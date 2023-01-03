@@ -12,6 +12,13 @@
       }
     },
     {
+      "name": "getUserById",
+      "http": {
+        "method": "GET",
+        "path": "/users/${id}"
+      }
+    },
+    {
       "name": "getPosts",
       "http": {
         "method": "GET",

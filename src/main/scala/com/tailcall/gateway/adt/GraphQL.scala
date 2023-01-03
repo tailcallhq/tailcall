@@ -1,7 +1,6 @@
 package com.tailcall.gateway.adt
 
-import zio.json.JsonCodec
-import zio.json.DeriveJsonCodec
+import zio.json.{DeriveJsonCodec, JsonCodec}
 
 final case class GraphQL()
 object GraphQL {

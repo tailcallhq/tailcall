@@ -1,10 +1,7 @@
 package com.tailcall.gateway.adt
 
-import zio.json.JsonCodec
 import caliban.parsing.adt.Document
-import zio.json.DeriveJsonCodec
-import zio.json.DeriveJsonDecoder
-import zio.schema.DeriveSchema
+import zio.json.{DeriveJsonCodec, JsonCodec}
 
 final case class Config(endpoints: List[Endpoint], graphQL: GraphQL)
 

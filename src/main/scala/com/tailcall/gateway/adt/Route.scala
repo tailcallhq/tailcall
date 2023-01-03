@@ -1,9 +1,8 @@
 package com.tailcall.gateway.adt
 
-import zio.parser._
 import zio.Chunk
 import zio.json.JsonCodec
-import zio.json.JsonError
+import zio.parser._
 
 final case class Route(segments: Chunk[Route.Segment])
 
@@ -24,8 +23,7 @@ object Route {
 
     val literal = segment.transform[Segment.Literal](Segment.Literal(_), _.value)
 
-    val segmentChunk = Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])
-      .repeatWithSep(Syntax.char('/'))
+    val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
 
     val route = segmentChunk.transform[Route](Route(_), _.segments)
   }
@@ -37,6 +35,7 @@ object Route {
         case Right(value) => Right(value)
       },
     syntax.route.asPrinter.printString(_) match {
+      // TODO: handle this more gracefully
       case Left(_)      => throw new RuntimeException("Invalid route")
       case Right(value) => value
     },
