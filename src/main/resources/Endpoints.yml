@@ -1,0 +1,12 @@
+version: 1.0.0
+http:
+  baseURL: https://jsonplaceholder.typicode.com
+endpoints:
+  - name: getUsers
+    http:
+      method: GET
+      path: /users
+  - name: getPosts
+    http:
+      method: GET
+      path: /posts
