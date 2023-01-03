@@ -1,6 +1,0 @@
-engine:
-  version: 1.0.0
-endpoints:
-  getUsers:
-    url: /users
-    method: GET

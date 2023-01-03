@@ -1,8 +1,6 @@
 package com.tailcall.gateway.adt
 
-import zio.json.JsonCodec
-import zio.json.DeriveJsonCodec
-import zio.json.DeriveJsonDecoder
+import zio.json.{DeriveJsonCodec, DeriveJsonDecoder, JsonCodec, JsonDecoder}
 
 final case class Endpoint(
   version: String,
