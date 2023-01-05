@@ -1,25 +1,25 @@
 type User {
-    id: ID!
-    name: String!
-    email: String!
-    username: String!
-    phone: String
-    website: String
-    posts: [Post]
+  id: ID!
+  name: String!
+  email: String!
+  username: String!
+  phone: String
+  website: String
+  posts: [Post]
 }
 
 type Post {
-    id: ID!
-    title: String!
-    body: String!
-    userId: ID!
+  id: ID!
+  title: String!
+  body: String!
+  userId: ID!
 }
 
 type Ids {
-    ids: [ID!]
+  ids: [ID!]
 }
 
 type Query {
-    users: [User]
-    posts: [Post]
+  users: [User]
+  posts: [Post]
 }
