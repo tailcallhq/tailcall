@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "endpoints": {
+    "http": {
+      "baseURL": "https://jsonplaceholder.typicode.com"
+    },
+    "definitions": [
+      {
+        "name": "getUsers",
+        "http": {
+          "method": "GET",
+          "path": "/users"
+        },
+        "output": {
+          "schema": {
+            "list": {
+              "item": {
+                "id": "Int",
+                "name": "String",
+                "username": "String",
+                "email": "String",
+                "phone": "String",
+                "website": "String"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "getUserById",
+        "http": {
+          "method": "GET",
+          "path": "/users/${id}"
+        }
+      },
+      {
+        "name": "getPosts",
+        "http": {
+          "method": "GET",
+          "path": "/posts"
+        },
+        "input": {
+          "query": {
+            "userId": {
+              "list": "Int"
+            }
+          },
+          "params": "GetPostsParams"
+        },
+        "output": {
+        }
+      },
+      {
+        "name": "getPostsById",
+        "http": {
+          "method": "GET",
+          "path": "/posts/${id}"
+        }
+      }
+    ]
+  },
+  "graphQL": {}
+}

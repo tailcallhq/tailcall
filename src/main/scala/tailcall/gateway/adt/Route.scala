@@ -1,4 +1,4 @@
-package com.tailcall.gateway.adt
+package tailcall.gateway.adt
 
 import zio.Chunk
 import zio.json.JsonCodec
@@ -15,15 +15,22 @@ object Route {
   }
 
   object syntax {
-    val segment = Syntax.alphaNumeric.repeat
+    val segment = Syntax
+      .alphaNumeric
+      .repeat
       .transform[String](_.asString, s => Chunk.fromIterable(s))
 
-    val param = (Syntax.string("${", ()) ~ segment ~ Syntax.char('}'))
-      .transform[Segment.Param](Segment.Param(_), _.value)
+    val param =
+      (
+        Syntax.string("${", ()) ~ segment ~ Syntax.char('}')
+      ).transform[Segment.Param](Segment.Param(_), _.value)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal(_), _.value)
 
-    val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
+    val segmentChunk =
+      (
+        Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])
+      ).repeat
 
     val route = segmentChunk.transform[Route](Route(_), _.segments)
   }
@@ -31,13 +38,17 @@ object Route {
   implicit val json: JsonCodec[Route] = JsonCodec[String].transformOrFail(
     string =>
       syntax.route.parseString(string) match {
-        case Left(_)      => Left(s"Invalid route: ${string}")
-        case Right(value) => Right(value)
+        case Left(_)      =>
+          Left(s"Invalid route: ${string}")
+        case Right(value) =>
+          Right(value)
       },
     syntax.route.asPrinter.printString(_) match {
       // TODO: handle this more gracefully
-      case Left(_)      => throw new RuntimeException("Invalid route")
-      case Right(value) => value
+      case Left(_)      =>
+        throw new RuntimeException("Invalid route")
+      case Right(value) =>
+        value
     },
   )
 }

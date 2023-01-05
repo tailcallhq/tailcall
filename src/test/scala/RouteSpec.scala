@@ -1,5 +1,5 @@
-import com.tailcall.gateway.adt.Route
-import com.tailcall.gateway.adt.Route.Segment.{Literal, Param}
+import tailcall.gateway.adt.Route.Segment.{Literal, Param}
+import tailcall.gateway.adt.Route
 import zio.test.Assertion.equalTo
 import zio.test.{Gen, ZIOSpecDefault, assertZIO, checkAll}
 import zio.{Chunk, ZIO}
