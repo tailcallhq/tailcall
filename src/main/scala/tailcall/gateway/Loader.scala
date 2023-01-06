@@ -46,12 +46,13 @@ object Loader {
     }
   }
 
-  def read(name: String): Task[String] = ZIO.attemptBlocking(Source.fromResource(name).mkString(""))
+  def readFile(name: String): Task[String] = ZIO
+    .attemptBlocking(Source.fromResource(name).mkString(""))
 
   def load(name: String): Task[Config] = {
     for {
       ext      <- Extension.detect(name)
-      input    <- read(name)
+      input    <- readFile(name)
       endpoint <- ext.decode(input)
     } yield endpoint
   }

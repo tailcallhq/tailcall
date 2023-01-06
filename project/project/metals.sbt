@@ -3,7 +3,7 @@
 // This plugin enables semantic information to be produced by sbt.
 // It also adds support for debugging using the Debug Adapter Protocol
 
-addSbtPlugin("org.scalameta" % "sbt-metals" % "0.11.9")
+addSbtPlugin("org.scalameta" % "sbt-metals" % "0.11.10")
 
 // This plugin makes sure that the JDI tools are in the sbt classpath.
 // JDI tools are used by the debug adapter server.

@@ -1,0 +1,122 @@
+version: 1.0.0
+server:
+  baseURL: https://jsonplaceholder.typicode.com
+schemas:
+
+  # Schema for Geo
+  - &Geo
+    type: object
+    fields:
+      - name: lat
+        required: true
+        schema:
+          type: String
+
+      - name: lng
+        required: true
+        schema:
+          type: String
+
+  # Schema for Address
+  - &Address
+    type: object
+    fields:
+      - name: street
+        required: true
+        schema:
+          type: String
+
+      - name: suite
+        required: true
+        schema:
+          type: String
+
+      - name: city
+        required: true
+        schema:
+          type: String
+
+      - name: zipcode
+        required: true
+        schema:
+          type: String
+
+      - name: geo
+        required: false
+        schema: *Geo
+  - &Post
+    type: object
+    fields:
+      - name: userId
+        required: true
+        schema:
+          type: Integer
+
+      - name: id
+        required: true
+        schema:
+          type: Integer
+
+      - name: title
+        required: true
+        schema:
+          type: String
+
+      - name: body
+        required: true
+        schema:
+          type: String
+
+  # List of IDs
+  - &IdList
+    type: array
+    items:
+      type: ID
+
+
+  # Schema for User
+  - &User
+    type: object
+    fields:
+      - name: id
+        required: true
+        schema:
+          type: ID
+
+      - name: name
+        required: true
+        schema:
+          type: String
+
+      - name: email
+        required: true
+        schema:
+          type: String
+
+      - name: address
+        required: false
+        schema: *Address
+endpoints:
+  - name: getUsers
+    http:
+      method: GET
+      path: "/users"
+    output:
+      type: array
+      items: *User
+
+  - name: getPosts
+    http:
+      method: GET
+      path: "/posts"
+    input:
+      name: path
+      type: object
+      fields:
+        - name: id
+          schema: *IdList
+    output:
+      type: array
+      items: *Post
+
+graphQL: { }

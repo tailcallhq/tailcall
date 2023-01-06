@@ -1,7 +1,7 @@
 ThisBuild / scalaVersion := "2.13.10"
 val zioJson   = "0.4.2"
 val zioSchema = "0.4.1"
-
+ThisBuild / scalacOptions       := Seq("-language:postfixOps")
 ThisBuild / libraryDependencies := Seq(
   "dev.zio"               %% "zio-schema"            % zioSchema,
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,

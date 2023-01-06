@@ -1,0 +1,16 @@
+input Input {
+  path: String
+}
+
+input User {
+  id: ID!
+  name: String!
+  email: String!
+  username: String
+  phone: String
+  website: String
+}
+
+type Query {
+  users(input: Input): [User]
+}
