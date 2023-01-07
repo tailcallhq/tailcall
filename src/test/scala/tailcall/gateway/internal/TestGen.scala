@@ -2,7 +2,6 @@ package tailcall.gateway.internal
 
 import tailcall.gateway.adt.Config
 import tailcall.gateway.adt.Config._
-import zio.Chunk
 import zio.test.Gen
 
 object TestGen {
@@ -47,20 +46,18 @@ object TestGen {
 
   def genEndpoints: Gen[Any, Config.Endpoint] =
     for {
-      id     <- genName
       http   <- genHttp
-      input  <- genSchema
+      input  <- Gen.option(genSchema)
       output <- genSchema
-    } yield Endpoint(id, http, input, output)
+    } yield Endpoint(http, input, output)
 
   def genGraphQL: Gen[Any, Config.GraphQL] = Gen.const(Config.GraphQL())
 
   def genConfig: Gen[Any, Config] =
     for {
       version   <- genVersion
-      schemas   <- Gen.listOfN(2)(genSchema)
       server    <- genServer
       endpoints <- Gen.listOfN(2)(genEndpoints)
       graphQL   <- genGraphQL
-    } yield Config(version, server, schemas, endpoints, graphQL)
+    } yield Config(version, server, endpoints, graphQL)
 }

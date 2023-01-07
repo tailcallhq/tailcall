@@ -8,17 +8,16 @@ import zio.parser.Syntax
 final case class Config(
   version: String = "1.0.0",
   server: Server,
-  schemas: List[Schema] = Nil,
   endpoints: List[Endpoint],
   graphQL: GraphQL = GraphQL(),
 )
 
 object Config {
-
   final case class Server(baseURL: String)
-  final case class Endpoint(name: String, http: Http, input: Schema = Schema.Null, output: Schema)
+  final case class Endpoint(http: Http, input: Option[Schema] = None, output: Schema)
   final case class Http(path: Route, method: Method = Method.GET)
-  final case class GraphQL()
+  final case class GraphQL(connections: List[Connection] = Nil)
+  final case class Connection(from: String, to: String, input: Option[String])
 
   @jsonDiscriminator("type")
   sealed trait Schema
@@ -143,6 +142,7 @@ object Config {
   implicit lazy val httpCodec: JsonCodec[Http]              = DeriveJsonCodec.gen[Http]
   implicit lazy val globalHttpCodec: JsonCodec[Server]      = DeriveJsonCodec.gen[Server]
   implicit lazy val endpointCodec: JsonCodec[Endpoint]      = DeriveJsonCodec.gen[Endpoint]
+  implicit lazy val sourceCodec: JsonCodec[Connection]      = DeriveJsonCodec.gen[Connection]
   implicit lazy val graphQLCodec: JsonCodec[GraphQL]        = DeriveJsonCodec.gen[GraphQL]
   implicit lazy val routeCodec: JsonCodec[Route]            = JsonCodec[String].transformOrFail(
     Route.decode,

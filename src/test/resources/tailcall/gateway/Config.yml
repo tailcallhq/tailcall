@@ -1,9 +1,9 @@
 version: 1.0.0
 server:
   baseURL: https://jsonplaceholder.typicode.com
-schemas:
 
-  # Schema for Geo
+# Schemas to be using in endpoints
+schemas:
   - &Geo
     type: object
     fields:
@@ -16,8 +16,6 @@ schemas:
         required: true
         schema:
           type: String
-
-  # Schema for Address
   - &Address
     type: object
     fields:
@@ -66,15 +64,10 @@ schemas:
         required: true
         schema:
           type: String
-
-  # List of IDs
   - &IdList
     type: array
-    items:
+    item:
       type: ID
-
-
-  # Schema for User
   - &User
     type: object
     fields:
@@ -96,27 +89,36 @@ schemas:
       - name: address
         required: false
         schema: *Address
+  - &Query
+    type: object
+    fields:
+      - name: users
+        schema:
+          type: array
+          item: *User
+      - name: posts
+        schema:
+          type: array
+          item: *Post
+
+# List of endpoints
 endpoints:
-  - name: getUsers
+  - &getUsers
     http:
       method: GET
       path: "/users"
     output:
       type: array
-      items: *User
-
-  - name: getPosts
+      item: *User
+  - &getPosts
     http:
       method: GET
       path: "/posts"
     input:
-      name: path
       type: object
       fields:
         - name: id
           schema: *IdList
     output:
       type: array
-      items: *Post
-
-graphQL: { }
+      item: *Post
