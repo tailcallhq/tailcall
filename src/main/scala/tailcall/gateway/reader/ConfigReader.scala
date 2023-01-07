@@ -11,6 +11,8 @@ import scala.io.Source
 
 /**
  * Reads configuration from a file.
+ *
+ * TODO: replace the custom implementation with ZIO Config.
  */
 trait ConfigReader {
   def readFile(file: => File): Task[Config]
