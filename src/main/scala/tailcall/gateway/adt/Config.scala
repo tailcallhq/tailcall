@@ -42,7 +42,7 @@ object Config {
     final case class Obj(fields: List[Field]) extends Schema
 
     @jsonHint("array")
-    final case class Arr(items: Schema) extends Schema
+    final case class Arr(item: Schema) extends Schema
 
     final case class Field(name: String, schema: Schema, required: Boolean = false)
 
