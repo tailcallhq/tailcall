@@ -12,15 +12,15 @@ object RouteSpec extends ZIOSpecDefault {
   override def spec =
     suite("route")(
       test("segments") {
-        val input = Seq(
-          "/a"              -> Chunk(Literal("a")),
-          "/a/b"            -> Chunk(Literal("a"), Literal("b")),
-          "/a/b/c"          -> Chunk(Literal("a"), Literal("b"), Literal("c")),
-          "/a/b/${c}"       -> Chunk(Literal("a"), Literal("b"), Param("c")),
-          "/a/${b}/${c}"    -> Chunk(Literal("a"), Param("b"), Param("c")),
-          "/${a}/${b}/${c}" -> Chunk(Param("a"), Param("b"), Param("c")),
-          "/${a}/${b}"      -> Chunk(Param("a"), Param("b")),
-          "/${a}"           -> Chunk(Param("a")),
+        val input: Seq[(String, List[Route.Segment])] = Seq(
+          "/a"              -> (Literal("a") :: Nil),
+          "/a/b"            -> (Literal("a") :: Literal("b") :: Nil),
+          "/a/b/c"          -> (Literal("a") :: Literal("b") :: Literal("c") :: Nil),
+          "/a/b/${c}"       -> (Literal("a") :: Literal("b") :: Param("c") :: Nil),
+          "/a/${b}/${c}"    -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
+          "/${a}/${b}/${c}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
+          "/${a}/${b}"      -> (Param("a") :: Param("b") :: Nil),
+          "/${a}"           -> (Param("a") :: Nil),
         )
         checkAll(Gen.fromIterable(input)) { case (input, expected) =>
           val parsed = ZIO.fromEither(syntax.parseString(input)).map(_.segments)

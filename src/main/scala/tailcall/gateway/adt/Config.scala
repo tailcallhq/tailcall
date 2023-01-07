@@ -47,7 +47,7 @@ object Config {
     final case class Field(name: String, schema: Schema, required: Boolean = false)
   }
 
-  final case class Route(segments: Chunk[Route.Segment])
+  final case class Route(segments: List[Route.Segment])
   object Route {
     sealed trait Segment
     object Segment {
@@ -73,7 +73,8 @@ object Config {
           Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])
         ).repeat
 
-      val route = segmentChunk.transform[Route](Route(_), _.segments)
+      val route = segmentChunk
+        .transform[Route](chunk => Route(chunk.toList), route => Chunk.from(route.segments))
 
     }
 

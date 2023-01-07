@@ -37,9 +37,7 @@ object TestGen {
   def genSegment: Gen[Any, Route.Segment] = Gen
     .oneOf(genName.map(Route.Segment.Literal), genName.map(Route.Segment.Param))
 
-  def genRoute: Gen[Any, Route] = Gen
-    .listOf(genSegment)
-    .map(segments => Route(Chunk.fromIterable(segments)))
+  def genRoute: Gen[Any, Route] = Gen.listOf(genSegment).map(Route(_))
 
   def genHttp: Gen[Any, Http] =
     for {
