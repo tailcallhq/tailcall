@@ -7,8 +7,7 @@ import zio.test._
 import zio.{Scope, durationInt}
 
 object ConfigReaderSpec extends ZIOSpecDefault {
-
-  val reader = ConfigReader.custom
+  private val reader = ConfigReader.custom
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("ConfigReader")(
