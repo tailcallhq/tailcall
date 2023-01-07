@@ -45,6 +45,12 @@ object Config {
     final case class Arr(items: Schema) extends Schema
 
     final case class Field(name: String, schema: Schema, required: Boolean = false)
+
+    @jsonHint("union")
+    final case class Union(types: List[Schema]) extends Schema
+
+    @jsonHint("intersect")
+    final case class Intersection(types: List[Schema]) extends Schema
   }
 
   final case class Route(segments: List[Route.Segment])
