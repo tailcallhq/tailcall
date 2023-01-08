@@ -1,3 +1,4 @@
+---
 version: 1.0.0
 server:
   baseURL: https://jsonplaceholder.typicode.com
@@ -68,6 +69,13 @@ schemas:
     type: array
     item:
       type: ID
+  - &UserId
+    type: object
+    fields:
+      - name: userId
+        schema:
+          type: String
+
   - &User
     type: object
     fields:
@@ -89,36 +97,68 @@ schemas:
       - name: address
         required: false
         schema: *Address
-  - &Query
-    type: object
-    fields:
-      - name: users
-        schema:
-          type: array
-          item: *User
-      - name: posts
-        schema:
-          type: array
-          item: *Post
 
 # List of endpoints
-endpoints:
+operations:
   - &getUsers
-    http:
+    operation:
+      type: http
       method: GET
       path: "/users"
     output:
       type: array
       item: *User
+
   - &getPosts
-    http:
+    operation: &getPostsOperation
+      type: http
       method: GET
       path: "/posts"
+    output: &getPostsOutput
+      type: array
+      item: *Post
+
+  - &getUserPosts
+    operation:
+      <<: *getPostsOperation
+      query:
+        - name: userId
+          value: ${parent, id}
+    input:
+      type: object
+      fields:
+        - name: parent
+          schema: *User
+    output: *getPostsOutput
+
+  - &getPostUser
     input:
       type: object
       fields:
         - name: id
-          schema: *IdList
-    output:
-      type: array
-      item: *Post
+          schema:
+            type: ID
+    output: *User
+    operation:
+      type: http
+      method: GET
+      path: /users/${parent.id}
+
+graphQL:
+  connections:
+    Query:
+      users:
+        operations:
+          - *getUsers
+      posts:
+        operations:
+          - *getPosts
+    User:
+      posts:
+        operations:
+          - *getUserPosts
+
+    Post:
+      user:
+        operations:
+          - *getPostUser

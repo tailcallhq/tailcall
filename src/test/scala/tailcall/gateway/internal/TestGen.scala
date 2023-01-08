@@ -38,11 +38,11 @@ object TestGen {
 
   def genRoute: Gen[Any, Route] = Gen.listOf(genSegment).map(Route(_))
 
-  def genHttp: Gen[Any, Http] =
+  def genHttp: Gen[Any, Operation.Http] =
     for {
       path   <- genRoute
       method <- genMethod
-    } yield Http(path, method)
+    } yield Operation.Http(path, method)
 
   def genEndpoints: Gen[Any, Config.Endpoint] =
     for {
@@ -51,13 +51,21 @@ object TestGen {
       output <- genSchema
     } yield Endpoint(http, input, output)
 
-  def genGraphQL: Gen[Any, Config.GraphQL] = Gen.const(Config.GraphQL())
+  def genConnection: Gen[Any, (String, Connection)] =
+    for {
+      name     <- genName
+      endpoint <- Gen.listOf(genEndpoints)
+    } yield (name, Connection(endpoint))
+
+  def genGraphQL: Gen[Any, Config.GraphQL] =
+    for {
+      connections <- Gen.listOf1(genConnection)
+    } yield Config.GraphQL(Map("Query" -> Map.from(connections)))
 
   def genConfig: Gen[Any, Config] =
     for {
-      version   <- genVersion
-      server    <- genServer
-      endpoints <- Gen.listOfN(2)(genEndpoints)
-      graphQL   <- genGraphQL
-    } yield Config(version, server, endpoints, graphQL)
+      version <- genVersion
+      server  <- genServer
+      graphQL <- genGraphQL
+    } yield Config(version, server, graphQL)
 }

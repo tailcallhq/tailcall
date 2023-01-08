@@ -1,23 +1,45 @@
 package tailcall.gateway.adt
 
+import tailcall.gateway.adt.Config.Operation.Transform
 import tailcall.gateway.adt.Config._
 import zio.Chunk
-import zio.json.{DeriveJsonCodec, JsonCodec, jsonDiscriminator, jsonHint}
+import zio.json.{DeriveJsonCodec, JsonCodec, jsonDiscriminator, jsonField, jsonHint}
 import zio.parser.Syntax
 
 final case class Config(
   version: String = "1.0.0",
   server: Server,
-  endpoints: List[Endpoint],
-  graphQL: GraphQL = GraphQL(),
+  graphQL: GraphQL = GraphQL(Map.empty),
 )
 
 object Config {
   final case class Server(baseURL: String)
-  final case class Endpoint(http: Http, input: Option[Schema] = None, output: Schema)
-  final case class Http(path: Route, method: Method = Method.GET)
-  final case class GraphQL(connections: List[Connection] = Nil)
-  final case class Connection(from: String, to: String, input: Option[String])
+  final case class GraphQL(connections: Map[String, Map[String, Connection]])
+  final case class Connection(operations: List[Endpoint])
+  final case class Endpoint(operation: Operation, input: Option[Schema] = None, output: Schema)
+
+  @jsonDiscriminator("type")
+  sealed trait Operation
+  object Operation {
+    @jsonHint("http")
+    final case class Http(path: Route, method: Method = Method.GET, query: List[QueryParam] = Nil)
+        extends Operation
+
+    // TODO: value should not be a string
+    // It should be a template string
+    final case class QueryParam(name: String, value: String)
+
+    @jsonHint("transformation")
+    case class Transformation(@jsonField("apply") transform: Transform) extends Operation
+
+    sealed trait Transform
+
+    @jsonHint("^identity")
+    case object Identity extends Transform
+
+    @jsonHint("^compose")
+    case class Compose(transforms: List[Transform]) extends Transform
+  }
 
   @jsonDiscriminator("type")
   sealed trait Schema
@@ -135,19 +157,33 @@ object Config {
    * instance of Config
    */
 
-  implicit lazy val fieldSchema: JsonCodec[Schema.Field]    = DeriveJsonCodec.gen[Schema.Field]
+  implicit lazy val fieldSchema: JsonCodec[Schema.Field] = DeriveJsonCodec.gen[Schema.Field]
+
   implicit lazy val schemaCodec: zio.json.JsonCodec[Schema] = zio.json.DeriveJsonCodec.gen[Schema]
-  implicit lazy val methodCodec: JsonCodec[Method]          = JsonCodec[String]
+
+  implicit lazy val methodCodec: JsonCodec[Method]  = JsonCodec[String]
     .transformOrFail(Method.decode, Method.encode)
-  implicit lazy val httpCodec: JsonCodec[Http]              = DeriveJsonCodec.gen[Http]
-  implicit lazy val globalHttpCodec: JsonCodec[Server]      = DeriveJsonCodec.gen[Server]
-  implicit lazy val endpointCodec: JsonCodec[Endpoint]      = DeriveJsonCodec.gen[Endpoint]
-  implicit lazy val sourceCodec: JsonCodec[Connection]      = DeriveJsonCodec.gen[Connection]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]        = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val routeCodec: JsonCodec[Route]            = JsonCodec[String].transformOrFail(
+  implicit lazy val httpCodec: JsonCodec[Operation] = DeriveJsonCodec.gen[Operation]
+
+  implicit lazy val transformationCodec: JsonCodec[Transform] = DeriveJsonCodec.gen[Transform]
+
+  implicit lazy val globalHttpCodec: JsonCodec[Server] = DeriveJsonCodec.gen[Server]
+
+  implicit lazy val endpointCodec: JsonCodec[Endpoint] = DeriveJsonCodec.gen[Endpoint]
+
+  implicit lazy val sourceCodec: JsonCodec[Connection] = DeriveJsonCodec.gen[Connection]
+
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL] = DeriveJsonCodec.gen[GraphQL]
+
+  implicit lazy val routeCodec: JsonCodec[Route] = JsonCodec[String].transformOrFail(
     Route.decode,
+
+    // TODO: handle this error more gracefully
     route => Route.encode(route).getOrElse(throw new RuntimeException("Invalid Route")),
   )
-  implicit lazy val configCodec: JsonCodec[Config]          = DeriveJsonCodec.gen[Config]
 
+  implicit lazy val configCodec: JsonCodec[Config] = DeriveJsonCodec.gen[Config]
+
+  implicit lazy val queryParamCodec: JsonCodec[Operation.QueryParam] = DeriveJsonCodec
+    .gen[Operation.QueryParam]
 }
