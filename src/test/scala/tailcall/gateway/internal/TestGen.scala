@@ -2,6 +2,7 @@ package tailcall.gateway.internal
 
 import tailcall.gateway.adt.Config
 import tailcall.gateway.adt.Config._
+import tailcall.gateway.adt._
 import zio.test.Gen
 
 object TestGen {
@@ -22,7 +23,7 @@ object TestGen {
 
   def genObj: Gen[Any, Schema] = Gen.listOfBounded(2, 5)(genField).map(fields => Schema.Obj(fields))
 
-  def genSchema: Gen[Any, Config.Schema] = genObj
+  def genSchema: Gen[Any, Schema] = genObj
 
   def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(baseURL))
 
