@@ -43,6 +43,7 @@ object Schema {
   @jsonHint("intersect")
   final case class Intersection(self: Schema, other: Schema) extends Schema
 
+  // TODO: add unit tests
   private def isSubType(s1: Schema, s2: Schema): Boolean = {
     def checkFields(fields1: List[Field], fields2: List[Field]): Boolean = {
       fields2.forall { f2 =>
