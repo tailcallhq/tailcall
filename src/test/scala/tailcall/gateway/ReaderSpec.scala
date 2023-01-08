@@ -1,19 +1,22 @@
 package tailcall.gateway
 
 import tailcall.gateway.internal.{Extension, TestGen}
-import tailcall.gateway.reader.ConfigReader
+import tailcall.gateway.Reader
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, durationInt}
 
-object ConfigReaderSpec extends ZIOSpecDefault {
-  private val reader = ConfigReader.custom
-
+object ReaderSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("ConfigReader")(
+    suite("Reader")(
       test("Config.yml is valid") {
         for {
-          _ <- reader.readURL(getClass.getResource("Config.yml"))
+          _ <- Reader.config.readURL(getClass.getResource("Config.yml"))
+        } yield assertCompletes
+      },
+      test("Schema.graphql is valid") {
+        for {
+          _ <- Reader.document.readURL(getClass.getResource("Schema.graphql"))
         } yield assertCompletes
       },
       test("YML Generator (debug)") {
