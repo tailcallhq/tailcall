@@ -12,7 +12,7 @@ object TestGen {
 
   def genVersion: Gen[Any, String] = genName
 
-  def genScalar: Gen[Any, Schema] = Gen.fromIterable(List(Schema.Str, Schema.Int, Schema.Null))
+  def genScalar: Gen[Any, Schema] = Gen.fromIterable(List(Schema.string, Schema.int, Schema.`null`))
 
   def genField: Gen[Any, Schema.Field] =
     for {
