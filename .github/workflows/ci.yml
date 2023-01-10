@@ -56,6 +56,9 @@ jobs:
       - name: Build project
         run: sbt ++${{ matrix.scala }} test
 
+      - name: Lint
+        run: sbt ++${{ matrix.scala }} lintCheck
+
       - name: Compress target directories
         run: tar cf targets.tar target project/target
 
