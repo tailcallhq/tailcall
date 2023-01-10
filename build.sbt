@@ -32,3 +32,4 @@ addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 
 ThisBuild / githubWorkflowBuild += WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"))
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
