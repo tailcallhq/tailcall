@@ -1,8 +1,7 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.adt.Config
 import tailcall.gateway.adt.Config._
-import tailcall.gateway.adt._
+import tailcall.gateway.adt.{Config, _}
 import zio.test.Gen
 
 object TestGen {

@@ -1,5 +1,7 @@
 package tailcall.gateway
 
+import caliban.parsing.Parser
+import caliban.parsing.adt.Document
 import tailcall.gateway.adt.Config
 import tailcall.gateway.internal.Extension
 import zio.{Task, ZIO}
@@ -8,8 +10,6 @@ import java.io.File
 import java.net.URL
 import java.nio.file.Path
 import scala.io.Source
-import caliban.parsing.adt.Document
-import caliban.parsing.Parser
 
 /**
  * Reads configuration from a file.

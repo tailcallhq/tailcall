@@ -1,7 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.internal.{Extension, TestGen}
 import tailcall.gateway.Reader
+import tailcall.gateway.internal.{Extension, TestGen}
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, durationInt}

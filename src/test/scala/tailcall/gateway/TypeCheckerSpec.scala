@@ -1,15 +1,10 @@
 package tailcall.gateway
 
-import zio.test._
-import zio.Scope
-import zio.ZIO
 import tailcall.gateway.Reader
-import tailcall.gateway.TypeChecker
-import caliban.parsing.adt.Document
 import zio._
+import zio.test._
 
 object TypeCheckerSpec extends ZIOSpecDefault {
-  import caliban.parsing.Parser
 
   def typeCheck(configName: String, schemaName: String): Task[List[String]] =
     for {
