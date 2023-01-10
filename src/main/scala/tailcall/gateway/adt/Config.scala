@@ -3,7 +3,7 @@ package tailcall.gateway.adt
 import tailcall.gateway.adt.Config.Operation.Transform
 import tailcall.gateway.adt.Config._
 import zio.Chunk
-import zio.json.{DeriveJsonCodec, JsonCodec, jsonDiscriminator, jsonField, jsonHint}
+import zio.json.{jsonDiscriminator, jsonField, jsonHint, DeriveJsonCodec, JsonCodec}
 import zio.parser.Syntax
 
 final case class Config(

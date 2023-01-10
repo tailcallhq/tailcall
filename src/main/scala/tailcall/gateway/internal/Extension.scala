@@ -5,7 +5,7 @@ import zio.json.yaml._
 import zio.json.{DecoderOps, _}
 import zio.{Task, ZIO}
 
-private[tailcall] sealed trait Extension {
+sealed private[tailcall] trait Extension {
   self =>
 
   def name: String                            =
