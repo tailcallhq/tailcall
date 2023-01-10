@@ -11,18 +11,18 @@ import zio._
 object TypeCheckerSpec extends ZIOSpecDefault {
   import caliban.parsing.Parser
 
-  def typeCheck(config: String, schema: String): Task[TypeChecker.Status] =
+  def typeCheck(configName: String, schemaName: String): Task[List[String]] =
     for {
-      config   <- Reader.config.readURL(getClass.getResource(config))
-      document <- Reader.document.readURL(getClass.getResource(schema))
-    } yield TypeChecker.Status.Empty
+      config   <- Reader.config.readURL(getClass.getResource(configName))
+      document <- Reader.document.readURL(getClass.getResource(schemaName))
+    } yield TypeChecker.check(config, document)
 
   override def spec =
     suite("TypeCheckerSpec")(
       test("files are being read") {
         for {
-          status <- typeCheck("Config.yml", "Schema.graphql")
-        } yield assertTrue(status == TypeChecker.Status.Empty)
+          problems <- typeCheck("Config.yml", "Schema.graphql")
+        } yield assertTrue(problems == Nil)
       },
     )
 }
