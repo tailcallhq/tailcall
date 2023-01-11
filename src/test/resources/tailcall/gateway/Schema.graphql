@@ -19,3 +19,7 @@ type Query {
   users: [User]
   posts: [Post]
 }
+
+schema {
+  query: Query
+}
