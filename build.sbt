@@ -1,6 +1,7 @@
 ThisBuild / scalaVersion := "2.13.10"
 val zioJson   = "0.4.2"
 val zioSchema = "0.4.1"
+val caliban   = "2.0.2"
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 ThisBuild / scalacOptions       := Seq("-language:postfixOps", "-Ywarn-unused")
 ThisBuild / libraryDependencies := Seq(
@@ -8,7 +9,8 @@ ThisBuild / libraryDependencies := Seq(
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,
   "com.lihaoyi"           %% "pprint"                % "0.8.1",
   "dev.zio"               %% "zio"                   % "2.0.5",
-  "com.github.ghostdogpr" %% "caliban"               % "2.0.1",
+  "com.github.ghostdogpr" %% "caliban"               % caliban,
+  "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
   "dev.zio"               %% "zio-json"              % zioJson,
   "dev.zio"               %% "zio-json-macros"       % zioJson,
   "dev.zio"               %% "zio-json-yaml"         % zioJson,
