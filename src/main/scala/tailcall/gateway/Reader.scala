@@ -39,7 +39,7 @@ object Reader {
       override def readFile(file: => File): Task[Document] = {
         for {
           string   <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
-          document <- Parser.parseQuery(string).mapError(_ => ???)
+          document <- Parser.parseQuery(string)
         } yield document
       }
     }
