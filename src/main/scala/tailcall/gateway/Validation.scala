@@ -26,6 +26,10 @@ final case class Validation[-A, +B] private[Validation] (validate: A => Status[B
   def map[B1](f: B => B1): Validation[A, B1] = {
     self.flatMap(b => value(f(b)))
   }
+
+  def contramap[A1](f: A1 => A): Validation[A1, B] = {
+    Validation(a1 => self.validate(f(a1)))
+  }
 }
 
 object Validation {
