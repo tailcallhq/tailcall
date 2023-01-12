@@ -1,60 +1,69 @@
 package tailcall.gateway
 
-import tailcall.gateway.Validation._
 import zio.test.Assertion._
 import zio.test._
 
 object ValidationSpec extends ZIOSpecDefault {
-  val isNumber: Validation[String, Int] = Validation.make[String] { s =>
-    if (s.matches("^[0-9]+$"))
-      Status.value(s.toInt)
-    else
-      Status.trace(s"Invalid number: $s")
-  }
+  val isNumber: Validation[Any, Nothing, String, Int] =
+    for {
+      s      <- Validation.access[String]
+      result <-
+        if (s.matches("^[0-9]+$"))
+          Validation.value(s.toInt)
+        else
+          Validation.trace(s"Invalid number: $s")
+    } yield result
 
-  val areAlphabets: Validation[String, String] = Validation.make[String] { s =>
-    if (s.matches("^[A-Za-z]+$"))
-      Status.value(s)
-    else
-      Status.trace(s"Invalid alphabets: $s")
-  }
+  val areAlphabets: Validation[Any, Nothing, String, String] =
+    for {
+      s      <- Validation.access[String]
+      result <-
+        if (s.matches("^[A-Za-z]+$"))
+          Validation.value(s)
+        else
+          Validation.trace(s"Invalid alphabets: $s")
+    } yield result
 
   def spec =
     suite("ValidationSpec")(
       test("test input with valid number") {
-        assert(isNumber.validate("123").values)(equalTo(List(123)))
+        assertZIO(isNumber.eval.values("123"))(equalTo(List(123)))
       },
       test("test input with valid string") {
-        assert(areAlphabets.validate("abc").values)(equalTo(List("abc")))
+        assertZIO(areAlphabets.eval.values("abc"))(equalTo(List("abc")))
       },
       test("test input with invalid number and string") {
-        assert(isNumber.validate("123abc").traces)(equalTo(List("Invalid number: 123abc")))
+        assertZIO(isNumber.eval.traces("123abc"))(equalTo(List("Invalid number: 123abc")))
       },
       test("test input with invalid string") {
-        assert(areAlphabets.validate("123abc").traces)(equalTo(List("Invalid alphabets: 123abc")))
+        assertZIO(areAlphabets.eval.traces("123abc"))(equalTo(List("Invalid alphabets: 123abc")))
       },
       test("test empty input") {
-        assert(isNumber.validate("").traces)(equalTo(List("Invalid number: ")))
+        assertZIO(isNumber.eval.traces(""))(equalTo(List("Invalid number: ")))
       },
       test("test compose invalid input") {
         val composed = isNumber ++ areAlphabets
-        assert(composed.validate("123abc").traces)(
+        assertZIO(composed.eval.traces("123abc"))(
           equalTo(List("Invalid number: 123abc", "Invalid alphabets: 123abc")),
         )
       },
       test("test compose validation") {
         val composed = isNumber ++ areAlphabets
-        val result   = composed.validate("123")
-        assert(result.traces)(equalTo(List("Invalid alphabets: 123"))) &&
-        assert(result.values)(equalTo(List(123)))
+        val result   = composed.eval
+        assertZIO(result.traces("123"))(equalTo(List("Invalid alphabets: 123"))) &&
+        assertZIO(result.values("123"))(equalTo(List(123)))
       },
       test("test flatMap validation") {
         val flatMapped = isNumber.flatMap(_ => areAlphabets)
-        assert(flatMapped.validate("123abc").traces)(equalTo(List("Invalid number: 123abc")))
+        assertZIO(flatMapped.eval.traces("123abc"))(equalTo(List("Invalid number: 123abc")))
+      },
+      test("test flatMap validation") {
+        val flatMapped = isNumber.flatMap(_ => areAlphabets)
+        assertZIO(flatMapped.eval.traces("123"))(equalTo(List("Invalid alphabets: 123")))
       },
       test("test map validation") {
         val mapped = isNumber.map(res => res + 1)
-        assert(mapped.validate("123").values)(equalTo(List(124)))
+        assertZIO(mapped.eval.values("123"))(equalTo(List(124)))
       },
     )
 }
