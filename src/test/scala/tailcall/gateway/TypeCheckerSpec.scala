@@ -1,23 +1,27 @@
 package tailcall.gateway
 
+import caliban.parsing.adt.Document
 import tailcall.gateway.Reader
 import zio._
 import zio.test._
 
 object TypeCheckerSpec extends ZIOSpecDefault {
+  private val configFile: Task[adt.Config] = {
+    Reader.config.readURL(getClass.getResource("Config.yml"))
+  }
 
-  def typeCheck(configName: String, schemaName: String): Task[List[String]] =
-    for {
-      config   <- Reader.config.readURL(getClass.getResource(configName))
-      document <- Reader.document.readURL(getClass.getResource(schemaName))
-    } yield TypeChecker.check(config, document)
+  private val schemaFile: Task[Document] = {
+    Reader.document.readURL(getClass.getResource("Schema.graphql"))
+  }
 
   override def spec =
     suite("TypeCheckerSpec")(
-      test("files are being read") {
+      test("is valid") {
         for {
-          problems <- typeCheck("Config.yml", "Schema.graphql")
-        } yield assertTrue(problems == Nil)
+          config <- configFile
+          schema <- schemaFile
+          errors = TypeChecker.check(config, schema).errors
+        } yield assertTrue(errors == Chunk.empty)
       },
     )
 }

@@ -25,4 +25,9 @@ object TValid {
   def fail[E](e: E): TValid[E, Nothing]    = TValid(Chunk.single(e), Chunk.empty)
   def empty: TValid[Nothing, Nothing]      = TValid(Chunk.empty, Chunk.empty)
   def unit: TValid[Nothing, Unit]          = success(())
+  def from[E, A](iterable: Iterable[TValid[E, A]]): TValid[E, A] = {
+    val failures0  = Chunk.fromIterable(iterable).flatMap(_.errors)
+    val successes0 = Chunk.fromIterable(iterable).flatMap(_.values)
+    TValid(failures0, successes0)
+  }
 }
