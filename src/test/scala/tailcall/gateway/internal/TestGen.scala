@@ -13,12 +13,11 @@ object TestGen {
 
   def genScalar: Gen[Any, Schema] = Gen.fromIterable(List(Schema.string, Schema.int, Schema.`null`))
 
-  def genField: Gen[Any, Schema.Field] =
-    for {
-      name     <- genName
-      kind     <- genScalar
-      required <- Gen.boolean
-    } yield Schema.Field(name, kind, required)
+  def genField: Gen[Any, Schema.Field] = for {
+    name     <- genName
+    kind     <- genScalar
+    required <- Gen.boolean
+  } yield Schema.Field(name, kind, required)
 
   def genObj: Gen[Any, Schema] = Gen.listOfBounded(2, 5)(genField).map(fields => Schema.Obj(fields))
 
@@ -38,34 +37,29 @@ object TestGen {
 
   def genRoute: Gen[Any, Route] = Gen.listOf(genSegment).map(Route(_))
 
-  def genHttp: Gen[Any, Operation.Http] =
-    for {
-      path   <- genRoute
-      method <- genMethod
-    } yield Operation.Http(path, method)
+  def genHttp: Gen[Any, Operation.Http] = for {
+    path   <- genRoute
+    method <- genMethod
+  } yield Operation.Http(path, method)
 
-  def genEndpoints: Gen[Any, Config.Endpoint] =
-    for {
-      http   <- genHttp
-      input  <- Gen.option(genSchema)
-      output <- genSchema
-    } yield Endpoint(http, input, output)
+  def genEndpoints: Gen[Any, Config.Endpoint] = for {
+    http   <- genHttp
+    input  <- Gen.option(genSchema)
+    output <- genSchema
+  } yield Endpoint(http, input, output)
 
-  def genConnection: Gen[Any, (String, Connection)] =
-    for {
-      name     <- genName
-      endpoint <- Gen.listOf(genEndpoints)
-    } yield (name, Connection(endpoint))
+  def genConnection: Gen[Any, (String, Connection)] = for {
+    name     <- genName
+    endpoint <- Gen.listOf(genEndpoints)
+  } yield (name, Connection(endpoint))
 
-  def genGraphQL: Gen[Any, Config.GraphQL] =
-    for {
-      connections <- Gen.listOf1(genConnection)
-    } yield Config.GraphQL(Map("Query" -> Map.from(connections)))
+  def genGraphQL: Gen[Any, Config.GraphQL] = for {
+    connections <- Gen.listOf1(genConnection)
+  } yield Config.GraphQL(Map("Query" -> Map.from(connections)))
 
-  def genConfig: Gen[Any, Config] =
-    for {
-      version <- genVersion
-      server  <- genServer
-      graphQL <- genGraphQL
-    } yield Config(version, server, graphQL)
+  def genConfig: Gen[Any, Config] = for {
+    version <- genVersion
+    server  <- genServer
+    graphQL <- genGraphQL
+  } yield Config(version, server, graphQL)
 }

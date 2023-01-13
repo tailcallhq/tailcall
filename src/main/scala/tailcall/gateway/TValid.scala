@@ -11,9 +11,7 @@ final case class TValid[+E, +A](errors: Chunk[E], values: Chunk[A]) {
     TValid(errors ++ failures0, successes0)
   }
 
-  def map[B](f: A => B): TValid[E, B] = {
-    flatMap(a => TValid.success(f(a)))
-  }
+  def map[B](f: A => B): TValid[E, B] = { flatMap(a => TValid.success(f(a))) }
 
   def ++[E1 >: E, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = {
     TValid(self.errors ++ other.errors, self.values ++ other.values)

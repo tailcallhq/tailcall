@@ -14,14 +14,11 @@ object TypeCheckerSpec extends ZIOSpecDefault {
     Reader.document.readURL(getClass.getResource("Schema.graphql"))
   }
 
-  override def spec =
-    suite("TypeCheckerSpec")(
-      test("is valid") {
-        for {
-          config <- configFile
-          schema <- schemaFile
-          errors = TypeChecker.check(config, schema).errors
-        } yield assertTrue(errors == Chunk.empty)
-      },
-    )
+  override def spec = suite("TypeCheckerSpec")(test("is valid") {
+    for {
+      config <- configFile
+      schema <- schemaFile
+      errors = TypeChecker.check(config, schema).errors
+    } yield assertTrue(errors == Chunk.empty)
+  })
 }

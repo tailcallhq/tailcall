@@ -12,18 +12,15 @@ object ExtensionSpec extends ZIOSpecDefault {
   def read(file: String): Task[String] = ZIO.attemptBlocking(Source.fromResource(file).mkString(""))
 
   // TODO: fix failing tests
-  def spec =
-    suite("ExtensionSpec")(
-      test("json codec") {
-        val gen = Gen.fromIterable(Seq(Extension.YML, Extension.JSON))
-        checkAll(gen) { ext =>
-          for {
-            str     <- read(s"Config.${ext.name}")
-            config  <- ext.decode(str)
-            str0    <- ext.encode(config)
-            config0 <- ext.decode(str0)
-          } yield assertTrue(config0 == config)
-        }
-      },
-    ) @@ failing
+  def spec = suite("ExtensionSpec")(test("json codec") {
+    val gen = Gen.fromIterable(Seq(Extension.YML, Extension.JSON))
+    checkAll(gen) { ext =>
+      for {
+        str     <- read(s"Config.${ext.name}")
+        config  <- ext.decode(str)
+        str0    <- ext.encode(config)
+        config0 <- ext.decode(str0)
+      } yield assertTrue(config0 == config)
+    }
+  }) @@ failing
 }

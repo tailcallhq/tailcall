@@ -46,20 +46,21 @@ object Config {
    * instance of Config
    */
 
-  implicit lazy val httpCodec: JsonCodec[Operation] = DeriveJsonCodec.gen[Operation]
+  implicit lazy val httpCodec: JsonCodec[Operation] = { DeriveJsonCodec.gen[Operation] }
 
-  implicit lazy val transformationCodec: JsonCodec[Transform] = DeriveJsonCodec.gen[Transform]
+  implicit lazy val transformationCodec: JsonCodec[Transform] = { DeriveJsonCodec.gen[Transform] }
 
-  implicit lazy val serverCodec: JsonCodec[Server] = DeriveJsonCodec.gen[Server]
+  implicit lazy val serverCodec: JsonCodec[Server] = { DeriveJsonCodec.gen[Server] }
 
-  implicit lazy val endpointCodec: JsonCodec[Endpoint] = DeriveJsonCodec.gen[Endpoint]
+  implicit lazy val endpointCodec: JsonCodec[Endpoint] = { DeriveJsonCodec.gen[Endpoint] }
 
-  implicit lazy val sourceCodec: JsonCodec[Connection] = DeriveJsonCodec.gen[Connection]
+  implicit lazy val sourceCodec: JsonCodec[Connection] = { DeriveJsonCodec.gen[Connection] }
 
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL] = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL] = { DeriveJsonCodec.gen[GraphQL] }
 
-  implicit lazy val configCodec: JsonCodec[Config] = DeriveJsonCodec.gen[Config]
+  implicit lazy val configCodec: JsonCodec[Config] = { DeriveJsonCodec.gen[Config] }
 
-  implicit lazy val queryParamCodec: JsonCodec[Operation.QueryParam] = DeriveJsonCodec
-    .gen[Operation.QueryParam]
+  implicit lazy val queryParamCodec: JsonCodec[Operation.QueryParam] = {
+    DeriveJsonCodec.gen[Operation.QueryParam]
+  }
 }

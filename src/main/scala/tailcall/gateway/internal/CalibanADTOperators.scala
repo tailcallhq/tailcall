@@ -5,21 +5,17 @@ object CalibanADTOperators {
     def findDefinition(
       name: String,
     ): Option[Definition.TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition] = document
-      .definitions
-      .collectFirst {
+      .definitions.collectFirst {
         case d: Definition.TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition
-            if d.name == name =>
-          d
+            if d.name == name => d
       }
   }
 
   implicit final class TypeOperator(ofType: Type) {
     def resolveName: String = {
       ofType match {
-        case Type.ListType(ofType, _) =>
-          ofType.resolveName
-        case Type.NamedType(name, _)  =>
-          name
+        case Type.ListType(ofType, _) => ofType.resolveName
+        case Type.NamedType(name, _)  => name
       }
     }
   }

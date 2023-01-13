@@ -56,29 +56,21 @@ object Schema {
     }
 
     (s1, s2) match {
-      case (_, Scalar.Null) =>
-        true
+      case (_, Scalar.Null) => true
 
-      case (Scalar.Null, _) =>
-        false
+      case (Scalar.Null, _) => false
 
-      case (s1: Scalar, s2: Scalar) =>
-        s1 == s2
+      case (s1: Scalar, s2: Scalar) => s1 == s2
 
-      case (Obj(fields1), Obj(fields2)) =>
-        checkFields(fields1, fields2)
+      case (Obj(fields1), Obj(fields2)) => checkFields(fields1, fields2)
 
-      case (Arr(item1), Arr(item2)) =>
-        isSubType(item1, item2)
+      case (Arr(item1), Arr(item2)) => isSubType(item1, item2)
 
-      case (Union(s1a, s1b), _) =>
-        isSubType(s1a, s2) || isSubType(s1b, s2)
+      case (Union(s1a, s1b), _) => isSubType(s1a, s2) || isSubType(s1b, s2)
 
-      case (Intersection(s1a, s1b), _) =>
-        isSubType(s1a, s2) && isSubType(s1b, s2)
+      case (Intersection(s1a, s1b), _) => isSubType(s1a, s2) && isSubType(s1b, s2)
 
-      case _ =>
-        false
+      case _ => false
     }
   }
 
