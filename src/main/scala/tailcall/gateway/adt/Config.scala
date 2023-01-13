@@ -46,15 +46,15 @@ object Config {
    * instance of Config
    */
 
-  implicit lazy val httpCodec: JsonCodec[Operation] = { DeriveJsonCodec.gen[Operation] }
+  implicit lazy val operationCodec: JsonCodec[Operation] = { DeriveJsonCodec.gen[Operation] }
 
-  implicit lazy val transformationCodec: JsonCodec[Transform] = { DeriveJsonCodec.gen[Transform] }
+  implicit lazy val transformCodec: JsonCodec[Transform] = { DeriveJsonCodec.gen[Transform] }
 
   implicit lazy val serverCodec: JsonCodec[Server] = { DeriveJsonCodec.gen[Server] }
 
   implicit lazy val endpointCodec: JsonCodec[Endpoint] = { DeriveJsonCodec.gen[Endpoint] }
 
-  implicit lazy val sourceCodec: JsonCodec[Connection] = { DeriveJsonCodec.gen[Connection] }
+  implicit lazy val connectionCodec: JsonCodec[Connection] = { DeriveJsonCodec.gen[Connection] }
 
   implicit lazy val graphQLCodec: JsonCodec[GraphQL] = { DeriveJsonCodec.gen[GraphQL] }
 
