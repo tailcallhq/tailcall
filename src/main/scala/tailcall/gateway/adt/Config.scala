@@ -7,12 +7,12 @@ import zio.json._
 final case class Config(
   version: String = "1.0.0",
   server: Server,
-  graphQL: GraphQL = GraphQL(Map.empty),
+  graphQL: Specification = Specification(Map.empty),
 )
 
 object Config {
   final case class Server(baseURL: String)
-  final case class GraphQL(connections: Map[String, Map[String, Connection]])
+  final case class Specification(connections: Map[String, Map[String, Connection]])
   final case class Connection(operations: List[Endpoint])
   final case class Endpoint(operation: Operation, input: Option[Schema] = None, output: Schema)
 
@@ -56,7 +56,9 @@ object Config {
 
   implicit lazy val connectionCodec: JsonCodec[Connection] = { DeriveJsonCodec.gen[Connection] }
 
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL] = { DeriveJsonCodec.gen[GraphQL] }
+  implicit lazy val specificationCodec: JsonCodec[Specification] = {
+    DeriveJsonCodec.gen[Specification]
+  }
 
   implicit lazy val configCodec: JsonCodec[Config] = { DeriveJsonCodec.gen[Config] }
 

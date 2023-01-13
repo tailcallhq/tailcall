@@ -53,9 +53,9 @@ object TestGen {
     endpoint <- Gen.listOf(genEndpoints)
   } yield (name, Connection(endpoint))
 
-  def genGraphQL: Gen[Any, Config.GraphQL] = for {
+  def genGraphQL: Gen[Any, Config.Specification] = for {
     connections <- Gen.listOf1(genConnection)
-  } yield Config.GraphQL(Map("Query" -> Map.from(connections)))
+  } yield Config.Specification(Map("Query" -> Map.from(connections)))
 
   def genConfig: Gen[Any, Config] = for {
     version <- genVersion
