@@ -1,8 +1,9 @@
-package tailcall.gateway.adt
+package tailcall.gateway.dsl.json
 
-import tailcall.gateway.adt.Config.Operation.Transform
-import tailcall.gateway.adt.Config._
 import zio.json._
+
+import Config.Operation.Transform
+import Config._
 
 final case class Config(
   version: String = "1.0.0",

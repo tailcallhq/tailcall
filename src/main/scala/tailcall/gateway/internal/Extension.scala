@@ -1,6 +1,6 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.adt.Config
+import tailcall.gateway.dsl.json.Config
 import zio.json.yaml._
 import zio.json.{DecoderOps, _}
 import zio.{Task, ZIO}

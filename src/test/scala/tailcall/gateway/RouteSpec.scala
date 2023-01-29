@@ -1,7 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.adt.Route
-import tailcall.gateway.adt.Route.Segment.{Literal, Param}
+import tailcall.gateway.dsl.json.Route
+import tailcall.gateway.dsl.json.Route.Segment.{Literal, Param}
 import zio.ZIO
 import zio.test.Assertion.equalTo
 import zio.test.{Gen, ZIOSpecDefault, assertZIO, checkAll}

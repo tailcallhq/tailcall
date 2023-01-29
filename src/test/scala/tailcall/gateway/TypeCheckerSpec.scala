@@ -6,7 +6,7 @@ import zio._
 import zio.test._
 
 object TypeCheckerSpec extends ZIOSpecDefault {
-  private val configFile: Task[adt.Config] = {
+  private val configFile: Task[dsl.json.Config] = {
     Reader.config.readURL(getClass.getResource("Config.yml"))
   }
 
