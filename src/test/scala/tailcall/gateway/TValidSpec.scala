@@ -56,6 +56,6 @@ object TValidSpec extends ZIOSpecDefault {
       val valid2 = TValid.fail("error")
       val valid3 = TValid.from(List(valid1, valid2))
       assert(valid3.errors)(equalTo(Chunk.single("error")))
-    },
+    }
   )
 }

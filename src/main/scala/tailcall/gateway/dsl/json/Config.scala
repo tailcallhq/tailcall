@@ -8,7 +8,7 @@ import Config._
 final case class Config(
   version: String = "1.0.0",
   server: Server,
-  graphQL: Specification = Specification(Map.empty),
+  graphQL: Specification = Specification(Map.empty)
 )
 
 object Config {

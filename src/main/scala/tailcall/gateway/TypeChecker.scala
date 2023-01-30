@@ -22,7 +22,7 @@ final class TypeChecker(config: Config, document: Document) {
   }
 
   def hasQueryType(
-    schema: Definition.TypeSystemDefinition.SchemaDefinition,
+    schema: Definition.TypeSystemDefinition.SchemaDefinition
   ): TValid[String, Definition.TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition] = {
     schema.query.flatMap(document.findDefinition(_)) match {
       case None          => TValid.fail("Missing query in schema definition")
@@ -31,7 +31,7 @@ final class TypeChecker(config: Config, document: Document) {
   }
 
   def checkResolverDefinition(
-    objectType: Definition.TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition,
+    objectType: Definition.TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition
   ): TValid[String, Unit] = {
     for {
       resolverMap <- hasResolverType(objectType.name)

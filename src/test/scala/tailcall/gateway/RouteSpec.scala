@@ -18,7 +18,7 @@ object RouteSpec extends ZIOSpecDefault {
       "/a/${b}/${c}"    -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
       "/${a}/${b}/${c}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
       "/${a}/${b}"      -> (Param("a") :: Param("b") :: Nil),
-      "/${a}"           -> (Param("a") :: Nil),
+      "/${a}"           -> (Param("a") :: Nil)
     )
     checkAll(Gen.fromIterable(input)) { case (input, expected) =>
       val parsed = ZIO.fromEither(syntax.parseString(input)).map(_.segments)

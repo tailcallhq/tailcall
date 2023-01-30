@@ -38,7 +38,7 @@ object Route {
     Route.decode,
 
     // TODO: handle this error more gracefully
-    route => Route.encode(route).getOrElse(throw new RuntimeException("Invalid Route")),
+    route => Route.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
   )
 
 }

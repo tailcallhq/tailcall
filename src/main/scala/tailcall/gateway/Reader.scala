@@ -48,7 +48,7 @@ object Reader {
               mutation = __schema.mutationType.map(Operation(_, Step.NullStep)),
               subscription = __schema.mutationType.map(Operation(_, Step.NullStep)),
               additionalTypes = __schema.types,
-              schemaDirectives = Nil,
+              schemaDirectives = Nil
             ))
         }
 

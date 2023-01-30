@@ -29,7 +29,7 @@ object TestGen {
     Gen.const(Method.GET),
     Gen.const(Method.POST),
     Gen.const(Method.PUT),
-    Gen.const(Method.DELETE),
+    Gen.const(Method.DELETE)
   )
 
   def genSegment: Gen[Any, Route.Segment] = Gen
