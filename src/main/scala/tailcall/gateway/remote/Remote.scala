@@ -45,11 +45,6 @@ sealed trait Remote[A] {
   final def unary_!(implicit ev: Remote[A] =:= Remote[Boolean]): Remote[Boolean] = Remote
     .Logical(Remote.Logical.Not(self))
 
-  final def ++[B](
-    other: Remote[IndexedSeq[B]]
-  )(implicit ev: Remote[A] =:= Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] = Remote
-    .IndexSeqOperations(Remote.IndexSeqOperations.Concat(ev(self), other))
-
   final def reverse[B](implicit ev: Remote[A] =:= Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] =
     Remote.IndexSeqOperations(Remote.IndexSeqOperations.Reverse(ev(self)))
 
@@ -111,6 +106,12 @@ object Remote extends RemoteTags with RemoteCtors {
     final case class Not(value: Remote[Boolean]) extends Operation
   }
 
+  final case class StringOperations(operation: StringOperations.Operation) extends Remote[String]
+  object StringOperations {
+    sealed trait Operation
+    final case class Concat(left: Remote[String], right: Remote[String]) extends Operation
+  }
+
   final case class IndexSeqOperations[A](operation: IndexSeqOperations.Operation[A])
       extends Remote[A]
 
@@ -149,4 +150,23 @@ object Remote extends RemoteTags with RemoteCtors {
 
   final case class RemoteFunction[A, B](input: Binding[A], body: Remote[B]) extends Remote[A => B]
 
+  implicit final class ComposeStringInterpolator(val sc: StringContext) extends AnyVal {
+    def rs[A](args: (Remote[String])*): Remote[String] = {
+      val strings             = sc.parts.iterator
+      val seq                 = args.iterator
+      var buf: Remote[String] = Remote(strings.next())
+      while (strings.hasNext) buf = buf ++ seq.next() ++ Remote(strings.next())
+      buf
+    }
+  }
+
+  implicit final class RemoteStringOps(val self: Remote[String]) extends AnyVal {
+    def ++(other: Remote[String]): Remote[String] = Remote
+      .StringOperations(Remote.StringOperations.Concat(self, other))
+  }
+
+  implicit final class RemoteSeqOps[A](val self: Remote[IndexedSeq[A]]) extends AnyVal {
+    def ++(other: Remote[IndexedSeq[A]]): Remote[IndexedSeq[A]] = Remote
+      .IndexSeqOperations(Remote.IndexSeqOperations.Concat(self, other))
+  }
 }

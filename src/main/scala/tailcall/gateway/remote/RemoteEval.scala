@@ -1,4 +1,5 @@
 package tailcall.gateway.remote
+import tailcall.gateway.remote.Remote.StringOperations.Concat
 import zio._
 
 trait RemoteEval {
@@ -40,16 +41,16 @@ object RemoteEval {
           }
         case RemoteFunction(arg, fBody)     => new Default(ctx + (arg.id -> arg))
             .eval(fBody.asInstanceOf[Remote[A]])
-
-        case Binding(id) => ctx.get(id) match {
+        case Binding(id)                    => ctx.get(id) match {
             case Some(value) => ZIO.succeed(value.asInstanceOf[A])
             case None        => ZIO.dieMessage("No value found for id: " + id)
           }
-
-        case Apply(f, arg) => for {
+        case Apply(f, arg)                  => for {
             a <- eval(arg)
             b <- new Default(ctx + (f.input.id -> a)).eval(f.body)
           } yield b.asInstanceOf[A]
+        case StringOperations(operation)    =>
+          operation match { case Concat(left, right) => eval(left).zipWith(eval(right))(_ + _) }
       }
     }
   }
