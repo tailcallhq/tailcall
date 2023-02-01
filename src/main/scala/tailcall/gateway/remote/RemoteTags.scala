@@ -25,6 +25,7 @@ trait RemoteTags {
     def multiply(left: A, right: A): A
     def divide(left: A, right: A): A
     def modulo(left: A, right: A): A
+    def one: A
   }
 
   object NumericTag {
@@ -34,6 +35,7 @@ trait RemoteTags {
       override def multiply(left: Int, right: Int): Int = left * right
       override def divide(left: Int, right: Int): Int   = left / right
       override def modulo(left: Int, right: Int): Int   = left % right
+      override def one: Int                             = 1
     }
   }
 
