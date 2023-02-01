@@ -82,10 +82,9 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         assertRemote(program)(equalTo(1))
       },
       test("function") {
-        val function: Remote[Int => Int] = Remote.fromFunction[Int, Int](_.increment)
-        val program                      = function(Remote(1))
+        val function = Remote.fromFunction[Int, Int](_.increment)
+        val program  = function(Remote(1))
         assertRemote(program)(equalTo(2))
-
       },
       test("filter") {
         val program = Remote(IndexedSeq(1, 2, 3, 4)).filter[Int](r => r % Remote(2) =:= Remote(0))

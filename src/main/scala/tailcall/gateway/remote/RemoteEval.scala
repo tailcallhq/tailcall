@@ -38,18 +38,17 @@ object RemoteEval {
             case IndexSeqOperations.IndexOf(seq, element) => eval(seq)
                 .zipWith(eval(element))(_ indexOf _)
           }
-        case remote: Closure[_]             => remote match {
-            case Closure.RemoteFunction(arg, fBody) => new Default(ctx + (arg.id -> arg))
-                .eval(fBody.asInstanceOf[Remote[A]])
+        case RemoteFunction(arg, fBody)     => new Default(ctx + (arg.id -> arg))
+            .eval(fBody.asInstanceOf[Remote[A]])
 
-            case Closure.Ref(id) => ctx.get(id) match {
-                case Some(value) => ZIO.succeed(value.asInstanceOf[A])
-                case None        => ZIO.dieMessage("No value found for id: " + id)
-              }
+        case Binding(id) => ctx.get(id) match {
+            case Some(value) => ZIO.succeed(value.asInstanceOf[A])
+            case None        => ZIO.dieMessage("No value found for id: " + id)
           }
-        case Apply(f, arg)                  => for {
+
+        case Apply(f, arg) => for {
             a <- eval(arg)
-            b <- new Default(ctx + (f.ref.id -> a)).eval(f.f)
+            b <- new Default(ctx + (f.input.id -> a)).eval(f.body)
           } yield b.asInstanceOf[A]
       }
     }

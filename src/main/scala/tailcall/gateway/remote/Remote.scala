@@ -10,7 +10,7 @@ sealed trait Remote[A] {
   final def increment(implicit tag: NumericTag[A]) = self + Remote(tag.one)
 
   final def apply[A1, A2](a1: Remote[A1])(implicit ev: Remote[A] =:= Remote[A1 => A2]): Remote[A2] =
-    Remote.Apply[A1, A2](ev(self).asInstanceOf[Remote.Closure.RemoteFunction[A1, A2]], a1)
+    Remote.Apply[A1, A2](ev(self).asInstanceOf[Remote.RemoteFunction[A1, A2]], a1)
 
   final def diverge[B](isTrue: Remote[B], isFalse: Remote[B])(implicit
     ev: Remote[A] =:= Remote[Boolean]
@@ -56,7 +56,7 @@ sealed trait Remote[A] {
   final def filter[B](
     f: Remote[B] => Remote[Boolean]
   )(implicit ev: Remote[A] =:= Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] = Remote
-    .IndexSeqOperations(Remote.IndexSeqOperations.Filter(ev(self), Remote.Closure.make(f)))
+    .IndexSeqOperations(Remote.IndexSeqOperations.Filter(ev(self), Remote.fromFunction(f)))
 
   final def flatMap[B, C](
     f: Remote[B] => Remote[IndexedSeq[C]]
@@ -139,18 +139,14 @@ object Remote extends RemoteTags with RemoteCtors {
         extends Operation[Int]
   }
 
-  final case class Apply[A1, A2](f: Closure.RemoteFunction[A1, A2], arg: Remote[A1])
-      extends Remote[A2]
+  final case class Apply[A1, A2](f: RemoteFunction[A1, A2], arg: Remote[A1]) extends Remote[A2]
 
-  sealed trait Closure[A] extends Remote[A]
-  object Closure {
-    val counter = new AtomicInteger(0)
-    final case class Ref[A] private (id: Int)                        extends Closure[A]
-    final case class RemoteFunction[A, B](ref: Ref[A], f: Remote[B]) extends Closure[A => B]
-
-    def make[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] = {
-      val id = Ref[A](counter.incrementAndGet())
-      Closure.RemoteFunction(id, ab(id))
-    }
+  final case class Binding[A] private (id: Int) extends Remote[A]
+  object Binding {
+    private val counter     = new AtomicInteger(0)
+    def make[A]: Binding[A] = new Binding[A](counter.incrementAndGet())
   }
+
+  final case class RemoteFunction[A, B](input: Binding[A], body: Remote[B]) extends Remote[A => B]
+
 }
