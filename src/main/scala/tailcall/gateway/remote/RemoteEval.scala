@@ -1,5 +1,5 @@
 package tailcall.gateway.remote
-import tailcall.gateway.remote.Remote.StringOperations.Concat
+
 import zio._
 
 trait RemoteEval {
@@ -12,7 +12,7 @@ object RemoteEval {
 
     def eval[A](remote: Remote[A]): UIO[A] = ZIO.suspendSucceed {
       remote match {
-        case Literal(value)                 => ZIO.succeed(value)
+        case Literal(value, _)              => ZIO.succeed(value)
         case Diverge(cond, isTrue, isFalse) => eval(cond)
             .flatMap(i => if (i) eval(isTrue) else eval(isFalse))
         case EqualTo(left, right, tag)      => eval(left).zipWith(eval(right))(tag.equals)
@@ -29,14 +29,14 @@ object RemoteEval {
             case Logical.Not(value)       => eval(value).map(!_)
           }
         case IndexSeqOperations(operation)  => operation match {
-            case IndexSeqOperations.Concat(left, right)   => eval(left).zipWith(eval(right))(_ ++ _)
-            case IndexSeqOperations.Reverse(seq)          => eval(seq).map(_.reverse)
-            case IndexSeqOperations.Filter(seq, cond)     => eval(seq)
-                .flatMap(seq => ZIO.filter(seq)(any => eval(cond(Remote(any)))))
-            case IndexSeqOperations.FlatMap(_, _)         => ???
-            case IndexSeqOperations.Map(_, _)             => ???
-            case IndexSeqOperations.Length(seq)           => eval(seq).map(_.length)
-            case IndexSeqOperations.IndexOf(seq, element) => eval(seq)
+            case IndexSeqOperations.Concat(left, right) => eval(left).zipWith(eval(right))(_ ++ _)
+            case IndexSeqOperations.Reverse(seq)        => eval(seq).map(_.reverse)
+            case IndexSeqOperations.Filter(seq, cond, schema) => eval(seq)
+                .flatMap(seq => ZIO.filter(seq)(any => eval(cond(Remote(any)(schema)))))
+            case IndexSeqOperations.FlatMap(_, _)             => ???
+            case IndexSeqOperations.Map(_, _)                 => ???
+            case IndexSeqOperations.Length(seq)               => eval(seq).map(_.length)
+            case IndexSeqOperations.IndexOf(seq, element)     => eval(seq)
                 .zipWith(eval(element))(_ indexOf _)
           }
         case RemoteFunction(arg, fBody)     => new Default(ctx + (arg.id -> arg))
@@ -50,7 +50,7 @@ object RemoteEval {
             b <- new Default(ctx + (f.input.id -> a)).eval(f.body)
           } yield b.asInstanceOf[A]
         case StringOperations(operation)    =>
-          operation match { case Concat(left, right) => eval(left).zipWith(eval(right))(_ + _) }
+          operation match { case StringOperations.Concat(left, right) => eval(left).zipWith(eval(right))(_ + _) }
       }
     }
   }

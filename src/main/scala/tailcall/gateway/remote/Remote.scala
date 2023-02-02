@@ -3,11 +3,12 @@ package tailcall.gateway.remote
 import tailcall.gateway.remote.Remote.{EqualityTag, NumericTag}
 
 import java.util.concurrent.atomic.AtomicInteger
+import zio.schema.Schema
 
 sealed trait Remote[A] {
   self =>
 
-  final def increment(implicit tag: NumericTag[A]) = self + Remote(tag.one)
+  final def increment(implicit tag: NumericTag[A], schema: Schema[A]) = self + Remote(tag.one)
 
   final def apply[A1, A2](a1: Remote[A1])(implicit ev: Remote[A] =:= Remote[A1 => A2]): Remote[A2] =
     Remote.Apply[A1, A2](ev(self).asInstanceOf[Remote.RemoteFunction[A1, A2]], a1)
@@ -48,10 +49,11 @@ sealed trait Remote[A] {
   final def reverse[B](implicit ev: Remote[A] =:= Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] =
     Remote.IndexSeqOperations(Remote.IndexSeqOperations.Reverse(ev(self)))
 
-  final def filter[B](
-    f: Remote[B] => Remote[Boolean]
-  )(implicit ev: Remote[A] =:= Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] = Remote
-    .IndexSeqOperations(Remote.IndexSeqOperations.Filter(ev(self), Remote.fromFunction(f)))
+  final def filter[B](f: Remote[B] => Remote[Boolean])(implicit
+    ev: Remote[A] =:= Remote[IndexedSeq[B]],
+    schema: Schema[B]
+  ): Remote[IndexedSeq[B]] = Remote
+    .IndexSeqOperations(Remote.IndexSeqOperations.Filter(ev(self), Remote.fromFunction(f), schema))
 
   final def flatMap[B, C](
     f: Remote[B] => Remote[IndexedSeq[C]]
@@ -71,7 +73,7 @@ sealed trait Remote[A] {
 }
 
 object Remote extends RemoteTags with RemoteCtors {
-  final case class Literal[A](value: A) extends Remote[A]
+  final case class Literal[A](value: A, schema: Schema[A]) extends Remote[A]
 
   final case class Diverge[A](cond: Remote[Boolean], isTrue: Remote[A], isFalse: Remote[A])
       extends Remote[A]
@@ -123,8 +125,11 @@ object Remote extends RemoteTags with RemoteCtors {
 
     final case class Reverse[A](seq: Remote[IndexedSeq[A]]) extends Operation[IndexedSeq[A]]
 
-    final case class Filter[A](seq: Remote[IndexedSeq[A]], condition: Remote[A => Boolean])
-        extends Operation[IndexedSeq[A]]
+    final case class Filter[A](
+      seq: Remote[IndexedSeq[A]],
+      condition: Remote[A => Boolean],
+      schema: Schema[A]
+    ) extends Operation[IndexedSeq[A]]
 
     final case class FlatMap[A, B](
       seq: Remote[IndexedSeq[A]],

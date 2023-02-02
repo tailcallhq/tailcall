@@ -4,8 +4,12 @@ import tailcall.gateway.internal.RemoteAssertion
 import tailcall.gateway.remote.Remote
 import zio.test.Assertion.{equalTo, isFalse, isTrue}
 import zio.test.ZIOSpecDefault
+import zio.schema.Schema
+import zio.Chunk
 
 object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
+  implicit def indexedSeqSchema[A: Schema]: Schema[IndexedSeq[A]] = Schema.chunk[A]
+    .transform(_.toIndexedSeq, Chunk.from(_))
 
   def spec = suite("Remote")(
     suite("math")(
