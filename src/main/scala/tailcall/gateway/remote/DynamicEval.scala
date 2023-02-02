@@ -1,7 +1,5 @@
 package tailcall.gateway.remote
 
-import tailcall.gateway.remote.DynamicEval.Logical.{Binary, Unary}
-import tailcall.gateway.remote.DynamicEval.StringOperations.Concat
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
@@ -128,54 +126,6 @@ object DynamicEval {
 
   def equal(left: DynamicEval, right: DynamicEval, tag: Equatable[Any]): DynamicEval =
     EqualTo(left, right, tag.any)
-
-  object Unsafe {
-    def evaluateTyped[A](eval: DynamicEval): A = evaluate(eval).asInstanceOf[A]
-
-    def evaluate(eval: DynamicEval): Any = eval match {
-      case Literal(value, meta)          => value.toTypedValue(meta.toSchema) match {
-          case Right(value) => value
-          case Left(value)  => throw new RuntimeException("Could not translate literal: " + value)
-        }
-      case EqualTo(left, right, tag)     => tag.equal(evaluate(left), evaluate(right))
-      case Math(operation, tag)          => operation match {
-          case Math.Binary(left, right, operation) =>
-            val leftValue  = evaluate(left)
-            val rightValue = evaluate(right)
-            operation match {
-              case Math.Binary.Add      => tag.add(leftValue, rightValue)
-              case Math.Binary.Multiply => tag.multiply(leftValue, rightValue)
-              case Math.Binary.Divide   => tag.divide(leftValue, rightValue)
-              case Math.Binary.Modulo   => tag.modulo(leftValue, rightValue)
-            }
-          case Math.Unary(value, operation)        =>
-            val a = evaluate(value)
-            operation match { case Math.Unary.Negate => tag.negate(a) }
-        }
-      case Logical(operation)            => operation match {
-          case Binary(left, right, operation) =>
-            val leftValue  = evaluateTyped[Boolean](left)
-            val rightValue = evaluateTyped[Boolean](right)
-            operation match {
-              case Binary.And => leftValue && rightValue
-              case Binary.Or  => leftValue || rightValue
-            }
-          case Unary(value, operation)        =>
-            val a = evaluateTyped[Boolean](value)
-            operation match {
-              case Unary.Not                      => !a
-              case Unary.Diverge(isTrue, isFalse) => if (a) evaluate(isTrue) else evaluate(isFalse)
-            }
-        }
-      case StringOperations(operation)   => operation match {
-          case Concat(left, right) => evaluateTyped[String](left) ++ evaluateTyped[String](right)
-        }
-      case IndexSeqOperations(operation) => ???
-      case Apply(f, arg)                 => ???
-      case Binding(id)                   => ???
-      case EvalFunction(input, body)     => ???
-    }
-  }
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }
