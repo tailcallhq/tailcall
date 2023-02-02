@@ -49,8 +49,9 @@ object RemoteEval {
             a <- eval(arg)
             b <- new Default(ctx + (f.input.id -> a)).eval(f.body)
           } yield b.asInstanceOf[A]
-        case StringOperations(operation)    =>
-          operation match { case StringOperations.Concat(left, right) => eval(left).zipWith(eval(right))(_ + _) }
+        case StringOperations(operation)    => operation match {
+            case StringOperations.Concat(left, right) => eval(left).zipWith(eval(right))(_ + _)
+          }
       }
     }
   }

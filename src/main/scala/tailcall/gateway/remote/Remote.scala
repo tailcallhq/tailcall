@@ -1,10 +1,17 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.remote.Remote.{EqualityTag, NumericTag}
-
-import java.util.concurrent.atomic.AtomicInteger
 import zio.schema.Schema
 
+import java.util.concurrent.atomic.AtomicInteger
+
+/**
+ * Remote[A] Allows for any arbitrary computation that can
+ * be serialized and when evaluated produces a result of
+ * type A. This is the lowest level primitive that’s
+ * extremely powerful. We use this inside the compiler to
+ * convert the composition logic into some form of a Remote.
+ */
 sealed trait Remote[A] {
   self =>
 
@@ -72,7 +79,7 @@ sealed trait Remote[A] {
   ): Remote[Int] = Remote.IndexSeqOperations(Remote.IndexSeqOperations.IndexOf(ev(self), other))
 }
 
-object Remote extends RemoteTags with RemoteCtors {
+object Remote extends RemoteTags with RemoteCtors with Remote2Eval {
   final case class Literal[A](value: A, schema: Schema[A]) extends Remote[A]
 
   final case class Diverge[A](cond: Remote[Boolean], isTrue: Remote[A], isFalse: Remote[A])
@@ -173,5 +180,11 @@ object Remote extends RemoteTags with RemoteCtors {
   implicit final class RemoteSeqOps[A](val self: Remote[IndexedSeq[A]]) extends AnyVal {
     def ++(other: Remote[IndexedSeq[A]]): Remote[IndexedSeq[A]] = Remote
       .IndexSeqOperations(Remote.IndexSeqOperations.Concat(self, other))
+  }
+
+  object unsafe {
+    object attempt {
+      def apply[A](eval: => DynamicEval): Remote[A] = ???
+    }
   }
 }

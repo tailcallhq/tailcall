@@ -1,13 +1,7 @@
 package tailcall.gateway.remote
+import tailcall.gateway.remote.Remote.IndexSeqOperations.{Filter, FlatMap, IndexOf, Length, Reverse}
+import tailcall.gateway.remote.Remote.Logical.{And, Not, Or}
 import tailcall.gateway.remote.Remote.StringOperations.Concat
-import tailcall.gateway.remote.Remote.IndexSeqOperations.IndexOf
-import tailcall.gateway.remote.Remote.IndexSeqOperations.Filter
-import tailcall.gateway.remote.Remote.IndexSeqOperations.Length
-import tailcall.gateway.remote.Remote.IndexSeqOperations.FlatMap
-import tailcall.gateway.remote.Remote.IndexSeqOperations.Reverse
-import tailcall.gateway.remote.Remote.Logical.And
-import tailcall.gateway.remote.Remote.Logical.Not
-import tailcall.gateway.remote.Remote.Logical.Or
 trait Remote2Eval {
   import tailcall.gateway.remote.Remote._
 

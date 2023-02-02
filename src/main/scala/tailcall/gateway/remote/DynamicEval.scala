@@ -1,10 +1,7 @@
 package tailcall.gateway.remote
 
-import zio.schema.DeriveSchema
-import zio.schema.Schema
-import zio._
-import zio.schema.DynamicValue
 import zio.schema.meta.MetaSchema
+import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 sealed trait DynamicEval
 
@@ -59,6 +56,4 @@ object DynamicEval {
   final case class EvalFunction(input: Binding, body: DynamicEval) extends DynamicEval
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
-
-  def eval(value: DynamicEval): UIO[Any] = ???
 }

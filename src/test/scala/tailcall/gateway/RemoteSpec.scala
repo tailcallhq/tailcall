@@ -2,10 +2,10 @@ package tailcall.gateway
 
 import tailcall.gateway.internal.RemoteAssertion
 import tailcall.gateway.remote.Remote
+import zio.Chunk
+import zio.schema.Schema
 import zio.test.Assertion.{equalTo, isFalse, isTrue}
 import zio.test.ZIOSpecDefault
-import zio.schema.Schema
-import zio.Chunk
 
 object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
   implicit def indexedSeqSchema[A: Schema]: Schema[IndexedSeq[A]] = Schema.chunk[A]
