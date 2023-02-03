@@ -25,7 +25,7 @@ object Config {
   sealed trait Operation
   object Operation {
     @jsonHint("http")
-    final case class Http(path: Route, method: Method = Method.GET, query: List[QueryParam] = Nil)
+    final case class Http(path: Path, method: Method = Method.GET, query: List[QueryParam] = Nil)
         extends Operation
 
     // TODO: value should not be a string

@@ -35,10 +35,10 @@ object TestGen {
     Gen.const(Method.DELETE)
   )
 
-  def genSegment: Gen[Any, Route.Segment] = Gen
-    .oneOf(genName.map(Route.Segment.Literal), genName.map(Route.Segment.Param))
+  def genSegment: Gen[Any, Path.Segment] = Gen
+    .oneOf(genName.map(Path.Segment.Literal), genName.map(Path.Segment.Param))
 
-  def genRoute: Gen[Any, Route] = Gen.listOf(genSegment).map(Route(_))
+  def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
 
   def genHttp: Gen[Any, Operation.Http] = for {
     path   <- genRoute

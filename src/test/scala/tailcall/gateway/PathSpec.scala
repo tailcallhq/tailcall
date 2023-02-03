@@ -1,16 +1,16 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Route
-import tailcall.gateway.ast.Route.Segment.{Literal, Param}
+import tailcall.gateway.ast.Path
+import tailcall.gateway.ast.Path.Segment.{Literal, Param}
 import zio.ZIO
 import zio.test.Assertion.equalTo
 import zio.test.{Gen, ZIOSpecDefault, assertZIO, checkAll}
 
-object RouteSpec extends ZIOSpecDefault {
-  val syntax = Route.syntax.route
+object PathSpec extends ZIOSpecDefault {
+  val syntax = Path.syntax.route
 
-  override def spec = suite("route")(test("segments") {
-    val input: Seq[(String, List[Route.Segment])] = Seq(
+  override def spec = suite("path")(test("segments") {
+    val input: Seq[(String, List[Path.Segment])] = Seq(
       "/a"              -> (Literal("a") :: Nil),
       "/a/b"            -> (Literal("a") :: Literal("b") :: Nil),
       "/a/b/c"          -> (Literal("a") :: Literal("b") :: Literal("c") :: Nil),

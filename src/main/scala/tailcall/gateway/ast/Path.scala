@@ -4,8 +4,8 @@ import zio.Chunk
 import zio.json.JsonCodec
 import zio.parser.Syntax
 
-final case class Route(segments: List[Route.Segment])
-object Route {
+final case class Path(segments: List[Path.Segment])
+object Path {
   sealed trait Segment
   object Segment {
     final case class Literal(value: String) extends Segment
@@ -23,22 +23,22 @@ object Route {
     val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
 
     val route = segmentChunk
-      .transform[Route](chunk => Route(chunk.toList), route => Chunk.from(route.segments))
+      .transform[Path](chunk => Path(chunk.toList), route => Chunk.from(route.segments))
 
   }
 
-  def decode(string: String): Either[String, Route] = syntax.route.parseString(string) match {
+  def decode(string: String): Either[String, Path] = syntax.route.parseString(string) match {
     case Left(_)      => Left(s"Invalid route: ${string}")
     case Right(value) => Right(value)
   }
 
-  def encode(route: Route): Either[String, String] = syntax.route.asPrinter.printString(route)
+  def encode(route: Path): Either[String, String] = syntax.route.asPrinter.printString(route)
 
-  implicit lazy val routeCodec: JsonCodec[Route] = JsonCodec[String].transformOrFail(
-    Route.decode,
+  implicit lazy val routeCodec: JsonCodec[Path] = JsonCodec[String].transformOrFail(
+    Path.decode,
 
     // TODO: handle this error more gracefully
-    route => Route.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
+    route => Path.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
   )
 
 }
