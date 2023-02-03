@@ -12,8 +12,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
   import tailcall.gateway.remote.Equatable._
   import tailcall.gateway.remote.Remote._
 
-  implicit def indexedSeqSchema[A: Schema]: Schema[IndexedSeq[A]] = Schema.chunk[A]
-    .transform(_.toIndexedSeq, Chunk.from(_))
+  implicit def seqSchema[A: Schema]: Schema[Seq[A]] = Schema.chunk[A]
+    .transform(_.toSeq, Chunk.from(_))
 
   def spec = suite("Remote")(
     suite("math")(
@@ -82,35 +82,34 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         assertRemote(program)(equalTo("Hello World!"))
       }
     ),
-    suite("indexSeq")(
+    suite("seq")(
       test("concat") {
-        val program = Remote(IndexedSeq(1, 2)) ++ Remote(IndexedSeq(3, 4))
-        assertRemote(program)(equalTo(IndexedSeq(1, 2, 3, 4)))
+        val program = Remote(Seq(1, 2)) ++ Remote(Seq(3, 4))
+        assertRemote(program)(equalTo(Seq(1, 2, 3, 4)))
       },
       test("reverse") {
-        val program = Remote(IndexedSeq(1, 2, 3)).reverse
-        assertRemote(program)(equalTo(IndexedSeq(3, 2, 1)))
+        val program = Remote(Seq(1, 2, 3)).reverse
+        assertRemote(program)(equalTo(Seq(3, 2, 1)))
       },
       test("length") {
-        val program = Remote(IndexedSeq(1, 2, 3)).length
+        val program = Remote(Seq(1, 2, 3)).length
         assertRemote(program)(equalTo(3))
       },
       test("indexOf") {
-        val program = Remote(IndexedSeq(1, 2, 3)).indexOf(Remote(2))
+        val program = Remote(Seq(1, 2, 3)).indexOf(Remote(2))
         assertRemote(program)(equalTo(1))
       },
       test("filter") {
-        val program = Remote(IndexedSeq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
-        assertRemote(program)(equalTo(IndexedSeq(2, 4)))
+        val program = Remote(Seq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
+        assertRemote(program)(equalTo(Seq(2, 4)))
       },
       test("map") {
-        val program = Remote(IndexedSeq(1, 2, 3, 4)).map(r => r * Remote(2))
-        assertRemote(program)(equalTo(IndexedSeq(2, 4, 6, 8)))
+        val program = Remote(Seq(1, 2, 3, 4)).map(r => r * Remote(2))
+        assertRemote(program)(equalTo(Seq(2, 4, 6, 8)))
       },
       test("flatMap") {
-        val program = Remote(IndexedSeq(1, 2, 3, 4))
-          .flatMap(r => Remote.seq(IndexedSeq(r, r * Remote(2))))
-        assertRemote(program)(equalTo(IndexedSeq(1, 2, 2, 4, 3, 6, 4, 8)))
+        val program = Remote(Seq(1, 2, 3, 4)).flatMap(r => Remote.seq(Seq(r, r * Remote(2))))
+        assertRemote(program)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
       }
     ),
     suite("function")(test("function") {

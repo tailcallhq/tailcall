@@ -10,12 +10,12 @@ object UnsafeEvaluator {
 
   final class Default(val bindings: mutable.Map[Int, Any]) extends UnsafeEvaluator {
     def evaluate(eval: DynamicEval): Any = eval match {
-      case Literal(value, meta)          => value.toTypedValue(meta.toSchema) match {
+      case Literal(value, meta)        => value.toTypedValue(meta.toSchema) match {
           case Right(value) => value
           case Left(value)  => throw new RuntimeException("Could not translate literal: " + value)
         }
-      case EqualTo(left, right, tag)     => tag.equal(evaluate(left), evaluate(right))
-      case Math(operation, tag)          => operation match {
+      case EqualTo(left, right, tag)   => tag.equal(evaluate(left), evaluate(right))
+      case Math(operation, tag)        => operation match {
           case Math.Binary(left, right, operation) =>
             val leftValue  = evaluate(left)
             val rightValue = evaluate(right)
@@ -29,7 +29,7 @@ object UnsafeEvaluator {
             val a = evaluate(value)
             operation match { case Math.Unary.Negate => tag.negate(a) }
         }
-      case Logical(operation)            => operation match {
+      case Logical(operation)          => operation match {
           case Logical.Binary(left, right, operation) =>
             val leftValue  = evaluateAs[Boolean](left)
             val rightValue = evaluateAs[Boolean](right)
@@ -45,28 +45,28 @@ object UnsafeEvaluator {
                 if (a) evaluate(isTrue) else evaluate(isFalse)
             }
         }
-      case StringOperations(operation)   => operation match {
+      case StringOperations(operation) => operation match {
           case StringOperations.Concat(left, right) =>
             evaluateAs[String](left) ++ evaluateAs[String](right)
         }
-      case IndexSeqOperations(operation) => operation match {
-          case IndexSeqOperations.Concat(left, right)    =>
+      case SeqOperations(operation)    => operation match {
+          case SeqOperations.Concat(left, right)    =>
             evaluateAs[Seq[_]](left) ++ evaluateAs[Seq[_]](right)
-          case IndexSeqOperations.IndexOf(seq, element)  => evaluateAs[Seq[_]](seq)
+          case SeqOperations.IndexOf(seq, element)  => evaluateAs[Seq[_]](seq)
               .indexOf(evaluate(element))
-          case IndexSeqOperations.Reverse(seq)           => evaluateAs[Seq[_]](seq).reverse
-          case IndexSeqOperations.Filter(seq, condition) => evaluateAs[Seq[_]](seq)
+          case SeqOperations.Reverse(seq)           => evaluateAs[Seq[_]](seq).reverse
+          case SeqOperations.Filter(seq, condition) => evaluateAs[Seq[_]](seq)
               .filter(call[Boolean](condition, _))
 
-          case IndexSeqOperations.FlatMap(seq, operation) => evaluateAs[Seq[_]](seq)
+          case SeqOperations.FlatMap(seq, operation) => evaluateAs[Seq[_]](seq)
               .flatMap(call[Seq[_]](operation, _))
-          case IndexSeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).length
-          case IndexSeqOperations.Sequence(value)         => value.map(evaluate(_))
+          case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).length
+          case SeqOperations.Sequence(value)         => value.map(evaluate(_))
         }
-      case FunctionCall(f, arg)          => call(f, evaluate(arg))
-      case Binding(id)                   => bindings
+      case FunctionCall(f, arg)        => call(f, evaluate(arg))
+      case Binding(id)                 => bindings
           .getOrElse(id, throw new RuntimeException("Could not find binding: " + id))
-      case EvalFunction(_, body)         => evaluate(body)
+      case EvalFunction(_, body)       => evaluate(body)
     }
 
     def call[A](func: EvalFunction, arg: Any): A = {

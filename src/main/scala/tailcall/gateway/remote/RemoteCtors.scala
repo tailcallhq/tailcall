@@ -12,8 +12,8 @@ trait RemoteCtors {
     DynamicEval.EvalFunction(id, ab(Remote.unsafe.attempt[A](id)).compile)
   }
 
-  def seq[A](a: Seq[Remote[A]]): Remote[IndexedSeq[A]] = Remote.unsafe.attempt {
+  def seq[A](a: Seq[Remote[A]]): Remote[Seq[A]] = Remote.unsafe.attempt {
     val seq = a.map(_.compile)
-    DynamicEval.IndexSeqOperations(DynamicEval.IndexSeqOperations.Sequence(Chunk.from(seq)))
+    DynamicEval.SeqOperations(DynamicEval.SeqOperations.Sequence(Chunk.from(seq)))
   }
 }

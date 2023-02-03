@@ -79,12 +79,12 @@ object DynamicEval {
     final case class Concat(left: DynamicEval, right: DynamicEval) extends Operation
   }
 
-  final case class IndexSeqOperations(operation: IndexSeqOperations.Operation) extends DynamicEval
+  final case class SeqOperations(operation: SeqOperations.Operation) extends DynamicEval
 
   // TODO: rename to SeqOperations
   // TODO: Use Seq instead of IndexSeq
   // TODO: Support for other collections
-  object IndexSeqOperations {
+  object SeqOperations {
     sealed trait Operation
     final case class Concat(left: DynamicEval, right: DynamicEval)      extends Operation
     final case class Reverse(seq: DynamicEval)                          extends Operation
@@ -136,20 +136,20 @@ object DynamicEval {
   def functionCall(f: EvalFunction, arg: DynamicEval): DynamicEval = FunctionCall(f, arg)
 
   def filter(seq: DynamicEval, condition: EvalFunction): DynamicEval =
-    IndexSeqOperations(IndexSeqOperations.Filter(seq, condition))
+    SeqOperations(SeqOperations.Filter(seq, condition))
 
   def flatMap(seq: DynamicEval, operation: EvalFunction): DynamicEval =
-    IndexSeqOperations(IndexSeqOperations.FlatMap(seq, operation))
+    SeqOperations(SeqOperations.FlatMap(seq, operation))
 
   def concat(left: DynamicEval, right: DynamicEval): DynamicEval =
-    IndexSeqOperations(IndexSeqOperations.Concat(left, right))
+    SeqOperations(SeqOperations.Concat(left, right))
 
-  def reverse(seq: DynamicEval): DynamicEval = IndexSeqOperations(IndexSeqOperations.Reverse(seq))
+  def reverse(seq: DynamicEval): DynamicEval = SeqOperations(SeqOperations.Reverse(seq))
 
-  def length(seq: DynamicEval): DynamicEval = IndexSeqOperations(IndexSeqOperations.Length(seq))
+  def length(seq: DynamicEval): DynamicEval = SeqOperations(SeqOperations.Length(seq))
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
-    IndexSeqOperations(IndexSeqOperations.IndexOf(seq, element))
+    SeqOperations(SeqOperations.IndexOf(seq, element))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

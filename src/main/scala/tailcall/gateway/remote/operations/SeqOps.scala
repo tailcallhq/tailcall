@@ -3,26 +3,24 @@ package tailcall.gateway.remote.operations
 import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait SeqOps {
-  implicit final class RemoteSeqOps[A](val self: Remote[IndexedSeq[A]]) {
-    def ++(other: Remote[IndexedSeq[A]]): Remote[IndexedSeq[A]] = Remote.unsafe
+  implicit final class RemoteSeqOps[A](val self: Remote[Seq[A]]) {
+    def ++(other: Remote[Seq[A]]): Remote[Seq[A]] = Remote.unsafe
       .attempt(DynamicEval.concat(self.compile, other.compile))
 
-    final def reverse: Remote[IndexedSeq[A]] = Remote.unsafe
-      .attempt(DynamicEval.reverse(self.compile))
+    final def reverse: Remote[Seq[A]] = Remote.unsafe.attempt(DynamicEval.reverse(self.compile))
 
-    final def filter(f: Remote[A] => Remote[Boolean]): Remote[IndexedSeq[A]] = Remote.unsafe
-      .attempt(DynamicEval.filter(
+    final def filter(f: Remote[A] => Remote[Boolean]): Remote[Seq[A]] = Remote.unsafe.attempt(
+      DynamicEval
+        .filter(self.compile, Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction])
+    )
+
+    final def flatMap[B](f: Remote[A] => Remote[Seq[B]]): Remote[Seq[B]] = Remote.unsafe
+      .attempt(DynamicEval.flatMap(
         self.compile,
         Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction]
       ))
 
-    final def flatMap[B](f: Remote[A] => Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] = Remote
-      .unsafe.attempt(DynamicEval.flatMap(
-        self.compile,
-        Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction]
-      ))
-
-    final def map[B](f: Remote[A] => Remote[B]): Remote[IndexedSeq[B]] = self
+    final def map[B](f: Remote[A] => Remote[B]): Remote[Seq[B]] = self
       .flatMap(a => Remote.seq(Seq(f(a))))
 
     final def length: Remote[Int] = Remote.unsafe.attempt(DynamicEval.length(self.compile))
