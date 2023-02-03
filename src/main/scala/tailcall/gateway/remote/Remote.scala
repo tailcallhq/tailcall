@@ -44,61 +44,7 @@ sealed trait Remote[A] {
 
 }
 
-object Remote extends RemoteTags with RemoteCtors {
-  implicit final class ComposeStringInterpolator(val sc: StringContext) extends AnyVal {
-    def rs[A](args: (Remote[String])*): Remote[String] = {
-      val strings             = sc.parts.iterator
-      val seq                 = args.iterator
-      var buf: Remote[String] = Remote(strings.next())
-      while (strings.hasNext) buf = buf ++ seq.next() ++ Remote(strings.next())
-      buf
-    }
-  }
-
-  implicit final class RemoteStringOps(val self: Remote[String]) extends AnyVal {
-    def ++(other: Remote[String]): Remote[String] = unsafe.attempt(
-      DynamicEval.StringOperations(DynamicEval.StringOperations.Concat(self.compile, other.compile))
-    )
-  }
-
-  implicit final class RemoteSeqOps[A](val self: Remote[IndexedSeq[A]]) extends AnyVal {
-    def ++(other: Remote[IndexedSeq[A]]): Remote[IndexedSeq[A]] = Remote.unsafe
-      .attempt(DynamicEval.concat(self.compile, other.compile))
-
-    final def reverse: Remote[IndexedSeq[A]] = unsafe.attempt(DynamicEval.reverse(self.compile))
-
-    final def filter(f: Remote[A] => Remote[Boolean]): Remote[IndexedSeq[A]] = unsafe.attempt(
-      DynamicEval
-        .filter(self.compile, Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction])
-    )
-
-    final def flatMap[B](f: Remote[A] => Remote[IndexedSeq[B]]): Remote[IndexedSeq[B]] = unsafe
-      .attempt(DynamicEval.flatMap(
-        self.compile,
-        Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction]
-      ))
-
-    final def map[B](f: Remote[A] => Remote[B]): Remote[IndexedSeq[B]] = self
-      .flatMap(a => Remote.seq(Seq(f(a))))
-
-    final def length: Remote[Int] = unsafe.attempt(DynamicEval.length(self.compile))
-
-    final def indexOf(other: Remote[A]): Remote[Int] = unsafe
-      .attempt(DynamicEval.indexOf(self.compile, other.compile))
-  }
-
-  implicit final class RemoteBooleanOps(val self: Remote[Boolean]) extends AnyVal {
-    def &&(other: Remote[Boolean]): Remote[Boolean] = unsafe
-      .attempt(DynamicEval.and(self.compile, other.compile))
-
-    def ||(other: Remote[Boolean]): Remote[Boolean] = unsafe
-      .attempt(DynamicEval.or(self.compile, other.compile))
-
-    def unary_! : Remote[Boolean] = unsafe.attempt(DynamicEval.not(self.compile))
-
-    def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] = unsafe
-      .attempt(DynamicEval.diverge(self.compile, isTrue.compile, isFalse.compile))
-  }
+object Remote extends RemoteTags with RemoteCtors with StringOps with SeqOps with BooleanOps {
 
   object unsafe {
     object attempt {
