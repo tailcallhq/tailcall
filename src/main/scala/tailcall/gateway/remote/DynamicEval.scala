@@ -82,7 +82,6 @@ object DynamicEval {
   final case class SeqOperations(operation: SeqOperations.Operation) extends DynamicEval
 
   // TODO: rename to SeqOperations
-  // TODO: Use Seq instead of IndexSeq
   // TODO: Support for other collections
   object SeqOperations {
     sealed trait Operation
