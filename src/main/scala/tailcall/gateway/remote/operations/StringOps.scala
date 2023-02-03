@@ -1,4 +1,6 @@
-package tailcall.gateway.remote
+package tailcall.gateway.remote.operations
+
+import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait StringOps {
   implicit final class RemoteStringOps(val self: Remote[String]) {

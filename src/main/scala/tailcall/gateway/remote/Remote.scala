@@ -1,5 +1,6 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.remote.operations._
 import zio.schema.Schema
 
 /**
@@ -44,7 +45,7 @@ sealed trait Remote[A] {
 
 }
 
-object Remote extends RemoteTags with RemoteCtors with StringOps with SeqOps with BooleanOps {
+object Remote extends RemoteCtors with StringOps with SeqOps with BooleanOps {
 
   object unsafe {
     object attempt {

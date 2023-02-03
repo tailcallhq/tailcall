@@ -1,4 +1,6 @@
-package tailcall.gateway.remote
+package tailcall.gateway.remote.operations
+
+import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait SeqOps {
   implicit final class RemoteSeqOps[A](val self: Remote[IndexedSeq[A]]) {
