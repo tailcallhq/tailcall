@@ -1,5 +1,6 @@
 package tailcall.gateway.remote
 
+import zio.Chunk
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
@@ -80,22 +81,25 @@ object DynamicEval {
 
   final case class IndexSeqOperations(operation: IndexSeqOperations.Operation) extends DynamicEval
 
+  // TODO: rename to SeqOperations
+  // TODO: Use Seq instead of IndexSeq
+  // TODO: Support for other collections
   object IndexSeqOperations {
     sealed trait Operation
-    final case class Concat(left: DynamicEval, right: DynamicEval)     extends Operation
-    final case class Reverse(seq: DynamicEval)                         extends Operation
-    final case class Filter(seq: DynamicEval, condition: DynamicEval)  extends Operation
-    final case class FlatMap(seq: DynamicEval, operation: DynamicEval) extends Operation
-    final case class Map(seq: DynamicEval, operation: DynamicEval)     extends Operation
-    final case class Length(seq: DynamicEval)                          extends Operation
-    final case class IndexOf(seq: DynamicEval, element: DynamicEval)   extends Operation
+    final case class Concat(left: DynamicEval, right: DynamicEval)      extends Operation
+    final case class Reverse(seq: DynamicEval)                          extends Operation
+    final case class Filter(seq: DynamicEval, condition: EvalFunction)  extends Operation
+    final case class FlatMap(seq: DynamicEval, operation: EvalFunction) extends Operation
+    final case class Length(seq: DynamicEval)                           extends Operation
+    final case class IndexOf(seq: DynamicEval, element: DynamicEval)    extends Operation
+    final case class Sequence(value: Chunk[DynamicEval])                extends Operation
   }
 
-  final case class Apply(f: EvalFunction, arg: DynamicEval) extends DynamicEval
-  final case class Binding private (id: Int)                extends DynamicEval
+  final case class FunctionCall(f: EvalFunction, arg: DynamicEval) extends DynamicEval
+  final case class Binding private (id: Int)                       extends DynamicEval
   object Binding {
-    val counter       = new AtomicInteger(0)
-    def make: Binding = new Binding(counter.incrementAndGet())
+    private val counter = new AtomicInteger(0)
+    def make: Binding   = new Binding(counter.incrementAndGet())
   }
   final case class EvalFunction(input: Binding, body: DynamicEval) extends DynamicEval
 
@@ -126,6 +130,26 @@ object DynamicEval {
 
   def equal(left: DynamicEval, right: DynamicEval, tag: Equatable[Any]): DynamicEval =
     EqualTo(left, right, tag.any)
+
+  def binding: Binding = Binding.make
+
+  def functionCall(f: EvalFunction, arg: DynamicEval): DynamicEval = FunctionCall(f, arg)
+
+  def filter(seq: DynamicEval, condition: EvalFunction): DynamicEval =
+    IndexSeqOperations(IndexSeqOperations.Filter(seq, condition))
+
+  def flatMap(seq: DynamicEval, operation: EvalFunction): DynamicEval =
+    IndexSeqOperations(IndexSeqOperations.FlatMap(seq, operation))
+
+  def concat(left: DynamicEval, right: DynamicEval): DynamicEval =
+    IndexSeqOperations(IndexSeqOperations.Concat(left, right))
+
+  def reverse(seq: DynamicEval): DynamicEval = IndexSeqOperations(IndexSeqOperations.Reverse(seq))
+
+  def length(seq: DynamicEval): DynamicEval = IndexSeqOperations(IndexSeqOperations.Length(seq))
+
+  def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
+    IndexSeqOperations(IndexSeqOperations.IndexOf(seq, element))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

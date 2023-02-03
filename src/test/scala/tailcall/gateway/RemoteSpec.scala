@@ -5,7 +5,6 @@ import tailcall.gateway.remote.Remote
 import zio.Chunk
 import zio.schema.Schema
 import zio.test.Assertion.{equalTo, isFalse, isTrue}
-import zio.test.TestAspect._
 import zio.test.ZIOSpecDefault
 
 object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
@@ -100,15 +99,24 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         val program = Remote(IndexedSeq(1, 2, 3)).indexOf(Remote(2))
         assertRemote(program)(equalTo(1))
       },
-      test("function") {
-        val function = Remote.fromFunction[Int, Int](_.increment)
-        val program  = function(Remote(1))
-        assertRemote(program)(equalTo(2))
-      },
       test("filter") {
-        val program = Remote(IndexedSeq(1, 2, 3, 4)).filter[Int](r => r % Remote(2) =:= Remote(0))
+        val program = Remote(IndexedSeq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
         assertRemote(program)(equalTo(IndexedSeq(2, 4)))
+      },
+      test("map") {
+        val program = Remote(IndexedSeq(1, 2, 3, 4)).map(r => r * Remote(2))
+        assertRemote(program)(equalTo(IndexedSeq(2, 4, 6, 8)))
+      },
+      test("flatMap") {
+        val program = Remote(IndexedSeq(1, 2, 3, 4))
+          .flatMap(r => Remote.seq(IndexedSeq(r, r * Remote(2))))
+        assertRemote(program)(equalTo(IndexedSeq(1, 2, 2, 4, 3, 6, 4, 8)))
       }
-    ) @@ failing
+    ),
+    suite("function")(test("function") {
+      val function = Remote.fromFunction[Int, Int](_.increment)
+      val program  = function(Remote(1))
+      assertRemote(program)(equalTo(2))
+    })
   )
 }
