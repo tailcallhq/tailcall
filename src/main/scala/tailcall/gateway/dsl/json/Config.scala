@@ -5,7 +5,6 @@ import zio.json._
 
 import Config.Operation.Transform
 import Config._
-
 final case class Config(
   version: String = "1.0.0",
   server: Server,
@@ -15,8 +14,12 @@ final case class Config(
 object Config {
   final case class Server(baseURL: String)
   final case class Specification(connections: Map[String, Map[String, Connection]])
-  final case class Connection(operations: List[Endpoint])
-  final case class Endpoint(operation: Operation, input: Option[TSchema] = None, output: TSchema)
+  final case class Connection(operations: List[ConfigEndpoint])
+  final case class ConfigEndpoint(
+    operation: Operation,
+    input: Option[TSchema] = None,
+    output: TSchema
+  )
 
   @jsonDiscriminator("type")
   sealed trait Operation
@@ -54,7 +57,9 @@ object Config {
 
   implicit lazy val serverCodec: JsonCodec[Server] = { DeriveJsonCodec.gen[Server] }
 
-  implicit lazy val endpointCodec: JsonCodec[Endpoint] = { DeriveJsonCodec.gen[Endpoint] }
+  implicit lazy val endpointCodec: JsonCodec[ConfigEndpoint] = {
+    DeriveJsonCodec.gen[ConfigEndpoint]
+  }
 
   implicit lazy val connectionCodec: JsonCodec[Connection] = { DeriveJsonCodec.gen[Connection] }
 

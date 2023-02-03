@@ -1,8 +1,8 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.ast.{Method, Route}
+import tailcall.gateway.ast._
+import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.dsl.json.Config._
-import tailcall.gateway.dsl.json.{Config, TSchema}
 import zio.test.Gen
 
 object TestGen {
@@ -45,11 +45,11 @@ object TestGen {
     method <- genMethod
   } yield Operation.Http(path, method)
 
-  def genEndpoints: Gen[Any, Config.Endpoint] = for {
+  def genEndpoints: Gen[Any, Config.ConfigEndpoint] = for {
     http   <- genHttp
     input  <- Gen.option(genSchema)
     output <- genSchema
-  } yield Endpoint(http, input, output)
+  } yield ConfigEndpoint(http, input, output)
 
   def genConnection: Gen[Any, (String, Connection)] = for {
     name     <- genName
