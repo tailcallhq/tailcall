@@ -1,4 +1,4 @@
-package tailcall.gateway.dsl.json
+package tailcall.gateway.ast
 
 import zio.json.JsonCodec
 

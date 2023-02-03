@@ -1,5 +1,6 @@
 package tailcall.gateway.dsl.json
 
+import tailcall.gateway.ast._
 import zio.json._
 
 import Config.Operation.Transform

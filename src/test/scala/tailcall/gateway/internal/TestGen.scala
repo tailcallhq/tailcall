@@ -1,7 +1,8 @@
 package tailcall.gateway.internal
 
+import tailcall.gateway.ast.{Method, Route}
 import tailcall.gateway.dsl.json.Config._
-import tailcall.gateway.dsl.json.{Config, Method, Route, Schema}
+import tailcall.gateway.dsl.json.{Config, Schema}
 import zio.test.Gen
 
 object TestGen {
