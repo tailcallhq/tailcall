@@ -2,7 +2,7 @@ package tailcall.gateway.internal
 
 import tailcall.gateway.ast.{Method, Route}
 import tailcall.gateway.dsl.json.Config._
-import tailcall.gateway.dsl.json.{Config, Schema}
+import tailcall.gateway.dsl.json.{Config, TSchema}
 import zio.test.Gen
 
 object TestGen {
@@ -12,17 +12,19 @@ object TestGen {
 
   def genVersion: Gen[Any, String] = genName
 
-  def genScalar: Gen[Any, Schema] = Gen.fromIterable(List(Schema.string, Schema.int, Schema.`null`))
+  def genScalar: Gen[Any, TSchema] = Gen
+    .fromIterable(List(TSchema.string, TSchema.int, TSchema.`null`))
 
-  def genField: Gen[Any, Schema.Field] = for {
+  def genField: Gen[Any, TSchema.Field] = for {
     name     <- genName
     kind     <- genScalar
     required <- Gen.boolean
-  } yield Schema.Field(name, kind, required)
+  } yield TSchema.Field(name, kind, required)
 
-  def genObj: Gen[Any, Schema] = Gen.listOfBounded(2, 5)(genField).map(fields => Schema.Obj(fields))
+  def genObj: Gen[Any, TSchema] = Gen.listOfBounded(2, 5)(genField)
+    .map(fields => TSchema.Obj(fields))
 
-  def genSchema: Gen[Any, Schema] = genObj
+  def genSchema: Gen[Any, TSchema] = genObj
 
   def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(baseURL))
 

@@ -16,7 +16,7 @@ object Config {
   final case class Server(baseURL: String)
   final case class Specification(connections: Map[String, Map[String, Connection]])
   final case class Connection(operations: List[Endpoint])
-  final case class Endpoint(operation: Operation, input: Option[Schema] = None, output: Schema)
+  final case class Endpoint(operation: Operation, input: Option[TSchema] = None, output: TSchema)
 
   @jsonDiscriminator("type")
   sealed trait Operation
