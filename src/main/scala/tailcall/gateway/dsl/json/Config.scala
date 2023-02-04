@@ -33,7 +33,7 @@ object Config {
     final case class QueryParam(name: String, value: String)
 
     @jsonHint("transformation")
-    case class Transformation(@jsonField("apply") transform: Transform) extends Operation
+    final case class Transformation(@jsonField("apply") transform: Transform) extends Operation
 
     sealed trait Transform
 
@@ -41,7 +41,7 @@ object Config {
     case object Identity extends Transform
 
     @jsonHint("^compose")
-    case class Compose(transforms: List[Transform]) extends Transform
+    final case class Compose(transforms: List[Transform]) extends Transform
   }
 
   /**

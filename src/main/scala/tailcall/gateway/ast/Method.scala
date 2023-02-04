@@ -25,5 +25,4 @@ object Method {
 
   implicit lazy val methodCodec: JsonCodec[Method] = JsonCodec[String]
     .transformOrFail(Method.decode, Method.encode)
-
 }

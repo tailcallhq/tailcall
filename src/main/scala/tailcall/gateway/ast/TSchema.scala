@@ -78,6 +78,12 @@ object TSchema {
   def int: TSchema    = TSchema.Scalar.Int
   def `null`: TSchema = TSchema.Scalar.Null
 
+  def obj(fields: (String, TSchema)*): TSchema = TSchema.Obj(fields.map { case (name, schema) =>
+    TSchema.Field(name, schema)
+  }.toList)
+
+  def arr(item: TSchema): TSchema = TSchema.Arr(item)
+
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
 }

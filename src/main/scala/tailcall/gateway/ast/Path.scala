@@ -41,4 +41,9 @@ object Path {
     route => Path.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
   )
 
+  object unsafe {
+    def fromString(string: String): Path = decode(string)
+      .getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
+  }
+
 }

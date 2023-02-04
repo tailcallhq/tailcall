@@ -28,7 +28,7 @@ object DynamicEval {
       case object Modulo   extends Operation
     }
 
-    case class Unary(value: DynamicEval, operation: Unary.Operation) extends Operation
+    final case class Unary(value: DynamicEval, operation: Unary.Operation) extends Operation
     object Unary {
       sealed trait Operation
       case object Negate extends Operation
@@ -61,8 +61,8 @@ object DynamicEval {
     final case class Unary(value: DynamicEval, operation: Unary.Operation) extends Operation
     object Unary {
       sealed trait Operation
-      case object Not                                               extends Operation
-      case class Diverge(isTrue: DynamicEval, isFalse: DynamicEval) extends Operation
+      case object Not                                                     extends Operation
+      final case class Diverge(isTrue: DynamicEval, isFalse: DynamicEval) extends Operation
     }
 
     def apply(left: DynamicEval, right: DynamicEval, operation: Binary.Operation): DynamicEval =
