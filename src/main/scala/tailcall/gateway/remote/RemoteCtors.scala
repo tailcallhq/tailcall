@@ -1,6 +1,5 @@
 package tailcall.gateway.remote
 
-import zio.Chunk
 import zio.schema.Schema
 
 trait RemoteCtors {
@@ -16,10 +15,12 @@ trait RemoteCtors {
   def fromFunction2[A0, A1, B](ab: (Remote[A0], Remote[A1]) => Remote[B]): Remote[(A0, A1) => B] =
     ???
 
-  def seq[A](a: Seq[Remote[A]]): Remote[Seq[A]] = Remote.unsafe.attempt {
-    val seq = a.map(_.compile)
-    DynamicEval.SeqOperations(DynamicEval.SeqOperations.Sequence(Chunk.from(seq)))
-  }
+  def seq[A](a: Seq[Remote[A]]): Remote[Seq[A]] = Remote.unsafe
+    .attempt(DynamicEval.seq(a.map(_.compile)))
 
-  def either[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] = ???
+  def either[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] = Remote.unsafe
+    .attempt(DynamicEval.either(a match {
+      case Left(value)  => Left(value.compile)
+      case Right(value) => Right(value.compile)
+    }))
 }

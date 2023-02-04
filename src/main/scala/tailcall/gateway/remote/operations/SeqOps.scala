@@ -9,16 +9,11 @@ trait SeqOps {
 
     final def reverse: Remote[Seq[A]] = Remote.unsafe.attempt(DynamicEval.reverse(self.compile))
 
-    final def filter(f: Remote[A] => Remote[Boolean]): Remote[Seq[A]] = Remote.unsafe.attempt(
-      DynamicEval
-        .filter(self.compile, Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction])
-    )
+    final def filter(f: Remote[A] => Remote[Boolean]): Remote[Seq[A]] = Remote.unsafe
+      .attempt(DynamicEval.filter(self.compile, Remote.fromFunction(f).compileAsFunction))
 
     final def flatMap[B](f: Remote[A] => Remote[Seq[B]]): Remote[Seq[B]] = Remote.unsafe
-      .attempt(DynamicEval.flatMap(
-        self.compile,
-        Remote.fromFunction(f).compile.asInstanceOf[DynamicEval.EvalFunction]
-      ))
+      .attempt(DynamicEval.flatMap(self.compile, Remote.fromFunction(f).compileAsFunction))
 
     final def map[B](f: Remote[A] => Remote[B]): Remote[Seq[B]] = self
       .flatMap(a => Remote.seq(Seq(f(a))))

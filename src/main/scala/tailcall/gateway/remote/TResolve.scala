@@ -12,8 +12,7 @@ final case class TResolve[-R, +E, +A](remote: Remote[R => Either[E, A]]) {
     .flatMap(a => TResolve.succeed(f(a)))
 
   final def flatMap[R1 <: R, E1 >: E, B](f: Remote[A] => TResolve[R1, E1, B]): TResolve[R1, E1, B] =
-    TResolve
-      .collect[R1](r => self.remote(r).diverge(e => Remote.either(Left(e)), a => f(a).remote(r)))
+    TResolve.collect[R1](r => self.remote(r).fold(e => Remote.either(Left(e)), a => f(a).remote(r)))
 }
 
 object TResolve {

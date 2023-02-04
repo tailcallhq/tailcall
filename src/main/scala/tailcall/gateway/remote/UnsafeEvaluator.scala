@@ -63,6 +63,16 @@ object UnsafeEvaluator {
           case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).length
           case SeqOperations.Sequence(value)         => value.map(evaluate(_))
         }
+      case EitherOperations(operation) => operation match {
+          case EitherOperations.Cons(value)              => value match {
+              case Left(value)  => Left(evaluate(value))
+              case Right(value) => Right(evaluate(value))
+            }
+          case EitherOperations.Fold(value, left, right) => evaluate(value) match {
+              case Left(value)  => call(left, value)
+              case Right(value) => call(right, value)
+            }
+        }
       case FunctionCall(f, arg)        => call(f, evaluate(arg))
       case Binding(id)                 => bindings
           .getOrElse(id, throw new RuntimeException("Could not find binding: " + id))

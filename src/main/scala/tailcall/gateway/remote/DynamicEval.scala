@@ -100,6 +100,15 @@ object DynamicEval {
     private val counter = new AtomicInteger(0)
     def make: Binding   = new Binding(counter.incrementAndGet())
   }
+
+  final case class EitherOperations(operation: EitherOperations.Operation) extends DynamicEval
+  object EitherOperations {
+    sealed trait Operation
+    final case class Cons(value: Either[DynamicEval, DynamicEval]) extends Operation
+    final case class Fold(value: DynamicEval, left: EvalFunction, right: EvalFunction)
+        extends Operation
+  }
+
   final case class EvalFunction(input: Binding, body: DynamicEval) extends DynamicEval
 
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
@@ -149,6 +158,18 @@ object DynamicEval {
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
+
+  def foldEither(value: DynamicEval, left: EvalFunction, right: EvalFunction): DynamicEval =
+    EitherOperations(EitherOperations.Fold(value, left, right))
+
+  def concatStrings(left: DynamicEval, right: DynamicEval): DynamicEval =
+    StringOperations(StringOperations.Concat(left, right))
+
+  def seq(a: Seq[DynamicEval]): DynamicEval =
+    SeqOperations(SeqOperations.Sequence(Chunk.fromIterable(a)))
+
+  def either(a: Either[DynamicEval, DynamicEval]): DynamicEval =
+    EitherOperations(EitherOperations.Cons(a))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }
