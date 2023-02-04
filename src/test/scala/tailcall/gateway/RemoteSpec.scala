@@ -108,7 +108,10 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         assertRemote(program)(equalTo(Seq(2, 4, 6, 8)))
       },
       test("flatMap") {
-        val program = Remote(Seq(1, 2, 3, 4)).flatMap(r => Remote.seq(Seq(r, r * Remote(2))))
+        val program = for {
+          r   <- Remote(Seq(1, 2, 3, 4))
+          seq <- Remote.seq(Seq(r, r * Remote(2)))
+        } yield seq
         assertRemote(program)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
       }
     ),
