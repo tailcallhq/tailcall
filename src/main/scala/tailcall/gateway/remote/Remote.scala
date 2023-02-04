@@ -10,42 +10,44 @@ import zio.schema.Schema
  * extremely powerful. We use this inside the compiler to
  * convert the composition logic into some form of a Remote.
  */
-sealed trait Remote[A] {
+sealed trait Remote[+A] {
   self =>
 
   import Remote.unsafe.attempt
   def compile: DynamicEval
 
-  final def apply[A1, A2](a1: Remote[A1])(implicit ev: Remote[A] =:= Remote[A1 => A2]): Remote[A2] =
+  final def apply[A1, A2](a1: Remote[A1])(implicit ev: Remote[A] <:< Remote[A1 => A2]): Remote[A2] =
     attempt(
       DynamicEval.functionCall(self.compile.asInstanceOf[DynamicEval.EvalFunction], a1.compile)
     )
 
-  final def =:=(other: Remote[A])(implicit tag: Equatable[A]): Remote[Boolean] =
+  final def =:=[A1 >: A](other: Remote[A1])(implicit tag: Equatable[A1]): Remote[Boolean] =
     attempt(DynamicEval.equal(self.compile, other.compile, tag.any))
 
-  final def increment(implicit tag: Numeric[A], schema: Schema[A]) = self + Remote(tag.one)
+  final def increment[A1 >: A](implicit tag: Numeric[A1], schema: Schema[A1]) =
+    self + Remote(tag.one)
 
-  final def +(other: Remote[A])(implicit tag: Numeric[A]): Remote[A] =
+  final def +[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.add(self.compile, other.compile, tag.any))
 
-  final def -(other: Remote[A])(implicit tag: Numeric[A]): Remote[A] = self + other.negate
+  final def -[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] = self + other
+    .negate
 
-  final def *(other: Remote[A])(implicit tag: Numeric[A]): Remote[A] =
+  final def *[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.multiply(self.compile, other.compile, tag.any))
 
-  final def /(other: Remote[A])(implicit tag: Numeric[A]): Remote[A] =
+  final def /[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.divide(self.compile, other.compile, tag.any))
 
-  final def %(other: Remote[A])(implicit tag: Numeric[A]): Remote[A] =
+  final def %[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.modulo(self.compile, other.compile, tag.any))
 
-  final def negate(implicit tag: Numeric[A]): Remote[A] =
+  final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.negate(self.compile, tag.any))
 
 }
 
-object Remote extends RemoteCtors with StringOps with SeqOps with BooleanOps {
+object Remote extends RemoteCtors with StringOps with SeqOps with BooleanOps with EitherOps {
 
   object unsafe {
     object attempt {

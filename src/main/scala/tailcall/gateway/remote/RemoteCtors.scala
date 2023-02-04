@@ -20,4 +20,6 @@ trait RemoteCtors {
     val seq = a.map(_.compile)
     DynamicEval.SeqOperations(DynamicEval.SeqOperations.Sequence(Chunk.from(seq)))
   }
+
+  def either[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] = ???
 }
