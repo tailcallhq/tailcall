@@ -16,10 +16,9 @@ object TestGen {
     .fromIterable(List(TSchema.string, TSchema.int, TSchema.`null`))
 
   def genField: Gen[Any, TSchema.Field] = for {
-    name     <- genName
-    kind     <- genScalar
-    required <- Gen.boolean
-  } yield TSchema.Field(name, kind, required)
+    name <- genName
+    kind <- genScalar
+  } yield TSchema.Field(name, kind)
 
   def genObj: Gen[Any, TSchema] = Gen.listOfBounded(2, 5)(genField)
     .map(fields => TSchema.Obj(fields))

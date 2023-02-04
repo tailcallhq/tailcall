@@ -35,7 +35,7 @@ object TSchema {
   @jsonHint("array")
   final case class Arr(item: TSchema) extends TSchema
 
-  final case class Field(name: String, schema: TSchema, required: Boolean = false)
+  final case class Field(name: String, schema: TSchema)
 
   @jsonHint("union")
   final case class Union(self: TSchema, other: TSchema) extends TSchema
@@ -49,8 +49,7 @@ object TSchema {
       fields2.forall { f2 =>
         fields1.exists { f1 =>
           f1.name == f2.name &&
-          isSubType(f1.schema, f2.schema) &&
-          (!f2.required || f1.required)
+          isSubType(f1.schema, f2.schema)
         }
       }
     }
