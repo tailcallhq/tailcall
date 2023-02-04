@@ -1,24 +1,25 @@
 package tailcall.gateway.ast
 
-import tailcall.gateway.remote.Remote
-import zio.schema.Schema
-
 /**
- * The core domain to perform API orchestration. It takes in
+ * The core AST to represent API orchestration. It takes in
  * an input of type A and performs a series of steps to
  * produce an output of type B.
  */
-
-sealed trait Orch[-A, +B] {
-  final def compile[A1 <: A, B1 >: B]: Remote[A1 => B1] = ???
-}
+sealed trait Orch {}
 
 object Orch {
-  final case class Pure[A](value: A)                        extends Orch[Any, A]
-  final case class FromRemote[A, B](remote: Remote[A => B]) extends Orch[A, B]
+  case class FromEndpoint(endpoint: Endpoint) extends Orch
 
-  def fromRemote[A, B](remote: Remote[A => B]): Orch[A, B] = FromRemote(remote)
+  def endpoint(endpoint: Endpoint): Orch = FromEndpoint(endpoint)
 
-  implicit def schema[A, B]: Schema[Orch[A, B]] = Schema[Remote[A => B]]
-    .transform(fromRemote(_), _.compile)
+  // ADD_PATH "/home-page" {
+  //   REQ /users {
+  //      ADD_PATH "posts" {
+  //         REQ /posts/${parent.id}
+  //      }
+  //   }
+  // }
+  // 
+  
+  
 }
