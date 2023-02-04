@@ -12,6 +12,10 @@ trait RemoteCtors {
     DynamicEval.EvalFunction(id, ab(Remote.unsafe.attempt[A](id)).compile)
   }
 
+  // TODO: Add a custom implementation for arity=2
+  def fromFunction2[A0, A1, B](ab: (Remote[A0], Remote[A1]) => Remote[B]): Remote[(A0, A1) => B] =
+    ???
+
   def seq[A](a: Seq[Remote[A]]): Remote[Seq[A]] = Remote.unsafe.attempt {
     val seq = a.map(_.compile)
     DynamicEval.SeqOperations(DynamicEval.SeqOperations.Sequence(Chunk.from(seq)))
