@@ -10,6 +10,7 @@ sealed trait TSchema {
 
   def <:<(other: TSchema): Boolean = TSchema.isSubType(self, other)
   def =:=(other: TSchema): Boolean = self <:< other && other <:< self
+  def arr: TSchema                 = TSchema.arr(self)
 }
 
 object TSchema {
