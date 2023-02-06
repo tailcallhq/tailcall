@@ -21,7 +21,7 @@ object TestGen {
   } yield TSchema.Field(name, kind)
 
   def genObj: Gen[Any, TSchema] = Gen.listOfBounded(2, 5)(genField)
-    .map(fields => TSchema.Obj(fields))
+    .map(fields => TSchema.Obj(TSchema.Id.Structural, fields))
 
   def genSchema: Gen[Any, TSchema] = genObj
 

@@ -3,18 +3,27 @@ package tailcall.gateway.ast
 sealed trait Endpoint
 
 object Endpoint {
+  sealed trait HttpError
+
   final case class InetAddress(host: String, port: Int = 80)
 
   final case class Http(
     method: Method = Method.GET,
     path: Path,
+    query: Map[String, String] = Map.empty,
     address: InetAddress,
-    input: Http.Input = Http.Input(None, None, None),
-    output: Http.Output = Http.Output(None)
+    input: TSchema,
+    output: TSchema
   ) extends Endpoint
 
-  object Http {
-    final case class Input(query: Option[TSchema], path: Option[TSchema], body: Option[TSchema])
-    final case class Output(body: Option[TSchema])
-  }
+  def http(
+    method: Method = Method.GET,
+    path: Path,
+    query: Map[String, String] = Map.empty,
+    address: InetAddress,
+    input: TSchema = TSchema.unit,
+    output: TSchema = TSchema.unit
+  ): Http = Http(method, path, query, address, input, output)
+
+  def inet(host: String, port: Int = 80): InetAddress = InetAddress(host, port)
 }

@@ -28,10 +28,13 @@ object TSchema {
 
     @jsonHint("null")
     case object Null extends Scalar
+
+    @jsonHint("Unit")
+    case object Unit extends Scalar
   }
 
   @jsonHint("object")
-  final case class Obj(fields: List[Field]) extends TSchema
+  final case class Obj(id: Id = Id.Structural, fields: List[Field]) extends TSchema
 
   @jsonHint("array")
   final case class Arr(item: TSchema) extends TSchema
@@ -62,7 +65,7 @@ object TSchema {
 
       case (s1: Scalar, s2: Scalar) => s1 == s2
 
-      case (Obj(fields1), Obj(fields2)) => checkFields(fields1, fields2)
+      case (Obj(_, fields1), Obj(_, fields2)) => checkFields(fields1, fields2)
 
       case (Arr(item1), Arr(item2)) => isSubType(item1, item2)
 
@@ -74,16 +77,26 @@ object TSchema {
     }
   }
 
+  sealed trait Id
+  object Id {
+    case class Named(name: String) extends Id
+    case object Structural         extends Id
+  }
+
   def string: TSchema = TSchema.Scalar.Str
   def int: TSchema    = TSchema.Scalar.Int
   def `null`: TSchema = TSchema.Scalar.Null
+  def unit: TSchema   = TSchema.Scalar.Unit
 
-  def obj(fields: (String, TSchema)*): TSchema = TSchema.Obj(fields.map { case (name, schema) =>
-    TSchema.Field(name, schema)
-  }.toList)
+  def structured(fields: (String, TSchema)*): TSchema = TSchema
+    .Obj(Id.Structural, fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
+
+  def named(name: String, fields: (String, TSchema)*): TSchema = TSchema
+    .Obj(Id.Named(name), fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
+  implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
 }
