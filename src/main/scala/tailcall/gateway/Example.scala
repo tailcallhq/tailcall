@@ -37,21 +37,21 @@ object Example extends App {
     output = TSchema.arr(Post)
   )
 
-  val orch = Orch.obj(
-    "Query" -> Orch
-      .obj("users" -> Orch.endpoint(usersEndpoint), "posts" -> Orch.endpoint(postsEndpoint)),
-    "User"  -> Orch.obj(
-      "posts" -> Orch.spec("userId" -> Orch.context("id")).pipe(Orch.endpoint(userPostsEndpoint)),
-      "fullName" -> (Orch.context("firstName") ++ Orch.context("lastName"))
+  val orch = Orc.obj(
+    "Query" -> Orc
+      .obj("users" -> Orc.endpoint(usersEndpoint), "posts" -> Orc.endpoint(postsEndpoint)),
+    "User"  -> Orc.obj(
+      "posts" -> Orc.spec("userId" -> Orc.context("id")).pipe(Orc.endpoint(userPostsEndpoint)),
+      "fullName" -> (Orc.context("firstName") ++ Orc.context("lastName"))
     ),
-    "Post"  -> Orch.obj(
-      "user" -> Orch.batch(
-        endpoint = Orch.spec("userId" -> Orch.context("userId"))
-          .pipe(Orch.endpoint(manyUserPostsEndpoint)),
-        groupBy = Orch.path("userId")
+    "Post"  -> Orc.obj(
+      "user" -> Orc.batch(
+        endpoint = Orc.spec("userId" -> Orc.context("userId"))
+          .pipe(Orc.endpoint(manyUserPostsEndpoint)),
+        groupBy = Orc.path("userId")
       )
     )
   )
 
-  pprint.pprintln(Schema[Orch].toDynamic(orch))
+  pprint.pprintln(Schema[Orc].toDynamic(orch))
 }
