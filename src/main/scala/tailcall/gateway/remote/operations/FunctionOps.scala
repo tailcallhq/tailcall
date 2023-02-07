@@ -1,7 +1,6 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.Remote
-import tailcall.gateway.remote.DynamicEval
+import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait FunctionOps {
   implicit final class FunctionOps[A, B](private val self: Remote[A => B]) {
