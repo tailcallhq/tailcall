@@ -115,7 +115,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         assertRemote(program)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
       }
     ),
-    suite("function")(test("function") {
+    suite("function")(test("apply") {
       val function = Remote.fromFunction[Int, Int](_.increment)
       val program  = function(Remote(1))
       assertRemote(program)(equalTo(2))

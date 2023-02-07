@@ -141,7 +141,7 @@ object DynamicEval {
 
   def binding: Binding = Binding.make
 
-  def functionCall(f: EvalFunction, arg: DynamicEval): DynamicEval = FunctionCall(f, arg)
+  def call(f: EvalFunction, arg: DynamicEval): DynamicEval = FunctionCall(f, arg)
 
   def filter(seq: DynamicEval, condition: EvalFunction): DynamicEval =
     SeqOperations(SeqOperations.Filter(seq, condition))
@@ -170,6 +170,8 @@ object DynamicEval {
 
   def either(a: Either[DynamicEval, DynamicEval]): DynamicEval =
     EitherOperations(EitherOperations.Cons(a))
+
+  def bind(input: Binding, body: DynamicEval): DynamicEval = EvalFunction(input, body)
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

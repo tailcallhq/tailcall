@@ -14,14 +14,9 @@ sealed trait Remote[+A] {
   self =>
 
   import Remote.unsafe.attempt
+
+  // TODO: wrap inside an unsafe
   def compile: DynamicEval
-
-  final def compileAsFunction[A1, A2](implicit
-    ev: Remote[A] <:< Remote[A1 => A2]
-  ): DynamicEval.EvalFunction = compile.asInstanceOf[DynamicEval.EvalFunction]
-
-  final def apply[A1, A2](a1: Remote[A1])(implicit ev: Remote[A] <:< Remote[A1 => A2]): Remote[A2] =
-    attempt(DynamicEval.functionCall(self.compileAsFunction, a1.compile))
 
   final def =:=[A1 >: A](other: Remote[A1])(implicit tag: Equatable[A1]): Remote[Boolean] =
     attempt(DynamicEval.equal(self.compile, other.compile, tag.any))
@@ -46,10 +41,10 @@ sealed trait Remote[+A] {
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.negate(self.compile, tag.any))
-
 }
 
-object Remote extends RemoteCtors with StringOps with SeqOps with BooleanOps with EitherOps {
+object Remote
+    extends RemoteCtors with StringOps with SeqOps with BooleanOps with EitherOps with FunctionOps {
 
   object unsafe {
     object attempt {

@@ -8,7 +8,7 @@ trait RemoteCtors {
 
   def fromFunction[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] = Remote.unsafe.attempt {
     val id = DynamicEval.binding
-    DynamicEval.EvalFunction(id, ab(Remote.unsafe.attempt[A](id)).compile)
+    DynamicEval.bind(id, ab(Remote.unsafe.attempt[A](id)).compile)
   }
 
   // TODO: Add a custom implementation for arity=2
