@@ -115,11 +115,32 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         assertRemote(program)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
       }
     ),
-    suite("function")(test("apply") {
-      val function = Remote.fromFunction[Int, Int](_.increment)
-      val program  = function(Remote(1))
-      assertRemote(program)(equalTo(2))
-    }),
+    suite("function")(
+      test("apply") {
+        val function = Remote.fromFunction[Int, Int](_.increment)
+        val program  = function(Remote(1))
+        assertRemote(program)(equalTo(2))
+      },
+      test("toFunction") {
+        val function = Remote.fromFunction[Int, Int](_.increment)
+        val program  = function.toFunction(Remote(1))
+        assertRemote(program)(equalTo(2))
+      },
+      test("pipe") {
+        val f       = Remote.fromFunction[Int, Int](_.increment)
+        val g       = Remote.fromFunction[Int, Int](_.increment)
+        val fg      = f >>> g
+        val program = fg(Remote(1))
+        assertRemote(program)(equalTo(3))
+      },
+      test("compose") {
+        val f       = Remote.fromFunction[Int, Int](_.increment)
+        val g       = Remote.fromFunction[Int, Int](_.increment)
+        val fg      = f <<< g
+        val program = fg(Remote(1))
+        assertRemote(program)(equalTo(3))
+      }
+    ),
     suite("either")(
       test("left") {
         val program = Remote.either(Left(Remote("Error")))
