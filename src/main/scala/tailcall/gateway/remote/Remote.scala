@@ -27,8 +27,8 @@ sealed trait Remote[+A] {
   final def +[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.add(self.compile, other.compile, tag.any))
 
-  final def -[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] = self + other
-    .negate
+  final def -[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
+    self + other.negate
 
   final def *[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.multiply(self.compile, other.compile, tag.any))
@@ -48,9 +48,10 @@ object Remote
 
   object unsafe {
     object attempt {
-      def apply[A](eval: => DynamicEval): Remote[A] = new Remote[A] {
-        override def compile: DynamicEval = eval
-      }
+      def apply[A](eval: => DynamicEval): Remote[A] =
+        new Remote[A] {
+          override def compile: DynamicEval = eval
+        }
     }
   }
 

@@ -88,11 +88,13 @@ object TSchema {
   def `null`: TSchema = TSchema.Scalar.Null
   def unit: TSchema   = TSchema.Scalar.Unit
 
-  def structured(fields: (String, TSchema)*): TSchema = TSchema
-    .Obj(Id.Structural, fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
+  def structured(fields: (String, TSchema)*): TSchema =
+    TSchema
+      .Obj(Id.Structural, fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
-  def named(name: String, fields: (String, TSchema)*): TSchema = TSchema
-    .Obj(Id.Named(name), fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
+  def named(name: String, fields: (String, TSchema)*): TSchema =
+    TSchema
+      .Obj(Id.Named(name), fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 

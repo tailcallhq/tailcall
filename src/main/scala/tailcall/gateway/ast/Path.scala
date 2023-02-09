@@ -30,10 +30,11 @@ object Path {
 
   }
 
-  def decode(string: String): Either[String, Path] = syntax.route.parseString(string) match {
-    case Left(_)      => Left(s"Invalid route: ${string}")
-    case Right(value) => Right(value)
-  }
+  def decode(string: String): Either[String, Path] =
+    syntax.route.parseString(string) match {
+      case Left(_)      => Left(s"Invalid route: ${string}")
+      case Right(value) => Right(value)
+    }
 
   def encode(route: Path): Either[String, String] = syntax.route.asPrinter.printString(route)
 
@@ -45,8 +46,8 @@ object Path {
   )
 
   object unsafe {
-    def fromString(string: String): Path = decode(string)
-      .getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
+    def fromString(string: String): Path =
+      decode(string).getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
   }
 
   def empty: Path = Path(Nil)

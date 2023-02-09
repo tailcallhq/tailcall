@@ -8,8 +8,8 @@ final case class TResolve[-R, +E, +A](remote: Remote[R => Either[E, A]]) {
   final def provide(r: Remote[R]): TResolve[Any, E, A] =
     TResolve(Remote.fromFunction[Any, Either[E, A]](_ => self.remote(r)))
 
-  final def map[B](f: Remote[A] => Remote[B]): TResolve[R, E, B] = self
-    .flatMap(a => TResolve.succeed(f(a)))
+  final def map[B](f: Remote[A] => Remote[B]): TResolve[R, E, B] =
+    self.flatMap(a => TResolve.succeed(f(a)))
 
   final def flatMap[R1 <: R, E1 >: E, B](f: Remote[A] => TResolve[R1, E1, B]): TResolve[R1, E1, B] =
     TResolve.collect[R1](r => self.remote(r).fold(e => Remote.either(Left(e)), a => f(a).remote(r)))
@@ -29,6 +29,6 @@ object TResolve {
       TResolve(Remote.fromFunction[R, Either[E, A]](f))
   }
 
-  implicit def schema[R, E, A]: Schema[TResolve[R, E, A]] = Schema[Remote[R => Either[E, A]]]
-    .transform(TResolve(_), _.remote)
+  implicit def schema[R, E, A]: Schema[TResolve[R, E, A]] =
+    Schema[Remote[R => Either[E, A]]].transform(TResolve(_), _.remote)
 }

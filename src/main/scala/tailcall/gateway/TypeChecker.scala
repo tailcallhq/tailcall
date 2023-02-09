@@ -6,9 +6,9 @@ import tailcall.gateway.dsl.json.Config
 final class TypeChecker(config: Config, document: Document) {
   import tailcall.gateway.internal.CalibanADTOperators._
   def hasSchemaDefinition: TValid[String, Definition.TypeSystemDefinition.SchemaDefinition] = {
-    document.definitions.collectFirst { case d: Definition.TypeSystemDefinition.SchemaDefinition =>
-      d
-    } match {
+    document
+      .definitions
+      .collectFirst { case d: Definition.TypeSystemDefinition.SchemaDefinition => d } match {
       case Some(d) => TValid.success(d)
       case None    => TValid.fail("Missing schema definition")
     }
