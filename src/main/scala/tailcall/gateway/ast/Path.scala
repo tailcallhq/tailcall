@@ -8,15 +8,18 @@ final case class Path(segments: List[Path.Segment])
 object Path {
   sealed trait Segment
   object Segment {
-    final case class Literal(value: String) extends Segment
-    final case class Param(value: String)   extends Segment
+    final case class Literal(value: String)    extends Segment
+    final case class Param(value: Placeholder) extends Segment
+    object Param {
+      def apply(value: String): Param = Param(Placeholder(Chunk.single(value)))
+    }
   }
 
   object syntax {
     val segment = Syntax.alphaNumeric.repeat.transform[String](_.asString, Chunk.fromIterable(_))
 
-    val param = (Syntax.string("${", ()) ~ segment ~ Syntax.char('}'))
-      .transform[Segment.Param](Segment.Param, _.value)
+    val param = (Syntax.string("${", ()) ~ Placeholder.syntax ~ Syntax.char('}'))
+      .transform[Segment.Param](Segment.Param(_), _.value)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal, _.value)
 
@@ -46,4 +49,5 @@ object Path {
       .getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
   }
 
+  def empty: Path = Path(Nil)
 }

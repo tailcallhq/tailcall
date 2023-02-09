@@ -13,7 +13,7 @@ object TestGen {
   def genVersion: Gen[Any, String] = genName
 
   def genScalar: Gen[Any, TSchema] = Gen
-    .fromIterable(List(TSchema.string, TSchema.int, TSchema.`null`))
+    .fromIterable(List(TSchema.str, TSchema.int, TSchema.`null`))
 
   def genField: Gen[Any, TSchema.Field] = for {
     name <- genName
@@ -34,8 +34,12 @@ object TestGen {
     Gen.const(Method.DELETE)
   )
 
+  def genPlaceholder: Gen[Any, Placeholder] = for {
+    name <- Gen.chunkOf(genName)
+  } yield Placeholder(name)
+
   def genSegment: Gen[Any, Path.Segment] = Gen
-    .oneOf(genName.map(Path.Segment.Literal), genName.map(Path.Segment.Param))
+    .oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
 
   def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
 
