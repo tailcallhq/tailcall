@@ -6,7 +6,6 @@ import io.netty.channel._
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http._
-import zio.{UIO, ZIO}
 
 import java.net.URL
 import scala.jdk.CollectionConverters.CollectionHasAsScala
