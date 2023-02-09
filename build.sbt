@@ -10,6 +10,7 @@ ThisBuild / scalacOptions       := Seq("-language:postfixOps", "-Ywarn-unused")
 ThisBuild / libraryDependencies := Seq(
   "dev.zio"               %% "zio-schema"            % zioSchema,
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,
+  "dev.zio"               %% "zio-schema-json"       % zioSchema,
   "com.lihaoyi"           %% "pprint"                % "0.8.1",
   "dev.zio"               %% "zio"                   % zio,
   "com.github.ghostdogpr" %% "caliban"               % caliban,
@@ -18,6 +19,7 @@ ThisBuild / libraryDependencies := Seq(
   "dev.zio"               %% "zio-json-macros"       % zioJson,
   "dev.zio"               %% "zio-json-yaml"         % zioJson,
   "dev.zio"               %% "zio-parser"            % "0.1.8",
+  "io.netty"               % "netty-all"             % "4.1.68.Final",
 
   // Testing
   "dev.zio" %% "zio-test"     % zio % Test,

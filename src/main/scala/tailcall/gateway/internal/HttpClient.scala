@@ -10,11 +10,10 @@ import zio.{UIO, ZIO}
 
 import java.net.URL
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import tailcall.gateway.ast.Method
 
 trait HttpClient {
   def request(
-    m: Method,
+    m: String,
     u: String,
     h: Map[String, String],
     b: Option[String]
@@ -23,7 +22,7 @@ trait HttpClient {
 
 object HttpClient {
   final class NettyHttpClient() extends HttpClient {
-    def boostrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
+    def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
       new Bootstrap().group(new NioEventLoopGroup()).channelFactory(new ChannelFactory[Channel] {
         override def newChannel(): Channel = new NioSocketChannel()
       }).handler(new ChannelInitializer[Channel] {
@@ -39,7 +38,7 @@ object HttpClient {
       })
 
     override def request(
-      m: Method,
+      m: String,
       u: String,
       h: Map[String, String],
       b: Option[String]
@@ -54,7 +53,7 @@ object HttpClient {
 
       var close: Option[ChannelFuture] = None
 
-      val future = boostrapConnection(request) { response =>
+      val future = bootstrapConnection(request) { response =>
         val status  = response.status().code()
         val body    = ByteBufUtil.getBytes(response.content)
         val headers = response.headers().entries().asScala
@@ -68,14 +67,14 @@ object HttpClient {
     }
 
     private def buildRequest(
-      method: Method,
+      method: String,
       headers: Map[String, String],
       body: Option[String],
       url: URL
     ): FullHttpRequest = {
       val request = new DefaultFullHttpRequest(
         io.netty.handler.codec.http.HttpVersion.HTTP_1_1,
-        io.netty.handler.codec.http.HttpMethod.valueOf(method.name),
+        io.netty.handler.codec.http.HttpMethod.valueOf(method),
         url.getPath,
         body.map(b => io.netty.buffer.Unpooled.wrappedBuffer(b.getBytes))
           .getOrElse(Unpooled.EMPTY_BUFFER)
@@ -90,5 +89,5 @@ object HttpClient {
 
   type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
 
-  def make: UIO[HttpClient] = ZIO.succeed(new NettyHttpClient())
+  def make: HttpClient = new NettyHttpClient()
 }
