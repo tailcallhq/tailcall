@@ -163,6 +163,32 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
             .fold(l => rs"Some ${l}", (r: Remote[Nothing]) => r * Remote(2))
           assertRemote(program)(equalTo("Some Error"))
         }
+      ),
+      suite("option")(
+        test("some") {
+          val program = Remote.option(Some(Remote(1)))
+          assertRemote(program)(equalTo(Some(1)))
+        },
+        test("none") {
+          val program = Remote.option(None)
+          assertRemote(program)(equalTo(None))
+        },
+        test("isSome") {
+          val program = Remote.option(Some(Remote(1))).isSome
+          assertRemote(program)(isTrue)
+        },
+        test("isNone") {
+          val program = Remote.option(None).isNone
+          assertRemote(program)(isTrue)
+        },
+        test("fold some") {
+          val program = Remote.option(Some(Remote(1))).fold(Remote(0))(_ * Remote(2))
+          assertRemote(program)(equalTo(2))
+        },
+        test("fold none") {
+          val program = Remote.option(None).fold(Remote(0))(_ * Remote(2))
+          assertRemote(program)(equalTo(0))
+        }
       )
     )
 }

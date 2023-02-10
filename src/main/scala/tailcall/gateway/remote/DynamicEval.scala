@@ -109,6 +109,16 @@ object DynamicEval {
         extends Operation
   }
 
+
+  final case class OptionOperations(operation: OptionOperations.Operation) extends DynamicEval
+
+  object OptionOperations {
+    sealed trait Operation
+    final case class Cons(option: Option[DynamicEval]) extends Operation
+    final case class Fold(value: DynamicEval, none: DynamicEval, some: EvalFunction)
+        extends Operation
+  }
+
   final case class EvalFunction(input: Binding, body: DynamicEval) extends DynamicEval
 
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
@@ -172,6 +182,13 @@ object DynamicEval {
     EitherOperations(EitherOperations.Cons(a))
 
   def bind(input: Binding, body: DynamicEval): DynamicEval = EvalFunction(input, body)
+
+
+  def foldOption(value: DynamicEval, none: DynamicEval, some: EvalFunction): DynamicEval =
+    OptionOperations(OptionOperations.Fold(value, none, some))
+
+  def option(value: Option[DynamicEval]): DynamicEval =
+    OptionOperations(OptionOperations.Cons(value))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

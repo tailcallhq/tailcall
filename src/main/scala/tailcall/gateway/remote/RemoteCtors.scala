@@ -28,4 +28,7 @@ trait RemoteCtors {
         case Left(value)  => Left(value.compile)
         case Right(value) => Right(value.compile)
       }))
+
+  def option[A](a: Option[Remote[A]]): Remote[Option[A]] =
+    Remote.unsafe.attempt(DynamicEval.option(a.map(_.compile)))
 }

@@ -84,6 +84,16 @@ object UnsafeEvaluator {
         case FunctionCall(f, arg)        => call(f, evaluate(arg))
         case Binding(id)                 => bindings.getOrElse(id, throw BindingNotFound(id))
         case EvalFunction(_, body)       => evaluate(body)
+        case OptionOperations(operation) => operation match {
+            case OptionOperations.Cons(option)            => option match {
+                case Some(value) => Some(evaluate(value))
+                case None        => None
+              }
+            case OptionOperations.Fold(value, none, some) => evaluate(value) match {
+                case Some(value) => call(some, value)
+                case None        => evaluate(none)
+              }
+          }
       }
 
     def call[A](func: EvalFunction, arg: Any): A = {

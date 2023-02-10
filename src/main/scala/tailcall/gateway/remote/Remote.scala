@@ -44,7 +44,13 @@ sealed trait Remote[+A] {
 }
 
 object Remote
-    extends RemoteCtors with StringOps with SeqOps with BooleanOps with EitherOps with FunctionOps {
+    extends RemoteCtors
+    with StringOps
+    with SeqOps
+    with BooleanOps
+    with EitherOps
+    with FunctionOps
+    with OptionOps {
 
   object unsafe {
     object attempt {
