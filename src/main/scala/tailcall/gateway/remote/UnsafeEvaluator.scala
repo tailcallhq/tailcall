@@ -1,4 +1,5 @@
 package tailcall.gateway.remote
+import zio.schema.{DynamicValue, Schema}
 
 trait UnsafeEvaluator  {
   final def evaluateAs[A](eval: DynamicEval): A = evaluate(eval).asInstanceOf[A]
@@ -9,12 +10,18 @@ object UnsafeEvaluator {
   import scala.collection.mutable
 
   final class Default(val bindings: mutable.Map[Int, Any]) extends UnsafeEvaluator {
+    import UnsafeEvaluator.Error._
+
+    private def toTypedValue(value: DynamicValue, schema: Schema[_]): Any = {
+      value.toTypedValue(schema) match {
+        case Left(cause)  => throw TypeError(value, cause, schema)
+        case Right(value) => value
+      }
+    }
+
     def evaluate(eval: DynamicEval): Any =
       eval match {
-        case Literal(value, meta)        => value.toTypedValue(meta.toSchema) match {
-            case Right(value) => value
-            case Left(value)  => throw new RuntimeException("Could not translate literal: " + value)
-          }
+        case Literal(value, meta)        => toTypedValue(value, meta.toSchema)
         case EqualTo(left, right, tag)   => tag.equal(evaluate(left), evaluate(right))
         case Math(operation, tag)        => operation match {
             case Math.Binary(left, right, operation) =>
@@ -75,8 +82,7 @@ object UnsafeEvaluator {
               }
           }
         case FunctionCall(f, arg)        => call(f, evaluate(arg))
-        case Binding(id)                 => bindings
-            .getOrElse(id, throw new RuntimeException("Could not find binding: " + id))
+        case Binding(id)                 => bindings.getOrElse(id, throw BindingNotFound(id))
         case EvalFunction(_, body)       => evaluate(body)
       }
 
@@ -90,4 +96,25 @@ object UnsafeEvaluator {
 
   def make(bindings: mutable.Map[Int, Any] = mutable.Map.empty): UnsafeEvaluator =
     new Default(bindings)
+
+  sealed trait Error extends Throwable {
+    self =>
+    override def getMessage(): String = Error.getMessage(self)
+  }
+
+  object Error {
+    final case class FieldNotFound(name: String)                                      extends Error
+    final case class UnsupportedOperation(operation: String, value: DynamicValue)     extends Error
+    final case class TypeError(value: DynamicValue, cause: String, schema: Schema[_]) extends Error
+    final case class BindingNotFound(id: Int)                                         extends Error
+
+    def getMessage(self: Error): String =
+      self match {
+        case FieldNotFound(name)                    => s"Field not found: $name"
+        case UnsupportedOperation(operation, value) =>
+          s"Unsupported operation: $operation on $value"
+        case TypeError(value, cause, schema) => s"Type conversion error: $value, $cause, $schema"
+        case BindingNotFound(id)             => s"Binding not found: $id"
+      }
+  }
 }

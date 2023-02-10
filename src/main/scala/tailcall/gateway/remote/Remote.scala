@@ -59,4 +59,7 @@ object Remote
     .transform(unsafe.attempt(_), _.compile)
 
   implicit def schema[A]: Schema[Remote[A]] = anySchema.asInstanceOf[Schema[Remote[A]]]
+
+  implicit def remoteFunctionSchema[A, B]: Schema[Remote[A] => Remote[B]] =
+    Schema[Remote[A => B]].transform(_.toFunction, Remote.fromFunction(_))
 }

@@ -1,9 +1,11 @@
 package tailcall.gateway.ast
 
+import zio.Chunk
+
 final case class Endpoint(
   method: Method = Method.GET,
   path: Path = Path.empty,
-  query: Map[String, String] = Map.empty,
+  query: Chunk[(String, String)] = Chunk.empty,
   address: Endpoint.InetAddress,
   input: TSchema = TSchema.unit,
   output: TSchema = TSchema.unit
@@ -14,7 +16,7 @@ final case class Endpoint(
 
   def withPath(path: String): Endpoint = copy(path = Path.unsafe.fromString(path))
 
-  def withQuery(query: Map[String, String]): Endpoint = copy(query = query)
+  def withQuery(query: (String, String)*): Endpoint = copy(query = Chunk.from(query))
 
   def withAddress(address: Endpoint.InetAddress): Endpoint = copy(address = address)
 
@@ -35,8 +37,8 @@ object Endpoint {
   def from(url: String): Endpoint = {
     val uri     = new java.net.URI(url)
     val path    = Path.unsafe.fromString(uri.getPath())
-    val query   = Option(uri.getQuery).fold(Map.empty[String, String]) { query =>
-      query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v }.toMap
+    val query   = Option(uri.getQuery).fold(Chunk.empty[(String, String)]) { query =>
+      Chunk.from(query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v })
     }
     val address = InetAddress(uri.getHost, uri.getPort)
     Endpoint(path = path, query = query, address = address)
