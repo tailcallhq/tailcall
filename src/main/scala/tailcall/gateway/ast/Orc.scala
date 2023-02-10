@@ -1,5 +1,6 @@
 package tailcall.gateway.ast
 
+import tailcall.gateway.ast.Context
 import tailcall.gateway.remote.Remote
 import zio.schema._
 
@@ -16,12 +17,19 @@ object Orc {
   final case class ObjectOrc(name: String, fields: Map[String, Orc])          extends Orc
   final case class EndpointOrc(endpoint: Endpoint)                            extends Orc
   final case class RemoteOrc(orc: Remote[Orc])                                extends Orc
+  final case class ContextOrc(remote: Remote[Context] => Remote[Orc])         extends Orc
 
-  def obj(fields: (String, Orc)*): Orc                              = ObjectOrc("", fields.toMap)
-  def list(orcs: Orc*): Orc                                         = ListOrc(orcs.toList)
-  def endpoint(endpoint: Endpoint): Orc                             = EndpointOrc(endpoint)
+  def obj(name: String, fields: (String, Orc)*): Orc = ObjectOrc(name, fields.toMap)
+
+  def list(orcs: Orc*): Orc = ListOrc(orcs.toList)
+
+  def endpoint(endpoint: Endpoint): Orc = EndpointOrc(endpoint)
+
+  def endpoint(url: String): Orc = endpoint(Endpoint.from(url))
+
   def function(orcs: Remote[Map[String, DynamicValue] => Orc]): Orc = FunctionOrc(orcs)
-  def remote(orc: Remote[Orc]): Orc                                 = RemoteOrc(orc)
+
+  def remote(orc: Remote[Orc]): Orc = RemoteOrc(orc)
 
   implicit val schema: Schema[Orc] = DeriveSchema.gen[Orc]
 }

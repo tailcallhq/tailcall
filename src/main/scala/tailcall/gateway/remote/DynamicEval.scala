@@ -109,6 +109,14 @@ object DynamicEval {
         extends Operation
   }
 
+  final case class ContextOperations(context: DynamicEval, operation: ContextOperations.Operation)
+      extends DynamicEval
+  object ContextOperations {
+    sealed trait Operation
+    case object GetValue  extends Operation
+    case object GetArgs   extends Operation
+    case object GetParent extends Operation
+  }
 
   final case class OptionOperations(operation: OptionOperations.Operation) extends DynamicEval
 
@@ -183,6 +191,14 @@ object DynamicEval {
 
   def bind(input: Binding, body: DynamicEval): DynamicEval = EvalFunction(input, body)
 
+  def contextValue(context: DynamicEval): DynamicEval =
+    ContextOperations(context, ContextOperations.GetValue)
+
+  def contextArgs(context: DynamicEval): DynamicEval =
+    ContextOperations(context, ContextOperations.GetArgs)
+
+  def contextParent(context: DynamicEval): DynamicEval =
+    ContextOperations(context, ContextOperations.GetParent)
 
   def foldOption(value: DynamicEval, none: DynamicEval, some: EvalFunction): DynamicEval =
     OptionOperations(OptionOperations.Fold(value, none, some))
