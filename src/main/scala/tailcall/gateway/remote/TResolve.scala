@@ -12,13 +12,14 @@ final case class TResolve[-R, +E, +A](remote: Remote[R => Either[E, A]]) {
     self.flatMap(a => TResolve.succeed(f(a)))
 
   final def flatMap[R1 <: R, E1 >: E, B](f: Remote[A] => TResolve[R1, E1, B]): TResolve[R1, E1, B] =
-    TResolve.collect[R1](r => self.remote(r).fold(e => Remote.either(Left(e)), a => f(a).remote(r)))
+    TResolve
+      .collect[R1](r => self.remote(r).fold(e => Remote.fromEither(Left(e)), a => f(a).remote(r)))
 }
 
 object TResolve {
-  def succeed[A](a: Remote[A]): TResolve[Any, Nothing, A] = fromEither(Remote.either(Right(a)))
+  def succeed[A](a: Remote[A]): TResolve[Any, Nothing, A] = fromEither(Remote.fromEither(Right(a)))
 
-  def fail[E](e: Remote[E]): TResolve[Any, E, Nothing] = fromEither(Remote.either(Left(e)))
+  def fail[E](e: Remote[E]): TResolve[Any, E, Nothing] = fromEither(Remote.fromEither(Left(e)))
 
   def fromEither[E, A](e: Remote[Either[E, A]]): TResolve[Any, E, A] = TResolve.collect[Any](_ => e)
 

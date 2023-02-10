@@ -18,10 +18,10 @@ trait RemoteCtors {
   def fromFunction2[A0, A1, B](ab: (Remote[A0], Remote[A1]) => Remote[B]): Remote[(A0, A1) => B] =
     ???
 
-  def seq[A](a: Seq[Remote[A]]): Remote[Seq[A]] =
+  def fromSeq[A](a: Seq[Remote[A]]): Remote[Seq[A]] =
     Remote.unsafe.attempt(DynamicEval.seq(a.map(_.compile)))
 
-  def either[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
+  def fromEither[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
     Remote
       .unsafe
       .attempt(DynamicEval.either(a match {
@@ -29,6 +29,6 @@ trait RemoteCtors {
         case Right(value) => Right(value.compile)
       }))
 
-  def option[A](a: Option[Remote[A]]): Remote[Option[A]] =
+  def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] =
     Remote.unsafe.attempt(DynamicEval.option(a.map(_.compile)))
 }

@@ -20,7 +20,7 @@ trait SeqOps {
         .attempt(DynamicEval.flatMap(self.compile, Remote.fromFunction(f).compileAsFunction))
 
     final def map[B](f: Remote[A] => Remote[B]): Remote[Seq[B]] =
-      self.flatMap(a => Remote.seq(Seq(f(a))))
+      self.flatMap(a => Remote.fromSeq(Seq(f(a))))
 
     final def length: Remote[Int] = Remote.unsafe.attempt(DynamicEval.length(self.compile))
 

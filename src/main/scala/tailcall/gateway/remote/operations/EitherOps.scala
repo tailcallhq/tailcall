@@ -12,5 +12,14 @@ trait EitherOps {
           Remote.fromFunction(f).compileAsFunction,
           Remote.fromFunction(g).compileAsFunction
         ))
+
+    def flatMap[B](f: Remote[A] => Remote[Either[E, B]]): Remote[Either[E, B]] =
+      fold[Either[E, B]](e => Remote.fromEither(Left(e)), a => f(a))
+
+    def map[B](f: Remote[A] => Remote[B]): Remote[Either[E, B]] =
+      flatMap(a => Remote.fromEither(Right(f(a))))
+
+    def toOption: Remote[Option[A]] =
+      self.fold[Option[A]](_ => Remote.fromOption(Option.empty), a => Remote.fromOption(Some(a)))
   }
 }
