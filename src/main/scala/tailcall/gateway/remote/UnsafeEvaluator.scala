@@ -1,121 +1,154 @@
 package tailcall.gateway.remote
-import zio.schema.{DynamicValue, Schema, StandardType}
+
+import zio.schema.{DynamicValue, Schema}
+import zio.{Ref, Task, UIO, ZIO}
 
 trait UnsafeEvaluator {
-  final def evaluateAs[A](eval: DynamicEval): A = evaluate(eval).asInstanceOf[A]
-  def evaluate(eval: DynamicEval): Any
+  final def evaluateAs[A](eval: DynamicEval): Task[A] =
+    evaluate(eval).flatMap(any => ZIO.attempt(any.asInstanceOf[A]))
+  def evaluate(eval: DynamicEval): Task[Any]
 }
 
 object UnsafeEvaluator {
+
   import DynamicEval._
-  import scala.collection.mutable
+  final class Default(val context: EvaluationContext) extends UnsafeEvaluator {
 
-  final class Default(val bindings: mutable.Map[Int, Any]) extends UnsafeEvaluator {
-
-    private def toTypedValue(value: DynamicValue, schema: Schema[_]): Any = {
+    def toTypedValue(value: DynamicValue, schema: Schema[_]): Task[Any] = {
       value.toTypedValue(schema) match {
-        case Left(cause)  => throw EvaluationError.TypeError(value, cause, schema)
-        case Right(value) => value
+        case Left(cause)  => ZIO.fail(EvaluationError.TypeError(value, cause, schema))
+        case Right(value) => ZIO.succeed(value)
       }
     }
 
-    def evaluate(eval: DynamicEval): Any =
+    def call[A](func: EvalFunction, arg: Any): Task[A] =
+      for {
+        _      <- context.set(func.input.id, arg)
+        result <- evaluateAs[A](func.body)
+        _      <- context.drop(func.input.id)
+      } yield result
+
+    def evaluate(eval: DynamicEval): Task[Any] =
       eval match {
-        case Literal(value, meta)        => toTypedValue(value, meta.toSchema)
-        case EqualTo(left, right, tag)   => tag.equal(evaluate(left), evaluate(right))
+        case Literal(value, meta) => ZIO
+            .fromEither(value.toTypedValue(meta.toSchema))
+            .mapError(cause => EvaluationError.TypeError(value, cause, meta.toSchema))
+
+        case EqualTo(left, right, tag)   => for {
+            leftValue  <- evaluate(left)
+            rightValue <- evaluate(right)
+          } yield tag.equal(leftValue, rightValue)
         case Math(operation, tag)        => operation match {
             case Math.Binary(left, right, operation) =>
-              val leftValue  = evaluate(left)
-              val rightValue = evaluate(right)
-              operation match {
+              for {
+                leftValue  <- evaluate(left)
+                rightValue <- evaluate(right)
+              } yield operation match {
                 case Math.Binary.Add      => tag.add(leftValue, rightValue)
                 case Math.Binary.Multiply => tag.multiply(leftValue, rightValue)
                 case Math.Binary.Divide   => tag.divide(leftValue, rightValue)
                 case Math.Binary.Modulo   => tag.modulo(leftValue, rightValue)
               }
-            case Math.Unary(value, operation)        =>
-              val a = evaluate(value)
-              operation match { case Math.Unary.Negate => tag.negate(a) }
+            case Math.Unary(value, operation)        => evaluate(value)
+                .map(evaluate => operation match { case Math.Unary.Negate => tag.negate(evaluate) })
           }
         case Logical(operation)          => operation match {
             case Logical.Binary(left, right, operation) =>
-              val leftValue  = evaluateAs[Boolean](left)
-              val rightValue = evaluateAs[Boolean](right)
-              operation match {
+              for {
+                leftValue  <- evaluateAs[Boolean](left)
+                rightValue <- evaluateAs[Boolean](right)
+              } yield operation match {
                 case Logical.Binary.And => leftValue && rightValue
                 case Logical.Binary.Or  => leftValue || rightValue
               }
-            case Logical.Unary(value, operation)        =>
-              val a = evaluateAs[Boolean](value)
-              operation match {
-                case Logical.Unary.Not                      => !a
-                case Logical.Unary.Diverge(isTrue, isFalse) =>
-                  if (a) evaluate(isTrue) else evaluate(isFalse)
+            case Logical.Unary(value, operation)        => evaluateAs[Boolean](value).flatMap { a =>
+                operation match {
+                  case Logical.Unary.Not                      => ZIO.succeed(!a)
+                  case Logical.Unary.Diverge(isTrue, isFalse) =>
+                    if (a) evaluate(isTrue) else evaluate(isFalse)
+                }
               }
           }
         case StringOperations(operation) => operation match {
-            case StringOperations.Concat(left, right) =>
-              evaluateAs[String](left) ++ evaluateAs[String](right)
+            case StringOperations.Concat(left, right) => for {
+                leftValue  <- evaluateAs[String](left)
+                rightValue <- evaluateAs[String](right)
+              } yield leftValue ++ rightValue
           }
         case SeqOperations(operation)    => operation match {
-            case SeqOperations.Concat(left, right)    =>
-              evaluateAs[Seq[_]](left) ++ evaluateAs[Seq[_]](right)
-            case SeqOperations.IndexOf(seq, element)  =>
-              evaluateAs[Seq[_]](seq).indexOf(evaluate(element))
-            case SeqOperations.Reverse(seq)           => evaluateAs[Seq[_]](seq).reverse
-            case SeqOperations.Filter(seq, condition) =>
-              evaluateAs[Seq[_]](seq).filter(call[Boolean](condition, _))
+            case SeqOperations.Concat(left, right)    => for {
+                leftValue  <- evaluateAs[Seq[_]](left)
+                rightValue <- evaluateAs[Seq[_]](right)
+              } yield leftValue ++ rightValue
+            case SeqOperations.IndexOf(seq, element)  => for {
+                seq <- evaluateAs[Seq[_]](seq)
+                e   <- evaluate(element)
+              } yield seq.indexOf(e)
+            case SeqOperations.Reverse(seq)           => evaluateAs[Seq[_]](seq).map(_.reverse)
+            case SeqOperations.Filter(seq, condition) => for {
+                seq    <- evaluateAs[Seq[_]](seq)
+                result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
+              } yield result
 
-            case SeqOperations.FlatMap(seq, operation) =>
-              evaluateAs[Seq[_]](seq).flatMap(call[Seq[_]](operation, _))
-            case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).length
-            case SeqOperations.Sequence(value)         => value.map(evaluate(_))
+            case SeqOperations.FlatMap(seq, operation) => for {
+                seq    <- evaluateAs[Seq[Any]](seq)
+                result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
+              } yield result.flatten
+            case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).map(_.length)
+            case SeqOperations.Sequence(value)         => ZIO.foreach(value)(evaluate)
           }
         case EitherOperations(operation) => operation match {
             case EitherOperations.Cons(value)              => value match {
-                case Left(value)  => Left(evaluate(value))
-                case Right(value) => Right(evaluate(value))
+                case Left(value)  => evaluate(value).map(Left(_))
+                case Right(value) => evaluate(value).map(Right(_))
               }
-            case EitherOperations.Fold(value, left, right) => evaluate(value) match {
-                case Left(value)  => call(left, value)
-                case Right(value) => call(right, value)
-              }
+            case EitherOperations.Fold(value, left, right) => for {
+                either <- evaluateAs[Either[_, _]](value)
+                result <- either match {
+                  case Left(value)  => call[Any](left, value)
+                  case Right(value) => call[Any](right, value)
+                }
+              } yield result
           }
-        case FunctionCall(f, arg)        => call(f, evaluate(arg))
-        case Binding(id) => bindings.getOrElse(id, throw EvaluationError.BindingNotFound(id))
+        case FunctionCall(f, arg)        => evaluate(arg).flatMap(call(f, _))
+        case Binding(id)                 => context.get(id)
         case EvalFunction(_, body)       => evaluate(body)
         case OptionOperations(operation) => operation match {
             case OptionOperations.Cons(option)            => option match {
-                case Some(value) => Some(evaluate(value))
-                case None        => None
+                case Some(value) => evaluate(value).map(Some(_))
+                case None        => ZIO.none
               }
-            case OptionOperations.Fold(value, none, some) => evaluate(value) match {
-                case Some(value) => call(some, value)
-                case None        => evaluate(none)
-              }
+            case OptionOperations.Fold(value, none, some) => for {
+                option <- evaluateAs[Option[_]](value)
+                result <- option match {
+                  case Some(value) => call(some, value)
+                  case None        => evaluate(none)
+                }
+              } yield result
           }
 
-        case ContextOperations(self, operation) =>
-          val ctx = evaluateAs[Map[String, Any]](self)
-          operation match {
-            case ContextOperations.GetArg(name) =>
-              ctx.get("args").asInstanceOf[Option[Map[String, DynamicValue]]].flatMap(_.get(name))
-            case ContextOperations.GetValue     => ctx
-                .getOrElse("value", DynamicValue.Primitive((), StandardType.UnitType))
-                .asInstanceOf[DynamicValue]
-            case ContextOperations.GetParent    => ctx("parent")
-          }
-        case Die(message) => throw EvaluationError.Death(evaluateAs[String](message))
+        case ContextOperations(_, _) => ???
+        case Die(message)            => evaluateAs[String](message)
+            .flatMap(message => ZIO.fail(EvaluationError.Death(message)))
       }
-
-    def call[A](func: EvalFunction, arg: Any): A = {
-      bindings.addOne(func.input.id -> arg)
-      val result = evaluateAs[A](func.body)
-      bindings.drop(func.input.id)
-      result
-    }
   }
 
-  def make(bindings: mutable.Map[Int, Any] = mutable.Map.empty): UnsafeEvaluator =
-    new Default(bindings)
+  def make(bindings: Map[Int, Any] = Map.empty): UIO[UnsafeEvaluator] =
+    for { map <- Ref.make(bindings) } yield new Default(EvaluationContext(map))
+
+  final case class EvaluationContext(map: Ref[Map[Int, Any]]) {
+    def get(id: Int): Task[Any] =
+      map
+        .get
+        .flatMap { map =>
+          map.get(id) match {
+            case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
+            case Some(value) => ZIO.succeed(value)
+          }
+        }
+
+    def set(id: Int, value: Any): Task[Unit] = map.update(_ + (id -> value))
+
+    def drop(id: Int): Task[Unit] = map.update(_ - id)
+  }
 }

@@ -1,6 +1,6 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.remote.{Remote, UnsafeEvaluatorZIO}
+import tailcall.gateway.remote.{Remote, UnsafeEvaluator}
 import zio.internal.stacktracer.SourceLocation
 import zio.test.{Assertion, TestResult, assertZIO}
 import zio.{Task, Trace}
@@ -16,7 +16,7 @@ trait RemoteAssertion {
   implicit final class RemoteTestOps[A](private val self: Remote[A]) {
     def toZIO: Task[A] =
       for {
-        e <- UnsafeEvaluatorZIO.make()
+        e <- UnsafeEvaluator.make()
         a <- e.evaluateAs[A](self.compile)
       } yield a
   }
