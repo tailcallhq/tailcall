@@ -43,4 +43,9 @@ trait RemoteCtors {
 
   def record(fields: (String, Remote[DynamicValue])*): Remote[DynamicValue] =
     Remote.unsafe.attempt(DynamicEval.record(fields.map { case (k, v) => k -> v.compile }))
+
+  def die(msg: Remote[String]): Remote[Nothing] =
+    Remote.unsafe.attempt(DynamicEval.die(msg.compile))
+
+  def die(msg: String): Remote[Nothing] = die(Remote(msg))
 }

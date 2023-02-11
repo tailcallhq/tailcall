@@ -1,6 +1,6 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.{Endpoint, TGraph, TSchema}
+import tailcall.gateway.ast.{Endpoint, Orc, TSchema}
 import tailcall.gateway.remote.Remote
 import zio.test._
 
@@ -30,7 +30,7 @@ object OrcSpec extends ZIOSpecDefault {
 
   val unit = Remote.dynamicValue(())
 
-  val query = TGraph.query(
+  val query = Orc.query(
     "Query" -> List(
       "users" -> (_ => endpoints.users(unit)),
       "posts" -> (_ => endpoints.posts(unit))
@@ -38,7 +38,7 @@ object OrcSpec extends ZIOSpecDefault {
     "User"  -> List(
       "posts"    -> { context => endpoints.userPosts(Remote.record("userId" -> context.value)) },
       "comments" -> { context =>
-        endpoints.userPosts(Remote.record("userId" -> context.value.path("id")))
+        endpoints.userPosts(Remote.record("userId" -> context.value.path("id").getOrDie))
       }
     )
   )

@@ -22,5 +22,9 @@ trait OptionOps {
     def isNone: Remote[Boolean] = fold(Remote(true))(_ => Remote(false))
 
     def isSome: Remote[Boolean] = !isNone
+
+    def getOrElse(default: Remote[A]): Remote[A] = fold(default)(identity)
+
+    def getOrDie: Remote[A] = fold(Remote.die(Remote("Value not found")))(identity)
   }
 }

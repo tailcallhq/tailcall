@@ -1,11 +1,11 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.ast.Endpoint
 import zio.Chunk
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import java.util.concurrent.atomic.AtomicInteger
-import tailcall.gateway.ast.Endpoint
 
 sealed trait DynamicEval
 
@@ -134,6 +134,8 @@ object DynamicEval {
 
   final case class Record(value: Chunk[(String, DynamicEval)]) extends DynamicEval
 
+  final case class Die(message: DynamicEval) extends DynamicEval
+
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Add, tag)
 
@@ -214,6 +216,8 @@ object DynamicEval {
   def endpoint(endpoint: Endpoint, input: DynamicEval): DynamicEval = EndpointCall(endpoint, input)
 
   def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))
+
+  def die(message: DynamicEval): DynamicEval = Die(message)
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

@@ -96,6 +96,7 @@ object UnsafeEvaluator {
           }
 
         case ContextOperations(self, operation) => ???
+        case Die(message)                       => throw Error.Died(evaluateAs[String](message))
       }
 
     def call[A](func: EvalFunction, arg: Any): A = {
@@ -120,6 +121,8 @@ object UnsafeEvaluator {
     final case class TypeError(value: DynamicValue, cause: String, schema: Schema[_]) extends Error
     final case class BindingNotFound(id: Int)                                         extends Error
 
+    final case class Died(message: String) extends Error
+
     def getMessage(self: Error): String =
       self match {
         case FieldNotFound(name)                    => s"Field not found: $name"
@@ -127,6 +130,7 @@ object UnsafeEvaluator {
           s"Unsupported operation: $operation on $value"
         case TypeError(value, cause, schema) => s"Type conversion error: $value, $cause, $schema"
         case BindingNotFound(id)             => s"Binding not found: $id"
+        case Died(message)                   => s"Died because of: $message"
       }
   }
 }

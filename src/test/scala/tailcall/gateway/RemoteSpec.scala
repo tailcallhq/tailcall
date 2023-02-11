@@ -2,11 +2,11 @@ package tailcall.gateway
 
 import tailcall.gateway.ast.Context
 import tailcall.gateway.internal.RemoteAssertion
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote.{Remote, UnsafeEvaluator}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
-import zio.test.Assertion.{equalTo, isFalse, isTrue}
-import zio.test.ZIOSpecDefault
+import zio.test.Assertion.{equalTo, fails, isFalse, isTrue}
+import zio.test.{ZIOSpecDefault, assertZIO}
 
 import scala.collection.immutable.ListMap
 
@@ -214,6 +214,16 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           val context = Context(DynamicValue(1), args = ListMap.from(List("a" -> DynamicValue(2))))
           val program = Remote(context).arg("a")
           assertRemote(program)(equalTo(Option(DynamicValue(2))))
+        }
+      ),
+      suite("die")(
+        test("literal") {
+          val program = Remote.die("Error")
+          assertZIO(program.toZIO.exit)(fails(equalTo(UnsafeEvaluator.Error.Died("Error"))))
+        },
+        test("remote") {
+          val program = Remote.die(Remote("Error"))
+          assertZIO(program.toZIO.exit)(fails(equalTo(UnsafeEvaluator.Error.Died("Error"))))
         }
       )
     )

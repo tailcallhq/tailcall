@@ -9,7 +9,10 @@ trait RemoteAssertion {
   def assertRemote[A](remote: Remote[A])(
     assertion: Assertion[A]
   )(implicit trace: Trace, sourceLocation: SourceLocation): Task[TestResult] = {
-    val result = ZIO.attempt(UnsafeEvaluator.make().evaluateAs[A](remote.compile))
+    val result = remote.toZIO
     assertZIO(result)(assertion)
+  }
+  implicit final class RemoteTestOps[A](private val self: Remote[A]) {
+    def toZIO: Task[A] = ZIO.attempt(UnsafeEvaluator.make().evaluateAs[A](self.compile))
   }
 }
