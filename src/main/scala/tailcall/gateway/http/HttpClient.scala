@@ -1,4 +1,4 @@
-package tailcall.gateway.internal
+package tailcall.gateway.http
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.{ByteBufUtil, Unpooled}
@@ -11,12 +11,7 @@ import java.net.URL
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait HttpClient {
-  def request(
-    m: String,
-    u: String,
-    h: Map[String, String],
-    b: Option[String]
-  ): HttpClient.AsyncHandler
+  def request(req: HttpRequest): HttpClient.AsyncHandler
 }
 
 object HttpClient {
@@ -41,24 +36,15 @@ object HttpClient {
           }
         })
 
-    override def request(
-      m: String,
-      u: String,
-      h: Map[String, String],
-      b: Option[String]
-    ): AsyncHandler =
+    override def request(req: HttpRequest): AsyncHandler =
       cb => {
-        val url  = new URL(u)
+        val url  = new URL(req.uri())
         val host = url.getHost
         val port = Math.max(url.getPort, 80)
 
-        val request = buildRequest(m, h, b, url)
-
-        request.headers().set(HttpHeaderNames.HOST, host)
-
         var close: Option[ChannelFuture] = None
 
-        val future = bootstrapConnection(request) { response =>
+        val future = bootstrapConnection(req) { response =>
           val status  = response.status().code()
           val body    = ByteBufUtil.getBytes(response.content)
           val headers = response
@@ -74,31 +60,34 @@ object HttpClient {
         close = Some(future)
       }
 
-    private def buildRequest(
-      method: String,
-      headers: Map[String, String],
-      body: Option[String],
-      url: URL
-    ): FullHttpRequest = {
-      val request = new DefaultFullHttpRequest(
-        io.netty.handler.codec.http.HttpVersion.HTTP_1_1,
-        io.netty.handler.codec.http.HttpMethod.valueOf(method),
-        url.getPath,
-        body
-          .map(b => io.netty.buffer.Unpooled.wrappedBuffer(b.getBytes))
-          .getOrElse(Unpooled.EMPTY_BUFFER)
-      )
-      request
-        .headers
-        .set(headers.foldLeft[HttpHeaders](new DefaultHttpHeaders())((acc, h) =>
-          acc.add(h._1, h._2)
-        ))
-
-      request
-    }
   }
 
   type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
 
   def make: HttpClient = new NettyHttpClient()
+
+  def buildRequest(
+    method: String,
+    headers: Map[String, String],
+    body: Option[String],
+    url: URL
+  ): FullHttpRequest = {
+    val request = new DefaultFullHttpRequest(
+      io.netty.handler.codec.http.HttpVersion.HTTP_1_1,
+      io.netty.handler.codec.http.HttpMethod.valueOf(method),
+      url.getPath,
+      body
+        .map(b => io.netty.buffer.Unpooled.wrappedBuffer(b.getBytes))
+        .getOrElse(Unpooled.EMPTY_BUFFER)
+    )
+    request
+      .headers
+      .set(headers.foldLeft[HttpHeaders](new DefaultHttpHeaders())((acc, h) => acc.add(h._1, h._2)))
+
+    val host = url.getHost()
+
+    request.headers().set(HttpHeaderNames.HOST, host)
+
+    request
+  }
 }
