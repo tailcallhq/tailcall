@@ -4,7 +4,12 @@ import zio.Chunk
 import zio.json.JsonCodec
 import zio.parser.Syntax
 
-final case class Path(segments: List[Path.Segment])
+final case class Path(segments: List[Path.Segment]) {
+  self =>
+  def transform(f: Path.Segment => Path.Segment): Path = Path(segments.map(f))
+  def encode: Either[String, String]                   = Path.encode(self)
+}
+
 object Path {
   sealed trait Segment
   object Segment {

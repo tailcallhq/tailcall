@@ -2,8 +2,14 @@ package tailcall.gateway.ast
 
 import zio.Chunk
 import zio.parser.Syntax
+import zio.schema.DynamicValue
 
-case class Placeholder(path: Chunk[String])
+import tailcall.gateway.internal.DynamicValueExtension._
+
+final case class Placeholder(path: Chunk[String]) {
+  self =>
+  def evaluate(dv: DynamicValue): Option[DynamicValue] = Placeholder.evaluate(dv, self)
+}
 
 object Placeholder {
   lazy val path = Syntax
@@ -23,4 +29,6 @@ object Placeholder {
 
   def encode(placeholder: Placeholder): Either[String, String] =
     syntax.asPrinter.printString(placeholder)
+
+  def evaluate(dv: DynamicValue, ph: Placeholder): Option[DynamicValue] = dv.getPath(ph.path.toList)
 }
