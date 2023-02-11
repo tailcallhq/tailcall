@@ -35,6 +35,9 @@ object TSchema {
 
     @jsonHint("Unit")
     case object Unit extends Scalar
+
+    @jsonHint("Boolean")
+    case object Boolean extends Scalar
   }
 
   @jsonHint("object")
@@ -91,6 +94,8 @@ object TSchema {
   def int: TSchema    = TSchema.Scalar.Int
   def `null`: TSchema = TSchema.Scalar.Null
   def unit: TSchema   = TSchema.Scalar.Unit
+
+  def bool: TSchema = TSchema.Scalar.Boolean
 
   def obj(fields: (String, TSchema)*): TSchema =
     TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
