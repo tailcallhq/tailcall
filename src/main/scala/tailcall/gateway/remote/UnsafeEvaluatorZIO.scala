@@ -1,11 +1,12 @@
 package tailcall.gateway.remote
 
 import zio.schema.{DynamicValue, Schema}
-import zio.{IO, Ref, UIO, ZIO}
+import zio.{Ref, Task, UIO, ZIO}
 
 trait UnsafeEvaluatorZIO {
-  final def evaluateAs[A](eval: DynamicEval): IO[EvaluationError, A] = ???
-  def evaluate(eval: DynamicEval): IO[EvaluationError, Any]
+  final def evaluateAs[A](eval: DynamicEval): Task[A] =
+    evaluate(eval).flatMap(any => ZIO.attempt(any.asInstanceOf[A]))
+  def evaluate(eval: DynamicEval): Task[Any]
 }
 
 object UnsafeEvaluatorZIO {
@@ -13,21 +14,21 @@ object UnsafeEvaluatorZIO {
   import DynamicEval._
   final class Default(val context: EvaluationContext) extends UnsafeEvaluatorZIO {
 
-    def toTypedValue(value: DynamicValue, schema: Schema[_]): IO[EvaluationError, Any] = {
+    def toTypedValue(value: DynamicValue, schema: Schema[_]): Task[Any] = {
       value.toTypedValue(schema) match {
         case Left(cause)  => ZIO.fail(EvaluationError.TypeError(value, cause, schema))
         case Right(value) => ZIO.succeed(value)
       }
     }
 
-    def call[A](func: EvalFunction, arg: Any): IO[EvaluationError, A] =
+    def call[A](func: EvalFunction, arg: Any): Task[A] =
       for {
         _      <- context.set(func.input.id, arg)
         result <- evaluateAs[A](func.body)
         _      <- context.drop(func.input.id)
       } yield result
 
-    def evaluate(eval: DynamicEval): IO[EvaluationError, Any] =
+    def evaluate(eval: DynamicEval): Task[Any] =
       eval match {
         case Literal(value, meta) => ZIO
             .fromEither(value.toTypedValue(meta.toSchema))
@@ -60,9 +61,9 @@ object UnsafeEvaluatorZIO {
                 case Logical.Binary.And => leftValue && rightValue
                 case Logical.Binary.Or  => leftValue || rightValue
               }
-            case Logical.Unary(value, operation)        => evaluateAs[Boolean](value).map { a =>
+            case Logical.Unary(value, operation)        => evaluateAs[Boolean](value).flatMap { a =>
                 operation match {
-                  case Logical.Unary.Not                      => !a
+                  case Logical.Unary.Not                      => ZIO.succeed(!a)
                   case Logical.Unary.Diverge(isTrue, isFalse) =>
                     if (a) evaluate(isTrue) else evaluate(isFalse)
                 }
@@ -75,17 +76,24 @@ object UnsafeEvaluatorZIO {
               } yield leftValue ++ rightValue
           }
         case SeqOperations(operation)    => operation match {
-            case SeqOperations.Concat(left, right)     => for {
+            case SeqOperations.Concat(left, right)    => for {
                 leftValue  <- evaluateAs[Seq[_]](left)
                 rightValue <- evaluateAs[Seq[_]](right)
               } yield leftValue ++ rightValue
-            case SeqOperations.IndexOf(seq, element)   =>
-              evaluateAs[Seq[_]](seq).map(_.indexOf(evaluate(element)))
-            case SeqOperations.Reverse(seq)            => evaluateAs[Seq[_]](seq).map(_.reverse)
-            case SeqOperations.Filter(seq, condition)  =>
-              evaluateAs[Seq[_]](seq).map(list => ZIO.filter(list)(call[Boolean](condition, _)))
-            case SeqOperations.FlatMap(seq, operation) =>
-              evaluateAs[Seq[_]](seq).flatMap(call[Seq[_]](operation, _))
+            case SeqOperations.IndexOf(seq, element)  => for {
+                seq <- evaluateAs[Seq[_]](seq)
+                e   <- evaluate(element)
+              } yield seq.indexOf(e)
+            case SeqOperations.Reverse(seq)           => evaluateAs[Seq[_]](seq).map(_.reverse)
+            case SeqOperations.Filter(seq, condition) => for {
+                seq    <- evaluateAs[Seq[_]](seq)
+                result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
+              } yield result
+
+            case SeqOperations.FlatMap(seq, operation) => for {
+                seq    <- evaluateAs[Seq[Any]](seq)
+                result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
+              } yield result.flatten
             case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).map(_.length)
             case SeqOperations.Sequence(value)         => ZIO.foreach(value)(evaluate)
           }
@@ -97,19 +105,13 @@ object UnsafeEvaluatorZIO {
             case EitherOperations.Fold(value, left, right) => for {
                 either <- evaluateAs[Either[_, _]](value)
                 result <- either match {
-                  case Left(value)  => call(left, value)
-                  case Right(value) => call(right, value)
+                  case Left(value)  => call[Any](left, value)
+                  case Right(value) => call[Any](right, value)
                 }
               } yield result
           }
-        case FunctionCall(f, arg)        => call(f, evaluate(arg))
-        case Binding(id)                 => for {
-            option <- context.get(id)
-            result <- option match {
-              case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
-              case Some(value) => ZIO.succeed(value)
-            }
-          } yield result
+        case FunctionCall(f, arg)        => evaluate(arg).flatMap(call(f, _))
+        case Binding(id)                 => context.get(id)
         case EvalFunction(_, body)       => evaluate(body)
         case OptionOperations(operation) => operation match {
             case OptionOperations.Cons(option)            => option match {
@@ -135,7 +137,7 @@ object UnsafeEvaluatorZIO {
     for { map <- Ref.make(bindings) } yield new Default(EvaluationContext(map))
 
   final case class EvaluationContext(map: Ref[Map[Int, Any]]) {
-    def get(id: Int): IO[EvaluationError, Any] =
+    def get(id: Int): Task[Any] =
       map
         .get
         .flatMap { map =>
@@ -145,8 +147,8 @@ object UnsafeEvaluatorZIO {
           }
         }
 
-    def set(id: Int, value: Any): IO[EvaluationError, Unit] = map.update(_ + (id -> value))
+    def set(id: Int, value: Any): Task[Unit] = map.update(_ + (id -> value))
 
-    def drop(id: Int): IO[EvaluationError, Unit] = map.update(_ - id)
+    def drop(id: Int): Task[Unit] = map.update(_ - id)
   }
 }
