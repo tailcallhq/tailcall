@@ -1,6 +1,6 @@
 package tailcall.gateway.remote
 
-import zio.schema.{DynamicValue, Schema, TypeId}
+import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import zio.{Ref, Task, UIO, ZIO}
 
 import scala.collection.immutable.ListMap
@@ -12,7 +12,6 @@ trait UnsafeEvaluator {
 }
 
 object UnsafeEvaluator {
-
   import DynamicEval._
   final class Default(val context: EvaluationContext) extends UnsafeEvaluator {
 
@@ -129,14 +128,23 @@ object UnsafeEvaluator {
               } yield result
           }
 
-        case Die(message)              => evaluateAs[String](message)
+        case Die(message)                       => evaluateAs[String](message)
             .flatMap(message => ZIO.fail(EvaluationError.Death(message)))
-        case Record(fields)            => for {
+        case Record(fields)                     => for {
             f <- ZIO.foreach(fields)(field => evaluateAs[DynamicValue](field._2).map(field._1 -> _))
           } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
-        case ContextOperations(_, _)   => ???
-        case EndpointCall(_, _)        => ???
-        case _: DynamicValueOperations => ???
+        case ContextOperations(self, operation) => evaluateAs[Map[String, _]](self).map { ctx =>
+            operation match {
+              case ContextOperations.GetArg(name) =>
+                ctx.get("args").asInstanceOf[Option[Map[String, DynamicValue]]].flatMap(_.get(name))
+              case ContextOperations.GetValue     => ctx
+                  .getOrElse("value", DynamicValue.Primitive((), StandardType.UnitType))
+                  .asInstanceOf[DynamicValue]
+              case ContextOperations.GetParent    => ctx("parent")
+            }
+          }
+        case EndpointCall(_, _)                 => ???
+        case _: DynamicValueOperations          => ???
       }
   }
 

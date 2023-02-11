@@ -231,7 +231,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           val program = Remote(context).arg("a")
           assertRemote(program)(equalTo(Option(DynamicValue(2))))
         }
-      ) @@ failing,
+      ),
       suite("die")(
         test("literal") {
           val program = Remote.die("Error")
