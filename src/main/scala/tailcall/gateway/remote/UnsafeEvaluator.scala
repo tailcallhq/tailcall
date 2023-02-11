@@ -94,6 +94,8 @@ object UnsafeEvaluator {
                 case None        => evaluate(none)
               }
           }
+
+        case ContextOperations(self, operation) => ???
       }
 
     def call[A](func: EvalFunction, arg: Any): A = {

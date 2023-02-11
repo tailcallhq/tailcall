@@ -1,35 +1,29 @@
 package tailcall.gateway.ast
 
-import tailcall.gateway.ast.Context
-import tailcall.gateway.remote.Remote
 import zio.schema._
 
 /**
- * The core AST to represent API orchestration. It takes in
- * an input of type A and performs a series of steps to
- * produce an output of type B.
+ * Orc is virtually a function from A to B. It doesn't have
+ * any type information because the type verification only
+ * happens at runtime.
  */
-sealed trait Orc
+sealed trait Orc[-A, +B] {
+  self =>
+  final def <<<[A0](other: Orc[A0, A]): Orc[A0, B]     = other >>> self
+  final def >>>[C](other: Orc[B, C]): Orc[A, C]        = Orc.Pipe(self, other)
+  final def pipe[C](other: Orc[B, C]): Orc[A, C]       = self >>> other
+  final def compose[A0](other: Orc[A0, A]): Orc[A0, B] = self <<< other
+}
 
 object Orc {
-  final case class FunctionOrc(orc: Remote[Map[String, DynamicValue] => Orc]) extends Orc
-  final case class ListOrc(orcs: List[Orc])                                   extends Orc
-  final case class ObjectOrc(name: String, fields: Map[String, Orc])          extends Orc
-  final case class EndpointOrc(endpoint: Endpoint)                            extends Orc
-  final case class RemoteOrc(orc: Remote[Orc])                                extends Orc
-  final case class ContextOrc(remote: Remote[Context] => Remote[Orc])         extends Orc
+  final case class FromEndpoint(endpoint: Endpoint) extends Orc[DynamicValue, DynamicValue]
+  final case class Pipe[A, B, C](left: Orc[A, B], right: Orc[B, C]) extends Orc[A, C]
+  final case class Select(fields: List[(String, List[String])])
+      extends Orc[DynamicValue, DynamicValue]
 
-  def obj(name: String, fields: (String, Orc)*): Orc = ObjectOrc(name, fields.toMap)
+  def endpoint(endpoint: Endpoint): Orc[DynamicValue, DynamicValue] = FromEndpoint(endpoint)
+  def select(fields: (String, List[String])*): Orc[DynamicValue, DynamicValue] =
+    Select(fields.toList)
 
-  def list(orcs: Orc*): Orc = ListOrc(orcs.toList)
-
-  def endpoint(endpoint: Endpoint): Orc = EndpointOrc(endpoint)
-
-  def endpoint(url: String): Orc = endpoint(Endpoint.from(url))
-
-  def function(orcs: Remote[Map[String, DynamicValue] => Orc]): Orc = FunctionOrc(orcs)
-
-  def remote(orc: Remote[Orc]): Orc = RemoteOrc(orc)
-
-  implicit val schema: Schema[Orc] = DeriveSchema.gen[Orc]
+  // implicit def schema[A, B]: Schema[Orc[A, B]] = DeriveSchema.gen[Orc[A, B]]
 }

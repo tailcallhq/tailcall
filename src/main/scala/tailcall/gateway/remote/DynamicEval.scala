@@ -5,6 +5,7 @@ import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import java.util.concurrent.atomic.AtomicInteger
+import tailcall.gateway.ast.Endpoint
 
 sealed trait DynamicEval
 
@@ -113,9 +114,9 @@ object DynamicEval {
       extends DynamicEval
   object ContextOperations {
     sealed trait Operation
-    case object GetValue  extends Operation
-    case object GetArgs   extends Operation
-    case object GetParent extends Operation
+    final case class GetArg(name: String) extends Operation
+    case object GetValue                  extends Operation
+    case object GetParent                 extends Operation
   }
 
   final case class OptionOperations(operation: OptionOperations.Operation) extends DynamicEval
@@ -128,6 +129,10 @@ object DynamicEval {
   }
 
   final case class EvalFunction(input: Binding, body: DynamicEval) extends DynamicEval
+
+  final case class EndpointCall(endpoint: Endpoint, arg: DynamicEval) extends DynamicEval
+
+  final case class Record(value: Chunk[(String, DynamicEval)]) extends DynamicEval
 
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Add, tag)
@@ -194,8 +199,8 @@ object DynamicEval {
   def contextValue(context: DynamicEval): DynamicEval =
     ContextOperations(context, ContextOperations.GetValue)
 
-  def contextArgs(context: DynamicEval): DynamicEval =
-    ContextOperations(context, ContextOperations.GetArgs)
+  def contextArgs(context: DynamicEval, name: String): DynamicEval =
+    ContextOperations(context, ContextOperations.GetArg(name))
 
   def contextParent(context: DynamicEval): DynamicEval =
     ContextOperations(context, ContextOperations.GetParent)
@@ -205,6 +210,10 @@ object DynamicEval {
 
   def option(value: Option[DynamicEval]): DynamicEval =
     OptionOperations(OptionOperations.Cons(value))
+
+  def endpoint(endpoint: Endpoint, input: DynamicEval): DynamicEval = EndpointCall(endpoint, input)
+
+  def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

@@ -1,6 +1,8 @@
 package tailcall.gateway.ast
 
+import tailcall.gateway.remote.Remote
 import zio.Chunk
+import zio.schema.DynamicValue
 
 final case class Endpoint(
   method: Method = Method.GET,
@@ -25,6 +27,10 @@ final case class Endpoint(
   def withInput(input: TSchema): Endpoint = copy(input = input)
 
   def withOutput(output: TSchema): Endpoint = copy(output = output)
+
+  def remote: Remote[DynamicValue => DynamicValue] = Remote.fromEndpoint(this)
+
+  def apply(input: Remote[DynamicValue]): Remote[DynamicValue] = remote(input)
 }
 
 object Endpoint {

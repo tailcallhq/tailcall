@@ -1,11 +1,14 @@
 package tailcall.gateway
 
+import tailcall.gateway.ast.Context
 import tailcall.gateway.internal.RemoteAssertion
 import tailcall.gateway.remote.Remote
 import zio.Chunk
-import zio.schema.Schema
+import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.test.Assertion.{equalTo, isFalse, isTrue}
 import zio.test.ZIOSpecDefault
+
+import scala.collection.immutable.ListMap
 
 object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
   import tailcall.gateway.remote.Numeric._
@@ -188,6 +191,29 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         test("fold none") {
           val program = Remote.fromOption(None).fold(Remote(0))(_ * Remote(2))
           assertRemote(program)(equalTo(0))
+        }
+      ),
+      test("record") {
+        val program = Remote.record("a" -> Remote(DynamicValue(1)), "b" -> Remote(DynamicValue(2)))
+        assertRemote(program)(equalTo(DynamicValue.Record(
+          TypeId.Structural,
+          ListMap.from(List("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
+        )))
+      },
+      suite("context")(
+        test("value") {
+          val program = Remote(Context(DynamicValue(1))).value
+          assertRemote(program)(equalTo(DynamicValue(1)))
+        },
+        test("parent") {
+          val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
+          val program = Remote(context).parent
+          assertRemote(program)(equalTo(Option(Context(DynamicValue(2)))))
+        },
+        test("arg") {
+          val context = Context(DynamicValue(1), args = ListMap.from(List("a" -> DynamicValue(2))))
+          val program = Remote(context).arg("a")
+          assertRemote(program)(equalTo(Option(DynamicValue(2))))
         }
       )
     )

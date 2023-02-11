@@ -1,27 +1,22 @@
 package tailcall.gateway.ast
 
-import tailcall.gateway.remote.TResolve
+import tailcall.gateway.remote.Remote
 import zio.schema.DynamicValue
 
-final case class TGraph(operation: TGraph.Operation, connections: List[TGraph.Connection])
+final case class TGraph(
+  operation: TGraph.Operation,
+  connections: List[(String, List[(String, TGraph.Resolver)])]
+)
 
 object TGraph {
-  case class Arguments(values: List[(String, DynamicValue)])
-
-  case class Context(value: Either[String, DynamicValue], args: Arguments, parent: Option[Context])
-
-  final case class Connection(
-    name: String,
-    from: TSchema,
-    to: TSchema,
-    arg: List[(String, TSchema)],
-    resolver: TResolve[Context, String, DynamicValue]
-  )
-
+  type Resolver = Remote[Context] => Remote[DynamicValue]
   sealed trait Operation
   object Operation {
     case object Query        extends Operation
     case object Mutation     extends Operation
     case object Subscription extends Operation
   }
+
+  def query(connections: (String, List[(String, Resolver)])*): TGraph =
+    TGraph(Operation.Query, connections.toList)
 }

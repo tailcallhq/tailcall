@@ -1,6 +1,7 @@
 package tailcall.gateway.remote
 
-import zio.schema.Schema
+import tailcall.gateway.ast.Endpoint
+import zio.schema.{DynamicValue, Schema}
 
 trait RemoteCtors {
   def apply[A](a: A)(implicit schema: Schema[A]): Remote[A] =
@@ -31,4 +32,15 @@ trait RemoteCtors {
 
   def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] =
     Remote.unsafe.attempt(DynamicEval.option(a.map(_.compile)))
+
+  def fromEndpoint(endpoint: Endpoint): Remote[DynamicValue => DynamicValue] =
+    Remote.fromFunction[DynamicValue, DynamicValue](input =>
+      Remote.unsafe.attempt(DynamicEval.endpoint(endpoint, input.compile))
+    )
+
+  def dynamicValue[A](a: A)(implicit schema: Schema[A]): Remote[DynamicValue] =
+    Remote(Schema.toDynamic(a))
+
+  def record(fields: (String, Remote[DynamicValue])*): Remote[DynamicValue] =
+    Remote.unsafe.attempt(DynamicEval.record(fields.map { case (k, v) => k -> v.compile }))
 }

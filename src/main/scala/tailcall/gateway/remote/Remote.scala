@@ -50,7 +50,9 @@ object Remote
     with BooleanOps
     with EitherOps
     with FunctionOps
-    with OptionOps {
+    with OptionOps
+    with ContextOps
+    with DynamicValueOps {
 
   object unsafe {
     object attempt {
