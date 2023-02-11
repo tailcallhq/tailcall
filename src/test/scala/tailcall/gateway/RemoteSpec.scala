@@ -2,7 +2,7 @@ package tailcall.gateway
 
 import tailcall.gateway.ast.Context
 import tailcall.gateway.internal.RemoteAssertion
-import tailcall.gateway.remote.{Remote, UnsafeEvaluator}
+import tailcall.gateway.remote.{EvaluationError, Remote}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.test.Assertion.{equalTo, fails, isFalse, isTrue}
@@ -220,11 +220,11 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       suite("die")(
         test("literal") {
           val program = Remote.die("Error")
-          assertZIO(program.toZIO.exit)(fails(equalTo(UnsafeEvaluator.Error.Died("Error"))))
+          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Died("Error"))))
         },
         test("remote") {
           val program = Remote.die(Remote("Error"))
-          assertZIO(program.toZIO.exit)(fails(equalTo(UnsafeEvaluator.Error.Died("Error"))))
+          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Died("Error"))))
         }
       ),
       suite("dynamicValue")(
