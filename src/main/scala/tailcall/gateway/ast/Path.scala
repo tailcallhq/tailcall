@@ -18,8 +18,7 @@ object Path {
   object syntax {
     val segment = Syntax.alphaNumeric.repeat.transform[String](_.asString, Chunk.fromIterable(_))
 
-    val param = (Syntax.string("${", ()) ~ Placeholder.syntax ~ Syntax.char('}'))
-      .transform[Segment.Param](Segment.Param(_), _.value)
+    val param = Placeholder.syntax.transform[Segment.Param](Segment.Param(_), _.value)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal, _.value)
 
