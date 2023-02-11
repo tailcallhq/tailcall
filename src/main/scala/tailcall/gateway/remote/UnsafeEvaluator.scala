@@ -95,7 +95,7 @@ object UnsafeEvaluator {
           }
 
         case ContextOperations(self, operation) => ???
-        case Die(message) => throw EvaluationError.Died(evaluateAs[String](message))
+        case Die(message) => throw EvaluationError.Death(evaluateAs[String](message))
       }
 
     def call[A](func: EvalFunction, arg: Any): A = {

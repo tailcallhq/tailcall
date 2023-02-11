@@ -220,11 +220,11 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       suite("die")(
         test("literal") {
           val program = Remote.die("Error")
-          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Died("Error"))))
+          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Death("Error"))))
         },
         test("remote") {
           val program = Remote.die(Remote("Error"))
-          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Died("Error"))))
+          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Death("Error"))))
         }
       ),
       suite("dynamicValue")(
