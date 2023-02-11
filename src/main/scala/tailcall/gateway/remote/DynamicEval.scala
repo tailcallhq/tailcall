@@ -96,7 +96,7 @@ object DynamicEval {
   }
 
   final case class FunctionCall(f: EvalFunction, arg: DynamicEval) extends DynamicEval
-  final case class Binding private (id: Int)                       extends DynamicEval
+  final case class Binding(id: Int)                                extends DynamicEval
   object Binding {
     private val counter = new AtomicInteger(0)
     def make: Binding   = new Binding(counter.incrementAndGet())

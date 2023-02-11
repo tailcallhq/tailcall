@@ -26,6 +26,6 @@ object EvaluationError {
       case UnsupportedOperation(operation, value) => s"Unsupported operation: $operation on $value"
       case TypeError(value, cause, schema) => s"Type conversion error: $value, $cause, $schema"
       case BindingNotFound(id)             => s"Binding not found: $id"
-      case Death(message)                   => s"Died because of: $message"
+      case Death(message)                  => s"Died because of: $message"
     }
 }

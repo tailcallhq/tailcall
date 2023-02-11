@@ -1,10 +1,11 @@
 package tailcall.gateway.remote
 import zio.schema.{DynamicValue, Schema, StandardType}
 
-trait UnsafeEvaluator  {
+trait UnsafeEvaluator {
   final def evaluateAs[A](eval: DynamicEval): A = evaluate(eval).asInstanceOf[A]
   def evaluate(eval: DynamicEval): Any
 }
+
 object UnsafeEvaluator {
   import DynamicEval._
   import scala.collection.mutable
