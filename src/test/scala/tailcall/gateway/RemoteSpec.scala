@@ -202,14 +202,29 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         )))
       } @@ failing,
       suite("context")(
+        suite("parent")(
+          test("present") {
+            val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
+            val program = Remote(context).parent.map(_.value)
+            assertRemote(program)(equalTo(Some(DynamicValue(2))))
+          },
+          test("not present") {
+            val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
+            val program = Remote(context).parent.flatMap(_.parent)
+            assertRemote(program)(equalTo(None))
+          },
+          test("nested") {
+            val context = Context(
+              DynamicValue(1),
+              parent = Option(Context(DynamicValue(2), parent = Option(Context(DynamicValue(3)))))
+            )
+            val program = Remote(context).parent.flatMap(_.parent).map(_.value)
+            assertRemote(program)(equalTo(Some(DynamicValue(3))))
+          }
+        ),
         test("value") {
           val program = Remote(Context(DynamicValue(1))).value
           assertRemote(program)(equalTo(DynamicValue(1)))
-        },
-        test("parent") {
-          val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
-          val program = Remote(context).parent
-          assertRemote(program)(equalTo(Option(Context(DynamicValue(2)))))
         },
         test("arg") {
           val context = Context(DynamicValue(1), args = ListMap.from(List("a" -> DynamicValue(2))))

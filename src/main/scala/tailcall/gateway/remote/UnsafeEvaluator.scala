@@ -1,5 +1,5 @@
 package tailcall.gateway.remote
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.{DynamicValue, Schema, StandardType}
 
 trait UnsafeEvaluator  {
   final def evaluateAs[A](eval: DynamicEval): A = evaluate(eval).asInstanceOf[A]
@@ -94,7 +94,16 @@ object UnsafeEvaluator {
               }
           }
 
-        case ContextOperations(self, operation) => ???
+        case ContextOperations(self, operation) =>
+          val ctx = evaluateAs[Map[String, Any]](self)
+          operation match {
+            case ContextOperations.GetArg(name) =>
+              ctx.get("args").asInstanceOf[Option[Map[String, DynamicValue]]].flatMap(_.get(name))
+            case ContextOperations.GetValue     => ctx
+                .getOrElse("value", DynamicValue.Primitive((), StandardType.UnitType))
+                .asInstanceOf[DynamicValue]
+            case ContextOperations.GetParent    => ctx("parent")
+          }
         case Die(message) => throw EvaluationError.Death(evaluateAs[String](message))
       }
 
