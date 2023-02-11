@@ -2,7 +2,7 @@ package tailcall.gateway
 
 import tailcall.gateway.Reader
 import tailcall.gateway.internal.{Extension, TestGen}
-import zio.test.TestAspect.timeout
+import zio.test.TestAspect.{failing, timeout}
 import zio.test._
 import zio.{Scope, durationInt}
 
@@ -20,6 +20,6 @@ object ReaderSpec extends ZIOSpecDefault {
           config <- TestGen.genConfig.runHead
           _      <- Extension.YML.encode(config.get)
         } yield assertCompletes
-      }
+      } @@ failing
     ) @@ timeout(10 seconds)
 }

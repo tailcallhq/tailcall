@@ -136,6 +136,25 @@ object DynamicEval {
 
   final case class Die(message: DynamicEval) extends DynamicEval
 
+  final case class DynamicValueOperations(
+    value: DynamicEval,
+    operation: DynamicValueOperations.Operation
+  ) extends DynamicEval
+
+  object DynamicValueOperations {
+    sealed trait Operation
+    final case class Path(path: Chunk[String]) extends Operation
+    case object AsString                       extends Operation
+    case object AsBoolean                      extends Operation
+    case object AsInt                          extends Operation
+    case object AsLong                         extends Operation
+    case object AsDouble                       extends Operation
+    case object AsFloat                        extends Operation
+    case object AsBigDecimal                   extends Operation
+    case object AsList                         extends Operation
+    case object AsMap                          extends Operation
+  }
+
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Add, tag)
 
@@ -218,6 +237,33 @@ object DynamicEval {
   def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))
 
   def die(message: DynamicEval): DynamicEval = Die(message)
+
+  def dynamicValuePath(value: DynamicEval, path: Chunk[String]): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.Path(path))
+
+  def dynamicValueAsString(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsString)
+
+  def dynamicValueAsBoolean(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsBoolean)
+
+  def dynamicValueAsInt(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsInt)
+
+  def dynamicValueAsLong(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsLong)
+
+  def dynamicValueAsDouble(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsDouble)
+
+  def dynamicValueAsFloat(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsFloat)
+
+  def dynamicValueAsList(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsList)
+
+  def dynamicValueAsMap(value: DynamicEval): DynamicEval =
+    DynamicValueOperations(value, DynamicValueOperations.AsMap)
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

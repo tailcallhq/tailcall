@@ -43,7 +43,5 @@ object OrcSpec extends ZIOSpecDefault {
     )
   )
 
-  pprint.pprintln(query)
-
   def spec = suite("OrchSpec")(test("test")(assertCompletes))
 }

@@ -4,19 +4,26 @@ import tailcall.gateway.remote.Remote
 import zio.schema.DynamicValue
 
 final case class Orc(
-  operation: Orc.Operation,
-  connections: List[(String, List[(String, Orc.Resolver)])]
-)
+  query: List[(String, List[(String, Orc.Resolver)])] = Nil,
+  mutation: List[(String, List[(String, Orc.Resolver)])] = Nil,
+  subscription: List[(String, List[(String, Orc.Resolver)])] = Nil
+) {
+  def ++(other: Orc): Orc =
+    Orc(
+      query = query ++ other.query,
+      mutation = mutation ++ other.mutation,
+      subscription = subscription ++ other.subscription
+    )
+}
 
 object Orc {
   type Resolver = Remote[Context] => Remote[DynamicValue]
-  sealed trait Operation
-  object Operation {
-    case object Query        extends Operation
-    case object Mutation     extends Operation
-    case object Subscription extends Operation
-  }
 
-  def query(connections: (String, List[(String, Resolver)])*): Orc =
-    Orc(Operation.Query, connections.toList)
+  def query(connections: (String, List[(String, Resolver)])*): Orc = Orc(query = connections.toList)
+
+  def mutation(connections: (String, List[(String, Resolver)])*): Orc =
+    Orc(mutation = connections.toList)
+
+  def subscription(connections: (String, List[(String, Resolver)])*): Orc =
+    Orc(subscription = connections.toList)
 }

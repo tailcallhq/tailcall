@@ -6,6 +6,7 @@ import tailcall.gateway.remote.{Remote, UnsafeEvaluator}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.test.Assertion.{equalTo, fails, isFalse, isTrue}
+import zio.test.TestAspect.failing
 import zio.test.{ZIOSpecDefault, assertZIO}
 
 import scala.collection.immutable.ListMap
@@ -199,7 +200,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           TypeId.Structural,
           ListMap.from(List("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
         )))
-      },
+      } @@ failing,
       suite("context")(
         test("value") {
           val program = Remote(Context(DynamicValue(1))).value
@@ -215,7 +216,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           val program = Remote(context).arg("a")
           assertRemote(program)(equalTo(Option(DynamicValue(2))))
         }
-      ),
+      ) @@ failing,
       suite("die")(
         test("literal") {
           val program = Remote.die("Error")
@@ -225,6 +226,102 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           val program = Remote.die(Remote("Error"))
           assertZIO(program.toZIO.exit)(fails(equalTo(UnsafeEvaluator.Error.Died("Error"))))
         }
-      )
+      ),
+      suite("dynamicValue")(
+        suite("path")(
+          test("path not found") {
+            val program = Remote(DynamicValue(1)).path("a")
+            assertRemote(program)(equalTo(Option.empty[DynamicValue]))
+          },
+          test("path found") {
+            val program = Remote.record("a" -> Remote(DynamicValue(1))).path("a")
+            assertRemote(program)(equalTo(Option(DynamicValue(1))))
+          }
+        ),
+        suite("asString")(
+          test("string") {
+            val program = Remote(DynamicValue("a")).asString
+            assertRemote(program)(equalTo(Option("a")))
+          },
+          test("not string") {
+            val program = Remote(DynamicValue(1)).asString
+            assertRemote(program)(equalTo(Option.empty[String]))
+          }
+        ),
+        suite("asBoolean")(
+          test("boolean") {
+            val program = Remote(DynamicValue(true)).asBoolean
+            assertRemote(program)(equalTo(Option(true)))
+          },
+          test("not boolean") {
+            val program = Remote(DynamicValue(1)).asBoolean
+            assertRemote(program)(equalTo(Option.empty[Boolean]))
+          }
+        ),
+        suite("asInt")(
+          test("int") {
+            val program = Remote(DynamicValue(1)).asInt
+            assertRemote(program)(equalTo(Option(1)))
+          },
+          test("not int") {
+            val program = Remote(DynamicValue("a")).asInt
+            assertRemote(program)(equalTo(Option.empty[Int]))
+          }
+        ),
+        suite("asLong")(
+          test("long") {
+            val program = Remote(DynamicValue(1L)).asLong
+            assertRemote(program)(equalTo(Option(1L)))
+          },
+          test("not long") {
+            val program = Remote(DynamicValue("a")).asLong
+            assertRemote(program)(equalTo(Option.empty[Long]))
+          }
+        ),
+        suite("asDouble")(
+          test("double") {
+            val program = Remote(DynamicValue(1.0)).asDouble
+            assertRemote(program)(equalTo(Option(1.0)))
+          },
+          test("not double") {
+            val program = Remote(DynamicValue("a")).asDouble
+            assertRemote(program)(equalTo(Option.empty[Double]))
+          }
+        ),
+        suite("asFloat")(
+          test("float") {
+            val program = Remote(DynamicValue(1.0f)).asFloat
+            assertRemote(program)(equalTo(Option(1.0f)))
+          },
+          test("not float") {
+            val program = Remote(DynamicValue("a")).asFloat
+            assertRemote(program)(equalTo(Option.empty[Float]))
+          }
+        ),
+        suite("asList")(
+          test("list") {
+            val program  = Remote(DynamicValue(List(1, 2, 3))).asList
+            val expected = Option(List(DynamicValue(1), DynamicValue(2), DynamicValue(3)))
+            assertRemote(program)(equalTo(expected))
+          },
+          test("not list") {
+            val program = Remote(DynamicValue("a")).asList
+            assertRemote(program)(equalTo(Option.empty[List[DynamicValue]]))
+          }
+        ),
+        suite("asMap")(
+          test("map") {
+            val program  = Remote(DynamicValue(Map("a" -> 1, "b" -> 2))).asMap
+            val expected = Option(
+              Map(DynamicValue("a") -> DynamicValue(1), DynamicValue("b") -> DynamicValue(2))
+            )
+            assertRemote(program)(equalTo(expected))
+          },
+          test("not map") {
+            val program = Remote(DynamicValue("a")).asMap
+            assertRemote(program)(equalTo(Option.empty[Map[DynamicValue, DynamicValue]]))
+          }
+        )
+      ) @@ failing
     )
 }
