@@ -44,4 +44,7 @@ trait RemoteCtors {
     Remote.unsafe.attempt(DynamicEval.die(msg.compile))
 
   def die(msg: String): Remote[Nothing] = die(Remote(msg))
+
+  def batch(remote: Remote[DynamicValue], groupByKey: List[String]): Remote[DynamicValue] =
+    Remote.unsafe.attempt(DynamicEval.batch(remote.compile, groupByKey))
 }

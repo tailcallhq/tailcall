@@ -6,6 +6,7 @@ import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.immutable.List
 
 sealed trait DynamicEval
 
@@ -136,6 +137,8 @@ object DynamicEval {
 
   final case class Die(message: DynamicEval) extends DynamicEval
 
+  final case class Batch(eval: DynamicEval, groupbyKey: List[String]) extends DynamicEval
+
   final case class DynamicValueOperations(
     value: DynamicEval,
     operation: DynamicValueOperations.Operation
@@ -237,6 +240,8 @@ object DynamicEval {
   def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))
 
   def die(message: DynamicEval): DynamicEval = Die(message)
+
+  def batch(value: DynamicEval, groupByKey: List[String]): DynamicEval = Batch(value, groupByKey)
 
   def dynamicValuePath(value: DynamicEval, path: Chunk[String]): DynamicEval =
     DynamicValueOperations(value, DynamicValueOperations.Path(path))
