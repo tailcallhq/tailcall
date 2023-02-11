@@ -10,7 +10,8 @@ final case class Endpoint(
   query: Chunk[(String, String)] = Chunk.empty,
   address: Endpoint.InetAddress,
   input: TSchema = TSchema.unit,
-  output: TSchema = TSchema.unit
+  output: TSchema = TSchema.unit,
+  protocol: Endpoint.Protocol = Endpoint.Protocol.Http
 ) {
   def withMethod(method: Method): Endpoint = copy(method = method)
 
@@ -31,9 +32,30 @@ final case class Endpoint(
   def remote: Remote[DynamicValue => DynamicValue] = Remote.fromEndpoint(this)
 
   def apply(input: Remote[DynamicValue]): Remote[DynamicValue] = remote(input)
+
+  def withProtocol(protocol: Endpoint.Protocol): Endpoint = copy(protocol = protocol)
+
+  def withHttp: Endpoint = withProtocol(Endpoint.Protocol.Http)
+
+  def withHttps: Endpoint = withProtocol(Endpoint.Protocol.Https)
+
+  def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
 }
 
 object Endpoint {
+  sealed trait Protocol {
+    self =>
+    def name: String =
+      self match {
+        case Protocol.Http  => "http"
+        case Protocol.Https => "https"
+      }
+  }
+  object Protocol       {
+    case object Http  extends Protocol
+    case object Https extends Protocol
+  }
+
   sealed trait HttpError
 
   final case class InetAddress(host: String, port: Int = 80)
