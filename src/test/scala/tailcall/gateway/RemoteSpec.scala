@@ -200,7 +200,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           TypeId.Structural,
           ListMap.from(List("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
         )))
-      } @@ failing,
+      },
       suite("context")(
         suite("parent")(
           test("present") {

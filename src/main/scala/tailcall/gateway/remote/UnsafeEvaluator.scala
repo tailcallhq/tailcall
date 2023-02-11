@@ -1,7 +1,9 @@
 package tailcall.gateway.remote
 
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.{Ref, Task, UIO, ZIO}
+
+import scala.collection.immutable.ListMap
 
 trait UnsafeEvaluator {
   final def evaluateAs[A](eval: DynamicEval): Task[A] =
@@ -127,9 +129,14 @@ object UnsafeEvaluator {
               } yield result
           }
 
-        case ContextOperations(_, _) => ???
-        case Die(message)            => evaluateAs[String](message)
+        case Die(message)              => evaluateAs[String](message)
             .flatMap(message => ZIO.fail(EvaluationError.Death(message)))
+        case Record(fields)            => for {
+            f <- ZIO.foreach(fields)(field => evaluateAs[DynamicValue](field._2).map(field._1 -> _))
+          } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
+        case ContextOperations(_, _)   => ???
+        case EndpointCall(_, _)        => ???
+        case _: DynamicValueOperations => ???
       }
   }
 
