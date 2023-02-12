@@ -24,7 +24,9 @@ object EndpointCompiler {
 
     val queryString = endpoint
       .query
-      .nonEmptyOrElse("")(_.map { case (k, v) => s"$k=$v" }.mkString("?", "&", ""))
+      .nonEmptyOrElse("")(
+        _.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }.mkString("?", "&", "")
+      )
 
     val pathString: String = endpoint
       .path

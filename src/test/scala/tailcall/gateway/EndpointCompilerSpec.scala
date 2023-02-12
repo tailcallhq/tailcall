@@ -54,6 +54,19 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
           val request = EndpointCompiler.compile(endpoint, input)
           assertTrue(request.headers == Map("X-Server" -> "1"))
         }
+      },
+      test("query") {
+        val root   = Endpoint.make("abc.com")
+        val inputs = List(
+          DynamicValue(())                          -> root.withQuery("a" -> "1"),
+          DynamicValue(Map("a" -> "1"))             -> root.withQuery("a" -> "{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withQuery("a" -> "{{a.b}}")
+        )
+
+        checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
+          val request = EndpointCompiler.compile(endpoint, input)
+          assertTrue(request.url == "http://abc.com?a=1")
+        }
       }
     )
 }
