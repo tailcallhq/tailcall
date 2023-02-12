@@ -3,11 +3,23 @@ package tailcall.gateway.ast
 import zio.Chunk
 import zio.json.JsonCodec
 import zio.parser.Syntax
+import zio.schema.DynamicValue
 
 final case class Path(segments: List[Path.Segment]) {
   self =>
   def transform(f: Path.Segment => Path.Segment): Path = Path(segments.map(f))
   def encode: Either[String, String]                   = Path.encode(self)
+  def evaluate(input: DynamicValue): String            =
+    transform {
+      case Path.Segment.Literal(value)  => Path.Segment.Literal(value)
+      case Path.Segment.Param(mustache) => Path
+          .Segment
+          .Literal(
+            mustache
+              .evaluate(input)
+              .getOrElse(throw new RuntimeException("Mustache evaluation failed"))
+          )
+    }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 }
 
 object Path {
