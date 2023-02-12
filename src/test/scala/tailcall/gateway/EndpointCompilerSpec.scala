@@ -2,7 +2,6 @@ package tailcall.gateway
 
 import tailcall.gateway.ast.{Endpoint, Method}
 import tailcall.gateway.http.EndpointCompiler
-import zio.test.TestAspect._
 import zio.schema.DynamicValue
 import zio.test._
 
@@ -32,11 +31,11 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
           assertTrue(request.url == expected)
         }
       },
-      test("path eval") {
+      test("{{path}}") {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
-          DynamicValue(Map("id" -> 1))                   -> root.withPath("/users/${id}"),
-          DynamicValue(Map("context" -> Map("id" -> 1))) -> root.withPath("/users/${context.id}")
+          DynamicValue(Map("a" -> 1))             -> root.withPath("/users/{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> 1))) -> root.withPath("/users/{{a.b}}")
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
@@ -47,15 +46,14 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
       test("headers") {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
-          DynamicValue(Map("server" -> "tailcall")) -> root.withHeader("X-Server" -> "${server}"),
-          DynamicValue(Map("context" -> Map("server" -> "tailcall"))) -> root
-            .withHeader("X-Server" -> "${context.id}")
+          DynamicValue(Map("a" -> "1"))             -> root.withHeader("X-Server" -> "{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withHeader("X-Server" -> "{{a.b}}")
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
           val request = EndpointCompiler.compile(endpoint, input)
-          assertTrue(request.headers == Map("X-Server" -> "tailcall"))
+          assertTrue(request.headers == Map("X-Server" -> "1"))
         }
-      } @@ failing
+      }
     )
 }

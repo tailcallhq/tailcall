@@ -1,7 +1,7 @@
 package tailcall.gateway.http
 
-import tailcall.gateway.ast.{Endpoint, Path}
-import tailcall.gateway.internal.DynamicValueExtension._
+import tailcall.gateway.ast.Path.Segment
+import tailcall.gateway.ast.{Endpoint, Mustache, Path}
 import zio.schema.DynamicValue
 
 object EndpointCompiler {
@@ -26,20 +26,20 @@ object EndpointCompiler {
       .query
       .nonEmptyOrElse("")(_.map { case (k, v) => s"$k=$v" }.mkString("?", "&", ""))
 
-    val pathString = endpoint
+    val pathString: String = endpoint
       .path
-      .transform { segment =>
-        segment match {
-          case Path.Segment.Literal(value)     => Path.Segment.Literal(value)
-          case Path.Segment.Param(placeholder) =>
-            placeholder.evaluate(input).flatMap(_.asPrimitive) match {
-              case None        => throw new RuntimeException("Missing placeholder value")
-              case Some(value) => Path.Segment.Literal(value.value.toString)
-            }
-        }
+      .transform {
+        case Segment.Literal(value)  => Path.Segment.Literal(value)
+        case Segment.Param(mustache) => Path
+            .Segment
+            .Literal(
+              mustache
+                .evaluate(input)
+                .getOrElse(throw new RuntimeException("Mustache evaluation failed"))
+            )
       }
       .encode
-      .getOrElse(throw new RuntimeException("Invalid path"))
+      .getOrElse(throw new RuntimeException("Path encoding failed"))
 
     val url = List(
       endpoint.protocol.name,
@@ -50,7 +50,7 @@ object EndpointCompiler {
       queryString
     ).mkString
 
-    val headers = endpoint.headers.map { case (k, v) => k -> v }.toMap
+    val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
     Request(method = method, url = url, headers = headers)
   }
 }
