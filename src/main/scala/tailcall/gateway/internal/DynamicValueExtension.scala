@@ -24,10 +24,8 @@ object DynamicValueExtension {
             case DynamicValue.Sequence(array)   =>
               if (withIndex) head.toIntOption.flatMap(array.lift).flatMap(_.getPath(tail))
               else Option(DynamicValue(array.flatMap(_.getPath(tail))))
-            case DynamicValue.Dictionary(chunk) => chunk
-                .find(_._1.asString.map(_ == head).getOrElse(false))
-                .map(_._2)
-                .flatMap(_.getPath(tail))
+            case DynamicValue.Dictionary(chunk) =>
+              chunk.find(_._1.asString.exists(_ == head)).map(_._2).flatMap(_.getPath(tail))
             case _                              => None
           }
       }
