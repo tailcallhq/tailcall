@@ -6,11 +6,11 @@ import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.immutable.List
 
 sealed trait DynamicEval
 
 object DynamicEval {
+
   final case class Literal(value: DynamicValue, meta: MetaSchema) extends DynamicEval
 
   final case class EqualTo(left: DynamicEval, right: DynamicEval, tag: Equatable[Any])
@@ -159,6 +159,8 @@ object DynamicEval {
     case object AsMap                          extends Operation
   }
 
+  final case class Debug(eval: DynamicEval, str: String) extends DynamicEval
+
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Add, tag)
 
@@ -273,6 +275,8 @@ object DynamicEval {
 
   def dynamicValueAsMap(value: DynamicEval): DynamicEval =
     DynamicValueOperations(value, DynamicValueOperations.AsMap)
+
+  def debug(compile: DynamicEval, message: String): DynamicEval = Debug(compile, message)
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

@@ -1,8 +1,11 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.http.{EndpointCompiler, HttpClient}
+import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import zio.{Ref, Task, UIO, ZIO}
 
+import java.nio.charset.StandardCharsets
 import scala.collection.immutable.ListMap
 
 trait UnsafeEvaluator {
@@ -150,8 +153,26 @@ object UnsafeEvaluator {
               case ContextOperations.GetParent    => ctx("parent")
             }
           }
-        case EndpointCall(_, _)                 => ???
-        case _: DynamicValueOperations          => ???
+        case EndpointCall(endpoint, arg)        => for {
+            input <- evaluateAs[DynamicValue](arg)
+            req = EndpointCompiler.compile(endpoint, input).toHttpRequest
+            array <- ZIO.async[Any, Nothing, Array[Byte]] { cb =>
+              HttpClient.make.request(req)((_, _, body) => cb(ZIO.succeed(body)))
+            }
+            outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
+            any <- ZIO
+              .fromEither(
+                JsonCodec
+                  .jsonDecoder(outputSchema)
+                  .decodeJson(new String(array, StandardCharsets.UTF_8))
+                  .map(outputSchema.toDynamic)
+              )
+              .mapError(EvaluationError.DecodingError)
+          } yield any
+
+        case _: DynamicValueOperations => ???
+
+        case Debug(self, prefix) => evaluate(self).debug(prefix)
       }
   }
 

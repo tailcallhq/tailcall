@@ -16,6 +16,7 @@ final case class Endpoint(
   protocol: Endpoint.Protocol = Endpoint.Protocol.Http,
   body: Option[String] = None
 ) {
+  self =>
   def withMethod(method: Method): Endpoint = copy(method = method)
 
   def withPath(path: Path): Endpoint = copy(path = path)
@@ -36,6 +37,8 @@ final case class Endpoint(
 
   def apply(input: Remote[DynamicValue]): Remote[DynamicValue] = remote(input)
 
+  def apply(input: DynamicValue): Remote[DynamicValue] = self(Remote(input))
+
   def withProtocol(protocol: Endpoint.Protocol): Endpoint = copy(protocol = protocol)
 
   def withHttp: Endpoint = withProtocol(Endpoint.Protocol.Http)
@@ -47,6 +50,9 @@ final case class Endpoint(
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 
   def withBody(body: String): Endpoint = copy(body = Option(body))
+
+  def outputSchema: Schema[_] = output.toSchema
+  def inputSchema: Schema[_]  = input.toSchema
 }
 
 object Endpoint {

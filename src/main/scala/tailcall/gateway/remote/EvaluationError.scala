@@ -20,6 +20,8 @@ object EvaluationError {
 
   final case class Death(message: String) extends EvaluationError
 
+  final case class DecodingError(str: String) extends EvaluationError
+
   def getMessage(self: EvaluationError): String =
     self match {
       case FieldNotFound(name)                    => s"Field not found: $name"
@@ -27,5 +29,7 @@ object EvaluationError {
       case TypeError(value, cause, schema) => s"Type conversion error: $value, $cause, $schema"
       case BindingNotFound(id)             => s"Binding not found: $id"
       case Death(message)                  => s"Died because of: $message"
+      case DecodingError(str)              => s"Decoding error: $str"
     }
+
 }

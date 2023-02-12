@@ -1,5 +1,6 @@
 package tailcall.gateway.http
 
+import io.netty.handler.codec.http._
 import tailcall.gateway.ast.Path.Segment
 import tailcall.gateway.ast.{Endpoint, Mustache, Path}
 import zio.schema.DynamicValue
@@ -10,7 +11,17 @@ object EndpointCompiler {
     method: String = "GET",
     headers: Map[String, String] = Map.empty,
     body: Array[Byte] = Array.empty
-  )
+  ) {
+    def toHttpRequest: FullHttpRequest = {
+      val httpMethod  = HttpMethod.valueOf(method)
+      val httpRequest = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, url)
+
+      headers.foreach { case (key, value) => httpRequest.headers.add(key, value) }
+      if (body.nonEmpty) { httpRequest.content().writeBytes(body) }
+
+      httpRequest
+    }
+  }
 
   def compile(endpoint: Endpoint, input: DynamicValue): Request = {
 
@@ -53,6 +64,7 @@ object EndpointCompiler {
     ).mkString
 
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
+
     Request(method = method, url = url, headers = headers)
   }
 }

@@ -1,7 +1,7 @@
 package tailcall.gateway.http
 
 import io.netty.bootstrap.Bootstrap
-import io.netty.buffer.{ByteBufUtil, Unpooled}
+import io.netty.buffer.ByteBufUtil
 import io.netty.channel._
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
@@ -36,15 +36,16 @@ object HttpClient {
           }
         })
 
-    override def request(req: HttpRequest): AsyncHandler =
+    override def request(request: HttpRequest): AsyncHandler =
       cb => {
-        val url  = new URL(req.uri())
+        val url  = new URL(request.uri())
         val host = url.getHost
         val port = Math.max(url.getPort, 80)
 
         var close: Option[ChannelFuture] = None
 
-        val future = bootstrapConnection(req) { response =>
+        request.headers().set(HttpHeaderNames.HOST, host)
+        val future = bootstrapConnection(request) { response =>
           val status  = response.status().code()
           val body    = ByteBufUtil.getBytes(response.content)
           val headers = response
@@ -65,29 +66,4 @@ object HttpClient {
   type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
 
   def make: HttpClient = new NettyHttpClient()
-
-  def buildRequest(
-    method: String,
-    headers: Map[String, String],
-    body: Option[String],
-    url: URL
-  ): FullHttpRequest = {
-    val request = new DefaultFullHttpRequest(
-      io.netty.handler.codec.http.HttpVersion.HTTP_1_1,
-      io.netty.handler.codec.http.HttpMethod.valueOf(method),
-      url.getPath,
-      body
-        .map(b => io.netty.buffer.Unpooled.wrappedBuffer(b.getBytes))
-        .getOrElse(Unpooled.EMPTY_BUFFER)
-    )
-    request
-      .headers
-      .set(headers.foldLeft[HttpHeaders](new DefaultHttpHeaders())((acc, h) => acc.add(h._1, h._2)))
-
-    val host = url.getHost()
-
-    request.headers().set(HttpHeaderNames.HOST, host)
-
-    request
-  }
 }

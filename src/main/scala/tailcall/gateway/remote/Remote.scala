@@ -41,6 +41,8 @@ sealed trait Remote[+A] {
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
     attempt(DynamicEval.negate(self.compile, tag.any))
+
+  final def debug(message: String): Remote[A] = attempt(DynamicEval.debug(self.compile, message))
 }
 
 object Remote

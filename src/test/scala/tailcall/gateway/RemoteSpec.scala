@@ -1,19 +1,20 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Context
+import tailcall.gateway.OrcSpec.schema.User
+import tailcall.gateway.ast.{Context, Endpoint}
 import tailcall.gateway.internal.RemoteAssertion
 import tailcall.gateway.remote.{EvaluationError, Remote}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
-import zio.test.Assertion.{equalTo, fails, isFalse, isTrue}
+import zio.test.Assertion._
 import zio.test.TestAspect.failing
 import zio.test.{ZIOSpecDefault, assertZIO}
 
 import scala.collection.immutable.ListMap
 
 object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
-  import tailcall.gateway.remote.Numeric._
   import tailcall.gateway.remote.Equatable._
+  import tailcall.gateway.remote.Numeric._
   import tailcall.gateway.remote.Remote._
 
   implicit def seqSchema[A: Schema]: Schema[Seq[A]] =
@@ -341,6 +342,13 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
             assertRemote(program)(equalTo(Option.empty[Map[DynamicValue, DynamicValue]]))
           }
         )
-      ) @@ failing
+      ) @@ failing,
+      suite("endpoint")(test("/users/{{id}}") {
+        val endpoint =
+          Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}").withOutput[User]
+        val program  = Remote.fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
+        val expected = DynamicValue(User(1, "Leanne Graham"))
+        assertRemote(program)(equalTo(expected))
+      })
     )
 }
