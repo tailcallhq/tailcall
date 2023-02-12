@@ -118,6 +118,10 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
             seq <- Remote.fromSeq(Seq(r, r * Remote(2)))
           } yield seq
           assertRemote(program)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
+        },
+        test("groupBy") {
+          val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
+          assertRemote(program)(equalTo(Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))))
         }
       ),
       suite("function")(

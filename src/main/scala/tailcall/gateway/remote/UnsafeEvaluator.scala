@@ -91,12 +91,16 @@ object UnsafeEvaluator {
                 result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
               } yield result
 
-            case SeqOperations.FlatMap(seq, operation) => for {
+            case SeqOperations.FlatMap(seq, operation)   => for {
                 seq    <- evaluateAs[Seq[Any]](seq)
                 result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
               } yield result.flatten
-            case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).map(_.length)
-            case SeqOperations.Sequence(value)         => ZIO.foreach(value)(evaluate)
+            case SeqOperations.Length(seq)               => evaluateAs[Seq[_]](seq).map(_.length)
+            case SeqOperations.Sequence(value)           => ZIO.foreach(value)(evaluate)
+            case SeqOperations.GroupBy(seq, keyFunction) => for {
+                seq <- evaluateAs[Seq[Any]](seq)
+                map <- ZIO.foreach(seq)(any => call[Any](keyFunction, any).map(_ -> any))
+              } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
           }
         case EitherOperations(operation) => operation match {
             case EitherOperations.Cons(value)              => value match {
@@ -128,11 +132,14 @@ object UnsafeEvaluator {
               } yield result
           }
 
-        case Die(message)                       => evaluateAs[String](message)
+        case Die(message)   => evaluateAs[String](message)
             .flatMap(message => ZIO.fail(EvaluationError.Death(message)))
-        case Record(fields)                     => for {
+        case Record(fields) => for {
             f <- ZIO.foreach(fields)(field => evaluateAs[DynamicValue](field._2).map(field._1 -> _))
           } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
+
+        case Batch(_, _) => ???
+
         case ContextOperations(self, operation) => evaluateAs[Map[String, _]](self).map { ctx =>
             operation match {
               case ContextOperations.GetArg(name) =>

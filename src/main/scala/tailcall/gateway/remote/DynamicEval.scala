@@ -87,13 +87,14 @@ object DynamicEval {
   // TODO: Support for other collections
   object SeqOperations {
     sealed trait Operation
-    final case class Concat(left: DynamicEval, right: DynamicEval)      extends Operation
-    final case class Reverse(seq: DynamicEval)                          extends Operation
-    final case class Filter(seq: DynamicEval, condition: EvalFunction)  extends Operation
-    final case class FlatMap(seq: DynamicEval, operation: EvalFunction) extends Operation
-    final case class Length(seq: DynamicEval)                           extends Operation
-    final case class IndexOf(seq: DynamicEval, element: DynamicEval)    extends Operation
-    final case class Sequence(value: Chunk[DynamicEval])                extends Operation
+    final case class Concat(left: DynamicEval, right: DynamicEval)        extends Operation
+    final case class Reverse(seq: DynamicEval)                            extends Operation
+    final case class Filter(seq: DynamicEval, condition: EvalFunction)    extends Operation
+    final case class FlatMap(seq: DynamicEval, operation: EvalFunction)   extends Operation
+    final case class Length(seq: DynamicEval)                             extends Operation
+    final case class IndexOf(seq: DynamicEval, element: DynamicEval)      extends Operation
+    final case class Sequence(value: Chunk[DynamicEval])                  extends Operation
+    final case class GroupBy(seq: DynamicEval, keyFunction: EvalFunction) extends Operation
   }
 
   final case class FunctionCall(f: EvalFunction, arg: DynamicEval) extends DynamicEval
@@ -205,6 +206,9 @@ object DynamicEval {
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
+
+  def groupBy(seq: DynamicEval, keyFunction: EvalFunction): DynamicEval =
+    SeqOperations(SeqOperations.GroupBy(seq, keyFunction))
 
   def foldEither(value: DynamicEval, left: EvalFunction, right: EvalFunction): DynamicEval =
     EitherOperations(EitherOperations.Fold(value, left, right))
