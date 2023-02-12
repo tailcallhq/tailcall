@@ -5,20 +5,33 @@ import zio.Chunk
 import zio.parser.Syntax
 import zio.schema.DynamicValue
 
-final case class Placeholder(path: Chunk[String]) {
+sealed trait Placeholder {
   self =>
-  def evaluate(dv: DynamicValue): Option[DynamicValue] = Placeholder.evaluate(dv, self)
+  final def evaluate(input: DynamicValue): Option[DynamicValue] = Placeholder.evaluate(input, self)
+  final def evaluateAsString(input: DynamicValue): Option[String] =
+    evaluate(input).flatMap(_.asPrimitive).map(_.value.toString())
 }
 
 object Placeholder {
-  lazy val path = Syntax
+  final case class Cons(path: Chunk[String]) extends Placeholder
+  final case class Literal(value: String)    extends Placeholder
+
+  def apply(path: String*): Placeholder   = Cons(Chunk.fromIterable(path))
+  def literal(value: String): Placeholder = Literal(value)
+
+  lazy val consSyntax: Syntax[String, Char, Char, Cons] = Syntax.string("${", ()) ~ Syntax
     .alphaNumeric
     .repeat
     .transform[String](_.asString, Chunk.fromIterable(_))
     .repeatWithSep(Syntax.char('.'))
-    .transform[Placeholder](Placeholder(_), _.path)
+    .transform[Placeholder.Cons](Placeholder.Cons(_), _.path) ~ Syntax.char('}')
 
-  lazy val syntax = Syntax.string("${", ()) ~ path ~ Syntax.char('}')
+  lazy val literalSyntax: Syntax[Nothing, Char, Char, Literal] = Syntax
+    .anyString
+    .transform[Literal](Literal(_), _.value)
+
+  lazy val syntax: Syntax[String, Char, Char, Placeholder] = consSyntax
+    .widen[Placeholder] | literalSyntax.widen[Placeholder]
 
   def decode(string: String): Either[String, Placeholder] =
     syntax.parseString(string) match {
@@ -29,5 +42,24 @@ object Placeholder {
   def encode(placeholder: Placeholder): Either[String, String] =
     syntax.asPrinter.printString(placeholder)
 
-  def evaluate(dv: DynamicValue, ph: Placeholder): Option[DynamicValue] = dv.getPath(ph.path.toList)
+  def evaluate(dv: DynamicValue, ph: Placeholder): Option[DynamicValue] =
+    ph match {
+      case Cons(path) => dv.getPath(path.toList)
+      case Literal(_) => None
+    }
+
+  def evaluateOrReturn(string: String, input: DynamicValue): Either[String, DynamicValue] =
+    decode(string) match {
+      case Left(_)      => Left(string)
+      case Right(value) => evaluate(input, value) match {
+          case None        => Left(string)
+          case Some(value) => Right(value)
+        }
+    }
+
+  def evaluateOrReturnString(string: String, input: DynamicValue): String =
+    evaluateOrReturn(string, input) match {
+      case Left(value)  => value
+      case Right(value) => value.asPrimitive.fold(string)(_.value.toString())
+    }
 }

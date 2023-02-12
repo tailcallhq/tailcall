@@ -1,7 +1,6 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Placeholder
-import zio.Chunk
 import zio.test.Assertion._
 import zio.test._
 
@@ -9,9 +8,10 @@ object PlaceholderSpec extends ZIOSpecDefault {
   def spec =
     suite("PlaceholderSpec")(test("syntax") {
       val input = List(
-        "${a}"     -> Placeholder(Chunk("a")),
-        "${a.b}"   -> Placeholder(Chunk("a", "b")),
-        "${a.b.c}" -> Placeholder(Chunk("a", "b", "c"))
+        "${a}"     -> Placeholder("a"),
+        "${a.b}"   -> Placeholder("a", "b"),
+        "${a.b.c}" -> Placeholder("a", "b", "c"),
+        "a"        -> Placeholder.literal("a")
       )
 
       checkAll(Gen.fromIterable(input)) { case (input, expected) =>

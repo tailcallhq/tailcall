@@ -16,7 +16,7 @@ object Path {
     final case class Literal(value: String)    extends Segment
     final case class Param(value: Placeholder) extends Segment
     object Param {
-      def apply(value: String): Param = Param(Placeholder(Chunk.single(value)))
+      def apply(value: String): Param = Param(Placeholder(value))
     }
   }
 

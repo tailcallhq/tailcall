@@ -37,7 +37,7 @@ object TestGen {
     )
 
   def genPlaceholder: Gen[Any, Placeholder] =
-    for { name <- Gen.chunkOf(genName) } yield Placeholder(name)
+    for { name <- Gen.chunkOf(genName) } yield Placeholder(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
     Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
