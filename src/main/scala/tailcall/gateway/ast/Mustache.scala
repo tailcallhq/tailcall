@@ -8,7 +8,11 @@ import zio.schema.DynamicValue
 /**
  * Custom implementation of mustache syntax
  */
-final case class Mustache(path: Chunk[String])
+final case class Mustache(path: Chunk[String]) {
+  self =>
+  def evaluate(input: DynamicValue): Option[String] =
+    input.getPath(self.path.toList).flatMap(_.asString)
+}
 
 object Mustache {
   def apply(path: String*): Mustache = Mustache(Chunk.fromIterable(path))
@@ -23,7 +27,6 @@ object Mustache {
   def evaluate(string: String, input: DynamicValue): String =
     syntax.parseString(string) match {
       case Left(_)         => string
-      case Right(mustache) =>
-        input.getPath(mustache.path.toList).flatMap(_.asString).getOrElse(string)
+      case Right(mustache) => mustache.evaluate(input).getOrElse(string)
     }
 }
