@@ -13,17 +13,17 @@ final case class Path(segments: List[Path.Segment]) {
 object Path {
   sealed trait Segment
   object Segment {
-    final case class Literal(value: String)    extends Segment
-    final case class Param(value: Placeholder) extends Segment
+    final case class Literal(value: String) extends Segment
+    final case class Param(value: Mustache) extends Segment
     object Param {
-      def apply(value: String): Param = Param(Placeholder(value))
+      def apply(value: String): Param = Param(Mustache(value))
     }
   }
 
   object syntax {
     val segment = Syntax.alphaNumeric.repeat.transform[String](_.asString, Chunk.fromIterable(_))
 
-    val param = Placeholder.syntax.transform[Segment.Param](Segment.Param(_), _.value)
+    val param = Mustache.syntax.transform[Segment.Param](Segment.Param(_), _.value)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal, _.value)
 

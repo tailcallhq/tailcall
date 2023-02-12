@@ -36,8 +36,8 @@ object TestGen {
       Gen.const(Method.DELETE)
     )
 
-  def genPlaceholder: Gen[Any, Placeholder] =
-    for { name <- Gen.chunkOf(genName) } yield Placeholder(name: _*)
+  def genPlaceholder: Gen[Any, Mustache] =
+    for { name <- Gen.chunkOf(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
     Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
