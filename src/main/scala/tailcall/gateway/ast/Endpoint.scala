@@ -11,6 +11,7 @@ final case class Endpoint(
   address: Endpoint.InetAddress,
   input: TSchema = TSchema.unit,
   output: TSchema = TSchema.unit,
+  headers: Chunk[(String, String)] = Chunk.empty,
   protocol: Endpoint.Protocol = Endpoint.Protocol.Http
 ) {
   def withMethod(method: Method): Endpoint = copy(method = method)
@@ -40,6 +41,8 @@ final case class Endpoint(
   def withHttps: Endpoint = withProtocol(Endpoint.Protocol.Https)
 
   def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
+
+  def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 }
 
 object Endpoint {

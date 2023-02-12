@@ -4,8 +4,6 @@ import tailcall.gateway.ast.{Endpoint, Path}
 import tailcall.gateway.internal.DynamicValueExtension._
 import zio.schema.DynamicValue
 
-import scala.annotation.unused
-
 object EndpointCompiler {
   final case class Request(
     url: String = "",
@@ -14,11 +12,7 @@ object EndpointCompiler {
     body: Array[Byte] = Array.empty
   )
 
-  def compile(
-    endpoint: Endpoint,
-    @unused
-    input: DynamicValue
-  ): Request = {
+  def compile(endpoint: Endpoint, input: DynamicValue): Request = {
 
     val method = endpoint.method.name
 
@@ -55,6 +49,8 @@ object EndpointCompiler {
       pathString,
       queryString
     ).mkString
-    Request(method = method, url = url)
+
+    val headers = endpoint.headers.map { case (k, v) => k -> v }.toMap
+    Request(method = method, url = url, headers = headers)
   }
 }
