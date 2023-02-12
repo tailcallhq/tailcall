@@ -1,10 +1,10 @@
 package tailcall.gateway.http
 
-import tailcall.gateway.ast.Endpoint
-import zio.schema.DynamicValue
-import tailcall.gateway.ast.Path
-import scala.annotation.unused
+import tailcall.gateway.ast.{Endpoint, Path}
 import tailcall.gateway.internal.DynamicValueExtension._
+import zio.schema.DynamicValue
+
+import scala.annotation.unused
 
 object EndpointCompiler {
   final case class Request(

@@ -1,10 +1,9 @@
 package tailcall.gateway
 
-import zio.test._
-import tailcall.gateway.ast.Endpoint
-import tailcall.gateway.ast.Method
-import zio.schema.DynamicValue
+import tailcall.gateway.ast.{Endpoint, Method}
 import tailcall.gateway.http.EndpointCompiler
+import zio.schema.DynamicValue
+import zio.test._
 
 object EndpointCompilerSpec extends ZIOSpecDefault {
   def spec =

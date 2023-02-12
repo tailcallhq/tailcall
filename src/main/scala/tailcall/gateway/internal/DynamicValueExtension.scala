@@ -1,7 +1,6 @@
 package tailcall.gateway.internal
 
-import zio.schema.DynamicValue
-import zio.schema.StandardType
+import zio.schema.{DynamicValue, StandardType}
 
 object DynamicValueExtension {
   implicit final class DynamicValueExtension(dv: DynamicValue) {

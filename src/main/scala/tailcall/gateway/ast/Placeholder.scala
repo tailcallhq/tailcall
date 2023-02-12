@@ -1,10 +1,9 @@
 package tailcall.gateway.ast
 
+import tailcall.gateway.internal.DynamicValueExtension._
 import zio.Chunk
 import zio.parser.Syntax
 import zio.schema.DynamicValue
-
-import tailcall.gateway.internal.DynamicValueExtension._
 
 final case class Placeholder(path: Chunk[String]) {
   self =>
