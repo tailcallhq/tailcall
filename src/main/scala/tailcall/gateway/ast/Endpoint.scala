@@ -2,17 +2,19 @@ package tailcall.gateway.ast
 
 import tailcall.gateway.remote.Remote
 import zio.Chunk
-import zio.schema.DynamicValue
+import zio.schema.meta.MetaSchema
+import zio.schema.{DynamicValue, Schema}
 
 final case class Endpoint(
   method: Method = Method.GET,
   path: Path = Path.empty,
   query: Chunk[(String, String)] = Chunk.empty,
   address: Endpoint.InetAddress,
-  input: TSchema = TSchema.unit,
-  output: TSchema = TSchema.unit,
+  input: MetaSchema = Schema[Unit].ast,
+  output: MetaSchema = Schema[Unit].ast,
   headers: Chunk[(String, String)] = Chunk.empty,
-  protocol: Endpoint.Protocol = Endpoint.Protocol.Http
+  protocol: Endpoint.Protocol = Endpoint.Protocol.Http,
+  body: Option[String] = None
 ) {
   def withMethod(method: Method): Endpoint = copy(method = method)
 
@@ -26,9 +28,9 @@ final case class Endpoint(
 
   def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
 
-  def withInput(input: TSchema): Endpoint = copy(input = input)
+  def withInput[A](implicit schema: Schema[A]): Endpoint = copy(input = schema.ast)
 
-  def withOutput(output: TSchema): Endpoint = copy(output = output)
+  def withOutput[A](implicit schema: Schema[A]): Endpoint = copy(output = schema.ast)
 
   def remote: Remote[DynamicValue => DynamicValue] = Remote.fromEndpoint(this)
 
@@ -43,6 +45,8 @@ final case class Endpoint(
   def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
+
+  def withBody(body: String): Endpoint = copy(body = Option(body))
 }
 
 object Endpoint {
