@@ -1,14 +1,13 @@
 package tailcall.gateway.internal
 
-import zio.schema.{DynamicValue, StandardType}
+import zio.schema.DynamicValue
 
 object DynamicValueExtension {
   implicit final class DynamicValueExtension(dv: DynamicValue) {
     def asString: Option[String] =
       dv match {
-        case DynamicValue.Primitive(value, tag) if tag == StandardType.StringType =>
-          Some(value.asInstanceOf[String])
-        case _                                                                    => None
+        case DynamicValue.Primitive(value, _) => Some(value.toString)
+        case _                                => None
       }
 
     def asPrimitive: Option[DynamicValue.Primitive[_]] =
