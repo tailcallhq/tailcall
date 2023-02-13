@@ -247,6 +247,8 @@ object DynamicEval {
   def option(value: Option[DynamicEval]): DynamicEval =
     OptionOperations(OptionOperations.Cons(value))
 
+  def none: DynamicEval = OptionOperations(OptionOperations.Cons(None))
+
   def endpoint(endpoint: Endpoint, input: DynamicEval): DynamicEval = EndpointCall(endpoint, input)
 
   def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))

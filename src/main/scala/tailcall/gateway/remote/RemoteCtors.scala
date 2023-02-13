@@ -30,6 +30,8 @@ trait RemoteCtors {
   def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] =
     Remote.unsafe.attempt(DynamicEval.option(a.map(_.compile)))
 
+  def none[B]: Remote[Option[B]] = Remote.unsafe.attempt(DynamicEval.none)
+
   def fromEndpoint(endpoint: Endpoint): Remote[DynamicValue => DynamicValue] =
     Remote.fromFunction[DynamicValue, DynamicValue](input =>
       Remote.unsafe.attempt(DynamicEval.endpoint(endpoint, input.compile))
