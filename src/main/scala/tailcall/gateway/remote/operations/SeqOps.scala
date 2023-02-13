@@ -27,6 +27,13 @@ trait SeqOps {
     final def indexOf(other: Remote[A]): Remote[Int] =
       Remote.unsafe.attempt(DynamicEval.indexOf(self.compile, other.compile))
 
+    final def take(n: Int): Remote[Seq[A]] = slice(0, n)
+
+    final def slice(from: Int, until: Int): Remote[Seq[A]] =
+      Remote.unsafe.attempt(DynamicEval.slice(self.compile, from, until))
+
+    final def head: Remote[Option[A]] = Remote.unsafe.attempt(DynamicEval.head(self.compile))
+
     final def groupBy[B](f: Remote[A] => Remote[B]): Remote[Seq[(B, Seq[A])]] =
       Remote
         .unsafe

@@ -67,14 +67,9 @@ trait RemoteCtors {
     ab: Remote[A] => Remote[B],
     ba: Remote[B] => Remote[A],
     cb: Remote[C] => Remote[B]
-  ): Remote[Seq[(A, Seq[C])]] = {
-    val seqb                                  = from.map(ab(_))
-    val seqc                                  = to(seqb)
-    val secbc: Remote[Seq[(B, C)]]            = seqc.map(c => fromTuple((cb(c), c)))
-    val seqaac: Remote[Seq[(A, Seq[(A, C)])]] = secbc
-      .map(bc => fromTuple((ba(bc._1), bc._2)))
+  ) =
+    to(from.map(ab(_)))
+      .map(c => fromTuple((cb(c), c)))
       .groupBy(_._1)
-    val seqac: Remote[Seq[(A, Seq[C])]] = seqaac.map(aac => fromTuple((aac._1, aac._2.map(_._2))))
-    seqac
-  }
+      .map(x => fromTuple((ba(x._1), x._2.head.map(_._2))))
 }

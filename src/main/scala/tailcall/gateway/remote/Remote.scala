@@ -21,6 +21,9 @@ sealed trait Remote[+A] {
   final def =:=[A1 >: A](other: Remote[A1])(implicit tag: Equatable[A1]): Remote[Boolean] =
     attempt(DynamicEval.equal(self.compile, other.compile, tag.any))
 
+  final def >[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[Boolean] =
+    attempt(DynamicEval.greaterThan(self.compile, other.compile, tag.any))
+
   final def increment[A1 >: A](implicit tag: Numeric[A1], schema: Schema[A1]) =
     self + Remote(tag.one)
 

@@ -42,6 +42,10 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         test("modulo") {
           val program = Remote(7) % Remote(3)
           assertRemote(program)(equalTo(1))
+        },
+        test("greater than") {
+          val program = Remote(2) > Remote(1)
+          assertRemote(program)(isTrue)
         }
       ),
       suite("logical")(
@@ -123,6 +127,14 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
           assertRemote(program)(equalTo(Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)))
+        },
+        test("slice") {
+          val program = Remote(Seq(1, 2, 3, 4)).slice(1, 3)
+          assertRemote(program)(equalTo(Seq(2, 3)))
+        },
+        test("take") {
+          val program = Remote(Seq(1, 2, 3, 4)).take(2)
+          assertRemote(program)(equalTo(Seq(1, 2)))
         }
       ),
       suite("function")(
@@ -367,6 +379,24 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           val program = Remote.fromTuple((Remote(1), Remote(2), Remote(3)))
           assertRemote(program)(equalTo((1, 2, 3)))
         }
-      )
+      ),
+      suite("batch")(test("option") {
+        val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+        val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
+        val program = Remote.batch(
+          from,
+          to,
+          (x: Remote[(Int, String)]) => x._1,
+          (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
+          (y: Remote[(Int, String)]) => y._1
+        )
+
+        val expected = List(
+          ((1, "john"), Some(1, "london")),
+          ((2, "richard"), Some(2, "paris")),
+          ((3, "paul"), Some(3, "new york"))
+        )
+        assertRemote(program)(equalTo(expected))
+      })
     )
 }

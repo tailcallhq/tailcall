@@ -49,10 +49,11 @@ object UnsafeEvaluator {
                 leftValue  <- evaluate(left)
                 rightValue <- evaluate(right)
               } yield operation match {
-                case Math.Binary.Add      => tag.add(leftValue, rightValue)
-                case Math.Binary.Multiply => tag.multiply(leftValue, rightValue)
-                case Math.Binary.Divide   => tag.divide(leftValue, rightValue)
-                case Math.Binary.Modulo   => tag.modulo(leftValue, rightValue)
+                case Math.Binary.Add         => tag.add(leftValue, rightValue)
+                case Math.Binary.Multiply    => tag.multiply(leftValue, rightValue)
+                case Math.Binary.Divide      => tag.divide(leftValue, rightValue)
+                case Math.Binary.Modulo      => tag.modulo(leftValue, rightValue)
+                case Math.Binary.GreaterThan => tag.greaterThan(leftValue, rightValue)
               }
             case Math.Unary(value, operation)        => evaluate(value)
                 .map(evaluate => operation match { case Math.Unary.Negate => tag.negate(evaluate) })
@@ -95,12 +96,17 @@ object UnsafeEvaluator {
                 result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
               } yield result
 
-            case SeqOperations.FlatMap(seq, operation)   => for {
+            case SeqOperations.FlatMap(seq, operation) => for {
                 seq    <- evaluateAs[Seq[Any]](seq)
                 result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
               } yield result.flatten
-            case SeqOperations.Length(seq)               => evaluateAs[Seq[_]](seq).map(_.length)
-            case SeqOperations.Sequence(value)           => ZIO.foreach(value)(evaluate)
+            case SeqOperations.Length(seq)             => evaluateAs[Seq[_]](seq).map(_.length)
+            case SeqOperations.Slice(seq, from, to)    => for {
+                seq    <- evaluateAs[Seq[_]](seq)
+                result <- ZIO.succeed(seq.slice(from, to))
+              } yield result
+            case SeqOperations.Head(seq)               => evaluateAs[Seq[_]](seq).map(_.headOption)
+            case SeqOperations.Sequence(value)         => ZIO.foreach(value)(evaluate)
             case SeqOperations.GroupBy(seq, keyFunction) => for {
                 seq <- evaluateAs[Seq[Any]](seq)
                 map <- ZIO.foreach(seq)(any => call[Any](keyFunction, any).map(_ -> any))

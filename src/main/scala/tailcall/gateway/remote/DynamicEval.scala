@@ -24,10 +24,11 @@ object DynamicEval {
         extends Operation
     object Binary {
       sealed trait Operation
-      case object Add      extends Operation
-      case object Multiply extends Operation
-      case object Divide   extends Operation
-      case object Modulo   extends Operation
+      case object Add         extends Operation
+      case object Multiply    extends Operation
+      case object Divide      extends Operation
+      case object Modulo      extends Operation
+      case object GreaterThan extends Operation
     }
 
     final case class Unary(value: DynamicEval, operation: Unary.Operation) extends Operation
@@ -99,6 +100,8 @@ object DynamicEval {
     final case class FlatMap(seq: DynamicEval, operation: EvalFunction)   extends Operation
     final case class Length(seq: DynamicEval)                             extends Operation
     final case class IndexOf(seq: DynamicEval, element: DynamicEval)      extends Operation
+    final case class Slice(seq: DynamicEval, from: Int, to: Int)          extends Operation
+    final case class Head(seq: DynamicEval)                               extends Operation
     final case class Sequence(value: Chunk[DynamicEval])                  extends Operation
     final case class GroupBy(seq: DynamicEval, keyFunction: EvalFunction) extends Operation
   }
@@ -144,8 +147,6 @@ object DynamicEval {
 
   final case class Die(message: DynamicEval) extends DynamicEval
 
-  final case class Batch(eval: DynamicEval, groupbyKey: List[String]) extends DynamicEval
-
   final case class DynamicValueOperations(
     value: DynamicEval,
     operation: DynamicValueOperations.Operation
@@ -178,6 +179,9 @@ object DynamicEval {
 
   def modulo(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Modulo, tag)
+
+  def greaterThan(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
+    Math(left, right, Math.Binary.GreaterThan, tag)
 
   def negate(value: DynamicEval, tag: Numeric[Any]): Math = Math(value, Math.Unary.Negate, tag)
 
@@ -214,6 +218,13 @@ object DynamicEval {
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
+
+  def take(seq: DynamicEval, n: Int): DynamicEval = slice(seq, 0, n)
+
+  def slice(seq: DynamicEval, from: Int, to: Int): DynamicEval =
+    SeqOperations(SeqOperations.Slice(seq, from, to))
+
+  def head(seq: DynamicEval): DynamicEval = SeqOperations(SeqOperations.Head(seq))
 
   def groupBy(seq: DynamicEval, keyFunction: EvalFunction): DynamicEval =
     SeqOperations(SeqOperations.GroupBy(seq, keyFunction))
@@ -254,8 +265,6 @@ object DynamicEval {
   def record(fields: Seq[(String, DynamicEval)]): DynamicEval = Record(Chunk.fromIterable(fields))
 
   def die(message: DynamicEval): DynamicEval = Die(message)
-
-  def batch(value: DynamicEval, groupByKey: List[String]): DynamicEval = Batch(value, groupByKey)
 
   def dynamicValuePath(value: DynamicEval, path: Chunk[String]): DynamicEval =
     DynamicValueOperations(value, DynamicValueOperations.Path(path))
