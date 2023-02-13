@@ -144,11 +144,12 @@ object UnsafeEvaluator {
 
         case TupleOperations(operations) => operations match {
             case TupleOperations.Cons(values)       => for {
-              any <- ZIO.foreach(values)(evaluate)
-            } yield ChunkUtil.toTuple(any) match {
-              case null => ZIO.fail(EvaluationError.InvalidTupleSize(any.length))
-              case product => ZIO.succeed(product)
-            }
+                any <- ZIO.foreach(values)(evaluate)
+                tup <- ChunkUtil.toTuple(any) match {
+                  case null    => ZIO.fail(EvaluationError.InvalidTupleSize(any.length))
+                  case product => ZIO.succeed(product)
+                }
+              } yield tup
             case TupleOperations.GetIndex(value, i) =>
               for { f <- evaluateAs[Tuple2[Any, Any]](value) } yield f.productIterator.toSeq(i)
           }
