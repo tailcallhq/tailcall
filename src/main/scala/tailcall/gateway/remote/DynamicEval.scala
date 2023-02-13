@@ -84,9 +84,7 @@ object DynamicEval {
   object TupleOperations  {
     sealed trait Operation
     final case class GetIndex(value: DynamicEval, index: Int) extends Operation
-
     final case class Cons(value: Chunk[DynamicEval]) extends Operation
-
   }
 
   final case class SeqOperations(operation: SeqOperations.Operation) extends DynamicEval
