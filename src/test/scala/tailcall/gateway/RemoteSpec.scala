@@ -352,13 +352,21 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       }),
       suite("tuple")(
         test("_1") {
-          val program: Remote[Int] = Remote(Tuple2(1, 2))._1
+          val program = Remote((1, 2))._1
           assertRemote(program)(equalTo(1))
         },
         test("_2") {
-          val program: Remote[Int] = Remote(Tuple2(1, 2))._2
+          val program = Remote((1, 2))._2
           assertRemote(program)(equalTo(2))
-        }
+        },
+        test("fromTuple 2") {
+          val program = Remote.fromTuple((Remote(1), Remote(2)))
+          assertRemote(program)(equalTo((1, 2)))
+        },
+        test("fromTuple 3") {
+          val program = Remote.fromTuple((Remote(1), Remote(2), Remote(3)))
+          assertRemote(program)(equalTo((1, 2, 3)))
+        },
       )
     )
 }

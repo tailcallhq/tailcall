@@ -46,13 +46,13 @@ trait RemoteCtors {
 
   def die(msg: String): Remote[Nothing] = die(Remote(msg))
 
-  def tuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
+  def fromTuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
     Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile)))
 
-  def tuple[A1, A2, A3](t: (Remote[A1], Remote[A2], Remote[A3])): Remote[(A1, A2, A3)] =
+  def fromTuple[A1, A2, A3](t: (Remote[A1], Remote[A2], Remote[A3])): Remote[(A1, A2, A3)] =
     Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile, t._3.compile)))
 
-  def tuple[A1, A2, A3, A4](
+  def fromTuple[A1, A2, A3, A4](
     t: (Remote[A1], Remote[A2], Remote[A3], Remote[A4])
   ): Remote[(A1, A2, A3, A4)] =
     Remote
@@ -68,11 +68,11 @@ trait RemoteCtors {
   ): Remote[Seq[(A, Seq[C])]] = {
     val seqb                                  = from.map(ab(_))
     val seqc                                  = to(seqb)
-    val secbc: Remote[Seq[(B, C)]]            = seqc.map(c => tuple((cb(c), c)))
+    val secbc: Remote[Seq[(B, C)]]            = seqc.map(c => fromTuple((cb(c), c)))
     val seqaac: Remote[Seq[(A, Seq[(A, C)])]] = secbc
-      .map(bc => tuple((ba(bc._1), bc._2)))
+      .map(bc => fromTuple((ba(bc._1), bc._2)))
       .groupBy(_._1)
-    val seqac: Remote[Seq[(A, Seq[C])]]       = seqaac.map(aac => tuple((aac._1, aac._2.map(_._2))))
+    val seqac: Remote[Seq[(A, Seq[C])]] = seqaac.map(aac => fromTuple((aac._1, aac._2.map(_._2))))
     seqac
   }
 }

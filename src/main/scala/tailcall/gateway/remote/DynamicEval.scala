@@ -84,7 +84,7 @@ object DynamicEval {
   object TupleOperations  {
     sealed trait Operation
     final case class GetIndex(value: DynamicEval, index: Int) extends Operation
-    final case class Cons(value: Chunk[DynamicEval]) extends Operation
+    final case class Cons(value: Chunk[DynamicEval])          extends Operation
   }
 
   final case class SeqOperations(operation: SeqOperations.Operation) extends DynamicEval
@@ -287,7 +287,7 @@ object DynamicEval {
   def tuple(value: Chunk[DynamicEval]): DynamicEval =
     DynamicEval.TupleOperations(TupleOperations.Cons(value))
 
-  def getIndex(seq: DynamicEval, index: Int): DynamicEval =
+  def tupleIndex(seq: DynamicEval, index: Int): DynamicEval =
     TupleOperations(TupleOperations.GetIndex(seq, index))
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
