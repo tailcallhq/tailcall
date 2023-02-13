@@ -1,6 +1,7 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.ast.Endpoint
+import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
 trait RemoteCtors {
@@ -45,6 +46,33 @@ trait RemoteCtors {
 
   def die(msg: String): Remote[Nothing] = die(Remote(msg))
 
-  def batch(remote: Remote[DynamicValue], groupByKey: List[String]): Remote[DynamicValue] =
-    Remote.unsafe.attempt(DynamicEval.batch(remote.compile, groupByKey))
+  def tuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
+    Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile)))
+
+  def tuple[A1, A2, A3](t: (Remote[A1], Remote[A2], Remote[A3])): Remote[(A1, A2, A3)] =
+    Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile, t._3.compile)))
+
+  def tuple[A1, A2, A3, A4](
+    t: (Remote[A1], Remote[A2], Remote[A3], Remote[A4])
+  ): Remote[(A1, A2, A3, A4)] =
+    Remote
+      .unsafe
+      .attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile, t._3.compile, t._4.compile)))
+
+  def batch[A, B, C](
+    from: Remote[Seq[A]],
+    to: Remote[Seq[B]] => Remote[Seq[C]],
+    ab: Remote[A] => Remote[B],
+    ba: Remote[B] => Remote[A],
+    cb: Remote[C] => Remote[B]
+  ): Remote[Seq[(A, Seq[C])]] = {
+    val seqb                                  = from.map(ab(_))
+    val seqc                                  = to(seqb)
+    val secbc: Remote[Seq[(B, C)]]            = seqc.map(c => tuple((cb(c), c)))
+    val seqaac: Remote[Seq[(A, Seq[(A, C)])]] = secbc
+      .map(bc => tuple((ba(bc._1), bc._2)))
+      .groupBy(_._1)
+    val seqac: Remote[Seq[(A, Seq[C])]]       = seqaac.map(aac => tuple((aac._1, aac._2.map(_._2))))
+    seqac
+  }
 }

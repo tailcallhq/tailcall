@@ -122,7 +122,7 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         },
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
-          assertRemote(program)(equalTo(Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))))
+          assertRemote(program)(equalTo(Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)))
         }
       ),
       suite("function")(
@@ -349,6 +349,16 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         val program  = Remote.fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
         val expected = DynamicValue(User(1, "Leanne Graham"))
         assertRemote(program)(equalTo(expected))
-      })
+      }),
+      suite("tuple")(
+        test("_1") {
+          val program: Remote[Int] = Remote(Tuple2(1, 2))._1
+          assertRemote(program)(equalTo(1))
+        },
+        test("_2") {
+          val program: Remote[Int] = Remote(Tuple2(1, 2))._2
+          assertRemote(program)(equalTo(2))
+        }
+      )
     )
 }

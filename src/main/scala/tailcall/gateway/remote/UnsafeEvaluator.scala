@@ -103,7 +103,7 @@ object UnsafeEvaluator {
             case SeqOperations.GroupBy(seq, keyFunction) => for {
                 seq <- evaluateAs[Seq[Any]](seq)
                 map <- ZIO.foreach(seq)(any => call[Any](keyFunction, any).map(_ -> any))
-              } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
+              } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }.toSeq
           }
         case EitherOperations(operation) => operation match {
             case EitherOperations.Cons(value)              => value match {
@@ -141,7 +141,11 @@ object UnsafeEvaluator {
             f <- ZIO.foreach(fields)(field => evaluateAs[DynamicValue](field._2).map(field._1 -> _))
           } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
 
-        case Batch(_, _) => ???
+        case TupleOperations(operations) => operations match {
+            case TupleOperations.Cons(values) => for { f <- ZIO.foreach(values)(evaluate) } yield f
+            case TupleOperations.GetIndex(value, i) =>
+              for { f <- evaluateAs[Tuple2[Any, Any]](value) } yield f.productIterator.toSeq(i)
+          }
 
         case ContextOperations(self, operation) => evaluateAs[Map[String, _]](self).map { ctx =>
             operation match {

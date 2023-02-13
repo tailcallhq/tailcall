@@ -106,25 +106,25 @@ object OrcSpec extends ZIOSpecDefault {
       "posts" -> (_ => endpoints.posts(unit))
     ),
     "User"  -> List(
-      "posts" -> { context => endpoints.userPosts(Remote.record("userId" -> context.value)) },
-      "manyUsersPosts" -> { context =>
+      "posts"    -> { context => endpoints.userPosts(Remote.record("userId" -> context.value)) },
+      /*"manyUsersPosts" -> { context =>
         Remote.batch(
           endpoints.ManyUsersPosts(Remote.record("userId" -> context.value.path("id").getOrDie)),
           List("userId")
         )
-      },
-      "fullName"       -> { context =>
+      },*/
+      "fullName" -> { context =>
         val fn = context.value.path("firstName").flatMap(_.asString).getOrDie
         val ln = context.value.path("lastName").flatMap(_.asString).getOrDie
         Remote.dynamicValue(fn ++ Remote(" ") ++ ln)
       },
-      "comments"       -> { context =>
+      "comments" -> { context =>
         endpoints.userComments(Remote.record("email" -> context.value.path("email").getOrDie))
       },
-      "albums"         -> { context =>
+      "albums"   -> { context =>
         endpoints.userAlbums(Remote.record("userId" -> context.value.path("id").getOrDie))
       },
-      "todos"          -> { context =>
+      "todos"    -> { context =>
         endpoints.UserTodos(Remote.record("userId" -> context.value.path("id").getOrDie))
       }
     ),
