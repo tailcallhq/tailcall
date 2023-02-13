@@ -22,6 +22,8 @@ object EvaluationError {
 
   final case class DecodingError(str: String) extends EvaluationError
 
+  final case class InvalidTupleSize(length: Int) extends EvaluationError
+
   def getMessage(self: EvaluationError): String =
     self match {
       case FieldNotFound(name)                    => s"Field not found: $name"
@@ -30,6 +32,7 @@ object EvaluationError {
       case BindingNotFound(id)             => s"Binding not found: $id"
       case Death(message)                  => s"Died because of: $message"
       case DecodingError(str)              => s"Decoding error: $str"
+      case InvalidTupleSize(length)        => s"Invalid tuple size: $length"
     }
 
 }

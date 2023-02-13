@@ -1,6 +1,7 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.http.{EndpointCompiler, HttpClient}
+import tailcall.gateway.internal.ChunkUtil
 import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import zio.{Ref, Task, UIO, ZIO}
@@ -142,7 +143,12 @@ object UnsafeEvaluator {
           } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
 
         case TupleOperations(operations) => operations match {
-            case TupleOperations.Cons(values) => for { f <- ZIO.foreach(values)(evaluate) } yield f
+            case TupleOperations.Cons(values)       => for {
+              any <- ZIO.foreach(values)(evaluate)
+            } yield ChunkUtil.toTuple(any) match {
+              case null => ZIO.fail(EvaluationError.InvalidTupleSize(any.length))
+              case product => ZIO.succeed(product)
+            }
             case TupleOperations.GetIndex(value, i) =>
               for { f <- evaluateAs[Tuple2[Any, Any]](value) } yield f.productIterator.toSeq(i)
           }
@@ -160,9 +166,9 @@ object UnsafeEvaluator {
         case EndpointCall(endpoint, arg)        => for {
             input <- evaluateAs[DynamicValue](arg)
             req = EndpointCompiler.compile(endpoint, input).toHttpRequest
-            array <- ZIO.async[Any, Nothing, Array[Byte]] { cb =>
+            array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
               HttpClient.make.request(req)((_, _, body) => cb(ZIO.succeed(body)))
-            }
+            )
             outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
             any <- ZIO
               .fromEither(
