@@ -151,7 +151,7 @@ object UnsafeEvaluator {
                 }
               } yield tup
             case TupleOperations.GetIndex(value, i) =>
-              for { f <- evaluateAs[Tuple2[Any, Any]](value) } yield f.productIterator.toSeq(i)
+              for { f <- evaluateAs[Product](value) } yield f.productIterator.toSeq(i)
           }
 
         case ContextOperations(self, operation) => evaluateAs[Map[String, _]](self).map { ctx =>
