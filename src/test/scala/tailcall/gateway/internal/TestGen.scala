@@ -3,6 +3,7 @@ package tailcall.gateway.internal
 import tailcall.gateway.ast._
 import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.dsl.json.Config._
+import tailcall.gateway.http.Method
 import zio.test.Gen
 
 object TestGen {

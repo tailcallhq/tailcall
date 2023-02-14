@@ -1,6 +1,6 @@
 package tailcall.gateway.remote
 
-import tailcall.gateway.http.{EndpointCompiler, HttpClient}
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.ChunkUtil
 import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
@@ -172,7 +172,7 @@ object UnsafeEvaluator {
           }
         case EndpointCall(endpoint, arg)        => for {
             input <- evaluateAs[DynamicValue](arg)
-            req = EndpointCompiler.compile(endpoint, input).toHttpRequest
+            req = endpoint.evaluate(input).toHttpRequest
             array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
               HttpClient.make.request(req)((_, _, body) => cb(ZIO.succeed(body)))
             )

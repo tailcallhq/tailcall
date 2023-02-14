@@ -1,6 +1,7 @@
 package tailcall.gateway.dsl.json
 
 import tailcall.gateway.ast._
+import tailcall.gateway.http.Method
 import zio.json._
 
 import Config.Operation.Transform

@@ -1,17 +1,17 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.{Endpoint, Method}
-import tailcall.gateway.http.EndpointCompiler
+import tailcall.gateway.ast.Endpoint
+import tailcall.gateway.http.Method
 import zio.schema.DynamicValue
 import zio.test._
 
-object EndpointCompilerSpec extends ZIOSpecDefault {
+object EndpointSpec extends ZIOSpecDefault {
   def spec =
-    suite("EndpointCompilerSpec")(
+    suite("EndpointSpec")(
       test("method") {
         val endpoint = Endpoint.make("abc.com").withMethod(Method.POST)
-        val request  = EndpointCompiler.compile(endpoint, DynamicValue(()))
-        assertTrue(request.method == "POST")
+        val request  = endpoint.evaluate(DynamicValue(()))
+        assertTrue(request.method == Method.POST)
       },
       test("path") {
         val root   = Endpoint.make("abc.com")
@@ -27,7 +27,7 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (expected, endpoint) =>
-          val request = EndpointCompiler.compile(endpoint, DynamicValue(()))
+          val request = endpoint.evaluate(DynamicValue(()))
           assertTrue(request.url == expected)
         }
       },
@@ -39,7 +39,7 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
-          val request = EndpointCompiler.compile(endpoint, input)
+          val request = endpoint.evaluate(input)
           assertTrue(request.url == "http://abc.com/users/1")
         }
       },
@@ -51,7 +51,7 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
-          val request = EndpointCompiler.compile(endpoint, input)
+          val request = endpoint.evaluate(input)
           assertTrue(request.headers == Map("X-Server" -> "1"))
         }
       },
@@ -64,7 +64,7 @@ object EndpointCompilerSpec extends ZIOSpecDefault {
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
-          val request = EndpointCompiler.compile(endpoint, input)
+          val request = endpoint.evaluate(input)
           assertTrue(request.url == "http://abc.com?a=1")
         }
       }

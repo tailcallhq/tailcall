@@ -1,5 +1,7 @@
 package tailcall.gateway.ast
 
+import tailcall.gateway.ast.Path.Segment
+import tailcall.gateway.http.{Method, Request}
 import tailcall.gateway.remote.Remote
 import zio.Chunk
 import zio.schema.meta.MetaSchema
@@ -52,7 +54,10 @@ final case class Endpoint(
   def withBody(body: String): Endpoint = copy(body = Option(body))
 
   def outputSchema: Schema[_] = output.toSchema
-  def inputSchema: Schema[_]  = input.toSchema
+
+  def inputSchema: Schema[_] = input.toSchema
+
+  def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
 }
 
 object Endpoint {
@@ -86,4 +91,47 @@ object Endpoint {
   }
 
   def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
+
+  def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
+    val method     = endpoint.method
+    val portString = endpoint.address.port match {
+      case 80   => ""
+      case 443  => ""
+      case port => s":$port"
+    }
+
+    val queryString = endpoint
+      .query
+      .nonEmptyOrElse("")(
+        _.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }.mkString("?", "&", "")
+      )
+
+    val pathString: String = endpoint
+      .path
+      .transform {
+        case Segment.Literal(value)  => Path.Segment.Literal(value)
+        case Segment.Param(mustache) => Path
+            .Segment
+            .Literal(
+              mustache
+                .evaluate(input)
+                .getOrElse(throw new RuntimeException("Mustache evaluation failed"))
+            )
+      }
+      .encode
+      .getOrElse(throw new RuntimeException("Path encoding failed"))
+
+    val url = List(
+      endpoint.protocol.name,
+      "://",
+      endpoint.address.host,
+      portString,
+      pathString,
+      queryString
+    ).mkString
+
+    val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
+
+    Request(method = method, url = url, headers = headers)
+  }
 }
