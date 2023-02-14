@@ -9,7 +9,9 @@ trait FunctionOps {
     def >>>[C](other: Remote[B => C]): Remote[A => C] = pipe(other)
 
     def apply(a1: Remote[A]): Remote[B] =
-      Remote.unsafe.attempt(DynamicEval.call(self.compileAsFunction, a1.compile))
+      Remote
+        .unsafe
+        .attempt(DynamicEval.call(self.compileAsFunction, a1.compile))
 
     def compileAsFunction: DynamicEval.EvalFunction =
       self.compile.asInstanceOf[DynamicEval.EvalFunction]

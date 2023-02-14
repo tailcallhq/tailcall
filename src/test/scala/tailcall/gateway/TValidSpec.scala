@@ -17,7 +17,8 @@ object TValidSpec extends ZIOSpecDefault {
         assert(valid.errors)(equalTo(Chunk.single("error")))
       },
       test("flatMap ++ with error") {
-        val valid = (TValid.success(1) ++ TValid.fail("error")).flatMap(i => TValid.success(i + 1))
+        val valid = (TValid.success(1) ++ TValid.fail("error"))
+          .flatMap(i => TValid.success(i + 1))
 
         assert(valid.errors)(equalTo(Chunk.single("error"))) &&
         assert(valid.values)(equalTo(Chunk.single(2)))
@@ -40,11 +41,19 @@ object TValidSpec extends ZIOSpecDefault {
         val valid1 = TValid.fail("error1")
         val valid2 = TValid.fail("error2")
         val valid3 = valid1 ++ valid2
-        assert(valid3.errors)(equalTo(Chunk.fromIterable(List("error1", "error2"))))
+        assert(valid3.errors)(equalTo(
+          Chunk.fromIterable(List("error1", "error2"))
+        ))
       },
-      test("success")(assert(TValid.success(1))(equalTo(TValid(Chunk.empty, Chunk.single(1))))),
-      test("fail")(assert(TValid.fail(1))(equalTo(TValid(Chunk.single(1), Chunk.empty)))),
-      test("empty")(assert(TValid.empty)(equalTo(TValid(Chunk.empty, Chunk.empty)))),
+      test("success")(
+        assert(TValid.success(1))(equalTo(TValid(Chunk.empty, Chunk.single(1))))
+      ),
+      test("fail")(
+        assert(TValid.fail(1))(equalTo(TValid(Chunk.single(1), Chunk.empty)))
+      ),
+      test("empty")(
+        assert(TValid.empty)(equalTo(TValid(Chunk.empty, Chunk.empty)))
+      ),
       test("unit")(assert(TValid.unit)(equalTo(TValid.success(())))),
       test("from") {
         val valid1 = TValid.success(1)

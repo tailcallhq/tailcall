@@ -8,7 +8,9 @@ object OrcSpec extends ZIOSpecDefault {
 
   def spec =
     suite("OrcSpec")(test("test") {
-      val orc     = Orc.query("Query" -> List("count" -> { _ => Remote.dynamicValue(1) }))
+      val orc     = Orc.query("Query" -> List("count" -> { _ =>
+        Remote.dynamicValue(1)
+      }))
       val graphQL = orc.toGraphQLSchema
       pprint.pprintln(graphQL)
       assertCompletes

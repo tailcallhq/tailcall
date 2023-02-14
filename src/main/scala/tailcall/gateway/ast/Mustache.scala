@@ -17,7 +17,8 @@ final case class Mustache(path: Chunk[String]) {
 object Mustache {
   def apply(path: String*): Mustache = Mustache(Chunk.fromIterable(path))
 
-  lazy val syntax: Syntax[String, Char, Char, Mustache] = Syntax.string("{{", ()) ~ Syntax
+  lazy val syntax: Syntax[String, Char, Char, Mustache] = Syntax
+    .string("{{", ()) ~ Syntax
     .alphaNumeric
     .repeat
     .transform[String](_.asString, Chunk.fromIterable(_))

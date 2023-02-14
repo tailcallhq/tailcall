@@ -9,7 +9,8 @@ import scala.io.Source
 
 object ExtensionSpec extends ZIOSpecDefault {
 
-  def read(file: String): Task[String] = ZIO.attemptBlocking(Source.fromResource(file).mkString(""))
+  def read(file: String): Task[String] =
+    ZIO.attemptBlocking(Source.fromResource(file).mkString(""))
 
   // TODO: fix failing tests
   def spec =

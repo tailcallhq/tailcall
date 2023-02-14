@@ -19,10 +19,11 @@ final case class TValid[+E, +A](errors: Chunk[E], values: Chunk[A]) {
 }
 
 object TValid {
-  def success[A](a: A): TValid[Nothing, A] = TValid(Chunk.empty, Chunk.single(a))
-  def fail[E](e: E): TValid[E, Nothing]    = TValid(Chunk.single(e), Chunk.empty)
-  def empty: TValid[Nothing, Nothing]      = TValid(Chunk.empty, Chunk.empty)
-  def unit: TValid[Nothing, Unit]          = success(())
+  def success[A](a: A): TValid[Nothing, A] =
+    TValid(Chunk.empty, Chunk.single(a))
+  def fail[E](e: E): TValid[E, Nothing] = TValid(Chunk.single(e), Chunk.empty)
+  def empty: TValid[Nothing, Nothing]   = TValid(Chunk.empty, Chunk.empty)
+  def unit: TValid[Nothing, Unit]       = success(())
   def from[E, A](iterable: Iterable[TValid[E, A]]): TValid[E, A] = {
     val failures0  = Chunk.fromIterable(iterable).flatMap(_.errors)
     val successes0 = Chunk.fromIterable(iterable).flatMap(_.values)

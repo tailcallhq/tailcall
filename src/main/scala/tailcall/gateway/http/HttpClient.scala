@@ -16,7 +16,9 @@ trait HttpClient {
 
 object HttpClient {
   final class NettyHttpClient() extends HttpClient {
-    def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
+    def bootstrapConnection(
+      request: HttpRequest
+    )(cb: FullHttpResponse => Any): Bootstrap =
       new Bootstrap()
         .group(new NioEventLoopGroup())
         .channelFactory(new ChannelFactory[Channel] {
@@ -28,9 +30,11 @@ object HttpClient {
               .addLast(new HttpClientCodec())
               .addLast(new HttpObjectAggregator(1024 * 100))
               .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
-                override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit =
-                  cb(msg)
-                override def channelActive(ctx: ChannelHandlerContext): Unit                       =
+                override def channelRead0(
+                  ctx: ChannelHandlerContext,
+                  msg: FullHttpResponse
+                ): Unit = cb(msg)
+                override def channelActive(ctx: ChannelHandlerContext): Unit =
                   ctx.writeAndFlush(request)
               })
           }
@@ -52,7 +56,9 @@ object HttpClient {
             .headers()
             .entries()
             .asScala
-            .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
+            .foldLeft(Map.empty[String, String])((acc, h) =>
+              acc + (h.getKey -> h.getValue)
+            )
 
           close.foreach(_.cancel(true))
           cb(status, headers, body)

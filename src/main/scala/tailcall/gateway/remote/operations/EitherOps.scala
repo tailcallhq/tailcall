@@ -3,8 +3,13 @@ package tailcall.gateway.remote.operations
 import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait EitherOps {
-  implicit final class RemoteEitherOps[E, A](private val self: Remote[Either[E, A]]) {
-    def fold[B](f: Remote[E] => Remote[B], g: Remote[A] => Remote[B]): Remote[B] =
+  implicit final class RemoteEitherOps[E, A](
+    private val self: Remote[Either[E, A]]
+  ) {
+    def fold[B](
+      f: Remote[E] => Remote[B],
+      g: Remote[A] => Remote[B]
+    ): Remote[B] =
       Remote
         .unsafe
         .attempt(DynamicEval.foldEither(
@@ -20,6 +25,9 @@ trait EitherOps {
       flatMap(a => Remote.fromEither(Right(f(a))))
 
     def toOption: Remote[Option[A]] =
-      self.fold[Option[A]](_ => Remote.fromOption(Option.empty), a => Remote.fromOption(Some(a)))
+      self.fold[Option[A]](
+        _ => Remote.fromOption(Option.empty),
+        a => Remote.fromOption(Some(a))
+      )
   }
 }

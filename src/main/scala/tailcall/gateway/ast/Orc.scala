@@ -1,5 +1,6 @@
 package tailcall.gateway.ast
 
+import caliban.schema.Schema
 import tailcall.gateway.remote.Remote
 import zio.schema.DynamicValue
 
@@ -14,12 +15,15 @@ final case class Orc(
       mutation = mutation ++ other.mutation,
       subscription = subscription ++ other.subscription
     )
+
+  def toGraphQLSchema: Schema[Any, Orc] = ???
 }
 
 object Orc {
   type Resolver = Remote[Context] => Remote[DynamicValue]
 
-  def query(connections: (String, List[(String, Resolver)])*): Orc = Orc(query = connections.toList)
+  def query(connections: (String, List[(String, Resolver)])*): Orc =
+    Orc(query = connections.toList)
 
   def mutation(connections: (String, List[(String, Resolver)])*): Orc =
     Orc(mutation = connections.toList)

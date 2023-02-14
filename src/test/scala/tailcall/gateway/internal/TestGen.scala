@@ -27,7 +27,8 @@ object TestGen {
 
   def genSchema: Gen[Any, TSchema] = genObj
 
-  def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(baseURL))
+  def genServer: Gen[Any, Config.Server] =
+    genBaseURL.map(baseURL => Config.Server(baseURL))
 
   def genMethod: Gen[Any, Method] =
     Gen.oneOf(
@@ -41,7 +42,10 @@ object TestGen {
     for { name <- Gen.chunkOf(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
-    Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
+    Gen.oneOf(
+      genName.map(Path.Segment.Literal),
+      genPlaceholder.map(Path.Segment.Param(_))
+    )
 
   def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
 

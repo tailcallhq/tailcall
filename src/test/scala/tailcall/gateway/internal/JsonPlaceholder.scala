@@ -13,7 +13,13 @@ object JsonPlaceholder {
   object Post    {
     implicit val schema = DeriveSchema.gen[Post]
   }
-  final case class Comment(id: Int, name: String, email: String, body: String, postId: Int)
+  final case class Comment(
+    id: Int,
+    name: String,
+    email: String,
+    body: String,
+    postId: Int
+  )
   object Comment {
     implicit val schema = DeriveSchema.gen[Comment]
   }
@@ -21,7 +27,13 @@ object JsonPlaceholder {
   object Album   {
     implicit val schema = DeriveSchema.gen[Album]
   }
-  final case class Photo(id: Int, title: String, url: String, thumbnailUrl: String, albumId: Int)
+  final case class Photo(
+    id: Int,
+    title: String,
+    url: String,
+    thumbnailUrl: String,
+    albumId: Int
+  )
   object Photo   {
     implicit val schema = DeriveSchema.gen[Photo]
   }
@@ -101,27 +113,39 @@ object JsonPlaceholder {
       "posts" -> (_ => endpoints.posts(unit))
     ),
     "User"  -> List(
-      "posts"    -> { context => endpoints.userPosts(Remote.record("userId" -> context.value)) },
+      "posts"    -> { context =>
+        endpoints.userPosts(Remote.record("userId" -> context.value))
+      },
       "fullName" -> { context =>
         val fn = context.value.path("firstName").flatMap(_.asString).getOrDie
         val ln = context.value.path("lastName").flatMap(_.asString).getOrDie
         Remote.dynamicValue(fn ++ Remote(" ") ++ ln)
       },
       "comments" -> { context =>
-        endpoints.userComments(Remote.record("email" -> context.value.path("email").getOrDie))
+        endpoints.userComments(
+          Remote.record("email" -> context.value.path("email").getOrDie)
+        )
       },
       "albums"   -> { context =>
-        endpoints.userAlbums(Remote.record("userId" -> context.value.path("id").getOrDie))
+        endpoints.userAlbums(
+          Remote.record("userId" -> context.value.path("id").getOrDie)
+        )
       },
       "todos"    -> { context =>
-        endpoints.UserTodos(Remote.record("userId" -> context.value.path("id").getOrDie))
+        endpoints.UserTodos(
+          Remote.record("userId" -> context.value.path("id").getOrDie)
+        )
       }
     ),
     "Post"  -> List("comments" -> { context =>
-      endpoints.postComments(Remote.record("postId" -> context.value.path("id").getOrDie))
+      endpoints.postComments(
+        Remote.record("postId" -> context.value.path("id").getOrDie)
+      )
     }),
     "Album" -> List("photos" -> { context =>
-      endpoints.AlbumPhotos(Remote.record("albumId" -> context.value.path("id").getOrDie))
+      endpoints.AlbumPhotos(
+        Remote.record("albumId" -> context.value.path("id").getOrDie)
+      )
     })
   )
 }

@@ -7,9 +7,11 @@ trait OptionOps {
     def fold[B](g: Remote[B])(f: Remote[A] => Remote[B]): Remote[B] =
       Remote
         .unsafe
-        .attempt(
-          DynamicEval.foldOption(self.compile, g.compile, Remote.fromFunction(f).compileAsFunction)
-        )
+        .attempt(DynamicEval.foldOption(
+          self.compile,
+          g.compile,
+          Remote.fromFunction(f).compileAsFunction
+        ))
 
     def map[B](f: Remote[A] => Remote[B]): Remote[Option[B]] =
       self.flatMap(a => Remote.fromOption(Some(f(a))))
@@ -23,6 +25,7 @@ trait OptionOps {
 
     def getOrElse(default: Remote[A]): Remote[A] = fold(default)(identity)
 
-    def getOrDie: Remote[A] = fold(Remote.die(Remote("Value not found")))(identity)
+    def getOrDie: Remote[A] =
+      fold(Remote.die(Remote("Value not found")))(identity)
   }
 }

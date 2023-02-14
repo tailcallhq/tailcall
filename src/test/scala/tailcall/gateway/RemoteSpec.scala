@@ -109,7 +109,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           assertRemote(program)(equalTo(1))
         },
         test("filter") {
-          val program = Remote(Seq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
+          val program =
+            Remote(Seq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
           assertRemote(program)(equalTo(Seq(2, 4)))
         },
         test("map") {
@@ -125,7 +126,9 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         },
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
-          assertRemote(program)(equalTo(Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)))
+          assertRemote(program)(equalTo(
+            Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)
+          ))
         },
         test("slice") {
           val program = Remote(Seq(1, 2, 3, 4)).slice(1, 3)
@@ -202,7 +205,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           assertRemote(program)(isTrue)
         },
         test("fold some") {
-          val program = Remote.fromOption(Some(Remote(1))).fold(Remote(0))(_ * Remote(2))
+          val program =
+            Remote.fromOption(Some(Remote(1))).fold(Remote(0))(_ * Remote(2))
           assertRemote(program)(equalTo(2))
         },
         test("fold none") {
@@ -211,7 +215,10 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         }
       ),
       test("record") {
-        val program = Remote.record("a" -> Remote(DynamicValue(1)), "b" -> Remote(DynamicValue(2)))
+        val program = Remote.record(
+          "a" -> Remote(DynamicValue(1)),
+          "b" -> Remote(DynamicValue(2))
+        )
         assertRemote(program)(equalTo(DynamicValue.Record(
           TypeId.Structural,
           ListMap.from(List("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
@@ -220,19 +227,28 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       suite("context")(
         suite("parent")(
           test("present") {
-            val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
+            val context = Context(
+              DynamicValue(1),
+              parent = Option(Context(DynamicValue(2)))
+            )
             val program = Remote(context).parent.map(_.value)
             assertRemote(program)(equalTo(Some(DynamicValue(2))))
           },
           test("not present") {
-            val context = Context(DynamicValue(1), parent = Option(Context(DynamicValue(2))))
+            val context = Context(
+              DynamicValue(1),
+              parent = Option(Context(DynamicValue(2)))
+            )
             val program = Remote(context).parent.flatMap(_.parent)
             assertRemote(program)(equalTo(None))
           },
           test("nested") {
             val context = Context(
               DynamicValue(1),
-              parent = Option(Context(DynamicValue(2), parent = Option(Context(DynamicValue(3)))))
+              parent = Option(Context(
+                DynamicValue(2),
+                parent = Option(Context(DynamicValue(3)))
+              ))
             )
             val program = Remote(context).parent.flatMap(_.parent).map(_.value)
             assertRemote(program)(equalTo(Some(DynamicValue(3))))
@@ -243,7 +259,10 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           assertRemote(program)(equalTo(DynamicValue(1)))
         },
         test("arg") {
-          val context = Context(DynamicValue(1), args = ListMap.from(List("a" -> DynamicValue(2))))
+          val context = Context(
+            DynamicValue(1),
+            args = ListMap.from(List("a" -> DynamicValue(2)))
+          )
           val program = Remote(context).arg("a")
           assertRemote(program)(equalTo(Option(DynamicValue(2))))
         }
@@ -251,11 +270,15 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       suite("die")(
         test("literal") {
           val program = Remote.die("Error")
-          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Death("Error"))))
+          assertZIO(program.toZIO.exit)(fails(
+            equalTo(EvaluationError.Death("Error"))
+          ))
         },
         test("remote") {
           val program = Remote.die(Remote("Error"))
-          assertZIO(program.toZIO.exit)(fails(equalTo(EvaluationError.Death("Error"))))
+          assertZIO(program.toZIO.exit)(fails(
+            equalTo(EvaluationError.Death("Error"))
+          ))
         }
       ),
       suite("dynamicValue")(
@@ -265,7 +288,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
             assertRemote(program)(equalTo(Option.empty[DynamicValue]))
           },
           test("path found") {
-            val program = Remote.record("a" -> Remote(DynamicValue(1))).path("a")
+            val program =
+              Remote.record("a" -> Remote(DynamicValue(1))).path("a")
             assertRemote(program)(equalTo(Option(DynamicValue(1))))
           }
         ),
@@ -332,7 +356,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         suite("asList")(
           test("list") {
             val program  = Remote(DynamicValue(List(1, 2, 3))).asList
-            val expected = Option(List(DynamicValue(1), DynamicValue(2), DynamicValue(3)))
+            val expected =
+              Option(List(DynamicValue(1), DynamicValue(2), DynamicValue(3)))
             assertRemote(program)(equalTo(expected))
           },
           test("not list") {
@@ -343,14 +368,17 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         suite("asMap")(
           test("map") {
             val program  = Remote(DynamicValue(Map("a" -> 1, "b" -> 2))).asMap
-            val expected = Option(
-              Map(DynamicValue("a") -> DynamicValue(1), DynamicValue("b") -> DynamicValue(2))
-            )
+            val expected = Option(Map(
+              DynamicValue("a") -> DynamicValue(1),
+              DynamicValue("b") -> DynamicValue(2)
+            ))
             assertRemote(program)(equalTo(expected))
           },
           test("not map") {
             val program = Remote(DynamicValue("a")).asMap
-            assertRemote(program)(equalTo(Option.empty[Map[DynamicValue, DynamicValue]]))
+            assertRemote(program)(equalTo(
+              Option.empty[Map[DynamicValue, DynamicValue]]
+            ))
           }
         )
       ) @@ failing,
@@ -359,7 +387,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
           .make("jsonplaceholder.typicode.com")
           .withPath("/users/{{id}}")
           .withOutput[JsonPlaceholder.User]
-        val program  = Remote.fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
+        val program  = Remote
+          .fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
         val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
         assertRemote(program)(equalTo(expected))
       }),
@@ -383,7 +412,8 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
       ),
       suite("batch")(test("option") {
         val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
-        val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
+        val to      =
+          (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
         val program = Remote.batch(
           from,
           to,

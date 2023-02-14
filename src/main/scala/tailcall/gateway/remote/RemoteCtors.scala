@@ -41,7 +41,9 @@ trait RemoteCtors {
     Remote(Schema.toDynamic(a))
 
   def record(fields: (String, Remote[DynamicValue])*): Remote[DynamicValue] =
-    Remote.unsafe.attempt(DynamicEval.record(fields.map { case (k, v) => k -> v.compile }))
+    Remote
+      .unsafe
+      .attempt(DynamicEval.record(fields.map { case (k, v) => k -> v.compile }))
 
   def die(msg: Remote[String]): Remote[Nothing] =
     Remote.unsafe.attempt(DynamicEval.die(msg.compile))
@@ -51,15 +53,23 @@ trait RemoteCtors {
   def fromTuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
     Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile)))
 
-  def fromTuple[A1, A2, A3](t: (Remote[A1], Remote[A2], Remote[A3])): Remote[(A1, A2, A3)] =
-    Remote.unsafe.attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile, t._3.compile)))
+  def fromTuple[A1, A2, A3](
+    t: (Remote[A1], Remote[A2], Remote[A3])
+  ): Remote[(A1, A2, A3)] =
+    Remote
+      .unsafe
+      .attempt(DynamicEval.tuple(
+        Chunk(t._1.compile, t._2.compile, t._3.compile)
+      ))
 
   def fromTuple[A1, A2, A3, A4](
     t: (Remote[A1], Remote[A2], Remote[A3], Remote[A4])
   ): Remote[(A1, A2, A3, A4)] =
     Remote
       .unsafe
-      .attempt(DynamicEval.tuple(Chunk(t._1.compile, t._2.compile, t._3.compile, t._4.compile)))
+      .attempt(DynamicEval.tuple(
+        Chunk(t._1.compile, t._2.compile, t._3.compile, t._4.compile)
+      ))
 
   def batch[A, B, C](
     from: Remote[Seq[A]],

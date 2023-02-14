@@ -25,7 +25,8 @@ sealed private[tailcall] trait Extension {
     ZIO
       .fromEither(self match {
         case Extension.JSON => Right(config.toJsonPretty)
-        case Extension.YML  => config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0))
+        case Extension.YML  =>
+          config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0))
       })
       .mapError(new RuntimeException(_))
 }
