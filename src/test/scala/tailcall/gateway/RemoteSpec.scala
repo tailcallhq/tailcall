@@ -1,8 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.OrcSpec.schema.User
 import tailcall.gateway.ast.{Context, Endpoint}
-import tailcall.gateway.internal.RemoteAssertion
+import tailcall.gateway.internal.{JsonPlaceholder, RemoteAssertion}
 import tailcall.gateway.remote.{EvaluationError, Remote}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
@@ -356,10 +355,12 @@ object RemoteSpec extends ZIOSpecDefault with RemoteAssertion {
         )
       ) @@ failing,
       suite("endpoint")(test("/users/{{id}}") {
-        val endpoint =
-          Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}").withOutput[User]
+        val endpoint = Endpoint
+          .make("jsonplaceholder.typicode.com")
+          .withPath("/users/{{id}}")
+          .withOutput[JsonPlaceholder.User]
         val program  = Remote.fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
-        val expected = DynamicValue(User(1, "Leanne Graham"))
+        val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
         assertRemote(program)(equalTo(expected))
       }),
       suite("tuple")(
