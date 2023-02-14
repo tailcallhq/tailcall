@@ -273,6 +273,8 @@ object DynamicEval {
   def length(seq: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Length(seq))
 
+  final def find(seq: DynamicEval, condition: EvalFunction): DynamicEval = ???
+
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
 

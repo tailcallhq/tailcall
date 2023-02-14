@@ -78,7 +78,7 @@ trait RemoteCtors {
     ba: Remote[B] => Remote[A],
     cb: Remote[C] => Remote[B]
   ) =
-    to(from.map(ab(_)))
+    to(from.map(ab(_)).debug("ab"))
       .map(c => fromTuple((cb(c), c)))
       .groupBy(_._1)
       .map(x => fromTuple((ba(x._1), x._2.head.map(_._2))))
