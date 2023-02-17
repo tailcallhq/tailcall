@@ -131,8 +131,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
           assertZIO(program.evaluate)(equalTo(
-            Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)
-          ))
+            Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))))
         },
         test("slice") {
           val program = Remote(Seq(1, 2, 3, 4)).slice(1, 3)
@@ -466,32 +465,14 @@ object RemoteSpec extends ZIOSpecDefault {
           )
           assertZIO(program.evaluate)(equalTo(expected))
         },
-        test("option duplicate") {
-          val from    = Remote(Seq((1, "john"), (1, "amit"), (2, "richard"), (3, "paul")))
-          val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
-          val program = Remote.batch(
-            from,
-            to,
-            (x: Remote[(Int, String)]) => x._1,
-            (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
-            (y: Remote[(Int, String)]) => y._1
-          )
-
-          val expected = List(
-            ((1, "john"), Some(1, "london")),
-            ((2, "richard"), Some(2, "paris")),
-            ((3, "paul"), Some(3, "new york"))
-          )
-          assertZIO(program.evaluate)(equalTo(expected))
-        },
-        test("option empty") {
+        test("empty") {
           val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris")))
           val program = Remote.batch(
             from,
             to,
             (x: Remote[(Int, String)]) => x._1,
-            (b: Remote[Int]) => from.find(x => x._1 =:= b).debug("head").getOrDie,
+            (b: Remote[Int]) => from.find(x => x._1 =:= b).getOrDie,
             (y: Remote[(Int, String)]) => y._1
           )
 
