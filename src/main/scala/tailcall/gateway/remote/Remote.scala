@@ -1,7 +1,8 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.remote.operations._
-import zio.schema.Schema
+import zio.ZIO
+import zio.schema.{DynamicValue, Schema}
 
 /**
  * Remote[A] Allows for any arbitrary computation that can
@@ -59,6 +60,11 @@ sealed trait Remote[+A] {
 
   final def debug(message: String): Remote[A] =
     attempt(DynamicEval.debug(self.compile, message))
+
+  def toDynamicValue[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
+    ???
+
+  def evaluate: ZIO[RemoteRuntime, Throwable, A] = RemoteRuntime.evaluate(self)
 }
 
 object Remote
@@ -89,5 +95,5 @@ object Remote
     anySchema.asInstanceOf[Schema[Remote[A]]]
 
   implicit def remoteFunctionSchema[A, B]: Schema[Remote[A] => Remote[B]] =
-    Schema[Remote[A => B]].transform(_.toFunction, Remote.fromFunction(_))
+    Schema[Remote[A => B]].transform(_.toFunction, Remote.fromFunction)
 }

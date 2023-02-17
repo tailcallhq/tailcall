@@ -4,29 +4,24 @@ import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.ChunkUtil
 import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
-import zio.{Ref, Task, UIO, ZIO}
+import zio.{Task, ZIO, ZLayer}
 
 import java.nio.charset.StandardCharsets
 import scala.collection.immutable.ListMap
 
-trait UnsafeEvaluator {
+trait RemoteRuntime {
   final def evaluateAs[A](eval: DynamicEval): Task[A] =
     evaluate(eval).flatMap(any => ZIO.attempt(any.asInstanceOf[A]))
+
+  final def evaluate[A](remote: Remote[A]): Task[A] =
+    evaluateAs[A](remote.compile)
+
   def evaluate(eval: DynamicEval): Task[Any]
 }
 
-object UnsafeEvaluator {
+object RemoteRuntime {
   import DynamicEval._
-  final class Default(val context: EvaluationContext) extends UnsafeEvaluator {
-
-    def toTypedValue(value: DynamicValue, schema: Schema[_]): Task[Any] = {
-      value.toTypedValue(schema) match {
-        case Left(cause)  => ZIO
-            .fail(EvaluationError.TypeError(value, cause, schema))
-        case Right(value) => ZIO.succeed(value)
-      }
-    }
-
+  final class Default(val context: EvaluationContext) extends RemoteRuntime {
     def call[A](func: EvalFunction, arg: Any): Task[A] =
       for {
         _      <- context.set(func.input.id, arg)
@@ -218,22 +213,9 @@ object UnsafeEvaluator {
       }
   }
 
-  def make(bindings: Map[Int, Any] = Map.empty): UIO[UnsafeEvaluator] =
-    for { map <- Ref.make(bindings) } yield new Default(EvaluationContext(map))
+  def live: ZLayer[EvaluationContext, Nothing, RemoteRuntime] =
+    ZLayer.fromZIO(ZIO.service[EvaluationContext].map(ctx => new Default(ctx)))
 
-  final case class EvaluationContext(map: Ref[Map[Int, Any]]) {
-    def get(id: Int): Task[Any] =
-      map
-        .get
-        .flatMap { map =>
-          map.get(id) match {
-            case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
-            case Some(value) => ZIO.succeed(value)
-          }
-        }
-
-    def set(id: Int, value: Any): Task[Unit] = map.update(_ + (id -> value))
-
-    def drop(id: Int): Task[Unit] = map.update(_ - id)
-  }
+  def evaluate[A](remote: Remote[A]) =
+    ZIO.serviceWithZIO[RemoteRuntime](_.evaluateAs[A](remote.compile))
 }
