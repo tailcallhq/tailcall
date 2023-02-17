@@ -45,7 +45,7 @@ trait SeqOps {
     final def head: Remote[Option[A]] =
       Remote.unsafe.attempt(DynamicEval.head(self.compile))
 
-    final def groupBy[B](f: Remote[A] => Remote[B]): Remote[Seq[(B, Seq[A])]] =
+    final def groupBy[B](f: Remote[A] => Remote[B]): Remote[Map[B, Seq[A]]] =
       Remote
         .unsafe
         .attempt(

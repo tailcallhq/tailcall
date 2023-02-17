@@ -130,7 +130,7 @@ object RemoteRuntime {
                 map <- ZIO.foreach(seq)(any =>
                   call[Any](keyFunction, any).map(_ -> any)
                 )
-              } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }.toSeq
+              } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
           }
         case EitherOperations(operation) => operation match {
             case EitherOperations.Cons(value)              => value match {
