@@ -107,45 +107,49 @@ object JsonPlaceholder {
 
   val unit = Remote.dynamicValue(())
 
-  val orc: Orc = Orc.query(
-    "Query" -> List(
-      "users" -> (_ => endpoints.users(unit)),
-      "posts" -> (_ => endpoints.posts(unit))
-    ),
-    "User"  -> List(
-      "posts"    -> { context =>
-        endpoints.userPosts(Remote.record("userId" -> context.value))
-      },
-      "fullName" -> { context =>
-        val fn = context.value.path("firstName").flatMap(_.asString).getOrDie
-        val ln = context.value.path("lastName").flatMap(_.asString).getOrDie
-        Remote.dynamicValue(fn ++ Remote(" ") ++ ln)
-      },
-      "comments" -> { context =>
-        endpoints.userComments(
-          Remote.record("email" -> context.value.path("email").getOrDie)
-        )
-      },
-      "albums"   -> { context =>
-        endpoints.userAlbums(
-          Remote.record("userId" -> context.value.path("id").getOrDie)
-        )
-      },
-      "todos"    -> { context =>
-        endpoints.UserTodos(
-          Remote.record("userId" -> context.value.path("id").getOrDie)
-        )
-      }
-    ),
-    "Post"  -> List("comments" -> { context =>
-      endpoints.postComments(
-        Remote.record("postId" -> context.value.path("id").getOrDie)
-      )
-    }),
-    "Album" -> List("photos" -> { context =>
-      endpoints.AlbumPhotos(
-        Remote.record("albumId" -> context.value.path("id").getOrDie)
-      )
-    })
-  )
+  val orc: Orc = {
+    ???
+
+//    Orc.obj(
+//      "Query" -> List(
+//        "users" -> Orc.fromRemote(endpoints.users(unit)),
+//        "posts" -> Orc.fromRemote(endpoints.posts(unit))
+//      ),
+//      "User" -> List(
+//        "posts" -> Orc.fromContext { context =>
+//          endpoints.userPosts(Remote.record("userId" -> context.value))
+//        },
+//        "fullName" -> Orc.fromContext { context =>
+//          val fn = context.value.path("firstName").flatMap(_.asString).getOrDie
+//          val ln = context.value.path("lastName").flatMap(_.asString).getOrDie
+//          Remote.dynamicValue(fn ++ Remote(" ") ++ ln)
+//        },
+//        "comments" -> Orc.fromContext { context =>
+//          endpoints.userComments(
+//            Remote.record("email" -> context.value.path("email").getOrDie)
+//          )
+//        },
+//        "albums" -> Orc.fromContext { context =>
+//          endpoints.userAlbums(
+//            Remote.record("userId" -> context.value.path("id").getOrDie)
+//          )
+//        },
+//        "todos" -> Orc.fromContext { context =>
+//          endpoints.UserTodos(
+//            Remote.record("userId" -> context.value.path("id").getOrDie)
+//          )
+//        }
+//      ),
+//      "Post" -> List("comments" -> Orc.fromContext { context =>
+//        endpoints.postComments(
+//          Remote.record("postId" -> context.value.path("id").getOrDie)
+//        )
+//      }),
+//      "Album" -> List("photos" -> Orc.fromContext { context =>
+//        endpoints.AlbumPhotos(
+//          Remote.record("albumId" -> context.value.path("id").getOrDie)
+//        )
+//      })
+//    )
+  }
 }

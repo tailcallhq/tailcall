@@ -1,6 +1,7 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.ast.Context
+import tailcall.gateway.ast.Orc.OExit
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, StandardType}
 
@@ -19,6 +20,8 @@ object Constructor {
     Constructor(Schema[DynamicValue])
 
   implicit val context: Constructor[Context] = Constructor(Schema[Context])
+
+  implicit val oExit: Constructor[OExit] = Constructor(Schema[OExit])
 
   implicit def tuple2[A1, A2](implicit
     ctor1: Constructor[A1],
