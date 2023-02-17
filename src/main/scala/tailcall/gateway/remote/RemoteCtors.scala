@@ -19,6 +19,9 @@ trait RemoteCtors {
   def fromSeq[A](a: Seq[Remote[A]]): Remote[Seq[A]] =
     Remote.unsafe.attempt(DynamicEval.seq(a.map(_.compile)))
 
+  def fromMap[A, B](a: Map[Remote[A], Remote[B]]): Remote[Map[A, B]] =
+    Remote.unsafe.attempt(DynamicEval.map(a.map { case (k, v) => k.compile -> v.compile }))
+
   def fromEither[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
     Remote
       .unsafe

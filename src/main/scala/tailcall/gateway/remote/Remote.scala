@@ -79,7 +79,8 @@ object Remote
     with OptionOps
     with ContextOps
     with DynamicValueOps
-    with TupleOps {
+    with TupleOps
+    with MapOps {
 
   object unsafe {
     object attempt {

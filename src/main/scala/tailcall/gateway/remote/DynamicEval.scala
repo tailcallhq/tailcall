@@ -134,6 +134,13 @@ object DynamicEval {
         extends Operation
   }
 
+  final case class MapOperations(operation: MapOperations.Operation) extends DynamicEval
+  object MapOperations {
+    sealed trait Operation
+    final case class Get(map: DynamicEval, key: DynamicEval)        extends Operation
+    final case class Cons(value: Chunk[(DynamicEval, DynamicEval)]) extends Operation
+  }
+
   final case class FunctionCall(f: EvalFunction, arg: DynamicEval)
       extends DynamicEval
   final case class Binding(id: Int) extends DynamicEval
@@ -267,6 +274,9 @@ object DynamicEval {
   def concat(left: DynamicEval, right: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Concat(left, right))
 
+  def mapGet(map: DynamicEval, key: DynamicEval): DynamicEval =
+    MapOperations(MapOperations.Get(map, key))
+
   def reverse(seq: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Reverse(seq))
 
@@ -300,6 +310,9 @@ object DynamicEval {
 
   def seq(a: Seq[DynamicEval]): DynamicEval =
     SeqOperations(SeqOperations.Sequence(Chunk.fromIterable(a)))
+
+  def map(a: Map[DynamicEval, DynamicEval]): DynamicEval =
+    MapOperations(MapOperations.Cons(Chunk.fromIterable(a)))
 
   def either(a: Either[DynamicEval, DynamicEval]): DynamicEval =
     EitherOperations(EitherOperations.Cons(a))

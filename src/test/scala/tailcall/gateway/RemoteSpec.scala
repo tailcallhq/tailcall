@@ -144,11 +144,11 @@ object RemoteSpec extends ZIOSpecDefault {
         },
         test("head") {
           val program = Remote(Seq(1, 2, 3, 4)).head
-          assertRemote(program)(equalTo(Option(1)))
+          assertZIO(program.evaluate)(equalTo(Option(1)))
         },
         test("head empty") {
           val program = Remote(Seq.empty[Int]).head
-          assertRemote(program)(equalTo(Option.empty[Int]))
+          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
         }
       ),
       suite("function")(
@@ -501,7 +501,17 @@ object RemoteSpec extends ZIOSpecDefault {
             ((3, "paul"), None)
           )
           assertZIO(program.evaluate)(equalTo(expected))
-        } @@ failing
+        }
+      ),
+      suite("map")(
+        test("get some") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("a"))
+          assertZIO(program.evaluate)(equalTo(Option(1)))
+        },
+        test("get none") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("c"))
+          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+        }
       )
     ).provide(RemoteRuntime.live, EvaluationContext.live)
 }

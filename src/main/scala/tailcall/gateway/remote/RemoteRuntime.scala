@@ -85,6 +85,17 @@ object RemoteRuntime {
                 rightValue <- evaluateAs[String](right)
               } yield leftValue ++ rightValue
           }
+        case MapOperations(operation)    => operation match {
+            case MapOperations.Get(map, key) => for {
+                map <- evaluateAs[Map[Any, Any]](map)
+                key <- evaluateAs[Any](key)
+              } yield map.get(key)
+            case MapOperations.Cons(values)  =>
+              val result = ZIO.foreach(values) { case (key, value) =>
+                evaluate(value).map(key -> _)
+              }
+              result.map(_.toMap)
+          }
         case SeqOperations(operation)    => operation match {
             case SeqOperations.Concat(left, right)    => for {
                 leftValue  <- evaluateAs[Seq[_]](left)
