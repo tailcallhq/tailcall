@@ -31,4 +31,12 @@ object Constructor {
     implicit val schema2: Schema[A2] = ctor2.schema
     Constructor(Schema[(A1, A2)])
   }
+  implicit def map[A, B](implicit
+    ctorA: Constructor[A],
+    ctorB: Constructor[B]
+  ): Constructor[Map[A, B]] = {
+    implicit val schemaA: Schema[A] = ctorA.schema
+    implicit val schemaB: Schema[B] = ctorB.schema
+    Constructor(Schema[Map[A, B]])
+  }
 }

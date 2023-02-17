@@ -113,6 +113,11 @@ object RemoteSpec extends ZIOSpecDefault {
             Remote(Seq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
           assertZIO(program.evaluate)(equalTo(Seq(2, 4)))
         },
+        test("filter empty") {
+          val program =
+            Remote(Seq(1, 5, 3, 7)).filter(r => r % Remote(2) =:= Remote(0))
+          assertZIO(program.evaluate)(equalTo(Seq.empty[Int]))
+        },
         test("map") {
           val program = Remote(Seq(1, 2, 3, 4)).map(r => r * Remote(2))
           assertZIO(program.evaluate)(equalTo(Seq(2, 4, 6, 8)))
@@ -127,7 +132,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
           assertZIO(program.evaluate)(equalTo(
-            Seq((1, Seq(1, 3)), (0, Seq(2, 4))).sortBy(_._1)
+            Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))
           ))
         },
         test("slice") {
@@ -137,6 +142,14 @@ object RemoteSpec extends ZIOSpecDefault {
         test("take") {
           val program = Remote(Seq(1, 2, 3, 4)).take(2)
           assertZIO(program.evaluate)(equalTo(Seq(1, 2)))
+        },
+        test("head") {
+          val program = Remote(Seq(1, 2, 3, 4)).head
+          assertZIO(program.evaluate)(equalTo(Option(1)))
+        },
+        test("head empty") {
+          val program = Remote(Seq.empty[Int]).head
+          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
         }
       ),
       suite("function")(
@@ -416,24 +429,73 @@ object RemoteSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(equalTo((1, 2, 3)))
         }
       ),
-      suite("batch")(test("option") {
-        val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
-        val to      =
-          (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
-        val program = Remote.batch(
-          from,
-          to,
-          (x: Remote[(Int, String)]) => x._1,
-          (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
-          (y: Remote[(Int, String)]) => y._1
-        )
+      suite("batch")(
+        test("option") {
+          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val to      = (_: Any) =>
+            Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
+          val program = Remote.batch(
+            from,
+            to,
+            (x: Remote[(Int, String)]) => x._1,
+            (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
+            (y: Remote[(Int, String)]) => y._1
+          )
 
-        val expected = List(
-          ((1, "john"), Some(1, "london")),
-          ((2, "richard"), Some(2, "paris")),
-          ((3, "paul"), Some(3, "new york"))
-        )
-        assertZIO(program.evaluate)(equalTo(expected))
-      })
+          val expected = List(
+            ((1, "john"), Some(1, "london")),
+            ((2, "richard"), Some(2, "paris")),
+            ((3, "paul"), Some(3, "new york"))
+          )
+          assertZIO(program.evaluate)(equalTo(expected))
+        },
+        test("option order") {
+          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val to      = (_: Any) =>
+            Remote(Seq((3, "london"), (2, "paris"), (1, "new york")))
+          val program = Remote.batch(
+            from,
+            to,
+            (x: Remote[(Int, String)]) => x._1,
+            (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
+            (y: Remote[(Int, String)]) => y._1
+          )
+
+          val expected = List(
+            ((1, "john"), Some(1, "new york")),
+            ((2, "richard"), Some(2, "paris")),
+            ((3, "paul"), Some(3, "london"))
+          )
+          assertZIO(program.evaluate)(equalTo(expected))
+        },
+        test("empty") {
+          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris")))
+          val program = Remote.batch(
+            from,
+            to,
+            (x: Remote[(Int, String)]) => x._1,
+            (b: Remote[Int]) => from.find(x => x._1 =:= b).getOrDie,
+            (y: Remote[(Int, String)]) => y._1
+          )
+
+          val expected = List(
+            ((1, "john"), Some(1, "london")),
+            ((2, "richard"), Some(2, "paris")),
+            ((3, "paul"), None)
+          )
+          assertZIO(program.evaluate)(equalTo(expected))
+        }
+      ),
+      suite("map")(
+        test("get some") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("a"))
+          assertZIO(program.evaluate)(equalTo(Option(1)))
+        },
+        test("get none") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("c"))
+          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+        }
+      )
     ).provide(RemoteRuntime.live, EvaluationContext.live)
 }
