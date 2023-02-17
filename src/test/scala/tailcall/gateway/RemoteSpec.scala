@@ -265,6 +265,10 @@ object RemoteSpec extends ZIOSpecDefault {
           )
           val program = Remote(context).arg("a")
           assertZIO(program.evaluate)(equalTo(Option(DynamicValue(2))))
+        },
+        test("evaluate") {
+          val program = Remote(Context(DynamicValue(1)))
+          assertZIO(program.evaluate)(equalTo(Context(DynamicValue(1))))
         }
       ),
       suite("die")(

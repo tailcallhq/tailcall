@@ -5,8 +5,8 @@ import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
 trait RemoteCtors {
-  def apply[A](a: A)(implicit schema: Schema[A]): Remote[A] =
-    Remote.unsafe.attempt(DynamicEval.Literal(schema.toDynamic(a), schema.ast))
+  def apply[A](a: A)(implicit ctor: Constructor[A]): Remote[A] =
+    Remote.unsafe.attempt(DynamicEval.cons(ctor.schema.toDynamic(a), ctor))
 
   def fromFunction[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] =
     Remote

@@ -2,7 +2,6 @@ package tailcall.gateway.remote
 
 import tailcall.gateway.ast.Endpoint
 import zio.Chunk
-import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -10,8 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 sealed trait DynamicEval
 
 object DynamicEval {
-
-  final case class Literal(value: DynamicValue, meta: MetaSchema)
+  final case class Literal(value: DynamicValue, ctor: Constructor[Any])
       extends DynamicEval
 
   final case class EqualTo(
@@ -370,6 +368,9 @@ object DynamicEval {
 
   def tupleIndex(seq: DynamicEval, index: Int): DynamicEval =
     TupleOperations(TupleOperations.GetIndex(seq, index))
+
+  def cons[A](value: DynamicValue, ctor: Constructor[A]): DynamicEval =
+    Literal(value, ctor.asInstanceOf[Constructor[Any]])
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

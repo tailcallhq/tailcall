@@ -1,9 +1,10 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.ast.Context
 import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.ChunkUtil
 import zio.schema.codec.JsonCodec
-import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
+import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.{Task, ZIO, ZLayer}
 
 import java.nio.charset.StandardCharsets
@@ -31,10 +32,10 @@ object RemoteRuntime {
 
     def evaluate(eval: DynamicEval): Task[Any] =
       eval match {
-        case Literal(value, meta) => ZIO
-            .fromEither(value.toTypedValue(meta.toSchema))
+        case Literal(value, ctor) => ZIO
+            .fromEither(value.toTypedValue(ctor.schema))
             .mapError(cause =>
-              EvaluationError.TypeError(value, cause, meta.toSchema)
+              EvaluationError.TypeError(value, cause, ctor.schema)
             )
 
         case EqualTo(left, right, tag)   => for {
@@ -172,23 +173,16 @@ object RemoteRuntime {
               } yield f.productIterator.toSeq(i)
           }
 
-        case ContextOperations(self, operation) =>
-          evaluateAs[Map[String, _]](self).map { ctx =>
-            operation match {
-              case ContextOperations.GetArg(name) => ctx
-                  .get("args")
-                  .asInstanceOf[Option[Map[String, DynamicValue]]]
-                  .flatMap(_.get(name))
-              case ContextOperations.GetValue     => ctx
-                  .getOrElse(
-                    "value",
-                    DynamicValue.Primitive((), StandardType.UnitType)
-                  )
-                  .asInstanceOf[DynamicValue]
-              case ContextOperations.GetParent    => ctx("parent")
+        case ContextOperations(self, operation) => evaluateAs[Context](self)
+            .map { ctx =>
+              operation match {
+                case ContextOperations.GetArg(name) => ctx.args.get(name)
+                case ContextOperations.GetValue     => ctx.value
+                case ContextOperations.GetParent    => ctx.parent
+              }
             }
-          }
-        case EndpointCall(endpoint, arg)        => for {
+
+        case EndpointCall(endpoint, arg) => for {
             input <- evaluateAs[DynamicValue](arg)
             req = endpoint.evaluate(input).toHttpRequest
             array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
