@@ -20,7 +20,9 @@ trait RemoteCtors {
     Remote.unsafe.attempt(DynamicEval.seq(a.map(_.compile)))
 
   def fromMap[A, B](a: Map[Remote[A], Remote[B]]): Remote[Map[A, B]] =
-    Remote.unsafe.attempt(DynamicEval.map(a.map { case (k, v) => k.compile -> v.compile }))
+    Remote
+      .unsafe
+      .attempt(DynamicEval.map(a.map { case (k, v) => k.compile -> v.compile }))
 
   def fromEither[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
     Remote
@@ -85,7 +87,11 @@ trait RemoteCtors {
     v.map(i =>
       fromTuple(
         ba(i),
-        to(v).map(c => fromTuple((cb(c), c))).groupBy(_._1).get(i).flatMap(x => x.map(_._2).head)
+        to(v)
+          .map(c => fromTuple((cb(c), c)))
+          .groupBy(_._1)
+          .get(i)
+          .flatMap(x => x.map(_._2).head) // Todo: Add flatten in Option
       )
     )
   }

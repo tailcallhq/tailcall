@@ -7,7 +7,8 @@ trait MapOps {
     def get(key: Remote[A]): Remote[Option[B]] =
       Remote.unsafe.attempt(DynamicEval.mapGet(self.compile, key.compile))
 
-    def getOrElse(key: Remote[A], default: Remote[B]): Remote[B] = get(key).getOrElse(default)
+    def getOrElse(key: Remote[A], default: Remote[B]): Remote[B] =
+      get(key).getOrElse(default)
 
     def getOrDie(key: Remote[A]): Remote[B] = get(key).getOrDie
 
@@ -29,7 +30,8 @@ trait MapOps {
 
     def map[C](f: Remote[(A, B)] => Remote[(A, C)]): Remote[Map[A, C]] = ???
 
-    def flatMap[C](f: Remote[(A, B)] => Remote[Map[A, C]]): Remote[Map[A, C]] = ???
+    def flatMap[C](f: Remote[(A, B)] => Remote[Map[A, C]]): Remote[Map[A, C]] =
+      ???
   }
 
 }

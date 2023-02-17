@@ -18,7 +18,8 @@ trait SeqOps {
             .filter(self.compile, Remote.fromFunction(f).compileAsFunction)
         )
 
-    def find(f: Remote[A] => Remote[Boolean]): Remote[Option[A]] = filter(f).head
+    def find(f: Remote[A] => Remote[Boolean]): Remote[Option[A]] =
+      filter(f).head
 
     final def flatMap[B](f: Remote[A] => Remote[Seq[B]]): Remote[Seq[B]] =
       Remote

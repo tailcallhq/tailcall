@@ -114,7 +114,8 @@ object RemoteSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(equalTo(Seq(2, 4)))
         },
         test("filter empty") {
-          val program = Remote(Seq(1, 5, 3, 7)).filter(r => r % Remote(2) =:= Remote(0))
+          val program =
+            Remote(Seq(1, 5, 3, 7)).filter(r => r % Remote(2) =:= Remote(0))
           assertZIO(program.evaluate)(equalTo(Seq.empty[Int]))
         },
         test("map") {
@@ -131,7 +132,8 @@ object RemoteSpec extends ZIOSpecDefault {
         test("groupBy") {
           val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
           assertZIO(program.evaluate)(equalTo(
-            Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))))
+            Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))
+          ))
         },
         test("slice") {
           val program = Remote(Seq(1, 2, 3, 4)).slice(1, 3)
@@ -430,8 +432,8 @@ object RemoteSpec extends ZIOSpecDefault {
       suite("batch")(
         test("option") {
           val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
-          val to      =
-          (_: Any) => Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
+          val to      = (_: Any) =>
+            Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
           val program = Remote.batch(
             from,
             to,
@@ -449,7 +451,8 @@ object RemoteSpec extends ZIOSpecDefault {
         },
         test("option order") {
           val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
-          val to      = (_: Any) => Remote(Seq((3, "london"), (2, "paris"), (1, "new york")))
+          val to      = (_: Any) =>
+            Remote(Seq((3, "london"), (2, "paris"), (1, "new york")))
           val program = Remote.batch(
             from,
             to,

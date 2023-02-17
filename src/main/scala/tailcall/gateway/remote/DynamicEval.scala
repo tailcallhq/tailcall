@@ -134,11 +134,13 @@ object DynamicEval {
         extends Operation
   }
 
-  final case class MapOperations(operation: MapOperations.Operation) extends DynamicEval
+  final case class MapOperations(operation: MapOperations.Operation)
+      extends DynamicEval
   object MapOperations {
     sealed trait Operation
-    final case class Get(map: DynamicEval, key: DynamicEval)        extends Operation
-    final case class Cons(value: Chunk[(DynamicEval, DynamicEval)]) extends Operation
+    final case class Get(map: DynamicEval, key: DynamicEval) extends Operation
+    final case class Cons(value: Chunk[(DynamicEval, DynamicEval)])
+        extends Operation
   }
 
   final case class FunctionCall(f: EvalFunction, arg: DynamicEval)
