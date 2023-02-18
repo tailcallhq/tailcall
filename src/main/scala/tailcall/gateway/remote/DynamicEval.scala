@@ -220,6 +220,10 @@ object DynamicEval {
 
   final case class Debug(eval: DynamicEval, str: String) extends DynamicEval
 
+  final case class Recurse(func: EvalFunction) extends DynamicEval
+
+  final case class Flatten(eval: DynamicEval) extends DynamicEval
+
   def add(left: DynamicEval, right: DynamicEval, tag: Numeric[Any]): Math =
     Math(left, right, Math.Binary.Add, tag)
 
@@ -285,7 +289,7 @@ object DynamicEval {
   def length(seq: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Length(seq))
 
-  final def find(seq: DynamicEval, condition: EvalFunction): DynamicEval = ???
+  def find(seq: DynamicEval, condition: EvalFunction): DynamicEval = ???
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
@@ -388,6 +392,10 @@ object DynamicEval {
 
   def cons[A](value: DynamicValue, ctor: Constructor[A]): DynamicEval =
     Literal(value, ctor.asInstanceOf[Constructor[Any]])
+
+  def recurse(func: EvalFunction): DynamicEval = Recurse(func)
+
+  def flatten(r: DynamicEval): DynamicEval = Flatten(r)
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
 }

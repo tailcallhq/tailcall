@@ -3,19 +3,13 @@ package tailcall.gateway
 import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
-import tailcall.gateway.ast.Orc.OExit
 import tailcall.gateway.ast.{Context, Orc}
 import tailcall.gateway.remote.{Remote, RemoteRuntime}
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 
 final class StepGenerator(orc: Orc) {
-  val nodeMap: Map[String, List[Orc.Field]] = orc
-    .nodes
-    .map(node => node.name -> node.fields)
-    .toMap
-
-  def gen(value: Any, standardType: StandardType[_]): Value =
+  def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
       case StandardType.StringType   => Value.StringValue(value.toString)
       case StandardType.IntType      => Value.IntValue(value.toString.toInt)
@@ -54,13 +48,12 @@ final class StepGenerator(orc: Orc) {
       case StandardType.DurationType      => Value.StringValue(value.toString)
       case StandardType.DayOfWeekType     => Value.StringValue(value.toString)
     }
-
-  def toValue(input: DynamicValue): ResponseValue = {
+  def toValue(input: DynamicValue): ResponseValue               = {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue
           .ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) =>
-        gen(value, standardType)
+        toValue(value, standardType)
       case DynamicValue.Dictionary(_)                  => ???
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.NoneValue                      => ???
@@ -76,41 +69,20 @@ final class StepGenerator(orc: Orc) {
     }
   }
 
-  def gen(
-    name: String,
-    fields: List[Orc.Field],
-    context: Context
-  ): RemoteStep = {
-
-    Step.ObjectStep(
-      name,
-      fields.map(field => field.name -> gen(field.resolver, context)).toMap
-    )
-  }
-
-  def gen(resolver: Orc.Resolver, context: Context): RemoteStep = {
-    Step.QueryStep(ZQuery.fromZIO(
-      resolver
-        .remote(Remote(context))
-        .evaluate
-        .map {
-          case OExit.Value(value) => Step.PureStep(toValue(value))
-          case OExit.Ref(name)    => nodeMap(name) match {
-              case fields => gen(name, fields, context)
-              case Nil    => Step.NullStep
-            }
-        }
-    ))
-  }
-
-  def gen: RemoteStep = {
-    val context = Context(DynamicValue(()))
-
-    orc.nodes.headOption match {
-      case None        => Step.NullStep
-      case Some(value) => gen(value.name, value.fields, context)
+  def gen(orc: Orc, context: Remote[Context]): RemoteStep = {
+    orc match {
+      case Orc.OrcValue(dynamicValue)  => Step.PureStep(toValue(dynamicValue))
+      case Orc.OrcObject(name, fields) => Step.ObjectStep(
+          name,
+          fields.map { case (name, orc) => (name, gen(orc, context)) }
+        )
+      case Orc.OrcList(values)  => Step.ListStep(values.map(gen(_, context)))
+      case Orc.OrcFunction(fun) => Step
+          .QueryStep(ZQuery.fromZIO(fun(context).evaluate.map(gen(_, context))))
     }
   }
+
+  def gen: RemoteStep = { gen(orc, Remote(Context(DynamicValue(())))) }
 }
 
 object StepGenerator {

@@ -215,6 +215,12 @@ object RemoteRuntime {
         case _: DynamicValueOperations => ???
 
         case Debug(self, prefix) => evaluate(self).debug(prefix)
+
+        case Recurse(func) =>
+          println("RECURSE")
+          ???
+
+        case Flatten(eval) => evaluateAs[Remote[_]](eval).flatMap(evaluate(_))
       }
   }
 

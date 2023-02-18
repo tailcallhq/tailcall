@@ -8,10 +8,8 @@ import tailcall.gateway.StepGenerator
 import tailcall.gateway.remote.{Remote, RemoteRuntime}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
-final case class Orc(nodes: List[Orc.NamedNode]) {
+sealed trait Orc {
   self =>
-  def ++(other: Orc): Orc = Orc(self.nodes ++ other.nodes)
-
   def toGraphQL: GraphQL[RemoteRuntime] =
     new GraphQL[RemoteRuntime] {
       val schema = new caliban.schema.Schema[RemoteRuntime, Orc] {
@@ -38,40 +36,23 @@ final case class Orc(nodes: List[Orc.NamedNode]) {
 }
 
 object Orc {
-  final case class Resolver(remote: Remote[Context] => Remote[OExit])
-  object Resolver {
-    def make[A](
-      f: Remote[Context] => Remote[A]
-    )(implicit schema: Schema[A]): Resolver =
-      Resolver(context => Remote(OExit.value(f(context).toDynamicValue)))
+  final case class OrcValue(dynamicValue: DynamicValue)              extends Orc
+  final case class OrcObject(name: String, fields: Map[String, Orc]) extends Orc
+  final case class OrcList(values: List[Orc])                        extends Orc
+  final case class OrcFunction(fun: Remote[Context] => Remote[Orc])  extends Orc
+  final case class OrcRef(name: String)                              extends Orc
 
-    def value[A](a: A)(implicit schema: Schema[A]): Resolver =
-      Resolver(_ => Remote(OExit.value(a)))
+  def value[A](a: A)(implicit schema: Schema[A]): Orc =
+    OrcValue(schema.toDynamic(a))
 
-    def ref(name: String): Resolver = Resolver(_ => Remote(OExit.ref(name)))
-  }
-  final case class Field(name: String, resolver: Resolver)
-  final case class NamedNode(name: String, fields: List[Field])
+  def obj(name: String)(fields: (String, Orc)*): Orc =
+    OrcObject(name, fields.toMap)
 
-  sealed trait OExit
-  object OExit {
-    final case class Value(value: DynamicValue) extends OExit
-    final case class Ref(name: String)          extends OExit
+  def list(values: Orc*): Orc = OrcList(values.toList)
 
-    def value[A](a: A)(implicit schema: Schema[A]): OExit =
-      Value(DynamicValue(a))
+  def function(fun: Remote[Context] => Remote[Orc]): Orc = OrcFunction(fun)
 
-    def ref(name: String): OExit = Ref(name)
-
-    implicit lazy val schema: Schema[OExit] = DeriveSchema.gen[OExit]
-  }
-
-  def node(name: String)(fields: (String, Resolver)*): NamedNode =
-    NamedNode(name, fields.map(field).toList)
-
-  def field(input: (String, Resolver)): Field = Field(input._1, input._2)
-
-  def make(nodes: NamedNode*): Orc = Orc(nodes.toList)
+  def ref(ref: String): Orc = OrcRef(ref)
 
   implicit lazy val schema: Schema[Orc] = DeriveSchema.gen[Orc]
 }

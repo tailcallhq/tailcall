@@ -63,10 +63,13 @@ sealed trait Remote[+A] {
   final def debug(message: String): Remote[A] =
     attempt(DynamicEval.debug(self.compile, message))
 
-  def toDynamicValue[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
+  final def toDynamicValue[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
     ???
 
-  def evaluate: ZIO[RemoteRuntime, Throwable, A] = RemoteRuntime.evaluate(self)
+  final def flatten[B](implicit ev: Remote[A] <:< Remote[Remote[B]]): Remote[B] =
+    Remote.flatten(self)
+
+  final def evaluate: ZIO[RemoteRuntime, Throwable, A] = RemoteRuntime.evaluate(self)
 }
 
 object Remote

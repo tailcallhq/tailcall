@@ -95,4 +95,12 @@ trait RemoteCtors {
       )
     )
   }
+
+  def flatten[A](r: Remote[Remote[A]]): Remote[A] =
+    Remote.unsafe.attempt(DynamicEval.flatten(r.compile))
+
+  def recurse[A, B](f: Remote[(A, A => B)] => Remote[B]): Remote[A => B] =
+    Remote
+      .unsafe
+      .attempt(DynamicEval.recurse(Remote.fromFunction(f).compileAsFunction))
 }
