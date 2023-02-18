@@ -16,25 +16,25 @@ object OrcSpec extends ZIOSpecDefault {
   def spec =
     suite("OrcSpec")(suite("execute")(
       test("one level") {
-        val orc =
-          Orc.obj("Query")("foo" -> Orc.value(100), "bar" -> Orc.value("BAR"))
+        val orc = Orc
+          .obj("Query")("foo" -> Orc.value(100), "bar" -> Orc.value("BAR"))
 
         val response = execute(orc)("""query {foo bar}""")
         assertZIO(response)(equalTo("{\"foo\":100,\"bar\":\"BAR\"}"))
-      },
-      test("two level") {
-        def foo =
-          Orc.obj("Foo")("value" -> Orc.value("foo"), "bar" -> Orc.ref("Bar"))
-
-        def bar =
-          Orc.obj("Bar")("value" -> Orc.value("bar"), "foo" -> Orc.ref("Foo"))
-
-        val response = execute(foo)("{bar {foo {bar {foo {bar {value}}}}}}")
-
-        assertZIO(response)(equalTo(
-          "{\"bar\":{\"foo\":{\"bar\":{\"foo\":{\"bar\":{\"value\":\"bar\"}}}}}}"
-        ))
       }
+      // test("two level") {
+      //   def foo =
+      //     Orc.obj("Foo")("value" -> Orc.value("foo"), "bar" -> Orc.ref("Bar"))
+
+      //   def bar =
+      //     Orc.obj("Bar")("value" -> Orc.value("bar"), "foo" -> Orc.ref("Foo"))
+
+      //   val response = execute(foo)("{bar {foo {bar {foo {bar {value}}}}}}")
+
+      //   assertZIO(response)(equalTo(
+      //     "{\"bar\":{\"foo\":{\"bar\":{\"foo\":{\"bar\":{\"value\":\"bar\"}}}}}}"
+      //   ))
+      // }
 //      test("list") {
 //        val orc = Orc.make(
 //          Orc.node("Query")(

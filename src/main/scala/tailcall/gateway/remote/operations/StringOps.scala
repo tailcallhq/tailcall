@@ -7,7 +7,9 @@ trait StringOps {
     def ++(other: Remote[String]): Remote[String] =
       Remote
         .unsafe
-        .attempt(DynamicEval.concatStrings(self.compile, other.compile))
+        .attempt(ctx =>
+          DynamicEval.concatStrings(self.compile(ctx), other.compile(ctx))
+        )
   }
 
   implicit final class ComposeStringInterpolator(val sc: StringContext) {

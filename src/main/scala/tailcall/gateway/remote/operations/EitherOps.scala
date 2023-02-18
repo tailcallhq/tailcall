@@ -12,11 +12,13 @@ trait EitherOps {
     ): Remote[B] =
       Remote
         .unsafe
-        .attempt(DynamicEval.foldEither(
-          self.compile,
-          Remote.fromFunction(f).compileAsFunction,
-          Remote.fromFunction(g).compileAsFunction
-        ))
+        .attempt(ctx =>
+          DynamicEval.foldEither(
+            self.compile(ctx),
+            Remote.fromFunction(f).compileAsFunction(ctx),
+            Remote.fromFunction(g).compileAsFunction(ctx)
+          )
+        )
 
     def flatMap[B](f: Remote[A] => Remote[Either[E, B]]): Remote[Either[E, B]] =
       fold[Either[E, B]](e => Remote.fromEither(Left(e)), a => f(a))

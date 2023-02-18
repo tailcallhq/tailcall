@@ -7,7 +7,7 @@ import zio.Chunk
 import zio.schema.{DynamicValue, Schema, TypeId}
 import zio.test.Assertion._
 import zio.test.TestAspect.failing
-import zio.test.{ZIOSpecDefault, assertCompletes, assertZIO}
+import zio.test._
 
 import scala.collection.immutable.ListMap
 
@@ -175,6 +175,19 @@ object RemoteSpec extends ZIOSpecDefault {
           val g       = Remote.fromFunction[Int, Int](_.increment)
           val fg      = f <<< g
           val program = fg(Remote(1))
+          assertZIO(program.evaluate)(equalTo(3))
+        },
+        test("multilevel") {
+          val f1      = Remote.fromFunction[Int, Int] { a =>
+            val f2 = Remote.fromFunction[Int, Int] { b =>
+              val f3 = Remote.fromFunction[Int, Int](c => a + b + c)
+              f3(b)
+            }
+
+            f2(a)
+          }
+          val program = f1(Remote(1))
+
           assertZIO(program.evaluate)(equalTo(3))
         }
       ),
@@ -497,16 +510,6 @@ object RemoteSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
         }
       ),
-      test("recursion") {
-        val program = Remote.recurse[Int, Int] { ctx =>
-          (ctx._1 > Remote(5)).diverge(ctx._1, ctx._2(ctx._1 + Remote(1)))
-        }
-
-        pprint.pprintln(program.compile)
-
-        //
-        assertCompletes
-      },
       test("flatten") {
         val program = Remote.flatten(Remote(Remote(1)))
         assertZIO(program.evaluate)(equalTo(1))

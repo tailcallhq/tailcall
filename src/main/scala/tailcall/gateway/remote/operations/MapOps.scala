@@ -5,7 +5,9 @@ import tailcall.gateway.remote.{DynamicEval, Remote}
 trait MapOps {
   implicit final class RemoteMapOps[A, B](val self: Remote[Map[A, B]]) {
     def get(key: Remote[A]): Remote[Option[B]] =
-      Remote.unsafe.attempt(DynamicEval.mapGet(self.compile, key.compile))
+      Remote
+        .unsafe
+        .attempt(ctx => DynamicEval.mapGet(self.compile(ctx), key.compile(ctx)))
 
     def getOrElse(key: Remote[A], default: Remote[B]): Remote[B] =
       get(key).getOrElse(default)

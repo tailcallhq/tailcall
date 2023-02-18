@@ -16,27 +16,33 @@ sealed trait Remote[+A] {
 
   import Remote.unsafe.attempt
 
-  // TODO: wrap inside an unsafe
-  def compile: DynamicEval
+  def compile(context: CompilationContext): DynamicEval
 
   final def =:=[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Equatable[A1]): Remote[Boolean] =
-    attempt(DynamicEval.equal(self.compile, other.compile, tag.any))
+    attempt(ctx =>
+      DynamicEval.equal(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def >[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[Boolean] =
-    attempt(DynamicEval.greaterThan(self.compile, other.compile, tag.any))
+    attempt(ctx =>
+      DynamicEval.greaterThan(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def increment[A1 >: A](implicit
     tag: Numeric[A1],
     ctor: Constructor[A1]
   ) = self + Remote(tag.one)
 
-  final def +[A1 >: A](other: Remote[A1])(implicit
-    tag: Numeric[A1]
-  ): Remote[A1] = attempt(DynamicEval.add(self.compile, other.compile, tag.any))
+  final def +[A1 >: A](
+    other: Remote[A1]
+  )(implicit tag: Numeric[A1]): Remote[A1] =
+    attempt(ctx =>
+      DynamicEval.add(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def -[A1 >: A](other: Remote[A1])(implicit
     tag: Numeric[A1]
@@ -45,31 +51,40 @@ sealed trait Remote[+A] {
   final def *[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(DynamicEval.multiply(self.compile, other.compile, tag.any))
+    attempt(ctx =>
+      DynamicEval.multiply(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def /[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(DynamicEval.divide(self.compile, other.compile, tag.any))
+    attempt(ctx =>
+      DynamicEval.divide(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def %[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(DynamicEval.modulo(self.compile, other.compile, tag.any))
+    attempt(ctx =>
+      DynamicEval.modulo(self.compile(ctx), other.compile(ctx), tag.any)
+    )
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(DynamicEval.negate(self.compile, tag.any))
+    attempt(ctx => DynamicEval.negate(self.compile(ctx), tag.any))
 
   final def debug(message: String): Remote[A] =
-    attempt(DynamicEval.debug(self.compile, message))
+    attempt(ctx => DynamicEval.debug(self.compile(ctx), message))
 
-  final def toDynamicValue[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
-    ???
+  final def toDynamicValue[A1 >: A](implicit
+    ev: Schema[A1]
+  ): Remote[DynamicValue] = ???
 
-  final def flatten[B](implicit ev: Remote[A] <:< Remote[Remote[B]]): Remote[B] =
-    Remote.flatten(self)
+  final def flatten[B](implicit
+    ev: Remote[A] <:< Remote[Remote[B]]
+  ): Remote[B] = Remote.flatten(self)
 
-  final def evaluate: ZIO[RemoteRuntime, Throwable, A] = RemoteRuntime.evaluate(self)
+  final def evaluate: ZIO[RemoteRuntime, Throwable, A] =
+    RemoteRuntime.evaluate(self)
 }
 
 object Remote
@@ -87,15 +102,18 @@ object Remote
 
   object unsafe {
     object attempt {
-      def apply[A](eval: => DynamicEval): Remote[A] =
+      def apply[A](eval: CompilationContext => DynamicEval): Remote[A] =
         new Remote[A] {
-          override def compile: DynamicEval = eval
+          override def compile(context: CompilationContext): DynamicEval =
+            eval(context)
         }
     }
   }
 
-  implicit val anySchema: Schema[Remote[_]] = Schema[DynamicEval]
-    .transform(unsafe.attempt(_), _.compile)
+  implicit val anySchema: Schema[Remote[_]] = Schema[DynamicEval].transform(
+    eval => unsafe.attempt(_ => eval),
+    _.compile(CompilationContext.initial)
+  )
 
   implicit def schema[A]: Schema[Remote[A]] =
     anySchema.asInstanceOf[Schema[Remote[A]]]

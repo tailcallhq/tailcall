@@ -7,12 +7,14 @@ import zio.schema.DynamicValue
 trait ContextOps {
   implicit final class RemoteContextOps(private val self: Remote[Context]) {
     def value: Remote[DynamicValue] =
-      Remote.unsafe.attempt(DynamicEval.contextValue(self.compile))
+      Remote.unsafe.attempt(ctx => DynamicEval.contextValue(self.compile(ctx)))
 
     def arg(name: String): Remote[Option[DynamicValue]] =
-      Remote.unsafe.attempt(DynamicEval.contextArgs(self.compile, name))
+      Remote
+        .unsafe
+        .attempt(ctx => DynamicEval.contextArgs(self.compile(ctx), name))
 
     def parent: Remote[Option[Context]] =
-      Remote.unsafe.attempt(DynamicEval.contextParent(self.compile))
+      Remote.unsafe.attempt(ctx => DynamicEval.contextParent(self.compile(ctx)))
   }
 }

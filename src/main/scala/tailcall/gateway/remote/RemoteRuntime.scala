@@ -15,7 +15,7 @@ trait RemoteRuntime {
     evaluate(eval).flatMap(any => ZIO.attempt(any.asInstanceOf[A]))
 
   final def evaluate[A](remote: Remote[A]): Task[A] =
-    evaluateAs[A](remote.compile)
+    evaluateAs[A](remote.compile(CompilationContext.initial))
 
   def evaluate(eval: DynamicEval): Task[Any]
 }
@@ -23,11 +23,11 @@ trait RemoteRuntime {
 object RemoteRuntime {
   import DynamicEval._
   final class Default(val context: EvaluationContext) extends RemoteRuntime {
-    def call[A](func: EvalFunction, arg: Any): Task[A] =
+    def call[A](func: FunctionDef, arg: Any): Task[A] =
       for {
-        _      <- context.set(func.input.id, arg)
+        _      <- context.set(func.arg.id, arg)
         result <- evaluateAs[A](func.body)
-        _      <- context.drop(func.input.id)
+        _      <- context.drop(func.arg.id)
       } yield result
 
     def evaluate(eval: DynamicEval): Task[Any] =
@@ -145,9 +145,9 @@ object RemoteRuntime {
                 }
               } yield result
           }
-        case FunctionCall(f, arg)        => evaluate(arg).flatMap(call(f, _))
-        case Binding(id)                 => context.get(id)
-        case EvalFunction(_, body)       => evaluate(body)
+        case FunctionCall(arg, f)        => evaluate(arg).flatMap(call(f, _))
+        case Lookup(id)                  => context.get(id)
+        case FunctionDef(_, _)           => ???
         case OptionOperations(operation) => operation match {
             case OptionOperations.Cons(option)            => option match {
                 case Some(value) => evaluate(value).map(Some(_))
@@ -216,9 +216,7 @@ object RemoteRuntime {
 
         case Debug(self, prefix) => evaluate(self).debug(prefix)
 
-        case Recurse(func) =>
-          println("RECURSE")
-          ???
+        case Recurse(_) => ???
 
         case Flatten(eval) => evaluateAs[Remote[_]](eval).flatMap(evaluate(_))
       }
@@ -228,5 +226,7 @@ object RemoteRuntime {
     ZLayer.fromZIO(ZIO.service[EvaluationContext].map(ctx => new Default(ctx)))
 
   def evaluate[A](remote: Remote[A]) =
-    ZIO.serviceWithZIO[RemoteRuntime](_.evaluateAs[A](remote.compile))
+    ZIO.serviceWithZIO[RemoteRuntime](
+      _.evaluateAs[A](remote.compile(CompilationContext.initial))
+    )
 }

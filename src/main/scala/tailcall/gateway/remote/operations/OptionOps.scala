@@ -7,11 +7,13 @@ trait OptionOps {
     def fold[B](g: Remote[B])(f: Remote[A] => Remote[B]): Remote[B] =
       Remote
         .unsafe
-        .attempt(DynamicEval.foldOption(
-          self.compile,
-          g.compile,
-          Remote.fromFunction(f).compileAsFunction
-        ))
+        .attempt(ctx =>
+          DynamicEval.foldOption(
+            self.compile(ctx),
+            g.compile(ctx),
+            Remote.fromFunction(f).compileAsFunction(ctx)
+          )
+        )
 
     def map[B](f: Remote[A] => Remote[B]): Remote[Option[B]] =
       self.flatMap(a => Remote.fromOption(Some(f(a))))
