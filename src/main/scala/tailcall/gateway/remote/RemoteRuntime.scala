@@ -113,19 +113,20 @@ object RemoteRuntime {
                 result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
               } yield result
 
-            case SeqOperations.FlatMap(seq, operation) => for {
+            case SeqOperations.FlatMap(seq, operation)   => for {
                 seq    <- evaluateAs[Seq[Any]](seq)
                 result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
               } yield result.flatten
-            case SeqOperations.Length(seq)             =>
+            case SeqOperations.Length(seq)               =>
               evaluateAs[Seq[_]](seq).map(_.length)
-            case SeqOperations.Slice(seq, from, to)    => for {
+            case SeqOperations.Slice(seq, from, to)      => for {
                 seq    <- evaluateAs[Seq[_]](seq)
                 result <- ZIO.succeed(seq.slice(from, to))
               } yield result
-            case SeqOperations.Head(seq)               =>
+            case SeqOperations.Head(seq)                 =>
               evaluateAs[Seq[_]](seq).map(_.headOption)
-            case SeqOperations.Sequence(value) => ZIO.foreach(value)(evaluate)
+            case SeqOperations.Sequence(value, _)        =>
+              ZIO.foreach(value)(evaluate)
             case SeqOperations.GroupBy(seq, keyFunction) => for {
                 seq <- evaluateAs[Seq[Any]](seq)
                 map <- ZIO.foreach(seq)(any =>

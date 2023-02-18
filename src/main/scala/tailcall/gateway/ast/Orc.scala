@@ -55,4 +55,5 @@ object Orc {
   def ref(ref: String): Orc = OrcRef(ref)
 
   implicit lazy val schema: Schema[Orc] = DeriveSchema.gen[Orc]
+
 }

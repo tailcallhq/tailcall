@@ -41,4 +41,10 @@ object Constructor {
 
   implicit def remote[A]: Constructor[Remote[A]] =
     Constructor(Schema[Remote[A]])
+  implicit def option[A](implicit
+    ctor: Constructor[A]
+  ): Constructor[Option[A]] = {
+    implicit val schema: Schema[A] = ctor.schema
+    Constructor(Schema[Option[A]])
+  }
 }
