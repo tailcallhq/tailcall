@@ -13,9 +13,9 @@ trait RemoteCtors {
       .unsafe
       .attempt { ctx =>
         val next = ctx.withNextLevel
-        val id   = DynamicEval.lookup(next.level)
+        val id   = DynamicEval.lookup(next)
         DynamicEval
-          .bind(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
+          .functionDef(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
       }
 
   def fromSeq[A](a: Seq[Remote[A]]): Remote[Seq[A]] =
@@ -124,7 +124,5 @@ trait RemoteCtors {
   def recurse[A, B](f: Remote[(A, A => B)] => Remote[B]): Remote[A => B] =
     Remote
       .unsafe
-      .attempt(ctx =>
-        DynamicEval.recurse(Remote.fromFunction(f).compileAsFunction(ctx))
-      )
+      .attempt(ctx => DynamicEval.recurse(Remote.fromFunction(f).compile(ctx)))
 }

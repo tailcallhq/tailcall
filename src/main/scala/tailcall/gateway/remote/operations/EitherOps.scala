@@ -15,8 +15,8 @@ trait EitherOps {
         .attempt(ctx =>
           DynamicEval.foldEither(
             self.compile(ctx),
-            Remote.fromFunction(f).compileAsFunction(ctx),
-            Remote.fromFunction(g).compileAsFunction(ctx)
+            Remote.fromFunction(f).compile(ctx),
+            Remote.fromFunction(g).compile(ctx)
           )
         )
 

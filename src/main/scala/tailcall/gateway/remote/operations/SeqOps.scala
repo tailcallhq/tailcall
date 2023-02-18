@@ -18,10 +18,8 @@ trait SeqOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.filter(
-            self.compile(ctx),
-            Remote.fromFunction(f).compileAsFunction(ctx)
-          )
+          DynamicEval
+            .filter(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
         )
 
     def find(f: Remote[A] => Remote[Boolean]): Remote[Option[A]] =
@@ -31,10 +29,8 @@ trait SeqOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.flatMap(
-            self.compile(ctx),
-            Remote.fromFunction(f).compileAsFunction(ctx)
-          )
+          DynamicEval
+            .flatMap(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
         )
 
     final def map[B](f: Remote[A] => Remote[B]): Remote[Seq[B]] =
@@ -64,10 +60,8 @@ trait SeqOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.groupBy(
-            self.compile(ctx),
-            Remote.fromFunction(f).compileAsFunction(ctx)
-          )
+          DynamicEval
+            .groupBy(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
         )
   }
 }

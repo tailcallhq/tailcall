@@ -1,6 +1,6 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.{CompilationContext, DynamicEval, Remote}
+import tailcall.gateway.remote.{DynamicEval, Remote}
 
 trait FunctionOps {
   implicit final class FunctionOps[A, B](private val self: Remote[A => B]) {
@@ -11,12 +11,7 @@ trait FunctionOps {
     def apply(a1: Remote[A]): Remote[B] =
       Remote
         .unsafe
-        .attempt(ctx =>
-          DynamicEval.call(self.compileAsFunction(ctx), a1.compile(ctx))
-        )
-
-    def compileAsFunction(ctx: CompilationContext): DynamicEval.FunctionDef =
-      self.compile(ctx).asInstanceOf[DynamicEval.FunctionDef]
+        .attempt(ctx => DynamicEval.call(self.compile(ctx), a1.compile(ctx)))
 
     def toFunction: Remote[A] => Remote[B] = a => self(a)
 

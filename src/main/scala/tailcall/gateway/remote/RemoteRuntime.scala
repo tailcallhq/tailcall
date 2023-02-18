@@ -23,14 +23,15 @@ trait RemoteRuntime {
 object RemoteRuntime {
   import DynamicEval._
   final class Default(val context: EvaluationContext) extends RemoteRuntime {
-    def call[A](func: FunctionDef, arg: Any): Task[A] =
+    def call[A](eval: DynamicEval, arg: Any): Task[A] = {
+      val func = eval.asInstanceOf[FunctionDef]
       for {
         _      <- context.set(func.arg.id, arg)
         result <- evaluateAs[A](func.body)
         _      <- context.drop(func.arg.id)
       } yield result
-
-    def evaluate(eval: DynamicEval): Task[Any] =
+    }
+    def evaluate(eval: DynamicEval): Task[Any]        =
       eval match {
         case Literal(value, ctor) => ZIO
             .fromEither(value.toTypedValue(ctor.schema))

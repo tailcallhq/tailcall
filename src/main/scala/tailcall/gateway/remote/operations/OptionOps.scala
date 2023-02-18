@@ -11,7 +11,7 @@ trait OptionOps {
           DynamicEval.foldOption(
             self.compile(ctx),
             g.compile(ctx),
-            Remote.fromFunction(f).compileAsFunction(ctx)
+            Remote.fromFunction(f).compile(ctx)
           )
         )
 

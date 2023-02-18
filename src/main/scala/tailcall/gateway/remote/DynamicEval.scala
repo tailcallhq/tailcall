@@ -117,9 +117,9 @@ object DynamicEval {
     final case class Concat(left: DynamicEval, right: DynamicEval)
         extends Operation
     final case class Reverse(seq: DynamicEval)           extends Operation
-    final case class Filter(seq: DynamicEval, condition: FunctionDef)
+    final case class Filter(seq: DynamicEval, condition: DynamicEval)
         extends Operation
-    final case class FlatMap(seq: DynamicEval, operation: FunctionDef)
+    final case class FlatMap(seq: DynamicEval, operation: DynamicEval)
         extends Operation
     final case class Length(seq: DynamicEval)            extends Operation
     final case class IndexOf(seq: DynamicEval, element: DynamicEval)
@@ -128,7 +128,7 @@ object DynamicEval {
         extends Operation
     final case class Head(seq: DynamicEval)              extends Operation
     final case class Sequence(value: Chunk[DynamicEval]) extends Operation
-    final case class GroupBy(seq: DynamicEval, keyFunction: FunctionDef)
+    final case class GroupBy(seq: DynamicEval, keyFunction: DynamicEval)
         extends Operation
   }
 
@@ -141,10 +141,14 @@ object DynamicEval {
         extends Operation
   }
 
-  final case class FunctionCall(arg: DynamicEval, body: FunctionDef)
+  final case class FunctionCall(arg: DynamicEval, body: DynamicEval)
       extends DynamicEval
 
-  final case class Lookup(id: Int) extends DynamicEval
+  final case class Lookup(id: EvaluationContext.Key) extends DynamicEval
+  object Lookup {
+    def apply(context: CompilationContext): Lookup =
+      Lookup((context.level, context.index))
+  }
 
   final case class EitherOperations(operation: EitherOperations.Operation)
       extends DynamicEval
@@ -154,8 +158,8 @@ object DynamicEval {
         extends Operation
     final case class Fold(
       value: DynamicEval,
-      left: FunctionDef,
-      right: FunctionDef
+      left: DynamicEval,
+      right: DynamicEval
     ) extends Operation
   }
 
@@ -179,7 +183,7 @@ object DynamicEval {
     final case class Fold(
       value: DynamicEval,
       none: DynamicEval,
-      some: FunctionDef
+      some: DynamicEval
     ) extends Operation
   }
 
@@ -215,7 +219,7 @@ object DynamicEval {
 
   final case class Debug(eval: DynamicEval, str: String) extends DynamicEval
 
-  final case class Recurse(func: FunctionDef) extends DynamicEval
+  final case class Recurse(func: DynamicEval) extends DynamicEval
 
   final case class Flatten(eval: DynamicEval) extends DynamicEval
 
@@ -261,14 +265,14 @@ object DynamicEval {
     tag: Equatable[Any]
   ): DynamicEval = EqualTo(left, right, tag.any)
 
-  def lookup(id: Int): Lookup = Lookup(id)
+  def lookup(ctx: CompilationContext): Lookup = Lookup(ctx)
 
-  def call(f: FunctionDef, arg: DynamicEval): DynamicEval = FunctionCall(arg, f)
+  def call(f: DynamicEval, arg: DynamicEval): DynamicEval = FunctionCall(arg, f)
 
-  def filter(seq: DynamicEval, condition: FunctionDef): DynamicEval =
+  def filter(seq: DynamicEval, condition: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Filter(seq, condition))
 
-  def flatMap(seq: DynamicEval, operation: FunctionDef): DynamicEval =
+  def flatMap(seq: DynamicEval, operation: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.FlatMap(seq, operation))
 
   def concat(left: DynamicEval, right: DynamicEval): DynamicEval =
@@ -283,7 +287,7 @@ object DynamicEval {
   def length(seq: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Length(seq))
 
-  def find(seq: DynamicEval, condition: FunctionDef): DynamicEval = ???
+  def find(seq: DynamicEval, condition: DynamicEval): DynamicEval = ???
 
   def indexOf(seq: DynamicEval, element: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.IndexOf(seq, element))
@@ -296,13 +300,13 @@ object DynamicEval {
   def head(seq: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.Head(seq))
 
-  def groupBy(seq: DynamicEval, keyFunction: FunctionDef): DynamicEval =
+  def groupBy(seq: DynamicEval, keyFunction: DynamicEval): DynamicEval =
     SeqOperations(SeqOperations.GroupBy(seq, keyFunction))
 
   def foldEither(
     value: DynamicEval,
-    left: FunctionDef,
-    right: FunctionDef
+    left: DynamicEval,
+    right: DynamicEval
   ): DynamicEval = EitherOperations(EitherOperations.Fold(value, left, right))
 
   def concatStrings(left: DynamicEval, right: DynamicEval): DynamicEval =
@@ -317,7 +321,7 @@ object DynamicEval {
   def either(a: Either[DynamicEval, DynamicEval]): DynamicEval =
     EitherOperations(EitherOperations.Cons(a))
 
-  def bind(input: Lookup, body: DynamicEval): DynamicEval =
+  def functionDef(input: Lookup, body: DynamicEval): DynamicEval =
     FunctionDef(input, body)
 
   def contextValue(context: DynamicEval): DynamicEval =
@@ -332,7 +336,7 @@ object DynamicEval {
   def foldOption(
     value: DynamicEval,
     none: DynamicEval,
-    some: FunctionDef
+    some: DynamicEval
   ): DynamicEval = OptionOperations(OptionOperations.Fold(value, none, some))
 
   def option(value: Option[DynamicEval]): DynamicEval =
@@ -387,7 +391,7 @@ object DynamicEval {
   def cons[A](value: DynamicValue, ctor: Constructor[A]): DynamicEval =
     Literal(value, ctor.asInstanceOf[Constructor[Any]])
 
-  def recurse(func: FunctionDef): DynamicEval = Recurse(func)
+  def recurse(func: DynamicEval): DynamicEval = Recurse(func)
 
   def flatten(r: DynamicEval): DynamicEval = Flatten(r)
 

@@ -19,7 +19,8 @@ object EvaluationError {
     schema: Schema[_]
   ) extends EvaluationError
 
-  final case class BindingNotFound(id: Int) extends EvaluationError
+  final case class BindingNotFound(id: EvaluationContext.Key)
+      extends EvaluationError
 
   final case class Death(message: String) extends EvaluationError
 

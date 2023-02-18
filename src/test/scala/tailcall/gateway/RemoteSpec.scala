@@ -189,7 +189,12 @@ object RemoteSpec extends ZIOSpecDefault {
           val program = f1(Remote(1))
 
           assertZIO(program.evaluate)(equalTo(3))
-        }
+        },
+        test("higher order function") {
+          val f1 = Remote.fromFunction[Int => Int, Int](f => f(Remote(100)))
+          val program = f1(Remote.fromFunction[Int, Int](_.increment))
+          assertZIO(program.evaluate)(equalTo(101))
+        } @@ failing
       ),
       suite("either")(
         test("left") {
