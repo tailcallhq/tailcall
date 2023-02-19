@@ -25,6 +25,9 @@ sealed trait Lambda[-A, +B] {
   final def apply[A1 <: A](a: A1)(implicit ev: Constructor[A1]): Lazy[B] =
     Lambda(a) >>> self
 
+  final def apply(a: Lazy[A]): Lazy[B] =
+    a >>> self
+
 }
 
 object Lambda {

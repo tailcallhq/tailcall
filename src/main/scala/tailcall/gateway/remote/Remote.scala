@@ -1,9 +1,7 @@
 package tailcall.gateway.remote
 
-import tailcall.gateway.remote.DynamicEval.{EqualTo, Math}
 import tailcall.gateway.remote.operations._
-import zio.ZIO
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.Schema
 
 /**
  * Remote[A] Allows for any arbitrary computation that can
@@ -30,10 +28,7 @@ object Remote
   object unsafe {
     object attempt {
       def apply[A](eval: CompilationContext => DynamicEval): Remote[A] =
-        new Remote[A] {
-          override def compile(context: CompilationContext): DynamicEval =
-            eval(context)
-        }
+        Lambda.unsafe.attempt(eval)
     }
   }
 
