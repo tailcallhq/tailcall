@@ -1,6 +1,5 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.DynamicEval.FunctionCall
 import tailcall.gateway.remote.Remote
 
 trait FunctionOps {
@@ -9,10 +8,7 @@ trait FunctionOps {
 
     def >>>[C](other: Remote[B => C]): Remote[A => C] = pipe(other)
 
-    def apply(a1: Remote[A]): Remote[B] =
-      Remote
-        .unsafe
-        .attempt(ctx => FunctionCall(a1.compile(ctx), self.compile(ctx)))
+    def apply(a1: Remote[A]): Remote[B] = ???
 
     def toFunction: Remote[A] => Remote[B] = a => self(a)
 

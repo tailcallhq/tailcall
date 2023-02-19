@@ -13,14 +13,14 @@ trait RemoteCtors {
         Literal(ctor.schema.toDynamic(a), ctor.asInstanceOf[Constructor[Any]])
       )
 
-  def fromFunction[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] =
-    Remote
+  def fromFunction[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] = ???
+  /*Remote
       .unsafe
       .attempt { ctx =>
         val next = ctx.withNextLevel
         val id   = Lookup(next)
         FunctionDef(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
-      }
+      }*/
 
   def fromSeq[A](
     a: Seq[Remote[A]]

@@ -9,20 +9,28 @@ trait BooleanOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          Logical(self.compile(ctx), other.compile(ctx), Logical.Binary.And)
+          Logical(
+            Logical
+              .Binary(self.compile(ctx), other.compile(ctx), Logical.Binary.And)
+          )
         )
 
     def ||(other: Remote[Boolean]): Remote[Boolean] =
       Remote
         .unsafe
         .attempt(ctx =>
-          Logical(self.compile(ctx), other.compile(ctx), Logical.Binary.Or)
+          Logical(
+            Logical
+              .Binary(self.compile(ctx), other.compile(ctx), Logical.Binary.Or)
+          )
         )
 
     def unary_! : Remote[Boolean] =
       Remote
         .unsafe
-        .attempt(ctx => Logical(self.compile(ctx), Logical.Unary.Not))
+        .attempt(ctx =>
+          Logical(Logical.Unary(self.compile(ctx), Logical.Unary.Not))
+        )
 
     def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] =
       Remote

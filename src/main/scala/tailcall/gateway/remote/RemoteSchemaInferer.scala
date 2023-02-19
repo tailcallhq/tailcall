@@ -45,7 +45,6 @@ class RemoteSchemaInferer {
             Schema.map(inferSchema(keyFunction), inferSchema(seq))
         }
       case DynamicEval.MapOperations(_)             => ???
-      case DynamicEval.FunctionCall(_, b)           => inferSchema(b)
       case DynamicEval.EitherOperations(operation)  => operation match {
           case EitherOperations.Cons(value)   => value match {
               case Left(v)  => Schema.either(inferSchema(v), Schema[Unit])
@@ -60,8 +59,6 @@ class RemoteSchemaInferer {
       case DynamicEval.Die(_)                       => ???
       case DynamicEval.DynamicValueOperations(_, _) => ???
       case DynamicEval.Debug(_, _)                  => ???
-      case DynamicEval.FunctionDef(_, b)            => inferSchema(b)
-      case DynamicEval.Lookup(_)                    => ???
       case DynamicEval.Flatten(b)                   => inferSchema(b)
       case DynamicEval.Recurse(b)                   => inferSchema(b)
     }
