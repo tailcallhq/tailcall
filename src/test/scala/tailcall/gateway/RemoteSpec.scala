@@ -519,5 +519,5 @@ object RemoteSpec extends ZIOSpecDefault {
         val program = Remote.flatten(Remote(Remote(1)))
         assertZIO(program.evaluate)(equalTo(1))
       }
-    ).provide(RemoteRuntime.live, EvaluationContext.live)
+    ).provide(LambdaRuntime.live, EvaluationContext.live)
 }

@@ -10,14 +10,14 @@ import zio.schema.{DynamicValue, Schema, TypeId}
 import java.nio.charset.StandardCharsets
 import scala.collection.immutable.ListMap
 
-trait RemoteRuntime {
+trait LambdaRuntime {
   def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B]
 }
 
-object RemoteRuntime {
+object LambdaRuntime {
   import DynamicEval._
 
-  final class Live(ctx: EvaluationContext) extends RemoteRuntime {
+  final class Live(ctx: EvaluationContext) extends LambdaRuntime {
     def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
       evaluate(lambda.compile(CompilationContext.initial))
         .asInstanceOf[LExit[Any, Throwable, A, B]]
@@ -244,9 +244,9 @@ object RemoteRuntime {
     }
   }
 
-  def live: ZLayer[EvaluationContext, Nothing, RemoteRuntime] =
+  def live: ZLayer[EvaluationContext, Nothing, LambdaRuntime] =
     ZLayer.fromZIO(ZIO.service[EvaluationContext].map(new Live(_)))
 
-  def evaluate[A, B](ab: A ~> B): LExit[RemoteRuntime, Throwable, A, B] =
-    LExit.fromZIO(ZIO.service[RemoteRuntime]).flatMap(_.evaluate(ab))
+  def evaluate[A, B](ab: A ~> B): LExit[LambdaRuntime, Throwable, A, B] =
+    LExit.fromZIO(ZIO.service[LambdaRuntime]).flatMap(_.evaluate(ab))
 }

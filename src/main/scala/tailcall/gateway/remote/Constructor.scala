@@ -1,7 +1,6 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.ast.{Context, Orc}
-import tailcall.gateway.lambda._
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, StandardType}
 

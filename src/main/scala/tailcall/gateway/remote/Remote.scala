@@ -104,8 +104,7 @@ sealed trait Remote[+A] {
     ev: Remote[A] <:< Remote[Remote[B]]
   ): Remote[B] = Remote.flatten(self)
 
-  final def evaluate: ZIO[RemoteRuntime, Throwable, A] =
-    RemoteRuntime.evaluate(self)
+  final def evaluate: ZIO[LambdaRuntime, Throwable, A] = LambdaRuntime.evaluate(self)
 }
 
 object Remote
