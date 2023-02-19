@@ -1,10 +1,13 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.ast.{Context, Orc}
+import tailcall.gateway.lambda._
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, StandardType}
 
-final case class Constructor[A](schema: Schema[A])
+final case class Constructor[A](schema: Schema[A]) {
+  def any: Constructor[Any] = this.asInstanceOf[Constructor[Any]]
+}
 
 object Constructor {
   implicit def primitive[A](implicit s: StandardType[A]): Constructor[A] =
@@ -47,4 +50,6 @@ object Constructor {
     implicit val schema: Schema[A] = ctor.schema
     Constructor(Schema[Option[A]])
   }
+
+  implicit def lambda[A, B]: Constructor[A ~> B] = Constructor(Schema[A ~> B])
 }

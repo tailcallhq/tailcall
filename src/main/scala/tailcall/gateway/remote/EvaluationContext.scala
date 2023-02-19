@@ -9,7 +9,11 @@ trait EvaluationContext {
 }
 
 object EvaluationContext {
-  type Key = (Int, Int)
+  final case class Key(level: Int, index: Int)
+
+  object Key {
+    def fromContext(ctx: CompilationContext): Key = Key(ctx.level, ctx.index)
+  }
 
   final case class Default(map: Ref[Map[Key, Any]]) extends EvaluationContext {
     def get(id: Key): Task[Any] =

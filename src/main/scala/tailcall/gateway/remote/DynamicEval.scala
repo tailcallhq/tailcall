@@ -148,7 +148,7 @@ object DynamicEval {
   final case class Lookup(id: EvaluationContext.Key) extends DynamicEval
   object Lookup {
     def apply(context: CompilationContext): Lookup =
-      Lookup((context.level, context.index))
+      Lookup(EvaluationContext.Key.fromContext(context))
   }
 
   final case class EitherOperations(operation: EitherOperations.Operation)
