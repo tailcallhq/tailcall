@@ -19,8 +19,6 @@ trait RemoteOps {
 
     import Remote.unsafe.attempt
 
-    def compile(context: CompilationContext): DynamicEval
-
     def =:=[A1 >: A](
       other: Remote[A1]
     )(implicit tag: Equatable[A1]): Remote[Boolean] =
