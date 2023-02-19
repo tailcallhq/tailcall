@@ -21,10 +21,10 @@ sealed trait Lambda[-A, +B] {
         )
       )
 
-  final def apply[A1 <: A](a: A1)(implicit ev: Constructor[A1]): Lazy[B] =
+  final def apply[A1 <: A](a: A1)(implicit ev: Constructor[A1]): Remote[B] =
     Lambda(a) >>> self
 
-  final def apply(a: Lazy[A]): Lazy[B] =
+  final def apply(a: Remote[A]): Remote[B] =
     a >>> self
 
 }
@@ -48,7 +48,7 @@ object Lambda {
         )
       )
 
-  def fromFunction[A, B](f: Lazy[A] => Lazy[B]): A ~> B =
+  def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B =
     Lambda
       .unsafe
       .attempt[A, B] { ctx =>
