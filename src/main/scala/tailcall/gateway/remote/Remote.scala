@@ -29,9 +29,11 @@ sealed trait Remote[+A] {
   )(implicit tag: Numeric[A1]): Remote[Boolean] =
     attempt(ctx =>
       Math(
-        self.compile(ctx),
-        other.compile(ctx),
-        Math.Binary.GreaterThan,
+        Math.Binary(
+          self.compile(ctx),
+          other.compile(ctx),
+          Math.Binary.GreaterThan
+        ),
         tag.any
       )
     )
@@ -45,7 +47,10 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Add, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Add),
+        tag.any
+      )
     )
 
   final def -[A1 >: A](other: Remote[A1])(implicit
@@ -56,25 +61,37 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Multiply, tag.any)
+      Math(
+        Math
+          .Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Multiply),
+        tag.any
+      )
     )
 
   final def /[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Divide, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Divide),
+        tag.any
+      )
     )
 
   final def %[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Modulo, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Modulo),
+        tag.any
+      )
     )
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(ctx => Math(self.compile(ctx), Math.Unary.Negate, tag.any))
+    attempt(ctx =>
+      Math(Math.Unary(self.compile(ctx), Math.Unary.Negate), tag.any)
+    )
 
   final def debug(message: String): Remote[A] =
     attempt(ctx => DynamicEval.Debug(self.compile(ctx), message))
