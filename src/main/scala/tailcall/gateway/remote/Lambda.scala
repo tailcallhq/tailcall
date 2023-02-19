@@ -10,8 +10,7 @@ sealed trait Lambda[-A, +B] {
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] =
     LambdaRuntime.evaluate(self)
 
-  final def evaluateWith(a: A): ZIO[LambdaRuntime, Throwable, B] =
-    evaluate(a)
+  final def evaluateWith(a: A): ZIO[LambdaRuntime, Throwable, B] = evaluate(a)
 
   final def >>>[B1 >: B, C](other: B1 ~> C): A ~> C =
     Lambda

@@ -138,13 +138,15 @@ object LambdaRuntime {
               evaluateAs[Seq[_]](seq).map(_.reverse)
             case SeqOperations.Filter(seq, condition) => for {
                 seq    <- evaluateAs[Seq[_]](seq)
-                result <-
-                  LExit.filter(seq)(any => call[Boolean](condition, any))
+                result <- LExit.filter(seq)((any: Any) =>
+                  evaluateAs[Boolean](condition).provideInput(any)
+                )
               } yield result
 
             case SeqOperations.FlatMap(seq, operation)   => for {
                 seq    <- evaluateAs[Seq[Any]](seq)
-                result <- ZIO.foreach(seq)(any => call[Seq[_]](operation, any))
+                result <-
+                  LExit.foreach(seq)(evaluateAs[Seq[_]](operation).provideInput)
               } yield result.flatten
             case SeqOperations.Length(seq)               =>
               evaluateAs[Seq[_]](seq).map(_.length)
@@ -159,7 +161,7 @@ object LambdaRuntime {
             case SeqOperations.GroupBy(seq, keyFunction) => for {
                 seq <- evaluateAs[Seq[Any]](seq)
                 map <- LExit.foreach(seq)(any =>
-                  call[Any](keyFunction, any).map(_ -> any)
+                  evaluate(keyFunction).provideInput(any).map(_ -> any)
                 )
               } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
           }
@@ -171,8 +173,8 @@ object LambdaRuntime {
             case EitherOperations.Fold(value, left, right) => for {
                 either <- evaluateAs[Either[_, _]](value)
                 result <- either match {
-                  case Left(value)  => call[Any](left, value)
-                  case Right(value) => call[Any](right, value)
+                  case Left(value)  => evaluate(right).provideInput(value)
+                  case Right(value) => evaluate(right).provideInput(value)
                 }
               } yield result
           }
@@ -184,7 +186,7 @@ object LambdaRuntime {
             case OptionOperations.Fold(value, none, some) => for {
                 option <- evaluateAs[Option[_]](value)
                 result <- option match {
-                  case Some(value) => call(some, value)
+                  case Some(value) => evaluate(some).provideInput(value)
                   case None        => evaluate(none)
                 }
               } yield result

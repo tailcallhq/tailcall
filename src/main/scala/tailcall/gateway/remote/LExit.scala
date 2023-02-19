@@ -21,6 +21,13 @@ final case class LExit[-R, +E, -A, +B](exit: A => ZIO[R, E, B])
   ): LExit[R1, E1, A1, B1] = LExit(a => exit(a).flatMap(b => f(b).exit(a)))
 
   def map[C](f: B => C): LExit[R, E, A, C] = LExit(a => exit(a).map(f))
+
+  def provideInput(a: A): LExit[R, E, Any, B] = LExit(_ => exit(a))
+
+  def mapError[E1](f: E => E1): LExit[R, E1, A, B] =
+    LExit(a => exit(a).mapError(f))
+
+  def debug(msg: String): LExit[R, E, A, B] = LExit(a => exit(a).debug(msg))
 }
 
 object LExit {
@@ -38,10 +45,10 @@ object LExit {
 
   def foreach[R, E, A, B, S](seq: Seq[S])(
     f: S => LExit[R, E, A, B]
-  ): LExit[R, E, A, Seq[B]] = ???
+  ): LExit[R, E, A, Chunk[B]] = ???
 
   def filter[R, E, A, B, S](seq: Seq[S])(
-    f: LExit[R, E, A, Boolean]
+    f: S => LExit[R, E, A, Boolean]
   ): LExit[R, E, A, Seq[S]] = ???
 
   def none: LExit[Any, Nothing, Any, Option[Nothing]] =
