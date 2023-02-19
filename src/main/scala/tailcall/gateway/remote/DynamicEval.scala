@@ -5,9 +5,20 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 sealed trait DynamicEval
 object DynamicEval {
   // scalafmt: { maxColumn = 240 }
+  final case class FunctionOperations(operation: FunctionOperations.Operation) extends DynamicEval
+  object FunctionOperations {
+    sealed trait Operation
+    final case class Literal(value: DynamicValue, ctor: Constructor[Any])                extends Operation
+    final case class Pipe(left: DynamicEval, right: DynamicEval)                         extends Operation
+    final case class FunctionDefinition(input: EvaluationContext.Key, body: DynamicEval) extends Operation
+    final case class Lookup(key: EvaluationContext.Key)                                  extends Operation
+    final case class Flatten(plan: DynamicEval)                                          extends Operation
+  }
+
   final case class RemoteOperations(operation: RemoteOperations.Operation) extends DynamicEval
   object RemoteOperations {
     sealed trait Operation
+    // TODO: drop in favor of FunctionOperations
     final case class Literal(value: DynamicValue, ctor: Constructor[Any])                extends Operation
     final case class EqualTo(left: DynamicEval, right: DynamicEval, tag: Equatable[Any]) extends Operation
     final case class Math(operation: Math.Operation, tag: Numeric[Any])                  extends Operation
