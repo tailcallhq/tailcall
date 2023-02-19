@@ -22,6 +22,9 @@ object LambdaRuntime {
       evaluate(lambda.compile(CompilationContext.initial))
         .asInstanceOf[LExit[Any, Throwable, A, B]]
 
+    def evaluateAs[A](eval: DynamicEval): LExit[Any, Throwable, Any, A] =
+      evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
+
     def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
       plan match {
         case FunctionOperations(operation) => operation match {
@@ -55,10 +58,13 @@ object LambdaRuntime {
                 )
               } yield outer
           }
-        case Literal(value, ctor)          => ZIO
-            .fromEither(value.toTypedValue(ctor.schema))
-            .mapError(cause =>
-              EvaluationError.TypeError(value, cause, ctor.schema)
+        case Literal(value, ctor)          => value
+            .toTypedValue(ctor.schema)
+            .fold(
+              cause =>
+                LExit
+                  .fail(EvaluationError.TypeError(value, cause, ctor.schema)),
+              LExit.succeed
             )
 
         case EqualTo(left, right, tag)   => for {
@@ -96,7 +102,7 @@ object LambdaRuntime {
             case Logical.Unary(value, operation) => evaluateAs[Boolean](value)
                 .flatMap { a =>
                   operation match {
-                    case Logical.Unary.Not => ZIO.succeed(!a)
+                    case Logical.Unary.Not => LExit.succeed(!a)
                     case Logical.Unary.Diverge(isTrue, isFalse) =>
                       if (a) evaluate(isTrue) else evaluate(isFalse)
                   }
@@ -114,7 +120,7 @@ object LambdaRuntime {
                 key <- evaluateAs[Any](key)
               } yield map.get(key)
             case MapOperations.Cons(values)  =>
-              val result = ZIO.foreach(values) { case (key, value) =>
+              val result = LExit.foreach(values) { case (key, value) =>
                 evaluate(value).map(key -> _)
               }
               result.map(_.toMap)
@@ -132,7 +138,8 @@ object LambdaRuntime {
               evaluateAs[Seq[_]](seq).map(_.reverse)
             case SeqOperations.Filter(seq, condition) => for {
                 seq    <- evaluateAs[Seq[_]](seq)
-                result <- ZIO.filter(seq)(any => call[Boolean](condition, any))
+                result <-
+                  LExit.filter(seq)(any => call[Boolean](condition, any))
               } yield result
 
             case SeqOperations.FlatMap(seq, operation)   => for {
@@ -143,15 +150,15 @@ object LambdaRuntime {
               evaluateAs[Seq[_]](seq).map(_.length)
             case SeqOperations.Slice(seq, from, to)      => for {
                 seq    <- evaluateAs[Seq[_]](seq)
-                result <- ZIO.succeed(seq.slice(from, to))
+                result <- LExit.succeed(seq.slice(from, to))
               } yield result
             case SeqOperations.Head(seq)                 =>
               evaluateAs[Seq[_]](seq).map(_.headOption)
             case SeqOperations.Sequence(value, _)        =>
-              ZIO.foreach(value)(evaluate)
+              LExit.foreach(value)(evaluate)
             case SeqOperations.GroupBy(seq, keyFunction) => for {
                 seq <- evaluateAs[Seq[Any]](seq)
-                map <- ZIO.foreach(seq)(any =>
+                map <- LExit.foreach(seq)(any =>
                   call[Any](keyFunction, any).map(_ -> any)
                 )
               } yield map.groupBy(_._1).map { case (k, v) => k -> v.map(_._2) }
@@ -172,7 +179,7 @@ object LambdaRuntime {
         case OptionOperations(operation) => operation match {
             case OptionOperations.Cons(option)            => option match {
                 case Some(value) => evaluate(value).map(Some(_))
-                case None        => ZIO.none
+                case None        => LExit.none
               }
             case OptionOperations.Fold(value, none, some) => for {
                 option <- evaluateAs[Option[_]](value)
@@ -184,20 +191,20 @@ object LambdaRuntime {
           }
 
         case Die(message)   => evaluateAs[String](message)
-            .flatMap(message => ZIO.fail(EvaluationError.Death(message)))
+            .flatMap(message => LExit.fail(EvaluationError.Death(message)))
         case Record(fields) => for {
-            f <- ZIO.foreach(fields)(field =>
+            f <- LExit.foreach(fields)(field =>
               evaluateAs[DynamicValue](field._2).map(field._1 -> _)
             )
           } yield DynamicValue.Record(TypeId.Structural, ListMap.from(f))
 
         case TupleOperations(operations) => operations match {
             case TupleOperations.Cons(values)       => for {
-                any <- ZIO.foreach(values)(evaluate)
+                any <- LExit.foreach(values)(evaluate)
                 tup <- ChunkUtil.toTuple(any) match {
                   case null    =>
-                    ZIO.fail(EvaluationError.InvalidTupleSize(any.length))
-                  case product => ZIO.succeed(product)
+                    LExit.fail(EvaluationError.InvalidTupleSize(any.length))
+                  case product => LExit.succeed(product)
                 }
               } yield tup
             case TupleOperations.GetIndex(value, i) => for {
@@ -217,13 +224,13 @@ object LambdaRuntime {
         case EndpointCall(endpoint, arg) => for {
             input <- evaluateAs[DynamicValue](arg)
             req = endpoint.evaluate(input).toHttpRequest
-            array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
+            array <- LExit.fromZIO(ZIO.async[Any, Nothing, Array[Byte]](cb =>
               HttpClient
                 .make
                 .request(req)((_, _, body) => cb(ZIO.succeed(body)))
-            )
+            ))
             outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
-            any <- ZIO
+            any <- LExit
               .fromEither(
                 JsonCodec
                   .jsonDecoder(outputSchema)

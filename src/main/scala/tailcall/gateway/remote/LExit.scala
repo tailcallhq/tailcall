@@ -35,4 +35,18 @@ object LExit {
     LExit(_ => effect)
 
   def input[A]: LExit[Any, Nothing, A, A] = LExit(ZIO.succeed(_))
+
+  def foreach[R, E, A, B, S](seq: Seq[S])(
+    f: S => LExit[R, E, A, B]
+  ): LExit[R, E, A, Seq[B]] = ???
+
+  def filter[R, E, A, B, S](seq: Seq[S])(
+    f: LExit[R, E, A, Boolean]
+  ): LExit[R, E, A, Seq[S]] = ???
+
+  def none: LExit[Any, Nothing, Any, Option[Nothing]] =
+    LExit(_ => ZIO.succeed(None))
+
+  def attempt[A](a: => A): LExit[Any, Throwable, Any, A] =
+    LExit.fromZIO(ZIO.attempt(a))
 }
