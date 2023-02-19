@@ -1,5 +1,6 @@
 package tailcall.gateway.remote.operations
 
+import tailcall.gateway.remote.DynamicEval.DynamicValueOperations
 import tailcall.gateway.remote.{DynamicEval, Remote}
 import zio.Chunk
 import zio.schema.DynamicValue
@@ -12,47 +13,90 @@ trait DynamicValueOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.dynamicValuePath(self.compile(ctx), Chunk.from(fields))
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.Path(Chunk.from(fields))
+          )
         )
 
     def asString: Remote[Option[String]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsString(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsString
+          )
+        )
 
     def asBoolean: Remote[Option[Boolean]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsBoolean(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsBoolean
+          )
+        )
 
     def asInt: Remote[Option[Int]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsInt(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsInt
+          )
+        )
 
     def asLong: Remote[Option[Long]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsLong(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsLong
+          )
+        )
 
     def asDouble: Remote[Option[Double]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsDouble(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsDouble
+          )
+        )
 
     def asFloat: Remote[Option[Float]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsFloat(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsFloat
+          )
+        )
 
     def asList: Remote[Option[List[DynamicValue]]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsList(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsList
+          )
+        )
 
     def asMap: Remote[Option[Map[DynamicValue, DynamicValue]]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.dynamicValueAsMap(self.compile(ctx)))
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsMap
+          )
+        )
   }
 }

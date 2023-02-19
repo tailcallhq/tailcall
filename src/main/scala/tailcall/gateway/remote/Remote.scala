@@ -1,5 +1,6 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.remote.DynamicEval.{EqualTo, Math}
 import tailcall.gateway.remote.operations._
 import zio.ZIO
 import zio.schema.{DynamicValue, Schema}
@@ -21,15 +22,18 @@ sealed trait Remote[+A] {
   final def =:=[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Equatable[A1]): Remote[Boolean] =
-    attempt(ctx =>
-      DynamicEval.equal(self.compile(ctx), other.compile(ctx), tag.any)
-    )
+    attempt(ctx => EqualTo(self.compile(ctx), other.compile(ctx), tag.any))
 
   final def >[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[Boolean] =
     attempt(ctx =>
-      DynamicEval.greaterThan(self.compile(ctx), other.compile(ctx), tag.any)
+      Math(
+        self.compile(ctx),
+        other.compile(ctx),
+        Math.Binary.GreaterThan,
+        tag.any
+      )
     )
 
   final def increment[A1 >: A](implicit
@@ -41,7 +45,7 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      DynamicEval.add(self.compile(ctx), other.compile(ctx), tag.any)
+      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Add, tag.any)
     )
 
   final def -[A1 >: A](other: Remote[A1])(implicit
@@ -52,28 +56,28 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      DynamicEval.multiply(self.compile(ctx), other.compile(ctx), tag.any)
+      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Multiply, tag.any)
     )
 
   final def /[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      DynamicEval.divide(self.compile(ctx), other.compile(ctx), tag.any)
+      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Divide, tag.any)
     )
 
   final def %[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      DynamicEval.modulo(self.compile(ctx), other.compile(ctx), tag.any)
+      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Modulo, tag.any)
     )
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(ctx => DynamicEval.negate(self.compile(ctx), tag.any))
+    attempt(ctx => Math(self.compile(ctx), Math.Unary.Negate, tag.any))
 
   final def debug(message: String): Remote[A] =
-    attempt(ctx => DynamicEval.debug(self.compile(ctx), message))
+    attempt(ctx => DynamicEval.Debug(self.compile(ctx), message))
 
   final def toDynamicValue[A1 >: A](implicit
     ev: Schema[A1]

@@ -1,21 +1,25 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.ast.Endpoint
+import tailcall.gateway.remote.DynamicEval._
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
 trait RemoteCtors {
   def apply[A](a: A)(implicit ctor: Constructor[A]): Remote[A] =
-    Remote.unsafe.attempt(_ => DynamicEval.cons(ctor.schema.toDynamic(a), ctor))
+    Remote
+      .unsafe
+      .attempt(_ =>
+        Literal(ctor.schema.toDynamic(a), ctor.asInstanceOf[Constructor[Any]])
+      )
 
   def fromFunction[A, B](ab: Remote[A] => Remote[B]): Remote[A => B] =
     Remote
       .unsafe
       .attempt { ctx =>
         val next = ctx.withNextLevel
-        val id   = DynamicEval.lookup(next)
-        DynamicEval
-          .functionDef(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
+        val id   = Lookup(next)
+        FunctionDef(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
       }
 
   def fromSeq[A](
@@ -24,39 +28,47 @@ trait RemoteCtors {
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval
-          .seq(a.map(_.compile(ctx)), ctor.asInstanceOf[Constructor[Any]])
+        SeqOperations(SeqOperations.Sequence(
+          Chunk.fromIterable(a.map(_.compile(ctx))),
+          ctor.asInstanceOf[Constructor[Any]]
+        ))
       )
 
   def fromMap[A, B](a: Map[Remote[A], Remote[B]]): Remote[Map[A, B]] =
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval.map(a.map { case (k, v) =>
-          k.compile(ctx) -> v.compile(ctx)
-        })
+        MapOperations(MapOperations.Cons(Chunk.fromIterable(a.map {
+          case (k, v) => k.compile(ctx) -> v.compile(ctx)
+        })))
       )
 
   def fromEither[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval.either(a match {
+        EitherOperations(EitherOperations.Cons(a match {
           case Left(value)  => Left(value.compile(ctx))
           case Right(value) => Right(value.compile(ctx))
-        })
+        }))
       )
 
   def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] =
-    Remote.unsafe.attempt(ctx => DynamicEval.option(a.map(_.compile(ctx))))
+    Remote
+      .unsafe
+      .attempt(ctx =>
+        DynamicEval
+          .OptionOperations(OptionOperations.Cons(a.map(_.compile(ctx))))
+      )
 
-  def none[B]: Remote[Option[B]] = Remote.unsafe.attempt(_ => DynamicEval.none)
+  def none[B]: Remote[Option[B]] =
+    Remote.unsafe.attempt(_ => OptionOperations(OptionOperations.Cons(None)))
 
   def fromEndpoint(endpoint: Endpoint): Remote[DynamicValue => DynamicValue] =
     Remote.fromFunction[DynamicValue, DynamicValue](input =>
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.endpoint(endpoint, input.compile(ctx)))
+        .attempt(ctx => DynamicEval.EndpointCall(endpoint, input.compile(ctx)))
     )
 
   def dynamicValue[A](a: A)(implicit schema: Schema[A]): Remote[DynamicValue] =
@@ -66,11 +78,13 @@ trait RemoteCtors {
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval.record(fields.map { case (k, v) => k -> v.compile(ctx) })
+        DynamicEval.Record(Chunk.fromIterable(fields.map { case (k, v) =>
+          k -> v.compile(ctx)
+        }))
       )
 
   def die(msg: Remote[String]): Remote[Nothing] =
-    Remote.unsafe.attempt(ctx => DynamicEval.die(msg.compile(ctx)))
+    Remote.unsafe.attempt(ctx => DynamicEval.Die(msg.compile(ctx)))
 
   def die(msg: String): Remote[Nothing] = die(Remote(msg))
 
@@ -78,7 +92,9 @@ trait RemoteCtors {
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval.tuple(Chunk(t._1.compile(ctx), t._2.compile(ctx)))
+        DynamicEval.TupleOperations(
+          TupleOperations.Cons(Chunk(t._1.compile(ctx), t._2.compile(ctx)))
+        )
       )
 
   def fromTuple[A1, A2, A3](
@@ -87,8 +103,9 @@ trait RemoteCtors {
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval
-          .tuple(Chunk(t._1.compile(ctx), t._2.compile(ctx), t._3.compile(ctx)))
+        DynamicEval.TupleOperations(TupleOperations.Cons(
+          Chunk(t._1.compile(ctx), t._2.compile(ctx), t._3.compile(ctx))
+        ))
       )
 
   def fromTuple[A1, A2, A3, A4](
@@ -97,12 +114,12 @@ trait RemoteCtors {
     Remote
       .unsafe
       .attempt(ctx =>
-        DynamicEval.tuple(Chunk(
+        DynamicEval.TupleOperations(TupleOperations.Cons(Chunk(
           t._1.compile(ctx),
           t._2.compile(ctx),
           t._3.compile(ctx),
           t._4.compile(ctx)
-        ))
+        )))
       )
 
   def batch[A, B, C](
@@ -130,10 +147,8 @@ trait RemoteCtors {
   }
 
   def flatten[A](r: Remote[Remote[A]]): Remote[A] =
-    Remote.unsafe.attempt(ctx => DynamicEval.flatten(r.compile(ctx)))
+    Remote.unsafe.attempt(ctx => Flatten(r.compile(ctx)))
 
   def recurse[A, B](f: Remote[(A, A => B)] => Remote[B]): Remote[A => B] =
-    Remote
-      .unsafe
-      .attempt(ctx => DynamicEval.recurse(Remote.fromFunction(f).compile(ctx)))
+    Remote.unsafe.attempt(ctx => Recurse(Remote.fromFunction(f).compile(ctx)))
 }

@@ -1,6 +1,7 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.{DynamicEval, Remote}
+import tailcall.gateway.remote.DynamicEval.OptionOperations
+import tailcall.gateway.remote.Remote
 
 trait OptionOps {
   implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]) {
@@ -8,11 +9,11 @@ trait OptionOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.foldOption(
+          OptionOperations(OptionOperations.Fold(
             self.compile(ctx),
             g.compile(ctx),
             Remote.fromFunction(f).compile(ctx)
-          )
+          ))
         )
 
     def map[B](f: Remote[A] => Remote[B]): Remote[Option[B]] =

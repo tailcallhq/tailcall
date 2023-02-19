@@ -1,6 +1,7 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.{Constructor, DynamicEval, Remote}
+import tailcall.gateway.remote.DynamicEval.SeqOperations
+import tailcall.gateway.remote.{Constructor, Remote}
 
 trait SeqOps {
   implicit final class RemoteSeqOps[A](val self: Remote[Seq[A]]) {
@@ -8,18 +9,24 @@ trait SeqOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.concat(self.compile(ctx), other.compile(ctx))
+          SeqOperations(
+            SeqOperations.Concat(self.compile(ctx), other.compile(ctx))
+          )
         )
 
     def reverse: Remote[Seq[A]] =
-      Remote.unsafe.attempt(ctx => DynamicEval.reverse(self.compile(ctx)))
+      Remote
+        .unsafe
+        .attempt(ctx => SeqOperations(SeqOperations.Reverse(self.compile(ctx))))
 
     def filter(f: Remote[A] => Remote[Boolean]): Remote[Seq[A]] =
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval
-            .filter(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          SeqOperations(
+            SeqOperations
+              .Filter(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          )
         )
 
     def find(f: Remote[A] => Remote[Boolean]): Remote[Option[A]] =
@@ -29,8 +36,10 @@ trait SeqOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval
-            .flatMap(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          SeqOperations(
+            SeqOperations
+              .FlatMap(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          )
         )
 
     def map[B](f: Remote[A] => Remote[B])(implicit
@@ -38,13 +47,17 @@ trait SeqOps {
     ): Remote[Seq[B]] = self.flatMap(a => Remote.fromSeq(Seq(f(a))))
 
     def length: Remote[Int] =
-      Remote.unsafe.attempt(ctx => DynamicEval.length(self.compile(ctx)))
+      Remote
+        .unsafe
+        .attempt(ctx => SeqOperations(SeqOperations.Length(self.compile(ctx))))
 
     def indexOf(other: Remote[A]): Remote[Int] =
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.indexOf(self.compile(ctx), other.compile(ctx))
+          SeqOperations(
+            SeqOperations.IndexOf(self.compile(ctx), other.compile(ctx))
+          )
         )
 
     def take(n: Int): Remote[Seq[A]] = slice(0, n)
@@ -52,17 +65,23 @@ trait SeqOps {
     def slice(from: Int, until: Int): Remote[Seq[A]] =
       Remote
         .unsafe
-        .attempt(ctx => DynamicEval.slice(self.compile(ctx), from, until))
+        .attempt(ctx =>
+          SeqOperations(SeqOperations.Slice(self.compile(ctx), from, until))
+        )
 
     def head: Remote[Option[A]] =
-      Remote.unsafe.attempt(ctx => DynamicEval.head(self.compile(ctx)))
+      Remote
+        .unsafe
+        .attempt(ctx => SeqOperations(SeqOperations.Head(self.compile(ctx))))
 
     def groupBy[B](f: Remote[A] => Remote[B]): Remote[Map[B, Seq[A]]] =
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval
-            .groupBy(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          SeqOperations(
+            SeqOperations
+              .GroupBy(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+          )
         )
   }
 }

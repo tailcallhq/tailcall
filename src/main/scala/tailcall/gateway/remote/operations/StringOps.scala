@@ -1,6 +1,7 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.{DynamicEval, Remote}
+import tailcall.gateway.remote.DynamicEval.StringOperations
+import tailcall.gateway.remote.Remote
 
 trait StringOps {
   implicit final class RemoteStringOps(val self: Remote[String]) {
@@ -8,7 +9,9 @@ trait StringOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.concatStrings(self.compile(ctx), other.compile(ctx))
+          StringOperations(
+            StringOperations.Concat(self.compile(ctx), other.compile(ctx))
+          )
         )
   }
 

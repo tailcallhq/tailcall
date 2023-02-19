@@ -1,6 +1,7 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.{DynamicEval, Remote}
+import tailcall.gateway.remote.DynamicEval.EitherOperations
+import tailcall.gateway.remote.Remote
 
 trait EitherOps {
   implicit final class RemoteEitherOps[E, A](
@@ -13,11 +14,11 @@ trait EitherOps {
       Remote
         .unsafe
         .attempt(ctx =>
-          DynamicEval.foldEither(
+          EitherOperations(EitherOperations.Fold(
             self.compile(ctx),
             Remote.fromFunction(f).compile(ctx),
             Remote.fromFunction(g).compile(ctx)
-          )
+          ))
         )
 
     def flatMap[B](f: Remote[A] => Remote[Either[E, B]]): Remote[Either[E, B]] =
