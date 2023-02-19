@@ -8,48 +8,66 @@ trait ExecutionRuntime {
 }
 
 object ExecutionRuntime {
-  import ExecutionPlan._
+  import DynamicEval._
 
   final class Live(ctx: EvaluationContext) extends ExecutionRuntime {
     def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
       evaluate(lambda.compile(CompilationContext.initial))
         .asInstanceOf[LExit[Any, Throwable, A, B]]
 
-    def evaluate(plan: ExecutionPlan): LExit[Any, Throwable, Any, Any] =
+    def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Constant(value, ctor) => ctor.schema.fromDynamic(value) match {
-            case Left(cause)  =>
-              LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
-            case Right(value) => LExit.succeed(value)
+        case FunctionOperations(operation)            => operation match {
+            case FunctionOperations.Literal(value, ctor) =>
+              ctor.schema.fromDynamic(value) match {
+                case Left(cause)  => LExit
+                    .fail(EvaluationError.TypeError(value, cause, ctor.schema))
+                case Right(value) => LExit.succeed(value)
+              }
+
+            case FunctionOperations.Pipe(left, right) =>
+              evaluate(left) >>> evaluate(right)
+
+            case FunctionOperations.Lookup(key) => LExit.fromZIO(
+                ctx.get(key).mapError(_ => EvaluationError.BindingNotFound(key))
+              )
+
+            case FunctionOperations.FunctionDefinition(key, body) => for {
+                any <- LExit.input[Any]
+                _   <- LExit.fromZIO(ctx.set(key, any))
+                res <- evaluate(body)
+                _   <- LExit.fromZIO(ctx.drop(key))
+              } yield res
+
+            case FunctionOperations.Flatten(eval) => for {
+                inner <- evaluate(eval)
+                outer <- evaluate(
+                  inner
+                    .asInstanceOf[Lambda[_, _]]
+                    .compile(CompilationContext.initial)
+                )
+              } yield outer
           }
-
-        case Pipe(left, right) => evaluate(left) >>> evaluate(right)
-
-        case Add(left, right) => for {
-            left  <- evaluate(left)
-            right <- evaluate(right)
-          } yield left.asInstanceOf[Int] + right.asInstanceOf[Int]
-
-        case Lookup(key) => LExit.fromZIO(
-            ctx.get(key).mapError(_ => EvaluationError.BindingNotFound(key))
-          )
-
-        case FunctionDefinition(key, body) => for {
-            any <- LExit.input[Any]
-            _   <- LExit.fromZIO(ctx.set(key, any))
-            res <- evaluate(body)
-            _   <- LExit.fromZIO(ctx.drop(key))
-          } yield res
-
-        case Flatten(eval) => for {
-            inner <- evaluate(eval)
-            outer <- evaluate(
-              inner
-                .asInstanceOf[Lambda[_, _]]
-                .compile(CompilationContext.initial)
-            )
-          } yield outer
+        case Literal(value, ctor)                     => ???
+        case EqualTo(left, right, tag)                => ???
+        case Math(operation, tag)                     => ???
+        case Logical(operation)                       => ???
+        case StringOperations(operation)              => ???
+        case TupleOperations(operation)               => ???
+        case SeqOperations(operation)                 => ???
+        case MapOperations(operation)                 => ???
+        case EitherOperations(operation)              => ???
+        case ContextOperations(context, operation)    => ???
+        case OptionOperations(operation)              => ???
+        case EndpointCall(endpoint, arg)              => ???
+        case Record(value)                            => ???
+        case Die(message)                             => ???
+        case DynamicValueOperations(value, operation) => ???
+        case Debug(eval, str)                         => ???
+        case Recurse(func)                            => ???
+        case Flatten(eval)                            => ???
       }
+    }
   }
 
   def live: ZLayer[EvaluationContext, Nothing, ExecutionRuntime] =

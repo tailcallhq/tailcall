@@ -6,7 +6,7 @@ import zio.schema.Schema
 
 sealed trait Lambda[-A, +B] {
   self =>
-  def compile(ctx: CompilationContext): ExecutionPlan
+  def compile(ctx: CompilationContext): DynamicEval
 
   final def evaluate: LExit[ExecutionRuntime, Throwable, A, B] =
     ExecutionRuntime.evaluate(self)
@@ -28,9 +28,9 @@ sealed trait Lambda[-A, +B] {
 
 object Lambda {
   object unsafe {
-    def attempt[A, B](c: CompilationContext => ExecutionPlan): Lambda[A, B] =
+    def attempt[A, B](c: CompilationContext => DynamicEval): Lambda[A, B] =
       new Lambda[A, B] {
-        override def compile(ctx: CompilationContext): ExecutionPlan = c(ctx)
+        override def compile(ctx: CompilationContext): DynamicEval = c(ctx)
       }
   }
 
@@ -68,7 +68,7 @@ object Lambda {
     def flatten = Lambda.flatten(self)
   }
 
-  implicit val anySchema: Schema[Lambda[_, _]] = Schema[ExecutionPlan]
+  implicit val anySchema: Schema[Lambda[_, _]] = Schema[DynamicEval]
     .transform(
       exe => Lambda.unsafe.attempt(_ => exe),
       _.compile(CompilationContext.initial)
