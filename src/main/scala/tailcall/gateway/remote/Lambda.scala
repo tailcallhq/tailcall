@@ -1,6 +1,5 @@
-package tailcall.gateway.lambda
+package tailcall.gateway.remote
 
-import tailcall.gateway.remote._
 import zio.ZIO
 import zio.schema.Schema
 
@@ -8,10 +7,10 @@ sealed trait Lambda[-A, +B] {
   self =>
   def compile(ctx: CompilationContext): DynamicEval
 
-  final def evaluate: LExit[ExecutionRuntime, Throwable, A, B] =
-    ExecutionRuntime.evaluate(self)
+  final def evaluate: LExit[RemoteRuntime, Throwable, A, B] =
+    RemoteRuntime.evaluate(self)
 
-  final def evaluateWith(a: A): ZIO[ExecutionRuntime, Throwable, B] =
+  final def evaluateWith(a: A): ZIO[RemoteRuntime, Throwable, B] =
     evaluate(a)
 
   final def >>>[B1 >: B, C](other: B1 ~> C): A ~> C =

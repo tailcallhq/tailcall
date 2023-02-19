@@ -1,12 +1,12 @@
 package tailcall.gateway
 
 import tailcall.gateway.lambda._
-import tailcall.gateway.remote.EvaluationContext
+import tailcall.gateway.remote.{EvaluationContext, RemoteRuntime, Lambda}
 import zio.test.Assertion._
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
-  import Lambda._
+  import tailcall.gateway.remote.Lambda._
   def spec =
     suite("lambda")(
       test("literal") {
@@ -34,5 +34,5 @@ object LambdaSpec extends ZIOSpecDefault {
         val program = Lambda(1) + Lambda(2)
         assertZIO(program.evaluate(()))(equalTo(3))
       }
-    ).provide(EvaluationContext.live, ExecutionRuntime.live)
+    ).provide(EvaluationContext.live, RemoteRuntime.live)
 }

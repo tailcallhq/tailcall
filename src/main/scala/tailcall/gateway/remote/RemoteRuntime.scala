@@ -3,39 +3,59 @@ package tailcall.gateway.remote
 import tailcall.gateway.ast.Context
 import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.ChunkUtil
+import zio._
 import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema, TypeId}
-import zio.{Task, ZIO, ZLayer}
 
 import java.nio.charset.StandardCharsets
 import scala.collection.immutable.ListMap
 
 trait RemoteRuntime {
-  final def evaluateAs[A](eval: DynamicEval): Task[A] =
-    evaluate(eval).flatMap(any => ZIO.attempt(any.asInstanceOf[A]))
-
-  final def evaluate[A](remote: Remote[A]): Task[A] =
-    evaluateAs[A](remote.compile(CompilationContext.initial))
-
-  def evaluate(eval: DynamicEval): Task[Any]
+  def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B]
 }
 
 object RemoteRuntime {
   import DynamicEval._
-  final class Default(val context: EvaluationContext) extends RemoteRuntime {
-    def call[A](eval: DynamicEval, arg: Any): Task[A] = ???
 
-    /*{
-      val func = eval.asInstanceOf[FunctionDef]
-      for {
-        _      <- context.set(func.arg.id, arg)
-        result <- evaluateAs[A](func.body)
-        _      <- context.drop(func.arg.id)
-      } yield result
-    }*/
-    def evaluate(eval: DynamicEval): Task[Any] =
-      eval match {
-        case Literal(value, ctor) => ZIO
+  final class Live(ctx: EvaluationContext) extends RemoteRuntime {
+    def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
+      evaluate(lambda.compile(CompilationContext.initial))
+        .asInstanceOf[LExit[Any, Throwable, A, B]]
+
+    def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
+      plan match {
+        case FunctionOperations(operation) => operation match {
+            case FunctionOperations.Literal(value, ctor) =>
+              ctor.schema.fromDynamic(value) match {
+                case Left(cause)  => LExit
+                    .fail(EvaluationError.TypeError(value, cause, ctor.schema))
+                case Right(value) => LExit.succeed(value)
+              }
+
+            case FunctionOperations.Pipe(left, right) =>
+              evaluate(left) >>> evaluate(right)
+
+            case FunctionOperations.Lookup(key) => LExit.fromZIO(
+                ctx.get(key).mapError(_ => EvaluationError.BindingNotFound(key))
+              )
+
+            case FunctionOperations.FunctionDefinition(key, body) => for {
+                any <- LExit.input[Any]
+                _   <- LExit.fromZIO(ctx.set(key, any))
+                res <- evaluate(body)
+                _   <- LExit.fromZIO(ctx.drop(key))
+              } yield res
+
+            case FunctionOperations.Flatten(eval) => for {
+                inner <- evaluate(eval)
+                outer <- evaluate(
+                  inner
+                    .asInstanceOf[Lambda[_, _]]
+                    .compile(CompilationContext.initial)
+                )
+              } yield outer
+          }
+        case Literal(value, ctor)          => ZIO
             .fromEither(value.toTypedValue(ctor.schema))
             .mapError(cause =>
               EvaluationError.TypeError(value, cause, ctor.schema)
@@ -221,13 +241,12 @@ object RemoteRuntime {
 
         case Flatten(eval) => evaluateAs[Remote[_]](eval).flatMap(evaluate(_))
       }
+    }
   }
 
   def live: ZLayer[EvaluationContext, Nothing, RemoteRuntime] =
-    ZLayer.fromZIO(ZIO.service[EvaluationContext].map(ctx => new Default(ctx)))
+    ZLayer.fromZIO(ZIO.service[EvaluationContext].map(new Live(_)))
 
-  def evaluate[A](remote: Remote[A]) =
-    ZIO.serviceWithZIO[RemoteRuntime](
-      _.evaluateAs[A](remote.compile(CompilationContext.initial))
-    )
+  def evaluate[A, B](ab: A ~> B): LExit[RemoteRuntime, Throwable, A, B] =
+    LExit.fromZIO(ZIO.service[RemoteRuntime]).flatMap(_.evaluate(ab))
 }
