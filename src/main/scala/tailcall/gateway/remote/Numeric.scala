@@ -1,5 +1,8 @@
 package tailcall.gateway.remote
 
+import zio.schema.DeriveSchema.gen
+import zio.schema.Schema
+
 sealed trait Numeric[A] {
   def add(left: A, right: A): A
   def negate(value: A): A
@@ -9,6 +12,7 @@ sealed trait Numeric[A] {
   def greaterThan(left: A, right: A): Boolean
   def one: A
   def any: Numeric[Any] = this.asInstanceOf[Numeric[Any]]
+  def schema: Schema[A]
 }
 
 // TODO: add more numeric types
@@ -22,5 +26,7 @@ object Numeric {
     override def modulo(left: Int, right: Int): Int          = left % right
     override def greaterThan(left: Int, right: Int): Boolean = left > right
     override def one: Int                                    = 1
+
+    override def schema: Schema[Int] = Schema[Int]
   }
 }

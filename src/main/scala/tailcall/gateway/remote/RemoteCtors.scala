@@ -18,8 +18,15 @@ trait RemoteCtors {
           .functionDef(id, ab(Remote.unsafe.attempt[A](_ => id)).compile(next))
       }
 
-  def fromSeq[A](a: Seq[Remote[A]]): Remote[Seq[A]] =
-    Remote.unsafe.attempt(ctx => DynamicEval.seq(a.map(_.compile(ctx))))
+  def fromSeq[A](
+    a: Seq[Remote[A]]
+  )(implicit ctor: Constructor[A]): Remote[Seq[A]] =
+    Remote
+      .unsafe
+      .attempt(ctx =>
+        DynamicEval
+          .seq(a.map(_.compile(ctx)), ctor.asInstanceOf[Constructor[Any]])
+      )
 
   def fromMap[A, B](a: Map[Remote[A], Remote[B]]): Remote[Map[A, B]] =
     Remote
@@ -104,6 +111,10 @@ trait RemoteCtors {
     ab: Remote[A] => Remote[B],
     ba: Remote[B] => Remote[A],
     cb: Remote[C] => Remote[B]
+  )(implicit
+    ctorB: Constructor[B],
+    ctorC: Constructor[C],
+    ctorF: Constructor[(A, Option[C])]
   ) = {
     val v = from.map(ab(_))
     v.map(i =>

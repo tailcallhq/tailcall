@@ -116,18 +116,19 @@ object DynamicEval {
     sealed trait Operation
     final case class Concat(left: DynamicEval, right: DynamicEval)
         extends Operation
-    final case class Reverse(seq: DynamicEval)           extends Operation
+    final case class Reverse(seq: DynamicEval) extends Operation
     final case class Filter(seq: DynamicEval, condition: DynamicEval)
         extends Operation
     final case class FlatMap(seq: DynamicEval, operation: DynamicEval)
         extends Operation
-    final case class Length(seq: DynamicEval)            extends Operation
+    final case class Length(seq: DynamicEval)  extends Operation
     final case class IndexOf(seq: DynamicEval, element: DynamicEval)
         extends Operation
     final case class Slice(seq: DynamicEval, from: Int, to: Int)
         extends Operation
-    final case class Head(seq: DynamicEval)              extends Operation
-    final case class Sequence(value: Chunk[DynamicEval]) extends Operation
+    final case class Head(seq: DynamicEval)    extends Operation
+    final case class Sequence(value: Chunk[DynamicEval], ctor: Constructor[Any])
+        extends Operation
     final case class GroupBy(seq: DynamicEval, keyFunction: DynamicEval)
         extends Operation
   }
@@ -312,8 +313,8 @@ object DynamicEval {
   def concatStrings(left: DynamicEval, right: DynamicEval): DynamicEval =
     StringOperations(StringOperations.Concat(left, right))
 
-  def seq(a: Seq[DynamicEval]): DynamicEval =
-    SeqOperations(SeqOperations.Sequence(Chunk.fromIterable(a)))
+  def seq(a: Seq[DynamicEval], ctor: Constructor[Any]): DynamicEval =
+    SeqOperations(SeqOperations.Sequence(Chunk.fromIterable(a), ctor))
 
   def map(a: Map[DynamicEval, DynamicEval]): DynamicEval =
     MapOperations(MapOperations.Cons(Chunk.fromIterable(a)))
