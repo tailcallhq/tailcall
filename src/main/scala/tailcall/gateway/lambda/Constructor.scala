@@ -39,8 +39,7 @@ object Constructor {
 
   implicit def orc: Constructor[Orc] = Constructor(Schema[Orc])
 
-  implicit def remote[A]: Constructor[Remote[A]] =
-    Constructor(Schema[Remote[A]])
+  implicit def lambda[A, B]: Constructor[A ~> B] = Constructor(Schema[A ~> B])
   implicit def option[A](implicit
     ctor: Constructor[A]
   ): Constructor[Option[A]] = {
