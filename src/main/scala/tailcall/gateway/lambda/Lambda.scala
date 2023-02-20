@@ -7,29 +7,6 @@ import zio.{Chunk, ZIO}
 
 sealed trait Lambda[-A, +B] {
   self =>
-  final def apply[A1 <: A](a: A1)(implicit ev: Constructor[A1]): Remote[B] =
-    Lambda(a) >>> self
-
-  final def apply(a: Remote[A]): Remote[B] = a >>> self
-
-  final def >>>[B1 >: B, C](other: B1 ~> C): A ~> C =
-    Lambda
-      .unsafe
-      .attempt[A, C](ctx => DynamicEval.Pipe(compile(ctx), other.compile(ctx)))
-
-  final def pipe[B1 >: B, C](other: B1 ~> C): A ~> C = self >>> other
-
-  final def <<<[A1 <: A, C](other: C ~> A1): C ~> B = other >>> self
-
-  def compile(ctx: CompilationContext): DynamicEval
-
-  final def evaluateWith(a: A): ZIO[LambdaRuntime, Throwable, B] = evaluate(a)
-
-  final def evaluate: LExit[LambdaRuntime, Throwable, A, B] =
-    LambdaRuntime.evaluate(self)
-
-  final def toFunction: Remote[A] => Remote[B] = a => a >>> self
-
   def =:=[A1 <: A, B1 >: B](
     other: A1 ~> B1
   )(implicit tag: Equatable[B1]): A1 ~> Boolean =
@@ -37,25 +14,34 @@ sealed trait Lambda[-A, +B] {
       .unsafe
       .attempt(ctx => EqualTo(self.compile(ctx), other.compile(ctx), tag.any))
 
+  final def <<<[A1 <: A, C](other: C ~> A1): C ~> B = other >>> self
+
+  final def >>>[B1 >: B, C](other: B1 ~> C): A ~> C =
+    Lambda
+      .unsafe
+      .attempt[A, C](ctx => DynamicEval.Pipe(compile(ctx), other.compile(ctx)))
+
+  final def apply[A1 <: A](a: A1)(implicit ev: Constructor[A1]): Remote[B] =
+    Lambda(a) >>> self
+
+  final def apply(a: Remote[A]): Remote[B] = a >>> self
+
+  def compile(ctx: CompilationContext): DynamicEval
+
   def debug(message: String): A ~> B =
     Lambda.unsafe.attempt(ctx => DynamicEval.Debug(self.compile(ctx), message))
+
+  final def evaluateWith(a: A): ZIO[LambdaRuntime, Throwable, B] = evaluate(a)
+
+  final def evaluate: LExit[LambdaRuntime, Throwable, A, B] =
+    LambdaRuntime.evaluate(self)
+
+  final def pipe[B1 >: B, C](other: B1 ~> C): A ~> C = self >>> other
+
+  final def toFunction: Remote[A] => Remote[B] = a => a >>> self
 }
 
 object Lambda {
-
-  def apply[B](b: B)(implicit ctor: Constructor[B]): Any ~> B =
-    Lambda
-      .unsafe
-      .attempt(_ => DynamicEval.Literal(ctor.schema.toDynamic(b), ctor.any))
-
-  def fromTuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
-    Lambda
-      .unsafe
-      .attempt(ctx =>
-        DynamicEval.TupleOperations(
-          TupleOperations.Cons(Chunk(t._1.compile(ctx), t._2.compile(ctx)))
-        )
-      )
 
   def die(msg: String): Remote[Nothing] = die(Lambda(msg))
 
@@ -64,6 +50,11 @@ object Lambda {
 
   def dynamicValue[A](a: A)(implicit schema: Schema[A]): Remote[DynamicValue] =
     Lambda(Schema.toDynamic(a))
+
+  def apply[B](b: B)(implicit ctor: Constructor[B]): Any ~> B =
+    Lambda
+      .unsafe
+      .attempt(_ => DynamicEval.Literal(ctor.schema.toDynamic(b), ctor.any))
 
   def flatten[A, B](ab: A ~> (A ~> B)): A ~> B =
     Lambda.unsafe.attempt(ctx => DynamicEval.Flatten(ab.compile(ctx)))
@@ -127,6 +118,15 @@ object Lambda {
         ))
       )
 
+  def fromTuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
+    Lambda
+      .unsafe
+      .attempt(ctx =>
+        DynamicEval.TupleOperations(
+          TupleOperations.Cons(Chunk(t._1.compile(ctx), t._2.compile(ctx)))
+        )
+      )
+
   def fromTuple[A1, A2, A3](
     t: (Remote[A1], Remote[A2], Remote[A3])
   ): Remote[(A1, A2, A3)] =
@@ -151,6 +151,8 @@ object Lambda {
           t._4.compile(ctx)
         )))
       )
+
+  def identity[A]: A ~> A = Lambda.unsafe.attempt(_ => DynamicEval.Identity)
 
   def none[B]: Remote[Option[B]] =
     Lambda.unsafe.attempt(_ => OptionOperations(OptionOperations.Cons(None)))
@@ -178,5 +180,4 @@ object Lambda {
 
   implicit def schema[A, B]: Schema[A ~> B] =
     anySchema.asInstanceOf[Schema[A ~> B]]
-
 }

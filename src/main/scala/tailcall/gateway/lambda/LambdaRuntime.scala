@@ -245,6 +245,7 @@ object LambdaRuntime {
         case Recurse(_) => ???
 
         case Flatten(eval) => evaluateAs[Remote[_]](eval).flatMap(evaluate(_))
+        case Identity      => LExit.input
       }
     }
   }

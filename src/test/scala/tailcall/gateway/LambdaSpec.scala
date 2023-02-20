@@ -78,6 +78,14 @@ object LambdaSpec extends ZIOSpecDefault {
         test("isFalse") {
           val program = Lambda(false).diverge(Lambda("Yes"), Lambda("No"))
           assertZIO(program.evaluateWith(()))(equalTo("No"))
+        },
+        test("inner value") {
+          import tailcall.gateway.lambda.Numeric._
+          val increase: Int ~> Int = Lambda.fromFunction[Int, Int](_.increment)
+          val decrease: Int ~> Int = Lambda.fromFunction[Int, Int](_.decrement)
+          val program: Int ~> Int  = (Lambda.identity[Int] > Lambda(10))
+            .diverge(increase, decrease)
+          assertZIO(program.evaluateWith(20))(equalTo(21))
         }
       ),
       suite("string")(

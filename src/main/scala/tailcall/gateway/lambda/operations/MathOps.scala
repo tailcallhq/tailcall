@@ -4,10 +4,10 @@ import tailcall.gateway.lambda.DynamicEval.Math
 import tailcall.gateway.lambda._
 
 trait MathOps {
-  implicit final class RemoteOps[A](val self: Remote[A]) {
-    def >[A1 >: A](
-      other: Remote[A1]
-    )(implicit tag: Numeric[A1]): Remote[Boolean] =
+  implicit final class MathOps[A, B](val self: A ~> B)(implicit
+    tag: Numeric[B]
+  ) {
+    def >(other: A ~> B): A ~> Boolean =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -21,10 +21,13 @@ trait MathOps {
           )
         )
 
-    def increment[A1 >: A](implicit tag: Numeric[A1], ctor: Constructor[A1]) =
+    def increment(implicit ctor: Constructor[B]): A ~> B =
       self + Lambda(tag.one)
 
-    def +[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
+    def decrement(implicit ctor: Constructor[B]): A ~> B =
+      self - Lambda(tag.one)
+
+    def +(other: A ~> B): A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -34,10 +37,9 @@ trait MathOps {
           )
         )
 
-    def -[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
-      self + other.negate
+    def -(other: A ~> B): A ~> B = self + other.negate
 
-    def *[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
+    def *(other: A ~> B): A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -51,7 +53,7 @@ trait MathOps {
           )
         )
 
-    def /[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
+    def /(other: A ~> B): A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -65,7 +67,7 @@ trait MathOps {
           )
         )
 
-    def %[A1 >: A](other: Remote[A1])(implicit tag: Numeric[A1]): Remote[A1] =
+    def %(other: A ~> B): A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -79,16 +81,11 @@ trait MathOps {
           )
         )
 
-    def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
+    def negate: A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
           Math(Math.Unary(self.compile(ctx), Math.Unary.Negate), tag.any)
         )
-
-    def debug(message: String): Remote[A] =
-      Lambda
-        .unsafe
-        .attempt(ctx => DynamicEval.Debug(self.compile(ctx), message))
   }
 }

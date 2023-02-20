@@ -5,6 +5,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 sealed trait DynamicEval
 object DynamicEval {
   // scalafmt: { maxColumn = 240 }
+  case object Identity                                                                 extends DynamicEval
   final case class Literal(value: DynamicValue, ctor: Constructor[Any])                extends DynamicEval
   final case class Pipe(left: DynamicEval, right: DynamicEval)                         extends DynamicEval
   final case class FunctionDefinition(input: EvaluationContext.Key, body: DynamicEval) extends DynamicEval
@@ -127,4 +128,5 @@ object DynamicEval {
   }
 
   implicit val schema: Schema[DynamicEval] = DeriveSchema.gen[DynamicEval]
+
 }

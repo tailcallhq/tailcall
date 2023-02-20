@@ -1,11 +1,11 @@
 package tailcall.gateway.lambda.operations
 
 import tailcall.gateway.lambda.DynamicEval.Logical
-import tailcall.gateway.lambda.{Lambda, Remote}
+import tailcall.gateway.lambda.{Lambda, ~>}
 
 trait BooleanOps {
-  implicit final class RemoteBooleanOps(val self: Remote[Boolean]) {
-    def &&(other: Remote[Boolean]): Remote[Boolean] =
+  implicit final class RemoteBooleanOps[A](val self: A ~> Boolean) {
+    def &&(other: A ~> Boolean): A ~> Boolean =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -15,7 +15,7 @@ trait BooleanOps {
           )
         )
 
-    def ||(other: Remote[Boolean]): Remote[Boolean] =
+    def ||(other: A ~> Boolean): A ~> Boolean =
       Lambda
         .unsafe
         .attempt(ctx =>
@@ -25,14 +25,14 @@ trait BooleanOps {
           )
         )
 
-    def unary_! : Remote[Boolean] =
+    def unary_! : A ~> Boolean =
       Lambda
         .unsafe
         .attempt(ctx =>
           Logical(Logical.Unary(self.compile(ctx), Logical.Unary.Not))
         )
 
-    def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] =
+    def diverge[B](isTrue: A ~> B, isFalse: A ~> B): A ~> B =
       Lambda
         .unsafe
         .attempt(ctx =>
