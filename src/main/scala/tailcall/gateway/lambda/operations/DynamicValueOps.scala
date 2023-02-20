@@ -6,9 +6,7 @@ import zio.Chunk
 import zio.schema.DynamicValue
 
 trait DynamicValueOps {
-  implicit final class RemoteDynamicValueOps(
-    private val self: Remote[DynamicValue]
-  ) {
+  implicit final class Extensions(private val self: Remote[DynamicValue]) {
     def path(fields: String*): Remote[Option[DynamicValue]] =
       Lambda
         .unsafe

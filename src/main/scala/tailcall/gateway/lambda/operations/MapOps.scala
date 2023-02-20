@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.MapOperations
 import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait MapOps {
-  implicit final class RemoteMapOps[A, B](val self: Remote[Map[A, B]]) {
+  implicit final class Extensions[A, B](val self: Remote[Map[A, B]]) {
     def get(key: Remote[A]): Remote[Option[B]] =
       Lambda
         .unsafe

@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.SeqOperations
 import tailcall.gateway.lambda.{Constructor, Lambda, Remote}
 
 trait SeqOps {
-  implicit final class RemoteSeqOps[A](val self: Remote[Seq[A]]) {
+  implicit final class Extensions[A](val self: Remote[Seq[A]]) {
     def ++(other: Remote[Seq[A]]): Remote[Seq[A]] =
       Lambda
         .unsafe

@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.Math
 import tailcall.gateway.lambda._
 
 trait MathOps {
-  implicit final class MathOps[A, B](val self: A ~> B)(implicit
+  implicit final class Extensions[A, B](val self: A ~> B)(implicit
     tag: Numeric[B]
   ) {
     def >(other: A ~> B): A ~> Boolean =

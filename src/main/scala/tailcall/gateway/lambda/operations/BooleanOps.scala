@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.Logical
 import tailcall.gateway.lambda.{Lambda, ~>}
 
 trait BooleanOps {
-  implicit final class RemoteBooleanOps[A](val self: A ~> Boolean) {
+  implicit final class Extensions[A](val self: A ~> Boolean) {
     def &&(other: A ~> Boolean): A ~> Boolean =
       Lambda
         .unsafe

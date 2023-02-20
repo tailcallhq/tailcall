@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.EitherOperations
 import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait EitherOps {
-  implicit final class RemoteEitherOps[E, A](
+  implicit final class Extensions[E, A](
     private val self: Remote[Either[E, A]]
   ) {
     def fold[B](

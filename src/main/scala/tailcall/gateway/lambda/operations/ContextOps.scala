@@ -6,7 +6,7 @@ import tailcall.gateway.lambda.{Lambda, Remote}
 import zio.schema.DynamicValue
 
 trait ContextOps {
-  implicit final class RemoteContextOps(private val self: Remote[Context]) {
+  implicit final class Extensions(private val self: Remote[Context]) {
     def value: Remote[DynamicValue] =
       Lambda
         .unsafe

@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.StringOperations
 import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait StringOps {
-  implicit final class RemoteStringOps(val self: Remote[String]) {
+  implicit final class Extensions(val self: Remote[String]) {
     def ++(other: Remote[String]): Remote[String] =
       Lambda
         .unsafe

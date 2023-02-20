@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.OptionOperations
 import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait OptionOps {
-  implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]) {
+  implicit final class Extensions[A](private val self: Remote[Option[A]]) {
     def fold[B](g: Remote[B])(f: Remote[A] => Remote[B]): Remote[B] =
       Lambda
         .unsafe
