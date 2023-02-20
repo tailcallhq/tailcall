@@ -2,7 +2,6 @@ package tailcall.gateway.ast
 
 import tailcall.gateway.ast.Path.Segment
 import tailcall.gateway.http.{Method, Request}
-import tailcall.gateway.remote.Remote
 import zio.Chunk
 import zio.schema.meta.MetaSchema
 import zio.schema.{DynamicValue, Schema}
@@ -40,12 +39,6 @@ final case class Endpoint(
 
   def withOutput[A](implicit schema: Schema[A]): Endpoint =
     copy(output = schema.ast)
-
-  def remote: Remote[DynamicValue => DynamicValue] = Remote.fromEndpoint(this)
-
-  def apply(input: Remote[DynamicValue]): Remote[DynamicValue] = remote(input)
-
-  def apply(input: DynamicValue): Remote[DynamicValue] = self(Remote(input))
 
   def withProtocol(protocol: Endpoint.Protocol): Endpoint =
     copy(protocol = protocol)

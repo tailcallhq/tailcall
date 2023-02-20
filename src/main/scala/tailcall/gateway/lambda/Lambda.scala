@@ -1,6 +1,7 @@
 package tailcall.gateway.lambda
 
 import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
+import tailcall.gateway.remote.Remote
 import zio.schema.Schema
 
 sealed trait Lambda[-A, +B] {
@@ -14,6 +15,7 @@ sealed trait Lambda[-A, +B] {
 
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] =
     LambdaRuntime.evaluate(self)
+
 }
 
 object Lambda {
@@ -135,6 +137,8 @@ object Lambda {
       .attempt(ctx =>
         Math(Math.Unary(ab.compile(ctx), Math.Unary.Negate), ev.any)
       )
+
+  def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B = ???
 
   object unsafe {
     object attempt {
