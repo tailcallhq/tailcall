@@ -1,15 +1,12 @@
 package tailcall.gateway
 
 import tailcall.gateway.lambda.{EvaluationContext, Lambda, LambdaRuntime}
-import zio.Chunk
-import zio.schema.Schema
 import zio.test.Assertion._
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.gateway.lambda.Numeric._
-
-  implicit def seqSchema[A: Schema]: Schema[Seq[A]] = Schema.chunk[A].transform(_.toSeq, Chunk.from(_))
+  import tailcall.gateway.remote._
 
   def spec =
     suite("Lambda")(
@@ -70,6 +67,10 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = Lambda.logic.diverge(Lambda(false), Lambda("Yes"), Lambda("No"))
           assertZIO(program.evaluate())(equalTo("No"))
         }
-      )
+      ),
+      suite("fromFunction")(test("evaluate") {
+        val program = Lambda.fromFunction[Int, Int](i => i + Remote(1))
+        assertZIO(program.evaluate(1))(equalTo(2))
+      })
     ).provide(LambdaRuntime.live, EvaluationContext.live)
 }

@@ -25,11 +25,11 @@ object LambdaRuntime {
         case Literal(value, ctor) => value.toTypedValue(ctor.schema)
             .fold(cause => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema)), LExit.succeed)
 
-        case EqualTo(left, right, tag) => for {
+        case EqualTo(left, right, tag)  => for {
             leftValue  <- evaluate(left)
             rightValue <- evaluate(right)
           } yield tag.equal(leftValue, rightValue)
-        case Math(operation, tag)      => operation match {
+        case Math(operation, tag)       => operation match {
             case Math.Binary(left, right, operation) =>
               for {
                 leftValue  <- evaluate(left)
@@ -44,7 +44,7 @@ object LambdaRuntime {
             case Math.Unary(value, operation)        => evaluate(value)
                 .map(evaluate => operation match { case Math.Unary.Negate => tag.negate(evaluate) })
           }
-        case Logical(operation)        => operation match {
+        case Logical(operation)         => operation match {
             case Logical.Binary(left, right, operation) =>
               for {
                 leftValue  <- evaluateAs[Boolean](left)
@@ -60,8 +60,15 @@ object LambdaRuntime {
                 }
               }
           }
-        case Identity                  => LExit.input
-        case Pipe(left, right)         => evaluate(left) >>> evaluate(right)
+        case Identity                   => LExit.input
+        case Pipe(left, right)          => evaluate(left) >>> evaluate(right)
+        case FunctionDef(binding, body) => for {
+            input <- LExit.input[Any]
+            _     <- LExit.fromZIO(ctx.set(binding, input))
+            r     <- evaluate(body)
+            _     <- LExit.fromZIO(ctx.drop(binding))
+          } yield r
+        case Lookup(binding)            => LExit.fromZIO(ctx.get(binding))
       }
     }
   }
