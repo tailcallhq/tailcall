@@ -12,15 +12,8 @@ final case class Path(segments: List[Path.Segment]) {
   def evaluate(input: DynamicValue): String            =
     transform {
       case Path.Segment.Literal(value)  => Path.Segment.Literal(value)
-      case Path.Segment.Param(mustache) => Path
-          .Segment
-          .Literal(
-            mustache
-              .evaluate(input)
-              .getOrElse(
-                throw new RuntimeException("Mustache evaluation failed")
-              )
-          )
+      case Path.Segment.Param(mustache) => Path.Segment
+          .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 }
 
@@ -35,25 +28,15 @@ object Path {
   }
 
   object syntax {
-    val segment = Syntax
-      .alphaNumeric
-      .repeat
-      .transform[String](_.asString, Chunk.fromIterable(_))
+    val segment = Syntax.alphaNumeric.repeat.transform[String](_.asString, Chunk.fromIterable(_))
 
-    val param = Mustache
-      .syntax
-      .transform[Segment.Param](Segment.Param(_), _.value)
+    val param = Mustache.syntax.transform[Segment.Param](Segment.Param(_), _.value)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal, _.value)
 
-    val segmentChunk =
-      (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment]))
-        .repeat
+    val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
 
-    val route = segmentChunk.transform[Path](
-      chunk => Path(chunk.toList),
-      route => Chunk.from(route.segments)
-    )
+    val route = segmentChunk.transform[Path](chunk => Path(chunk.toList), route => Chunk.from(route.segments))
 
   }
 
@@ -63,24 +46,18 @@ object Path {
       case Right(value) => Right(value)
     }
 
-  def encode(route: Path): Either[String, String] =
-    syntax.route.asPrinter.printString(route)
+  def encode(route: Path): Either[String, String] = syntax.route.asPrinter.printString(route)
 
-  implicit lazy val routeCodec: JsonCodec[Path] = JsonCodec[String]
-    .transformOrFail(
-      Path.decode,
+  implicit lazy val routeCodec: JsonCodec[Path] = JsonCodec[String].transformOrFail(
+    Path.decode,
 
-      // TODO: handle this error more gracefully
-      route =>
-        Path
-          .encode(route)
-          .getOrElse(throw new RuntimeException("Invalid Route"))
-    )
+    // TODO: handle this error more gracefully
+    route => Path.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
+  )
 
   object unsafe {
     def fromString(string: String): Path =
-      decode(string)
-        .getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
+      decode(string).getOrElse(throw new RuntimeException(s"Invalid Route: ${string}"))
   }
 
   def empty: Path = Path(Nil)

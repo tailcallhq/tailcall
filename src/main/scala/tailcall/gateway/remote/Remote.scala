@@ -20,14 +20,11 @@ sealed trait Remote[+A] {
 object Remote {
   final case class FromLambda[A](lambda: Any ~> A) extends Remote[A]
 
-  def apply[A](a: A)(implicit c: Constructor[A]): Remote[A] =
-    FromLambda(Lambda(a))
+  def apply[A](a: A)(implicit c: Constructor[A]): Remote[A] = FromLambda(Lambda(a))
 
   def apply[A](a: Any ~> A): Remote[A] = FromLambda(a)
 
-  def toLambda[A](remote: Remote[A]): Any ~> A =
-    remote match { case FromLambda(lambda) => lambda }
+  def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
 
-  implicit def schema[A]: Schema[Remote[A]] =
-    Schema[Any ~> A].transform(Remote(_), _.toLambda)
+  implicit def schema[A]: Schema[Remote[A]] = Schema[Any ~> A].transform(Remote(_), _.toLambda)
 }

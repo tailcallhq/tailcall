@@ -7,17 +7,12 @@ import zio.test._
 
 object OrcSpec extends ZIOSpecDefault {
   def execute(orc: Orc)(query: String) =
-    orc
-      .toGraphQL
-      .interpreter
-      .flatMap(_.execute(query, skipValidation = true))
-      .map(_.data.toString())
+    orc.toGraphQL.interpreter.flatMap(_.execute(query, skipValidation = true)).map(_.data.toString())
 
   def spec =
     suite("OrcSpec")(suite("execute")(
       test("one level") {
-        val orc = Orc
-          .obj("Query")("foo" -> Orc.value(100), "bar" -> Orc.value("BAR"))
+        val orc = Orc.obj("Query")("foo" -> Orc.value(100), "bar" -> Orc.value("BAR"))
 
         val response = execute(orc)("""query {foo bar}""")
         assertZIO(response)(equalTo("{\"foo\":100,\"bar\":\"BAR\"}"))
