@@ -78,8 +78,9 @@ final class StepGenerator(orc: Orc) {
           fields.map { case (name, orc) => (name, gen(orc, context)) }
         )
       case Orc.OrcList(values)  => Step.ListStep(values.map(gen(_, context)))
-      case Orc.OrcFunction(fun) => Step
-          .QueryStep(ZQuery.fromZIO(fun(context).evaluate.map(gen(_, context))))
+      case Orc.OrcFunction(fun) => Step.QueryStep(ZQuery.fromZIO(
+          (context.toLambda >>> fun).evaluate {}.map(gen(_, context))
+        ))
     }
   }
 

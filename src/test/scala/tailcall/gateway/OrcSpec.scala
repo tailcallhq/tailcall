@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Orc
-import tailcall.gateway.remote.{EvaluationContext, RemoteRuntime}
+import tailcall.gateway.lambda.{EvaluationContext, LambdaRuntime}
 import zio.test.Assertion._
 import zio.test._
 
@@ -53,5 +53,5 @@ object OrcSpec extends ZIOSpecDefault {
 //        val response = execute(orc)("{foo {a b}}")
 //        assertZIO(response)(equalTo("{\"foo\":[\"foo1\",\"foo2\"]}"))
 //      }
-    )).provide(RemoteRuntime.live, EvaluationContext.live)
+    )).provide(LambdaRuntime.live, EvaluationContext.live)
 }
