@@ -7,17 +7,38 @@ import zio.schema.Schema
 
 sealed trait Lambda[-A, +B] {
   self =>
+  final def apply(remote: Remote[A]): Remote[B] = Remote(remote.toLambda >>> self)
+
   final def >>>[C](other: B ~> C): A ~> C =
     Lambda.unsafe.attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
 
+  final def compile: DynamicEval = compile(CompilationContext.initial)
+
   def compile(context: CompilationContext): DynamicEval
-  final def compile: DynamicEval                            = compile(CompilationContext.initial)
+
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] = LambdaRuntime.evaluate(self)
-  final def apply(remote: Remote[A]): Remote[B]             = Remote(remote.toLambda >>> self)
-  final def toFunction: Remote[A] => Remote[B]              = remote => self(remote)
+
+  final def toFunction: Remote[A] => Remote[B] = remote => self(remote)
 }
 
 object Lambda {
+
+  def apply[A, B](b: B)(implicit ctor: Constructor[B]): A ~> B =
+    Lambda.unsafe.attempt(_ => Literal(ctor.schema.toDynamic(b), ctor.asInstanceOf[Constructor[Any]]))
+
+  def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =
+    Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
+
+  def fromLambdaFunction[A, B](f: (Any ~> A) => (Any ~> B)): A ~> B = {
+    Lambda.unsafe.attempt { ctx =>
+      val key  = Binding(ctx.level)
+      val body = f(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key)))
+      DynamicEval.FunctionDef(key, body.compile(ctx.next))
+    }
+  }
+
+  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
+
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
@@ -30,6 +51,9 @@ object Lambda {
           .Logical(Logical.Unary(cond.compile(ctx), Logical.Unary.Diverge(isTrue.compile(ctx), isFalse.compile(ctx))))
       }
 
+    def equalTo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
+      Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
+
     def not[A](a: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean](ctx => DynamicEval.Logical(Logical.Unary(a.compile(ctx), Logical.Unary.Not)))
 
@@ -38,21 +62,14 @@ object Lambda {
         DynamicEval.Logical(Logical.Binary(left.compile(ctx), right.compile(ctx), Logical.Binary.Or))
       }
 
-    def equalTo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
-      Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
-
   }
 
-  def apply[A, B](b: B)(implicit ctor: Constructor[B]): A ~> B =
-    Lambda.unsafe.attempt(_ => Literal(ctor.schema.toDynamic(b), ctor.asInstanceOf[Constructor[Any]]))
-
   object math {
-    def subtract[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, negate(b))
-
-    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B    =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Add), ev.any))
     def divide[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Divide), ev.any))
+
+    def gt[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> Boolean =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.GreaterThan), ev.any))
 
     def modulo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Modulo), ev.any))
@@ -60,21 +77,13 @@ object Lambda {
     def multiply[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Multiply), ev.any))
 
-    def gt[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> Boolean =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.GreaterThan), ev.any))
+    def subtract[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, negate(b))
+
+    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Add), ev.any))
 
     def negate[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Unary(ab.compile(ctx), Math.Unary.Negate), ev.any))
-  }
-
-  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
-
-  def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B = {
-    Lambda.unsafe.attempt { ctx =>
-      val key  = Binding(ctx.level)
-      val body = f(Remote(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key)))).toLambda
-      DynamicEval.FunctionDef(key, body.compile(ctx.next))
-    }
   }
 
   object unsafe {
