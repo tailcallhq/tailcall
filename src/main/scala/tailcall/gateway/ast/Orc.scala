@@ -5,7 +5,7 @@ import caliban.introspection.adt.{__Directive, __Type, __TypeKind}
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.wrappers.Wrapper
 import tailcall.gateway.StepGenerator
-import tailcall.gateway.lambda.{Lambda, LambdaRuntime, ~>}
+import tailcall.gateway.lambda.LambdaRuntime
 import tailcall.gateway.remote.Remote
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
@@ -31,7 +31,7 @@ object Orc {
   final case class OrcValue(dynamicValue: DynamicValue)              extends Orc
   final case class OrcObject(name: String, fields: Map[String, Orc]) extends Orc
   final case class OrcList(values: List[Orc])                        extends Orc
-  final case class OrcFunction(fun: Context ~> Orc)                  extends Orc
+  final case class OrcFunction(fun: Remote[Context] => Remote[Orc])  extends Orc
   final case class OrcRef(name: String)                              extends Orc
 
   def value[A](a: A)(implicit schema: Schema[A]): Orc = OrcValue(schema.toDynamic(a))
@@ -40,7 +40,7 @@ object Orc {
 
   def list(values: Orc*): Orc = OrcList(values.toList)
 
-  def function(fun: Remote[Context] => Remote[Orc]): Orc = OrcFunction(Lambda.fromFunction[Context, Orc](fun))
+  def function(fun: Remote[Context] => Remote[Orc]): Orc = OrcFunction(Remote.bind(fun))
 
   def ref(ref: String): Orc = OrcRef(ref)
 
