@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.MapOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.MapOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait MapOps {
   implicit final class RemoteMapOps[A, B](val self: Remote[Map[A, B]]) {

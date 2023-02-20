@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.SeqOperations
-import tailcall.gateway.remote.{Constructor, Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.SeqOperations
+import tailcall.gateway.lambda.{Constructor, Lambda, Remote}
 
 trait SeqOps {
   implicit final class RemoteSeqOps[A](val self: Remote[Seq[A]]) {

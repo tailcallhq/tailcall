@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
 sealed trait Equatable[A] {
   def equal(a: A, b: A): Boolean

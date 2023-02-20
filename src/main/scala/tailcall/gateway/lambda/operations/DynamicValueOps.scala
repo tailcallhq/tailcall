@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.DynamicValueOperations
-import tailcall.gateway.remote.{DynamicEval, Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.DynamicValueOperations
+import tailcall.gateway.lambda.{DynamicEval, Lambda, Remote}
 import zio.Chunk
 import zio.schema.DynamicValue
 

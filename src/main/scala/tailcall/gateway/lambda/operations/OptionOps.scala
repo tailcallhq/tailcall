@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.OptionOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.OptionOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait OptionOps {
   implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]) {

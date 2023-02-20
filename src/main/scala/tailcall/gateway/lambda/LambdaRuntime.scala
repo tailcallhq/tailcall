@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
 import tailcall.gateway.ast.Context
 import tailcall.gateway.http.HttpClient

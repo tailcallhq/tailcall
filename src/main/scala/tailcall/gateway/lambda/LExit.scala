@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
 import zio._
 

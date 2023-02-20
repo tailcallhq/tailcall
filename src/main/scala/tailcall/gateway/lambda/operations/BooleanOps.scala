@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.Logical
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.Logical
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait BooleanOps {
   implicit final class RemoteBooleanOps(val self: Remote[Boolean]) {

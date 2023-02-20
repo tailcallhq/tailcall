@@ -5,7 +5,7 @@ import caliban.introspection.adt.{__Directive, __Type, __TypeKind}
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.wrappers.Wrapper
 import tailcall.gateway.StepGenerator
-import tailcall.gateway.remote.{LambdaRuntime, ~>}
+import tailcall.gateway.lambda.{LambdaRuntime, ~>}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 sealed trait Orc {

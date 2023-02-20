@@ -1,7 +1,7 @@
 package tailcall.gateway.internal
 
 import tailcall.gateway.ast.{Endpoint, Orc}
-import tailcall.gateway.remote.Lambda
+import tailcall.gateway.lambda.Lambda
 import zio.schema.DeriveSchema
 
 object JsonPlaceholder {

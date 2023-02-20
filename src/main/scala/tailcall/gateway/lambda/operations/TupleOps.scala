@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.TupleOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.TupleOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait TupleOps {
   implicit final class RemoteTupleOps[A, B](val self: Remote[(A, B)]) {

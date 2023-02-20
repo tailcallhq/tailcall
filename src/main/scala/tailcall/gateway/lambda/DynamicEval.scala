@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 import tailcall.gateway.ast.Endpoint
 import zio.Chunk
 import zio.schema.{DeriveSchema, DynamicValue, Schema}

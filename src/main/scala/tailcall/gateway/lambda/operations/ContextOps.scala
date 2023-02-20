@@ -1,8 +1,8 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
 import tailcall.gateway.ast.Context
-import tailcall.gateway.remote.DynamicEval.ContextOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.ContextOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 import zio.schema.DynamicValue
 
 trait ContextOps {

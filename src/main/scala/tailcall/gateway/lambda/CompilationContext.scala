@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
 final case class CompilationContext(level: Int, index: Int) {
   def withNextLevel: CompilationContext =

@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.StringOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.StringOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait StringOps {
   implicit final class RemoteStringOps(val self: Remote[String]) {

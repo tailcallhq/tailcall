@@ -1,9 +1,9 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
-import tailcall.gateway.remote.DynamicEval._
+import tailcall.gateway.lambda.DynamicEval._
 import zio.schema.Schema
 
-class RemoteSchemaInferer {
+class SchemaInferer {
   def inferSchema(r: DynamicEval): Schema[_] =
     r match {
       case DynamicEval.Literal(_, ctor)             => ctor.schema
@@ -64,12 +64,12 @@ class RemoteSchemaInferer {
     }
 
 }
-object RemoteSchemaInferer {
+object SchemaInferer {
   def inferSchema[A](r: Remote[A]): Schema[A] =
-    new RemoteSchemaInferer()
+    new SchemaInferer()
       .inferSchema(r.compile(CompilationContext.initial))
       .asInstanceOf[Schema[A]]
 
   def inferSchema(r: DynamicEval): Schema[_] =
-    new RemoteSchemaInferer().inferSchema(r)
+    new SchemaInferer().inferSchema(r)
 }

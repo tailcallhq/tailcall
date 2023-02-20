@@ -1,4 +1,4 @@
-package tailcall.gateway.remote
+package tailcall.gateway.lambda
 
 import tailcall.gateway.ast.{Context, Orc}
 import zio.Chunk
@@ -41,8 +41,6 @@ object Constructor {
 
   implicit def orc: Constructor[Orc] = Constructor(Schema[Orc])
 
-  implicit def remote[A]: Constructor[Remote[A]] =
-    Constructor(Schema[Remote[A]])
   implicit def option[A](implicit
     ctor: Constructor[A]
   ): Constructor[Option[A]] = {

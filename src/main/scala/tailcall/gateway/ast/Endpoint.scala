@@ -2,7 +2,7 @@ package tailcall.gateway.ast
 
 import tailcall.gateway.ast.Path.Segment
 import tailcall.gateway.http.{Method, Request}
-import tailcall.gateway.remote.{Lambda, Remote, ~>}
+import tailcall.gateway.lambda.{Lambda, Remote, ~>}
 import zio.Chunk
 import zio.schema.meta.MetaSchema
 import zio.schema.{DynamicValue, Schema}

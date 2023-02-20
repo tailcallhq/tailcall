@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Orc
-import tailcall.gateway.remote.{EvaluationContext, LambdaRuntime}
+import tailcall.gateway.lambda.{EvaluationContext, LambdaRuntime}
 import zio.test.Assertion._
 import zio.test._
 

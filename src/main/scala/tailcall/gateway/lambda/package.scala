@@ -1,8 +1,8 @@
 package tailcall.gateway
 
-import tailcall.gateway.remote.operations._
+import tailcall.gateway.lambda.operations._
 
-package object remote
+package object lambda
     extends StringOps
     with SeqOps
     with BooleanOps

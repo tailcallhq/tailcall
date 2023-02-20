@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.Math
-import tailcall.gateway.remote._
+import tailcall.gateway.lambda.DynamicEval.Math
+import tailcall.gateway.lambda._
 
 trait MathOps {
   implicit final class RemoteOps[A](val self: Remote[A]) {

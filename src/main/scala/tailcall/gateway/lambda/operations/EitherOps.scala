@@ -1,7 +1,7 @@
-package tailcall.gateway.remote.operations
+package tailcall.gateway.lambda.operations
 
-import tailcall.gateway.remote.DynamicEval.EitherOperations
-import tailcall.gateway.remote.{Lambda, Remote}
+import tailcall.gateway.lambda.DynamicEval.EitherOperations
+import tailcall.gateway.lambda.{Lambda, Remote}
 
 trait EitherOps {
   implicit final class RemoteEitherOps[E, A](
