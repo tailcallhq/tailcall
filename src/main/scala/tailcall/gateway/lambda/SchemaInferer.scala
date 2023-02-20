@@ -59,6 +59,7 @@ class SchemaInferer {
       case DynamicEval.Debug(_, _)                  => ???
       case DynamicEval.Flatten(b)                   => inferSchema(b)
       case DynamicEval.Recurse(b)                   => inferSchema(b)
+      case DynamicEval.FunctionDefinition(_, b)     => inferSchema(b)
     }
 
 }
