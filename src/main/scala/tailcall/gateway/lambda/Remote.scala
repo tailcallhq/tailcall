@@ -1,9 +1,9 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.lambda.DynamicEval.{EqualTo, Math}
+import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Math}
 import tailcall.gateway.lambda.operations._
 import zio.ZIO
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.Schema
 
 /**
  * Remote[A] Allows for any arbitrary computation that can
@@ -29,9 +29,11 @@ sealed trait Remote[+A] {
   )(implicit tag: Numeric[A1]): Remote[Boolean] =
     attempt(ctx =>
       Math(
-        self.compile(ctx),
-        other.compile(ctx),
-        Math.Binary.GreaterThan,
+        Math.Binary(
+          self.compile(ctx),
+          other.compile(ctx),
+          Math.Binary.GreaterThan
+        ),
         tag.any
       )
     )
@@ -45,7 +47,10 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Add, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Add),
+        tag.any
+      )
     )
 
   final def -[A1 >: A](other: Remote[A1])(implicit
@@ -56,53 +61,43 @@ sealed trait Remote[+A] {
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Multiply, tag.any)
+      Math(
+        Math
+          .Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Multiply),
+        tag.any
+      )
     )
 
   final def /[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Divide, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Divide),
+        tag.any
+      )
     )
 
   final def %[A1 >: A](
     other: Remote[A1]
   )(implicit tag: Numeric[A1]): Remote[A1] =
     attempt(ctx =>
-      Math(self.compile(ctx), other.compile(ctx), Math.Binary.Modulo, tag.any)
+      Math(
+        Math.Binary(self.compile(ctx), other.compile(ctx), Math.Binary.Modulo),
+        tag.any
+      )
     )
 
   final def negate[A1 >: A](implicit tag: Numeric[A1]): Remote[A1] =
-    attempt(ctx => Math(self.compile(ctx), Math.Unary.Negate, tag.any))
-
-  final def debug(message: String): Remote[A] =
-    attempt(ctx => DynamicEval.Debug(self.compile(ctx), message))
-
-  final def toDynamicValue[A1 >: A](implicit
-    ev: Schema[A1]
-  ): Remote[DynamicValue] = ???
-
-  final def flatten[B](implicit
-    ev: Remote[A] <:< Remote[Remote[B]]
-  ): Remote[B] = Remote.flatten(self)
+    attempt(ctx =>
+      Math(Math.Unary(self.compile(ctx), Math.Unary.Negate), tag.any)
+    )
 
   final def evaluate: ZIO[RemoteRuntime, Throwable, A] =
     RemoteRuntime.evaluate(self)
 }
 
-object Remote
-    extends RemoteCtors
-    with StringOps
-    with SeqOps
-    with BooleanOps
-    with EitherOps
-    with FunctionOps
-    with OptionOps
-    with ContextOps
-    with DynamicValueOps
-    with TupleOps
-    with MapOps {
+object Remote extends BooleanOps {
 
   object unsafe {
     object attempt {
@@ -114,6 +109,13 @@ object Remote
     }
   }
 
+  def apply[A](a: A)(implicit ctor: Constructor[A]): Remote[A] =
+    Remote
+      .unsafe
+      .attempt(_ =>
+        Literal(ctor.schema.toDynamic(a), ctor.asInstanceOf[Constructor[Any]])
+      )
+
   implicit val anySchema: Schema[Remote[_]] = Schema[DynamicEval].transform(
     eval => unsafe.attempt(_ => eval),
     _.compile(CompilationContext.initial)
@@ -121,7 +123,4 @@ object Remote
 
   implicit def schema[A]: Schema[Remote[A]] =
     anySchema.asInstanceOf[Schema[Remote[A]]]
-
-  implicit def remoteFunctionSchema[A, B]: Schema[Remote[A] => Remote[B]] =
-    Schema[Remote[A => B]].transform(_.toFunction, Remote.fromFunction)
 }
