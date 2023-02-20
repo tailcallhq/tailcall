@@ -5,7 +5,13 @@ import zio.schema.Schema
 
 sealed trait Lambda[-A, +B] {
   self =>
+  final def >>>[C](other: B ~> C): A ~> C =
+    Lambda
+      .unsafe
+      .attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
+
   def compile(context: CompilationContext): DynamicEval
+
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] =
     LambdaRuntime.evaluate(self)
 }
@@ -69,6 +75,9 @@ object Lambda {
           ev.any
         )
       )
+
+  def identity[A]: A ~> A =
+    Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
 
   def modulo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
     Lambda
