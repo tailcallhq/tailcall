@@ -1,38 +1,38 @@
 package tailcall.gateway
 
+import tailcall.gateway.lambda.Lambda.math._
 import tailcall.gateway.lambda.{EvaluationContext, Lambda, LambdaRuntime}
 import zio.test.Assertion._
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.gateway.lambda.Numeric._
-  import tailcall.gateway.remote._
 
   def spec =
     suite("Lambda")(
       suite("math")(
         test("add") {
-          val program = Lambda.math.add(Lambda(1), Lambda(2))
+          val program = add(Lambda(1), Lambda(2))
           assertZIO(program.evaluate())(equalTo(3))
         },
         test("subtract") {
-          val program = Lambda.math.subtract(Lambda(1), Lambda(2))
+          val program = subtract(Lambda(1), Lambda(2))
           assertZIO(program.evaluate())(equalTo(-1))
         },
         test("multiply") {
-          val program = Lambda.math.multiply(Lambda(2), Lambda(3))
+          val program = multiply(Lambda(2), Lambda(3))
           assertZIO(program.evaluate())(equalTo(6))
         },
         test("divide") {
-          val program = Lambda.math.divide(Lambda(6), Lambda(3))
+          val program = divide(Lambda(6), Lambda(3))
           assertZIO(program.evaluate())(equalTo(2))
         },
         test("modulo") {
-          val program = Lambda.math.modulo(Lambda(7), Lambda(3))
+          val program = modulo(Lambda(7), Lambda(3))
           assertZIO(program.evaluate())(equalTo(1))
         },
         test("greater than") {
-          val program = Lambda.math.gt(Lambda(2), Lambda(1))
+          val program = gt(Lambda(2), Lambda(1))
           assertZIO(program.evaluate())(isTrue)
         }
       ),
@@ -70,31 +70,32 @@ object LambdaSpec extends ZIOSpecDefault {
       ),
       suite("fromFunction")(
         test("one level") {
-          val program = Lambda.fromFunction[Int, Int](i => i + Remote(1))
+          val program = Lambda.fromLambdaFunction[Int, Int](i => add(i, Lambda(1)))
           assertZIO(program.evaluate(1))(equalTo(2))
         },
         test("two level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => i * j)
-            f1(i + Remote(1))
+          val program = Lambda.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Lambda.fromLambdaFunction[Int, Int](j => multiply(i, j))
+            add(i, Lambda(1)) >>> f1
           }
           assertZIO(program.evaluate(10))(equalTo(110))
         },
         test("three level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int] { j =>
-              val f2 = Lambda.fromFunction[Int, Int](k => i * j * k)
-              f2(j + Remote(1))
+          val program = Lambda.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Lambda.fromLambdaFunction[Int, Int] { j =>
+              val f2 = Lambda.fromLambdaFunction[Int, Int](k => multiply(multiply(i, j), k))
+              add(j, Lambda(1)) >>> f2
             }
-            f1(i + Remote(1))
+            add(i, Lambda(1)) >>> f1
           }
           assertZIO(program.evaluate(10))(equalTo(10 * 11 * 12))
         },
         test("nested siblings") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => j * i)
-            val f2 = Lambda.fromFunction[Int, Int](j => i * j)
-            f1(i + Remote(1)) + f2(i - Remote(1))
+          val program = Lambda.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Lambda.fromLambdaFunction[Int, Int](j => multiply(i, j))
+            val f2 = Lambda.fromLambdaFunction[Int, Int](j => multiply(i, j))
+            add(add(i, Lambda(1)) >>> f1, subtract(i, Lambda(1)) >>> f2)
+
           }
           assertZIO(program.evaluate(10))(equalTo(200))
         }
