@@ -138,7 +138,7 @@ object LambdaRuntime {
             case EitherOperations.Fold(value, left, right) => for {
                 either <- evaluateAs[Either[_, _]](value)
                 result <- either match {
-                  case Left(value)  => evaluate(right).provideInput(value)
+                  case Left(value)  => evaluate(left).provideInput(value)
                   case Right(value) => evaluate(right).provideInput(value)
                 }
               } yield result

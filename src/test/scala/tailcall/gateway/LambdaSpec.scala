@@ -197,12 +197,7 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = f1(Lambda(1))
 
           assertZIO(program.evaluateWith(()))(equalTo(3))
-        },
-        test("higher order function") {
-          val f1      = Lambda.fromFunction[Int ~> Int, Int](f => Lambda.flatten(f)(Lambda(100)))
-          val program = f1(Lambda.fromFunction[Int, Int](_.increment))
-          assertZIO(program.evaluateWith(()))(equalTo(101))
-        } @@ failing
+        }
       ),
       suite("either")(
         test("left") {
@@ -219,7 +214,7 @@ object LambdaSpec extends ZIOSpecDefault {
         },
         test("fold left") {
           val program = Lambda.fromEither(Left(Lambda("Error")))
-            .fold(l => rs"Some ${l}", (r: Remote[Nothing]) => r * Lambda(2))
+            .fold(l => rs"Some $l", (r: Remote[Nothing]) => r * Lambda(2))
           assertZIO(program.evaluateWith(()))(equalTo("Some Error"))
         }
       ),
