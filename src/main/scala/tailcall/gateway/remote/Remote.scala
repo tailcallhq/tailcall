@@ -1,7 +1,5 @@
 package tailcall.gateway.remote
 
-
-
 /**
  * Remote[A] Allows for any arbitrary computation that can
  * be serialized and when evaluated produces a result of
