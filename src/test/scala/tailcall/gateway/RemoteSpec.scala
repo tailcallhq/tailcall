@@ -73,6 +73,37 @@ object RemoteSpec extends ZIOSpecDefault {
           val program = Remote(false).diverge(Remote("Yes"), Remote("No"))
           assertZIO(program.evaluate)(equalTo("No"))
         }
+      ),
+      suite("fromFunction")(
+        test("one level") {
+          val program = Remote.bounded[Int, Int](i => i + Remote(1))(Remote(1))
+          assertZIO(program.evaluate)(equalTo(2))
+        },
+        test("two level") {
+          val program = Remote.bounded[Int, Int] { i =>
+            val f1 = Remote.bounded[Int, Int](j => i * j)
+            f1(i + Remote(1))
+          }(Remote(10))
+          assertZIO(program.evaluate)(equalTo(110))
+        },
+        test("three level") {
+          val program = Remote.bounded[Int, Int] { i =>
+            val f1 = Remote.bounded[Int, Int] { j =>
+              val f2 = Remote.bounded[Int, Int](k => i * j * k)
+              f2(j + Remote(1))
+            }
+            f1(i + Remote(1))
+          }(Remote(10))
+          assertZIO(program.evaluate)(equalTo(10 * 11 * 12))
+        },
+        test("three level") {
+          val program = Remote.bounded[Int, Int] { i =>
+            val f1 = Remote.bounded[Int, Int](j => j * i)
+            val f2 = Remote.bounded[Int, Int](j => i * j)
+            f1(i + Remote(1)) + f2(i - Remote(1))
+          }(Remote(10))
+          assertZIO(program.evaluate)(equalTo(200))
+        }
       )
 //      suite("string")(
 //        test("concat") {
