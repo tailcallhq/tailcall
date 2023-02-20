@@ -1,37 +1,19 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.remote.DynamicEval.Logical
+import tailcall.gateway.lambda.Lambda
 import tailcall.gateway.remote.Remote
 
 trait BooleanOps {
   implicit final class RemoteBooleanOps(val self: Remote[Boolean]) {
     def &&(other: Remote[Boolean]): Remote[Boolean] =
-      Remote
-        .unsafe
-        .attempt(ctx =>
-          Logical(self.compile(ctx), other.compile(ctx), Logical.Binary.And)
-        )
+      Remote(Lambda.and(self.toLambda, other.toLambda))
 
     def ||(other: Remote[Boolean]): Remote[Boolean] =
-      Remote
-        .unsafe
-        .attempt(ctx =>
-          Logical(self.compile(ctx), other.compile(ctx), Logical.Binary.Or)
-        )
+      Remote(Lambda.or(self.toLambda, other.toLambda))
 
-    def unary_! : Remote[Boolean] =
-      Remote
-        .unsafe
-        .attempt(ctx => Logical(self.compile(ctx), Logical.Unary.Not))
+    def unary_! : Remote[Boolean] = Remote(Lambda.not(self.toLambda))
 
     def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] =
-      Remote
-        .unsafe
-        .attempt(ctx =>
-          Logical(Logical.Unary(
-            self.compile(ctx),
-            Logical.Unary.Diverge(isTrue.compile(ctx), isFalse.compile(ctx))
-          ))
-        )
+      Remote(Lambda.diverge(self.toLambda, isTrue.toLambda, isFalse.toLambda))
   }
 }

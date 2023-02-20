@@ -74,7 +74,8 @@ object LambdaRuntime {
                   }
                 }
           }
-        case resIdentity               => LExit.input
+        case Identity                  => LExit.input
+        case Pipe(left, right)         => evaluate(left) >>> evaluate(right)
       }
     }
   }
