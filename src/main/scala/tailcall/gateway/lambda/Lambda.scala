@@ -36,6 +36,9 @@ object Lambda {
         DynamicEval.Logical(Logical.Binary(left.compile(ctx), right.compile(ctx), Logical.Binary.Or))
       }
 
+    def equalTo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
+      Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
+
   }
 
   def apply[A, B](b: B)(implicit ctor: Constructor[B]): A ~> B =
@@ -61,9 +64,6 @@ object Lambda {
     def negate[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Unary(ab.compile(ctx), Math.Unary.Negate), ev.any))
   }
-
-  def equalTo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
-    Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
 
   def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
 
