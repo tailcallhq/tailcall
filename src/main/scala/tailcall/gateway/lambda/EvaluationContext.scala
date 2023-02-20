@@ -3,16 +3,16 @@ package tailcall.gateway.lambda
 import zio.{Ref, Task, ZIO, ZLayer}
 
 trait EvaluationContext {
-  def get(id: EvaluationContext.Key): Task[Any]
-  def set(id: EvaluationContext.Key, value: Any): Task[Unit]
-  def drop(id: EvaluationContext.Key): Task[Unit]
+  def get(id: EvaluationContext.Binding): Task[Any]
+  def set(id: EvaluationContext.Binding, value: Any): Task[Unit]
+  def drop(id: EvaluationContext.Binding): Task[Unit]
 }
 
 object EvaluationContext {
-  type Key = (Int, Int)
+  final case class Binding(id: Int)
 
-  final case class Default(map: Ref[Map[Key, Any]]) extends EvaluationContext {
-    def get(id: Key): Task[Any] =
+  final case class Default(map: Ref[Map[Binding, Any]]) extends EvaluationContext {
+    def get(id: Binding): Task[Any] =
       map.get.flatMap { map =>
         map.get(id) match {
           case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
@@ -20,17 +20,17 @@ object EvaluationContext {
         }
       }
 
-    def set(id: Key, value: Any): Task[Unit] = map.update(_ + (id -> value))
+    def set(id: Binding, value: Any): Task[Unit] = map.update(_ + (id -> value))
 
-    def drop(id: Key): Task[Unit] = map.update(_ - id)
+    def drop(id: Binding): Task[Unit] = map.update(_ - id)
   }
 
-  def live: ZLayer[Any, Nothing, EvaluationContext] = ZLayer.fromZIO(Ref.make(Map.empty[Key, Any]).map(Default))
+  def live: ZLayer[Any, Nothing, EvaluationContext] = ZLayer.fromZIO(Ref.make(Map.empty[Binding, Any]).map(Default))
 
-  def set(id: Key, value: Any): ZIO[EvaluationContext, EvaluationError, Unit] =
+  def set(id: Binding, value: Any): ZIO[EvaluationContext, EvaluationError, Unit] =
     ZIO.serviceWith[EvaluationContext](_.set(id, value))
 
-  def get(id: Key): ZIO[EvaluationContext, EvaluationError, Any] = ZIO.serviceWith[EvaluationContext](_.get(id))
+  def get(id: Binding): ZIO[EvaluationContext, EvaluationError, Any] = ZIO.serviceWith[EvaluationContext](_.get(id))
 
-  def drop(id: Key): ZIO[EvaluationContext, EvaluationError, Unit] = ZIO.serviceWith[EvaluationContext](_.drop(id))
+  def drop(id: Binding): ZIO[EvaluationContext, EvaluationError, Unit] = ZIO.serviceWith[EvaluationContext](_.drop(id))
 }

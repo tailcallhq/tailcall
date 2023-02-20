@@ -1,6 +1,7 @@
 package tailcall.gateway.lambda
 
 import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
+import tailcall.gateway.lambda.EvaluationContext.Binding
 import tailcall.gateway.remote.Remote
 import zio.schema.Schema
 
@@ -12,11 +13,9 @@ sealed trait Lambda[-A, +B] {
   def compile(context: CompilationContext): DynamicEval
 
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] = LambdaRuntime.evaluate(self)
-
 }
 
 object Lambda {
-
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
@@ -68,7 +67,14 @@ object Lambda {
 
   def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
 
-  def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B = ???
+  // TODO: add unit test
+  def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B = {
+    Lambda.unsafe.attempt { ctx =>
+      val key  = Binding(ctx.next.level)
+      val body = f(Remote(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key)))).toLambda
+      DynamicEval.FunctionDef(key, body.compile(ctx))
+    }
+  }
 
   object unsafe {
     object attempt {
