@@ -1,5 +1,6 @@
 package tailcall.gateway.lambda
 
+import tailcall.gateway.lambda.EvaluationContext.Binding
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 sealed trait DynamicEval
@@ -7,6 +8,8 @@ sealed trait DynamicEval
 object DynamicEval {
   // scalafmt: { maxColumn = 240 }
   case object Identity                                                                 extends DynamicEval
+  final case class Lookup(binding: Binding)                                            extends DynamicEval
+  final case class FunctionDef(binding: Binding, body: DynamicEval)                    extends DynamicEval
   final case class Literal(value: DynamicValue, ctor: Constructor[Any])                extends DynamicEval
   final case class Pipe(left: DynamicEval, right: DynamicEval)                         extends DynamicEval
   final case class EqualTo(left: DynamicEval, right: DynamicEval, tag: Equatable[Any]) extends DynamicEval
