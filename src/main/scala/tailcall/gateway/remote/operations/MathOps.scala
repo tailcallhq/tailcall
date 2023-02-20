@@ -1,8 +1,7 @@
 package tailcall.gateway.remote.operations
 
-import tailcall.gateway.lambda.Lambda
+import tailcall.gateway.lambda.{Lambda, Numeric}
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.lambda.Numeric
 
 trait MathOps {
   implicit final class RemoteMathOps[A](val self: Remote[A]) {
