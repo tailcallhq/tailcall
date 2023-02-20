@@ -38,5 +38,23 @@ trait SeqOps {
     def groupBy[B](f: Remote[A] => Remote[B]): Remote[Map[B, Seq[A]]] =
       Lambda.unsafe
         .attempt(ctx => SeqOperations(SeqOperations.GroupBy(self.compile(ctx), Lambda.fromFunction(f).compile(ctx))))
+
+    def batch[B1, C1](
+      to: Remote[Seq[B1]] => Remote[Seq[C1]],
+      ab: Remote[A] => Remote[B1],
+      ba: Remote[B1] => Remote[A],
+      cb: Remote[C1] => Remote[B1]
+    )(implicit ctorB: Constructor[B1], ctorC: Constructor[C1], ctorF: Constructor[(A, Option[C1])]) = {
+
+      val v = self.map(ab(_))
+      v.map(i =>
+        Lambda.fromTuple(
+          ba(i),
+          to(v).map(c => Lambda.fromTuple((cb(c), c))).groupBy(_._1).get(i)
+            .flatMap(x => x.map(_._2).head) // Todo: Add flatten in Option
+        )
+      )
+    }
+
   }
 }

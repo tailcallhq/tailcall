@@ -423,8 +423,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("option") {
           val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) => Lambda(Seq((1, "london"), (2, "paris"), (3, "new york")))
-          val program = Lambda.batch(
-            from,
+          val program = from.batch(
             to,
             (x: Remote[(Int, String)]) => x._1,
             (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
@@ -441,8 +440,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("option order") {
           val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) => Lambda(Seq((3, "london"), (2, "paris"), (1, "new york")))
-          val program = Lambda.batch(
-            from,
+          val program = from.batch(
             to,
             (x: Remote[(Int, String)]) => x._1,
             (b: Remote[Int]) => from.filter(x => x._1 =:= b).head.getOrDie,
@@ -459,8 +457,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("empty") {
           val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) => Lambda(Seq((1, "london"), (2, "paris")))
-          val program = Lambda.batch(
-            from,
+          val program = from.batch(
             to,
             (x: Remote[(Int, String)]) => x._1,
             (b: Remote[Int]) => from.find(x => x._1 =:= b).getOrDie,

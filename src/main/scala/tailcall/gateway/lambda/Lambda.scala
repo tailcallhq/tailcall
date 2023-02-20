@@ -37,24 +37,6 @@ object Lambda {
   def apply[B](b: B)(implicit ctor: Constructor[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => DynamicEval.Literal(ctor.schema.toDynamic(b), ctor.any))
 
-  def batch[A, B, C](
-    from: Remote[Seq[A]],
-    to: Remote[Seq[B]] => Remote[Seq[C]],
-    ab: Remote[A] => Remote[B],
-    ba: Remote[B] => Remote[A],
-    cb: Remote[C] => Remote[B]
-  )(implicit ctorB: Constructor[B], ctorC: Constructor[C], ctorF: Constructor[(A, Option[C])]) = {
-
-    val v = from.map(ab(_))
-    v.map(i =>
-      fromTuple(
-        ba(i),
-        to(v).map(c => fromTuple((cb(c), c))).groupBy(_._1).get(i)
-          .flatMap(x => x.map(_._2).head) // Todo: Add flatten in Option
-      )
-    )
-  }
-
   def fromTuple[A1, A2](t: (Remote[A1], Remote[A2])): Remote[(A1, A2)] =
     Lambda.unsafe
       .attempt(ctx => DynamicEval.TupleOperations(TupleOperations.Cons(Chunk(t._1.compile(ctx), t._2.compile(ctx)))))
