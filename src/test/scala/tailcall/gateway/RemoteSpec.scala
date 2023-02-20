@@ -10,8 +10,7 @@ import zio.test._
 object RemoteSpec extends ZIOSpecDefault {
   import tailcall.gateway.lambda.Numeric._
 
-  implicit def seqSchema[A: Schema]: Schema[Seq[A]] =
-    Schema.chunk[A].transform(_.toSeq, Chunk.from(_))
+  implicit def seqSchema[A: Schema]: Schema[Seq[A]] = Schema.chunk[A].transform(_.toSeq, Chunk.from(_))
 
   def spec =
     suite("Remote")(

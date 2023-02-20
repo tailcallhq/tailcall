@@ -12,13 +12,7 @@ object JsonPlaceholder {
   object Post    {
     implicit val schema = DeriveSchema.gen[Post]
   }
-  final case class Comment(
-    id: Int,
-    name: String,
-    email: String,
-    body: String,
-    postId: Int
-  )
+  final case class Comment(id: Int, name: String, email: String, body: String, postId: Int)
   object Comment {
     implicit val schema = DeriveSchema.gen[Comment]
   }
@@ -26,13 +20,7 @@ object JsonPlaceholder {
   object Album   {
     implicit val schema = DeriveSchema.gen[Album]
   }
-  final case class Photo(
-    id: Int,
-    title: String,
-    url: String,
-    thumbnailUrl: String,
-    albumId: Int
-  )
+  final case class Photo(id: Int, title: String, url: String, thumbnailUrl: String, albumId: Int)
   object Photo   {
     implicit val schema = DeriveSchema.gen[Photo]
   }
@@ -61,46 +49,25 @@ object JsonPlaceholder {
     val typicode: Endpoint  = Endpoint.make("jsonplaceholder.typicode.com")
     val users: Endpoint     = typicode.withPath("/users").withOutput[List[User]]
     val posts: Endpoint     = typicode.withPath("/posts").withOutput[List[Post]]
-    val userPosts: Endpoint = typicode
-      .withPath("/posts")
-      .withQuery("userId" -> "${userId}")
-      .withInput[UserId]
+    val userPosts: Endpoint = typicode.withPath("/posts").withQuery("userId" -> "${userId}").withInput[UserId]
       .withOutput[List[Post]]
 
-    val postComments: Endpoint = typicode
-      .withPath("/comments")
-      .withQuery("postId" -> "${postId}")
-      .withInput[PostId]
+    val postComments: Endpoint = typicode.withPath("/comments").withQuery("postId" -> "${postId}").withInput[PostId]
       .withOutput[List[Comment]]
 
-    val userComments: Endpoint = typicode
-      .withPath("/comments")
-      .withQuery("email" -> "${email}")
-      .withInput[EmailId]
+    val userComments: Endpoint = typicode.withPath("/comments").withQuery("email" -> "${email}").withInput[EmailId]
       .withOutput[List[Comment]]
 
-    val userAlbums: Endpoint = typicode
-      .withPath("/albums")
-      .withQuery("userId" -> "${userId}")
-      .withInput[UserId]
+    val userAlbums: Endpoint = typicode.withPath("/albums").withQuery("userId" -> "${userId}").withInput[UserId]
       .withOutput[List[Album]]
 
-    val UserTodos: Endpoint = typicode
-      .withPath("/todos")
-      .withQuery("userId" -> "${userId}")
-      .withInput[UserId]
+    val UserTodos: Endpoint = typicode.withPath("/todos").withQuery("userId" -> "${userId}").withInput[UserId]
       .withOutput[List[Todo]]
 
-    val AlbumPhotos: Endpoint = typicode
-      .withPath("/photos")
-      .withQuery("albumId" -> "${albumId}")
-      .withInput[AlbumId]
+    val AlbumPhotos: Endpoint = typicode.withPath("/photos").withQuery("albumId" -> "${albumId}").withInput[AlbumId]
       .withOutput[List[Photo]]
 
-    val ManyUsersPosts: Endpoint = typicode
-      .withPath("/posts")
-      .withQuery("userId" -> "${userId}")
-      .withInput[UserId]
+    val ManyUsersPosts: Endpoint = typicode.withPath("/posts").withQuery("userId" -> "${userId}").withInput[UserId]
       .withOutput[List[Post]]
   }
 

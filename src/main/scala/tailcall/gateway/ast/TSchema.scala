@@ -78,8 +78,7 @@ object TSchema {
 
       case (Union(s1a, s1b), _) => isSubType(s1a, s2) || isSubType(s1b, s2)
 
-      case (Intersection(s1a, s1b), _) =>
-        isSubType(s1a, s2) && isSubType(s1b, s2)
+      case (Intersection(s1a, s1b), _) => isSubType(s1a, s2) && isSubType(s1b, s2)
 
       case _ => false
     }
@@ -99,20 +98,13 @@ object TSchema {
   def bool: TSchema = TSchema.Scalar.Boolean
 
   def obj(fields: (String, TSchema)*): TSchema =
-    TSchema.Obj(
-      fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList
-    )
+    TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
   def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
-  implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec
-    .gen[TSchema.Id]
-  implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec
-    .gen[TSchema.Field]
-  implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio
-    .json
-    .DeriveJsonCodec
-    .gen[TSchema]
+  implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
+  implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
+  implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
 }
