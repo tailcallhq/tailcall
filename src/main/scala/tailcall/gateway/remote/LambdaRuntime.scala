@@ -27,38 +27,34 @@ object LambdaRuntime {
 
     def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case FunctionOperations(operation) => operation match {
-            case FunctionOperations.Literal(value, ctor) =>
-              ctor.schema.fromDynamic(value) match {
-                case Left(cause)  => LExit
-                    .fail(EvaluationError.TypeError(value, cause, ctor.schema))
-                case Right(value) => LExit.succeed(value)
-              }
-
-            case FunctionOperations.Pipe(left, right) =>
-              evaluate(left) >>> evaluate(right)
-
-            case FunctionOperations.Lookup(key) => LExit.fromZIO(
-                ctx.get(key).mapError(_ => EvaluationError.BindingNotFound(key))
-              )
-
-            case FunctionOperations.FunctionDefinition(key, body) => for {
-                any <- LExit.input[Any]
-                _   <- LExit.fromZIO(ctx.set(key, any))
-                res <- evaluate(body)
-                _   <- LExit.fromZIO(ctx.drop(key))
-              } yield res
-
-            case FunctionOperations.Flatten(eval) => for {
-                inner <- evaluate(eval)
-                outer <- evaluate(
-                  inner
-                    .asInstanceOf[Lambda[_, _]]
-                    .compile(CompilationContext.initial)
-                )
-              } yield outer
+        case Literal(value, ctor) => ctor.schema.fromDynamic(value) match {
+            case Left(cause)  =>
+              LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
+            case Right(value) => LExit.succeed(value)
           }
-        case Literal(value, ctor)          => value
+
+        case Pipe(left, right) => evaluate(left) >>> evaluate(right)
+
+        case Lookup(key) => LExit.fromZIO(
+            ctx.get(key).orElseFail(EvaluationError.BindingNotFound(key))
+          )
+
+        case FunctionDefinition(key, body) => for {
+            any <- LExit.input[Any]
+            _   <- LExit.fromZIO(ctx.set(key, any))
+            res <- evaluate(body)
+            _   <- LExit.fromZIO(ctx.drop(key))
+          } yield res
+
+        case Flatten(eval)        => for {
+            inner <- evaluate(eval)
+            outer <- evaluate(
+              inner
+                .asInstanceOf[Lambda[_, _]]
+                .compile(CompilationContext.initial)
+            )
+          } yield outer
+        case Literal(value, ctor) => value
             .toTypedValue(ctor.schema)
             .fold(
               cause =>

@@ -15,11 +15,7 @@ sealed trait Lambda[-A, +B] {
   final def >>>[B1 >: B, C](other: B1 ~> C): A ~> C =
     Lambda
       .unsafe
-      .attempt[A, C](ctx =>
-        DynamicEval.FunctionOperations(
-          DynamicEval.FunctionOperations.Pipe(compile(ctx), other.compile(ctx))
-        )
-      )
+      .attempt[A, C](ctx => DynamicEval.Pipe(compile(ctx), other.compile(ctx)))
 
   final def pipe[B1 >: B, C](other: B1 ~> C): A ~> C = self >>> other
 
@@ -50,13 +46,7 @@ object Lambda {
   def apply[B](b: B)(implicit ctor: Constructor[B]): Any ~> B =
     Lambda
       .unsafe
-      .attempt(_ =>
-        DynamicEval.FunctionOperations(
-          DynamicEval
-            .FunctionOperations
-            .Literal(ctor.schema.toDynamic(b), ctor.any)
-        )
-      )
+      .attempt(_ => DynamicEval.Literal(ctor.schema.toDynamic(b), ctor.any))
 
   def batch[A, B, C](
     from: Remote[Seq[A]],
@@ -101,13 +91,7 @@ object Lambda {
     Lambda(Schema.toDynamic(a))
 
   def flatten[A, B](ab: A ~> (A ~> B)): A ~> B =
-    Lambda
-      .unsafe
-      .attempt(ctx =>
-        DynamicEval.FunctionOperations(
-          DynamicEval.FunctionOperations.Flatten(ab.compile(ctx))
-        )
-      )
+    Lambda.unsafe.attempt(ctx => DynamicEval.Flatten(ab.compile(ctx)))
 
   def fromEither[E, A](a: Either[Remote[E], Remote[A]]): Remote[Either[E, A]] =
     Lambda
@@ -133,18 +117,10 @@ object Lambda {
         val next = ctx.withNextLevel
 
         val key  = EvaluationContext.Key.fromContext(next)
-        val body = f(
-          Lambda
-            .unsafe
-            .attempt(_ =>
-              DynamicEval
-                .FunctionOperations(DynamicEval.FunctionOperations.Lookup(key))
-            )
-        ).compile(next)
+        val body = f(Lambda.unsafe.attempt(_ => DynamicEval.Lookup(key)))
+          .compile(next)
 
-        DynamicEval.FunctionOperations(
-          DynamicEval.FunctionOperations.FunctionDefinition(key, body)
-        )
+        DynamicEval.FunctionDefinition(key, body)
       }
 
   def fromMap[A, B](a: Map[Remote[A], Remote[B]]): Remote[Map[A, B]] =
