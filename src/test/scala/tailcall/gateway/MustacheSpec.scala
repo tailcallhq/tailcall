@@ -9,11 +9,8 @@ object MustacheSpec extends ZIOSpecDefault {
   def spec =
     suite("MustacheSpec")(
       test("syntax") {
-        val input = List(
-          "{{a}}"     -> Mustache("a"),
-          "{{a.b}}"   -> Mustache("a", "b"),
-          "{{a.b.c}}" -> Mustache("a", "b", "c")
-        )
+        val input =
+          List("{{a}}" -> Mustache("a"), "{{a.b}}" -> Mustache("a", "b"), "{{a.b.c}}" -> Mustache("a", "b", "c"))
 
         checkAll(Gen.fromIterable(input)) { case (input, expected) =>
           val output = Mustache.syntax.parseString(input)
