@@ -22,8 +22,7 @@ class SchemaInferer {
       case DynamicEval.Logical(_)                   => Schema[Boolean]
       case DynamicEval.StringOperations(_)          => Schema[String]
       case DynamicEval.TupleOperations(operation)   => operation match {
-          case TupleOperations.GetIndex(value, _) =>
-            inferSchema(value) match { case Schema.Tuple2(a, _, _) => a }
+          case TupleOperations.GetIndex(value, _) => inferSchema(value) match { case Schema.Tuple2(a, _, _) => a }
           case TupleOperations.Cons(value)        =>
             val a = value.map(inferSchema)
             a.length match {
@@ -32,17 +31,16 @@ class SchemaInferer {
             }
         }
       case DynamicEval.SeqOperations(operation)     => operation match {
-          case SeqOperations.Concat(left, _)       => inferSchema(left)
-          case SeqOperations.Reverse(seq)          => inferSchema(seq)
-          case SeqOperations.Filter(seq, _)        => inferSchema(seq)
-          case SeqOperations.FlatMap(_, operation) => inferSchema(operation)
-          case SeqOperations.Length(_)             => Schema[Int]
-          case SeqOperations.IndexOf(_, _)         => Schema[Int]
-          case SeqOperations.Slice(seq, _, _)      => inferSchema(seq)
-          case SeqOperations.Head(seq)             => inferSchema(seq)
-          case SeqOperations.Sequence(_, ctor)     => Schema.chunk(ctor.schema)
-          case SeqOperations.GroupBy(seq, keyFunction) =>
-            Schema.map(inferSchema(keyFunction), inferSchema(seq))
+          case SeqOperations.Concat(left, _)           => inferSchema(left)
+          case SeqOperations.Reverse(seq)              => inferSchema(seq)
+          case SeqOperations.Filter(seq, _)            => inferSchema(seq)
+          case SeqOperations.FlatMap(_, operation)     => inferSchema(operation)
+          case SeqOperations.Length(_)                 => Schema[Int]
+          case SeqOperations.IndexOf(_, _)             => Schema[Int]
+          case SeqOperations.Slice(seq, _, _)          => inferSchema(seq)
+          case SeqOperations.Head(seq)                 => inferSchema(seq)
+          case SeqOperations.Sequence(_, ctor)         => Schema.chunk(ctor.schema)
+          case SeqOperations.GroupBy(seq, keyFunction) => Schema.map(inferSchema(keyFunction), inferSchema(seq))
         }
       case DynamicEval.MapOperations(_)             => ???
       case DynamicEval.EitherOperations(operation)  => operation match {
@@ -66,10 +64,7 @@ class SchemaInferer {
 }
 object SchemaInferer {
   def inferSchema[A](r: Remote[A]): Schema[A] =
-    new SchemaInferer()
-      .inferSchema(r.compile(CompilationContext.initial))
-      .asInstanceOf[Schema[A]]
+    new SchemaInferer().inferSchema(r.compile(CompilationContext.initial)).asInstanceOf[Schema[A]]
 
-  def inferSchema(r: DynamicEval): Schema[_] =
-    new SchemaInferer().inferSchema(r)
+  def inferSchema(r: DynamicEval): Schema[_] = new SchemaInferer().inferSchema(r)
 }

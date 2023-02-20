@@ -29,6 +29,5 @@ object Method {
       case name     => Left("Unknown method: " + name)
     }
 
-  implicit lazy val methodCodec: JsonCodec[Method] = JsonCodec[String]
-    .transformOrFail(Method.decode, Method.encode)
+  implicit lazy val methodCodec: JsonCodec[Method] = JsonCodec[String].transformOrFail(Method.decode, Method.encode)
 }

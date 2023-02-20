@@ -16,29 +16,18 @@ trait HttpClient {
 
 object HttpClient {
   final class NettyHttpClient() extends HttpClient {
-    def bootstrapConnection(
-      request: HttpRequest
-    )(cb: FullHttpResponse => Any): Bootstrap =
-      new Bootstrap()
-        .group(new NioEventLoopGroup())
-        .channelFactory(new ChannelFactory[Channel] {
-          override def newChannel(): Channel = new NioSocketChannel()
-        })
-        .handler(new ChannelInitializer[Channel] {
-          override def initChannel(ch: Channel): Unit = {
-            ch.pipeline()
-              .addLast(new HttpClientCodec())
-              .addLast(new HttpObjectAggregator(1024 * 100))
-              .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
-                override def channelRead0(
-                  ctx: ChannelHandlerContext,
-                  msg: FullHttpResponse
-                ): Unit = cb(msg)
-                override def channelActive(ctx: ChannelHandlerContext): Unit =
-                  ctx.writeAndFlush(request)
-              })
-          }
-        })
+    def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
+      new Bootstrap().group(new NioEventLoopGroup()).channelFactory(new ChannelFactory[Channel] {
+        override def newChannel(): Channel = new NioSocketChannel()
+      }).handler(new ChannelInitializer[Channel] {
+        override def initChannel(ch: Channel): Unit = {
+          ch.pipeline().addLast(new HttpClientCodec()).addLast(new HttpObjectAggregator(1024 * 100))
+            .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
+              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = cb(msg)
+              override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request)
+            })
+        }
+      })
 
     override def request(request: HttpRequest): AsyncHandler =
       cb => {
@@ -52,13 +41,8 @@ object HttpClient {
         val future = bootstrapConnection(request) { response =>
           val status  = response.status().code()
           val body    = ByteBufUtil.getBytes(response.content)
-          val headers = response
-            .headers()
-            .entries()
-            .asScala
-            .foldLeft(Map.empty[String, String])((acc, h) =>
-              acc + (h.getKey -> h.getValue)
-            )
+          val headers = response.headers().entries().asScala
+            .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
 
           close.foreach(_.cancel(true))
           cb(status, headers, body)
