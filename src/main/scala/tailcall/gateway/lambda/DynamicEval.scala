@@ -6,7 +6,9 @@ sealed trait DynamicEval
 
 object DynamicEval {
   // scalafmt: { maxColumn = 240 }
+  case object Identity                                                                 extends DynamicEval
   final case class Literal(value: DynamicValue, ctor: Constructor[Any])                extends DynamicEval
+  final case class Pipe(left: DynamicEval, right: DynamicEval)                         extends DynamicEval
   final case class EqualTo(left: DynamicEval, right: DynamicEval, tag: Equatable[Any]) extends DynamicEval
   final case class Math(operation: Math.Operation, tag: Numeric[Any])                  extends DynamicEval
   object Math {

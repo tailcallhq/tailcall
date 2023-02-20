@@ -4,7 +4,8 @@ import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
 import tailcall.gateway.ast.{Context, Orc}
-import tailcall.gateway.remote.{Remote, RemoteRuntime}
+import tailcall.gateway.lambda.LambdaRuntime
+import tailcall.gateway.remote.Remote
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 
@@ -86,7 +87,7 @@ final class StepGenerator(orc: Orc) {
 }
 
 object StepGenerator {
-  type RemoteStep = Step[RemoteRuntime]
+  type RemoteStep = Step[LambdaRuntime]
 
   sealed trait GraphQLSchemaGeneratorError extends Throwable
   case object QueryNotFound                extends GraphQLSchemaGeneratorError
