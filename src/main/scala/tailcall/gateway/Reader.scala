@@ -40,18 +40,23 @@ object Reader {
     new Reader[Document] {
       override def readFile(file: => File): Task[Document] = {
         for {
-          string            <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
-          document          <- Parser.parseQuery(string)
-          rootSchemaBuilder <- caliban.tools.RemoteSchema.parseRemoteSchema(document) match {
-            case None           => ZIO.fail(new RuntimeException("GraphQL does not contain a schema definition"))
-            case Some(__schema) => ZIO.succeed(RootSchemaBuilder(
-                query = Some(Operation(__schema.queryType, Step.NullStep)),
-                mutation = __schema.mutationType.map(Operation(_, Step.NullStep)),
-                subscription = __schema.mutationType.map(Operation(_, Step.NullStep)),
-                additionalTypes = __schema.types,
-                schemaDirectives = Nil
-              ))
-          }
+          string   <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
+          document <- Parser.parseQuery(string)
+          rootSchemaBuilder <-
+            caliban.tools.RemoteSchema.parseRemoteSchema(document) match {
+              case None           => ZIO.fail(new RuntimeException(
+                  "GraphQL does not contain a schema definition"
+                ))
+              case Some(__schema) => ZIO.succeed(RootSchemaBuilder(
+                  query = Some(Operation(__schema.queryType, Step.NullStep)),
+                  mutation =
+                    __schema.mutationType.map(Operation(_, Step.NullStep)),
+                  subscription =
+                    __schema.mutationType.map(Operation(_, Step.NullStep)),
+                  additionalTypes = __schema.types,
+                  schemaDirectives = Nil
+                ))
+            }
 
           _ <- Validator.validateSchema(rootSchemaBuilder)
 

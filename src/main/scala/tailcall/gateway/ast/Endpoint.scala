@@ -23,17 +23,23 @@ final case class Endpoint(
 
   def withPath(path: Path): Endpoint = copy(path = path)
 
-  def withPath(path: String): Endpoint = copy(path = Path.unsafe.fromString(path))
+  def withPath(path: String): Endpoint =
+    copy(path = Path.unsafe.fromString(path))
 
-  def withQuery(query: (String, String)*): Endpoint = copy(query = Chunk.from(query))
+  def withQuery(query: (String, String)*): Endpoint =
+    copy(query = Chunk.from(query))
 
-  def withAddress(address: Endpoint.InetAddress): Endpoint = copy(address = address)
+  def withAddress(address: Endpoint.InetAddress): Endpoint =
+    copy(address = address)
 
-  def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
+  def withAddress(address: String): Endpoint =
+    copy(address = Endpoint.inet(address))
 
-  def withInput[A](implicit schema: Schema[A]): Endpoint = copy(input = schema.ast)
+  def withInput[A](implicit schema: Schema[A]): Endpoint =
+    copy(input = schema.ast)
 
-  def withOutput[A](implicit schema: Schema[A]): Endpoint = copy(output = schema.ast)
+  def withOutput[A](implicit schema: Schema[A]): Endpoint =
+    copy(output = schema.ast)
 
   def remote: DynamicValue ~> DynamicValue = Lambda.fromEndpoint(this)
 
@@ -41,7 +47,8 @@ final case class Endpoint(
 
   def apply(input: DynamicValue): Remote[DynamicValue] = self(Lambda(input))
 
-  def withProtocol(protocol: Endpoint.Protocol): Endpoint = copy(protocol = protocol)
+  def withProtocol(protocol: Endpoint.Protocol): Endpoint =
+    copy(protocol = protocol)
 
   def withHttp: Endpoint = withProtocol(Endpoint.Protocol.Http)
 
@@ -49,7 +56,8 @@ final case class Endpoint(
 
   def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
 
-  def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
+  def withHeader(headers: (String, String)*): Endpoint =
+    copy(headers = Chunk.from(headers))
 
   def withBody(body: String): Endpoint = copy(body = Option(body))
 
@@ -83,14 +91,18 @@ object Endpoint {
   def from(url: String): Endpoint = {
     val uri     = new java.net.URI(url)
     val path    = Path.unsafe.fromString(uri.getPath())
-    val query   = Option(uri.getQuery).fold(Chunk.empty[(String, String)]) { query =>
-      Chunk.from(query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v })
-    }
+    val query   = Option(uri.getQuery)
+      .fold(Chunk.empty[(String, String)]) { query =>
+        Chunk.from(
+          query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v }
+        )
+      }
     val address = InetAddress(uri.getHost, uri.getPort)
     Endpoint(path = path, query = query, address = address)
   }
 
-  def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
+  def make(address: String): Endpoint =
+    Endpoint(address = Endpoint.inet(address))
 
   def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
     val method     = endpoint.method
@@ -100,18 +112,43 @@ object Endpoint {
       case port => s":$port"
     }
 
-    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
-      .mkString("?", "&", ""))
+    val queryString = endpoint
+      .query
+      .nonEmptyOrElse("")(
+        _.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
+          .mkString("?", "&", "")
+      )
 
-    val pathString: String = endpoint.path.transform {
-      case Segment.Literal(value)  => Path.Segment.Literal(value)
-      case Segment.Param(mustache) => Path.Segment
-          .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
-    }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
+    val pathString: String = endpoint
+      .path
+      .transform {
+        case Segment.Literal(value)  => Path.Segment.Literal(value)
+        case Segment.Param(mustache) => Path
+            .Segment
+            .Literal(
+              mustache
+                .evaluate(input)
+                .getOrElse(
+                  throw new RuntimeException("Mustache evaluation failed")
+                )
+            )
+      }
+      .encode
+      .getOrElse(throw new RuntimeException("Path encoding failed"))
 
-    val url = List(endpoint.protocol.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
+    val url = List(
+      endpoint.protocol.name,
+      "://",
+      endpoint.address.host,
+      portString,
+      pathString,
+      queryString
+    ).mkString
 
-    val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
+    val headers = endpoint
+      .headers
+      .map { case (k, v) => k -> Mustache.evaluate(v, input) }
+      .toMap
 
     Request(method = method, url = url, headers = headers)
   }

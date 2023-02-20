@@ -8,6 +8,10 @@ trait TupleOps {
     def _1: Remote[A]                      = getIndex(0)
     def _2: Remote[B]                      = getIndex(1)
     def getIndex[A](index: Int): Remote[A] =
-      Lambda.unsafe.attempt(ctx => TupleOperations(TupleOperations.GetIndex(self.compile(ctx), index)))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          TupleOperations(TupleOperations.GetIndex(self.compile(ctx), index))
+        )
   }
 }

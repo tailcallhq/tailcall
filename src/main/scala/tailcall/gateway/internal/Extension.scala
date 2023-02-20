@@ -14,16 +14,21 @@ sealed private[tailcall] trait Extension {
       case Extension.YML  => "yml"
     }
   def decode[A](string: String): Task[Config] =
-    ZIO.fromEither(self match {
-      case Extension.JSON => string.fromJson[Config]
-      case Extension.YML  => string.fromYaml[Config]
-    }).mapError(new RuntimeException(_))
+    ZIO
+      .fromEither(self match {
+        case Extension.JSON => string.fromJson[Config]
+        case Extension.YML  => string.fromYaml[Config]
+      })
+      .mapError(new RuntimeException(_))
 
   def encode(config: Config): Task[String] =
-    ZIO.fromEither(self match {
-      case Extension.JSON => Right(config.toJsonPretty)
-      case Extension.YML  => config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0))
-    }).mapError(new RuntimeException(_))
+    ZIO
+      .fromEither(self match {
+        case Extension.JSON => Right(config.toJsonPretty)
+        case Extension.YML  =>
+          config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0))
+      })
+      .mapError(new RuntimeException(_))
 }
 
 object Extension {

@@ -13,7 +13,8 @@ object TestGen {
 
   def genVersion: Gen[Any, String] = genName
 
-  def genScalar: Gen[Any, TSchema] = Gen.fromIterable(List(TSchema.str, TSchema.int, TSchema.`null`))
+  def genScalar: Gen[Any, TSchema] =
+    Gen.fromIterable(List(TSchema.str, TSchema.int, TSchema.`null`))
 
   def genField: Gen[Any, TSchema.Field] =
     for {
@@ -21,20 +22,30 @@ object TestGen {
       kind <- genScalar
     } yield TSchema.Field(name, kind)
 
-  def genObj: Gen[Any, TSchema] = Gen.listOfBounded(2, 5)(genField).map(fields => TSchema.obj(fields))
+  def genObj: Gen[Any, TSchema] =
+    Gen.listOfBounded(2, 5)(genField).map(fields => TSchema.obj(fields))
 
   def genSchema: Gen[Any, TSchema] = genObj
 
-  def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(baseURL))
+  def genServer: Gen[Any, Config.Server] =
+    genBaseURL.map(baseURL => Config.Server(baseURL))
 
   def genMethod: Gen[Any, Method] =
-    Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
+    Gen.oneOf(
+      Gen.const(Method.GET),
+      Gen.const(Method.POST),
+      Gen.const(Method.PUT),
+      Gen.const(Method.DELETE)
+    )
 
   def genPlaceholder: Gen[Any, Mustache] =
     for { name <- Gen.chunkOf(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
-    Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
+    Gen.oneOf(
+      genName.map(Path.Segment.Literal),
+      genPlaceholder.map(Path.Segment.Param(_))
+    )
 
   def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
 
@@ -58,7 +69,9 @@ object TestGen {
     } yield (name, Connection(endpoint))
 
   def genGraphQL: Gen[Any, Config.Specification] =
-    for { connections <- Gen.listOf1(genConnection) } yield Config.Specification(Map("Query" -> Map.from(connections)))
+    for {
+      connections <- Gen.listOf1(genConnection)
+    } yield Config.Specification(Map("Query" -> Map.from(connections)))
 
   def genConfig: Gen[Any, Config] =
     for {

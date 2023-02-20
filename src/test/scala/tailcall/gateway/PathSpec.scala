@@ -14,12 +14,14 @@ object PathSpec extends ZIOSpecDefault {
     suite("path")(
       test("segments") {
         val input: Seq[(String, List[Path.Segment])] = Seq(
-          "/a"                 -> (Literal("a") :: Nil),
-          "/a/b"               -> (Literal("a") :: Literal("b") :: Nil),
-          "/a/b/c"             -> (Literal("a") :: Literal("b") :: Literal("c") :: Nil),
-          "/a/b/{{c}}"         -> (Literal("a") :: Literal("b") :: Param("c") :: Nil),
-          "/a/{{b}}/{{c}}"     -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
-          "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
+          "/a"         -> (Literal("a") :: Nil),
+          "/a/b"       -> (Literal("a") :: Literal("b") :: Nil),
+          "/a/b/c"     -> (Literal("a") :: Literal("b") :: Literal("c") :: Nil),
+          "/a/b/{{c}}" -> (Literal("a") :: Literal("b") :: Param("c") :: Nil),
+          "/a/{{b}}/{{c}}" -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
+          "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param(
+            "c"
+          ) :: Nil),
           "/{{a}}/{{b}}"       -> (Param("a") :: Param("b") :: Nil),
           "/{{a}}"             -> (Param("a") :: Nil)
         )
@@ -30,12 +32,17 @@ object PathSpec extends ZIOSpecDefault {
       },
       test("evaluate") {
         val inputs = List(
-          "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")),
-          "/{{a.b.c}}/b/c"     -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> "a"))))
+          "/{{a}}/{{b}}/{{c}}" -> DynamicValue(
+            Map("a" -> "a", "b" -> "b", "c" -> "c")
+          ),
+          "/{{a.b.c}}/b/c"     -> DynamicValue(
+            Map("a" -> Map("b" -> Map("c" -> "a")))
+          )
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (path, input) =>
-          val string = ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
+          val string =
+            ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
           assertZIO(string)(equalTo("/a/b/c"))
         }
       }

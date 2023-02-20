@@ -6,9 +6,14 @@ import tailcall.gateway.lambda.{Lambda, Remote}
 trait MapOps {
   implicit final class RemoteMapOps[A, B](val self: Remote[Map[A, B]]) {
     def get(key: Remote[A]): Remote[Option[B]] =
-      Lambda.unsafe.attempt(ctx => MapOperations(MapOperations.Get(self.compile(ctx), key.compile(ctx))))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          MapOperations(MapOperations.Get(self.compile(ctx), key.compile(ctx)))
+        )
 
-    def getOrElse(key: Remote[A], default: Remote[B]): Remote[B] = get(key).getOrElse(default)
+    def getOrElse(key: Remote[A], default: Remote[B]): Remote[B] =
+      get(key).getOrElse(default)
 
     def getOrDie(key: Remote[A]): Remote[B] = get(key).getOrDie
 
@@ -30,7 +35,8 @@ trait MapOps {
 
     def map[C](f: Remote[(A, B)] => Remote[(A, C)]): Remote[Map[A, C]] = ???
 
-    def flatMap[C](f: Remote[(A, B)] => Remote[Map[A, C]]): Remote[Map[A, C]] = ???
+    def flatMap[C](f: Remote[(A, B)] => Remote[Map[A, C]]): Remote[Map[A, C]] =
+      ???
   }
 
 }

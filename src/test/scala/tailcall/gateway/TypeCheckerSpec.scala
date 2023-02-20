@@ -6,9 +6,13 @@ import zio._
 import zio.test._
 
 object TypeCheckerSpec extends ZIOSpecDefault {
-  private val configFile: Task[dsl.json.Config] = { Reader.config.readURL(getClass.getResource("Config.yml")) }
+  private val configFile: Task[dsl.json.Config] = {
+    Reader.config.readURL(getClass.getResource("Config.yml"))
+  }
 
-  private val schemaFile: Task[Document] = { Reader.document.readURL(getClass.getResource("Schema.graphql")) }
+  private val schemaFile: Task[Document] = {
+    Reader.document.readURL(getClass.getResource("Schema.graphql"))
+  }
 
   override def spec =
     suite("TypeCheckerSpec")(test("is valid") {

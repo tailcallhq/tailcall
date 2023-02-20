@@ -6,38 +6,97 @@ import zio.Chunk
 import zio.schema.DynamicValue
 
 trait DynamicValueOps {
-  implicit final class RemoteDynamicValueOps(private val self: Remote[DynamicValue]) {
+  implicit final class RemoteDynamicValueOps(
+    private val self: Remote[DynamicValue]
+  ) {
     def path(fields: String*): Remote[Option[DynamicValue]] =
-      Lambda.unsafe.attempt(ctx =>
-        DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.Path(Chunk.from(fields)))
-      )
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.Path(Chunk.from(fields))
+          )
+        )
 
     def asString: Remote[Option[String]] =
-      Lambda.unsafe
-        .attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsString))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsString
+          )
+        )
 
     def asBoolean: Remote[Option[Boolean]] =
-      Lambda.unsafe
-        .attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsBoolean))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsBoolean
+          )
+        )
 
     def asInt: Remote[Option[Int]] =
-      Lambda.unsafe.attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsInt))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsInt
+          )
+        )
 
     def asLong: Remote[Option[Long]] =
-      Lambda.unsafe.attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsLong))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsLong
+          )
+        )
 
     def asDouble: Remote[Option[Double]] =
-      Lambda.unsafe
-        .attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsDouble))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsDouble
+          )
+        )
 
     def asFloat: Remote[Option[Float]] =
-      Lambda.unsafe
-        .attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsFloat))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsFloat
+          )
+        )
 
     def asList: Remote[Option[List[DynamicValue]]] =
-      Lambda.unsafe.attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsList))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsList
+          )
+        )
 
     def asMap: Remote[Option[Map[DynamicValue, DynamicValue]]] =
-      Lambda.unsafe.attempt(ctx => DynamicEval.DynamicValueOperations(self.compile(ctx), DynamicValueOperations.AsMap))
+      Lambda
+        .unsafe
+        .attempt(ctx =>
+          DynamicEval.DynamicValueOperations(
+            self.compile(ctx),
+            DynamicValueOperations.AsMap
+          )
+        )
   }
 }
