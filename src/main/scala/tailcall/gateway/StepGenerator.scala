@@ -4,7 +4,7 @@ import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
 import tailcall.gateway.ast.{Context, Orc}
-import tailcall.gateway.remote.{Remote, LambdaRuntime}
+import tailcall.gateway.remote.{Lambda, LambdaRuntime, Remote}
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 
@@ -83,7 +83,7 @@ final class StepGenerator(orc: Orc) {
     }
   }
 
-  def gen: RemoteStep = { gen(orc, Remote(Context(DynamicValue(())))) }
+  def gen: RemoteStep = { gen(orc, Lambda(Context(DynamicValue(())))) }
 }
 
 object StepGenerator {

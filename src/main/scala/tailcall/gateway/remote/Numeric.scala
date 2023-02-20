@@ -17,7 +17,6 @@ sealed trait Numeric[A] {
 
 // TODO: add more numeric types
 object Numeric {
-
   implicit case object IntTag extends Numeric[Int] {
     override def add(left: Int, right: Int): Int             = left + right
     override def negate(value: Int): Int                     = -value
@@ -26,7 +25,6 @@ object Numeric {
     override def modulo(left: Int, right: Int): Int          = left % right
     override def greaterThan(left: Int, right: Int): Boolean = left > right
     override def one: Int                                    = 1
-
-    override def schema: Schema[Int] = Schema[Int]
+    override def schema: Schema[Int]                         = Schema[Int]
   }
 }

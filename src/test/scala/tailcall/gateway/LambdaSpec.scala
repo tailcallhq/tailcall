@@ -1,12 +1,10 @@
 package tailcall.gateway
 
-import tailcall.gateway.lambda._
-import tailcall.gateway.remote.{EvaluationContext, LambdaRuntime, Lambda}
+import tailcall.gateway.remote._
 import zio.test.Assertion._
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
-  import tailcall.gateway.remote.Lambda._
   def spec =
     suite("lambda")(
       test("literal") {
@@ -24,7 +22,8 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluateWith {})(equalTo(2))
         },
         test("higher order function") {
-          val f1      = Lambda.fromFunction[Int ~> Int, Int](f => f.flatten(1))
+          val f1      =
+            Lambda.fromFunction[Int ~> Int, Int](f => Lambda.flatten(f)(1))
           val program = f1(Lambda.fromFunction[Int, Int](x => x + Lambda(1)))
 
           assertZIO(program.evaluateWith {})(equalTo(2))

@@ -1,7 +1,7 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.remote.DynamicEval.EitherOperations
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote.{Lambda, Remote}
 
 trait EitherOps {
   implicit final class RemoteEitherOps[E, A](
@@ -11,26 +11,26 @@ trait EitherOps {
       f: Remote[E] => Remote[B],
       g: Remote[A] => Remote[B]
     ): Remote[B] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           EitherOperations(EitherOperations.Fold(
             self.compile(ctx),
-            Remote.fromFunction(f).compile(ctx),
-            Remote.fromFunction(g).compile(ctx)
+            Lambda.fromFunction(f).compile(ctx),
+            Lambda.fromFunction(g).compile(ctx)
           ))
         )
 
     def flatMap[B](f: Remote[A] => Remote[Either[E, B]]): Remote[Either[E, B]] =
-      fold[Either[E, B]](e => Remote.fromEither(Left(e)), a => f(a))
+      fold[Either[E, B]](e => Lambda.fromEither(Left(e)), a => f(a))
 
     def map[B](f: Remote[A] => Remote[B]): Remote[Either[E, B]] =
-      flatMap(a => Remote.fromEither(Right(f(a))))
+      flatMap(a => Lambda.fromEither(Right(f(a))))
 
     def toOption: Remote[Option[A]] =
       self.fold[Option[A]](
-        _ => Remote.fromOption(Option.empty),
-        a => Remote.fromOption(Some(a))
+        _ => Lambda.fromOption(Option.empty),
+        a => Lambda.fromOption(Some(a))
       )
   }
 }

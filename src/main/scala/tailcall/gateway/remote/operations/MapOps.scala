@@ -1,12 +1,12 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.remote.DynamicEval.MapOperations
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote.{Lambda, Remote}
 
 trait MapOps {
   implicit final class RemoteMapOps[A, B](val self: Remote[Map[A, B]]) {
     def get(key: Remote[A]): Remote[Option[B]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           MapOperations(MapOperations.Get(self.compile(ctx), key.compile(ctx)))

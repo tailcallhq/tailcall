@@ -1,12 +1,12 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.remote.DynamicEval.StringOperations
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote.{Lambda, Remote}
 
 trait StringOps {
   implicit final class RemoteStringOps(val self: Remote[String]) {
     def ++(other: Remote[String]): Remote[String] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           StringOperations(
@@ -19,8 +19,8 @@ trait StringOps {
     def rs[A](args: (Remote[String])*): Remote[String] = {
       val strings             = sc.parts.iterator
       val seq                 = args.iterator
-      var buf: Remote[String] = Remote(strings.next())
-      while (strings.hasNext) buf = buf ++ seq.next() ++ Remote(strings.next())
+      var buf: Remote[String] = Lambda(strings.next())
+      while (strings.hasNext) buf = buf ++ seq.next() ++ Lambda(strings.next())
       buf
     }
   }

@@ -1,12 +1,12 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.remote.DynamicEval.SeqOperations
-import tailcall.gateway.remote.{Constructor, Remote}
+import tailcall.gateway.remote.{Constructor, Lambda, Remote}
 
 trait SeqOps {
   implicit final class RemoteSeqOps[A](val self: Remote[Seq[A]]) {
     def ++(other: Remote[Seq[A]]): Remote[Seq[A]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(
@@ -15,17 +15,17 @@ trait SeqOps {
         )
 
     def reverse: Remote[Seq[A]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx => SeqOperations(SeqOperations.Reverse(self.compile(ctx))))
 
     def filter(f: Remote[A] => Remote[Boolean]): Remote[Seq[A]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(
             SeqOperations
-              .Filter(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+              .Filter(self.compile(ctx), Lambda.fromFunction(f).compile(ctx))
           )
         )
 
@@ -33,26 +33,26 @@ trait SeqOps {
       filter(f).head
 
     def flatMap[B](f: Remote[A] => Remote[Seq[B]]): Remote[Seq[B]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(
             SeqOperations
-              .FlatMap(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+              .FlatMap(self.compile(ctx), Lambda.fromFunction(f).compile(ctx))
           )
         )
 
     def map[B](f: Remote[A] => Remote[B])(implicit
       ctor: Constructor[B]
-    ): Remote[Seq[B]] = self.flatMap(a => Remote.fromSeq(Seq(f(a))))
+    ): Remote[Seq[B]] = self.flatMap(a => Lambda.fromSeq(Seq(f(a))))
 
     def length: Remote[Int] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx => SeqOperations(SeqOperations.Length(self.compile(ctx))))
 
     def indexOf(other: Remote[A]): Remote[Int] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(
@@ -63,24 +63,24 @@ trait SeqOps {
     def take(n: Int): Remote[Seq[A]] = slice(0, n)
 
     def slice(from: Int, until: Int): Remote[Seq[A]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(SeqOperations.Slice(self.compile(ctx), from, until))
         )
 
     def head: Remote[Option[A]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx => SeqOperations(SeqOperations.Head(self.compile(ctx))))
 
     def groupBy[B](f: Remote[A] => Remote[B]): Remote[Map[B, Seq[A]]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           SeqOperations(
             SeqOperations
-              .GroupBy(self.compile(ctx), Remote.fromFunction(f).compile(ctx))
+              .GroupBy(self.compile(ctx), Lambda.fromFunction(f).compile(ctx))
           )
         )
   }

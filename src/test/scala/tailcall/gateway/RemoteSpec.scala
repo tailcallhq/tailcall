@@ -14,7 +14,6 @@ import scala.collection.immutable.ListMap
 object RemoteSpec extends ZIOSpecDefault {
   import tailcall.gateway.remote.Equatable._
   import tailcall.gateway.remote.Numeric._
-  import tailcall.gateway.remote.Remote._
 
   implicit def seqSchema[A: Schema]: Schema[Seq[A]] =
     Schema.chunk[A].transform(_.toSeq, Chunk.from(_))
@@ -23,234 +22,236 @@ object RemoteSpec extends ZIOSpecDefault {
     suite("Remote")(
       suite("math")(
         test("add") {
-          val program = Remote(1) + Remote(2)
-          assertZIO(program.evaluate)(equalTo(3))
+          val program = Lambda(1) + Lambda(2)
+          assertZIO(program.evaluateWith(()))(equalTo(3))
         },
         test("subtract") {
-          val program = Remote(1) - Remote(2)
-          assertZIO(program.evaluate)(equalTo(-1))
+          val program = Lambda(1) - Lambda(2)
+          assertZIO(program.evaluateWith(()))(equalTo(-1))
         },
         test("multiply") {
-          val program = Remote(2) * Remote(3)
-          assertZIO(program.evaluate)(equalTo(6))
+          val program = Lambda(2) * Lambda(3)
+          assertZIO(program.evaluateWith(()))(equalTo(6))
         },
         test("divide") {
-          val program = Remote(6) / Remote(3)
-          assertZIO(program.evaluate)(equalTo(2))
+          val program = Lambda(6) / Lambda(3)
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("modulo") {
-          val program = Remote(7) % Remote(3)
-          assertZIO(program.evaluate)(equalTo(1))
+          val program = Lambda(7) % Lambda(3)
+          assertZIO(program.evaluateWith(()))(equalTo(1))
         },
         test("greater than") {
-          val program = Remote(2) > Remote(1)
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda(2) > Lambda(1)
+          assertZIO(program.evaluateWith(()))(isTrue)
         }
       ),
       suite("logical")(
         test("and") {
-          val program = Remote(true) && Remote(true)
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda(true) && Lambda(true)
+          assertZIO(program.evaluateWith(()))(isTrue)
         },
         test("or") {
-          val program = Remote(true) || Remote(false)
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda(true) || Lambda(false)
+          assertZIO(program.evaluateWith(()))(isTrue)
         },
         test("not") {
-          val program = !Remote(true)
-          assertZIO(program.evaluate)(isFalse)
+          val program = !Lambda(true)
+          assertZIO(program.evaluateWith(()))(isFalse)
         }
       ),
       suite("equals")(
         test("equal") {
-          val program = Remote(1) =:= Remote(1)
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda(1) =:= Lambda(1)
+          assertZIO(program.evaluateWith(()))(isTrue)
         },
         test("not equal") {
-          val program = Remote(1) =:= Remote(2)
-          assertZIO(program.evaluate)(isFalse)
+          val program = Lambda(1) =:= Lambda(2)
+          assertZIO(program.evaluateWith(()))(isFalse)
         }
       ),
       suite("diverge")(
         test("isTrue") {
-          val program = Remote(true).diverge(Remote("Yes"), Remote("No"))
-          assertZIO(program.evaluate)(equalTo("Yes"))
+          val program = Lambda(true).diverge(Lambda("Yes"), Lambda("No"))
+          assertZIO(program.evaluateWith(()))(equalTo("Yes"))
         },
         test("isFalse") {
-          val program = Remote(false).diverge(Remote("Yes"), Remote("No"))
-          assertZIO(program.evaluate)(equalTo("No"))
+          val program = Lambda(false).diverge(Lambda("Yes"), Lambda("No"))
+          assertZIO(program.evaluateWith(()))(equalTo("No"))
         }
       ),
       suite("string")(
         test("concat") {
-          val program = Remote("Hello") ++ Remote(" ") ++ Remote("World!")
-          assertZIO(program.evaluate)(equalTo("Hello World!"))
+          val program = Lambda("Hello") ++ Lambda(" ") ++ Lambda("World!")
+          assertZIO(program.evaluateWith(()))(equalTo("Hello World!"))
         },
         test("template string") {
-          val program = rs"Hello ${Remote("World")}!"
-          assertZIO(program.evaluate)(equalTo("Hello World!"))
+          val program = rs"Hello ${Lambda("World")}!"
+          assertZIO(program.evaluateWith(()))(equalTo("Hello World!"))
         }
       ),
       suite("seq")(
         test("concat") {
-          val program = Remote(Seq(1, 2)) ++ Remote(Seq(3, 4))
-          assertZIO(program.evaluate)(equalTo(Seq(1, 2, 3, 4)))
+          val program = Lambda(Seq(1, 2)) ++ Lambda(Seq(3, 4))
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(1, 2, 3, 4)))
         },
         test("reverse") {
-          val program = Remote(Seq(1, 2, 3)).reverse
-          assertZIO(program.evaluate)(equalTo(Seq(3, 2, 1)))
+          val program = Lambda(Seq(1, 2, 3)).reverse
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(3, 2, 1)))
         },
         test("length") {
-          val program = Remote(Seq(1, 2, 3)).length
-          assertZIO(program.evaluate)(equalTo(3))
+          val program = Lambda(Seq(1, 2, 3)).length
+          assertZIO(program.evaluateWith(()))(equalTo(3))
         },
         test("indexOf") {
-          val program = Remote(Seq(1, 2, 3)).indexOf(Remote(2))
-          assertZIO(program.evaluate)(equalTo(1))
+          val program = Lambda(Seq(1, 2, 3)).indexOf(Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(1))
         },
         test("filter") {
           val program =
-            Remote(Seq(1, 2, 3, 4)).filter(r => r % Remote(2) =:= Remote(0))
-          assertZIO(program.evaluate)(equalTo(Seq(2, 4)))
+            Lambda(Seq(1, 2, 3, 4)).filter(r => r % Lambda(2) =:= Lambda(0))
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(2, 4)))
         },
         test("filter empty") {
           val program =
-            Remote(Seq(1, 5, 3, 7)).filter(r => r % Remote(2) =:= Remote(0))
-          assertZIO(program.evaluate)(equalTo(Seq.empty[Int]))
+            Lambda(Seq(1, 5, 3, 7)).filter(r => r % Lambda(2) =:= Lambda(0))
+          assertZIO(program.evaluateWith(()))(equalTo(Seq.empty[Int]))
         },
         test("map") {
-          val program = Remote(Seq(1, 2, 3, 4)).map(r => r * Remote(2))
-          assertZIO(program.evaluate)(equalTo(Seq(2, 4, 6, 8)))
+          val program = Lambda(Seq(1, 2, 3, 4)).map(r => r * Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(2, 4, 6, 8)))
         },
         test("flatMap") {
           val program = for {
-            r   <- Remote(Seq(1, 2, 3, 4))
-            seq <- Remote.fromSeq(Seq(r, r * Remote(2)))
+            r   <- Lambda(Seq(1, 2, 3, 4))
+            seq <- Lambda.fromSeq(Seq(r, r * Lambda(2)))
           } yield seq
-          assertZIO(program.evaluate)(equalTo(Seq(1, 2, 2, 4, 3, 6, 4, 8)))
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(1, 2, 2, 4, 3, 6, 4,
+            8)))
         },
         test("groupBy") {
-          val program = Remote(Seq(1, 2, 3, 4)).groupBy(r => r % Remote(2))
-          assertZIO(program.evaluate)(equalTo(
+          val program = Lambda(Seq(1, 2, 3, 4)).groupBy(r => r % Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(
             Map(1 -> Seq(1, 3), 0 -> Seq(2, 4))
           ))
         },
         test("slice") {
-          val program = Remote(Seq(1, 2, 3, 4)).slice(1, 3)
-          assertZIO(program.evaluate)(equalTo(Seq(2, 3)))
+          val program = Lambda(Seq(1, 2, 3, 4)).slice(1, 3)
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(2, 3)))
         },
         test("take") {
-          val program = Remote(Seq(1, 2, 3, 4)).take(2)
-          assertZIO(program.evaluate)(equalTo(Seq(1, 2)))
+          val program = Lambda(Seq(1, 2, 3, 4)).take(2)
+          assertZIO(program.evaluateWith(()))(equalTo(Seq(1, 2)))
         },
         test("head") {
-          val program = Remote(Seq(1, 2, 3, 4)).head
-          assertZIO(program.evaluate)(equalTo(Option(1)))
+          val program = Lambda(Seq(1, 2, 3, 4)).head
+          assertZIO(program.evaluateWith(()))(equalTo(Option(1)))
         },
         test("head empty") {
-          val program = Remote(Seq.empty[Int]).head
-          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+          val program = Lambda(Seq.empty[Int]).head
+          assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Int]))
         }
       ),
       suite("function")(
         test("apply") {
-          val function = Remote.fromFunction[Int, Int](_.increment)
-          val program  = function(Remote(1))
-          assertZIO(program.evaluate)(equalTo(2))
+          val function = Lambda.fromFunction[Int, Int](_.increment)
+          val program  = function(Lambda(1))
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("toFunction") {
-          val function = Remote.fromFunction[Int, Int](_.increment)
-          val program  = function.toFunction(Remote(1))
-          assertZIO(program.evaluate)(equalTo(2))
+          val function = Lambda.fromFunction[Int, Int](_.increment)
+          val program  = function.toFunction(Lambda(1))
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("pipe") {
-          val f       = Remote.fromFunction[Int, Int](_.increment)
-          val g       = Remote.fromFunction[Int, Int](_.increment)
+          val f       = Lambda.fromFunction[Int, Int](_.increment)
+          val g       = Lambda.fromFunction[Int, Int](_.increment)
           val fg      = f >>> g
-          val program = fg(Remote(1))
-          assertZIO(program.evaluate)(equalTo(3))
+          val program = fg(Lambda(1))
+          assertZIO(program.evaluateWith(()))(equalTo(3))
         },
         test("compose") {
-          val f       = Remote.fromFunction[Int, Int](_.increment)
-          val g       = Remote.fromFunction[Int, Int](_.increment)
+          val f       = Lambda.fromFunction[Int, Int](_.increment)
+          val g       = Lambda.fromFunction[Int, Int](_.increment)
           val fg      = f <<< g
-          val program = fg(Remote(1))
-          assertZIO(program.evaluate)(equalTo(3))
+          val program = fg(Lambda(1))
+          assertZIO(program.evaluateWith(()))(equalTo(3))
         },
         test("multilevel") {
-          val f1      = Remote.fromFunction[Int, Int] { a =>
-            val f2 = Remote.fromFunction[Int, Int] { b =>
-              val f3 = Remote.fromFunction[Int, Int](c => a + b + c)
+          val f1      = Lambda.fromFunction[Int, Int] { a =>
+            val f2 = Lambda.fromFunction[Int, Int] { b =>
+              val f3 = Lambda.fromFunction[Int, Int](c => a + b + c)
               f3(b)
             }
 
             f2(a)
           }
-          val program = f1(Remote(1))
+          val program = f1(Lambda(1))
 
-          assertZIO(program.evaluate)(equalTo(3))
+          assertZIO(program.evaluateWith(()))(equalTo(3))
         },
         test("higher order function") {
-          val f1 = Remote.fromFunction[Int => Int, Int](f => f(Remote(100)))
-          val program = f1(Remote.fromFunction[Int, Int](_.increment))
-          assertZIO(program.evaluate)(equalTo(101))
+          val f1      = Lambda
+            .fromFunction[Int ~> Int, Int](f => Lambda.flatten(f)(Lambda(100)))
+          val program = f1(Lambda.fromFunction[Int, Int](_.increment))
+          assertZIO(program.evaluateWith(()))(equalTo(101))
         } @@ failing
       ),
       suite("either")(
         test("left") {
-          val program = Remote.fromEither(Left(Remote("Error")))
-          assertZIO(program.evaluate)(equalTo(Left("Error")))
+          val program = Lambda.fromEither(Left(Lambda("Error")))
+          assertZIO(program.evaluateWith(()))(equalTo(Left("Error")))
         },
         test("right") {
-          val program = Remote.fromEither(Right(Remote(1)))
-          assertZIO(program.evaluate)(equalTo(Right(1)))
+          val program = Lambda.fromEither(Right(Lambda(1)))
+          assertZIO(program.evaluateWith(()))(equalTo(Right(1)))
         },
         test("fold right") {
-          val program = Remote
-            .fromEither(Right(Remote(1)))
-            .fold((l: Remote[Nothing]) => l.length, r => r * Remote(2))
-          assertZIO(program.evaluate)(equalTo(2))
+          val program = Lambda
+            .fromEither(Right(Lambda(1)))
+            .fold((l: Remote[Nothing]) => l.length, r => r * Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("fold left") {
-          val program = Remote
-            .fromEither(Left(Remote("Error")))
-            .fold(l => rs"Some ${l}", (r: Remote[Nothing]) => r * Remote(2))
-          assertZIO(program.evaluate)(equalTo("Some Error"))
+          val program = Lambda
+            .fromEither(Left(Lambda("Error")))
+            .fold(l => rs"Some ${l}", (r: Remote[Nothing]) => r * Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo("Some Error"))
         }
       ),
       suite("option")(
         test("some") {
-          val program = Remote.fromOption(Some(Remote(1)))
-          assertZIO(program.evaluate)(equalTo(Some(1)))
+          val program = Lambda.fromOption(Some(Lambda(1)))
+          assertZIO(program.evaluateWith(()))(equalTo(Some(1)))
         },
         test("none") {
-          val program = Remote.fromOption(None)
-          assertZIO(program.evaluate)(equalTo(None))
+          val program = Lambda.fromOption(None)
+          assertZIO(program.evaluateWith(()))(equalTo(None))
         },
         test("isSome") {
-          val program = Remote.fromOption(Some(Remote(1))).isSome
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda.fromOption(Some(Lambda(1))).isSome
+          assertZIO(program.evaluateWith(()))(isTrue)
         },
         test("isNone") {
-          val program = Remote.fromOption(None).isNone
-          assertZIO(program.evaluate)(isTrue)
+          val program = Lambda.fromOption(None).isNone
+          assertZIO(program.evaluateWith(()))(isTrue)
         },
         test("fold some") {
           val program =
-            Remote.fromOption(Some(Remote(1))).fold(Remote(0))(_ * Remote(2))
-          assertZIO(program.evaluate)(equalTo(2))
+            Lambda.fromOption(Some(Lambda(1))).fold(Lambda(0))(_ * Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("fold none") {
-          val program = Remote.fromOption(None).fold(Remote(0))(_ * Remote(2))
-          assertZIO(program.evaluate)(equalTo(0))
+          val program = Lambda.fromOption(None).fold(Lambda(0))(_ * Lambda(2))
+          assertZIO(program.evaluateWith(()))(equalTo(0))
         }
       ),
       test("record") {
-        val program = Remote.record(
-          "a" -> Remote(DynamicValue(1)),
-          "b" -> Remote(DynamicValue(2))
+        val program = Lambda.record(
+          "a" -> Lambda(DynamicValue(1)),
+          "b" -> Lambda(DynamicValue(2))
         )
-        assertZIO(program.evaluate)(equalTo(DynamicValue.Record(
+        assertZIO(program.evaluateWith(()))(equalTo(DynamicValue.Record(
           TypeId.Structural,
           ListMap.from(List("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
         )))
@@ -262,16 +263,16 @@ object RemoteSpec extends ZIOSpecDefault {
               DynamicValue(1),
               parent = Option(Context(DynamicValue(2)))
             )
-            val program = Remote(context).parent.map(_.value)
-            assertZIO(program.evaluate)(equalTo(Some(DynamicValue(2))))
+            val program = Lambda(context).parent.map(_.value)
+            assertZIO(program.evaluateWith(()))(equalTo(Some(DynamicValue(2))))
           },
           test("not present") {
             val context = Context(
               DynamicValue(1),
               parent = Option(Context(DynamicValue(2)))
             )
-            val program = Remote(context).parent.flatMap(_.parent)
-            assertZIO(program.evaluate)(equalTo(None))
+            val program = Lambda(context).parent.flatMap(_.parent)
+            assertZIO(program.evaluateWith(()))(equalTo(None))
           },
           test("nested") {
             val context = Context(
@@ -281,37 +282,37 @@ object RemoteSpec extends ZIOSpecDefault {
                 parent = Option(Context(DynamicValue(3)))
               ))
             )
-            val program = Remote(context).parent.flatMap(_.parent).map(_.value)
-            assertZIO(program.evaluate)(equalTo(Some(DynamicValue(3))))
+            val program = Lambda(context).parent.flatMap(_.parent).map(_.value)
+            assertZIO(program.evaluateWith(()))(equalTo(Some(DynamicValue(3))))
           }
         ),
         test("value") {
-          val program = Remote(Context(DynamicValue(1))).value
-          assertZIO(program.evaluate)(equalTo(DynamicValue(1)))
+          val program = Lambda(Context(DynamicValue(1))).value
+          assertZIO(program.evaluateWith(()))(equalTo(DynamicValue(1)))
         },
         test("arg") {
           val context = Context(
             DynamicValue(1),
             args = ListMap.from(List("a" -> DynamicValue(2)))
           )
-          val program = Remote(context).arg("a")
-          assertZIO(program.evaluate)(equalTo(Option(DynamicValue(2))))
+          val program = Lambda(context).arg("a")
+          assertZIO(program.evaluateWith(()))(equalTo(Option(DynamicValue(2))))
         },
         test("evaluate") {
-          val program = Remote(Context(DynamicValue(1)))
-          assertZIO(program.evaluate)(equalTo(Context(DynamicValue(1))))
+          val program = Lambda(Context(DynamicValue(1)))
+          assertZIO(program.evaluateWith(()))(equalTo(Context(DynamicValue(1))))
         }
       ),
       suite("die")(
         test("literal") {
-          val program = Remote.die("Error")
-          assertZIO(program.evaluate.exit)(fails(
+          val program = Lambda.die("Error")
+          assertZIO(program.evaluateWith(()).exit)(fails(
             equalTo(EvaluationError.Death("Error"))
           ))
         },
         test("remote") {
-          val program = Remote.die(Remote("Error"))
-          assertZIO(program.evaluate.exit)(fails(
+          val program = Lambda.die(Lambda("Error"))
+          assertZIO(program.evaluateWith(()).exit)(fails(
             equalTo(EvaluationError.Death("Error"))
           ))
         }
@@ -319,101 +320,105 @@ object RemoteSpec extends ZIOSpecDefault {
       suite("dynamicValue")(
         suite("path")(
           test("path not found") {
-            val program = Remote(DynamicValue(1)).path("a")
-            assertZIO(program.evaluate)(equalTo(Option.empty[DynamicValue]))
+            val program = Lambda(DynamicValue(1)).path("a")
+            assertZIO(program.evaluateWith(()))(equalTo(
+              Option.empty[DynamicValue]
+            ))
           },
           test("path found") {
             val program =
-              Remote.record("a" -> Remote(DynamicValue(1))).path("a")
-            assertZIO(program.evaluate)(equalTo(Option(DynamicValue(1))))
+              Lambda.record("a" -> Lambda(DynamicValue(1))).path("a")
+            assertZIO(program.evaluateWith(()))(equalTo(
+              Option(DynamicValue(1))
+            ))
           }
         ),
         suite("asString")(
           test("string") {
-            val program = Remote(DynamicValue("a")).asString
-            assertZIO(program.evaluate)(equalTo(Option("a")))
+            val program = Lambda(DynamicValue("a")).asString
+            assertZIO(program.evaluateWith(()))(equalTo(Option("a")))
           },
           test("not string") {
-            val program = Remote(DynamicValue(1)).asString
-            assertZIO(program.evaluate)(equalTo(Option.empty[String]))
+            val program = Lambda(DynamicValue(1)).asString
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[String]))
           }
         ),
         suite("asBoolean")(
           test("boolean") {
-            val program = Remote(DynamicValue(true)).asBoolean
-            assertZIO(program.evaluate)(equalTo(Option(true)))
+            val program = Lambda(DynamicValue(true)).asBoolean
+            assertZIO(program.evaluateWith(()))(equalTo(Option(true)))
           },
           test("not boolean") {
-            val program = Remote(DynamicValue(1)).asBoolean
-            assertZIO(program.evaluate)(equalTo(Option.empty[Boolean]))
+            val program = Lambda(DynamicValue(1)).asBoolean
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Boolean]))
           }
         ),
         suite("asInt")(
           test("int") {
-            val program = Remote(DynamicValue(1)).asInt
-            assertZIO(program.evaluate)(equalTo(Option(1)))
+            val program = Lambda(DynamicValue(1)).asInt
+            assertZIO(program.evaluateWith(()))(equalTo(Option(1)))
           },
           test("not int") {
-            val program = Remote(DynamicValue("a")).asInt
-            assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+            val program = Lambda(DynamicValue("a")).asInt
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Int]))
           }
         ),
         suite("asLong")(
           test("long") {
-            val program = Remote(DynamicValue(1L)).asLong
-            assertZIO(program.evaluate)(equalTo(Option(1L)))
+            val program = Lambda(DynamicValue(1L)).asLong
+            assertZIO(program.evaluateWith(()))(equalTo(Option(1L)))
           },
           test("not long") {
-            val program = Remote(DynamicValue("a")).asLong
-            assertZIO(program.evaluate)(equalTo(Option.empty[Long]))
+            val program = Lambda(DynamicValue("a")).asLong
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Long]))
           }
         ),
         suite("asDouble")(
           test("double") {
-            val program = Remote(DynamicValue(1.0)).asDouble
-            assertZIO(program.evaluate)(equalTo(Option(1.0)))
+            val program = Lambda(DynamicValue(1.0)).asDouble
+            assertZIO(program.evaluateWith(()))(equalTo(Option(1.0)))
           },
           test("not double") {
-            val program = Remote(DynamicValue("a")).asDouble
-            assertZIO(program.evaluate)(equalTo(Option.empty[Double]))
+            val program = Lambda(DynamicValue("a")).asDouble
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Double]))
           }
         ),
         suite("asFloat")(
           test("float") {
-            val program = Remote(DynamicValue(1.0f)).asFloat
-            assertZIO(program.evaluate)(equalTo(Option(1.0f)))
+            val program = Lambda(DynamicValue(1.0f)).asFloat
+            assertZIO(program.evaluateWith(()))(equalTo(Option(1.0f)))
           },
           test("not float") {
-            val program = Remote(DynamicValue("a")).asFloat
-            assertZIO(program.evaluate)(equalTo(Option.empty[Float]))
+            val program = Lambda(DynamicValue("a")).asFloat
+            assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Float]))
           }
         ),
         suite("asList")(
           test("list") {
-            val program  = Remote(DynamicValue(List(1, 2, 3))).asList
+            val program  = Lambda(DynamicValue(List(1, 2, 3))).asList
             val expected =
               Option(List(DynamicValue(1), DynamicValue(2), DynamicValue(3)))
-            assertZIO(program.evaluate)(equalTo(expected))
+            assertZIO(program.evaluateWith(()))(equalTo(expected))
           },
           test("not list") {
-            val program = Remote(DynamicValue("a")).asList
-            assertZIO(program.evaluate)(equalTo(
+            val program = Lambda(DynamicValue("a")).asList
+            assertZIO(program.evaluateWith(()))(equalTo(
               Option.empty[List[DynamicValue]]
             ))
           }
         ),
         suite("asMap")(
           test("map") {
-            val program  = Remote(DynamicValue(Map("a" -> 1, "b" -> 2))).asMap
+            val program  = Lambda(DynamicValue(Map("a" -> 1, "b" -> 2))).asMap
             val expected = Option(Map(
               DynamicValue("a") -> DynamicValue(1),
               DynamicValue("b") -> DynamicValue(2)
             ))
-            assertZIO(program.evaluate)(equalTo(expected))
+            assertZIO(program.evaluateWith(()))(equalTo(expected))
           },
           test("not map") {
-            val program = Remote(DynamicValue("a")).asMap
-            assertZIO(program.evaluate)(equalTo(
+            val program = Lambda(DynamicValue("a")).asMap
+            assertZIO(program.evaluateWith(()))(equalTo(
               Option.empty[Map[DynamicValue, DynamicValue]]
             ))
           }
@@ -424,35 +429,35 @@ object RemoteSpec extends ZIOSpecDefault {
           .make("jsonplaceholder.typicode.com")
           .withPath("/users/{{id}}")
           .withOutput[JsonPlaceholder.User]
-        val program  = Remote
-          .fromEndpoint(endpoint)(Remote(DynamicValue(Map("id" -> 1))))
+        val program  = Lambda
+          .fromEndpoint(endpoint)(Lambda(DynamicValue(Map("id" -> 1))))
         val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
-        assertZIO(program.evaluate)(equalTo(expected))
+        assertZIO(program.evaluateWith(()))(equalTo(expected))
       }),
       suite("tuple")(
         test("_1") {
-          val program = Remote((1, 2))._1
-          assertZIO(program.evaluate)(equalTo(1))
+          val program = Lambda((1, 2))._1
+          assertZIO(program.evaluateWith(()))(equalTo(1))
         },
         test("_2") {
-          val program = Remote((1, 2))._2
-          assertZIO(program.evaluate)(equalTo(2))
+          val program = Lambda((1, 2))._2
+          assertZIO(program.evaluateWith(()))(equalTo(2))
         },
         test("fromTuple 2") {
-          val program = Remote.fromTuple((Remote(1), Remote(2)))
-          assertZIO(program.evaluate)(equalTo((1, 2)))
+          val program = Lambda.fromTuple((Lambda(1), Lambda(2)))
+          assertZIO(program.evaluateWith(()))(equalTo((1, 2)))
         },
         test("fromTuple 3") {
-          val program = Remote.fromTuple((Remote(1), Remote(2), Remote(3)))
-          assertZIO(program.evaluate)(equalTo((1, 2, 3)))
+          val program = Lambda.fromTuple((Lambda(1), Lambda(2), Lambda(3)))
+          assertZIO(program.evaluateWith(()))(equalTo((1, 2, 3)))
         }
       ),
       suite("batch")(
         test("option") {
-          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) =>
-            Remote(Seq((1, "london"), (2, "paris"), (3, "new york")))
-          val program = Remote.batch(
+            Lambda(Seq((1, "london"), (2, "paris"), (3, "new york")))
+          val program = Lambda.batch(
             from,
             to,
             (x: Remote[(Int, String)]) => x._1,
@@ -465,13 +470,13 @@ object RemoteSpec extends ZIOSpecDefault {
             ((2, "richard"), Some(2, "paris")),
             ((3, "paul"), Some(3, "new york"))
           )
-          assertZIO(program.evaluate)(equalTo(expected))
+          assertZIO(program.evaluateWith(()))(equalTo(expected))
         },
         test("option order") {
-          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
           val to      = (_: Any) =>
-            Remote(Seq((3, "london"), (2, "paris"), (1, "new york")))
-          val program = Remote.batch(
+            Lambda(Seq((3, "london"), (2, "paris"), (1, "new york")))
+          val program = Lambda.batch(
             from,
             to,
             (x: Remote[(Int, String)]) => x._1,
@@ -484,12 +489,12 @@ object RemoteSpec extends ZIOSpecDefault {
             ((2, "richard"), Some(2, "paris")),
             ((3, "paul"), Some(3, "london"))
           )
-          assertZIO(program.evaluate)(equalTo(expected))
+          assertZIO(program.evaluateWith(()))(equalTo(expected))
         },
         test("empty") {
-          val from    = Remote(Seq((1, "john"), (2, "richard"), (3, "paul")))
-          val to      = (_: Any) => Remote(Seq((1, "london"), (2, "paris")))
-          val program = Remote.batch(
+          val from    = Lambda(Seq((1, "john"), (2, "richard"), (3, "paul")))
+          val to      = (_: Any) => Lambda(Seq((1, "london"), (2, "paris")))
+          val program = Lambda.batch(
             from,
             to,
             (x: Remote[(Int, String)]) => x._1,
@@ -502,22 +507,22 @@ object RemoteSpec extends ZIOSpecDefault {
             ((2, "richard"), Some(2, "paris")),
             ((3, "paul"), None)
           )
-          assertZIO(program.evaluate)(equalTo(expected))
+          assertZIO(program.evaluateWith(()))(equalTo(expected))
         }
       ),
       suite("map")(
         test("get some") {
-          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("a"))
-          assertZIO(program.evaluate)(equalTo(Option(1)))
+          val program = Lambda(Map("a" -> 1, "b" -> 2)).get(Lambda("a"))
+          assertZIO(program.evaluateWith(()))(equalTo(Option(1)))
         },
         test("get none") {
-          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("c"))
-          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+          val program = Lambda(Map("a" -> 1, "b" -> 2)).get(Lambda("c"))
+          assertZIO(program.evaluateWith(()))(equalTo(Option.empty[Int]))
         }
       ),
       test("flatten") {
-        val program = Remote.flatten(Remote(Remote(1)))
-        assertZIO(program.evaluate)(equalTo(1))
+        val program = Lambda.flatten(Lambda(Lambda(1)))
+        assertZIO(program.evaluateWith(()))(equalTo(1))
       }
     ).provide(LambdaRuntime.live, EvaluationContext.live)
 }

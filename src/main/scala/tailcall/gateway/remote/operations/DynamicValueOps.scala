@@ -1,7 +1,7 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.remote.DynamicEval.DynamicValueOperations
-import tailcall.gateway.remote.{DynamicEval, Remote}
+import tailcall.gateway.remote.{DynamicEval, Lambda, Remote}
 import zio.Chunk
 import zio.schema.DynamicValue
 
@@ -10,7 +10,7 @@ trait DynamicValueOps {
     private val self: Remote[DynamicValue]
   ) {
     def path(fields: String*): Remote[Option[DynamicValue]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -20,7 +20,7 @@ trait DynamicValueOps {
         )
 
     def asString: Remote[Option[String]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -30,7 +30,7 @@ trait DynamicValueOps {
         )
 
     def asBoolean: Remote[Option[Boolean]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -40,7 +40,7 @@ trait DynamicValueOps {
         )
 
     def asInt: Remote[Option[Int]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -50,7 +50,7 @@ trait DynamicValueOps {
         )
 
     def asLong: Remote[Option[Long]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -60,7 +60,7 @@ trait DynamicValueOps {
         )
 
     def asDouble: Remote[Option[Double]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -70,7 +70,7 @@ trait DynamicValueOps {
         )
 
     def asFloat: Remote[Option[Float]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -80,7 +80,7 @@ trait DynamicValueOps {
         )
 
     def asList: Remote[Option[List[DynamicValue]]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(
@@ -90,7 +90,7 @@ trait DynamicValueOps {
         )
 
     def asMap: Remote[Option[Map[DynamicValue, DynamicValue]]] =
-      Remote
+      Lambda
         .unsafe
         .attempt(ctx =>
           DynamicEval.DynamicValueOperations(

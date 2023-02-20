@@ -1,7 +1,7 @@
 package tailcall.gateway.internal
 
 import tailcall.gateway.ast.{Endpoint, Orc}
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote.Lambda
 import zio.schema.DeriveSchema
 
 object JsonPlaceholder {
@@ -105,7 +105,7 @@ object JsonPlaceholder {
       .withOutput[List[Post]]
   }
 
-  val unit = Remote.dynamicValue(())
+  val unit = Lambda.dynamicValue(())
 
   val orc: Orc = {
     ???
