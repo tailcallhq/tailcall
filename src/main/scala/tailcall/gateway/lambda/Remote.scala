@@ -93,8 +93,8 @@ sealed trait Remote[+A] {
       Math(Math.Unary(self.compile(ctx), Math.Unary.Negate), tag.any)
     )
 
-  final def evaluate: ZIO[RemoteRuntime, Throwable, A] =
-    RemoteRuntime.evaluate(self)
+  final def evaluate: ZIO[LambdaRuntime, Throwable, A] =
+    LambdaRuntime.evaluate(self)
 }
 
 object Remote extends BooleanOps {
