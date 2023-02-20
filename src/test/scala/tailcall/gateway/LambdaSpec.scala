@@ -51,6 +51,14 @@ object LambdaSpec extends ZIOSpecDefault {
         test("not") {
           val program = Lambda.logic.not(Lambda(true))
           assertZIO(program.evaluate())(isFalse)
+        },
+        test("equal") {
+          val program = Lambda.logic.equalTo(Lambda(1), Lambda(1))
+          assertZIO(program.evaluate())(equalTo(true))
+        },
+        test("not equal") {
+          val program = Lambda.logic.equalTo(Lambda(1), Lambda(2))
+          assertZIO(program.evaluate())(equalTo(false))
         }
       ),
       suite("diverge")(
