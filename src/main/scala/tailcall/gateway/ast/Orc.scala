@@ -13,25 +13,16 @@ sealed trait Orc {
   def toGraphQL: GraphQL[LambdaRuntime] =
     new GraphQL[LambdaRuntime] {
       val schema = new caliban.schema.Schema[LambdaRuntime, Orc] {
-        override protected[this] def toType(
-          isInput: Boolean,
-          isSubscription: Boolean
-        ): __Type = __Type(__TypeKind.OBJECT)
+        override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
+          __Type(__TypeKind.OBJECT)
 
-        override def resolve(orc: Orc): Step[LambdaRuntime] =
-          new StepGenerator(orc).gen
+        override def resolve(orc: Orc): Step[LambdaRuntime] = new StepGenerator(orc).gen
       }
 
       override protected val schemaBuilder: RootSchemaBuilder[LambdaRuntime] =
-        RootSchemaBuilder(
-          Option(Operation(schema.toType_(), schema.resolve(self))),
-          None,
-          None,
-          Nil,
-          Nil
-        )
-      override protected val wrappers: List[Wrapper[Any]]            = Nil
-      override protected val additionalDirectives: List[__Directive] = Nil
+        RootSchemaBuilder(Option(Operation(schema.toType_(), schema.resolve(self))), None, None, Nil, Nil)
+      override protected val wrappers: List[Wrapper[Any]]                    = Nil
+      override protected val additionalDirectives: List[__Directive]         = Nil
     }
 }
 
@@ -42,11 +33,9 @@ object Orc {
   final case class OrcFunction(fun: Context ~> Orc)                  extends Orc
   final case class OrcRef(name: String)                              extends Orc
 
-  def value[A](a: A)(implicit schema: Schema[A]): Orc =
-    OrcValue(schema.toDynamic(a))
+  def value[A](a: A)(implicit schema: Schema[A]): Orc = OrcValue(schema.toDynamic(a))
 
-  def obj(name: String)(fields: (String, Orc)*): Orc =
-    OrcObject(name, fields.toMap)
+  def obj(name: String)(fields: (String, Orc)*): Orc = OrcObject(name, fields.toMap)
 
   def list(values: Orc*): Orc = OrcList(values.toList)
 

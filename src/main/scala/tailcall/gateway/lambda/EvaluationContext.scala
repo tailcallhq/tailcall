@@ -17,29 +17,24 @@ object EvaluationContext {
 
   final case class Default(map: Ref[Map[Key, Any]]) extends EvaluationContext {
     def get(id: Key): Task[Any] =
-      map
-        .get
-        .flatMap { map =>
-          map.get(id) match {
-            case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
-            case Some(value) => ZIO.succeed(value)
-          }
+      map.get.flatMap { map =>
+        map.get(id) match {
+          case None        => ZIO.fail(EvaluationError.BindingNotFound(id))
+          case Some(value) => ZIO.succeed(value)
         }
+      }
 
     def set(id: Key, value: Any): Task[Unit] = map.update(_ + (id -> value))
 
     def drop(id: Key): Task[Unit] = map.update(_ - id)
   }
 
-  def live: ZLayer[Any, Nothing, EvaluationContext] =
-    ZLayer.fromZIO(Ref.make(Map.empty[Key, Any]).map(Default))
+  def live: ZLayer[Any, Nothing, EvaluationContext] = ZLayer.fromZIO(Ref.make(Map.empty[Key, Any]).map(Default))
 
   def set(id: Key, value: Any): ZIO[EvaluationContext, EvaluationError, Unit] =
     ZIO.serviceWith[EvaluationContext](_.set(id, value))
 
-  def get(id: Key): ZIO[EvaluationContext, EvaluationError, Any] =
-    ZIO.serviceWith[EvaluationContext](_.get(id))
+  def get(id: Key): ZIO[EvaluationContext, EvaluationError, Any] = ZIO.serviceWith[EvaluationContext](_.get(id))
 
-  def drop(id: Key): ZIO[EvaluationContext, EvaluationError, Unit] =
-    ZIO.serviceWith[EvaluationContext](_.drop(id))
+  def drop(id: Key): ZIO[EvaluationContext, EvaluationError, Unit] = ZIO.serviceWith[EvaluationContext](_.drop(id))
 }
