@@ -68,9 +68,36 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate())(equalTo("No"))
         }
       ),
-      suite("fromFunction")(test("evaluate") {
-        val program = Lambda.fromFunction[Int, Int](i => i + Remote(1))
-        assertZIO(program.evaluate(1))(equalTo(2))
-      })
+      suite("fromFunction")(
+        test("one level") {
+          val program = Lambda.fromFunction[Int, Int](i => i + Remote(1))
+          assertZIO(program.evaluate(1))(equalTo(2))
+        },
+        test("two level") {
+          val program = Lambda.fromFunction[Int, Int] { i =>
+            val f1 = Lambda.fromFunction[Int, Int](j => i * j)
+            f1(i + Remote(1))
+          }
+          assertZIO(program.evaluate(10))(equalTo(110))
+        },
+        test("three level") {
+          val program = Lambda.fromFunction[Int, Int] { i =>
+            val f1 = Lambda.fromFunction[Int, Int] { j =>
+              val f2 = Lambda.fromFunction[Int, Int](k => i * j * k)
+              f2(j + Remote(1))
+            }
+            f1(i + Remote(1))
+          }
+          assertZIO(program.evaluate(10))(equalTo(10 * 11 * 12))
+        },
+        test("nested siblings") {
+          val program = Lambda.fromFunction[Int, Int] { i =>
+            val f1 = Lambda.fromFunction[Int, Int](j => j * i)
+            val f2 = Lambda.fromFunction[Int, Int](j => i * j)
+            f1(i + Remote(1)) + f2(i - Remote(1))
+          }
+          assertZIO(program.evaluate(10))(equalTo(200))
+        }
+      )
     ).provide(LambdaRuntime.live, EvaluationContext.live)
 }

@@ -11,8 +11,10 @@ sealed trait Lambda[-A, +B] {
     Lambda.unsafe.attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
 
   def compile(context: CompilationContext): DynamicEval
-
+  final def compile: DynamicEval                            = compile(CompilationContext.initial)
   final def evaluate: LExit[LambdaRuntime, Throwable, A, B] = LambdaRuntime.evaluate(self)
+  final def apply(remote: Remote[A]): Remote[B]             = Remote(remote.toLambda >>> self)
+  final def toFunction: Remote[A] => Remote[B]              = remote => self(remote)
 }
 
 object Lambda {
@@ -67,12 +69,11 @@ object Lambda {
 
   def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
 
-  // TODO: add unit test
   def fromFunction[A, B](f: Remote[A] => Remote[B]): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
-      val key  = Binding(ctx.next.level)
+      val key  = Binding(ctx.level)
       val body = f(Remote(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key)))).toLambda
-      DynamicEval.FunctionDef(key, body.compile(ctx))
+      DynamicEval.FunctionDef(key, body.compile(ctx.next))
     }
   }
 

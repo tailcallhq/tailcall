@@ -26,5 +26,10 @@ object Remote {
 
   def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
 
+  def bounded[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] = Lambda.fromFunction(ab).toFunction
+
   implicit def schema[A]: Schema[Remote[A]] = Schema[Any ~> A].transform(Remote(_), _.toLambda)
+
+  implicit def schemaFunction[A, B]: Schema[Remote[A] => Remote[B]] =
+    Schema[A ~> B].transform(_.toFunction, Lambda.fromFunction)
 }
