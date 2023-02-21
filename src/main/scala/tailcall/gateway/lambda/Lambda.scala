@@ -22,8 +22,7 @@ sealed trait Lambda[-A, +B] {
 }
 
 object Lambda {
-
-  def apply[A, B](b: B)(implicit ctor: Constructor[B]): A ~> B =
+  def apply[A, B](b: => B)(implicit ctor: Constructor[B]): A ~> B =
     Lambda.unsafe.attempt(_ => Literal(ctor.schema.toDynamic(b), ctor.asInstanceOf[Constructor[Any]]))
 
   def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =

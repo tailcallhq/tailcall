@@ -1,30 +1,11 @@
 package tailcall.gateway.ast
 
-import caliban.GraphQL
-import caliban.introspection.adt.{__Directive, __Type, __TypeKind}
-import caliban.schema.{Operation, RootSchemaBuilder, Step}
-import caliban.wrappers.Wrapper
-import tailcall.gateway.StepGenerator
-import tailcall.gateway.lambda.LambdaRuntime
 import tailcall.gateway.remote.Remote
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 sealed trait Orc {
   self =>
-  def toGraphQL: GraphQL[LambdaRuntime] =
-    new GraphQL[LambdaRuntime] {
-      val schema = new caliban.schema.Schema[LambdaRuntime, Orc] {
-        override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
-          __Type(__TypeKind.OBJECT)
 
-        override def resolve(orc: Orc): Step[LambdaRuntime] = new StepGenerator(orc).gen
-      }
-
-      override protected val schemaBuilder: RootSchemaBuilder[LambdaRuntime] =
-        RootSchemaBuilder(Option(Operation(schema.toType_(), schema.resolve(self))), None, None, Nil, Nil)
-      override protected val wrappers: List[Wrapper[Any]]                    = Nil
-      override protected val additionalDirectives: List[__Directive]         = Nil
-    }
 }
 
 object Orc {
@@ -42,7 +23,7 @@ object Orc {
 
   def function(fun: Remote[Context] => Remote[Orc]): Orc = OrcFunction(Remote.bind(fun))
 
-  def ref(ref: String): Orc = OrcRef(ref)
+  def ref(name: String): Orc = OrcRef(name)
 
   implicit lazy val schema: Schema[Orc] = DeriveSchema.gen[Orc]
 }

@@ -3,13 +3,18 @@ package tailcall.gateway
 import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
-import tailcall.gateway.ast.{Context, Orc}
+import tailcall.gateway.ast.{Context, Orc, TGraph}
 import tailcall.gateway.lambda.LambdaRuntime
 import tailcall.gateway.remote.Remote
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 
-final class StepGenerator(orc: Orc) {
+import scala.collection.mutable
+
+final class StepGenerator(tGraph: TGraph) {
+  private val orcMap: Map[String, Orc] = tGraph.orcs.collect { case orc @ Orc.OrcObject(name, _) => name -> orc }.toMap
+  private val stepMap: mutable.Map[String, RemoteStep] = mutable.Map.empty
+
   def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
@@ -70,10 +75,23 @@ final class StepGenerator(orc: Orc) {
           .ObjectStep(name, fields.map { case (name, orc) => (name, gen(orc, context)) })
       case Orc.OrcList(values)         => Step.ListStep(values.map(gen(_, context)))
       case Orc.OrcFunction(fun)        => Step.QueryStep(ZQuery.fromZIO(fun(context).evaluate.map(gen(_, context))))
+      case Orc.OrcRef(name)            => stepMap.get(name) match {
+          case Some(step) => step
+          case None       => orcMap.get(name) match {
+              case Some(orc) =>
+                val step = Step.QueryStep(ZQuery.succeed(gen(orc, context)))
+                stepMap.addOne(name -> step)
+                step
+              case None      => Step.NullStep
+            }
+        }
     }
   }
 
-  def gen: RemoteStep = { gen(orc, Remote(Context(DynamicValue(())))) }
+  def gen: RemoteStep = {
+    val orc = tGraph.query.flatMap(orcMap.get).getOrElse(throw StepGenerator.QueryNotFound)
+    gen(orc, Remote(Context(DynamicValue(()))))
+  }
 }
 
 object StepGenerator {
