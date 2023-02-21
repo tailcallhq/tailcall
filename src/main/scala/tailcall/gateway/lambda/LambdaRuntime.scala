@@ -18,34 +18,34 @@ object LambdaRuntime {
 
     def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Literal(value, ctor) => ctor.schema.fromDynamic(value) match {
+        case Literal(value, ctor)              => ctor.schema.fromDynamic(value) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
             case Right(value) => LExit.succeed(value)
           }
-        case Literal(value, ctor) => value.toTypedValue(ctor.schema)
+        case Literal(value, ctor)              => value.toTypedValue(ctor.schema)
             .fold(cause => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema)), LExit.succeed)
-
-        case EqualTo(left, right, tag)  => for {
+        case EqualTo(left, right, tag)         => for {
             leftValue  <- evaluate(left)
             rightValue <- evaluate(right)
           } yield tag.equal(leftValue, rightValue)
-        case Math(operation, tag)       => operation match {
-            case Math.Binary(left, right, operation) =>
+        case Math(operation, tag)              => operation match {
+            case Math.Binary(operation, left, right) =>
               for {
                 leftValue  <- evaluate(left)
                 rightValue <- evaluate(right)
               } yield operation match {
-                case Math.Binary.Add         => tag.add(leftValue, rightValue)
-                case Math.Binary.Multiply    => tag.multiply(leftValue, rightValue)
-                case Math.Binary.Divide      => tag.divide(leftValue, rightValue)
-                case Math.Binary.Modulo      => tag.modulo(leftValue, rightValue)
-                case Math.Binary.GreaterThan => tag.greaterThan(leftValue, rightValue)
+                case Math.Binary.Add              => tag.add(leftValue, rightValue)
+                case Math.Binary.Multiply         => tag.multiply(leftValue, rightValue)
+                case Math.Binary.Divide           => tag.divide(leftValue, rightValue)
+                case Math.Binary.Modulo           => tag.modulo(leftValue, rightValue)
+                case Math.Binary.GreaterThan      => tag.greaterThan(leftValue, rightValue)
+                case Math.Binary.GreaterThanEqual => tag.greaterThanEqual(leftValue, rightValue)
               }
-            case Math.Unary(value, operation)        => evaluate(value)
-                .map(evaluate => operation match { case Math.Unary.Negate => tag.negate(evaluate) })
+            case Math.Unary(operation, value)        =>
+              for { value <- evaluate(value) } yield operation match { case Math.Unary.Negate => tag.negate(value) }
           }
-        case Logical(operation)         => operation match {
-            case Logical.Binary(left, right, operation) =>
+        case Logical(operation)                => operation match {
+            case Logical.Binary(operation, left, right) =>
               for {
                 leftValue  <- evaluateAs[Boolean](left)
                 rightValue <- evaluateAs[Boolean](right)
@@ -60,15 +60,21 @@ object LambdaRuntime {
                 }
               }
           }
-        case Identity                   => LExit.input
-        case Pipe(left, right)          => evaluate(left) >>> evaluate(right)
-        case FunctionDef(binding, body) => for {
-            input <- LExit.input[Any]
-            _     <- LExit.fromZIO(ctx.set(binding, input))
-            r     <- evaluate(body)
-            _     <- LExit.fromZIO(ctx.drop(binding))
+        case Identity                          => LExit.input
+        case Pipe(left, right)                 => evaluate(left) >>> evaluate(right)
+        case FunctionDef(binding, body, input) => for {
+            i <- evaluate(input)
+            _ <- LExit.fromZIO(ctx.set(binding, i))
+            r <- evaluate(body)
+            _ <- LExit.fromZIO(ctx.drop(binding))
           } yield r
-        case Lookup(binding)            => LExit.fromZIO(ctx.get(binding))
+        case Lookup(binding)                   => LExit.fromZIO(ctx.get(binding))
+
+        case Immediate(eval0) => for {
+            eval1 <- evaluate(eval0)
+            eval2 <- evaluate(eval1.asInstanceOf[DynamicEval])
+          } yield eval2
+        case Defer(value)     => LExit.succeed(value)
       }
     }
   }
