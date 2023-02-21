@@ -29,29 +29,38 @@ object Lambda {
   def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =
     Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
 
-  def fromLambdaFunction[A, B](f: (Any ~> A) => (Any ~> B)): A ~> B = {
+  def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
-      val key  = Binding(ctx.level)
-      val body = f(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key)))
-      DynamicEval.FunctionDef(key, body.compile(ctx.next))
+      val key   = Binding(ctx.level)
+      val body  = f(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key))).compile(ctx.next)
+      val input = DynamicEval.Identity
+      DynamicEval.FunctionDef(key, body, input)
     }
   }
 
   def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
 
+  def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
+    Lambda.unsafe.attempt { ctx =>
+      val key   = Binding(ctx.level)
+      val body  = f(Lambda.unsafe.attempt[A, B](_ => DynamicEval.Immediate(DynamicEval.Lookup(key)))).compile(ctx.next)
+      val input = DynamicEval.Defer(body)
+      DynamicEval.FunctionDef(key, body, input)
+    }
+
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        DynamicEval.Logical(Logical.Binary(left.compile(ctx), right.compile(ctx), Logical.Binary.And))
+        DynamicEval.Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
       }
 
-    def diverge[A, B](cond: A ~> Boolean, isTrue: A ~> B, isFalse: A ~> B): A ~> B =
+    def cond[A, B](c: A ~> Boolean)(isTrue: A ~> B, isFalse: A ~> B): A ~> B =
       Lambda.unsafe.attempt[A, B] { ctx =>
         DynamicEval
-          .Logical(Logical.Unary(cond.compile(ctx), Logical.Unary.Diverge(isTrue.compile(ctx), isFalse.compile(ctx))))
+          .Logical(Logical.Unary(c.compile(ctx), Logical.Unary.Diverge(isTrue.compile(ctx), isFalse.compile(ctx))))
       }
 
-    def equalTo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
+    def eq[A, B](a: A ~> B, b: A ~> B)(implicit ev: Equatable[B]): A ~> Boolean =
       Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
 
     def not[A](a: A ~> Boolean): A ~> Boolean =
@@ -59,40 +68,47 @@ object Lambda {
 
     def or[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        DynamicEval.Logical(Logical.Binary(left.compile(ctx), right.compile(ctx), Logical.Binary.Or))
+        DynamicEval.Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
       }
-
   }
 
   object math {
-    def divide[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Divide), ev.any))
+    def dbl[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = mul(a, inc(ev(ev.one)))
 
-    def gt[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> Boolean =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.GreaterThan), ev.any))
-
-    def modulo[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Modulo), ev.any))
-
-    def multiply[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Multiply), ev.any))
-
-    def subtract[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, negate(b))
+    def inc[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, ev(ev.one))
 
     def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(a.compile(ctx), b.compile(ctx), Math.Binary.Add), ev.any))
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Add, a.compile(ctx), b.compile(ctx)), ev.any))
 
-    def negate[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Unary(ab.compile(ctx), Math.Unary.Negate), ev.any))
+    def mul[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Multiply, a.compile(ctx), b.compile(ctx)), ev.any))
+
+    def dec[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = sub(a, ev(ev.one))
+
+    def sub[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, neg(b))
+
+    def neg[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Unary(Math.Unary.Negate, ab.compile(ctx)), ev.any))
+
+    def div[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Divide, a.compile(ctx), b.compile(ctx)), ev.any))
+
+    def gt[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> Boolean =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.GreaterThan, a.compile(ctx), b.compile(ctx)), ev.any))
+
+    def gte[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> Boolean =
+      Lambda.unsafe
+        .attempt(ctx => Math(Math.Binary(Math.Binary.GreaterThanEqual, a.compile(ctx), b.compile(ctx)), ev.any))
+
+    def mod[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Modulo, a.compile(ctx), b.compile(ctx)), ev.any))
   }
 
   object unsafe {
-    object attempt {
-      def apply[A, B](eval: CompilationContext => DynamicEval): A ~> B =
-        new Lambda[A, B] {
-          override def compile(context: CompilationContext): DynamicEval = eval(context)
-        }
-    }
+    def attempt[A, B](eval: CompilationContext => DynamicEval): A ~> B =
+      new Lambda[A, B] {
+        override def compile(context: CompilationContext): DynamicEval = eval(context)
+      }
   }
 
   implicit val anySchema: Schema[_ ~> _] = Schema[DynamicEval]

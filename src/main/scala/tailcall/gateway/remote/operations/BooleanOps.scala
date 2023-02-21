@@ -12,6 +12,6 @@ trait BooleanOps {
     def unary_! : Remote[Boolean] = Remote(Lambda.logic.not(self.toLambda))
 
     def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] =
-      Remote(Lambda.logic.diverge(self.toLambda, isTrue.toLambda, isFalse.toLambda))
+      Remote(Lambda.logic.cond(self.toLambda)(isTrue.toLambda, isFalse.toLambda))
   }
 }
