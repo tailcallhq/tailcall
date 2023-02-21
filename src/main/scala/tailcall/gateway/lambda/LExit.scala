@@ -8,7 +8,7 @@ final case class LExit[-R, +E, -A, +B](run: A => ZIO[R, E, B]) extends (A => ZIO
   def apply(a: A): ZIO[R, E, B] = run(a)
 
   def pipe[R1 <: R, E1 >: E, A1 >: B, B1](other: LExit[R1, E1, A1, B1]): LExit[R1, E1, A, B1] =
-    LExit(a => run(a).flatMap(b => other.run(b)))
+    LExit(self(_).flatMap(other(_)))
 
   def >>>[R1 <: R, E1 >: E, A1 >: B, B1](other: LExit[R1, E1, A1, B1]): LExit[R1, E1, A, B1] = self.pipe(other)
 
