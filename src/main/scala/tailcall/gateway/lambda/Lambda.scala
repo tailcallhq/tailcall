@@ -16,7 +16,7 @@ sealed trait Lambda[-A, +B] {
 
   def compile(context: CompilationContext): DynamicEval
 
-  final def evaluate: LExit[LambdaRuntime, Throwable, A, B] = LambdaRuntime.evaluate(self)
+  final def evaluate: LExit[DynamicRuntime, Throwable, A, B] = DynamicRuntime.evaluate(self)
 
   final def toFunction: Remote[A] => Remote[B] = remote => self(remote)
 }
