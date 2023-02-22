@@ -2,21 +2,28 @@ package tailcall.gateway.lambda
 
 import zio._
 
-trait LambdaRuntime {
-  def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B]
+trait DynamicRuntime {
+  final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
+    evaluate(lambda.compile(CompilationContext.initial)).asInstanceOf[LExit[Any, Throwable, A, B]]
+
+  def evaluate(dynamicEval: DynamicEval): LExit[Any, Throwable, Any, Any]
+
+  final def evaluateAs[A](eval: DynamicEval): LExit[Any, Throwable, Any, A] =
+    evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
-object LambdaRuntime {
+object DynamicRuntime {
   import DynamicEval._
 
-  final class Live(ctx: EvaluationContext) extends LambdaRuntime {
-    def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
-      evaluate(lambda.compile(CompilationContext.initial)).asInstanceOf[LExit[Any, Throwable, A, B]]
+  def evaluate[A, B](ab: A ~> B): LExit[DynamicRuntime, Throwable, A, B] =
+    LExit.fromZIO(ZIO.service[DynamicRuntime]).flatMap(_.evaluate(ab))
 
-    def evaluateAs[A](eval: DynamicEval): LExit[Any, Throwable, Any, A] =
-      evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
+  def live: ZLayer[EvaluationContext, Nothing, DynamicRuntime] =
+    ZLayer.fromZIO(ZIO.service[EvaluationContext].map(new Live(_)))
 
-    def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
+  final class Live(ctx: EvaluationContext) extends DynamicRuntime {
+
+    override def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
       plan match {
         case Literal(value, ctor)              => ctor.schema.fromDynamic(value) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
@@ -78,10 +85,4 @@ object LambdaRuntime {
       }
     }
   }
-
-  def live: ZLayer[EvaluationContext, Nothing, LambdaRuntime] =
-    ZLayer.fromZIO(ZIO.service[EvaluationContext].map(new Live(_)))
-
-  def evaluate[A, B](ab: A ~> B): LExit[LambdaRuntime, Throwable, A, B] =
-    LExit.fromZIO(ZIO.service[LambdaRuntime]).flatMap(_.evaluate(ab))
 }
