@@ -21,8 +21,8 @@ final case class TGraph(orcs: List[Orc], query: Option[String] = None, mutation:
 
       override protected val schemaBuilder: RootSchemaBuilder[DynamicRuntime] =
         RootSchemaBuilder(Option(Operation(schema.toType_(), schema.resolve(self))), None, None, Nil, Nil)
-      override protected val wrappers: List[Wrapper[Any]]                  = Nil
-      override protected val additionalDirectives: List[__Directive]       = Nil
+      override protected val wrappers: List[Wrapper[Any]]                     = Nil
+      override protected val additionalDirectives: List[__Directive]          = Nil
     }
 
   def withQuery(name: String): TGraph    = self.copy(query = Option(name))
