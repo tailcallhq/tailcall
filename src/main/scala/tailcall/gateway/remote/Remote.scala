@@ -13,7 +13,7 @@ import zio.schema.Schema
  */
 sealed trait Remote[+A] {
   self =>
-  final def toLambda: Any ~> A                 = Remote.toLambda(self)
+  final def toLambda: Any ~> A                    = Remote.toLambda(self)
   def evaluate: ZIO[DynamicRuntime, Throwable, A] = toLambda.evaluate {}
 }
 
