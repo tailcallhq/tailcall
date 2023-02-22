@@ -4,7 +4,7 @@ import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
 import tailcall.gateway.ast.{Context, Orc, TGraph}
-import tailcall.gateway.lambda.LambdaRuntime
+import tailcall.gateway.lambda.DynamicRuntime
 import tailcall.gateway.remote.Remote
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
@@ -89,13 +89,13 @@ final class StepGenerator(tGraph: TGraph) {
   }
 
   def gen: RemoteStep = {
-    val orc = tGraph.query.flatMap(orcMap.get).getOrElse(throw StepGenerator.QueryNotFound)
+    val orc = tGraph.rootQuery.flatMap(orcMap.get).getOrElse(throw StepGenerator.QueryNotFound)
     gen(orc, Remote(Context(DynamicValue(()))))
   }
 }
 
 object StepGenerator {
-  type RemoteStep = Step[LambdaRuntime]
+  type RemoteStep = Step[DynamicRuntime]
 
   sealed trait GraphQLSchemaGeneratorError extends Throwable
   case object QueryNotFound                extends GraphQLSchemaGeneratorError
