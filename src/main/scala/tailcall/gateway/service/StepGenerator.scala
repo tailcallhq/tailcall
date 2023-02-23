@@ -3,7 +3,7 @@ package tailcall.gateway.service
 import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.ast.Graph
-import tailcall.gateway.lambda.{DynamicRuntime, Lambda}
+import tailcall.gateway.lambda.Lambda
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 import zio.{ZIO, ZLayer}

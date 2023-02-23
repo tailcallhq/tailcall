@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.{Orc, TGraph}
-import tailcall.gateway.lambda.{EvaluationContext, DynamicRuntime}
+import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
 import zio.test.Assertion._
 import zio.test._
 

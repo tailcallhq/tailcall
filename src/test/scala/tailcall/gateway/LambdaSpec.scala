@@ -1,7 +1,8 @@
 package tailcall.gateway
 
 import tailcall.gateway.lambda.Lambda.{logic, math}
-import tailcall.gateway.lambda.{EvaluationContext, Lambda, DynamicRuntime, ~>}
+import tailcall.gateway.lambda.{Lambda, ~>}
+import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
 import zio.test.Assertion._
 import zio.test._
 
