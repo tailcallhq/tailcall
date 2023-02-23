@@ -1,10 +1,9 @@
 package tailcall.gateway.ast
 
-import tailcall.gateway.lambda.DynamicEval
 import tailcall.gateway.remote.Remote
 import zio.Chunk
 import zio.schema.codec.JsonCodec.JsonEncoder
-import zio.schema.{DeriveSchema, Schema}
+import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 /**
  * A `GraphQL` represents a connection between two nodes in
@@ -26,7 +25,7 @@ object Graph {
     argType: Schema[Any],
     fromType: Schema[Any],
     toType: Schema[Any],
-    executable: Remote[Context] => Remote[DynamicEval]
+    executable: Remote[Context] => Remote[DynamicValue]
   ) {
     def toGraph: Graph = Graph(List(this))
   }
