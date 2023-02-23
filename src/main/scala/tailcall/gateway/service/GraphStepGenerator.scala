@@ -8,17 +8,17 @@ import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 import zio.{ZIO, ZLayer}
 
-trait StepGenerator {
+trait GraphStepGenerator {
   def resolve(graph: Graph): Step[Any]
 }
 
-object StepGenerator {
-  def live: ZLayer[DynamicRuntime, Nothing, StepGenerator] =
+object GraphStepGenerator {
+  def live: ZLayer[DynamicRuntime, Nothing, GraphStepGenerator] =
     ZLayer(ZIO.service[DynamicRuntime].map(rtm => new Live(rtm)))
 
-  def resolve(graph: Graph): ZIO[StepGenerator, Nothing, Step[Any]] = ZIO.serviceWith(_.resolve(graph))
+  def resolve(graph: Graph): ZIO[GraphStepGenerator, Nothing, Step[Any]] = ZIO.serviceWith(_.resolve(graph))
 
-  final class Live(rtm: DynamicRuntime) extends StepGenerator {
+  final class Live(rtm: DynamicRuntime) extends GraphStepGenerator {
     override def resolve(graph: Graph): Step[Any] = {
       Step.ObjectStep(
         "Query",

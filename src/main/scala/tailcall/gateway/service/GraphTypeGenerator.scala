@@ -7,17 +7,17 @@ import zio.{ZIO, ZLayer}
 
 import scala.collection.mutable
 
-trait TypeGenerator {
+trait GraphTypeGenerator {
   def __type(graph: Graph): __Type
 }
 
-object TypeGenerator {
-  def __type(graph: Graph): ZLayer[TypeGenerator, Nothing, __Type] =
-    ZLayer(ZIO.serviceWith[TypeGenerator](_.__type(graph)))
+object GraphTypeGenerator {
+  def __type(graph: Graph): ZLayer[GraphTypeGenerator, Nothing, __Type] =
+    ZLayer(ZIO.serviceWith[GraphTypeGenerator](_.__type(graph)))
 
-  def live: ZLayer[Any, Nothing, TypeGenerator] = ZLayer.succeed(new Live())
+  def live: ZLayer[Any, Nothing, GraphTypeGenerator] = ZLayer.succeed(new Live())
 
-  final class Live extends TypeGenerator {
+  final class Live extends GraphTypeGenerator {
     self =>
 
     private val pending: mutable.Map[zio.schema.TypeId, Graph] = mutable.Map.empty
