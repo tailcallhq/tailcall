@@ -1,5 +1,6 @@
-package tailcall.gateway.lambda
+package tailcall.gateway.service
 
+import tailcall.gateway.lambda._
 import zio._
 
 trait DynamicRuntime {

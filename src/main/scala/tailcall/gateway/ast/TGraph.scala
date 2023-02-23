@@ -6,7 +6,7 @@ import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.wrappers.Wrapper
 import tailcall.gateway.StepGenerator
 import tailcall.gateway.ast.Orc.OrcObject
-import tailcall.gateway.lambda.DynamicRuntime
+import tailcall.gateway.service.DynamicRuntime
 
 final case class TGraph(orcs: List[Orc], query: Option[String] = None, mutation: Option[String] = None) {
   self =>

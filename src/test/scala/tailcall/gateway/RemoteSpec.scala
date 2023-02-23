@@ -1,7 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.lambda.{EvaluationContext, DynamicRuntime}
 import tailcall.gateway.remote._
+import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
 import zio.Chunk
 import zio.schema.Schema
 import zio.test.Assertion._
