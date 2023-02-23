@@ -4,8 +4,8 @@ import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
 import tailcall.gateway.ast.{Context, Orc, TGraph}
-import tailcall.gateway.lambda.DynamicRuntime
 import tailcall.gateway.remote.Remote
+import tailcall.gateway.service.DynamicRuntime
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 

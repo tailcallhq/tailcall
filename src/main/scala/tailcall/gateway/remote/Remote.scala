@@ -1,6 +1,7 @@
 package tailcall.gateway.remote
 
-import tailcall.gateway.lambda.{Constructor, DynamicRuntime, Lambda, ~>}
+import tailcall.gateway.lambda.{Constructor, Lambda, ~>}
+import tailcall.gateway.service.DynamicRuntime
 import zio.ZIO
 import zio.schema.Schema
 

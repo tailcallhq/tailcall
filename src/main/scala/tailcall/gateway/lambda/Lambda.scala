@@ -1,8 +1,9 @@
 package tailcall.gateway.lambda
 
 import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
-import tailcall.gateway.lambda.EvaluationContext.Binding
 import tailcall.gateway.remote.Remote
+import tailcall.gateway.service.DynamicRuntime
+import tailcall.gateway.service.EvaluationContext.Binding
 import zio.schema.Schema
 
 sealed trait Lambda[-A, +B] {

@@ -1,5 +1,6 @@
 package tailcall.gateway.lambda
 
+import tailcall.gateway.service.EvaluationContext
 import zio.schema.{DynamicValue, Schema}
 
 sealed trait EvaluationError extends Throwable {

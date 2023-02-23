@@ -1,6 +1,6 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.lambda.EvaluationContext.Binding
+import tailcall.gateway.service.EvaluationContext.Binding
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 sealed trait DynamicEval
