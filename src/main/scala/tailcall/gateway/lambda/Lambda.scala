@@ -4,7 +4,7 @@ import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
 import tailcall.gateway.remote.Remote
 import tailcall.gateway.service.DynamicRuntime
 import tailcall.gateway.service.EvaluationContext.Binding
-import zio.schema.Schema
+import zio.schema.{DynamicValue, Schema}
 
 sealed trait Lambda[-A, +B] {
   self =>
@@ -13,9 +13,9 @@ sealed trait Lambda[-A, +B] {
   final def >>>[C](other: B ~> C): A ~> C =
     Lambda.unsafe.attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
 
-  final def compile: DynamicEval = compile(CompilationContext.initial)
+  final def compile: DynamicEval[DynamicValue] = compile(CompilationContext.initial)
 
-  def compile(context: CompilationContext): DynamicEval
+  def compile(context: CompilationContext): DynamicEval[DynamicValue]
 
   final def evaluate: LExit[DynamicRuntime, Throwable, A, B] = DynamicRuntime.evaluate(self)
 
@@ -105,13 +105,13 @@ object Lambda {
   }
 
   object unsafe {
-    def attempt[A, B](eval: CompilationContext => DynamicEval): A ~> B =
+    def attempt[A, B](eval: CompilationContext => DynamicEval[DynamicValue]): A ~> B =
       new Lambda[A, B] {
-        override def compile(context: CompilationContext): DynamicEval = eval(context)
+        override def compile(context: CompilationContext): DynamicEval[DynamicValue] = eval(context)
       }
   }
 
-  implicit val anySchema: Schema[_ ~> _] = Schema[DynamicEval]
+  implicit val anySchema: Schema[_ ~> _] = Schema[DynamicEval[DynamicValue]]
     .transform(eval => Lambda.unsafe.attempt(_ => eval), _.compile(CompilationContext.initial))
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]

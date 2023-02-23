@@ -2,14 +2,15 @@ package tailcall.gateway.service
 
 import tailcall.gateway.lambda._
 import zio._
+import zio.schema.DynamicValue
 
 trait DynamicRuntime {
   final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial)).asInstanceOf[LExit[Any, Throwable, A, B]]
 
-  def evaluate(dynamicEval: DynamicEval): LExit[Any, Throwable, Any, Any]
+  def evaluate(dynamicEval: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, Any]
 
-  final def evaluateAs[A](eval: DynamicEval): LExit[Any, Throwable, Any, A] =
+  final def evaluateAs[A](eval: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, A] =
     evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
@@ -24,7 +25,7 @@ object DynamicRuntime {
 
   final class Live(ctx: EvaluationContext) extends DynamicRuntime {
 
-    override def evaluate(plan: DynamicEval): LExit[Any, Throwable, Any, Any] = {
+    override def evaluate(plan: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, Any] = {
       plan match {
         case Literal(value, ctor)              => ctor.schema.fromDynamic(value) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
@@ -80,7 +81,7 @@ object DynamicRuntime {
 
         case Immediate(eval0) => for {
             eval1 <- evaluate(eval0)
-            eval2 <- evaluate(eval1.asInstanceOf[DynamicEval])
+            eval2 <- evaluate(eval1.asInstanceOf[DynamicEval[DynamicValue]])
           } yield eval2
         case Defer(value)     => LExit.succeed(value)
       }
