@@ -1,20 +1,20 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
-import tailcall.gateway.service.DynamicRuntime
+import tailcall.gateway.lambda.Expression.{EqualTo, Literal, Logical, Math}
 import tailcall.gateway.service.EvaluationContext.Binding
+import tailcall.gateway.service.EvaluationRuntime
 import zio.schema.{DynamicValue, Schema}
 
 sealed trait Lambda[-A, +B] {
   self =>
   final def >>>[C](other: B ~> C): A ~> C =
-    Lambda.unsafe.attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
+    Lambda.unsafe.attempt(ctx => Expression.Pipe(self.compile(ctx), other.compile(ctx)))
 
-  final def compile: DynamicEval[DynamicValue] = compile(CompilationContext.initial)
+  final def compile: Expression[DynamicValue] = compile(CompilationContext.initial)
 
-  def compile(context: CompilationContext): DynamicEval[DynamicValue]
+  def compile(context: CompilationContext): Expression[DynamicValue]
 
-  final def evaluate: LExit[DynamicRuntime, Throwable, A, B] = DynamicRuntime.evaluate(self)
+  final def evaluate: LExit[EvaluationRuntime, Throwable, A, B] = EvaluationRuntime.evaluate(self)
 }
 
 object Lambda {
@@ -24,31 +24,31 @@ object Lambda {
   def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
-      val body  = f(Lambda.unsafe.attempt[Any, A](_ => DynamicEval.Lookup(key))).compile(ctx.next)
-      val input = DynamicEval.Identity
-      DynamicEval.FunctionDef(key, body, input)
+      val body  = f(Lambda.unsafe.attempt[Any, A](_ => Expression.Lookup(key))).compile(ctx.next)
+      val input = Expression.Identity
+      Expression.FunctionDef(key, body, input)
     }
   }
 
-  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => DynamicEval.Identity)
+  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => Expression.Identity)
 
   def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
-      val body  = f(Lambda.unsafe.attempt[A, B](_ => DynamicEval.Immediate(DynamicEval.Lookup(key)))).compile(ctx.next)
-      val input = DynamicEval.Defer(body)
-      DynamicEval.FunctionDef(key, body, input)
+      val body  = f(Lambda.unsafe.attempt[A, B](_ => Expression.Immediate(Expression.Lookup(key)))).compile(ctx.next)
+      val input = Expression.Defer(body)
+      Expression.FunctionDef(key, body, input)
     }
 
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        DynamicEval.Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
+        Expression.Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
       }
 
     def cond[A, B](c: A ~> Boolean)(isTrue: A ~> B, isFalse: A ~> B): A ~> B =
       Lambda.unsafe.attempt[A, B] { ctx =>
-        DynamicEval
+        Expression
           .Logical(Logical.Unary(c.compile(ctx), Logical.Unary.Diverge(isTrue.compile(ctx), isFalse.compile(ctx))))
       }
 
@@ -56,11 +56,11 @@ object Lambda {
       Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
 
     def not[A](a: A ~> Boolean): A ~> Boolean =
-      Lambda.unsafe.attempt[A, Boolean](ctx => DynamicEval.Logical(Logical.Unary(a.compile(ctx), Logical.Unary.Not)))
+      Lambda.unsafe.attempt[A, Boolean](ctx => Expression.Logical(Logical.Unary(a.compile(ctx), Logical.Unary.Not)))
 
     def or[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        DynamicEval.Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
+        Expression.Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
       }
   }
 
@@ -97,13 +97,13 @@ object Lambda {
   }
 
   object unsafe {
-    def attempt[A, B](eval: CompilationContext => DynamicEval[DynamicValue]): A ~> B =
+    def attempt[A, B](eval: CompilationContext => Expression[DynamicValue]): A ~> B =
       new Lambda[A, B] {
-        override def compile(context: CompilationContext): DynamicEval[DynamicValue] = eval(context)
+        override def compile(context: CompilationContext): Expression[DynamicValue] = eval(context)
       }
   }
 
-  implicit val anySchema: Schema[_ ~> _] = Schema[DynamicEval[DynamicValue]]
+  implicit val anySchema: Schema[_ ~> _] = Schema[Expression[DynamicValue]]
     .transform(eval => Lambda.unsafe.attempt(_ => eval), _.compile(CompilationContext.initial))
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]

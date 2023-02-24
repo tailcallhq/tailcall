@@ -2,7 +2,7 @@ package tailcall.gateway
 
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
-import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
+import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
 import zio.test.Assertion._
 import zio.test._
 
@@ -133,5 +133,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(fib.evaluate(10))(equalTo(55))
         }
       )
-    ).provide(DynamicRuntime.live, EvaluationContext.live)
+    ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

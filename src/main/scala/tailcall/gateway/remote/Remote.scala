@@ -1,7 +1,7 @@
 package tailcall.gateway.remote
 
 import tailcall.gateway.lambda.{Constructor, Lambda, ~>}
-import tailcall.gateway.service.DynamicRuntime
+import tailcall.gateway.service.EvaluationRuntime
 import zio.ZIO
 import zio.schema.Schema
 
@@ -14,8 +14,8 @@ import zio.schema.Schema
  */
 sealed trait Remote[+A] {
   self =>
-  final def toLambda: Any ~> A                    = Remote.toLambda(self)
-  def evaluate: ZIO[DynamicRuntime, Throwable, A] = toLambda.evaluate {}
+  final def toLambda: Any ~> A                       = Remote.toLambda(self)
+  def evaluate: ZIO[EvaluationRuntime, Throwable, A] = toLambda.evaluate {}
 }
 
 object Remote {

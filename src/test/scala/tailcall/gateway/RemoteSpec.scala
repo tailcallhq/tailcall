@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.remote._
-import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
+import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
 import zio.Chunk
 import zio.schema.Schema
 import zio.test.Assertion._
@@ -543,5 +543,5 @@ object RemoteSpec extends ZIOSpecDefault {
 //        val program = Remote.flatten(Remote(Remote(1)))
 //        assertZIO(program.evaluate)(equalTo(1))
 //      }
-    ).provide(DynamicRuntime.live, EvaluationContext.live)
+    ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

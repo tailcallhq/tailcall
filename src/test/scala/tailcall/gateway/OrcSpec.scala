@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.{Orc, TGraph}
-import tailcall.gateway.service.{DynamicRuntime, EvaluationContext}
+import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
 import zio.test.Assertion._
 import zio.test._
 
@@ -25,5 +25,5 @@ object OrcSpec extends ZIOSpecDefault {
 
         assertZIO(response)(equalTo("{\"bar\":{\"foo\":{\"bar\":{\"foo\":{\"bar\":{\"value\":\"bar\"}}}}}}"))
       }
-    ).provide(DynamicRuntime.live, EvaluationContext.live)
+    ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

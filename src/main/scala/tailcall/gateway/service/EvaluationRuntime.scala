@@ -4,28 +4,28 @@ import tailcall.gateway.lambda._
 import zio._
 import zio.schema.DynamicValue
 
-trait DynamicRuntime {
+trait EvaluationRuntime {
   final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial)).asInstanceOf[LExit[Any, Throwable, A, B]]
 
-  def evaluate(dynamicEval: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, Any]
+  def evaluate(dynamicEval: Expression[DynamicValue]): LExit[Any, Throwable, Any, Any]
 
-  final def evaluateAs[A](eval: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, A] =
+  final def evaluateAs[A](eval: Expression[DynamicValue]): LExit[Any, Throwable, Any, A] =
     evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
-object DynamicRuntime {
-  import DynamicEval._
+object EvaluationRuntime {
+  import Expression._
 
-  def evaluate[A, B](ab: A ~> B): LExit[DynamicRuntime, Throwable, A, B] =
-    LExit.fromZIO(ZIO.service[DynamicRuntime]).flatMap(_.evaluate(ab))
+  def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
+    LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[EvaluationContext, Nothing, DynamicRuntime] =
+  def live: ZLayer[EvaluationContext, Nothing, EvaluationRuntime] =
     ZLayer.fromZIO(ZIO.service[EvaluationContext].map(new Live(_)))
 
-  final class Live(ctx: EvaluationContext) extends DynamicRuntime {
+  final class Live(ctx: EvaluationContext) extends EvaluationRuntime {
 
-    override def evaluate(plan: DynamicEval[DynamicValue]): LExit[Any, Throwable, Any, Any] = {
+    override def evaluate(plan: Expression[DynamicValue]): LExit[Any, Throwable, Any, Any] = {
       plan match {
         case Literal(value, ctor)              => ctor.schema.fromDynamic(value) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
@@ -81,7 +81,7 @@ object DynamicRuntime {
 
         case Immediate(eval0) => for {
             eval1 <- evaluate(eval0)
-            eval2 <- evaluate(eval1.asInstanceOf[DynamicEval[DynamicValue]])
+            eval2 <- evaluate(eval1.asInstanceOf[Expression[DynamicValue]])
           } yield eval2
         case Defer(value)     => LExit.succeed(value)
       }
