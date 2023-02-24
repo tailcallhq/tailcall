@@ -13,12 +13,12 @@ trait GraphStepGenerator {
 }
 
 object GraphStepGenerator {
-  def live: ZLayer[DynamicRuntime, Nothing, GraphStepGenerator] =
-    ZLayer(ZIO.service[DynamicRuntime].map(rtm => new Live(rtm)))
+  def live: ZLayer[EvaluationRuntime, Nothing, GraphStepGenerator] =
+    ZLayer(ZIO.service[EvaluationRuntime].map(rtm => new Live(rtm)))
 
   def resolve(graph: Graph): ZIO[GraphStepGenerator, Nothing, Step[Any]] = ZIO.serviceWith(_.resolve(graph))
 
-  final class Live(rtm: DynamicRuntime) extends GraphStepGenerator {
+  final class Live(rtm: EvaluationRuntime) extends GraphStepGenerator {
     override def resolve(graph: Graph): Step[Any] = {
       Step.ObjectStep(
         "Query",

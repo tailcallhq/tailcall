@@ -6,23 +6,23 @@ import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.wrappers.Wrapper
 import tailcall.gateway.StepGenerator
 import tailcall.gateway.ast.Orc.OrcObject
-import tailcall.gateway.service.DynamicRuntime
+import tailcall.gateway.service.EvaluationRuntime
 
 final case class TGraph(orcs: List[Orc], query: Option[String] = None, mutation: Option[String] = None) {
   self =>
-  def toGraphQL: GraphQL[DynamicRuntime] =
-    new GraphQL[DynamicRuntime] {
-      val schema = new caliban.schema.Schema[DynamicRuntime, TGraph] {
+  def toGraphQL: GraphQL[EvaluationRuntime] =
+    new GraphQL[EvaluationRuntime] {
+      val schema = new caliban.schema.Schema[EvaluationRuntime, TGraph] {
         override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
           __Type(__TypeKind.OBJECT)
 
-        override def resolve(input: TGraph): Step[DynamicRuntime] = new StepGenerator(input).gen
+        override def resolve(input: TGraph): Step[EvaluationRuntime] = new StepGenerator(input).gen
       }
 
-      override protected val schemaBuilder: RootSchemaBuilder[DynamicRuntime] =
+      override protected val schemaBuilder: RootSchemaBuilder[EvaluationRuntime] =
         RootSchemaBuilder(Option(Operation(schema.toType_(), schema.resolve(self))), None, None, Nil, Nil)
-      override protected val wrappers: List[Wrapper[Any]]                     = Nil
-      override protected val additionalDirectives: List[__Directive]          = Nil
+      override protected val wrappers: List[Wrapper[Any]]                        = Nil
+      override protected val additionalDirectives: List[__Directive]             = Nil
     }
 
   def withQuery(name: String): TGraph    = self.copy(query = Option(name))

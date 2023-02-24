@@ -1,6 +1,5 @@
 package tailcall.gateway.service
 
-import tailcall.gateway.lambda.EvaluationError
 import zio.{Ref, Task, ZIO, ZLayer}
 
 trait EvaluationContext {
