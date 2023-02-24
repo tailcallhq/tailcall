@@ -27,10 +27,16 @@ object Remote {
 
   def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
 
-  def bind[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] = Lambda.fromRemoteFunction(ab).toFunction
+  def bind[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] =
+    a => Remote(a.toLambda >>> Remote.fromRemoteFunction(ab))
 
   implicit def schema[A]: Schema[Remote[A]] = Schema[Any ~> A].transform(Remote(_), _.toLambda)
 
+  def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =
+    Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
+
+  def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
+
   implicit def schemaFunction[A, B]: Schema[Remote[A] => Remote[B]] =
-    Schema[A ~> B].transform[Remote[A] => Remote[B]](_.toFunction, Lambda.fromRemoteFunction(_))
+    Schema[A ~> B].transform[Remote[A] => Remote[B]](Remote.fromLambda, Remote.fromRemoteFunction)
 }

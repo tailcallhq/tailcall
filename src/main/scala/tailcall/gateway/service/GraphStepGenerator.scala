@@ -3,7 +3,7 @@ package tailcall.gateway.service
 import caliban.schema.Step
 import caliban.{ResponseValue, Value}
 import tailcall.gateway.ast.Graph
-import tailcall.gateway.lambda.Lambda
+import tailcall.gateway.remote.Remote
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 import zio.{ZIO, ZLayer}
@@ -25,7 +25,7 @@ object GraphStepGenerator {
         graph.fields.map(fields =>
           fields.name -> {
             Step.QueryStep(ZQuery.fromZIO(
-              rtm.evaluateAs[DynamicValue](Lambda.fromRemoteFunction(fields.executable).compile)(DynamicValue {})
+              rtm.evaluateAs[DynamicValue](Remote.fromRemoteFunction(fields.executable).compile)(DynamicValue {})
                 .map(result => Step.PureStep(toValue(result)))
             ))
           }
