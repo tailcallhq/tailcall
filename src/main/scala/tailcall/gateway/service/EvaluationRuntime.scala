@@ -77,7 +77,15 @@ object EvaluationRuntime {
             r <- evaluate(body)
             _ <- LExit.fromZIO(ctx.drop(binding))
           } yield r
-        case Lookup(binding)                   => LExit.fromZIO(ctx.get(binding))
+        case Lookup(binding)                   => LExit.fromZIO {
+            for {
+              ref <- ctx.get(binding)
+              res <- ref match {
+                case Some(value) => ZIO.succeed(value)
+                case None        => ZIO.fail(EvaluationError.BindingNotFound(binding))
+              }
+            } yield res
+          }
 
         case Immediate(eval0) => for {
             eval1 <- evaluate(eval0)
