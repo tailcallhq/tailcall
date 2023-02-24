@@ -1,15 +1,12 @@
 package tailcall.gateway.lambda
 
 import tailcall.gateway.lambda.DynamicEval.{EqualTo, Literal, Logical, Math}
-import tailcall.gateway.remote.Remote
 import tailcall.gateway.service.DynamicRuntime
 import tailcall.gateway.service.EvaluationContext.Binding
 import zio.schema.{DynamicValue, Schema}
 
 sealed trait Lambda[-A, +B] {
   self =>
-  final def apply(remote: Remote[A]): Remote[B] = Remote(remote.toLambda >>> self)
-
   final def >>>[C](other: B ~> C): A ~> C =
     Lambda.unsafe.attempt(ctx => DynamicEval.Pipe(self.compile(ctx), other.compile(ctx)))
 
@@ -18,16 +15,11 @@ sealed trait Lambda[-A, +B] {
   def compile(context: CompilationContext): DynamicEval[DynamicValue]
 
   final def evaluate: LExit[DynamicRuntime, Throwable, A, B] = DynamicRuntime.evaluate(self)
-
-  final def toFunction: Remote[A] => Remote[B] = remote => self(remote)
 }
 
 object Lambda {
   def apply[A, B](b: => B)(implicit ctor: Constructor[B]): A ~> B =
     Lambda.unsafe.attempt(_ => Literal(ctor.schema.toDynamic(b), ctor.asInstanceOf[Constructor[Any]]))
-
-  def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =
-    Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
 
   def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
