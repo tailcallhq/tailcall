@@ -5,7 +5,7 @@ import caliban.{ResponseValue, Value}
 import tailcall.gateway.StepGenerator.RemoteStep
 import tailcall.gateway.ast.{Context, Orc, TGraph}
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.service.DynamicRuntime
+import tailcall.gateway.service.EvaluationRuntime
 import zio.query.ZQuery
 import zio.schema.{DynamicValue, StandardType}
 
@@ -95,7 +95,7 @@ final class StepGenerator(tGraph: TGraph) {
 }
 
 object StepGenerator {
-  type RemoteStep = Step[DynamicRuntime]
+  type RemoteStep = Step[EvaluationRuntime]
 
   sealed trait GraphQLSchemaGeneratorError extends Throwable
   case object QueryNotFound                extends GraphQLSchemaGeneratorError
