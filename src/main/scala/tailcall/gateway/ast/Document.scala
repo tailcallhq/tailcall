@@ -1,11 +1,10 @@
 package tailcall.gateway.ast
 
 import caliban.GraphQL
-import caliban.introspection.adt.{__Directive, __Type}
-import caliban.schema.{Operation, RootSchemaBuilder, Step}
-import caliban.wrappers.Wrapper
+import caliban.introspection.adt.__Type
+import caliban.schema.Step
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.service.{DocumentStepGenerator, DocumentTypeGenerator}
+import tailcall.gateway.service.{DocumentGraphQLGenerator, DocumentStepGenerator}
 import zio.ZIO
 import zio.query.ZQuery
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
@@ -13,20 +12,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 final case class Document(definition: List[Document.Definition]) {
   self =>
 
-  def __type: ZIO[DocumentTypeGenerator, Nothing, __Type]  = DocumentTypeGenerator.__type(self)
-  def step: ZIO[DocumentStepGenerator, Nothing, Step[Any]] = DocumentStepGenerator.resolve(self)
-
-  def toGraphQL: ZIO[DocumentStepGenerator with DocumentTypeGenerator, Nothing, GraphQL[Any]] =
-    __type.zipWith(step) { case (tpe, step) =>
-      new GraphQL[Any] {
-        override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
-          val queryOperation = Operation(tpe, step)
-          RootSchemaBuilder(query = Option(queryOperation), None, None)
-        }
-        override protected val wrappers: List[Wrapper[Any]]            = Nil
-        override protected val additionalDirectives: List[__Directive] = Nil
-      }
-    }
+  def toGraphQL: ZIO[DocumentGraphQLGenerator, Nothing, GraphQL[Any]] = DocumentGraphQLGenerator.toGraphQL(self)
 }
 
 object Document {

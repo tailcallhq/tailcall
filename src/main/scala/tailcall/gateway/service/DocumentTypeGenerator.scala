@@ -8,9 +8,10 @@ import caliban.tools.RemoteSchema.parseRemoteSchema
 import tailcall.gateway.ast.Document
 import zio.{ZIO, ZLayer}
 
-trait DocumentTypeGenerator  {
+trait DocumentTypeGenerator {
   def __type(doc: Document): __Type
 }
+
 object DocumentTypeGenerator {
   def __type(document: Document): ZIO[DocumentTypeGenerator, Nothing, __Type] =
     ZIO.serviceWith[DocumentTypeGenerator](_.__type(document))
