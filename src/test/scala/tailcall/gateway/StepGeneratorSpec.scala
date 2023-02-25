@@ -1,6 +1,6 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Orchestration
+import tailcall.gateway.ast.Document
 import tailcall.gateway.remote.Remote
 import tailcall.gateway.service._
 import zio.ZIO
@@ -8,20 +8,18 @@ import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
-object OrchestrationStepGeneratorSpec extends ZIOSpecDefault {
+object StepGeneratorSpec extends ZIOSpecDefault {
 
   def spec = {
     suite("DocumentStepGenerator")(test("test") {
-      val document = Orchestration(List(
-        Orchestration.SchemaDefinition(query = Some("Query")),
-        Orchestration.ObjectTypeDefinition(
+      val document = Document(List(
+        Document.SchemaDefinition(query = Some("Query")),
+        Document.ObjectTypeDefinition(
           "Query",
-          List(Orchestration.FieldDefinition(
-            name = "id",
-            List(),
-            Orchestration.NamedType("Int", true),
-            _ => Remote(DynamicValue(100))
-          ))
+          List(
+            Document
+              .FieldDefinition(name = "id", List(), Document.NamedType("Int", true), _ => Remote(DynamicValue(100)))
+          )
         )
       ))
 
@@ -29,15 +27,15 @@ object OrchestrationStepGeneratorSpec extends ZIOSpecDefault {
 
       assertZIO(program)(equalTo("""{"id":100}"""))
     }).provide(
-      OrchestrationGraphQLGenerator.live,
-      OrchestrationTypeGenerator.live,
-      OrchestrationStepGenerator.live,
+      GraphQLGenerator.live,
+      TypeGenerator.live,
+      StepGenerator.live,
       EvaluationRuntime.live,
       EvaluationContext.live
     )
   }
 
-  def execute(doc: Orchestration)(query: String): ZIO[OrchestrationGraphQLGenerator, Throwable, String] =
+  def execute(doc: Document)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
     for {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter
