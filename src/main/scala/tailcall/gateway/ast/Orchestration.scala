@@ -1,12 +1,9 @@
 package tailcall.gateway.ast
 
 import caliban.GraphQL
-import caliban.introspection.adt.__Type
-import caliban.schema.Step
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.service.{OrchestrationGraphQLGenerator, OrchestrationStepGenerator}
+import tailcall.gateway.service.OrchestrationGraphQLGenerator
 import zio.ZIO
-import zio.query.ZQuery
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 final case class Orchestration(definition: List[Orchestration.Definition]) {
@@ -47,11 +44,4 @@ object Orchestration {
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
   implicit val schema: Schema[Orchestration] = DeriveSchema.gen[Orchestration]
-
-  val calibanSchema = new caliban.schema.Schema[OrchestrationStepGenerator, Orchestration] {
-    override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type = ???
-
-    override def resolve(input: Orchestration): Step[OrchestrationStepGenerator] =
-      Step.QueryStep(ZQuery.fromZIO(OrchestrationStepGenerator.resolve(input)))
-  }
 }
