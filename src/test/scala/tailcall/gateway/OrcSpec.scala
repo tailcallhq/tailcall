@@ -1,7 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.{Document, Orc, TGraph}
-import tailcall.gateway.service.{DocumentStepGenerator, DocumentTypeGenerator, EvaluationContext, EvaluationRuntime}
+import tailcall.gateway.ast.{Orc, TGraph}
+import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
 import zio.test.Assertion._
 import zio.test._
 
@@ -24,23 +24,6 @@ object OrcSpec extends ZIOSpecDefault {
         val response = execute(tGraph)("{bar {foo {bar {foo {bar {value}}}}}}")
 
         assertZIO(response)(equalTo("{\"bar\":{\"foo\":{\"bar\":{\"foo\":{\"bar\":{\"value\":\"bar\"}}}}}}"))
-      },
-      suite("DocumentTypeGenerator")(test("docment type generation") {
-        val document = Document(List(
-          Document.Definition.ObjectTypeDefinition(
-            "Query",
-            List(Document.Definition.FieldDefinition(
-              "test",
-              List(),
-              Document.Type.NamedType("String", false),
-              Document.FieldResolver.Identity
-            ))
-          ),
-          Document.Definition.SchemaDefinition(Some("Query"), None, None)
-        ))
-        val out      = document.toGraphQL.map(_.render)
-        assertZIO(out)(anything)
-
-      })
-    ).provide(DocumentStepGenerator.live, DocumentTypeGenerator.live, EvaluationRuntime.live, EvaluationContext.live)
+      }
+    ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }
