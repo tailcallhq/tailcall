@@ -22,8 +22,12 @@ object Document {
     case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                    extends Definition
     case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition])          extends Definition
     case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue]) extends Definition
-    case class FieldDefinition(name: String, args: List[InputValueDefinition], ofType: Type, resolver: FieldResolver)
-        extends Definition
+    case class FieldDefinition(
+      name: String,
+      args: List[InputValueDefinition] = Nil,
+      ofType: Type,
+      resolver: FieldResolver
+    ) extends Definition
 
     case class SchemaDefinition(query: Option[String], mutation: Option[String], subscription: Option[String])
         extends Definition
