@@ -13,43 +13,37 @@ final case class Document(definition: List[Document.Definition]) {
   self =>
 
   def toGraphQL: ZIO[DocumentGraphQLGenerator, Nothing, GraphQL[Any]] = DocumentGraphQLGenerator.toGraphQL(self)
-  def query: Option[Document.Definition.ObjectTypeDefinition]         =
+  def query: Option[Document.ObjectTypeDefinition]                    =
     for {
-      oName <- definition.collectFirst { case Document.Definition.SchemaDefinition(query, _, _) => query }
+      oName <- definition.collectFirst { case Document.SchemaDefinition(query, _, _) => query }
       name  <- oName
-      q     <- definition.collectFirst { case q @ Document.Definition.ObjectTypeDefinition(`name`, _) => q }
+      q     <- definition.collectFirst { case q @ Document.ObjectTypeDefinition(`name`, _) => q }
     } yield q
 }
 
 object Document {
   sealed trait Definition
-  object Definition {
 
-    final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])           extends Definition
-    final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
-    final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
+  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])           extends Definition
+  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
+  final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
 
-    final case class FieldDefinition(
-      name: String,
-      args: List[InputValueDefinition] = Nil,
-      ofType: Type,
-      resolver: FieldResolver
-    )
+  final case class FieldDefinition(
+    name: String,
+    args: List[InputValueDefinition] = Nil,
+    ofType: Type,
+    resolver: Remote[Context] => Remote[DynamicValue]
+  )
 
-    final case class SchemaDefinition(
-      query: Option[String] = None,
-      mutation: Option[String] = None,
-      subscription: Option[String] = None
-    ) extends Definition
-  }
+  final case class SchemaDefinition(
+    query: Option[String] = None,
+    mutation: Option[String] = None,
+    subscription: Option[String] = None
+  ) extends Definition
 
   sealed trait Type
-  object Type {
-    final case class NamedType(name: String, nonNull: Boolean) extends Type
-    final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
-  }
-
-  final case class FieldResolver(run: Remote[Context] => Remote[DynamicValue])
+  final case class NamedType(name: String, nonNull: Boolean) extends Type
+  final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
   implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
 

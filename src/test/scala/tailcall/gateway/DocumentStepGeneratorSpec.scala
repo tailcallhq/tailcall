@@ -13,15 +13,13 @@ object DocumentStepGeneratorSpec extends ZIOSpecDefault {
   def spec = {
     suite("DocumentStepGenerator")(test("test") {
       val document = Document(List(
-        Document.Definition.SchemaDefinition(query = Some("Query")),
-        Document.Definition.ObjectTypeDefinition(
+        Document.SchemaDefinition(query = Some("Query")),
+        Document.ObjectTypeDefinition(
           "Query",
-          List(Document.Definition.FieldDefinition(
-            name = "id",
-            List(),
-            Document.Type.NamedType("Int", true),
-            Document.FieldResolver(_ => Remote(DynamicValue(100)))
-          ))
+          List(
+            Document
+              .FieldDefinition(name = "id", List(), Document.NamedType("Int", true), _ => Remote(DynamicValue(100)))
+          )
         )
       ))
 
