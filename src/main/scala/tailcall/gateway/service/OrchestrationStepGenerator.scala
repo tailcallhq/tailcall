@@ -22,11 +22,13 @@ object OrchestrationStepGenerator {
     }
 
     override def resolve(document: Orchestration): Step[Any] = {
-      document.query match {
-        case Some(Orchestration.ObjectTypeDefinition(name, fields)) => Step
-            .ObjectStep(name, fields.map(field => field.name -> resolve(field)).toMap)
-        case None                                                   => Step.NullStep
-      }
+      document.definition.collectFirst { case Orchestration.SchemaDefinition(query, _, _) => query }.flatten
+        .flatMap(name =>
+          document.definition.collectFirst { case q @ Orchestration.ObjectTypeDefinition(`name`, _) => q }.map {
+            case Orchestration.ObjectTypeDefinition(name, fields) => Step
+                .ObjectStep(name, fields.map(field => field.name -> resolve(field)).toMap)
+          }
+        ).getOrElse(Step.NullStep)
     }
   }
 
