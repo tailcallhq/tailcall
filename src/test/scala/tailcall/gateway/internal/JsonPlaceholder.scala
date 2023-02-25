@@ -1,6 +1,6 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.ast.{Endpoint, Orc}
+import tailcall.gateway.ast.Endpoint
 import zio.schema.DeriveSchema
 
 object JsonPlaceholder {
@@ -71,7 +71,7 @@ object JsonPlaceholder {
       .withOutput[List[Post]]
   }
 
-  val orc: Orc = {
+  val orc = {
     ???
 
 //    Orc.obj(

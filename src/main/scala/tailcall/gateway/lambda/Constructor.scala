@@ -1,6 +1,6 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.ast.{Context, Orc}
+import tailcall.gateway.ast.Context
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema, StandardType}
 
@@ -28,8 +28,6 @@ object Constructor {
     implicit val schemaB: Schema[B] = ctorB.schema
     Constructor(Schema[Map[A, B]])
   }
-
-  implicit def orc: Constructor[Orc] = Constructor(Schema[Orc])
 
   implicit def lambda[A, B]: Constructor[A ~> B]                                = Constructor(Schema[A ~> B])
   implicit def option[A](implicit ctor: Constructor[A]): Constructor[Option[A]] = {
