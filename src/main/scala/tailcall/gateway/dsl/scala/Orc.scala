@@ -1,6 +1,6 @@
 package tailcall.gateway.dsl.scala
 
-import tailcall.gateway.ast.{Context, Orchestration}
+import tailcall.gateway.ast.{Context, Document}
 import tailcall.gateway.remote.Remote
 import zio.schema.DynamicValue
 
@@ -9,21 +9,20 @@ import zio.schema.DynamicValue
  */
 object Orc {
   type RemoteFunction = Remote[Context] => Remote[DynamicValue]
-  type ReturnType     = Orchestration.Type
+  type ReturnType     = Document.Type
   type Field          = (ReturnType, RemoteFunction)
   type LabeledField   = (String, Field)
 
-  def as(name: String)(func: Remote[Context] => Remote[DynamicValue]): Field =
-    (Orchestration.NamedType(name, true), func)
+  def as(name: String)(func: Remote[Context] => Remote[DynamicValue]): Field = (Document.NamedType(name, true), func)
 
   def asList(name: String)(func: Remote[Context] => Remote[DynamicValue]): Field =
-    (Orchestration.ListType(Orchestration.NamedType(name, true), true), func)
+    (Document.ListType(Document.NamedType(name, true), true), func)
 
-  def obj(spec: (String, List[LabeledField])*): Orchestration =
-    Orchestration(spec.toList.map { case (name, fields) =>
-      Orchestration.ObjectTypeDefinition(
+  def obj(spec: (String, List[LabeledField])*): Document =
+    Document(spec.toList.map { case (name, fields) =>
+      Document.ObjectTypeDefinition(
         name,
-        fields.map { case (name, (returnType, func)) => Orchestration.FieldDefinition(name, List(), returnType, func) }
+        fields.map { case (name, (returnType, func)) => Document.FieldDefinition(name, List(), returnType, func) }
       )
     })
 }

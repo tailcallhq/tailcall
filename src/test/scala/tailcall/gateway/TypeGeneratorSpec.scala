@@ -1,27 +1,25 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Orchestration
+import tailcall.gateway.ast.Document
 import tailcall.gateway.remote.Remote
 import tailcall.gateway.service._
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
-object OrchestrationTypeGeneratorSpec extends ZIOSpecDefault {
+object TypeGeneratorSpec extends ZIOSpecDefault {
   override def spec =
     suite("DocumentTypeGenerator")(
       test("document type generation") {
-        val document = Orchestration(List(
-          Orchestration.ObjectTypeDefinition(
+        val document = Document(List(
+          Document.ObjectTypeDefinition(
             "Query",
-            List(Orchestration.FieldDefinition(
-              "test",
-              List(),
-              Orchestration.NamedType("String", false),
-              _ => Remote(DynamicValue("test"))
-            ))
+            List(
+              Document
+                .FieldDefinition("test", List(), Document.NamedType("String", false), _ => Remote(DynamicValue("test")))
+            )
           ),
-          Orchestration.SchemaDefinition(Some("Query"), None, None)
+          Document.SchemaDefinition(Some("Query"), None, None)
         ))
         val out      = document.toGraphQL.map(_.render)
         val expected = """|schema {
@@ -34,20 +32,19 @@ object OrchestrationTypeGeneratorSpec extends ZIOSpecDefault {
         assertZIO(out)(equalTo(expected))
       },
       test("document with InputValue") {
-        val document = Orchestration(List(
-          Orchestration.ObjectTypeDefinition(
+        val document = Document(List(
+          Document.ObjectTypeDefinition(
             "Query",
-            List(Orchestration.FieldDefinition(
+            List(Document.FieldDefinition(
               "test",
               List(
-                Orchestration
-                  .InputValueDefinition("arg", Orchestration.NamedType("String", false), Some(DynamicValue("test")))
+                Document.InputValueDefinition("arg", Document.NamedType("String", false), Some(DynamicValue("test")))
               ),
-              Orchestration.NamedType("String", false),
+              Document.NamedType("String", false),
               _ => Remote(DynamicValue("test"))
             ))
           ),
-          Orchestration.SchemaDefinition(Some("Query"), None, None)
+          Document.SchemaDefinition(Some("Query"), None, None)
         ))
         val out      = document.toGraphQL.map(_.render)
         val expected = """|schema {
@@ -60,9 +57,9 @@ object OrchestrationTypeGeneratorSpec extends ZIOSpecDefault {
         assertZIO(out)(equalTo(expected))
       }
     ).provide(
-      OrchestrationGraphQLGenerator.live,
-      OrchestrationTypeGenerator.live,
-      OrchestrationStepGenerator.live,
+      GraphQLGenerator.live,
+      TypeGenerator.live,
+      StepGenerator.live,
       EvaluationRuntime.live,
       EvaluationContext.live
     )

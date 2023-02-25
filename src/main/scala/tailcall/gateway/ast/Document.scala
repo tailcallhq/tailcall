@@ -2,19 +2,24 @@ package tailcall.gateway.ast
 
 import caliban.GraphQL
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.service.OrchestrationGraphQLGenerator
+import tailcall.gateway.service.GraphQLGenerator
 import zio.ZIO
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
-final case class Orchestration(definition: List[Orchestration.Definition]) {
+/**
+ * Document is an intermediate representation of a GraphQL
+ * document. This tries to remain as close as possible to
+ * Caliban's AST with a few changes viz. the fields has
+ * information about how to resolve it also.
+ */
+final case class Document(definition: List[Document.Definition]) {
   self =>
 
-  def toGraphQL: ZIO[OrchestrationGraphQLGenerator, Nothing, GraphQL[Any]] =
-    OrchestrationGraphQLGenerator.toGraphQL(self)
+  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] = GraphQLGenerator.toGraphQL(self)
 }
 
 // scalafmt: {maxColumn = 240}
-object Orchestration {
+object Document {
   // TODO: create a common type for Object
   // TODO: drop non-null fields
   // TODO: create a common type for input and field use phantom types
@@ -33,5 +38,5 @@ object Orchestration {
   final case class NamedType(name: String, nonNull: Boolean) extends Type
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
-  implicit val schema: Schema[Orchestration] = DeriveSchema.gen[Orchestration]
+  implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
 }
