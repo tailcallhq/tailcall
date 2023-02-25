@@ -12,16 +12,14 @@ object DocumentTypeGeneratorSpec extends ZIOSpecDefault {
     suite("DocumentTypeGenerator")(
       test("document type generation") {
         val document = Document(List(
-          Document.Definition.ObjectTypeDefinition(
+          Document.ObjectTypeDefinition(
             "Query",
-            List(Document.Definition.FieldDefinition(
-              "test",
-              List(),
-              Document.Type.NamedType("String", false),
-              Document.FieldResolver(_ => Remote(DynamicValue("test")))
-            ))
+            List(
+              Document
+                .FieldDefinition("test", List(), Document.NamedType("String", false), _ => Remote(DynamicValue("test")))
+            )
           ),
-          Document.Definition.SchemaDefinition(Some("Query"), None, None)
+          Document.SchemaDefinition(Some("Query"), None, None)
         ))
         val out      = document.toGraphQL.map(_.render)
         val expected = """|schema {
@@ -35,19 +33,18 @@ object DocumentTypeGeneratorSpec extends ZIOSpecDefault {
       },
       test("document with InputValue") {
         val document = Document(List(
-          Document.Definition.ObjectTypeDefinition(
+          Document.ObjectTypeDefinition(
             "Query",
-            List(Document.Definition.FieldDefinition(
+            List(Document.FieldDefinition(
               "test",
               List(
-                Document.Definition
-                  .InputValueDefinition("arg", Document.Type.NamedType("String", false), Some(DynamicValue("test")))
+                Document.InputValueDefinition("arg", Document.NamedType("String", false), Some(DynamicValue("test")))
               ),
-              Document.Type.NamedType("String", false),
-              Document.FieldResolver(_ => Remote(DynamicValue("test")))
+              Document.NamedType("String", false),
+              _ => Remote(DynamicValue("test"))
             ))
           ),
-          Document.Definition.SchemaDefinition(Some("Query"), None, None)
+          Document.SchemaDefinition(Some("Query"), None, None)
         ))
         val out      = document.toGraphQL.map(_.render)
         val expected = """|schema {
