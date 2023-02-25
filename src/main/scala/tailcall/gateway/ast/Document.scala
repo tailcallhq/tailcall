@@ -8,9 +8,22 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 /**
  * Document is an intermediate representation of a GraphQL
- * document. This tries to remain as close as possible to
- * Caliban's AST with a few changes viz. the fields has
- * information about how to resolve it also.
+ * document. It has two features — 1. It is serializable and
+ * 2. It has logic to resolve fields into actual values.
+ *
+ * IMPORTANT: we should keep this as close to Caliban's AST
+ * as much as possible. The idea is that sometimes we might
+ * need some changes in Caliban's AST, for eg: we need to
+ * generate a ZIO Schema of the Caliban AST. This is
+ * currently not possible because the case classes are not
+ * final. Instead of opening a PR in Caliban, we can just
+ * make the changes here and then use the modified AST. The
+ * other reason is that our IR design isn't very clearly
+ * thought out. So we will use Document as a playground to
+ * try out different IRs. Document supports each and every
+ * feature that GraphQL has to offer so we keep it until IR
+ * is clearly defined. Once the IR is ready we will directly
+ * compile IR to Caliban's Step ADT.
  */
 final case class Document(definition: List[Document.Definition]) {
   self =>
