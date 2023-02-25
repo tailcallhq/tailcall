@@ -1,6 +1,7 @@
 package tailcall.gateway.internal
 
 import tailcall.gateway.ast.Endpoint
+import tailcall.gateway.dsl.scala.Orc
 import zio.schema.DeriveSchema
 
 object JsonPlaceholder {
@@ -71,8 +72,23 @@ object JsonPlaceholder {
       .withOutput[List[Post]]
   }
 
+  object mocks {}
+
   val orc = {
-    ???
+    // scalafmt: {maxColumn: 80}
+    Orc.obj(
+      "Query" -> List(
+        "users" -> Orc.asList("User")(_ => ???),
+        "posts" -> Orc.asList("Post")(_ => ???)
+      ),
+      "User"  -> List(
+        "posts"    -> Orc.asList("Post")(_ => ???),
+        "fullName" -> Orc.asList("String")(_ => ???),
+        "comments" -> Orc.asList("Comment")(_ => ???),
+        "albums"   -> Orc.asList("Album")(_ => ???),
+        "todos"    -> Orc.asList("Todo")(_ => ???)
+      )
+    )
 
 //    Orc.obj(
 //      "Query" -> List(
