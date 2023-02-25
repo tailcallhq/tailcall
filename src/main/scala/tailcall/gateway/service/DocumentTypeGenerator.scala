@@ -6,6 +6,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{Field
 import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
 import caliban.tools.RemoteSchema.parseRemoteSchema
 import tailcall.gateway.ast.Document
+import tailcall.gateway.internal.DynamicValueUtil
 import zio.{ZIO, ZLayer}
 
 trait DocumentTypeGenerator {
@@ -41,8 +42,13 @@ object DocumentTypeGenerator {
       FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), Nil)
 
     private def toCalibanInputValue(inputValue: Document.Definition.InputValueDefinition): InputValueDefinition =
-      CalibanDefinition.TypeSystemDefinition.TypeDefinition
-        .InputValueDefinition(None, inputValue.name, toCalibanType(inputValue.ofType), None, Nil)
+      CalibanDefinition.TypeSystemDefinition.TypeDefinition.InputValueDefinition(
+        None,
+        inputValue.name,
+        toCalibanType(inputValue.ofType),
+        inputValue.defaultValue.map(DynamicValueUtil.toInputValue),
+        Nil
+      )
 
     private def toCalibanType(tpe: Document.Type): CalibanType =
       tpe match {

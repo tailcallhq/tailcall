@@ -1,10 +1,10 @@
 package tailcall.gateway.internal
 
-import caliban.{ResponseValue, Value}
+import caliban.{InputValue, ResponseValue, Value}
 import zio.schema.{DynamicValue, StandardType}
 
 object DynamicValueUtil {
-  def toValue(value: Any, standardType: StandardType[_]): ResponseValue =
+  def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
       case StandardType.IntType            => Value.IntValue(value.toString.toInt)
@@ -39,7 +39,7 @@ object DynamicValueUtil {
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
 
-  def toValue(input: DynamicValue): ResponseValue = {
+  def toValue(input: DynamicValue): ResponseValue   = {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
@@ -55,6 +55,24 @@ object DynamicValueUtil {
       case DynamicValue.Tuple(_, _)                    => ???
       case DynamicValue.LeftValue(_)                   => ???
       case DynamicValue.Error(_)                       => ???
+    }
+  }
+  def toInputValue(input: DynamicValue): InputValue = {
+    input match {
+      case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
+      case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
+      case DynamicValue.Dictionary(_)                  => ???
+      case DynamicValue.Singleton(_)                   => ???
+      case DynamicValue.NoneValue                      => ???
+      case DynamicValue.DynamicAst(_)                  => ???
+      case DynamicValue.SetValue(_)                    => ???
+      case DynamicValue.Record(_, b)      => InputValue.ObjectValue(b.map { case (k, v) => k -> toInputValue(v) })
+      case DynamicValue.Enumeration(_, _) => ???
+      case DynamicValue.RightValue(_)     => ???
+      case DynamicValue.SomeValue(_)      => ???
+      case DynamicValue.Tuple(_, _)       => ???
+      case DynamicValue.LeftValue(_)      => ???
+      case DynamicValue.Error(_)          => ???
     }
   }
 }
