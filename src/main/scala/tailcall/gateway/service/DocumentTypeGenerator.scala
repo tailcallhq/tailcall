@@ -1,10 +1,9 @@
 package tailcall.gateway.service
 
-import caliban.introspection.adt.__Type
+import caliban.introspection.adt.{__Type, __TypeKind}
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
-import caliban.tools.RemoteSchema.parseRemoteSchema
 import tailcall.gateway.ast.Document
 import zio.{ZIO, ZLayer}
 
@@ -19,8 +18,8 @@ object DocumentTypeGenerator {
   def live: ZLayer[Any, Nothing, DocumentTypeGenerator] = ZLayer.succeed(new Live())
 
   final class Live extends DocumentTypeGenerator {
-    override def __type(doc: Document): __Type =
-      parseRemoteSchema(toCalibanDocument(doc)).map(_.queryType).getOrElse(???)
+    // TODO: fix this implementation
+    override def __type(doc: Document): __Type = __Type(__TypeKind.OBJECT)
 
     private def toCalibanDocument(document: Document): CalibanDocument = {
       CalibanDocument(
