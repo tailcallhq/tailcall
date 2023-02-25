@@ -27,21 +27,21 @@ object DocumentTypeGenerator {
     private def toCalibanDocument(document: Document): CalibanDocument = {
       CalibanDocument(
         document.definition.map {
-          case Document.Definition.ObjectTypeDefinition(name, fields)      => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
-          case Document.Definition.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
-          case Document.Definition.SchemaDefinition(queries, mutations, subscriptions) => CalibanDefinition
-              .TypeSystemDefinition.SchemaDefinition(Nil, queries, mutations, subscriptions)
+          case Document.ObjectTypeDefinition(name, fields)      => CalibanDefinition.TypeSystemDefinition.TypeDefinition
+              .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
+          case Document.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
+              .InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
+          case Document.SchemaDefinition(queries, mutations, subscriptions) => CalibanDefinition.TypeSystemDefinition
+              .SchemaDefinition(Nil, queries, mutations, subscriptions)
         },
         SourceMapper.empty
       )
     }
 
-    private def toCalibanField(field: Document.Definition.FieldDefinition): FieldDefinition =
+    private def toCalibanField(field: Document.FieldDefinition): FieldDefinition =
       FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), Nil)
 
-    private def toCalibanInputValue(inputValue: Document.Definition.InputValueDefinition): InputValueDefinition =
+    private def toCalibanInputValue(inputValue: Document.InputValueDefinition): InputValueDefinition =
       CalibanDefinition.TypeSystemDefinition.TypeDefinition.InputValueDefinition(
         None,
         inputValue.name,
@@ -52,8 +52,8 @@ object DocumentTypeGenerator {
 
     private def toCalibanType(tpe: Document.Type): CalibanType =
       tpe match {
-        case Document.Type.NamedType(name, nonNull)  => CalibanType.NamedType(name, nonNull)
-        case Document.Type.ListType(ofType, nonNull) => CalibanType.ListType(toCalibanType(ofType), nonNull)
+        case Document.NamedType(name, nonNull)  => CalibanType.NamedType(name, nonNull)
+        case Document.ListType(ofType, nonNull) => CalibanType.ListType(toCalibanType(ofType), nonNull)
       }
   }
 }
