@@ -28,13 +28,13 @@ object Document {
     final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])           extends Definition
     final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
     final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
-        extends Definition
+
     final case class FieldDefinition(
       name: String,
       args: List[InputValueDefinition] = Nil,
       ofType: Type,
       resolver: FieldResolver
-    ) extends Definition
+    )
 
     final case class SchemaDefinition(
       query: Option[String] = None,
