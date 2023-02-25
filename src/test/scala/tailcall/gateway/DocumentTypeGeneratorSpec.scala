@@ -1,7 +1,9 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Document
+import tailcall.gateway.remote.Remote
 import tailcall.gateway.service._
+import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
@@ -15,7 +17,7 @@ object DocumentTypeGeneratorSpec extends ZIOSpecDefault {
             "test",
             List(),
             Document.Type.NamedType("String", false),
-            Document.FieldResolver.Identity
+            Document.FieldResolver(_ => Remote(DynamicValue("test")))
           ))
         ),
         Document.Definition.SchemaDefinition(Some("Query"), None, None)
