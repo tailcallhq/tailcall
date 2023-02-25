@@ -29,6 +29,8 @@ object DocumentTypeGenerator {
               .TypeDefinition.ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
           case Document.Definition.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
+          case Document.Definition.SchemaDefinition(queries, mutations, subscriptions) => CalibanDefinition
+              .TypeSystemDefinition.SchemaDefinition(Nil, queries, mutations, subscriptions)
         },
         SourceMapper.empty
       )
