@@ -10,7 +10,7 @@ trait DocumentStepGenerator {
 
 object DocumentStepGenerator {
   final case class Live(rtm: EvaluationRuntime) extends DocumentStepGenerator {
-    override def resolve(document: Document): Step[Any] = ???
+    override def resolve(document: Document): Step[Any] = Step.NullStep
   }
 
   def live: ZLayer[EvaluationRuntime, Nothing, DocumentStepGenerator] = {
