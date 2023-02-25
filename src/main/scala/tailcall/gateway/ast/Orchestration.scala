@@ -4,24 +4,25 @@ import caliban.GraphQL
 import caliban.introspection.adt.__Type
 import caliban.schema.Step
 import tailcall.gateway.remote.Remote
-import tailcall.gateway.service.{DocumentGraphQLGenerator, DocumentStepGenerator}
+import tailcall.gateway.service.{OrchestrationGraphQLGenerator, OrchestrationStepGenerator}
 import zio.ZIO
 import zio.query.ZQuery
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
-final case class Document(definition: List[Document.Definition]) {
+final case class Orchestration(definition: List[Orchestration.Definition]) {
   self =>
 
-  def toGraphQL: ZIO[DocumentGraphQLGenerator, Nothing, GraphQL[Any]] = DocumentGraphQLGenerator.toGraphQL(self)
-  def query: Option[Document.ObjectTypeDefinition]                    =
+  def toGraphQL: ZIO[OrchestrationGraphQLGenerator, Nothing, GraphQL[Any]] =
+    OrchestrationGraphQLGenerator.toGraphQL(self)
+  def query: Option[Orchestration.ObjectTypeDefinition]                    =
     for {
-      oName <- definition.collectFirst { case Document.SchemaDefinition(query, _, _) => query }
+      oName <- definition.collectFirst { case Orchestration.SchemaDefinition(query, _, _) => query }
       name  <- oName
-      q     <- definition.collectFirst { case q @ Document.ObjectTypeDefinition(`name`, _) => q }
+      q     <- definition.collectFirst { case q @ Orchestration.ObjectTypeDefinition(`name`, _) => q }
     } yield q
 }
 
-object Document {
+object Orchestration {
   sealed trait Definition
 
   final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])           extends Definition
@@ -45,12 +46,12 @@ object Document {
   final case class NamedType(name: String, nonNull: Boolean) extends Type
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
-  implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
+  implicit val schema: Schema[Orchestration] = DeriveSchema.gen[Orchestration]
 
-  val calibanSchema = new caliban.schema.Schema[DocumentStepGenerator, Document] {
+  val calibanSchema = new caliban.schema.Schema[OrchestrationStepGenerator, Orchestration] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type = ???
 
-    override def resolve(input: Document): Step[DocumentStepGenerator] =
-      Step.QueryStep(ZQuery.fromZIO(DocumentStepGenerator.resolve(input)))
+    override def resolve(input: Orchestration): Step[OrchestrationStepGenerator] =
+      Step.QueryStep(ZQuery.fromZIO(OrchestrationStepGenerator.resolve(input)))
   }
 }
