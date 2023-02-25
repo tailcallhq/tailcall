@@ -3,7 +3,7 @@ package tailcall.gateway.remote
 import tailcall.gateway.lambda.{Constructor, Lambda, ~>}
 import tailcall.gateway.service.EvaluationRuntime
 import zio.ZIO
-import zio.schema.Schema
+import zio.schema.{DynamicValue, Schema}
 
 /**
  * Remote[A] Allows for any arbitrary computation that can
@@ -24,6 +24,8 @@ object Remote {
   def apply[A](a: => A)(implicit c: Constructor[A]): Remote[A] = FromLambda(Lambda(a))
 
   def apply[A](a: Any ~> A): Remote[A] = FromLambda(a)
+
+  def dynamic[A](a: A)(implicit c: Schema[A]): Remote[DynamicValue] = Remote(c.toDynamic(a))
 
   def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
 
