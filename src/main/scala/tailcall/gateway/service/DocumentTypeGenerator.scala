@@ -9,14 +9,18 @@ import tailcall.gateway.ast.Document
 import zio.{ZIO, ZLayer}
 
 trait DocumentTypeGenerator  {
-  def __type(graph: Document): Option[__Type]
+  def __type(doc: Document): __Type
 }
 object DocumentTypeGenerator {
-  def __type(document: Document): ZIO[DocumentTypeGenerator, Nothing, Option[__Type]] =
+  def __type(document: Document): ZIO[DocumentTypeGenerator, Nothing, __Type] =
     ZIO.serviceWith[DocumentTypeGenerator](_.__type(document))
-  def live: ZLayer[Any, Nothing, DocumentTypeGenerator]                               = ZLayer.succeed(new Live())
+
+  def live: ZLayer[Any, Nothing, DocumentTypeGenerator] = ZLayer.succeed(new Live())
 
   final class Live extends DocumentTypeGenerator {
+    override def __type(doc: Document): __Type =
+      parseRemoteSchema(toCalibanDocument(doc)).map(_.queryType).getOrElse(???)
+
     private def toCalibanDocument(document: Document): CalibanDocument = {
       CalibanDocument(
         document.definition.map {
@@ -24,8 +28,6 @@ object DocumentTypeGenerator {
               .TypeDefinition.ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
           case Document.Definition.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
-          // case ivdt: Document.Definition.InputValueDefinition              => toCalibanInputValue(ivdt)
-          // case fdt: Document.Definition.FieldDefinition                    => toCalibanField(fdt)
         },
         SourceMapper.empty
       )
@@ -43,7 +45,5 @@ object DocumentTypeGenerator {
         case Document.Type.NamedType(name, nonNull)  => CalibanType.NamedType(name, nonNull)
         case Document.Type.ListType(ofType, nonNull) => CalibanType.ListType(toCalibanType(ofType), nonNull)
       }
-
-    override def __type(doc: Document): Option[__Type] = parseRemoteSchema(toCalibanDocument(doc)).map(_.queryType)
   }
 }
