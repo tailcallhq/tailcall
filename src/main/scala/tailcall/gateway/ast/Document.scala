@@ -43,7 +43,7 @@ object Document {
   final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
 
-  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Remote[Context] => Remote[DynamicValue])
+  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Remote[DynamicValue] => Remote[DynamicValue])
 
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None) extends Definition
 
