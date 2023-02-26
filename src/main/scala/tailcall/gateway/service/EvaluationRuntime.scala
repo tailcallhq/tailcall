@@ -1,5 +1,6 @@
 package tailcall.gateway.service
 
+import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import zio._
 import zio.schema.DynamicValue
@@ -87,11 +88,24 @@ object EvaluationRuntime {
             } yield res
           }
 
-        case Immediate(eval0) => for {
+        case Immediate(eval0)   => for {
             eval1 <- evaluate(eval0)
             eval2 <- evaluate(eval1.asInstanceOf[Expression[DynamicValue]])
           } yield eval2
-        case Defer(value)     => LExit.succeed(value)
+        case Defer(value)       => LExit.succeed(value)
+        case Dynamic(operation) => for {
+            input <- LExit.input[Any]
+          } yield {
+            val d = input.asInstanceOf[DynamicValue]
+            operation match {
+              case Dynamic.AsSeq     => DynamicValueUtil.asSeq(d)
+              case Dynamic.AsMap     => DynamicValueUtil.asMap(d)
+              case Dynamic.AsString  => DynamicValueUtil.asString(d)
+              case Dynamic.AsInt     => DynamicValueUtil.asInt(d)
+              case Dynamic.AsBoolean => DynamicValueUtil.asBoolean(d)
+            }
+          }
+
       }
     }
   }
