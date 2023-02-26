@@ -1,10 +1,15 @@
 package tailcall.gateway
 
+import tailcall.gateway.ast.Context
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
 import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
+import zio.schema.DynamicValue
+import zio.schema.TypeId.Structural
 import zio.test.Assertion._
 import zio.test._
+
+import scala.collection.immutable.ListMap
 
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.gateway.lambda.Numeric._
@@ -132,6 +137,14 @@ object LambdaSpec extends ZIOSpecDefault {
           }
           assertZIO(fib.evaluate(10))(equalTo(55))
         }
-      )
+      ),
+      test("getField from args") {
+
+        val ctx: Context =
+          Context(DynamicValue(1), Map[String, DynamicValue]("a" -> DynamicValue(1), "b" -> DynamicValue(2)))
+        val field        = Lambda.accessors.getField[Context, DynamicValue]("a")
+        val expected     = DynamicValue(1)
+        assertZIO(field.evaluate(ctx))(equalTo(expected))
+      }
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

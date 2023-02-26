@@ -18,7 +18,6 @@ object Expression {
   final case class Lookup(binding: Binding)                                                    extends Expression[Nothing]
   final case class Math[A](operation: Math.Operation[A], tag: Numeric[Any])                    extends Expression[A]
   final case class Pipe[A](left: Expression[A], right: Expression[A])                          extends Expression[A]
-
   object Math {
     sealed trait Operation[+A]
     final case class Binary[A](operation: Binary.Operation, left: Expression[A], right: Expression[A]) extends Operation[A]
@@ -55,6 +54,14 @@ object Expression {
       sealed trait Operation[+A]
       final case class Diverge[A](isTrue: Expression[A], isFalse: Expression[A]) extends Operation[A]
       case object Not                                                            extends Operation[Nothing]
+    }
+  }
+
+  final case class AccessorOperations(operation: AccessorOperations.Operation) extends Expression[Nothing]
+  object AccessorOperations {
+    sealed trait Operation
+    object Operation {
+      final case class GetField(name: String) extends Operation
     }
   }
 

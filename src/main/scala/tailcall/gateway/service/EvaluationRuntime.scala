@@ -1,5 +1,7 @@
 package tailcall.gateway.service
 
+import tailcall.gateway.ast.Context
+import tailcall.gateway.lambda.Expression.AccessorOperations.Operation
 import tailcall.gateway.lambda._
 import zio._
 import zio.schema.DynamicValue
@@ -87,11 +89,20 @@ object EvaluationRuntime {
             } yield res
           }
 
-        case Immediate(eval0) => for {
+        case Immediate(eval0)       => for {
             eval1 <- evaluate(eval0)
             eval2 <- evaluate(eval1.asInstanceOf[Expression[DynamicValue]])
           } yield eval2
-        case Defer(value)     => LExit.succeed(value)
+        case Defer(value)           => LExit.succeed(value)
+        case AccessorOperations(op) => op match {
+            case Operation.GetField(name) => LExit.input[Context].flatMap { ctx =>
+                ctx.args.get(name) match {
+                  case Some(value) => LExit.succeed(value)
+                  case None        => LExit.fail(EvaluationError.FieldNotFound(name))
+                }
+              }.asInstanceOf[LExit[Any, Throwable, Any, Any]]
+          }
+
       }
     }
   }

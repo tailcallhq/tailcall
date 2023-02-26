@@ -1,6 +1,6 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.lambda.Expression.{EqualTo, Literal, Logical, Math}
+import tailcall.gateway.lambda.Expression.{AccessorOperations, EqualTo, Literal, Logical, Math}
 import tailcall.gateway.service.EvaluationContext.Binding
 import tailcall.gateway.service.EvaluationRuntime
 import zio.schema.{DynamicValue, Schema}
@@ -39,6 +39,14 @@ object Lambda {
       val input = Expression.Defer(body)
       Expression.FunctionDef(key, body, input)
     }
+
+  object accessors {
+    def getField[A, B](field: String): A ~> B =
+      Lambda.unsafe.attempt[A, B] { _ =>
+        Expression.AccessorOperations(AccessorOperations.Operation.GetField(field))
+      }
+
+  }
 
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
