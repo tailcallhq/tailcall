@@ -58,5 +58,15 @@ object Expression {
     }
   }
 
+  final case class Dynamic(operation: Dynamic.Operation) extends Expression[Nothing]
+  object Dynamic {
+    sealed trait Operation
+    case object AsSeq     extends Operation
+    case object AsString  extends Operation
+    case object AsInt     extends Operation
+    case object AsBoolean extends Operation
+    case object AsMap     extends Operation
+  }
+
   implicit def schema[A](implicit a: Schema[A]): Schema[Expression[A]] = DeriveSchema.gen[Expression[A]]
 }
