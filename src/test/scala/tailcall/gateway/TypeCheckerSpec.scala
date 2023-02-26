@@ -1,7 +1,7 @@
 package tailcall.gateway
 
 import caliban.parsing.adt.Document
-import tailcall.gateway.Reader
+import tailcall.gateway.dsl.json.{Reader, TypeChecker}
 import zio._
 import zio.test._
 
