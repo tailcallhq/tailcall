@@ -61,11 +61,7 @@ object Expression {
   final case class Dynamic(operation: Dynamic.Operation) extends Expression[Nothing]
   object Dynamic {
     sealed trait Operation
-    case object AsSeq     extends Operation
-    case object AsString  extends Operation
-    case object AsInt     extends Operation
-    case object AsBoolean extends Operation
-    case object AsMap     extends Operation
+    final case class Typed(ctor: Constructor[Any]) extends Operation
   }
 
   final case class Dict[A](operation: Dict.Operation[A]) extends Expression[A]

@@ -1,7 +1,7 @@
 package tailcall.gateway.internal
 
 import caliban.{InputValue, ResponseValue, Value}
-import zio.schema.{DynamicValue, StandardType}
+import zio.schema.{DynamicValue, Schema, StandardType}
 
 object DynamicValueUtil {
   def toValue(value: Any, standardType: StandardType[_]): Value =
@@ -39,7 +39,7 @@ object DynamicValueUtil {
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
 
-  def toValue(input: DynamicValue): ResponseValue                     = {
+  def toValue(input: DynamicValue): ResponseValue                   = {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
@@ -57,7 +57,7 @@ object DynamicValueUtil {
       case DynamicValue.Error(_)                       => ???
     }
   }
-  def toInputValue(input: DynamicValue): InputValue                   = {
+  def toInputValue(input: DynamicValue): InputValue                 = {
     input match {
       case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
@@ -75,9 +75,5 @@ object DynamicValueUtil {
       case DynamicValue.Error(_)          => ???
     }
   }
-  def asSeq(d: DynamicValue): Option[Seq[DynamicValue]]               = ???
-  def asMap(d: DynamicValue): Option[Map[DynamicValue, DynamicValue]] = ???
-  def asString(d: DynamicValue): Option[String]                       = ???
-  def asInt(d: DynamicValue): Option[Int]                             = ???
-  def asBoolean(d: DynamicValue): Option[Boolean]                     = ???
+  def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 }

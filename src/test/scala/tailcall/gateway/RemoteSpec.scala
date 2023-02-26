@@ -2,15 +2,11 @@ package tailcall.gateway
 
 import tailcall.gateway.remote._
 import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
-import zio.Chunk
-import zio.schema.Schema
 import zio.test.Assertion._
 import zio.test._
 
 object RemoteSpec extends ZIOSpecDefault {
   import tailcall.gateway.lambda.Numeric._
-
-  implicit def seqSchema[A: Schema]: Schema[Seq[A]] = Schema.chunk[A].transform(_.toSeq, Chunk.from(_))
 
   def spec =
     suite("Remote")(

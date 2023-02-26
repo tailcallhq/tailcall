@@ -3,6 +3,7 @@ package tailcall.gateway
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
 import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
+import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
@@ -142,6 +143,66 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = Lambda.dict.get(Lambda("key"), Lambda.identity[Map[String, String]])
           assertZIO(program.evaluate(Map("key0" -> "value")))(equalTo(None))
         }
+      ),
+      suite("DynamicValueOps")(
+        suite("AsSeq")(
+          test("some - int") {
+            val p = Lambda(DynamicValue(Seq(1, 2, 3))) >>> Lambda.dynamic.toTyped[Seq[Int]]
+            assertZIO(p.evaluate())(equalTo(Some(Seq(1, 2, 3))))
+          },
+          test("some - string") {
+            val p = Lambda(DynamicValue(Seq("1", "2", "3"))) >>> Lambda.dynamic.toTyped[Seq[String]]
+            assertZIO(p.evaluate())(equalTo(Some(Seq("1", "2", "3"))))
+          },
+          test("none - string") {
+            val p = Lambda(DynamicValue(Seq("1", "2", "3"))) >>> Lambda.dynamic.toTyped[Seq[Int]]
+            assertZIO(p.evaluate())(equalTo(None))
+          },
+          test("none - int") {
+            val p = Lambda(DynamicValue(Seq(1, 2, 3))) >>> Lambda.dynamic.toTyped[Seq[String]]
+            assertZIO(p.evaluate())(equalTo(None))
+          }
+        ),
+        suite("asMap")(
+          test("some - int") {
+            val p = Lambda(DynamicValue(Map("a" -> 1, "b" -> 2))) >>> Lambda.dynamic.toTyped[Map[String, Int]]
+            assertZIO(p.evaluate())(equalTo(Some(Map("a" -> 1, "b" -> 2))))
+          },
+          test("none -int") {
+            val p = Lambda(DynamicValue(Map("a" -> "1", "b" -> "2"))) >>> Lambda.dynamic.toTyped[Map[String, Int]]
+            assertZIO(p.evaluate())(equalTo(None))
+          }
+        ),
+        suite("asInt")(
+          test("some") {
+            val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[Int]
+            assertZIO(p.evaluate())(equalTo(Some(1)))
+          },
+          test("none") {
+            val p = Lambda(DynamicValue("1")) >>> Lambda.dynamic.toTyped[Int]
+            assertZIO(p.evaluate())(equalTo(None))
+          }
+        ),
+        suite("asBoolean")(
+          test("some") {
+            val p = Lambda(DynamicValue(true)) >>> Lambda.dynamic.toTyped[Boolean]
+            assertZIO(p.evaluate())(equalTo(Some(true)))
+          },
+          test("none") {
+            val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[Boolean]
+            assertZIO(p.evaluate())(equalTo(None))
+          }
+        ),
+        suite("asString")(
+          test("some") {
+            val p = Lambda(DynamicValue("1")) >>> Lambda.dynamic.toTyped[String]
+            assertZIO(p.evaluate())(equalTo(Some("1")))
+          },
+          test("none") {
+            val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[String]
+            assertZIO(p.evaluate())(equalTo(None))
+          }
+        )
       )
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

@@ -6,10 +6,11 @@ import zio.schema.DynamicValue
 
 trait DynamicValueOps {
   implicit final class RemoteDynamicValueOps(private val self: Remote[DynamicValue]) {
-    def asSeq: Remote[Option[Seq[DynamicValue]]]               = Remote(self.toLambda >>> Lambda.dynamic.asSeq)
-    def asMap: Remote[Option[Map[DynamicValue, DynamicValue]]] = Remote(self.toLambda >>> Lambda.dynamic.asMap)
-    def asString: Remote[Option[String]]                       = Remote(self.toLambda >>> Lambda.dynamic.asString)
-    def asInt: Remote[Option[Int]]                             = Remote(self.toLambda >>> Lambda.dynamic.asInt)
-    def asBoolean: Remote[Option[Boolean]]                     = Remote(self.toLambda >>> Lambda.dynamic.asBoolean)
+    def asSeq: Remote[Option[Seq[DynamicValue]]] = Remote(self.toLambda >>> Lambda.dynamic.toTyped[Seq[DynamicValue]])
+    def asMap: Remote[Option[Map[DynamicValue, DynamicValue]]] =
+      Remote(self.toLambda >>> Lambda.dynamic.toTyped[Map[DynamicValue, DynamicValue]])
+    def asString: Remote[Option[String]]   = Remote(self.toLambda >>> Lambda.dynamic.toTyped[String])
+    def asInt: Remote[Option[Int]]         = Remote(self.toLambda >>> Lambda.dynamic.toTyped[Int])
+    def asBoolean: Remote[Option[Boolean]] = Remote(self.toLambda >>> Lambda.dynamic.toTyped[Boolean])
   }
 }
