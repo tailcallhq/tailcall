@@ -16,8 +16,8 @@ object StepGenerator {
   final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
     def resolve(field: Document.FieldDefinition): Step[Any] = {
       Step.QueryStep(ZQuery.fromZIO(
-        field.resolver(Remote(Context(DynamicValue(())))).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
-          .provide(ZLayer.succeed(rtm))
+        field.resolver(Remote.dynamic(Context(DynamicValue(())))).evaluate.map(DynamicValueUtil.toValue)
+          .map(Step.PureStep(_)).provide(ZLayer.succeed(rtm))
       ))
     }
 

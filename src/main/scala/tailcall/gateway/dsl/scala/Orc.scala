@@ -1,6 +1,6 @@
 package tailcall.gateway.dsl.scala
 
-import tailcall.gateway.ast.{Context, Document}
+import tailcall.gateway.ast.Document
 import tailcall.gateway.remote.Remote
 import zio.schema.{DynamicValue, Schema}
 
@@ -37,7 +37,7 @@ object Orc {
   final case class Input(defaultValue: Option[DynamicValue])
   final case class Output(
     arguments: List[LabelledField[Input]] = Nil,
-    resolve: Option[Remote[Context] => Remote[DynamicValue]]
+    resolve: Option[Remote[DynamicValue] => Remote[DynamicValue]]
   )
 
   final case class Field[A](ofType: Option[Type], definition: A) {
@@ -53,7 +53,7 @@ object Orc {
     def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Some(_ => Remote(DynamicValue(t)))))
 
-    def withResolver(f: Remote[Context] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
+    def withResolver(f: Remote[DynamicValue] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Some(f)))
 
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
