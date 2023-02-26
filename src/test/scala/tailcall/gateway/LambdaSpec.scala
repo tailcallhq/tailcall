@@ -132,6 +132,16 @@ object LambdaSpec extends ZIOSpecDefault {
           }
           assertZIO(fib.evaluate(10))(equalTo(55))
         }
+      ),
+      suite("map")(
+        test("get some") {
+          val program = Lambda.dict.get(Lambda("key"), Lambda.identity[Map[String, String]])
+          assertZIO(program.evaluate(Map("key" -> "value")))(equalTo(Some("value")))
+        },
+        test("get none") {
+          val program = Lambda.dict.get(Lambda("key"), Lambda.identity[Map[String, String]])
+          assertZIO(program.evaluate(Map("key0" -> "value")))(equalTo(None))
+        }
       )
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

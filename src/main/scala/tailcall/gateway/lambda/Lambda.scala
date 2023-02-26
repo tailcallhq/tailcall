@@ -1,6 +1,6 @@
 package tailcall.gateway.lambda
 
-import tailcall.gateway.lambda.Expression.{Dynamic, EqualTo, Literal, Logical, Math}
+import tailcall.gateway.lambda.Expression._
 import tailcall.gateway.service.EvaluationContext.Binding
 import tailcall.gateway.service.EvaluationRuntime
 import zio.schema.{DynamicValue, Schema}
@@ -103,6 +103,11 @@ object Lambda {
     def asString: DynamicValue ~> Option[String]   = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsString))
     def asInt: DynamicValue ~> Option[Int]         = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsInt))
     def asBoolean: DynamicValue ~> Option[Boolean] = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsBoolean))
+  }
+
+  object dict {
+    def get[A, K, V](key: A ~> K, map: A ~> Map[K, V]): A ~> Option[V] =
+      Lambda.unsafe.attempt(ctx => Dict(Dict.Get(key.compile(ctx), map.compile(ctx))))
   }
 
   object unsafe {

@@ -68,5 +68,11 @@ object Expression {
     case object AsMap     extends Operation
   }
 
+  final case class Dict[A](operation: Dict.Operation[A]) extends Expression[A]
+  object Dict {
+    sealed trait Operation[A]
+    final case class Get[A](key: Expression[A], map: Expression[A]) extends Operation[A]
+  }
+
   implicit def schema[A](implicit a: Schema[A]): Schema[Expression[A]] = DeriveSchema.gen[Expression[A]]
 }
