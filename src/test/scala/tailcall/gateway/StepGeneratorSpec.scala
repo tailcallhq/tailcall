@@ -1,10 +1,9 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Document
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.service._
 import zio.ZIO
-import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
@@ -12,18 +11,11 @@ object StepGeneratorSpec extends ZIOSpecDefault {
 
   def spec = {
     suite("DocumentStepGenerator")(test("test") {
-      val document = Document(List(
-        Document.SchemaDefinition(query = Some("Query")),
-        Document.ObjectTypeDefinition(
-          "Query",
-          List(
-            Document
-              .FieldDefinition(name = "id", List(), Document.NamedType("Int", true), _ => Remote(DynamicValue(100)))
-          )
-        )
-      ))
+      val field = Orc.Field.output("id").as("Int").resolveWith(100)
+      val query = Orc.Obj("Query").withFields(field)
+      val doc   = Orc.empty.withQuery("Query").withType(query)
 
-      val program = execute(document)("query {id}")
+      val program = execute(doc.toDocument)("query {id}")
 
       assertZIO(program)(equalTo("""{"id":100}"""))
     }).provide(
