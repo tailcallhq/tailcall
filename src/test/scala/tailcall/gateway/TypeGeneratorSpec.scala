@@ -3,6 +3,7 @@ package tailcall.gateway
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.service._
+import zio.ZIO
 import zio.test.Assertion._
 import zio.test._
 
@@ -12,7 +13,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
       test("document type generation") {
         val orc = Orc("Query" -> List("test" -> Field.output.as("String").resolveWith("test")))
 
-        val actual   = orc.toDocument.toGraphQL.map(_.render)
+        val actual   = render(orc)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -29,7 +30,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
               .withArgument("arg" -> Field.input.as("String").withDefault("test"))
           )
         )
-        val actual = orc.toDocument.toGraphQL.map(_.render)
+        val actual = render(orc)
 
         val expected = """|schema {
                           |  query: Query
@@ -47,4 +48,6 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
       EvaluationRuntime.live,
       EvaluationContext.live
     )
+
+  def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toDocument.flatMap(_.toGraphQL).map(_.render)
 }

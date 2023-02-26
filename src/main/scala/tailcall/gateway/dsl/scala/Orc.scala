@@ -2,6 +2,7 @@ package tailcall.gateway.dsl.scala
 
 import tailcall.gateway.ast.Document
 import tailcall.gateway.remote.Remote
+import zio.Task
 import zio.schema.{DynamicValue, Schema}
 
 /**
@@ -14,13 +15,13 @@ final case class Orc(
   types: List[Orc.Obj] = Nil
 ) {
   self =>
-  def toDocument: Document         = OrcCodec.toDocument(self)
+  def toDocument: Task[Document]   = OrcCodec.toDocument(self).mapError(new RuntimeException(_))
   def withQuery(name: String): Orc = self.copy(query = Some(name))
   def withType(obj: Orc.Obj*): Orc = self.copy(types = obj.toList ++ types)
 }
 
 object Orc {
-  type LabelledField[A] = (String, Field[A])
+  final case class LabelledField[A](name: String, field: Field[A])
   final case class Obj(name: String, fields: FieldSet = FieldSet.Empty) {
     def withFields(fields: LabelledField[Output]*): Obj = copy(fields = FieldSet.OutputSet(fields.toList))
     def withInputs(fields: LabelledField[Input]*): Obj  = copy(fields = FieldSet.InputSet(fields.toList))
@@ -59,8 +60,8 @@ object Orc {
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
       copy(definition = definition.copy(defaultValue = Some(DynamicValue(t))))
 
-    def withArgument(fields: LabelledField[Input]*)(implicit ev: A <:< Output): Field[Output] =
-      copy(definition = definition.copy(arguments = fields.toList))
+    def withArgument(fields: (String, Field[Input])*)(implicit ev: A <:< Output): Field[Output] =
+      copy(definition = definition.copy(arguments = fields.toList.map(f => LabelledField(f._1, f._2))))
   }
 
   object Field {
@@ -79,7 +80,9 @@ object Orc {
     Orc(
       query = Some("Query"),
       mutation = Some("Mutation"),
-      types = spec.toList.map { case (name, fields) => Orc.Obj(name, FieldSet.OutputSet(fields.toList)) }
+      types = spec.toList.map { case (name, fields) =>
+        Orc.Obj(name, FieldSet.OutputSet(fields.map { case (name, field) => LabelledField(name, field) }))
+      }
     )
   }
 }
