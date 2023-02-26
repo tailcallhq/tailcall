@@ -105,7 +105,12 @@ object EvaluationRuntime {
               case Dynamic.AsBoolean => DynamicValueUtil.asBoolean(d)
             }
           }
-
+        case Dict(operation)    => operation match {
+            case Dict.Get(key, map) => for {
+                k <- evaluate(key)
+                m <- evaluateAs[Map[Any, Any]](map)
+              } yield m.get(k)
+          }
       }
     }
   }
