@@ -2,6 +2,7 @@ package tailcall.gateway
 
 import tailcall.gateway.ast.Document
 import tailcall.gateway.dsl.scala.Orc
+import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.service._
 import zio.ZIO
 import zio.test.Assertion.equalTo
@@ -11,11 +12,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
 
   def spec = {
     suite("DocumentStepGenerator")(test("test") {
-      val field = Orc.Field.output("id").as("Int").resolveWith(100)
-      val query = Orc.Obj("Query").withFields(field)
-      val doc   = Orc.empty.withQuery("Query").withType(query)
+      val orc = Orc("Query" -> List("id" -> Field.output.as("String").resolveWith(100)))
 
-      val program = execute(doc.toDocument)("query {id}")
+      val program = execute(orc.toDocument)("query {id}")
 
       assertZIO(program)(equalTo("""{"id":100}"""))
     }).provide(
