@@ -22,17 +22,23 @@ final case class Orc(
 object Orc {
   type LabelledField[A] = (String, Field[A])
   final case class Obj(name: String, fields: FieldSet = FieldSet.Empty) {
-    self =>
-    def withFields[A](fields: LabelledField[A]*)(implicit ev: FieldSetConstructor[A]): Obj =
-      self.copy(fields = ev(fields))
+    def withFields(fields: LabelledField[Output]*): Obj = copy(fields = FieldSet.OutputSet(fields.toList))
+    def withInputs(fields: LabelledField[Input]*): Obj  = copy(fields = FieldSet.InputSet(fields.toList))
+    def withName(name: String): Obj                     = copy(name = name)
   }
 
   sealed trait FieldSet
   object FieldSet {
-    case object Empty                                                  extends FieldSet
-    final case class Input(fields: List[LabelledField[Field.Input]])   extends FieldSet
-    final case class Output(fields: List[LabelledField[Field.Output]]) extends FieldSet
+    case object Empty                                               extends FieldSet
+    final case class InputSet(fields: List[LabelledField[Input]])   extends FieldSet
+    final case class OutputSet(fields: List[LabelledField[Output]]) extends FieldSet
   }
+
+  final case class Input(defaultValue: Option[DynamicValue])
+  final case class Output(
+    arguments: List[LabelledField[Input]] = Nil,
+    resolve: Option[Remote[Context] => Remote[DynamicValue]]
+  )
 
   final case class Field[A](ofType: Option[Type], definition: A) {
     self =>
@@ -44,29 +50,22 @@ object Orc {
 
     def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull))
 
-    def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Field.Output): Field[Field.Output] =
+    def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Some(_ => Remote(DynamicValue(t)))))
 
-    def withResolver(f: Remote[Context] => Remote[DynamicValue])(implicit ev: A <:< Field.Output): Field[Field.Output] =
+    def withResolver(f: Remote[Context] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Some(f)))
 
-    def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Field.Input): Field[Field.Input] =
+    def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
       copy(definition = definition.copy(defaultValue = Some(DynamicValue(t))))
 
-    def withArgument(fields: LabelledField[Field.Input]*)(implicit ev: A <:< Field.Output): Field[Field.Output] =
+    def withArgument(fields: LabelledField[Input]*)(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(arguments = fields.toList))
   }
 
   object Field {
-    sealed trait Definition
-    final case class Input(defaultValue: Option[DynamicValue]) extends Definition
-    final case class Output(
-      arguments: List[LabelledField[Input]] = Nil,
-      resolve: Option[Remote[Context] => Remote[DynamicValue]]
-    ) extends Definition
-
-    def input: Field[Field.Input]   = Field(None, Field.Input(None))
-    def output: Field[Field.Output] = Field(None, Field.Output(Nil, None))
+    def input: Field[Input]   = Field(None, Input(None))
+    def output: Field[Output] = Field(None, Output(Nil, None))
   }
 
   sealed trait Type
@@ -76,25 +75,12 @@ object Orc {
     final case class ListType(ofType: Type)  extends Type
   }
 
-  def apply(spec: (String, List[(String, Field[Field.Output])])*): Orc = {
+  def apply(spec: (String, List[(String, Field[Output])])*): Orc = {
     Orc(
       query = Some("Query"),
       mutation = Some("Mutation"),
-      types = spec.toList.map { case (name, fields) => Orc.Obj(name, FieldSet.Output(fields.toList)) }
+      types = spec.toList.map { case (name, fields) => Orc.Obj(name, FieldSet.OutputSet(fields.toList)) }
     )
-  }
-
-  sealed trait FieldSetConstructor[A] {
-    def apply(a: Seq[LabelledField[A]]): FieldSet
-  }
-
-  object FieldSetConstructor {
-    implicit object Input  extends FieldSetConstructor[Field.Input]  {
-      override def apply(a: Seq[LabelledField[Field.Input]]): FieldSet = FieldSet.Input(a.toList)
-    }
-    implicit object Output extends FieldSetConstructor[Field.Output] {
-      override def apply(a: Seq[LabelledField[Field.Output]]): FieldSet = FieldSet.Output(a.toList)
-    }
   }
 
   // TODO: add unit tests
@@ -107,10 +93,10 @@ object Orc {
     }
   }
 
-  private def toDefinition(field: LabelledField[Field.Input]): Document.InputValueDefinition =
+  private def toDefinition(field: LabelledField[Input]): Document.InputValueDefinition =
     Document.InputValueDefinition(field._1, toType(field._2.ofType.getOrElse(???)), field._2.definition.defaultValue)
 
-  private def toDefinition(field: LabelledField[Field.Output]): Document.FieldDefinition =
+  private def toDefinition(field: LabelledField[Output]): Document.FieldDefinition =
     Document.FieldDefinition(
       name = field._1,
       ofType = toType(field._2.ofType.getOrElse(???)),
@@ -123,8 +109,9 @@ object Orc {
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
     val objectDefinitions: List[Document.Definition] = o.types.collect {
-      case Orc.Obj(name, FieldSet.Input(fields))  => Document.InputObjectTypeDefinition(name, fields.map(toDefinition))
-      case Orc.Obj(name, FieldSet.Output(fields)) => Document.ObjectTypeDefinition(name, fields.map(toDefinition))
+      case Orc.Obj(name, FieldSet.InputSet(fields))  => Document
+          .InputObjectTypeDefinition(name, fields.map(toDefinition))
+      case Orc.Obj(name, FieldSet.OutputSet(fields)) => Document.ObjectTypeDefinition(name, fields.map(toDefinition))
     }
 
     Document(schemaDefinition :: objectDefinitions)
