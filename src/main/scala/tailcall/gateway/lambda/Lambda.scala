@@ -97,12 +97,8 @@ object Lambda {
   }
 
   object dynamic {
-    def asSeq: DynamicValue ~> Option[Seq[DynamicValue]] = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsSeq))
-    def asMap: DynamicValue ~> Option[Map[DynamicValue, DynamicValue]] =
-      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsMap))
-    def asString: DynamicValue ~> Option[String]   = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsString))
-    def asInt: DynamicValue ~> Option[Int]         = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsInt))
-    def asBoolean: DynamicValue ~> Option[Boolean] = Lambda.unsafe.attempt(_ => Dynamic(Dynamic.AsBoolean))
+    def toTyped[A](implicit ctor: Constructor[A]): DynamicValue ~> Option[A] =
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(ctor.asInstanceOf[Constructor[Any]])))
   }
 
   object dict {

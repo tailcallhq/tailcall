@@ -97,13 +97,7 @@ object EvaluationRuntime {
             input <- LExit.input[Any]
           } yield {
             val d = input.asInstanceOf[DynamicValue]
-            operation match {
-              case Dynamic.AsSeq     => DynamicValueUtil.asSeq(d)
-              case Dynamic.AsMap     => DynamicValueUtil.asMap(d)
-              case Dynamic.AsString  => DynamicValueUtil.asString(d)
-              case Dynamic.AsInt     => DynamicValueUtil.asInt(d)
-              case Dynamic.AsBoolean => DynamicValueUtil.asBoolean(d)
-            }
+            operation match { case Dynamic.Typed(ctor) => DynamicValueUtil.as(d)(ctor.schema) }
           }
         case Dict(operation)    => operation match {
             case Dict.Get(key, map) => for {
