@@ -1,27 +1,20 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Document
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.service._
-import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
 object TypeGeneratorSpec extends ZIOSpecDefault {
+  import Orc._
   override def spec =
     suite("DocumentTypeGenerator")(
       test("document type generation") {
-        val document = Document(List(
-          Document.ObjectTypeDefinition(
-            "Query",
-            List(
-              Document
-                .FieldDefinition("test", List(), Document.NamedType("String", false), _ => Remote(DynamicValue("test")))
-            )
-          ),
-          Document.SchemaDefinition(Some("Query"), None, None)
-        ))
-        val out      = document.toGraphQL.map(_.render)
+        val field  = Field.output("test").as("String").resolveWith("test")
+        val query  = Obj("Query").withFields(field)
+        val orc    = Orc.empty.withQuery("Query").withType(query)
+        val actual = orc.toDocument.toGraphQL.map(_.render)
+
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -29,24 +22,15 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test: String
                           |}""".stripMargin
-        assertZIO(out)(equalTo(expected))
+        assertZIO(actual)(equalTo(expected))
       },
       test("document with InputValue") {
-        val document = Document(List(
-          Document.ObjectTypeDefinition(
-            "Query",
-            List(Document.FieldDefinition(
-              "test",
-              List(
-                Document.InputValueDefinition("arg", Document.NamedType("String", false), Some(DynamicValue("test")))
-              ),
-              Document.NamedType("String", false),
-              _ => Remote(DynamicValue("test"))
-            ))
-          ),
-          Document.SchemaDefinition(Some("Query"), None, None)
-        ))
-        val out      = document.toGraphQL.map(_.render)
+        val input  = Field.input("arg").as("String").withDefault("test")
+        val field  = Field.output("test").as("String").resolveWith("test").withArgument(input)
+        val query  = Obj("Query").withFields(field)
+        val orc    = Orc.empty.withQuery("Query").withType(query)
+        val actual = orc.toDocument.toGraphQL.map(_.render)
+
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -54,7 +38,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        assertZIO(out)(equalTo(expected))
+        assertZIO(actual)(equalTo(expected))
       }
     ).provide(
       GraphQLGenerator.live,
