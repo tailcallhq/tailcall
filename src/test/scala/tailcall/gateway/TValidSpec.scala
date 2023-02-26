@@ -1,5 +1,6 @@
 package tailcall.gateway
 
+import tailcall.gateway.internal.TValid
 import zio.Chunk
 import zio.test.Assertion._
 import zio.test.{ZIOSpecDefault, _}

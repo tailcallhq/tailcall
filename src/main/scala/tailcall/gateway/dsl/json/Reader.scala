@@ -1,10 +1,9 @@
-package tailcall.gateway
+package tailcall.gateway.dsl.json
 
 import caliban.parsing.Parser
 import caliban.parsing.adt.Document
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.validation.Validator
-import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.internal.Extension
 import zio.{Task, ZIO}
 

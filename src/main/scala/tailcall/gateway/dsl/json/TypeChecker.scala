@@ -1,7 +1,7 @@
-package tailcall.gateway
+package tailcall.gateway.dsl.json
 
 import caliban.parsing.adt.{Definition, Document}
-import tailcall.gateway.dsl.json.Config
+import tailcall.gateway.internal.TValid
 
 final class TypeChecker(config: Config, document: Document) {
   import tailcall.gateway.internal.CalibanADTOperators._

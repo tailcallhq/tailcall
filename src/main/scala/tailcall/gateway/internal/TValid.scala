@@ -1,4 +1,4 @@
-package tailcall.gateway
+package tailcall.gateway.internal
 
 import zio.Chunk
 

@@ -1,6 +1,6 @@
 package tailcall.gateway
 
-import tailcall.gateway.Reader
+import tailcall.gateway.dsl.json.Reader
 import tailcall.gateway.internal.{Extension, TestGen}
 import zio.test.TestAspect.{failing, timeout}
 import zio.test._
