@@ -14,7 +14,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
     suite("DocumentStepGenerator")(test("test") {
       val orc = Orc("Query" -> List("id" -> Field.output.as("String").resolveWith(100)))
 
-      val program = execute(orc.toDocument)("query {id}")
+      val program = execute(orc)("query {id}")
 
       assertZIO(program)(equalTo("""{"id":100}"""))
     }).provide(
@@ -25,6 +25,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       EvaluationContext.live
     )
   }
+
+  def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
+    orc.toDocument.flatMap(execute(_)(query))
 
   def execute(doc: Document)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
     for {

@@ -2,6 +2,7 @@ package tailcall.gateway.dsl.scala
 
 import tailcall.gateway.ast.Document
 import tailcall.gateway.dsl.scala.Orc._
+import zio.{IO, ZIO}
 
 object OrcCodec {
   def toType(t: Type, isNull: Boolean = true): Document.Type = {
@@ -13,27 +14,36 @@ object OrcCodec {
     }
   }
 
-  def toDefinition(field: LabelledField[Input]): Document.InputValueDefinition =
-    Document.InputValueDefinition(field._1, toType(field._2.ofType.getOrElse(???)), field._2.definition.defaultValue)
+  def toInputValueDefinition(lField: LabelledField[Input]): IO[String, Document.InputValueDefinition] =
+    for {
+      ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Input type must be named")
+    } yield Document.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
 
-  def toDefinition(field: LabelledField[Output]): Document.FieldDefinition =
-    Document.FieldDefinition(
-      name = field._1,
-      ofType = toType(field._2.ofType.getOrElse(???)),
-      args = field._2.definition.arguments.map(toDefinition),
-      resolver = field._2.definition.resolve.getOrElse(???)
-    )
+  def toFieldDefinition(lField: LabelledField[Output]): IO[String, Document.FieldDefinition] = {
+    for {
+      ofType   <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
+      resolver <- ZIO.fromOption(lField.field.definition.resolve) <> ZIO.fail("Output must have a resolver")
+      args     <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
+    } yield Document.FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = resolver)
+  }
 
-  def toDocument(o: Orc): Document = {
+  def toDocument(o: Orc): IO[String, Document] = {
     val schemaDefinition = Document
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
-    val objectDefinitions: List[Document.Definition] = o.types.collect {
-      case Orc.Obj(name, FieldSet.InputSet(fields))  => Document
-          .InputObjectTypeDefinition(name, fields.map(toDefinition))
-      case Orc.Obj(name, FieldSet.OutputSet(fields)) => Document.ObjectTypeDefinition(name, fields.map(toDefinition))
-    }
+    for {
+      objectDefinitions <- ZIO.foreach(o.types.map {
+        case Orc.Obj(name, FieldSet.InputSet(fields))  => toInputObjectTypeDefinition(name, fields)
+        case Orc.Obj(name, FieldSet.OutputSet(fields)) => toObjectTypeDefinition(name, fields)
+      })(identity)
+    } yield Document(schemaDefinition :: objectDefinitions)
+  }
 
-    Document(schemaDefinition :: objectDefinitions)
+  private def toObjectTypeDefinition(name: String, fields: List[LabelledField[Output]]) = {
+    ZIO.foreach(fields)(toFieldDefinition).map(Document.ObjectTypeDefinition(name, _))
+  }
+
+  private def toInputObjectTypeDefinition(name: String, fields: List[LabelledField[Input]]) = {
+    ZIO.foreach(fields)(toInputValueDefinition).map(Document.InputObjectTypeDefinition(name, _))
   }
 }
