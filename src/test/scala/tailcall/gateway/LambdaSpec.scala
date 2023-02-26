@@ -203,6 +203,32 @@ object LambdaSpec extends ZIOSpecDefault {
             assertZIO(p.evaluate())(equalTo(None))
           }
         )
+      ),
+      suite("option")(
+        test("isSome") {
+          val program = Lambda(Option(1)) >>> Lambda.option.isSome
+          assertZIO(program.evaluate())(isTrue)
+        },
+        test("isNone") {
+          val program = Lambda(Option.empty[Int]) >>> Lambda.option.isNone
+          assertZIO(program.evaluate())(isTrue)
+        },
+        test("fold some") {
+          val program = Lambda.option.fold(
+            Lambda(Option(0)),
+            ifNone = Lambda.math.inc(Lambda.identity[Int]),
+            ifSome = Lambda.math.inc(Lambda.identity[Int])
+          )
+          assertZIO(program.evaluate(100))(equalTo(1))
+        },
+        test("fold none") {
+          val program = Lambda.option.fold(
+            Lambda(Option.empty[Int]),
+            ifNone = Lambda.math.inc(Lambda.identity[Int]),
+            ifSome = Lambda.math.inc(Lambda.identity[Int])
+          )
+          assertZIO(program.evaluate(100))(equalTo(101))
+        }
       )
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
 }

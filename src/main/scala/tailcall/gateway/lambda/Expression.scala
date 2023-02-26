@@ -70,5 +70,13 @@ object Expression {
     final case class Get[A](key: Expression[A], map: Expression[A]) extends Operation[A]
   }
 
+  final case class Opt[A](operation: Opt.Operation[A]) extends Expression[A]
+  object Opt {
+    sealed trait Operation[+A]
+    case object IsSome                                                                       extends Operation[Nothing]
+    case object IsNone                                                                       extends Operation[Nothing]
+    final case class Fold[A](value: Expression[A], none: Expression[A], some: Expression[A]) extends Operation[A]
+  }
+
   implicit def schema[A](implicit a: Schema[A]): Schema[Expression[A]] = DeriveSchema.gen[Expression[A]]
 }

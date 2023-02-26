@@ -105,6 +105,17 @@ object EvaluationRuntime {
                 m <- evaluateAs[Map[Any, Any]](map)
               } yield m.get(k)
           }
+        case Opt(operation)     => operation match {
+            case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
+            case Opt.IsNone                  => LExit.input.map(_.asInstanceOf[Option[_]].isEmpty)
+            case Opt.Fold(value, none, some) => for {
+                opt <- evaluateAs[Option[_]](value)
+                res <- opt match {
+                  case Some(value) => evaluate(some).provideInput(value)
+                  case None        => evaluate(none)
+                }
+              } yield res
+          }
       }
     }
   }

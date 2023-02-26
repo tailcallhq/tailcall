@@ -106,6 +106,13 @@ object Lambda {
       Lambda.unsafe.attempt(ctx => Dict(Dict.Get(key.compile(ctx), map.compile(ctx))))
   }
 
+  object option {
+    def isSome[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsSome))
+    def isNone[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsNone))
+    def fold[A, B](opt: A ~> Option[B], ifNone: A ~> B, ifSome: B ~> B): A ~> B =
+      Lambda.unsafe.attempt(ctx => Opt(Opt.Fold(opt.compile(ctx), ifNone.compile, ifSome.compile(ctx))))
+  }
+
   object unsafe {
     def attempt[A, B](eval: CompilationContext => Expression[DynamicValue]): A ~> B =
       new Lambda[A, B] {
