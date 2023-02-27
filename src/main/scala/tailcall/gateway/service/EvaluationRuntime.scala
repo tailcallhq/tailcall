@@ -28,12 +28,10 @@ object EvaluationRuntime {
 
     override def evaluate(plan: Expression[DynamicValue]): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Literal(value, ctor)              => ctor.schema.fromDynamic(value) match {
+        case Literal(value, ctor)              => value.toTypedValue(ctor.schema) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
             case Right(value) => LExit.succeed(value)
           }
-        case Literal(value, ctor)              => value.toTypedValue(ctor.schema)
-            .fold(cause => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema)), LExit.succeed)
         case EqualTo(left, right, tag)         => for {
             leftValue  <- evaluate(left)
             rightValue <- evaluate(right)
