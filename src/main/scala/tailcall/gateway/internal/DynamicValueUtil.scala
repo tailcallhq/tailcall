@@ -80,9 +80,13 @@ object DynamicValueUtil {
     path match {
       case Nil          => Some(d)
       case head :: tail => d match {
-          case DynamicValue.Record(_, b) => b.get(head).flatMap(getPath(_, tail))
-          case DynamicValue.SomeValue(a) => getPath(a, path)
-          case _                         => None
+          case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
+          case DynamicValue.SomeValue(a)  => getPath(a, path)
+          case DynamicValue.Dictionary(b) =>
+            val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
+            b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
+              .flatMap(getPath(_, tail))
+          case _                          => None
         }
     }
 }
