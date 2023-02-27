@@ -15,10 +15,14 @@ trait StepGenerator {
 object StepGenerator {
   final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
     def resolve(field: Document.FieldDefinition): Step[Any] = {
-      Step.QueryStep(ZQuery.fromZIO(
-        field.resolver(Remote.dynamic(Context(DynamicValue(())))).evaluate.map(DynamicValueUtil.toValue)
-          .map(Step.PureStep(_)).provide(ZLayer.succeed(rtm))
-      ))
+      Step.FunctionStep { args =>
+        val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue(_)).toMap
+        val context = Context(DynamicValue(()), ctxArgs, None)
+        Step.QueryStep(ZQuery.fromZIO(
+          field.resolver(Remote.dynamic(context)).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
+            .provide(ZLayer.succeed(rtm))
+        ))
+      }
     }
 
     override def resolve(document: Document): Step[Any] = {
