@@ -16,6 +16,9 @@ sealed trait Remote[+A] {
   self =>
   final def toLambda: Any ~> A                       = Remote.toLambda(self)
   def evaluate: ZIO[EvaluationRuntime, Throwable, A] = toLambda.evaluate {}
+
+  def toDynamic[A1 >: A](implicit ctor: Constructor[A1]): Remote[DynamicValue] =
+    Remote(self.toLambda >>> Lambda.dynamic.toDynamic)
 }
 
 object Remote {
