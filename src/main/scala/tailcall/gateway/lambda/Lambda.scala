@@ -122,8 +122,10 @@ object Lambda {
 
   object option {
     def isSome[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsSome))
+
     def isNone[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsNone))
-    def fold[A, B](opt: A ~> Option[B], ifNone: A ~> B, ifSome: B ~> B): A ~> B =
+
+    def fold[A, B, C](opt: A ~> Option[B], ifNone: A ~> C, ifSome: B ~> C): A ~> C =
       Lambda.unsafe.attempt(ctx => Opt(Opt.Fold(opt.compile(ctx), ifNone.compile, ifSome.compile(ctx))))
   }
 

@@ -39,6 +39,8 @@ object Remote {
 
   def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
 
+  def die(reason: String): Remote[Nothing] = Remote(Lambda.die(reason))
+
   implicit def schemaFunction[A, B]: Schema[Remote[A] => Remote[B]] =
     Schema[A ~> B].transform[Remote[A] => Remote[B]](Remote.fromLambda, Remote.fromRemoteFunction)
 }
