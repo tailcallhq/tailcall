@@ -99,6 +99,9 @@ object Lambda {
   object dynamic {
     def toTyped[A](implicit ctor: Constructor[A]): DynamicValue ~> Option[A] =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(ctor.asInstanceOf[Constructor[Any]])))
+
+    final def toDynamic[A](implicit ctor: Constructor[A]): A ~> DynamicValue =
+      Lambda.unsafe.attempt(_ => Expression.Dynamic(Expression.Dynamic.ToDynamic(ctor.asInstanceOf[Constructor[Any]])))
   }
 
   object dict {

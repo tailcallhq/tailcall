@@ -3,6 +3,8 @@ package tailcall.gateway.lambda
 import tailcall.gateway.service.EvaluationContext.Binding
 import zio.schema.{DeriveSchema, Schema}
 
+import scala.annotation.unused
+
 // scalafmt: { maxColumn = 240 }
 sealed trait Expression[+A]
 
@@ -62,6 +64,8 @@ object Expression {
   object Dynamic {
     sealed trait Operation
     final case class Typed(ctor: Constructor[Any]) extends Operation
+
+    final case class ToDynamic(ctor: Constructor[Any]) extends Operation
   }
 
   final case class Dict[A](operation: Dict.Operation[A]) extends Expression[A]
@@ -78,5 +82,8 @@ object Expression {
     final case class Fold[A](value: Expression[A], none: Expression[A], some: Expression[A]) extends Operation[A]
   }
 
-  implicit def schema[A](implicit a: Schema[A]): Schema[Expression[A]] = DeriveSchema.gen[Expression[A]]
+  implicit def schema[A](implicit
+    @unused
+    a: Schema[A]
+  ): Schema[Expression[A]] = DeriveSchema.gen[Expression[A]]
 }
