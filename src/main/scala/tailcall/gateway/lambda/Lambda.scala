@@ -10,6 +10,12 @@ sealed trait Lambda[-A, +B] {
   final def >>>[C](other: B ~> C): A ~> C =
     Lambda.unsafe.attempt(ctx => Expression.Pipe(self.compile(ctx), other.compile(ctx)))
 
+  final def <<<[C](other: C ~> A): C ~> B = other >>> self
+
+  final def pipe[C](other: B ~> C): A ~> C = self >>> other
+
+  final def compose[C](other: C ~> A): C ~> B = other >>> self
+
   final def compile: Expression[DynamicValue] = compile(CompilationContext.initial)
 
   def compile(context: CompilationContext): Expression[DynamicValue]
@@ -30,7 +36,9 @@ object Lambda {
     }
   }
 
-  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => Expression.Identity)
+  def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Expression.Identity)
+  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Expression.Die(reason))
+  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Expression.Debug(prefix))
 
   def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
     Lambda.unsafe.attempt { ctx =>
@@ -100,7 +108,10 @@ object Lambda {
     def toTyped[A](implicit ctor: Constructor[A]): DynamicValue ~> Option[A] =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(ctor.asInstanceOf[Constructor[Any]])))
 
-    final def toDynamic[A](implicit ctor: Constructor[A]): A ~> DynamicValue =
+    def path(p: String*): DynamicValue ~> Option[DynamicValue] =
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList)))
+
+    def toDynamic[A](implicit ctor: Constructor[A]): A ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Expression.Dynamic(Expression.Dynamic.ToDynamic(ctor.asInstanceOf[Constructor[Any]])))
   }
 

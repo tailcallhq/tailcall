@@ -6,6 +6,7 @@ import zio.schema.{DeriveSchema, Schema}
 import scala.annotation.unused
 
 // scalafmt: { maxColumn = 240 }
+// TODO: drop A type from Expression, it doesn't add much value at the moment
 sealed trait Expression[+A]
 
 object Expression {
@@ -20,6 +21,8 @@ object Expression {
   final case class Lookup(binding: Binding)                                                    extends Expression[Nothing]
   final case class Math[A](operation: Math.Operation[A], tag: Numeric[Any])                    extends Expression[A]
   final case class Pipe[A](left: Expression[A], right: Expression[A])                          extends Expression[A]
+  final case class Die(reason: String)                                                         extends Expression[Nothing]
+  final case class Debug(prefix: String)                                                       extends Expression[Nothing]
 
   object Math {
     sealed trait Operation[+A]
@@ -64,6 +67,7 @@ object Expression {
   object Dynamic {
     sealed trait Operation
     final case class Typed(ctor: Constructor[Any]) extends Operation
+    final case class Path(name: List[String])      extends Operation
 
     final case class ToDynamic(ctor: Constructor[Any]) extends Operation
   }

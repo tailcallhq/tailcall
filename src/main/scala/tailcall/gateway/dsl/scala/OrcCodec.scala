@@ -32,7 +32,7 @@ object OrcCodec {
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
     for {
-      objectDefinitions <- ZIO.foreach(o.types.map {
+      objectDefinitions <- ZIO.foreach(o.types.collect {
         case Orc.Obj(name, FieldSet.InputSet(fields))  => toInputObjectTypeDefinition(name, fields)
         case Orc.Obj(name, FieldSet.OutputSet(fields)) => toObjectTypeDefinition(name, fields)
       })(identity)
