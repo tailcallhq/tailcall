@@ -95,6 +95,7 @@ object EvaluationRuntime {
             operation match {
               case Dynamic.Typed(ctor)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(ctor.schema)
               case Dynamic.ToDynamic(ctor) => ctor.schema.toDynamic(input)
+              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
         case Dict(operation)    => operation match {
@@ -114,6 +115,11 @@ object EvaluationRuntime {
                 }
               } yield res
           }
+        case Die(message)       => LExit.fail(EvaluationError.Death(message))
+        case Debug(prefix)      => for {
+            input <- LExit.input[Any]
+            _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
+          } yield input
       }
     }
   }

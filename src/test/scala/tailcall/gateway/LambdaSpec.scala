@@ -1,5 +1,6 @@
 package tailcall.gateway
 
+import tailcall.gateway.ast.Context
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
 import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
@@ -203,7 +204,7 @@ object LambdaSpec extends ZIOSpecDefault {
             assertZIO(p.evaluate())(equalTo(None))
           }
         ),
-        suite("ToDynamic")(
+        suite("toDynamic")(
           test("int") {
             val p = Lambda(1) >>> Lambda.dynamic.toDynamic
             assertZIO(p.evaluate())(equalTo(DynamicValue(1)))
@@ -223,6 +224,21 @@ object LambdaSpec extends ZIOSpecDefault {
           test("seq") {
             val p = Lambda(Seq(1, 2, 3)) >>> Lambda.dynamic.toDynamic
             assertZIO(p.evaluate())(equalTo(DynamicValue(Seq(1, 2, 3))))
+          }
+        ),
+        suite("path")(
+          test("one level") {
+            val context  = Context(DynamicValue("Tailcall"), Map("foo" -> DynamicValue(1)), None)
+            val p        = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("value")
+            val expected = DynamicValue("Tailcall")
+            assertZIO(p.evaluate())(equalTo(Some(expected)))
+          },
+          test("with option") {
+            val parent   = Context(value = DynamicValue("Parent"))
+            val context  = Context(value = DynamicValue("Child"), parent = Option(parent))
+            val p        = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("parent", "value")
+            val expected = DynamicValue("Parent")
+            assertZIO(p.evaluate())(equalTo(Some(expected)))
           }
         )
       ),
