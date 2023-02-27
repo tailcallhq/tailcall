@@ -202,6 +202,28 @@ object LambdaSpec extends ZIOSpecDefault {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[String]
             assertZIO(p.evaluate())(equalTo(None))
           }
+        ),
+        suite("ToDynamic")(
+          test("int") {
+            val p = Lambda(1) >>> Lambda.dynamic.toDynamic
+            assertZIO(p.evaluate())(equalTo(DynamicValue(1)))
+          },
+          test("string") {
+            val p = Lambda("1") >>> Lambda.dynamic.toDynamic
+            assertZIO(p.evaluate())(equalTo(DynamicValue("1")))
+          },
+          test("boolean") {
+            val p = Lambda(true) >>> Lambda.dynamic.toDynamic
+            assertZIO(p.evaluate())(equalTo(DynamicValue(true)))
+          },
+          test("map") {
+            val p = Lambda(Map("a" -> 1, "b" -> 2)) >>> Lambda.dynamic.toDynamic
+            assertZIO(p.evaluate())(equalTo(DynamicValue(Map("a" -> 1, "b" -> 2))))
+          },
+          test("seq") {
+            val p = Lambda(Seq(1, 2, 3)) >>> Lambda.dynamic.toDynamic
+            assertZIO(p.evaluate())(equalTo(DynamicValue(Seq(1, 2, 3))))
+          }
         )
       ),
       suite("option")(

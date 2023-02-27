@@ -93,12 +93,12 @@ object EvaluationRuntime {
             eval2 <- evaluate(eval1.asInstanceOf[Expression[DynamicValue]])
           } yield eval2
         case Defer(value)       => LExit.succeed(value)
-        case Dynamic(operation) => for {
-            input <- LExit.input[Any]
-          } yield {
-            val d = input.asInstanceOf[DynamicValue]
-            operation match { case Dynamic.Typed(ctor) => DynamicValueUtil.as(d)(ctor.schema) }
-          }
+        case Dynamic(operation) => LExit.input[Any].map(input =>
+            operation match {
+              case Dynamic.Typed(ctor)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(ctor.schema)
+              case Dynamic.ToDynamic(ctor) => ctor.schema.toDynamic(input)
+            }
+          )
         case Dict(operation)    => operation match {
             case Dict.Get(key, map) => for {
                 k <- evaluate(key)
