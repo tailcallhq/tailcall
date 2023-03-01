@@ -2,6 +2,7 @@ package tailcall.gateway
 
 import tailcall.gateway.remote._
 import tailcall.gateway.service.{EvaluationContext, EvaluationRuntime}
+import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
@@ -100,7 +101,7 @@ object RemoteSpec extends ZIOSpecDefault {
           }(Remote(10))
           assertZIO(program.evaluate)(equalTo(200))
         }
-      )
+      ),
 //      suite("string")(
 //        test("concat") {
 //          val program = Remote("Hello") ++ Remote(" ") ++ Remote("World!")
@@ -238,33 +239,46 @@ object RemoteSpec extends ZIOSpecDefault {
 //          assertZIO(program.evaluate)(equalTo("Some Error"))
 //        }
 //      ),
-//      suite("option")(
-//        test("some") {
-//          val program = Remote.fromOption(Some(Remote(1)))
-//          assertZIO(program.evaluate)(equalTo(Some(1)))
-//        },
-//        test("none") {
-//          val program = Remote.fromOption(None)
-//          assertZIO(program.evaluate)(equalTo(None))
-//        },
-//        test("isSome") {
-//          val program = Remote.fromOption(Some(Remote(1))).isSome
-//          assertZIO(program.evaluate)(isTrue)
-//        },
-//        test("isNone") {
-//          val program = Remote.fromOption(None).isNone
-//          assertZIO(program.evaluate)(isTrue)
-//        },
-//        test("fold some") {
-//          val program =
-//            Remote.fromOption(Some(Remote(1))).fold(Remote(0))(_ * Remote(2))
-//          assertZIO(program.evaluate)(equalTo(2))
-//        },
-//        test("fold none") {
-//          val program = Remote.fromOption(None).fold(Remote(0))(_ * Remote(2))
-//          assertZIO(program.evaluate)(equalTo(0))
-//        }
-//      ),
+      suite("option")(
+        test("some") {
+          val program = Remote.fromOption(Some(Remote(1)))
+          assertZIO(program.evaluate)(equalTo(Some(1)))
+        },
+        test("none") {
+          val program = Remote.fromOption(None)
+          assertZIO(program.evaluate)(equalTo(None))
+        },
+        test("isSome") {
+          val program = Remote.fromOption(Some(Remote(1))).isSome
+          assertZIO(program.evaluate)(isTrue)
+        },
+        test("isNone") {
+          val program = Remote.fromOption(None).isNone
+          assertZIO(program.evaluate)(isTrue)
+        },
+        test("fold some") {
+          val program = Remote.fromOption(Some(Remote(1))).fold(Remote(0), _ * Remote(2))
+          assertZIO(program.evaluate)(equalTo(2))
+        },
+        test("fold none") {
+          val program = Remote.fromOption(Option.empty[Remote[Int]]).fold(Remote(0), _ * Remote(2))
+          assertZIO(program.evaluate)(equalTo(0))
+        }
+      ),
+      suite("dynamicValue")(
+        test("int") {
+          val program = Remote(1).toDynamic
+          assertZIO(program.evaluate)(equalTo(DynamicValue(1)))
+        },
+        test("some") {
+          val program = Remote(Option(1)).toDynamic
+          assertZIO(program.evaluate)(equalTo(DynamicValue(Option(1))))
+        },
+        test("none") {
+          val program = Remote(Option.empty[Int]).toDynamic
+          assertZIO(program.evaluate)(equalTo(DynamicValue(Option.empty[Int])))
+        }
+      )
 //      test("record") {
 //        val program = Remote.record(
 //          "a" -> Remote(DynamicValue(1)),

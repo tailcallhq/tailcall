@@ -19,6 +19,8 @@ sealed trait Remote[+A] {
 
   def toDynamic[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
     Remote(self.toLambda >>> Lambda.dynamic.toDynamic)
+
+  def debug(message: String): Remote[A] = Remote(self.toLambda >>> Lambda.debug(message))
 }
 
 object Remote {
@@ -32,11 +34,9 @@ object Remote {
 
   def die(reason: String): Remote[Nothing] = Remote(Lambda.die(reason))
 
-  def dynamic[A](a: A)(implicit c: Schema[A]): Remote[DynamicValue] = Remote(c.toDynamic(a))
-
   def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
 
-  def option[A](a: Option[Remote[A]])(implicit schema: Schema[A]): Remote[Option[A]] = ???
+  def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] = Remote(Lambda.option(a.map(_.toLambda)))
 
   def toLambda[A, B](ab: Remote[A] => Remote[B]): A ~> B = Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
 

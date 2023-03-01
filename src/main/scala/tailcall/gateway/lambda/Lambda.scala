@@ -7,12 +7,11 @@ import zio.schema.{DynamicValue, Schema}
 
 sealed trait Lambda[-A, +B] {
   self =>
-  final def >>>[C](other: B ~> C): A ~> C =
-    Lambda.unsafe.attempt(ctx => Expression.Pipe(self.compile(ctx), other.compile(ctx)))
-
   final def <<<[C](other: C ~> A): C ~> B = other >>> self
 
   final def pipe[C](other: B ~> C): A ~> C = self >>> other
+
+  final def >>>[C](other: B ~> C): A ~> C = Lambda.unsafe.attempt(ctx => Pipe(self.compile(ctx), other.compile(ctx)))
 
   final def compose[C](other: C ~> A): C ~> B = other >>> self
 
@@ -30,28 +29,28 @@ object Lambda {
   def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
-      val body  = f(Lambda.unsafe.attempt[Any, A](_ => Expression.Lookup(key))).compile(ctx.next)
-      val input = Expression.Identity
-      Expression.FunctionDef(key, body, input)
+      val body  = f(Lambda.unsafe.attempt[Any, A](_ => Lookup(key))).compile(ctx.next)
+      val input = Identity
+      FunctionDef(key, body, input)
     }
   }
 
-  def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Expression.Identity)
-  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Expression.Die(reason))
-  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Expression.Debug(prefix))
+  def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Identity)
+  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Die(reason))
+  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Debug(prefix))
 
   def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
-      val body  = f(Lambda.unsafe.attempt[A, B](_ => Expression.Immediate(Expression.Lookup(key)))).compile(ctx.next)
-      val input = Expression.Defer(body)
-      Expression.FunctionDef(key, body, input)
+      val body  = f(Lambda.unsafe.attempt[A, B](_ => Immediate(Lookup(key)))).compile(ctx.next)
+      val input = Defer(body)
+      FunctionDef(key, body, input)
     }
 
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        Expression.Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
+        Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
       }
 
     def cond[A, B](c: A ~> Boolean)(isTrue: A ~> B, isFalse: A ~> B): A ~> B =
@@ -64,11 +63,11 @@ object Lambda {
       Lambda.unsafe.attempt(ctx => EqualTo(a.compile(ctx), b.compile(ctx), ev.any))
 
     def not[A](a: A ~> Boolean): A ~> Boolean =
-      Lambda.unsafe.attempt[A, Boolean](ctx => Expression.Logical(Logical.Unary(a.compile(ctx), Logical.Unary.Not)))
+      Lambda.unsafe.attempt[A, Boolean](ctx => Logical(Logical.Unary(a.compile(ctx), Logical.Unary.Not)))
 
     def or[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
-        Expression.Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
+        Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
       }
   }
 
@@ -77,15 +76,15 @@ object Lambda {
 
     def inc[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, ev(ev.one))
 
-    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Add, a.compile(ctx), b.compile(ctx)), ev.any))
-
     def mul[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Multiply, a.compile(ctx), b.compile(ctx)), ev.any))
 
     def dec[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = sub(a, ev(ev.one))
 
     def sub[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, neg(b))
+
+    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Add, a.compile(ctx), b.compile(ctx)), ev.any))
 
     def neg[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Unary(Math.Unary.Negate, ab.compile(ctx)), ev.any))
@@ -112,7 +111,7 @@ object Lambda {
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList)))
 
     def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
-      Lambda.unsafe.attempt(_ => Expression.Dynamic(Expression.Dynamic.ToDynamic(schema.asInstanceOf[Schema[Any]])))
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.ToDynamic(schema.asInstanceOf[Schema[Any]])))
   }
 
   object dict {
