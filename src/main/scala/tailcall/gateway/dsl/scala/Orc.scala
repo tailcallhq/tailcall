@@ -3,7 +3,7 @@ package tailcall.gateway.dsl.scala
 import tailcall.gateway.ast.Document
 import tailcall.gateway.remote.Remote
 import zio.Task
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 /**
  * A scala DSL to create an orchestration specification.
@@ -85,4 +85,6 @@ object Orc {
       }
     )
   }
+
+  implicit val schema: Schema[Orc] = DeriveSchema.gen[Orc]
 }
