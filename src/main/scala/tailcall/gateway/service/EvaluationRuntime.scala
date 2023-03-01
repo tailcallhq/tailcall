@@ -9,9 +9,9 @@ trait EvaluationRuntime {
   final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial)).asInstanceOf[LExit[Any, Throwable, A, B]]
 
-  def evaluate(dynamicEval: Expression[DynamicValue]): LExit[Any, Throwable, Any, Any]
+  def evaluate(dynamicEval: Expression): LExit[Any, Throwable, Any, Any]
 
-  final def evaluateAs[A](eval: Expression[DynamicValue]): LExit[Any, Throwable, Any, A] =
+  final def evaluateAs[A](eval: Expression): LExit[Any, Throwable, Any, A] =
     evaluate(eval).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
@@ -26,10 +26,10 @@ object EvaluationRuntime {
 
   final class Live(ctx: EvaluationContext) extends EvaluationRuntime {
 
-    override def evaluate(plan: Expression[DynamicValue]): LExit[Any, Throwable, Any, Any] = {
+    override def evaluate(plan: Expression): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Literal(value, ctor)              => value.toTypedValue(ctor.schema) match {
-            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, ctor.schema))
+        case Literal(value, schema)            => value.toTypedValue(schema) match {
+            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, schema))
             case Right(value) => LExit.succeed(value)
           }
         case EqualTo(left, right, tag)         => for {
@@ -87,15 +87,15 @@ object EvaluationRuntime {
           }
 
         case Immediate(eval0)   => for {
-            eval1 <- evaluate(eval0)
-            eval2 <- evaluate(eval1.asInstanceOf[Expression[DynamicValue]])
+            eval1 <- evaluateAs[Expression](eval0)
+            eval2 <- evaluate(eval1)
           } yield eval2
         case Defer(value)       => LExit.succeed(value)
         case Dynamic(operation) => LExit.input[Any].map(input =>
             operation match {
-              case Dynamic.Typed(ctor)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(ctor.schema)
-              case Dynamic.ToDynamic(ctor) => ctor.schema.toDynamic(input)
-              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
+              case Dynamic.Typed(schema)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(schema)
+              case Dynamic.ToDynamic(schema) => schema.toDynamic(input)
+              case Dynamic.Path(path)        => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
         case Dict(operation)    => operation match {

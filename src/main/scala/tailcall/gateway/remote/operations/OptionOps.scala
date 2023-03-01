@@ -2,6 +2,7 @@ package tailcall.gateway.remote.operations
 
 import tailcall.gateway.lambda.Lambda
 import tailcall.gateway.remote.Remote
+import zio.schema.Schema
 
 trait OptionOps {
   implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]) {
@@ -16,5 +17,8 @@ trait OptionOps {
       Remote(Lambda.option.fold(self.toLambda, default.toLambda, Remote.fromRemoteFunction[B, B](i => i)))
 
     def getOrDie: Remote[A] = getOrElse(Remote.die("Failed to get value from None"))
+
+    def flatMap[B](f: Remote[A] => Remote[Option[B]])(implicit ev: Schema[B]): Remote[Option[B]] =
+      self.fold[Option[B]](Remote(Option.empty[B]), f(_))
   }
 }

@@ -14,7 +14,7 @@ sealed trait Numeric[A] {
   def one: A
   final def any: Numeric[Any] = this.asInstanceOf[Numeric[Any]]
   def schema: Schema[A]
-  def apply(a: A): Any ~> A   = Lambda(a)(Constructor(schema))
+  def apply(a: A): Any ~> A   = Lambda(a)(schema)
 }
 
 // TODO: add more numeric types

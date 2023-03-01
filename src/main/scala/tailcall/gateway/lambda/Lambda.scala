@@ -16,16 +16,16 @@ sealed trait Lambda[-A, +B] {
 
   final def compose[C](other: C ~> A): C ~> B = other >>> self
 
-  final def compile: Expression[DynamicValue] = compile(CompilationContext.initial)
+  final def compile: Expression = compile(CompilationContext.initial)
 
-  def compile(context: CompilationContext): Expression[DynamicValue]
+  def compile(context: CompilationContext): Expression
 
   final def evaluate: LExit[EvaluationRuntime, Throwable, A, B] = EvaluationRuntime.evaluate(self)
 }
 
 object Lambda {
-  def apply[A, B](b: => B)(implicit ctor: Constructor[B]): A ~> B =
-    Lambda.unsafe.attempt(_ => Literal(ctor.schema.toDynamic(b), ctor.asInstanceOf[Constructor[Any]]))
+  def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
+    Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.asInstanceOf[Schema[Any]]))
 
   def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
@@ -105,14 +105,14 @@ object Lambda {
   }
 
   object dynamic {
-    def toTyped[A](implicit ctor: Constructor[A]): DynamicValue ~> Option[A] =
-      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(ctor.asInstanceOf[Constructor[Any]])))
+    def toTyped[A](implicit schema: Schema[A]): DynamicValue ~> Option[A] =
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(schema.asInstanceOf[Schema[Any]])))
 
     def path(p: String*): DynamicValue ~> Option[DynamicValue] =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList)))
 
-    def toDynamic[A](implicit ctor: Constructor[A]): A ~> DynamicValue =
-      Lambda.unsafe.attempt(_ => Expression.Dynamic(Expression.Dynamic.ToDynamic(ctor.asInstanceOf[Constructor[Any]])))
+    def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
+      Lambda.unsafe.attempt(_ => Expression.Dynamic(Expression.Dynamic.ToDynamic(schema.asInstanceOf[Schema[Any]])))
   }
 
   object dict {
@@ -130,13 +130,13 @@ object Lambda {
   }
 
   object unsafe {
-    def attempt[A, B](eval: CompilationContext => Expression[DynamicValue]): A ~> B =
+    def attempt[A, B](eval: CompilationContext => Expression): A ~> B =
       new Lambda[A, B] {
-        override def compile(context: CompilationContext): Expression[DynamicValue] = eval(context)
+        override def compile(context: CompilationContext): Expression = eval(context)
       }
   }
 
-  implicit val anySchema: Schema[_ ~> _] = Schema[Expression[DynamicValue]]
+  implicit val anySchema: Schema[_ ~> _] = Schema[Expression]
     .transform(eval => Lambda.unsafe.attempt(_ => eval), _.compile(CompilationContext.initial))
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
