@@ -117,6 +117,9 @@ object Lambda {
   object dict {
     def get[A, K, V](key: A ~> K, map: A ~> Map[K, V]): A ~> Option[V] =
       Lambda.unsafe.attempt(ctx => Dict(Dict.Get(key.compile(ctx), map.compile(ctx))))
+
+    def concat[A, B, K, V](map1: A ~> Map[K, V], map2: B ~> Map[K, V]): A ~> Map[K, V] =
+      Lambda.unsafe.attempt(ctx => Dict(Dict.Concatenate(map1.compile(ctx), map2.compile(ctx))))
   }
 
   object option {

@@ -143,6 +143,10 @@ object LambdaSpec extends ZIOSpecDefault {
         test("get none") {
           val program = Lambda.dict.get(Lambda("key"), Lambda.identity[Map[String, String]])
           assertZIO(program.evaluate(Map("key0" -> "value")))(equalTo(None))
+        },
+        test("concatenate") {
+          val program = Lambda.dict.concat(Lambda(Map("k0" -> "v")), Lambda.identity[Map[String, String]])
+          assertZIO(program.evaluate(Map("k1" -> "v")))(equalTo(Map("k0" -> "v", "k1" -> "v")))
         }
       ),
       suite("DynamicValueOps")(

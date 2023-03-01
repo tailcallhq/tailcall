@@ -99,10 +99,14 @@ object EvaluationRuntime {
             }
           )
         case Dict(operation)    => operation match {
-            case Dict.Get(key, map) => for {
+            case Dict.Get(key, map)           => for {
                 k <- evaluate(key)
                 m <- evaluateAs[Map[Any, Any]](map)
               } yield m.get(k)
+            case Dict.Concatenate(map1, map2) => for {
+                m1 <- evaluateAs[Map[Any, Any]](map1)
+                m2 <- evaluateAs[Map[Any, Any]](map2)
+              } yield m1 ++ m2
           }
         case Opt(operation)     => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
