@@ -114,6 +114,10 @@ object EvaluationRuntime {
                   case None        => evaluate(none)
                 }
               } yield res
+            case Opt.Apply(value)            => value match {
+                case None        => LExit.succeed(None)
+                case Some(value) => for { any <- evaluate(value) } yield Option(any)
+              }
           }
         case Die(message)       => LExit.fail(EvaluationError.Death(message))
         case Debug(prefix)      => for {

@@ -127,6 +127,9 @@ object Lambda {
 
     def fold[A, B, C](opt: A ~> Option[B], ifNone: A ~> C, ifSome: B ~> C): A ~> C =
       Lambda.unsafe.attempt(ctx => Opt(Opt.Fold(opt.compile(ctx), ifNone.compile, ifSome.compile(ctx))))
+
+    def apply[A, B](ab: Option[A ~> B]): A ~> Option[B] =
+      Lambda.unsafe.attempt(ctx => Opt(Opt.Apply(ab.map(_.compile(ctx)))))
   }
 
   object unsafe {

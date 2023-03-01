@@ -81,6 +81,7 @@ object Expression {
     case object IsSome                                                           extends Operation
     case object IsNone                                                           extends Operation
     final case class Fold(value: Expression, none: Expression, some: Expression) extends Operation
+    final case class Apply(value: Option[Expression])                            extends Operation
   }
 
   implicit val schema: Schema[Expression] = DeriveSchema.gen[Expression]

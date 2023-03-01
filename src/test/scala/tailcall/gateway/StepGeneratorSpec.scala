@@ -23,10 +23,14 @@ object StepGeneratorSpec extends ZIOSpecDefault {
           "Query" -> List(
             "sum" -> Field.output.as("Int").withArgument("a" -> Field.input.as("Int"), "b" -> Field.input.as("Int"))
               .withResolver { ctx =>
-                val a = ctx.path("args", "a").getOrDie.toTyped[Int].getOrDie
-                val b = ctx.path("args", "b").getOrDie.toTyped[Int].getOrDie
-
-                (a + b).toDynamic
+                Remote.dynamic {
+                  for {
+                    anyA <- ctx.path("args", "a")
+                    anyB <- ctx.path("args", "b")
+                    a    <- anyA.toTyped[Int]
+                    b    <- anyB.toTyped[Int]
+                  } yield a + b
+                }
               }
           )
         )

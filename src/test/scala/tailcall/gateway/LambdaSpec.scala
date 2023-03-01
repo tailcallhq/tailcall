@@ -272,6 +272,14 @@ object LambdaSpec extends ZIOSpecDefault {
             ifSome = Lambda.math.inc(Lambda.identity[Int])
           )
           assertZIO(program.evaluate(100))(equalTo(101))
+        },
+        test("apply some") {
+          val program = Lambda.option(Option(Lambda(0)))
+          assertZIO(program.evaluate())(equalTo(Some(0)))
+        },
+        test("apply none") {
+          val program = Lambda.option(Option.empty[Int ~> Int])
+          assertZIO(program.evaluate(0))(equalTo(None))
         }
       )
     ).provide(EvaluationRuntime.live, EvaluationContext.live)

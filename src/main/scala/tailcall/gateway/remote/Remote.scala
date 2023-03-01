@@ -28,22 +28,22 @@ object Remote {
 
   def apply[A](a: Any ~> A): Remote[A] = FromLambda(a)
 
-  def dynamic[A](a: A)(implicit c: Schema[A]): Remote[DynamicValue] = Remote(c.toDynamic(a))
-
-  def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
-
-  def bind[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] =
-    a => Remote(a.toLambda >>> Remote.fromRemoteFunction(ab))
-
-  implicit def schema[A]: Schema[Remote[A]] = Schema[Any ~> A].transform(Remote(_), _.toLambda)
-
-  def fromRemoteFunction[A, B](ab: Remote[A] => Remote[B]): A ~> B =
-    Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
-
-  def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
+  def bind[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> Remote.toLambda(ab))
 
   def die(reason: String): Remote[Nothing] = Remote(Lambda.die(reason))
 
+  def dynamic[A](a: A)(implicit c: Schema[A]): Remote[DynamicValue] = Remote(c.toDynamic(a))
+
+  def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
+
+  def option[A](a: Option[Remote[A]])(implicit schema: Schema[A]): Remote[Option[A]] = ???
+
+  def toLambda[A, B](ab: Remote[A] => Remote[B]): A ~> B = Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
+
+  def toLambda[A](remote: Remote[A]): Any ~> A = remote match { case FromLambda(lambda) => lambda }
+
+  implicit def schema[A]: Schema[Remote[A]] = Schema[Any ~> A].transform(Remote(_), _.toLambda)
+
   implicit def schemaFunction[A, B]: Schema[Remote[A] => Remote[B]] =
-    Schema[A ~> B].transform[Remote[A] => Remote[B]](Remote.fromLambda, Remote.fromRemoteFunction)
+    Schema[A ~> B].transform[Remote[A] => Remote[B]](Remote.fromLambda, Remote.toLambda(_))
 }
