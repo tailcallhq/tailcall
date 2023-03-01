@@ -39,25 +39,26 @@ object DynamicValueUtil {
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
 
-  def toValue(input: DynamicValue): ResponseValue                        = {
+  def toValue(input: DynamicValue): ResponseValue = {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
       case DynamicValue.Dictionary(_)                  => ???
       case DynamicValue.Singleton(_)                   => ???
-      case DynamicValue.NoneValue                      => ???
+      case DynamicValue.NoneValue                      => Value.NullValue
       case DynamicValue.DynamicAst(_)                  => ???
       case DynamicValue.SetValue(_)                    => ???
       case DynamicValue.Record(_, _)                   => ???
       case DynamicValue.Enumeration(_, _)              => ???
       case DynamicValue.RightValue(_)                  => ???
-      case DynamicValue.SomeValue(_)                   => ???
+      case DynamicValue.SomeValue(input)               => toValue(input)
       case DynamicValue.Tuple(_, _)                    => ???
       case DynamicValue.LeftValue(_)                   => ???
       case DynamicValue.Error(_)                       => ???
     }
   }
-  def toInputValue(input: DynamicValue): InputValue                      = {
+
+  def toInputValue(input: DynamicValue): InputValue = {
     input match {
       case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
@@ -75,7 +76,9 @@ object DynamicValueUtil {
       case DynamicValue.Error(_)          => ???
     }
   }
-  def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A]      = d.toTypedValueOption(schema)
+
+  def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
+
   def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
