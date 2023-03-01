@@ -12,7 +12,7 @@ import zio.test.{ZIOSpecDefault, assertZIO}
 object StepGeneratorSpec extends ZIOSpecDefault {
 
   def spec = {
-    suite("DocumentStepGenerator")(
+    suite("StepGenerator")(
       test("static value") {
         val orc     = Orc("Query" -> List("id" -> Field.output.as("String").resolveWith(100)))
         val program = execute(orc)("query {id}")
@@ -23,13 +23,13 @@ object StepGeneratorSpec extends ZIOSpecDefault {
           "Query" -> List(
             "sum" -> Field.output.as("Int").withArgument("a" -> Field.input.as("Int"), "b" -> Field.input.as("Int"))
               .withResolver { ctx =>
-                Remote.dynamic {
-                  for {
+                {
+                  (for {
                     anyA <- ctx.path("args", "a")
                     anyB <- ctx.path("args", "b")
                     a    <- anyA.toTyped[Int]
                     b    <- anyB.toTyped[Int]
-                  } yield a + b
+                  } yield a + b).toDynamic
                 }
               }
           )

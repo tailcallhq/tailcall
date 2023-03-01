@@ -16,10 +16,10 @@ object StepGenerator {
   final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
     def resolve(field: Document.FieldDefinition): Step[Any] = {
       Step.FunctionStep { args =>
-        val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue(_)).toMap
+        val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap
         val context = Context(DynamicValue(()), ctxArgs, None)
         Step.QueryStep(ZQuery.fromZIO(
-          field.resolver(Remote.dynamic(context)).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
+          field.resolver(Remote(DynamicValue(context))).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
             .provide(ZLayer.succeed(rtm))
         ))
       }
