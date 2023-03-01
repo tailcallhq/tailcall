@@ -10,19 +10,18 @@ import tailcall.gateway.internal.DynamicValueUtil
 import zio.{ZIO, ZLayer}
 
 trait TypeGenerator {
-  def __type(doc: Document): __Type
+  def __type(doc: Document): Option[__Type]
 }
 
 object TypeGenerator {
-  def __type(document: Document): ZIO[TypeGenerator, Nothing, __Type] =
+  def __type(document: Document): ZIO[TypeGenerator, Nothing, Option[__Type]] =
     ZIO.serviceWith[TypeGenerator](_.__type(document))
 
   def live: ZLayer[Any, Nothing, TypeGenerator] = ZLayer.succeed(new Live())
 
   final class Live extends TypeGenerator {
     // TODO: fix this implementation
-    override def __type(doc: Document): __Type =
-      parseRemoteSchema(toCalibanDocument(doc)).map(_.queryType).getOrElse(???)
+    override def __type(doc: Document): Option[__Type] = parseRemoteSchema(toCalibanDocument(doc)).map(_.queryType)
 
     private def toCalibanDocument(document: Document): CalibanDocument = {
       CalibanDocument(

@@ -16,8 +16,8 @@ object GraphQLGenerator {
     override def toGraphQL(document: Document): GraphQL[Any] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
-          val queryOperation = Operation(tGen.__type(document), sGen.resolve(document))
-          RootSchemaBuilder(query = Option(queryOperation), None, None)
+          val queryOperation = tGen.__type(document).map(__type => Operation(__type, sGen.resolve(document)))
+          RootSchemaBuilder(query = queryOperation, None, None)
         }
         override protected val wrappers: List[Wrapper[Any]]            = Nil
         override protected val additionalDirectives: List[__Directive] = Nil
