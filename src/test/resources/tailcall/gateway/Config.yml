@@ -1,164 +1,100 @@
----
-version: 1.0.0
-server:
-  baseURL: https://jsonplaceholder.typicode.com
-
-# Schemas to be using in endpoints
-schemas:
-  - &Geo
-    type: object
-    fields:
-      - name: lat
-        required: true
-        schema:
-          type: String
-
-      - name: lng
-        required: true
-        schema:
-          type: String
-  - &Address
-    type: object
-    fields:
-      - name: street
-        required: true
-        schema:
-          type: String
-
-      - name: suite
-        required: true
-        schema:
-          type: String
-
-      - name: city
-        required: true
-        schema:
-          type: String
-
-      - name: zipcode
-        required: true
-        schema:
-          type: String
-
-      - name: geo
-        required: false
-        schema: *Geo
-  - &Post
-    type: object
-    fields:
-      - name: userId
-        required: true
-        schema:
-          type: Integer
-
-      - name: id
-        required: true
-        schema:
-          type: Integer
-
-      - name: title
-        required: true
-        schema:
-          type: String
-
-      - name: body
-        required: true
-        schema:
-          type: String
-  - &IdList
-    type: array
-    item:
-      type: ID
-  - &UserId
-    type: object
-    fields:
-      - name: userId
-        schema:
-          type: String
-
-  - &User
-    type: object
-    fields:
-      - name: id
-        required: true
-        schema:
-          type: ID
-
-      - name: name
-        required: true
-        schema:
-          type: String
-
-      - name: email
-        required: true
-        schema:
-          type: String
-
-      - name: address
-        required: false
-        schema: *Address
-
-# List of endpoints
 operations:
-  - &getUsers
-    operation:
-      type: http
-      method: GET
-      path: "/users"
+  - &getUsers:
+    type: Http
+    method: GET
+    path: /users
     output:
-      type: array
-      item: *User
-
-  - &getPosts
-    operation: &getPostsOperation
-      type: http
-      method: GET
-      path: "/posts"
-    output: &getPostsOutput
-      type: array
-      item: *Post
-
-  - &getUserPosts
-    operation:
-      <<: *getPostsOperation
-      query:
-        - name: userId
-          value: ${parent, id}
-    input:
-      type: object
-      fields:
-        - name: parent
-          schema: *User
-    output: *getPostsOutput
-
-  - &getPostUser
-    input:
-      type: object
-      fields:
-        - name: id
-          schema:
-            type: ID
-    output: *User
-    operation:
-      type: http
-      method: GET
-      path: /users/${parent.id}
+      type: User
+      list: true
+  - &getUserById:
+    type: Http
+    path: /users/${id}
+    output:
+      type: User
+  - &getPosts:
+    type: Http
+    path: /posts
+    output:
+      type: Post
+      list: true
+  - &getComments:
+    type: Http
+    path: /comments
+    output:
+      type: Comment
+      list: true
+  - &getUserPosts:
+    type: Http
+    path: /posts?userId=${userId}
+    output:
+      type: Post
+      list: true
+  - &getUserComments:
+    type: Http
+    path: /comments?userId=${userId}
+    output:
+      type: Comment
+      list: true
 
 graphQL:
-  connections:
-    Query:
-      users:
-        operations:
-          - *getUsers
-      posts:
-        operations:
-          - *getPosts
-    User:
-      posts:
-        operations:
+  Query:
+    users:
+      operations: *getUsers
+    posts:
+      operations: *getPosts
+    comments:
+      operations: *getComments
+  User:
+    id: Int
+    name: String
+    email: String
+    address: Address
+    phone: String
+    website: String
+    company: Company
+    posts:
+      operations:
+        compose:
           - *getUserPosts
+          - applySpec:
+              userId:
+                prop: id
 
+    comments:
+      operations:
+        compose:
+          - *getUserComments
+          - applySpec:
+              userId:
+                prop: id
     Post:
+      id: Int
+      userId: Int
+      title: String
+      body: String
       user:
         operations:
-          - *getPostUser
+          compose:
+            - *getUserById
+            - applySpec:
+                id:
+                  prop: userId
+      comments:
+        operations:
+          compose:
+            - *getComments
+            - applySpec:
+                postId:
+                  prop: id
+    Address:
+      street: String
+      suite: String
+      city: String
+      zipcode: String
+      geo:
+        type: Geo
+    Company:
+      name: String
+      catchPhrase: String
+      bs: String
+
