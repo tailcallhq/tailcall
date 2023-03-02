@@ -7,28 +7,28 @@ import zio.schema.{Schema, DeriveSchema}
 
 object JsonPlaceholder:
   final case class User(id: Int, name: String)
-  object User   :
+  object User:
     implicit val schema: Schema[User] = DeriveSchema.gen[User]
   final case class Post(id: Int, title: String, body: String, userId: Int)
-  object Post   :
+  object Post:
     implicit val schema: Schema[Post] = DeriveSchema.gen[Post]
   final case class Comment(id: Int, name: String, email: String, body: String, postId: Int)
   object Comment:
     implicit val schema: Schema[Comment] = DeriveSchema.gen[Comment]
   final case class Album(id: Int, title: String, userId: Int)
-  object Album  :
+  object Album:
     implicit val schema: Schema[Album] = DeriveSchema.gen[Album]
   final case class Photo(id: Int, title: String, url: String, thumbnailUrl: String, albumId: Int)
-  object Photo  :
+  object Photo:
     implicit val schema: Schema[Photo] = DeriveSchema.gen[Photo]
   final case class Todo(id: Int, title: String, completed: Boolean, userId: Int)
-  object Todo   :
+  object Todo:
     implicit val schema: Schema[Todo] = DeriveSchema.gen[Todo]
   final case class UserId(userId: Int)
-  object UserId :
+  object UserId:
     implicit val schema: Schema[UserId] = DeriveSchema.gen[UserId]
   final case class PostId(postId: Int)
-  object PostId :
+  object PostId:
     implicit val schema: Schema[PostId] = DeriveSchema.gen[PostId]
   final case class EmailId(email: String)
   object EmailId:

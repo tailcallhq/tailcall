@@ -13,4 +13,4 @@ final case class Context(
 )
 
 object Context:
-  implicit val schema: Schema[Context] = DeriveSchema.gen[Context]
+  given schema: Schema[Context] = DeriveSchema.gen[Context]

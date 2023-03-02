@@ -1,9 +1,13 @@
 package tailcall.gateway.lambda
 
-sealed trait Equatable[A]:
-  def equal(a: A, b: A): Boolean
-  def any: Equatable[Any] = this.asInstanceOf[Equatable[Any]]
+sealed trait Equatable[-A] extends Equatable.Tag:
+  self =>
+
+  def tag: Equatable.Tag      = this.asInstanceOf[Equatable.Tag]
+  def eq(a: A, b: A): Boolean =
+    self match
+      case Equatable.IntEquatable => a.asInstanceOf[Int] == b.asInstanceOf[Int]
 
 object Equatable:
-  implicit case object IntEquatable extends Equatable[Int]:
-    override def equal(a: Int, b: Int): Boolean = a == b
+  sealed trait Tag
+  implicit case object IntEquatable extends Equatable[Int]

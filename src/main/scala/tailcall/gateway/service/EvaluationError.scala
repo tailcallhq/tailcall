@@ -30,4 +30,3 @@ object EvaluationError:
       case Death(message)                         => s"Died because of: $message"
       case DecodingError(str)                     => s"Decoding error: $str"
       case InvalidTupleSize(length)               => s"Invalid tuple size: $length"
-

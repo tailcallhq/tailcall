@@ -1,6 +1,6 @@
 package tailcall.gateway
 
-import tailcall.gateway.internal.Extension
+import tailcall.gateway.internal.FileExtension
 import zio.test.TestAspect.failing
 import zio.test._
 import zio.{Task, ZIO}
@@ -14,7 +14,7 @@ object ExtensionSpec extends ZIOSpecDefault:
   // TODO: fix failing tests
   def spec =
     suite("ExtensionSpec")(test("json codec") {
-      val gen = Gen.fromIterable(Seq(Extension.YML, Extension.JSON))
+      val gen = Gen.fromIterable(Seq(FileExtension.YML, FileExtension.JSON))
       checkAll(gen) { ext =>
         for {
           str     <- read(s"Config.${ext.name}")

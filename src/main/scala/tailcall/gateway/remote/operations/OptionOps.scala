@@ -5,7 +5,7 @@ import tailcall.gateway.remote.Remote
 import zio.schema.Schema
 
 trait OptionOps:
-  implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]):
+  extension [A](self: Remote[Option[A]])
     def isSome: Remote[Boolean] = Remote(self.toLambda >>> Lambda.option.isSome)
 
     def isNone: Remote[Boolean] = Remote(self.toLambda >>> Lambda.option.isNone)

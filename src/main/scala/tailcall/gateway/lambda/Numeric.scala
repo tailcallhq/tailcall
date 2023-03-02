@@ -3,23 +3,25 @@ package tailcall.gateway.lambda
 import zio.schema.DeriveSchema.gen
 import zio.schema.Schema
 
-sealed trait Numeric[A]:
-  def add(left: A, right: A): A
-  def negate(value: A): A
-  def multiply(left: A, right: A): A
-  def divide(left: A, right: A): A
-  def modulo(left: A, right: A): A
-  def greaterThan(left: A, right: A): Boolean
-  def greaterThanEqual(left: A, right: A): Boolean
-  def one: A
-  final def any: Numeric[Any] = this.asInstanceOf[Numeric[Any]]
-  def schema: Schema[A]
-  def apply(a: A): Any ~> A   = Lambda(a)(schema)
+sealed trait Numeric:
+  type Input
+  def apply(value: Any): Input
+  def add(left: Input, right: Input): Input
+  def negate(value: Input): Input
+  def multiply(left: Input, right: Input): Input
+  def divide(left: Input, right: Input): Input
+  def modulo(left: Input, right: Input): Input
+  def greaterThan(left: Input, right: Input): Boolean
+  def greaterThanEqual(left: Input, right: Input): Boolean
+  def one: Input
+  def schema: Schema[Input]
+  // def apply(a: Input): Any ~> Input = Lambda(a)(schema)
 
 // TODO: add more numeric types
 object Numeric:
-
-  implicit case object IntTag extends Numeric[Int]:
+  type Aux[A] = Numeric { type Input = A }
+  implicit case object IntTag extends Numeric:
+    override type Input = Int
     override def add(left: Int, right: Int): Int                  = left + right
     override def negate(value: Int): Int                          = -value
     override def multiply(left: Int, right: Int): Int             = left * right
@@ -28,5 +30,5 @@ object Numeric:
     override def greaterThan(left: Int, right: Int): Boolean      = left > right
     override def greaterThanEqual(left: Int, right: Int): Boolean = left >= right
     override def one: Int                                         = 1
-
-    override def schema: Schema[Int] = Schema[Int]
+    override def schema: Schema[Int]                              = Schema[Int]
+    override def apply(value: Any): Int                           = value.asInstanceOf[Int]

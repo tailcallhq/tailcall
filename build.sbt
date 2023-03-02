@@ -1,37 +1,12 @@
 ThisBuild / scalaVersion := "3.2.2"
-ThisBuild / crossScalaVersions ++= Seq("2.13.6", "3.2.2")
 val zioJson   = "0.4.2"
 val zioSchema = "0.4.7"
 val caliban   = "2.0.2"
 val zio       = "2.0.6"
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
-ThisBuild / scalacOptions ++= {
-  Seq(
-    "-encoding",
-    "UTF-8",
-    "-feature",
-    "-language:implicitConversions",
-    "-language:postfixOps",
-    // disabled during the migration
-    // "-Xfatal-warnings"
-  ) ++ 
-    (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq(
-        "-unchecked",
-        "-source:3.0-migration",
-        "-indent",
-        "-rewrite",        
-      )
-      case _ => Seq(
-        "-deprecation",
-        "-Xfatal-warnings",
-        "-Wunused:imports,privates,locals",
-        "-Wvalue-discard",
-        
-      )
-    })
-}
+ThisBuild / scalacOptions ++= { Seq("-encoding", "UTF-8", "-indent", "-feature", "-unchecked") }
+
 ThisBuild / libraryDependencies                            := Seq(
   "dev.zio"               %% "zio-schema"            % zioSchema,
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,

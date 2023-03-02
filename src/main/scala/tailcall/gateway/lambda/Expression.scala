@@ -1,27 +1,29 @@
 package tailcall.gateway.lambda
 
 import tailcall.gateway.service.EvaluationContext.Binding
-import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.schema._
+import zio.schema.meta.MetaSchema
 
 // scalafmt: { maxColumn = 240 }
-// TODO: drop A type from Expression, it doesn't add much value at the moment
 sealed trait Expression
 
 object Expression:
-
+  // COMMENTED MARKERS ARE FOR FUTURE USE
+  given schema: Schema[Expression] = DeriveSchema.gen[Expression]
   case object Identity                                                                extends Expression
   final case class Defer(value: Expression)                                           extends Expression
-  final case class EqualTo(left: Expression, right: Expression, tag: Equatable[Any])  extends Expression
+  final case class EqualTo(left: Expression, right: Expression, tag: Equatable.Tag)   extends Expression
   final case class FunctionDef(binding: Binding, body: Expression, input: Expression) extends Expression
   final case class Immediate(value: Expression)                                       extends Expression
-  final case class Literal(value: DynamicValue, schema: Schema[Any])                  extends Expression
-  final case class Logical(operation: Logical.Operation)                              extends Expression
-  final case class Lookup(binding: Binding)                                           extends Expression
-  final case class Math(operation: Math.Operation, tag: Numeric[Any])                 extends Expression
-  final case class Pipe(left: Expression, right: Expression)                          extends Expression
-  final case class Die(reason: String)                                                extends Expression
-  final case class Debug(prefix: String)                                              extends Expression
+  final case class Literal(value: DynamicValue, schema: MetaSchema)                   extends Expression
 
+  final case class Lookup(binding: Binding) extends Expression
+
+  final case class Pipe(left: Expression, right: Expression) extends Expression
+  final case class Die(reason: String)                       extends Expression
+  final case class Debug(prefix: String)                     extends Expression
+
+  final case class Math(operation: Math.Operation, tag: Numeric) extends Expression
   object Math:
     sealed trait Operation
     final case class Binary(operation: Binary.Operation, left: Expression, right: Expression) extends Operation
@@ -40,6 +42,7 @@ object Expression:
       sealed trait Operation
       case object Negate extends Operation
 
+  final case class Logical(operation: Logical.Operation) extends Expression
   object Logical:
     sealed trait Operation
     final case class Binary(operation: Binary.Operation, left: Expression, right: Expression) extends Operation
@@ -58,9 +61,9 @@ object Expression:
   final case class Dynamic(operation: Dynamic.Operation) extends Expression
   object Dynamic:
     sealed trait Operation
-    final case class Typed(ctor: Schema[Any])     extends Operation
-    final case class Path(name: List[String])     extends Operation
-    final case class ToDynamic(ctor: Schema[Any]) extends Operation
+    final case class Typed(ctor: MetaSchema)     extends Operation
+    final case class Path(name: List[String])    extends Operation
+    final case class ToDynamic(ctor: MetaSchema) extends Operation
 
   final case class Dict(operation: Dict.Operation) extends Expression
   object Dict:
@@ -74,5 +77,3 @@ object Expression:
     case object IsNone                                                           extends Operation
     final case class Fold(value: Expression, none: Expression, some: Expression) extends Operation
     final case class Apply(value: Option[Expression])                            extends Operation
-
-  implicit val schema: Schema[Expression] = DeriveSchema.gen[Expression]

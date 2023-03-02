@@ -59,7 +59,7 @@ object Endpoint:
       self match
         case Protocol.Http  => "http"
         case Protocol.Https => "https"
-  object Protocol      :
+  object Protocol:
     case object Http  extends Protocol
     case object Https extends Protocol
 

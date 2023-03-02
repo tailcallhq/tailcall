@@ -4,6 +4,7 @@ import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import zio._
 import zio.schema.DynamicValue
+import zio.schema.Schema
 
 trait EvaluationRuntime:
   final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] =
@@ -27,19 +28,20 @@ object EvaluationRuntime:
 
     override def evaluate(plan: Expression): LExit[Any, Throwable, Any, Any] =
       plan match
-        case Literal(value, schema)            => value.toTypedValue(schema) match
-            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, schema))
-            case Right(value) => LExit.succeed(value)
-        case EqualTo(left, right, tag)         => 
+        case EqualTo(left, right, tag) =>
           for
             leftValue  <- evaluate(left)
             rightValue <- evaluate(right)
-          yield tag.equal(leftValue, rightValue)
+          yield tag.eq(leftValue, rightValue)
+        case Literal(value, meta)      => value.toTypedValue(meta.toSchema) match
+            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, meta.toSchema))
+            case Right(value) => LExit.succeed(value)
+
         case Math(operation, tag)              => operation match
             case Math.Binary(operation, left, right) =>
               for
-                leftValue  <- evaluate(left)
-                rightValue <- evaluate(right)
+                leftValue  <- evaluate(left).map(tag(_))
+                rightValue <- evaluate(right).map(tag(_))
               yield operation match
                 case Math.Binary.Add              => tag.add(leftValue, rightValue)
                 case Math.Binary.Multiply         => tag.multiply(leftValue, rightValue)
@@ -48,7 +50,8 @@ object EvaluationRuntime:
                 case Math.Binary.GreaterThan      => tag.greaterThan(leftValue, rightValue)
                 case Math.Binary.GreaterThanEqual => tag.greaterThanEqual(leftValue, rightValue)
             case Math.Unary(operation, value)        =>
-              for  value <- evaluate(value)  yield operation match { case Math.Unary.Negate => tag.negate(value) }
+              for value <- evaluate(value).map(tag(_))
+              yield operation match { case Math.Unary.Negate => tag.negate(value) }
         case Logical(operation)                => operation match
             case Logical.Binary(operation, left, right) =>
               for
@@ -80,7 +83,7 @@ object EvaluationRuntime:
             yield res
           }
 
-        case Immediate(eval0)   => 
+        case Immediate(eval0)   =>
           for
             eval1 <- evaluateAs[Expression](eval0)
             eval2 <- evaluate(eval1)
@@ -88,13 +91,13 @@ object EvaluationRuntime:
         case Defer(value)       => LExit.succeed(value)
         case Dynamic(operation) => LExit.input[Any].map(input =>
             operation match {
-              case Dynamic.Typed(schema)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(schema)
-              case Dynamic.ToDynamic(schema) => schema.toDynamic(input)
-              case Dynamic.Path(path)        => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
+              case Dynamic.Typed(meta)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(meta.toSchema)
+              case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
+              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
         case Dict(operation)    => operation match
-            case Dict.Get(key, map) => 
+            case Dict.Get(key, map) =>
               for
                 k <- evaluate(key)
                 m <- evaluateAs[Map[Any, Any]](map)
@@ -102,7 +105,7 @@ object EvaluationRuntime:
         case Opt(operation)     => operation match
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
             case Opt.IsNone                  => LExit.input.map(_.asInstanceOf[Option[_]].isEmpty)
-            case Opt.Fold(value, none, some) => 
+            case Opt.Fold(value, none, some) =>
               for
                 opt <- evaluateAs[Option[_]](value)
                 res <- opt match
@@ -111,7 +114,7 @@ object EvaluationRuntime:
               yield res
             case Opt.Apply(value)            => value match
                 case None        => LExit.succeed(None)
-                case Some(value) => for  any <- evaluate(value)  yield Option(any)
+                case Some(value) => for any <- evaluate(value) yield Option(any)
         case Die(message)       => LExit.fail(EvaluationError.Death(message))
         case Debug(prefix)      =>
           for

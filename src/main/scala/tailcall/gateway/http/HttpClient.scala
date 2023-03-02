@@ -22,10 +22,8 @@ object HttpClient:
         override def initChannel(ch: Channel): Unit = {
           ch.pipeline().addLast(new HttpClientCodec()).addLast(new HttpObjectAggregator(1024 * 100))
             .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
-              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
-                cb(msg): Unit
-              }
-              override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request) : Unit
+              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = { cb(msg): Unit }
+              override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request): Unit
             }): Unit
         }
       })
@@ -51,7 +49,6 @@ object HttpClient:
 
         close = Some(future)
       }
-
 
   type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
 

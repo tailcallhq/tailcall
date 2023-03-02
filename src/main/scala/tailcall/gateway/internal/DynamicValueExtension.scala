@@ -3,7 +3,7 @@ package tailcall.gateway.internal
 import zio.schema.DynamicValue
 
 object DynamicValueExtension:
-  implicit final class DynamicValueExtension(dv: DynamicValue):
+  extension (dv: DynamicValue)
     def asString: Option[String] =
       dv match
         case DynamicValue.Primitive(value, _) => Some(value.toString)

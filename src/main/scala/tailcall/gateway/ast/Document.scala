@@ -50,4 +50,4 @@ object Document:
   final case class NamedType(name: String, nonNull: Boolean) extends Type
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
-  implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
+  given Schema[Document] = DeriveSchema.gen[Document]

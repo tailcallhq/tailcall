@@ -4,7 +4,7 @@ import caliban.parsing.Parser
 import caliban.parsing.adt.Document
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.validation.Validator
-import tailcall.gateway.internal.Extension
+import tailcall.gateway.internal.FileExtension
 import zio.{Task, ZIO}
 
 import java.io.File
@@ -27,7 +27,7 @@ object Reader:
     new Reader[Config]:
       override def readFile(file: => File): Task[Config] =
         for
-          ext    <- Extension.detect(file.getName)
+          ext    <- FileExtension.detect(file.getName)
           string <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
           config <- ext.decode(string)
         yield config
@@ -49,5 +49,4 @@ object Reader:
               ))
 
           _ <- Validator.validateSchema(rootSchemaBuilder)
-
         yield document

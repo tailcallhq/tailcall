@@ -2,7 +2,7 @@ package tailcall.gateway.ast
 
 import zio.Chunk
 import zio.json.JsonCodec
-import zio.parser.Syntax
+import zio.parser.*
 import zio.schema.DynamicValue
 
 final case class Path(segments: List[Path.Segment]):
@@ -34,7 +34,6 @@ object Path:
     val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
 
     val route = segmentChunk.transform[Path](chunk => Path(chunk.toList), route => Chunk.from(route.segments))
-
 
   def decode(string: String): Either[String, Path] =
     syntax.route.parseString(string) match

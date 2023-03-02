@@ -13,6 +13,7 @@ final case class Mustache(path: Chunk[String]):
   def evaluate(input: DynamicValue): Option[String] = input.getPath(self.path.toList).flatMap(_.asString)
 
 object Mustache:
+  import zio.parser.SyntaxOps
   def apply(path: String*): Mustache = Mustache(Chunk.fromIterable(path))
 
   lazy val syntax: Syntax[String, Char, Char, Mustache] = Syntax.string("{{", ()) ~ Syntax.alphaNumeric.repeat
