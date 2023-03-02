@@ -5,7 +5,7 @@ import zio.Chunk
 import zio.test.Assertion._
 import zio.test.{ZIOSpecDefault, _}
 
-object TValidSpec extends ZIOSpecDefault {
+object TValidSpec extends ZIOSpecDefault:
 
   def spec =
     suite("TValid")(
@@ -60,4 +60,3 @@ object TValidSpec extends ZIOSpecDefault {
         assert(valid3.errors)(equalTo(Chunk.single("error")))
       }
     )
-}

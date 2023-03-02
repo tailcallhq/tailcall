@@ -12,6 +12,5 @@ final case class Context(
   parent: Option[Context] = None
 )
 
-object Context {
+object Context:
   implicit val schema: Schema[Context] = DeriveSchema.gen[Context]
-}

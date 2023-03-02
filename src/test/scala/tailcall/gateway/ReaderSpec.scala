@@ -6,7 +6,7 @@ import zio.test.TestAspect.{failing, timeout}
 import zio.test._
 import zio.{Scope, durationInt}
 
-object ReaderSpec extends ZIOSpecDefault {
+object ReaderSpec extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("Reader")(
       test("Config.yml is valid")(for {
@@ -22,4 +22,3 @@ object ReaderSpec extends ZIOSpecDefault {
         } yield assertCompletes
       } @@ failing
     ) @@ timeout(10 seconds)
-}

@@ -6,7 +6,7 @@ import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
-object RemoteSpec extends ZIOSpecDefault {
+object RemoteSpec extends ZIOSpecDefault:
   import tailcall.gateway.lambda.Numeric._
 
   def spec =
@@ -554,4 +554,3 @@ object RemoteSpec extends ZIOSpecDefault {
 //        assertZIO(program.evaluate)(equalTo(1))
 //      }
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
-}

@@ -3,9 +3,9 @@ package tailcall.gateway.internal
 import caliban.{InputValue, ResponseValue, Value}
 import zio.schema.{DynamicValue, Schema, StandardType}
 
-object DynamicValueUtil {
+object DynamicValueUtil:
   def toValue(value: Any, standardType: StandardType[_]): Value =
-    standardType match {
+    standardType match
       case StandardType.StringType         => Value.StringValue(value.toString)
       case StandardType.IntType            => Value.IntValue(value.toString.toInt)
       case StandardType.MonthDayType       => Value.StringValue(value.toString)
@@ -37,10 +37,9 @@ object DynamicValueUtil {
           .StringValue(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Array[Byte]]))
       case StandardType.DurationType       => Value.StringValue(value.toString)
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
-    }
 
-  def toValue(input: DynamicValue): ResponseValue = {
-    input match {
+  def toValue(input: DynamicValue): ResponseValue =
+    input match
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
       case DynamicValue.Dictionary(_)                  => ???
@@ -55,11 +54,9 @@ object DynamicValueUtil {
       case DynamicValue.Tuple(_, _)                    => ???
       case DynamicValue.LeftValue(_)                   => ???
       case DynamicValue.Error(_)                       => ???
-    }
-  }
 
-  def toInputValue(input: DynamicValue): InputValue = {
-    input match {
+  def toInputValue(input: DynamicValue): InputValue =
+    input match
       case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
       case DynamicValue.Dictionary(_)                  => ???
@@ -74,15 +71,13 @@ object DynamicValueUtil {
       case DynamicValue.Tuple(_, _)       => ???
       case DynamicValue.LeftValue(_)      => ???
       case DynamicValue.Error(_)          => ???
-    }
-  }
 
   def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
   def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
-    path match {
+    path match
       case Nil          => Some(d)
-      case head :: tail => d match {
+      case head :: tail => d match
           case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
           case DynamicValue.SomeValue(a)  => getPath(a, path)
           case DynamicValue.Dictionary(b) =>
@@ -90,17 +85,15 @@ object DynamicValueUtil {
             b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
               .flatMap(getPath(_, tail))
           case _                          => None
-        }
-    }
 
   // TODO: clean up
-  def fromInputValue(input: InputValue): DynamicValue = {
+  def fromInputValue(input: InputValue): DynamicValue =
     import caliban.InputValue.{ListValue, ObjectValue, VariableValue}
     import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
     import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
     import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-    input match {
+    input match
       case ListValue(values)       => DynamicValue(values.map(fromInputValue(_)))
       case ObjectValue(fields)     => ???
       case StringValue(value)      => DynamicValue(value)
@@ -114,6 +107,3 @@ object DynamicValueUtil {
       case LongNumber(value)       => DynamicValue(value)
       case EnumValue(value)        => ???
       case VariableValue(name)     => ???
-    }
-  }
-}

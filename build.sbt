@@ -1,13 +1,38 @@
-ThisBuild / scalaVersion := "2.13.10"
-
+ThisBuild / scalaVersion := "3.2.2"
+ThisBuild / crossScalaVersions ++= Seq("2.13.6", "3.2.2")
 val zioJson   = "0.4.2"
 val zioSchema = "0.4.7"
 val caliban   = "2.0.2"
 val zio       = "2.0.6"
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
-ThisBuild / scalacOptions       := Seq("-language:postfixOps", "-Ywarn-unused")
-ThisBuild / libraryDependencies := Seq(
+ThisBuild / scalacOptions ++= {
+  Seq(
+    "-encoding",
+    "UTF-8",
+    "-feature",
+    "-language:implicitConversions",
+    "-language:postfixOps",
+    // disabled during the migration
+    // "-Xfatal-warnings"
+  ) ++ 
+    (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq(
+        "-unchecked",
+        "-source:3.0-migration",
+        "-indent",
+        "-rewrite",        
+      )
+      case _ => Seq(
+        "-deprecation",
+        "-Xfatal-warnings",
+        "-Wunused:imports,privates,locals",
+        "-Wvalue-discard",
+        
+      )
+    })
+}
+ThisBuild / libraryDependencies                            := Seq(
   "dev.zio"               %% "zio-schema"            % zioSchema,
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,
   "dev.zio"               %% "zio-schema-json"       % zioSchema,
@@ -16,7 +41,6 @@ ThisBuild / libraryDependencies := Seq(
   "com.github.ghostdogpr" %% "caliban"               % caliban,
   "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
   "dev.zio"               %% "zio-json"              % zioJson,
-  "dev.zio"               %% "zio-json-macros"       % zioJson,
   "dev.zio"               %% "zio-json-yaml"         % zioJson,
   "dev.zio"               %% "zio-parser"            % "0.1.8",
   "io.netty"               % "netty-all"             % "4.1.68.Final",
@@ -28,8 +52,8 @@ ThisBuild / libraryDependencies := Seq(
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
-Global / semanticdbEnabled      := true
-Global / onChangedBuildSource   := ReloadOnSourceChanges
+Global / semanticdbEnabled                                 := true
+Global / onChangedBuildSource                              := ReloadOnSourceChanges
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt; sFix;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; sFixCheck")

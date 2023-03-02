@@ -5,7 +5,7 @@ import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
-object MustacheSpec extends ZIOSpecDefault {
+object MustacheSpec extends ZIOSpecDefault:
   def spec =
     suite("MustacheSpec")(
       test("syntax") {
@@ -30,4 +30,3 @@ object MustacheSpec extends ZIOSpecDefault {
         }
       }
     )
-}

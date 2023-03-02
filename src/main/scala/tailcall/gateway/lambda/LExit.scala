@@ -2,7 +2,7 @@ package tailcall.gateway.lambda
 
 import zio._
 
-final case class LExit[-R, +E, -A, +B](run: A => ZIO[R, E, B]) extends (A => ZIO[R, E, B]) {
+final case class LExit[-R, +E, -A, +B](run: A => ZIO[R, E, B]) extends (A => ZIO[R, E, B]):
   self =>
 
   def apply(a: A): ZIO[R, E, B] = run(a)
@@ -22,9 +22,8 @@ final case class LExit[-R, +E, -A, +B](run: A => ZIO[R, E, B]) extends (A => ZIO
   def mapError[E1](f: E => E1): LExit[R, E1, A, B] = LExit(a => run(a).mapError(f))
 
   def debug(msg: String): LExit[R, E, A, B] = LExit(a => run(a).debug(msg))
-}
 
-object LExit {
+object LExit:
   def succeed[A](a: A): LExit[Any, Nothing, Any, A] = LExit(_ => ZIO.succeed(a))
 
   def fail[E](e: E): LExit[Any, E, Any, Nothing] = LExit(_ => ZIO.fail(e))
@@ -46,4 +45,3 @@ object LExit {
   def none: LExit[Any, Nothing, Any, Option[Nothing]] = LExit(_ => ZIO.succeed(None))
 
   def attempt[A](a: => A): LExit[Any, Throwable, Any, A] = LExit.fromZIO(ZIO.attempt(a))
-}

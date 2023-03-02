@@ -7,7 +7,7 @@ import zio.{Task, ZIO}
 
 import scala.io.Source
 
-object ExtensionSpec extends ZIOSpecDefault {
+object ExtensionSpec extends ZIOSpecDefault:
 
   def read(file: String): Task[String] = ZIO.attemptBlocking(Source.fromResource(file).mkString(""))
 
@@ -24,4 +24,3 @@ object ExtensionSpec extends ZIOSpecDefault {
         } yield assertTrue(config0 == config)
       }
     }) @@ failing
-}

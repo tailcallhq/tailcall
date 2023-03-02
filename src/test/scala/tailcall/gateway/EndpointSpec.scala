@@ -5,7 +5,7 @@ import tailcall.gateway.http.Method
 import zio.schema.DynamicValue
 import zio.test._
 
-object EndpointSpec extends ZIOSpecDefault {
+object EndpointSpec extends ZIOSpecDefault:
   def spec =
     suite("EndpointSpec")(
       test("method") {
@@ -69,4 +69,3 @@ object EndpointSpec extends ZIOSpecDefault {
         }
       }
     )
-}

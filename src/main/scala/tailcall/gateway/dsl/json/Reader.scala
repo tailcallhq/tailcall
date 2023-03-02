@@ -15,33 +15,30 @@ import scala.io.Source
 /**
  * Reads configuration from a file.
  */
-trait Reader[A] {
+trait Reader[A]:
   def readFile(file: => File): Task[A]
   final def readPath(path: => Path): Task[A] = readFile(path.toFile)
   final def readURL(url: => URL): Task[A]    = readFile(new File(url.getPath))
-}
 
-object Reader {
+object Reader:
 
   // TODO: replace the custom implementation with ZIO Config.
   def config: Reader[Config] =
-    new Reader[Config] {
-      override def readFile(file: => File): Task[Config] = {
-        for {
+    new Reader[Config]:
+      override def readFile(file: => File): Task[Config] =
+        for
           ext    <- Extension.detect(file.getName)
           string <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
           config <- ext.decode(string)
-        } yield config
-      }
-    }
+        yield config
 
   def document: Reader[Document] =
-    new Reader[Document] {
-      override def readFile(file: => File): Task[Document] = {
-        for {
+    new Reader[Document]:
+      override def readFile(file: => File): Task[Document] =
+        for
           string            <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
           document          <- Parser.parseQuery(string)
-          rootSchemaBuilder <- caliban.tools.RemoteSchema.parseRemoteSchema(document) match {
+          rootSchemaBuilder <- caliban.tools.RemoteSchema.parseRemoteSchema(document) match
             case None           => ZIO.fail(new RuntimeException("GraphQL does not contain a schema definition"))
             case Some(__schema) => ZIO.succeed(RootSchemaBuilder(
                 query = Some(Operation(__schema.queryType, Step.NullStep)),
@@ -50,11 +47,7 @@ object Reader {
                 additionalTypes = __schema.types,
                 schemaDirectives = Nil
               ))
-          }
 
           _ <- Validator.validateSchema(rootSchemaBuilder)
 
-        } yield document
-      }
-    }
-}
+        yield document

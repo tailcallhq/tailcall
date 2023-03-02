@@ -7,7 +7,7 @@ import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{Gen, ZIOSpecDefault, assertZIO, checkAll}
 
-object PathSpec extends ZIOSpecDefault {
+object PathSpec extends ZIOSpecDefault:
   val syntax = Path.syntax.route
 
   override def spec =
@@ -40,4 +40,3 @@ object PathSpec extends ZIOSpecDefault {
         }
       }
     )
-}

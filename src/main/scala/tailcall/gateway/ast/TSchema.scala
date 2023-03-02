@@ -7,7 +7,7 @@ import zio.json._
  * perform structural type checks.
  */
 @jsonDiscriminator("type")
-sealed trait TSchema {
+sealed trait TSchema:
   self =>
   def &(other: TSchema): TSchema = TSchema.Intersection(self, other)
   def |(other: TSchema): TSchema = TSchema.Union(self, other)
@@ -15,12 +15,11 @@ sealed trait TSchema {
   def <:<(other: TSchema): Boolean = TSchema.isSubType(self, other)
   def =:=(other: TSchema): Boolean = self <:< other && other <:< self
   def arr: TSchema                 = TSchema.arr(self)
-}
 
-object TSchema {
+object TSchema:
   sealed trait Scalar extends TSchema
 
-  object Scalar {
+  object Scalar:
     @jsonHint("String")
     case object Str extends Scalar
 
@@ -38,7 +37,6 @@ object TSchema {
 
     @jsonHint("Boolean")
     case object Boolean extends Scalar
-  }
 
   @jsonHint("object")
   final case class Obj(fields: List[Field]) extends TSchema
@@ -55,17 +53,16 @@ object TSchema {
   final case class Intersection(self: TSchema, other: TSchema) extends TSchema
 
   // TODO: add unit tests
-  private def isSubType(s1: TSchema, s2: TSchema): Boolean = {
-    def checkFields(fields1: List[Field], fields2: List[Field]): Boolean = {
+  private def isSubType(s1: TSchema, s2: TSchema): Boolean =
+    def checkFields(fields1: List[Field], fields2: List[Field]): Boolean =
       fields2.forall { f2 =>
         fields1.exists { f1 =>
           f1.name == f2.name &&
           isSubType(f1.schema, f2.schema)
         }
       }
-    }
 
-    (s1, s2) match {
+    (s1, s2) match
       case (_, Scalar.Null) => true
 
       case (Scalar.Null, _) => false
@@ -81,14 +78,11 @@ object TSchema {
       case (Intersection(s1a, s1b), _) => isSubType(s1a, s2) && isSubType(s1b, s2)
 
       case _ => false
-    }
-  }
 
   sealed trait Id
-  object Id {
+  object Id:
     case class Named(name: String) extends Id
     case object Structural         extends Id
-  }
 
   def str: TSchema    = TSchema.Scalar.Str
   def int: TSchema    = TSchema.Scalar.Int
@@ -107,4 +101,3 @@ object TSchema {
   implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
-}

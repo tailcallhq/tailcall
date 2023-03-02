@@ -10,12 +10,11 @@ import io.netty.handler.codec.http._
 import java.net.URL
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait HttpClient {
+trait HttpClient:
   def request(req: HttpRequest): HttpClient.AsyncHandler
-}
 
-object HttpClient {
-  final class NettyHttpClient() extends HttpClient {
+object HttpClient:
+  final class NettyHttpClient() extends HttpClient:
     def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
       new Bootstrap().group(new NioEventLoopGroup()).channelFactory(new ChannelFactory[Channel] {
         override def newChannel(): Channel = new NioSocketChannel()
@@ -23,9 +22,11 @@ object HttpClient {
         override def initChannel(ch: Channel): Unit = {
           ch.pipeline().addLast(new HttpClientCodec()).addLast(new HttpObjectAggregator(1024 * 100))
             .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
-              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = cb(msg)
-              override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request)
-            })
+              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
+                cb(msg): Unit
+              }
+              override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request) : Unit
+            }): Unit
         }
       })
 
@@ -51,9 +52,7 @@ object HttpClient {
         close = Some(future)
       }
 
-  }
 
   type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
 
   def make: HttpClient = new NettyHttpClient()
-}

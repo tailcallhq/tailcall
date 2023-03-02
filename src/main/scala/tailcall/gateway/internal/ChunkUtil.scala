@@ -2,10 +2,10 @@ package tailcall.gateway.internal
 
 import zio.Chunk
 
-object ChunkUtil {
+object ChunkUtil:
   // scalafmt: { maxColumn = 1200 }
-  def toTuple(f: Chunk[Any]): Product = {
-    f.length match {
+  def toTuple(f: Chunk[Any]): Product =
+    f.length match
       case 2  => Tuple2(f(0), f(1))
       case 3  => Tuple3(f(0), f(1), f(2))
       case 4  => Tuple4(f(0), f(1), f(2), f(3))
@@ -28,6 +28,3 @@ object ChunkUtil {
       case 21 => Tuple21(f(0), f(1), f(2), f(3), f(4), f(5), f(6), f(7), f(8), f(9), f(10), f(11), f(12), f(13), f(14), f(15), f(16), f(17), f(18), f(19), f(20))
       case 22 => Tuple22(f(0), f(1), f(2), f(3), f(4), f(5), f(6), f(7), f(8), f(9), f(10), f(11), f(12), f(13), f(14), f(15), f(16), f(17), f(18), f(19), f(20), f(21))
       case _  => null
-    }
-  }
-}

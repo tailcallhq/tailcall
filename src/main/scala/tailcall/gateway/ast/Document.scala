@@ -25,14 +25,13 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Document(definition: List[Document.Definition]) {
+final case class Document(definition: List[Document.Definition]):
   self =>
 
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] = GraphQLGenerator.toGraphQL(self)
-}
 
 // scalafmt: {maxColumn = 240}
-object Document {
+object Document:
   // TODO: create a common type for Object
   // TODO: drop non-null fields
   // TODO: create a common type for input and field use phantom types
@@ -52,4 +51,3 @@ object Document {
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
   implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
-}

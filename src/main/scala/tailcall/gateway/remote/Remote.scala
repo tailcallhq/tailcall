@@ -12,7 +12,7 @@ import zio.schema.{DynamicValue, Schema}
  * extremely powerful. We use this inside the compiler to
  * convert the composition logic into some form of a Remote.
  */
-sealed trait Remote[+A] {
+sealed trait Remote[+A]:
   self =>
   final def toLambda: Any ~> A                       = Remote.toLambda(self)
   def evaluate: ZIO[EvaluationRuntime, Throwable, A] = toLambda.evaluate {}
@@ -21,9 +21,8 @@ sealed trait Remote[+A] {
     Remote(self.toLambda >>> Lambda.dynamic.toDynamic)
 
   def debug(message: String): Remote[A] = Remote(self.toLambda >>> Lambda.debug(message))
-}
 
-object Remote {
+object Remote:
   final case class FromLambda[A](lambda: Any ~> A) extends Remote[A]
 
   def apply[A](a: => A)(implicit c: Schema[A]): Remote[A] = FromLambda(Lambda(a))
@@ -46,4 +45,3 @@ object Remote {
 
   implicit def schemaFunction[A, B]: Schema[Remote[A] => Remote[B]] =
     Schema[A ~> B].transform[Remote[A] => Remote[B]](Remote.fromLambda, Remote.toLambda(_))
-}

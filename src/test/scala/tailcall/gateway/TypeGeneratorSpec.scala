@@ -7,7 +7,7 @@ import zio.ZIO
 import zio.test.Assertion._
 import zio.test._
 
-object TypeGeneratorSpec extends ZIOSpecDefault {
+object TypeGeneratorSpec extends ZIOSpecDefault:
   override def spec =
     suite("DocumentTypeGenerator")(
       test("document type generation") {
@@ -50,4 +50,3 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
     )
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toDocument.flatMap(_.toGraphQL).map(_.render)
-}

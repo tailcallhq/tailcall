@@ -8,7 +8,7 @@ import Config.Operation.Transform
 import Config._
 final case class Config(version: String = "1.0.0", server: Server, graphQL: Specification = Specification(Map.empty))
 
-object Config {
+object Config:
   final case class Server(baseURL: String)
   final case class Specification(connections: Map[String, Map[String, Connection]])
   final case class Connection(operations: List[ConfigEndpoint])
@@ -16,7 +16,7 @@ object Config {
 
   @jsonDiscriminator("type")
   sealed trait Operation
-  object Operation {
+  object Operation:
     @jsonHint("http")
     final case class Http(path: Path, method: Method = Method.GET, query: List[QueryParam] = Nil) extends Operation
 
@@ -34,7 +34,6 @@ object Config {
 
     @jsonHint("^compose")
     final case class Compose(transforms: List[Transform]) extends Transform
-  }
 
   /**
    * Json Codecs
@@ -58,4 +57,3 @@ object Config {
   implicit lazy val configCodec: JsonCodec[Config] = { DeriveJsonCodec.gen[Config] }
 
   implicit lazy val queryParamCodec: JsonCodec[Operation.QueryParam] = { DeriveJsonCodec.gen[Operation.QueryParam] }
-}

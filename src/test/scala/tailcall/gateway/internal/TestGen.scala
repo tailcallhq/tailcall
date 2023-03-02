@@ -6,7 +6,7 @@ import tailcall.gateway.dsl.json.Config._
 import tailcall.gateway.http.Method
 import zio.test.Gen
 
-object TestGen {
+object TestGen:
   def genName: Gen[Any, String] = Gen.alphaNumericStringBounded(3, 5)
 
   def genBaseURL: Gen[Any, String] = genName
@@ -34,7 +34,7 @@ object TestGen {
     for { name <- Gen.chunkOf(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
-    Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
+    Gen.oneOf(genName.map(Path.Segment.Literal(_)), genPlaceholder.map(Path.Segment.Param(_)))
 
   def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
 
@@ -66,4 +66,3 @@ object TestGen {
       server  <- genServer
       graphQL <- genGraphQL
     } yield Config(version, server, graphQL)
-}

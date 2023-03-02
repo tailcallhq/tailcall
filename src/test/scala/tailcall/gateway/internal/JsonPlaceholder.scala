@@ -3,51 +3,41 @@ package tailcall.gateway.internal
 import tailcall.gateway.ast.Endpoint
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
-import zio.schema.DeriveSchema
+import zio.schema.{Schema, DeriveSchema}
 
-object JsonPlaceholder {
+object JsonPlaceholder:
   final case class User(id: Int, name: String)
-  object User    {
-    implicit val schema = DeriveSchema.gen[User]
-  }
+  object User   :
+    implicit val schema: Schema[User] = DeriveSchema.gen[User]
   final case class Post(id: Int, title: String, body: String, userId: Int)
-  object Post    {
-    implicit val schema = DeriveSchema.gen[Post]
-  }
+  object Post   :
+    implicit val schema: Schema[Post] = DeriveSchema.gen[Post]
   final case class Comment(id: Int, name: String, email: String, body: String, postId: Int)
-  object Comment {
-    implicit val schema = DeriveSchema.gen[Comment]
-  }
+  object Comment:
+    implicit val schema: Schema[Comment] = DeriveSchema.gen[Comment]
   final case class Album(id: Int, title: String, userId: Int)
-  object Album   {
-    implicit val schema = DeriveSchema.gen[Album]
-  }
+  object Album  :
+    implicit val schema: Schema[Album] = DeriveSchema.gen[Album]
   final case class Photo(id: Int, title: String, url: String, thumbnailUrl: String, albumId: Int)
-  object Photo   {
-    implicit val schema = DeriveSchema.gen[Photo]
-  }
+  object Photo  :
+    implicit val schema: Schema[Photo] = DeriveSchema.gen[Photo]
   final case class Todo(id: Int, title: String, completed: Boolean, userId: Int)
-  object Todo    {
-    implicit val schema = DeriveSchema.gen[Todo]
-  }
+  object Todo   :
+    implicit val schema: Schema[Todo] = DeriveSchema.gen[Todo]
   final case class UserId(userId: Int)
-  object UserId  {
-    implicit val schema = DeriveSchema.gen[UserId]
-  }
+  object UserId :
+    implicit val schema: Schema[UserId] = DeriveSchema.gen[UserId]
   final case class PostId(postId: Int)
-  object PostId  {
-    implicit val schema = DeriveSchema.gen[PostId]
-  }
+  object PostId :
+    implicit val schema: Schema[PostId] = DeriveSchema.gen[PostId]
   final case class EmailId(email: String)
-  object EmailId {
-    implicit val schema = DeriveSchema.gen[EmailId]
-  }
+  object EmailId:
+    implicit val schema: Schema[EmailId] = DeriveSchema.gen[EmailId]
   final case class AlbumId(albumId: Int)
-  object AlbumId {
-    implicit val schema = DeriveSchema.gen[AlbumId]
-  }
+  object AlbumId:
+    implicit val schema: Schema[AlbumId] = DeriveSchema.gen[AlbumId]
 
-  object endpoints {
+  object endpoints:
     val typicode: Endpoint  = Endpoint.make("jsonplaceholder.typicode.com")
     val users: Endpoint     = typicode.withPath("/users").withOutput[List[User]]
     val posts: Endpoint     = typicode.withPath("/posts").withOutput[List[Post]]
@@ -71,11 +61,10 @@ object JsonPlaceholder {
 
     val ManyUsersPosts: Endpoint = typicode.withPath("/posts").withQuery("userId" -> "${userId}").withInput[UserId]
       .withOutput[List[Post]]
-  }
 
   object mocks {}
 
-  val orc = {
+  val orc =
     // scalafmt: {maxColumn: 80}
     Orc(
       "Query" -> List(
@@ -132,5 +121,3 @@ object JsonPlaceholder {
 //        )
 //      })
 //    )
-  }
-}

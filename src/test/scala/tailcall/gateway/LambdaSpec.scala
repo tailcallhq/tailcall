@@ -8,7 +8,7 @@ import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
-object LambdaSpec extends ZIOSpecDefault {
+object LambdaSpec extends ZIOSpecDefault:
   import tailcall.gateway.lambda.Numeric._
 
   def spec =
@@ -16,59 +16,59 @@ object LambdaSpec extends ZIOSpecDefault {
       suite("math")(
         test("add") {
           val program = math.add(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate())(equalTo(3))
+          assertZIO(program.evaluate({}))(equalTo(3))
         },
         test("subtract") {
           val program = math.sub(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate())(equalTo(-1))
+          assertZIO(program.evaluate({}))(equalTo(-1))
         },
         test("multiply") {
           val program = math.mul(Lambda(2), Lambda(3))
-          assertZIO(program.evaluate())(equalTo(6))
+          assertZIO(program.evaluate({}))(equalTo(6))
         },
         test("divide") {
           val program = math.div(Lambda(6), Lambda(3))
-          assertZIO(program.evaluate())(equalTo(2))
+          assertZIO(program.evaluate({}))(equalTo(2))
         },
         test("modulo") {
           val program = math.mod(Lambda(7), Lambda(3))
-          assertZIO(program.evaluate())(equalTo(1))
+          assertZIO(program.evaluate({}))(equalTo(1))
         },
         test("greater than") {
           val program = math.gt(Lambda(2), Lambda(1))
-          assertZIO(program.evaluate())(isTrue)
+          assertZIO(program.evaluate({}))(isTrue)
         }
       ),
       suite("logical")(
         test("and") {
           val program = logic.and(Lambda(true), Lambda(true))
-          assertZIO(program.evaluate())(isTrue)
+          assertZIO(program.evaluate({}))(isTrue)
         },
         test("or") {
           val program = logic.or(Lambda(true), Lambda(false))
-          assertZIO(program.evaluate())(isTrue)
+          assertZIO(program.evaluate({}))(isTrue)
         },
         test("not") {
           val program = logic.not(Lambda(true))
-          assertZIO(program.evaluate())(isFalse)
+          assertZIO(program.evaluate({}))(isFalse)
         },
         test("equal") {
           val program = logic.eq(Lambda(1), Lambda(1))
-          assertZIO(program.evaluate())(equalTo(true))
+          assertZIO(program.evaluate({}))(equalTo(true))
         },
         test("not equal") {
           val program = logic.eq(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate())(equalTo(false))
+          assertZIO(program.evaluate({}))(equalTo(false))
         }
       ),
       suite("diverge")(
         test("isTrue") {
           val program = logic.cond(Lambda(true))(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate())(equalTo("Yes"))
+          assertZIO(program.evaluate({}))(equalTo("Yes"))
         },
         test("isFalse") {
           val program = logic.cond(Lambda(false))(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate())(equalTo("No"))
+          assertZIO(program.evaluate({}))(equalTo("No"))
         }
       ),
       suite("fromFunction")(
@@ -149,85 +149,85 @@ object LambdaSpec extends ZIOSpecDefault {
         suite("AsSeq")(
           test("some - int") {
             val p = Lambda(DynamicValue(Seq(1, 2, 3))) >>> Lambda.dynamic.toTyped[Seq[Int]]
-            assertZIO(p.evaluate())(equalTo(Some(Seq(1, 2, 3))))
+            assertZIO(p.evaluate({}))(equalTo(Some(Seq(1, 2, 3))))
           },
           test("some - string") {
             val p = Lambda(DynamicValue(Seq("1", "2", "3"))) >>> Lambda.dynamic.toTyped[Seq[String]]
-            assertZIO(p.evaluate())(equalTo(Some(Seq("1", "2", "3"))))
+            assertZIO(p.evaluate({}))(equalTo(Some(Seq("1", "2", "3"))))
           },
           test("none - string") {
             val p = Lambda(DynamicValue(Seq("1", "2", "3"))) >>> Lambda.dynamic.toTyped[Seq[Int]]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           },
           test("none - int") {
             val p = Lambda(DynamicValue(Seq(1, 2, 3))) >>> Lambda.dynamic.toTyped[Seq[String]]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           }
         ),
         suite("asMap")(
           test("some - int") {
             val p = Lambda(DynamicValue(Map("a" -> 1, "b" -> 2))) >>> Lambda.dynamic.toTyped[Map[String, Int]]
-            assertZIO(p.evaluate())(equalTo(Some(Map("a" -> 1, "b" -> 2))))
+            assertZIO(p.evaluate({}))(equalTo(Some(Map("a" -> 1, "b" -> 2))))
           },
           test("none -int") {
             val p = Lambda(DynamicValue(Map("a" -> "1", "b" -> "2"))) >>> Lambda.dynamic.toTyped[Map[String, Int]]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           }
         ),
         suite("asInt")(
           test("some") {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[Int]
-            assertZIO(p.evaluate())(equalTo(Some(1)))
+            assertZIO(p.evaluate({}))(equalTo(Some(1)))
           },
           test("none") {
             val p = Lambda(DynamicValue("1")) >>> Lambda.dynamic.toTyped[Int]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           }
         ),
         suite("asBoolean")(
           test("some") {
             val p = Lambda(DynamicValue(true)) >>> Lambda.dynamic.toTyped[Boolean]
-            assertZIO(p.evaluate())(equalTo(Some(true)))
+            assertZIO(p.evaluate({}))(equalTo(Some(true)))
           },
           test("none") {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[Boolean]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           }
         ),
         suite("asString")(
           test("some") {
             val p = Lambda(DynamicValue("1")) >>> Lambda.dynamic.toTyped[String]
-            assertZIO(p.evaluate())(equalTo(Some("1")))
+            assertZIO(p.evaluate({}))(equalTo(Some("1")))
           },
           test("none") {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[String]
-            assertZIO(p.evaluate())(equalTo(None))
+            assertZIO(p.evaluate({}))(equalTo(None))
           }
         ),
         suite("toDynamic")(
           test("int") {
             val p = Lambda(1) >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue(1)))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue(1)))
           },
           test("string") {
             val p = Lambda("1") >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue("1")))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue("1")))
           },
           test("boolean") {
             val p = Lambda(true) >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue(true)))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue(true)))
           },
           test("map") {
             val p = Lambda(Map("a" -> 1, "b" -> 2)) >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue(Map("a" -> 1, "b" -> 2))))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue(Map("a" -> 1, "b" -> 2))))
           },
           test("seq") {
             val p = Lambda(Seq(1, 2, 3)) >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue(Seq(1, 2, 3))))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue(Seq(1, 2, 3))))
           },
           test("option") {
             val p = Lambda(Option(100)) >>> Lambda.dynamic.toDynamic
-            assertZIO(p.evaluate())(equalTo(DynamicValue(Option(100))))
+            assertZIO(p.evaluate({}))(equalTo(DynamicValue(Option(100))))
           }
         ),
         suite("path")(
@@ -235,31 +235,31 @@ object LambdaSpec extends ZIOSpecDefault {
             val context  = Context(DynamicValue("Tailcall"), Map("foo" -> DynamicValue(1)), None)
             val p        = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("value")
             val expected = DynamicValue("Tailcall")
-            assertZIO(p.evaluate())(equalTo(Some(expected)))
+            assertZIO(p.evaluate({}))(equalTo(Some(expected)))
           },
           test("with option") {
             val parent   = Context(value = DynamicValue("Parent"))
             val context  = Context(value = DynamicValue("Child"), parent = Option(parent))
             val p        = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("parent", "value")
             val expected = DynamicValue("Parent")
-            assertZIO(p.evaluate())(equalTo(Some(expected)))
+            assertZIO(p.evaluate({}))(equalTo(Some(expected)))
           },
           test("with map") {
             val input    = Map("a" -> 100)
             val p        = Lambda(DynamicValue(input)) >>> Lambda.dynamic.path("a")
             val expected = DynamicValue(100)
-            assertZIO(p.evaluate())(equalTo(Some(expected)))
+            assertZIO(p.evaluate({}))(equalTo(Some(expected)))
           }
         )
       ),
       suite("option")(
         test("isSome") {
           val program = Lambda(Option(1)) >>> Lambda.option.isSome
-          assertZIO(program.evaluate())(isTrue)
+          assertZIO(program.evaluate({}))(isTrue)
         },
         test("isNone") {
           val program = Lambda(Option.empty[Int]) >>> Lambda.option.isNone
-          assertZIO(program.evaluate())(isTrue)
+          assertZIO(program.evaluate({}))(isTrue)
         },
         test("fold some") {
           val program = Lambda.option.fold(
@@ -279,7 +279,7 @@ object LambdaSpec extends ZIOSpecDefault {
         },
         test("apply some") {
           val program = Lambda.option(Option(Lambda(0)))
-          assertZIO(program.evaluate())(equalTo(Some(0)))
+          assertZIO(program.evaluate({}))(equalTo(Some(0)))
         },
         test("apply none") {
           val program = Lambda.option(Option.empty[Int ~> Int])
@@ -287,4 +287,3 @@ object LambdaSpec extends ZIOSpecDefault {
         }
       )
     ).provide(EvaluationRuntime.live, EvaluationContext.live)
-}

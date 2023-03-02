@@ -4,8 +4,8 @@ import tailcall.gateway.lambda.Lambda
 import tailcall.gateway.remote.Remote
 import zio.schema.Schema
 
-trait OptionOps {
-  implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]) {
+trait OptionOps:
+  implicit final class RemoteOptionOps[A](private val self: Remote[Option[A]]):
     def isSome: Remote[Boolean] = Remote(self.toLambda >>> Lambda.option.isSome)
 
     def isNone: Remote[Boolean] = Remote(self.toLambda >>> Lambda.option.isNone)
@@ -23,5 +23,3 @@ trait OptionOps {
 
     def map[B](f: Remote[A] => Remote[B])(implicit ev: Schema[B]): Remote[Option[B]] =
       self.fold[Option[B]](Remote(Option.empty[B]), a => Remote.fromOption(Option(f(a))))
-  }
-}

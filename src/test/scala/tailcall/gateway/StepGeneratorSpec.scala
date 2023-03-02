@@ -9,9 +9,9 @@ import zio.ZIO
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
-object StepGeneratorSpec extends ZIOSpecDefault {
+object StepGeneratorSpec extends ZIOSpecDefault:
 
-  def spec = {
+  def spec =
     suite("StepGenerator")(
       test("static value") {
         val orc     = Orc("Query" -> List("id" -> Field.output.as("String").resolveWith(100)))
@@ -44,7 +44,6 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       EvaluationRuntime.live,
       EvaluationContext.live
     )
-  }
 
   def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
     orc.toDocument.flatMap(execute(_)(query))
@@ -54,9 +53,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter
       result <- interpreter.execute(query, skipValidation = true) // TODO: enable validation after __type is available
-      _      <- result.errors.headOption match {
+      _      <- result.errors.headOption match
         case Some(error) => ZIO.fail(error)
         case None        => ZIO.unit
-      }
     } yield result.data.toString
-}

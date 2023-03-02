@@ -5,7 +5,7 @@ import tailcall.gateway.service.EvaluationContext.Binding
 import tailcall.gateway.service.EvaluationRuntime
 import zio.schema.{DynamicValue, Schema}
 
-sealed trait Lambda[-A, +B] {
+sealed trait Lambda[-A, +B]:
   self =>
   final def <<<[C](other: C ~> A): C ~> B = other >>> self
 
@@ -20,20 +20,18 @@ sealed trait Lambda[-A, +B] {
   def compile(context: CompilationContext): Expression
 
   final def evaluate: LExit[EvaluationRuntime, Throwable, A, B] = EvaluationRuntime.evaluate(self)
-}
 
-object Lambda {
+object Lambda:
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.asInstanceOf[Schema[Any]]))
 
-  def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B = {
+  def fromLambdaFunction[A, B](f: => (Any ~> A) => (Any ~> B)): A ~> B =
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
       val body  = f(Lambda.unsafe.attempt[Any, A](_ => Lookup(key))).compile(ctx.next)
       val input = Identity
       FunctionDef(key, body, input)
     }
-  }
 
   def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Identity)
   def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Die(reason))
@@ -47,7 +45,7 @@ object Lambda {
       FunctionDef(key, body, input)
     }
 
-  object logic {
+  object logic:
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
         Logical(Logical.Binary(Logical.Binary.And, left.compile(ctx), right.compile(ctx)))
@@ -69,9 +67,8 @@ object Lambda {
       Lambda.unsafe.attempt[A, Boolean] { ctx =>
         Logical(Logical.Binary(Logical.Binary.Or, left.compile(ctx), right.compile(ctx)))
       }
-  }
 
-  object math {
+  object math:
     def dbl[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = mul(a, inc(ev(ev.one)))
 
     def inc[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, ev(ev.one))
@@ -101,9 +98,8 @@ object Lambda {
 
     def mod[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Lambda.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Modulo, a.compile(ctx), b.compile(ctx)), ev.any))
-  }
 
-  object dynamic {
+  object dynamic:
     def toTyped[A](implicit schema: Schema[A]): DynamicValue ~> Option[A] =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Typed(schema.asInstanceOf[Schema[Any]])))
 
@@ -112,14 +108,12 @@ object Lambda {
 
     def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.ToDynamic(schema.asInstanceOf[Schema[Any]])))
-  }
 
-  object dict {
+  object dict:
     def get[A, K, V](key: A ~> K, map: A ~> Map[K, V]): A ~> Option[V] =
       Lambda.unsafe.attempt(ctx => Dict(Dict.Get(key.compile(ctx), map.compile(ctx))))
-  }
 
-  object option {
+  object option:
     def isSome[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsSome))
 
     def isNone[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsNone))
@@ -129,17 +123,13 @@ object Lambda {
 
     def apply[A, B](ab: Option[A ~> B]): A ~> Option[B] =
       Lambda.unsafe.attempt(ctx => Opt(Opt.Apply(ab.map(_.compile(ctx)))))
-  }
 
-  object unsafe {
+  object unsafe:
     def attempt[A, B](eval: CompilationContext => Expression): A ~> B =
-      new Lambda[A, B] {
+      new Lambda[A, B]:
         override def compile(context: CompilationContext): Expression = eval(context)
-      }
-  }
 
   implicit val anySchema: Schema[_ ~> _] = Schema[Expression]
     .transform(eval => Lambda.unsafe.attempt(_ => eval), _.compile(CompilationContext.initial))
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
-}

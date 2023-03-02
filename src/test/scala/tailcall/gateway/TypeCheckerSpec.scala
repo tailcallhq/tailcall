@@ -5,7 +5,7 @@ import tailcall.gateway.dsl.json.{Reader, TypeChecker}
 import zio._
 import zio.test._
 
-object TypeCheckerSpec extends ZIOSpecDefault {
+object TypeCheckerSpec extends ZIOSpecDefault:
   private val configFile: Task[dsl.json.Config] = { Reader.config.readURL(getClass.getResource("Config.yml")) }
 
   private val schemaFile: Task[Document] = { Reader.document.readURL(getClass.getResource("Schema.graphql")) }
@@ -18,4 +18,3 @@ object TypeCheckerSpec extends ZIOSpecDefault {
         errors = TypeChecker.check(config, schema).errors
       } yield assertTrue(errors == Chunk.empty)
     })
-}

@@ -16,7 +16,7 @@ final case class Endpoint(
   headers: Chunk[(String, String)] = Chunk.empty,
   protocol: Endpoint.Protocol = Endpoint.Protocol.Http,
   body: Option[String] = None
-) {
+):
   self =>
   def withMethod(method: Method): Endpoint = copy(method = method)
 
@@ -51,21 +51,17 @@ final case class Endpoint(
   def inputSchema: Schema[_] = input.toSchema
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
-}
 
-object Endpoint {
-  sealed trait Protocol {
+object Endpoint:
+  sealed trait Protocol:
     self =>
     def name: String =
-      self match {
+      self match
         case Protocol.Http  => "http"
         case Protocol.Https => "https"
-      }
-  }
-  object Protocol       {
+  object Protocol      :
     case object Http  extends Protocol
     case object Https extends Protocol
-  }
 
   sealed trait HttpError
 
@@ -73,7 +69,7 @@ object Endpoint {
 
   def inet(host: String, port: Int = 80): InetAddress = InetAddress(host, port)
 
-  def from(url: String): Endpoint = {
+  def from(url: String): Endpoint =
     val uri     = new java.net.URI(url)
     val path    = Path.unsafe.fromString(uri.getPath())
     val query   = Option(uri.getQuery).fold(Chunk.empty[(String, String)]) { query =>
@@ -81,17 +77,15 @@ object Endpoint {
     }
     val address = InetAddress(uri.getHost, uri.getPort)
     Endpoint(path = path, query = query, address = address)
-  }
 
   def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
 
-  def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
+  def evaluate(endpoint: Endpoint, input: DynamicValue): Request =
     val method     = endpoint.method
-    val portString = endpoint.address.port match {
+    val portString = endpoint.address.port match
       case 80   => ""
       case 443  => ""
       case port => s":$port"
-    }
 
     val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
       .mkString("?", "&", ""))
@@ -107,5 +101,3 @@ object Endpoint {
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
 
     Request(method = method, url = url, headers = headers)
-  }
-}
