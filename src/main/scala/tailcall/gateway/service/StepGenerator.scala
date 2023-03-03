@@ -27,11 +27,9 @@ object StepGenerator {
               f(Remote(DynamicValue(context))).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
                 .provide(ZLayer.succeed(rtm))
             ))
-          case Resolver.Reference       => Step.FunctionStep { _ =>
-              field.ofType match {
-                case Document.NamedType(name, nonNull)  => stepRef.getOrElse(name, Step.NullStep)
-                case Document.ListType(ofType, nonNull) => ???
-              }
+          case Resolver.Reference       => field.ofType match {
+              case Document.NamedType(name, nonNull)  => stepRef.getOrElse(name, Step.NullStep)
+              case Document.ListType(ofType, nonNull) => ???
             }
         }
       }
