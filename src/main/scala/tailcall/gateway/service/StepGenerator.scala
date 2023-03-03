@@ -1,6 +1,7 @@
 package tailcall.gateway.service
 
 import caliban.schema.Step
+import tailcall.gateway.ast
 import tailcall.gateway.ast.Document.Resolver
 import tailcall.gateway.ast.{Context, Document}
 import tailcall.gateway.internal.DynamicValueUtil
@@ -23,18 +24,28 @@ object StepGenerator {
         val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap
         val context = Context(DynamicValue(()), ctxArgs, None)
         field.resolver match {
-          case Resolver.FromFunction(f) => Step.QueryStep(ZQuery.fromZIO(
-              f(Remote(DynamicValue(context))).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
-                .provide(ZLayer.succeed(rtm))
-            ))
-          case Resolver.Reference       => field.ofType match {
-              case Document.NamedType(name, nonNull)  => stepRef.getOrElse(name, Step.NullStep)
-              case Document.ListType(ofType, nonNull) => ???
+          case Resolver.FromFunction(f) => field.ofType match {
+              case Document.NamedType(_, _)     => Step.QueryStep(ZQuery.fromZIO(
+                  f(Remote(DynamicValue(context))).evaluate.map(DynamicValueUtil.toValue).map(Step.PureStep(_))
+                    .provide(ZLayer.succeed(rtm))
+                ))
+              case Document.ListType(ofType, _) =>
+                val resolver = f(Remote(DynamicValue(context))).evaluate.map { case DynamicValue.Sequence(values) =>
+                  Step.ListStep(values.map(value => resolve(ofType)).toList)
+                }.provide(ZLayer.succeed(rtm))
+
+                Step.QueryStep(ZQuery.fromZIO(resolver))
             }
+          case Resolver.Reference       => resolve(field.ofType)
         }
       }
     }
 
+    def resolve(tpe: ast.Document.Type): Step[Any]             =
+      tpe match {
+        case ast.Document.NamedType(name, nonNull)  => stepRef.getOrElse(name, Step.NullStep)
+        case ast.Document.ListType(ofType, nonNull) => Step.ListStep(List(resolve(ofType)))
+      }
     def resolve(obj: Document.ObjectTypeDefinition): Step[Any] = {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> resolve(field)).toMap)
     }
