@@ -105,10 +105,10 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar{baz: Baz}
         // type Baz{value: Int}
         val orc     = Orc(
-          "Query" -> List("foo" -> Field.output.as("Foo")),
-          "Foo"   -> List("bar" -> Field.output.as("Bar").resolveWith(100)),
-          "Bar"   -> List("baz" -> Field.output.as("Baz").resolveWith(200)),
-          "Baz"   -> List("value" -> Field.output.as("Int").resolveWithFunction {
+          "Query" -> List("foo" -> Field.output.to("Foo")),
+          "Foo"   -> List("bar" -> Field.output.to("Bar").resolveWith(100)),
+          "Bar"   -> List("baz" -> Field.output.to("Baz").resolveWith(200)),
+          "Baz"   -> List("value" -> Field.output.to("Int").resolveWithFunction {
             _.path("parent", "value").debug("here").map(_.toTyped[Int]).toDynamic
           })
         )
