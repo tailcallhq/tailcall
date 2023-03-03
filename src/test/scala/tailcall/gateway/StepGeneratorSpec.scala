@@ -99,6 +99,39 @@ object StepGeneratorSpec extends ZIOSpecDefault {
 
         val program = execute(document)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
+      },
+      test("with nesting array ctx") {
+        // type Query {foo: Foo}
+        // type Foo {bar: [Bar]}
+        // type Bar {value: Int}
+        val document = Document(List(
+          SchemaDefinition(query = Some("Query")),
+          ObjectTypeDefinition(
+            "Query",
+            List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false), Resolver.reference))
+          ),
+          ObjectTypeDefinition(
+            "Foo",
+            List(FieldDefinition(
+              "bar",
+              Nil,
+              ListType(NamedType("Bar", nonNull = false), nonNull = false),
+              Resolver.fromFunction(_ => Remote(DynamicValue(List(100, 200, 300))))
+            ))
+          ),
+          ObjectTypeDefinition(
+            "Bar",
+            List(FieldDefinition(
+              "value",
+              Nil,
+              NamedType("Int", nonNull = false),
+              Resolver.fromFunction(ctx => ctx.path("value").flatMap(_.toTyped[Int]).map(_ + Remote(1)).toDynamic)
+            ))
+          )
+        ))
+
+        val program = execute(document)("query {foo { bar { value }}}")
+        assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       }
     ).provide(
       GraphQLGenerator.live,
