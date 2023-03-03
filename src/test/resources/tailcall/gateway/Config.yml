@@ -17,9 +17,20 @@ operations:
     output:
       type: Post
       list: true
+  - &getPostById:
+    type: Http
+    path: /posts/${id}
+    output:
+      type: Post
   - &getComments:
     type: Http
     path: /comments
+    output:
+      type: Comment
+      list: true
+  - &getPostComments:
+    type: Http
+    path: /comments?postId=${postId}
     output:
       type: Comment
       list: true
@@ -35,15 +46,92 @@ operations:
     output:
       type: Comment
       list: true
+  - &getAlbums:
+    type: Http
+    path: /albums
+    output:
+      type: Album
+      list: true
+  - &getUserAlbums:
+    type: Http
+    path: /albums?userId=${userId}
+    output:
+      type: Album
+      list: true
+  - &getPhotos:
+    type: Http
+    path: /photos
+    output:
+      type: Photo
+      list: true
+  - &getAlbumPhotos:
+    type: Http
+    path: /photos?albumId=${albumId}
+    output:
+      type: Photo
+      list: true
+  - &getAlbumById:
+    type: Http
+    path: /albums/${id}
+    output:
+      type: Album
+  - &user:
+    compose:
+      - *getUserById
+      - applySpec:
+          id:
+            prop: id
+  - &post:
+    compose:
+      - *getPostById
+      - applySpec:
+          id:
+            prop: id
+  - &userPosts:
+    compose:
+      - *getUserPosts
+      - applySpec:
+          userId:
+            prop: id
+  - &userComments:
+    compose:
+      - *getUserComments
+      - applySpec:
+          userId:
+            prop: id
+  - &userAlbums:
+    compose:
+      - *getUserAlbums
+      - applySpec:
+          userId:
+            prop: id
+  - &postComments:
+    compose:
+      - *getPostComments
+      - applySpec:
+          postId:
+            prop: id
 
 graphQL:
   Query:
     users:
       operations: *getUsers
+    user:
+      arguments:
+        id: Int
+      operations: *user
     posts:
       operations: *getPosts
     comments:
       operations: *getComments
+    albums:
+      operations: *getAlbums
+    post:
+      input:
+        id: Int
+      operations: *post
+    photos:
+      operations: *getPhotos
   User:
     id: Int
     name: String
@@ -53,48 +141,76 @@ graphQL:
     website: String
     company: Company
     posts:
-      operations:
-        compose:
-          - *getUserPosts
-          - applySpec:
-              userId:
-                prop: id
-
+      operations: *userPosts
     comments:
+      operations: *userComments
+    albums:
+      operations: *userAlbums
+  Post:
+    id: Int
+    userId: Int
+    title: String
+    body: String
+    user:
       operations:
         compose:
-          - *getUserComments
+          - *user
+          - prop: userId
+    comments:
+      operations: *postComments
+  Address:
+    street: String
+    suite: String
+    city: String
+    zipcode: String
+    geo:
+      type: Geo
+  Company:
+    name: String
+    catchPhrase: String
+    bs: String
+  Album:
+    id: Int
+    userId: Int
+    title: String
+    photos:
+      operations:
+        compose:
+          - *getAlbumPhotos
           - applySpec:
-              userId:
+              albumId:
                 prop: id
-    Post:
-      id: Int
-      userId: Int
-      title: String
-      body: String
-      user:
-        operations:
-          compose:
-            - *getUserById
-            - applySpec:
-                id:
-                  prop: userId
-      comments:
-        operations:
-          compose:
-            - *getComments
-            - applySpec:
-                postId:
-                  prop: id
-    Address:
-      street: String
-      suite: String
-      city: String
-      zipcode: String
-      geo:
-        type: Geo
-    Company:
-      name: String
-      catchPhrase: String
-      bs: String
+    user:
+      operations:
+        compose:
+          - *getUserById
+          - applySpec:
+              id:
+                prop: userId
+  Comment:
+    id: Int
+    postId: Int
+    name: String
+    email: String
+    body: String
+    post:
+      operations:
+        compose:
+          - *getPosts
+          - applySpec:
+              id:
+                prop: postId
+  Photo:
+    id: Int
+    albumId: Int
+    title: String
+    url: String
+    thumbnailUrl: String
+    album:
+      operations:
+        compose:
+          - *getAlbumById
+          - applySpec:
+              id:
+                prop: albumId
 
