@@ -21,6 +21,9 @@ trait OptionOps {
     def flatMap[B](f: Remote[A] => Remote[Option[B]])(implicit ev: Schema[B]): Remote[Option[B]] =
       self.fold[Option[B]](Remote(Option.empty[B]), f(_))
 
+    def flatten[B](implicit ev: Remote[Option[A]] <:< Remote[Option[Option[B]]], schema: Schema[B]): Remote[Option[B]] =
+      ev(self).flatMap(identity(_))
+
     def map[B](f: Remote[A] => Remote[B])(implicit ev: Schema[B]): Remote[Option[B]] =
       self.fold[Option[B]](Remote(Option.empty[B]), a => Remote.fromOption(Option(f(a))))
   }
