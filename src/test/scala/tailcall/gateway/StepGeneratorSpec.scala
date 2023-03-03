@@ -133,13 +133,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val program = execute(document)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       }
-    ).provide(
-      GraphQLGenerator.live,
-      TypeGenerator.live,
-      StepGenerator.live,
-      EvaluationRuntime.live,
-      EvaluationContext.live
-    )
+    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
   }
 
   def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =

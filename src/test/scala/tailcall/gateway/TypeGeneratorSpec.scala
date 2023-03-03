@@ -41,13 +41,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
                           |}""".stripMargin
         assertZIO(actual)(equalTo(expected))
       }
-    ).provide(
-      GraphQLGenerator.live,
-      TypeGenerator.live,
-      StepGenerator.live,
-      EvaluationRuntime.live,
-      EvaluationContext.live
-    )
+    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toDocument.flatMap(_.toGraphQL).map(_.render)
 }

@@ -1,28 +1,14 @@
 package tailcall.gateway.service
 
-import zio.{Ref, UIO, ZIO, ZLayer}
+import tailcall.gateway.service.EvaluationContext.Binding
 
-trait EvaluationContext {
-  def get(id: EvaluationContext.Binding): UIO[Option[Any]]
-  def set(id: EvaluationContext.Binding, value: Any): UIO[Unit]
-  def drop(id: EvaluationContext.Binding): UIO[Unit]
+final case class EvaluationContext(map: Map[Binding, Any]) {
+  def get(id: EvaluationContext.Binding): Option[Any]                   = map.get(id)
+  def set(id: EvaluationContext.Binding, value: Any): EvaluationContext = EvaluationContext(map + (id -> value))
+  def drop(id: EvaluationContext.Binding): EvaluationContext            = EvaluationContext(map - id)
 }
 
 object EvaluationContext {
   final case class Binding(id: Int)
-
-  final case class Live(map: Ref[Map[Binding, Any]]) extends EvaluationContext {
-    def get(id: Binding): UIO[Option[Any]]      = map.get.map(_.get(id))
-    def set(id: Binding, value: Any): UIO[Unit] = map.update(_ + (id -> value))
-    def drop(id: Binding): UIO[Unit]            = map.update(_ - id)
-  }
-
-  def live: ZLayer[Any, Nothing, EvaluationContext] = ZLayer.fromZIO(Ref.make(Map.empty[Binding, Any]).map(Live))
-
-  def set(id: Binding, value: Any): ZIO[EvaluationContext, Nothing, Unit] =
-    ZIO.serviceWith[EvaluationContext](_.set(id, value))
-
-  def get(id: Binding): ZIO[EvaluationContext, Nothing, Option[Any]] = ZIO.serviceWithZIO[EvaluationContext](_.get(id))
-
-  def drop(id: Binding): ZIO[EvaluationContext, Nothing, Unit] = ZIO.serviceWith[EvaluationContext](_.drop(id))
+  def make: EvaluationContext = EvaluationContext(Map.empty)
 }
