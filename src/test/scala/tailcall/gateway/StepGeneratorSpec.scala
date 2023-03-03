@@ -1,11 +1,13 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Document
+import tailcall.gateway.ast.Document.{FieldDefinition, NamedType, ObjectTypeDefinition, Resolver, SchemaDefinition}
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.remote._
 import tailcall.gateway.service._
 import zio.ZIO
+import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
@@ -36,6 +38,34 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         )
         val program = execute(orc)("query {sum(a: 1, b: 2)}")
         assertZIO(program)(equalTo("""{"sum":3}"""))
+      },
+      test("with nesting") {
+        // type Query {foo: Foo}
+        // type Foo {bar: Bar}
+        // type Bar {value: Int}
+        val document = Document(List(
+          SchemaDefinition(query = Some("Query")),
+          ObjectTypeDefinition(
+            "Query",
+            List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false), Resolver.reference))
+          ),
+          ObjectTypeDefinition(
+            "Foo",
+            List(FieldDefinition("bar", Nil, NamedType("Bar", nonNull = false), Resolver.reference))
+          ),
+          ObjectTypeDefinition(
+            "Bar",
+            List(FieldDefinition(
+              "value",
+              Nil,
+              NamedType("Int", nonNull = false),
+              Resolver.fromFunction(_ => Remote(DynamicValue(100)))
+            ))
+          )
+        ))
+
+        val program = execute(document)("query {foo { bar { value }}}")
+        assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
       }
     ).provide(
       GraphQLGenerator.live,
