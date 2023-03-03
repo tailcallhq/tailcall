@@ -17,45 +17,43 @@ trait StepGenerator {
 
 object StepGenerator {
   final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
-    private val stepRef: mutable.Map[String, Context => Step[Any]]        = mutable.Map.empty
-    def resolve(field: Document.FieldDefinition, ctx: Context): Step[Any] = {
+    private val stepRef: mutable.Map[String, Context => Step[Any]] = mutable.Map.empty
+
+    def fromFieldDefinition(field: Document.FieldDefinition, ctx: Context): Step[Any] = {
       Step.FunctionStep { args =>
-        val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap
-        val context = Context(ctx.value, ctxArgs, ctx.parent)
+        val context = ctx.copy(args = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap)
         field.resolver match {
-          case Some(f) => Step.QueryStep(ZQuery.fromZIO(
-              f(Remote(DynamicValue(context))).evaluate.flatMap(value =>
-                field.ofType match {
-                  case Document.NamedType(_, _) => ZIO.succeed(DynamicValueUtil.toValue(value)).map(Step.PureStep(_))
-                  case Document.ListType(ofType, _) =>
-                    val resolver = ZIO.succeed(value match {
-                      case DynamicValue.Sequence(values) => Step
-                          .ListStep(values.map(value => resolve(ofType, context.copy(value = value))).toList)
-                    })
+          case Some(resolver) =>
+            val step = for {
+              value <- rtm.evaluate(resolver(Remote(DynamicValue(context))))
+              step = fromType(field.ofType, context.copy(value = value))
+            } yield step
 
-                    resolver
-
-                }
-              ).provide(ZLayer.succeed(rtm))
-            ))
-          case None    => resolve(field.ofType, context)
+            Step.QueryStep(ZQuery.fromZIO(step))
+          case None           => fromType(field.ofType, context)
         }
       }
     }
 
-    def resolve(tpe: ast.Document.Type, ctx: Context): Step[Any]             =
+    def fromType(tpe: ast.Document.Type, ctx: Context): Step[Any] =
       tpe match {
-        case ast.Document.NamedType(name, nonNull)  => stepRef.getOrElse(name, (_: Context) => Step.NullStep)(ctx)
-        case ast.Document.ListType(ofType, nonNull) => Step.ListStep(List(resolve(ofType, ctx)))
+        case ast.Document.NamedType(name, _)  => stepRef
+            .getOrElse(name, (ctx: Context) => Step.PureStep(DynamicValueUtil.toValue(ctx.value)))(ctx)
+        case ast.Document.ListType(ofType, _) => ctx.value match {
+            case DynamicValue.Sequence(values) => Step
+                .ListStep(values.map(value => fromType(ofType, ctx.copy(value = value))).toList)
+            case _                             => Step.ListStep(List(fromType(ofType, ctx)))
+          }
       }
-    def resolve(obj: Document.ObjectTypeDefinition, ctx: Context): Step[Any] = {
-      Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> resolve(field, ctx)).toMap)
+
+    def fromObjectDef(obj: Document.ObjectTypeDefinition, ctx: Context): Step[Any] = {
+      Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
     override def resolve(document: Document): Option[Step[Any]] = {
       val rootContext = Context(DynamicValue(()))
       document.definition.collect { case obj @ Document.ObjectTypeDefinition(_, _) =>
-        stepRef.put(obj.name, ctx => resolve(obj, ctx))
+        stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
       }
 
       for {
