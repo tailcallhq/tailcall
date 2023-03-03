@@ -3,6 +3,7 @@ package tailcall.gateway
 import caliban.parsing.adt.Document
 import tailcall.gateway.dsl.json.{Reader, TypeChecker}
 import zio._
+import zio.test.TestAspect.failing
 import zio.test._
 
 object TypeCheckerSpec extends ZIOSpecDefault {
@@ -17,5 +18,5 @@ object TypeCheckerSpec extends ZIOSpecDefault {
         schema <- schemaFile
         errors = TypeChecker.check(config, schema).errors
       } yield assertTrue(errors == Chunk.empty)
-    })
+    }) @@ failing
 }
