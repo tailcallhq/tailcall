@@ -79,6 +79,28 @@ object StepGeneratorSpec extends ZIOSpecDefault {
 
         val program = execute(orc)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
+      },
+      test("with nesting level 3") {
+        // type Query {foo: Foo}
+        // type Foo {bar: [Bar]}
+        // type Bar {baz: [Baz]}
+        // type Baz{value: Int}
+        val orc = Orc(
+          "Query" -> List("foo" -> Field.output.as("Foo")),
+          "Foo"   -> List("bar" -> Field.output.asList("Bar").resolveWith(List(100, 200, 300))),
+          "Bar"   -> List(
+            "baz" -> Field.output.asList("Baz")
+              .withResolver(_.path("value").flatMap(_.toTyped[Int].map(_ + Remote(1))).toDynamic)
+          ),
+          "Baz"   -> List("value" -> Field.output.as("Int").withResolver {
+            _.path("value").flatMap(_.toTyped[Option[Int]]).flatMap(identity(_)).map(_ + Remote(1)).toDynamic
+          })
+        )
+
+        val program = execute(orc)("query {foo { bar { baz {value} }}}")
+        assertZIO(program)(equalTo(
+          """{"foo":{"bar":[{"baz":[{"value":102}]},{"baz":[{"value":202}]},{"baz":[{"value":302}]}]}}"""
+        ))
       }
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
   }
