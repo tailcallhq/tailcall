@@ -45,22 +45,13 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
         val document = Document(List(
           SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition(
-            "Query",
-            List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false), Resolver.reference))
-          ),
-          ObjectTypeDefinition(
-            "Foo",
-            List(FieldDefinition("bar", Nil, NamedType("Bar", nonNull = false), Resolver.reference))
-          ),
+          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
+          ObjectTypeDefinition("Foo", List(FieldDefinition("bar", Nil, NamedType("Bar", nonNull = false)))),
           ObjectTypeDefinition(
             "Bar",
-            List(FieldDefinition(
-              "value",
-              Nil,
-              NamedType("Int", nonNull = false),
-              Resolver.fromFunction(_ => Remote(DynamicValue(100)))
-            ))
+            List(
+              FieldDefinition("value", Nil, NamedType("Int", nonNull = false), Option(_ => Remote(DynamicValue(100))))
+            )
           )
         ))
 
@@ -73,27 +64,21 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
         val document = Document(List(
           SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition(
-            "Query",
-            List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false), Resolver.reference))
-          ),
+          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
           ObjectTypeDefinition(
             "Foo",
             List(FieldDefinition(
               "bar",
               Nil,
               ListType(NamedType("Bar", nonNull = false), nonNull = false),
-              Resolver.fromFunction(_ => Remote(DynamicValue(List(100, 200, 300))))
+              Option(_ => Remote(DynamicValue(List(100, 200, 300))))
             ))
           ),
           ObjectTypeDefinition(
             "Bar",
-            List(FieldDefinition(
-              "value",
-              Nil,
-              NamedType("Int", nonNull = false),
-              Resolver.fromFunction(_ => Remote(DynamicValue(100)))
-            ))
+            List(
+              FieldDefinition("value", Nil, NamedType("Int", nonNull = false), Option(_ => Remote(DynamicValue(100))))
+            )
           )
         ))
 
@@ -106,17 +91,14 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
         val document = Document(List(
           SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition(
-            "Query",
-            List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false), Resolver.reference))
-          ),
+          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
           ObjectTypeDefinition(
             "Foo",
             List(FieldDefinition(
               "bar",
               Nil,
               ListType(NamedType("Bar", nonNull = false), nonNull = false),
-              Resolver.fromFunction(_ => Remote(DynamicValue(List(100, 200, 300))))
+              Option(_ => Remote(DynamicValue(List(100, 200, 300))))
             ))
           ),
           ObjectTypeDefinition(
@@ -125,7 +107,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
               "value",
               Nil,
               NamedType("Int", nonNull = false),
-              Resolver.fromFunction(ctx => ctx.path("value").flatMap(_.toTyped[Int]).map(_ + Remote(1)).toDynamic)
+              Option(ctx => ctx.path("value").flatMap(_.toTyped[Int]).map(_ + Remote(1)).toDynamic)
             ))
           )
         ))

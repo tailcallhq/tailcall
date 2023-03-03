@@ -2,7 +2,6 @@ package tailcall.gateway.service
 
 import caliban.schema.Step
 import tailcall.gateway.ast
-import tailcall.gateway.ast.Document.Resolver
 import tailcall.gateway.ast.{Context, Document}
 import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.remote.Remote
@@ -24,7 +23,7 @@ object StepGenerator {
         val ctxArgs = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap
         val context = Context(ctx.value, ctxArgs, ctx.parent)
         field.resolver match {
-          case Resolver.FromFunction(f) => Step.QueryStep(ZQuery.fromZIO(
+          case Some(f) => Step.QueryStep(ZQuery.fromZIO(
               f(Remote(DynamicValue(context))).evaluate.flatMap(value =>
                 field.ofType match {
                   case Document.NamedType(_, _) => ZIO.succeed(DynamicValueUtil.toValue(value)).map(Step.PureStep(_))
@@ -39,8 +38,7 @@ object StepGenerator {
                 }
               ).provide(ZLayer.succeed(rtm))
             ))
-
-          case Resolver.Reference => resolve(field.ofType, context)
+          case None    => resolve(field.ofType, context)
         }
       }
     }
