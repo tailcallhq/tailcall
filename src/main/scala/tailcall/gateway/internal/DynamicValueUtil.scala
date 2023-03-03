@@ -1,7 +1,9 @@
 package tailcall.gateway.internal
 
 import caliban.{InputValue, ResponseValue, Value}
-import zio.schema.{DynamicValue, Schema, StandardType}
+import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
+
+import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
   def toValue(value: Any, standardType: StandardType[_]): Value =
@@ -43,18 +45,19 @@ object DynamicValueUtil {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
-      case DynamicValue.Dictionary(_)                  => ???
+      case DynamicValue.Dictionary(chunk)              => ???
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.NoneValue                      => Value.NullValue
       case DynamicValue.DynamicAst(_)                  => ???
       case DynamicValue.SetValue(_)                    => ???
-      case DynamicValue.Record(_, _)                   => ???
-      case DynamicValue.Enumeration(_, _)              => ???
-      case DynamicValue.RightValue(_)                  => ???
-      case DynamicValue.SomeValue(input)               => toValue(input)
-      case DynamicValue.Tuple(_, _)                    => ???
-      case DynamicValue.LeftValue(_)                   => ???
-      case DynamicValue.Error(_)                       => ???
+      case DynamicValue.Record(_, fields) => ResponseValue.ObjectValue(fields.map { case (k, v) => k -> toValue(v) }
+          .toList)
+      case DynamicValue.Enumeration(_, _) => ???
+      case DynamicValue.RightValue(_)     => ???
+      case DynamicValue.SomeValue(input)  => toValue(input)
+      case DynamicValue.Tuple(_, _)       => ???
+      case DynamicValue.LeftValue(_)      => ???
+      case DynamicValue.Error(_)          => ???
     }
   }
 
@@ -116,4 +119,7 @@ object DynamicValueUtil {
       case VariableValue(name)     => ???
     }
   }
+
+  def record(fields: (String, DynamicValue)*): DynamicValue =
+    DynamicValue.Record(TypeId.Structural, ListMap.from(fields))
 }
