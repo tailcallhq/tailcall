@@ -9,5 +9,8 @@ trait DynamicValueOps {
     def toTyped[A](implicit schema: Schema[A]): Remote[Option[A]] = Remote(self.toLambda >>> Lambda.dynamic.toTyped[A])
 
     def path(name: String*): Remote[Option[DynamicValue]] = Remote(self.toLambda >>> Lambda.dynamic.path(name: _*))
+
+    def toTypedPath[A](name: String*)(implicit schema: Schema[A]): Remote[Option[A]] =
+      self.path(name: _*).flatMap(_.toTyped[A])
   }
 }
