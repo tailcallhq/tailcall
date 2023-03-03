@@ -11,7 +11,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
   override def spec =
     suite("DocumentTypeGenerator")(
       test("document type generation") {
-        val orc = Orc("Query" -> List("test" -> Field.output.as("String").resolveWith("test")))
+        val orc = Orc("Query" -> List("test" -> Field.output.to("String").resolveWith("test")))
 
         val actual   = render(orc)
         val expected = """|schema {
@@ -26,8 +26,8 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
       test("document with InputValue") {
         val orc    = Orc(
           "Query" -> List(
-            "test" -> Field.output.as("String").resolveWith("test")
-              .withArgument("arg" -> Field.input.as("String").withDefault("test"))
+            "test" -> Field.output.to("String").resolveWith("test")
+              .withArgument("arg" -> Field.input.to("String").withDefault("test"))
           )
         )
         val actual = render(orc)

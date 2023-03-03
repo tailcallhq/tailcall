@@ -43,11 +43,9 @@ object Orc {
 
   final case class Field[A](ofType: Option[Type], definition: A) {
     self =>
-    def as(name: String): Field[A] = copy(ofType = Some(Type.NamedType(name)))
+    def to(name: String): Field[A] = copy(ofType = Some(Type.NamedType(name)))
 
-    def asList: Field[A] = copy(ofType = ofType.map(Type.ListType))
-
-    def asList(name: String): Field[A] = copy(ofType = Some(Type.ListType(Type.NamedType(name))))
+    def toList(name: String): Field[A] = copy(ofType = Some(Type.ListType(Type.NamedType(name))))
 
     def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull))
 
