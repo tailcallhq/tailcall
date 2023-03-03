@@ -108,7 +108,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
           "Query" -> List("foo" -> Field.output.as("Foo")),
           "Foo"   -> List("bar" -> Field.output.as("Bar").resolveWith(100)),
           "Bar"   -> List("baz" -> Field.output.as("Baz").resolveWith(200)),
-          "Baz"   -> List("value" -> Field.output.as("Int").withResolver {
+          "Baz"   -> List("value" -> Field.output.as("Int").resolveWithFunction {
             _.path("parent", "value").debug("here").map(_.toTyped[Int]).toDynamic
           })
         )
