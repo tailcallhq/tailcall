@@ -93,7 +93,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
               .withResolver(_.path("value").flatMap(_.toTyped[Int].map(_ + Remote(1))).toDynamic)
           ),
           "Baz"   -> List("value" -> Field.output.as("Int").withResolver {
-            _.path("value").flatMap(_.toTyped[Option[Int]]).flatMap(identity(_)).map(_ + Remote(1)).toDynamic
+            _.path("value").flatMap(_.toTyped[Option[Int]]).flatten.map(_ + Remote(1)).toDynamic
           })
         )
 
