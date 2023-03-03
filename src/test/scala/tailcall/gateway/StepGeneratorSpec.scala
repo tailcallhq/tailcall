@@ -22,13 +22,11 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val orc     = Orc(
           "Query" -> List(
             "sum" -> Field.output.as("Int").withArgument("a" -> Field.input.as("Int"), "b" -> Field.input.as("Int"))
-              .withResolver { ctx =>
+              .resolveWithFunction { ctx =>
                 {
                   (for {
-                    anyA <- ctx.path("args", "a")
-                    anyB <- ctx.path("args", "b")
-                    a    <- anyA.toTyped[Int]
-                    b    <- anyB.toTyped[Int]
+                    a <- ctx.toTypedPath[Int]("args", "a")
+                    b <- ctx.toTypedPath[Int]("args", "b")
                   } yield a + b).toDynamic
                 }
               }
@@ -72,8 +70,8 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val orc = Orc(
           "Query" -> List("foo" -> Field.output.as("Foo")),
           "Foo"   -> List("bar" -> Field.output.asList("Bar").resolveWith(List(100, 200, 300))),
-          "Bar"   -> List("value" -> Field.output.as("Int").withResolver {
-            _.path("value").flatMap(_.toTyped[Int].map(_ + Remote(1))).toDynamic
+          "Bar"   -> List("value" -> Field.output.as("Int").resolveWithFunction {
+            _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           })
         )
 
@@ -88,12 +86,11 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val orc = Orc(
           "Query" -> List("foo" -> Field.output.as("Foo")),
           "Foo"   -> List("bar" -> Field.output.asList("Bar").resolveWith(List(100, 200, 300))),
-          "Bar"   -> List(
-            "baz" -> Field.output.asList("Baz")
-              .withResolver(_.path("value").flatMap(_.toTyped[Int].map(_ + Remote(1))).toDynamic)
-          ),
-          "Baz"   -> List("value" -> Field.output.as("Int").withResolver {
-            _.path("value").flatMap(_.toTyped[Option[Int]]).flatten.map(_ + Remote(1)).toDynamic
+          "Bar"   -> List("baz" -> Field.output.asList("Baz").resolveWithFunction {
+            _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
+          }),
+          "Baz"   -> List("value" -> Field.output.as("Int").resolveWithFunction {
+            _.toTypedPath[Option[Int]]("value").flatten.map(_ + Remote(1)).toDynamic
           })
         )
 
