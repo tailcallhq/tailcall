@@ -98,6 +98,23 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(
           """{"foo":{"bar":[{"baz":[{"value":102}]},{"baz":[{"value":202}]},{"baz":[{"value":302}]}]}}"""
         ))
+      },
+      test("parent") {
+        // type Query {foo: Foo}
+        // type Foo {bar: Bar}
+        // type Bar{baz: Baz}
+        // type Baz{value: Int}
+        val orc     = Orc(
+          "Query" -> List("foo" -> Field.output.as("Foo")),
+          "Foo"   -> List("bar" -> Field.output.as("Bar").resolveWith(100)),
+          "Bar"   -> List("baz" -> Field.output.as("Baz").resolveWith(200)),
+          "Baz"   -> List("value" -> Field.output.as("Int").withResolver {
+            _.path("parent", "value").debug("here").map(_.toTyped[Int]).toDynamic
+          })
+        )
+        val program = execute(orc)("query {foo { bar { baz {value} }}}")
+        assertZIO(program)(equalTo("""{"foo":{"bar":{"baz":{"value":100}}}}"""))
+
       }
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
   }
