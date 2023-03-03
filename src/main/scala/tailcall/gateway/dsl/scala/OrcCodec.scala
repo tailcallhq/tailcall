@@ -1,7 +1,6 @@
 package tailcall.gateway.dsl.scala
 
 import tailcall.gateway.ast.Document
-import tailcall.gateway.ast.Document.Resolver
 import tailcall.gateway.dsl.scala.Orc._
 import zio.{IO, ZIO}
 
@@ -25,12 +24,8 @@ object OrcCodec {
       ofType   <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
       resolver <- ZIO.fromOption(lField.field.definition.resolve) <> ZIO.fail("Output must have a resolver")
       args     <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
-    } yield Document.FieldDefinition(
-      name = lField.name,
-      ofType = toType(ofType),
-      args = args,
-      resolver = Resolver.fromFunction(resolver)
-    )
+    } yield Document
+      .FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = Option(resolver))
   }
 
   def toDocument(o: Orc): IO[String, Document] = {

@@ -43,22 +43,13 @@ object Document {
   final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
 
-  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Resolver)
+  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[Remote[DynamicValue] => Remote[DynamicValue]] = None)
 
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None) extends Definition
 
   sealed trait Type
   final case class NamedType(name: String, nonNull: Boolean) extends Type
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
-
-  sealed trait Resolver
-  object Resolver {
-    final case class FromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]) extends Resolver
-    case object Reference                                                          extends Resolver
-
-    def fromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Resolver = FromFunction(f)
-    def reference: Resolver                                                     = Reference
-  }
 
   implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
 }
