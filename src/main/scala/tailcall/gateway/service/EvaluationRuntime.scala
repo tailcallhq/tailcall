@@ -2,10 +2,15 @@ package tailcall.gateway.service
 
 import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
+import tailcall.gateway.remote.Remote
 import zio._
 import zio.schema.DynamicValue
 
 trait EvaluationRuntime {
+  final def evaluate[A](remote: Remote[A]): Task[A] = evaluate(remote.toLambda) {}
+
+  final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] = evaluate(lambda, EvaluationContext.make)
+
   final def evaluate[A, B](lambda: A ~> B, ctx: EvaluationContext): LExit[Any, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial), ctx).asInstanceOf[LExit[Any, Throwable, A, B]]
 
@@ -19,7 +24,7 @@ object EvaluationRuntime {
   import Expression._
 
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
-    LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab, EvaluationContext.make))
+    LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
   def live: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
