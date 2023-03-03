@@ -1,13 +1,11 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.Document
-import tailcall.gateway.ast.Document._
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.remote._
 import tailcall.gateway.service._
 import zio.ZIO
-import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
@@ -43,76 +41,43 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Query {foo: Foo}
         // type Foo {bar: Bar}
         // type Bar {value: Int}
-        val document = Document(List(
-          SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
-          ObjectTypeDefinition("Foo", List(FieldDefinition("bar", Nil, NamedType("Bar", nonNull = false)))),
-          ObjectTypeDefinition(
-            "Bar",
-            List(
-              FieldDefinition("value", Nil, NamedType("Int", nonNull = false), Option(_ => Remote(DynamicValue(100))))
-            )
-          )
-        ))
 
-        val program = execute(document)("query {foo { bar { value }}}")
+        val orc = Orc(
+          "Query" -> List("foo" -> Field.output.as("Foo")),
+          "Foo"   -> List("bar" -> Field.output.as("Bar")),
+          "Bar"   -> List("value" -> Field.output.as("Int").resolveWith(100))
+        )
+
+        val program = execute(orc)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
       },
       test("with nesting array") {
         // type Query {foo: Foo}
         // type Foo {bar: [Bar]}
         // type Bar {value: Int}
-        val document = Document(List(
-          SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
-          ObjectTypeDefinition(
-            "Foo",
-            List(FieldDefinition(
-              "bar",
-              Nil,
-              ListType(NamedType("Bar", nonNull = false), nonNull = false),
-              Option(_ => Remote(DynamicValue(List(100, 200, 300))))
-            ))
-          ),
-          ObjectTypeDefinition(
-            "Bar",
-            List(
-              FieldDefinition("value", Nil, NamedType("Int", nonNull = false), Option(_ => Remote(DynamicValue(100))))
-            )
-          )
-        ))
 
-        val program = execute(document)("query {foo { bar { value }}}")
+        val orc = Orc(
+          "Query" -> List("foo" -> Field.output.as("Foo")),
+          "Foo"   -> List("bar" -> Field.output.asList("Bar").resolveWith(List(100, 200, 300))),
+          "Bar"   -> List("value" -> Field.output.as("Int").resolveWith(100))
+        )
+
+        val program = execute(orc)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
       },
       test("with nesting array ctx") {
         // type Query {foo: Foo}
         // type Foo {bar: [Bar]}
         // type Bar {value: Int}
-        val document = Document(List(
-          SchemaDefinition(query = Some("Query")),
-          ObjectTypeDefinition("Query", List(FieldDefinition("foo", Nil, NamedType("Foo", nonNull = false)))),
-          ObjectTypeDefinition(
-            "Foo",
-            List(FieldDefinition(
-              "bar",
-              Nil,
-              ListType(NamedType("Bar", nonNull = false), nonNull = false),
-              Option(_ => Remote(DynamicValue(List(100, 200, 300))))
-            ))
-          ),
-          ObjectTypeDefinition(
-            "Bar",
-            List(FieldDefinition(
-              "value",
-              Nil,
-              NamedType("Int", nonNull = false),
-              Option(ctx => ctx.path("value").flatMap(_.toTyped[Int]).map(_ + Remote(1)).toDynamic)
-            ))
-          )
-        ))
+        val orc = Orc(
+          "Query" -> List("foo" -> Field.output.as("Foo")),
+          "Foo"   -> List("bar" -> Field.output.asList("Bar").resolveWith(List(100, 200, 300))),
+          "Bar"   -> List("value" -> Field.output.as("Int").withResolver {
+            _.path("value").flatMap(_.toTyped[Int].map(_ + Remote(1))).toDynamic
+          })
+        )
 
-        val program = execute(document)("query {foo { bar { value }}}")
+        val program = execute(orc)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       }
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)

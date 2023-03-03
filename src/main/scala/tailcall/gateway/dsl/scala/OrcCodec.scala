@@ -21,11 +21,12 @@ object OrcCodec {
 
   def toFieldDefinition(lField: LabelledField[Output]): IO[String, Document.FieldDefinition] = {
     for {
-      ofType   <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
-      resolver <- ZIO.fromOption(lField.field.definition.resolve) <> ZIO.fail("Output must have a resolver")
-      args     <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
-    } yield Document
-      .FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = Option(resolver))
+      ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
+      args   <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
+    } yield {
+      val resolver = lField.field.definition.resolve
+      Document.FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = resolver)
+    }
   }
 
   def toDocument(o: Orc): IO[String, Document] = {
