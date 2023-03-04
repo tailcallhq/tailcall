@@ -11,7 +11,7 @@ object TestGen {
 
   def genBaseURL: Gen[Any, String] = genName
 
-  def genVersion: Gen[Any, String] = genName
+  def genVersion: Gen[Any, Int] = Gen.int(0, 10)
 
   def genScalar: Gen[Any, TSchema] = Gen.fromIterable(List(TSchema.str, TSchema.int, TSchema.`null`))
 
@@ -30,17 +30,17 @@ object TestGen {
   def genMethod: Gen[Any, Method] =
     Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
 
-  def genPlaceholder: Gen[Any, Mustache] =
-    for { name <- Gen.chunkOf(genName) } yield Mustache(name: _*)
+  def genMustache: Gen[Any, Mustache] =
+    for { name <- Gen.chunkOf1(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
-    Gen.oneOf(genName.map(Path.Segment.Literal), genPlaceholder.map(Path.Segment.Param(_)))
+    Gen.oneOf(genName.map(Path.Segment.Literal), genMustache.map(Path.Segment.Param(_)))
 
-  def genRoute: Gen[Any, Path] = Gen.listOf(genSegment).map(Path(_))
+  def genPath: Gen[Any, Path] = Gen.listOf1(genSegment).map(Path(_))
 
   def genHttp: Gen[Any, Operation.Http] =
     for {
-      path   <- genRoute
+      path   <- genPath
       method <- genMethod
     } yield Operation.Http(path, method)
 
