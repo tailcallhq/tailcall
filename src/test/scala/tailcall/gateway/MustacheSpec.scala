@@ -17,6 +17,14 @@ object MustacheSpec extends ZIOSpecDefault {
           assert(output)(isRight(equalTo(expected)))
         }
       },
+      test("encoding") {
+        val input =
+          List(Mustache("a") -> "{{a}}", Mustache("a", "b") -> "{{a.b}}", Mustache("a", "b", "c") -> "{{a.b.c}}")
+        checkAll(Gen.fromIterable(input)) { case (input, expected) =>
+          val output = Mustache.syntax.printString(input)
+          assert(output)(isRight(equalTo(expected)))
+        }
+      },
       test("evaluate") {
         val input = List(
           "{{a}}"     -> DynamicValue(Map("a" -> 1)),
