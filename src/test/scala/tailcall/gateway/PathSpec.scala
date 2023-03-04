@@ -2,10 +2,11 @@ package tailcall.gateway
 
 import tailcall.gateway.ast.Path
 import tailcall.gateway.ast.Path.Segment.{Literal, Param}
+import tailcall.gateway.internal.TestGen
 import zio.ZIO
 import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
-import zio.test.{Gen, ZIOSpecDefault, assertZIO, checkAll}
+import zio.test.{Gen, ZIOSpecDefault, assertTrue, assertZIO, check, checkAll}
 
 object PathSpec extends ZIOSpecDefault {
   val syntax = Path.syntax.route
@@ -37,6 +38,12 @@ object PathSpec extends ZIOSpecDefault {
         checkAll(Gen.fromIterable(inputs)) { case (path, input) =>
           val string = ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
           assertZIO(string)(equalTo("/a/b/c"))
+        }
+      },
+      test("encoding") {
+        check(TestGen.genPath) { path =>
+          val program = path.encode
+          assertTrue(program.isRight)
         }
       }
     )
