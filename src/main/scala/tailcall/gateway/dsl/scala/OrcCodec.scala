@@ -31,10 +31,8 @@ object OrcCodec {
     for {
       ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
       args   <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
-    } yield {
-      val resolver = lField.field.definition.resolve
-      Document.FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = toResolver(lField))
-    }
+    } yield Document
+      .FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = toResolver(lField))
   }
 
   def toDocument(o: Orc): IO[String, Document] = {
