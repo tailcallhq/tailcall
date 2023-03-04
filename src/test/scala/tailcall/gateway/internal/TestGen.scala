@@ -41,7 +41,7 @@ object TestGen {
   def genHttp: Gen[Any, Step.Http] =
     for {
       path   <- genPath
-      method <- genMethod
+      method <- Gen.option(genMethod)
       input  <- Gen.option(genSchema)
       output <- Gen.option(genSchema)
     } yield Step.Http(path, method, input, output)

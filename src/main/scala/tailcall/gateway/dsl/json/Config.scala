@@ -38,7 +38,7 @@ object Config {
     @jsonHint("$http")
     final case class Http(
       path: Path,
-      method: Method = Method.GET,
+      method: Option[Method] = None,
       input: Option[TSchema] = None,
       output: Option[TSchema] = None
     ) extends Step
