@@ -7,7 +7,7 @@ import tailcall.gateway.http.Method
 import zio.test.Gen
 
 object TestGen {
-  def genName: Gen[Any, String] = Gen.alphaNumericStringBounded(3, 5)
+  def genName: Gen[Any, String] = fromIterableRandom("body", "completed", "email", "id", "name", "title", "url")
 
   def genBaseURL: Gen[Any, String] = genName
 
@@ -21,7 +21,7 @@ object TestGen {
       kind <- genScalar
     } yield TSchema.Field(name, kind)
 
-  def genObj: Gen[Any, TSchema] = Gen.listOfBounded(2, 5)(genField).map(fields => TSchema.obj(fields))
+  def genObj: Gen[Any, TSchema] = Gen.listOfN(2)(genField).map(fields => TSchema.obj(fields))
 
   def genSchema: Gen[Any, TSchema] = genObj
 
@@ -31,34 +31,47 @@ object TestGen {
     Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
 
   def genMustache: Gen[Any, Mustache] =
-    for { name <- Gen.chunkOf1(genName) } yield Mustache(name: _*)
+    for { name <- Gen.chunkOfN(2)(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
     Gen.oneOf(genName.map(Path.Segment.Literal), genMustache.map(Path.Segment.Param(_)))
 
-  def genPath: Gen[Any, Path] = Gen.listOf1(genSegment).map(Path(_))
+  def genPath: Gen[Any, Path] = Gen.listOfN(2)(genSegment).map(Path(_))
 
   def genHttp: Gen[Any, Operation.Http] =
     for {
       path   <- genPath
       method <- genMethod
-    } yield Operation.Http(path, method)
-
-  def genEndpoints: Gen[Any, Config.ConfigEndpoint] =
-    for {
-      http   <- genHttp
       input  <- Gen.option(genSchema)
-      output <- genSchema
-    } yield ConfigEndpoint(http, input, output)
+      output <- Gen.option(genSchema)
+    } yield Operation.Http(path, method, input, output)
 
-  def genConnection: Gen[Any, (String, Connection)] =
+  def genOperation: Gen[Any, Config.Operation] =
+    for { http <- genHttp } yield http
+
+  def genFieldDefinition: Gen[Any, FieldDefinition] =
     for {
-      name     <- genName
-      endpoint <- Gen.listOf(genEndpoints)
-    } yield (name, Connection(endpoint))
+      typeName  <- genTypeName
+      operation <- Gen.option(Gen.listOf(genOperation))
+    } yield FieldDefinition(typeName, operation)
 
-  def genGraphQL: Gen[Any, Config.Specification] =
-    for { connections <- Gen.listOf1(genConnection) } yield Config.Specification(Map("Query" -> Map.from(connections)))
+  def fromIterableRandom[A](seq: A*): Gen[Any, A] =
+    Gen.fromRandom { random =>
+      val list = seq.toVector
+      random.nextIntBetween(0, list.length - 1).map(list(_))
+    }
+
+  def genTypeName: Gen[Any, String] = {
+    fromIterableRandom("Query", "User", "Post", "Comment", "Album", "Photo", "Todo")
+  }
+
+  def schemaDefinition: Gen[Any, SchemaDefinition] = Gen.const(SchemaDefinition(Option("Query"), None))
+
+  def genGraphQL: Gen[Any, Config.GraphQL] =
+    for {
+      map    <- Gen.mapOfN(2)(genTypeName, Gen.mapOfN(2)(genName, genFieldDefinition))
+      schema <- schemaDefinition
+    } yield Config.GraphQL(schema, map)
 
   def genConfig: Gen[Any, Config] =
     for {
