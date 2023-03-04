@@ -6,7 +6,6 @@ import zio.json._
  * Represents the structure of a value. It allows us to
  * perform structural type checks.
  */
-@jsonDiscriminator("type")
 sealed trait TSchema {
   self =>
   def &(other: TSchema): TSchema = TSchema.Intersection(self, other)
