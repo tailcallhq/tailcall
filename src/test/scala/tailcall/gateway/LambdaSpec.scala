@@ -147,6 +147,14 @@ object LambdaSpec extends ZIOSpecDefault {
         test("concatenate") {
           val program = Lambda.dict.concat(Lambda(Map("k0" -> "v")), Lambda.identity[Map[String, String]])
           assertZIO(program.evaluate(Map("k1" -> "v")))(equalTo(Map("k0" -> "v", "k1" -> "v")))
+        },
+        test("removed - existing key") {
+          val program = Lambda.dict.removed(Lambda(Map("k0" -> "v")), Lambda.identity[String])
+          assertZIO(program.evaluate("k0"))(equalTo(Map.empty[String, String]))
+        },
+        test("removed - unknown key") {
+          val program = Lambda.dict.removed(Lambda(Map("k0" -> "v")), Lambda.identity[String])
+          assertZIO(program.evaluate("foo"))(equalTo(Map("k0" -> "v")))
         }
       ),
       suite("DynamicValueOps")(

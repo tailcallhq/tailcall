@@ -8,5 +8,7 @@ trait MapOps {
     def get(key: Remote[A]): Remote[Option[B]] = Remote(Lambda.dict.get(key.toLambda, self.toLambda))
 
     def ++(that: Remote[Map[A, B]]): Remote[Map[A, B]] = Remote(Lambda.dict.concat(self.toLambda, that.toLambda))
+
+    def -(that: Remote[A]): Remote[Map[A, B]] = Remote(Lambda.dict.removed(self.toLambda, that.toLambda))
   }
 }

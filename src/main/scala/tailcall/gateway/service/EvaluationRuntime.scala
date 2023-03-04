@@ -107,6 +107,10 @@ object EvaluationRuntime {
                 m1 <- evaluateAs[Map[Any, Any]](map1)
                 m2 <- evaluateAs[Map[Any, Any]](map2)
               } yield m1 ++ m2
+            case Dict.Removed(map, key)       => for {
+                m <- evaluateAs[Map[Any, Any]](map)
+                k <- evaluate(key)
+              } yield m.removed(k)
           }
         case Opt(operation)     => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)

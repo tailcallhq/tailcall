@@ -120,6 +120,9 @@ object Lambda {
 
     def concat[A, B, K, V](map1: A ~> Map[K, V], map2: B ~> Map[K, V]): A ~> Map[K, V] =
       Lambda.unsafe.attempt(ctx => Dict(Dict.Concatenate(map1.compile(ctx), map2.compile(ctx))))
+
+    def removed[A, K, V](map: A ~> Map[K, V], key: A ~> K): A ~> Map[K, V] =
+      Lambda.unsafe.attempt(ctx => Dict(Dict.Removed(map.compile(ctx), key.compile(ctx))))
   }
 
   object option {

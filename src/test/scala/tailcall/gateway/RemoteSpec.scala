@@ -551,6 +551,10 @@ object RemoteSpec extends ZIOSpecDefault {
         test("concatenate") {
           val program = Remote(Map("a" -> 1)) ++ Remote(Map("b" -> 2))
           assertZIO(program.evaluate)(equalTo(Map("a" -> 1, "b" -> 2)))
+        },
+        test("removed") {
+          val program = Remote(Map("a" -> 1)) - Remote("a")
+          assertZIO(program.evaluate)(equalTo(Map.empty[String, Int]))
         }
       )
 //      test("flatten") {
