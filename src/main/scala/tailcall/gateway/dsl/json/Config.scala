@@ -15,22 +15,33 @@ object Config {
     types: Map[String, Map[String, Field]] = Map.empty
   )
 
-  final case class Field(as: String, resolve: Option[List[Operation]] = None)
-  object Field {
-    def apply(str: String, operations: Operation*): Field =
-      Field(str, if (operations.isEmpty) None else Option(operations.toList))
+  final case class Field(
+    @jsonField("type") as: String,
+    isList: Option[Boolean] = None,
+    isRequired: Option[Boolean] = None,
+    steps: Option[List[Step]] = None,
+    args: Option[Map[String, TSchema]] = None
+  ) {
+    def withList: Field                                  = copy(isList = Option(true))
+    def withRequired: Field                              = copy(isRequired = Option(true))
+    def withArguments(args: Map[String, TSchema]): Field = copy(args = Option(args))
+    def apply(args: (String, TSchema)*): Field           = copy(args = Option(args.toMap))
   }
 
-  @jsonDiscriminator("type")
-  sealed trait Operation
-  object Operation {
-    @jsonHint("http")
+  object Field {
+    def apply(str: String, operations: Step*): Field =
+      Field(as = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+  }
+
+  sealed trait Step
+  object Step {
+    @jsonHint("$http")
     final case class Http(
       path: Path,
       method: Method = Method.GET,
       input: Option[TSchema] = None,
       output: Option[TSchema] = None
-    ) extends Operation
+    ) extends Step
   }
 
   /**
@@ -43,7 +54,7 @@ object Config {
    * list of tuples.
    */
 
-  implicit val operationCodec: JsonCodec[Operation]               = DeriveJsonCodec.gen[Operation]
+  implicit val operationCodec: JsonCodec[Step]                    = DeriveJsonCodec.gen[Step]
   implicit val fieldDefinitionCodec: JsonCodec[Field]             = DeriveJsonCodec.gen[Field]
   implicit val schemaDefinitionCodec: JsonCodec[SchemaDefinition] = DeriveJsonCodec.gen[SchemaDefinition]
   implicit val graphQLCodec: JsonCodec[GraphQL]                   = DeriveJsonCodec.gen[GraphQL]

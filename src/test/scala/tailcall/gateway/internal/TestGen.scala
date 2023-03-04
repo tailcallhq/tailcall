@@ -38,22 +38,22 @@ object TestGen {
 
   def genPath: Gen[Any, Path] = Gen.listOfN(2)(genSegment).map(Path(_))
 
-  def genHttp: Gen[Any, Operation.Http] =
+  def genHttp: Gen[Any, Step.Http] =
     for {
       path   <- genPath
       method <- genMethod
       input  <- Gen.option(genSchema)
       output <- Gen.option(genSchema)
-    } yield Operation.Http(path, method, input, output)
+    } yield Step.Http(path, method, input, output)
 
-  def genOperation: Gen[Any, Config.Operation] =
+  def genStep: Gen[Any, Config.Step] =
     for { http <- genHttp } yield http
 
   def genFieldDefinition: Gen[Any, Field] =
     for {
-      typeName  <- genTypeName
-      operation <- Gen.option(Gen.listOf(genOperation))
-    } yield Field(typeName, operation)
+      typeName <- genTypeName
+      steps    <- Gen.option(Gen.listOf(genStep))
+    } yield Field(as = typeName, steps = steps)
 
   def fromIterableRandom[A](seq: A*): Gen[Any, A] =
     Gen.fromRandom { random =>

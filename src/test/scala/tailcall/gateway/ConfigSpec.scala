@@ -1,8 +1,8 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Path
+import tailcall.gateway.ast.{Path, TSchema}
 import tailcall.gateway.dsl.json.Config
-import tailcall.gateway.dsl.json.Config.Operation
+import tailcall.gateway.dsl.json.Config.Step
 import tailcall.gateway.internal.Extension
 import zio.test.{ZIOSpecDefault, assertTrue}
 
@@ -10,27 +10,28 @@ object ConfigSpec extends ZIOSpecDefault {
   override def spec =
     suite("ConfigSpec")(test("encoding") {
 
-      val getUsers    = Config.Operation.Http(Path.unsafe.fromString("/users"))
-      val getPosts    = Config.Operation.Http(Path.unsafe.fromString("/posts"))
-      val getComments = Config.Operation.Http(Path.unsafe.fromString("/comments"))
-      val getAlbums   = Config.Operation.Http(Path.unsafe.fromString("/albums"))
-      val getPhotos   = Config.Operation.Http(Path.unsafe.fromString("/photos"))
+      val getUsers    = Config.Step.Http(Path.unsafe.fromString("/users"))
+      val getPosts    = Config.Step.Http(Path.unsafe.fromString("/posts"))
+      val getComments = Config.Step.Http(Path.unsafe.fromString("/comments"))
+      val getAlbums   = Config.Step.Http(Path.unsafe.fromString("/albums"))
+      val getPhotos   = Config.Step.Http(Path.unsafe.fromString("/photos"))
 
-      val userPosts: Operation    = Config.Operation.Http(Path.unsafe.fromString("/users/{id}/posts"))
-      val userComments: Operation = Config.Operation.Http(Path.unsafe.fromString("/users/{id}/comments"))
-      val userAlbums: Operation   = Config.Operation.Http(Path.unsafe.fromString("/users/{id}/albums"))
+      val userPosts: Step    = Config.Step.Http(Path.unsafe.fromString("/users/{{id}}/posts"))
+      val userComments: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{id}}/comments"))
+      val userAlbums: Step   = Config.Step.Http(Path.unsafe.fromString("/users/{{id}}/albums"))
 
-      val postComments: Operation = Config.Operation.Http(Path.unsafe.fromString("/posts/{id}/comments"))
-      val postUser: Operation     = Config.Operation.Http(Path.unsafe.fromString("/posts/{id}/user"))
+      val postComments: Step = Config.Step.Http(Path.unsafe.fromString("/posts/{{id}}/comments"))
+      val postUser: Step     = Config.Step.Http(Path.unsafe.fromString("/posts/{{id}}/user"))
 
-      val commentPost = Config.Operation.Http(Path.unsafe.fromString("/comments/{id}/post"))
-      val photoAlbum  = Config.Operation.Http(Path.unsafe.fromString("/photos/{id}/album"))
+      val commentPost = Config.Step.Http(Path.unsafe.fromString("/comments/{{id}}/post"))
+      val photoAlbum  = Config.Step.Http(Path.unsafe.fromString("/photos/{{id}}/album"))
 
       val graphQL = Config.GraphQL(
         schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
         types = Map(
           "Query"   -> Map(
-            "users"    -> Config.Field("User", getUsers),
+            "user"     -> Config.Field("User", getUsers)("id" -> TSchema.str),
+            "users"    -> Config.Field("User", getUsers).withList,
             "posts"    -> Config.Field("Post", getPosts),
             "comments" -> Config.Field("Comment", getComments),
             "albums"   -> Config.Field("Album", getAlbums),
