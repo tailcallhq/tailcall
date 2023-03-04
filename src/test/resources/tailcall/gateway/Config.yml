@@ -1,111 +1,111 @@
 operations:
-  - &getUsers:
+  - &getUsers
     type: Http
     method: GET
     path: /users
     output:
       type: User
       list: true
-  - &getUserById:
+  - &getUserById
     type: Http
     path: /users/${id}
     output:
       type: User
-  - &getPosts:
+  - &getPosts
     type: Http
     path: /posts
     output:
       type: Post
       list: true
-  - &getPostById:
+  - &getPostById
     type: Http
     path: /posts/${id}
     output:
       type: Post
-  - &getComments:
+  - &getComments
     type: Http
     path: /comments
     output:
       type: Comment
       list: true
-  - &getPostComments:
+  - &getPostComments
     type: Http
     path: /comments?postId=${postId}
     output:
       type: Comment
       list: true
-  - &getUserPosts:
+  - &getUserPosts
     type: Http
     path: /posts?userId=${userId}
     output:
       type: Post
       list: true
-  - &getUserComments:
+  - &getUserComments
     type: Http
     path: /comments?userId=${userId}
     output:
       type: Comment
       list: true
-  - &getAlbums:
+  - &getAlbums
     type: Http
     path: /albums
     output:
       type: Album
       list: true
-  - &getUserAlbums:
+  - &getUserAlbums
     type: Http
     path: /albums?userId=${userId}
     output:
       type: Album
       list: true
-  - &getPhotos:
+  - &getPhotos
     type: Http
     path: /photos
     output:
       type: Photo
       list: true
-  - &getAlbumPhotos:
+  - &getAlbumPhotos
     type: Http
     path: /photos?albumId=${albumId}
     output:
       type: Photo
       list: true
-  - &getAlbumById:
+  - &getAlbumById
     type: Http
     path: /albums/${id}
     output:
       type: Album
-  - &user:
+  - &user
     compose:
       - *getUserById
       - applySpec:
           id:
             prop: id
-  - &post:
+  - &post
     compose:
       - *getPostById
       - applySpec:
           id:
             prop: id
-  - &userPosts:
+  - &userPosts
     compose:
       - *getUserPosts
       - applySpec:
           userId:
             prop: id
-  - &userComments:
+  - &userComments
     compose:
       - *getUserComments
       - applySpec:
           userId:
             prop: id
-  - &userAlbums:
+  - &userAlbums
     compose:
       - *getUserAlbums
       - applySpec:
           userId:
             prop: id
-  - &postComments:
+  - &postComments
     compose:
       - *getPostComments
       - applySpec:
