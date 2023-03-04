@@ -6,7 +6,11 @@ val caliban   = "2.0.2"
 val zio       = "2.0.6"
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
-ThisBuild / scalacOptions       := Seq("-language:postfixOps", "-Ywarn-unused")
+
+ThisBuild / scalacOptions       := {
+  Seq("-language:postfixOps", "-Ywarn-unused") ++ (if (sys.env.contains("CI")) Seq("-Xfatal-warnings") else Seq())
+}
+
 ThisBuild / libraryDependencies := Seq(
   "dev.zio"               %% "zio-schema"            % zioSchema,
   "dev.zio"               %% "zio-schema-derivation" % zioSchema,
