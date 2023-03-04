@@ -45,7 +45,7 @@ object DynamicValueUtil {
     input match {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
-      case DynamicValue.Dictionary(chunk)              => ???
+      case DynamicValue.Dictionary(_)                  => ???
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.NoneValue                      => Value.NullValue
       case DynamicValue.DynamicAst(_)                  => ???
@@ -105,7 +105,7 @@ object DynamicValueUtil {
 
     input match {
       case ListValue(values)       => DynamicValue(values.map(fromInputValue(_)))
-      case ObjectValue(fields)     => ???
+      case ObjectValue(_)          => ???
       case StringValue(value)      => DynamicValue(value)
       case NullValue               => ???
       case BooleanValue(value)     => DynamicValue(value)
@@ -115,8 +115,8 @@ object DynamicValueUtil {
       case BigIntNumber(value)     => DynamicValue(value)
       case IntNumber(value)        => DynamicValue(value)
       case LongNumber(value)       => DynamicValue(value)
-      case EnumValue(value)        => ???
-      case VariableValue(name)     => ???
+      case EnumValue(_)            => ???
+      case VariableValue(_)        => ???
     }
   }
 
