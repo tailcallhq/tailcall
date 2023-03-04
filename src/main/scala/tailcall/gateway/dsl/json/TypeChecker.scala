@@ -12,7 +12,7 @@ final class TypeChecker(config: Config, document: Document) {
     }
   }
 
-  def hasResolverType(name: String): TValid[String, Map[String, Config.FieldDefinition]] = {
+  def hasResolverType(name: String): TValid[String, Map[String, Config.Field]] = {
     config.graphQL.types.get(name) match {
       case None        => TValid.fail(s"Missing resolver for type: $name")
       case Some(value) => TValid.success(value)
