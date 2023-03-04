@@ -6,7 +6,7 @@ import tailcall.gateway.internal.TestGen
 import zio.ZIO
 import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
-import zio.test.{Gen, ZIOSpecDefault, assertTrue, assertZIO, check, checkAll}
+import zio.test._
 
 object PathSpec extends ZIOSpecDefault {
   val syntax = Path.syntax.route
