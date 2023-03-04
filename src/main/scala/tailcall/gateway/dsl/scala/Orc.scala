@@ -36,10 +36,18 @@ object Orc {
   }
 
   final case class Input(defaultValue: Option[DynamicValue])
-  final case class Output(
-    arguments: List[LabelledField[Input]] = Nil,
-    resolve: Option[Remote[DynamicValue] => Remote[DynamicValue]]
-  )
+  final case class Output(arguments: List[LabelledField[Input]] = Nil, resolve: Resolver)
+  sealed trait Resolver
+  object Resolver {
+    case object Empty                                                              extends Resolver
+    final case class FromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]) extends Resolver
+
+    case object FromParent extends Resolver
+
+    def fromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Resolver = FromFunction(f)
+    def empty: Resolver                                                         = Empty
+    def fromParent: Resolver                                                    = FromParent
+  }
 
   final case class Field[A](ofType: Option[Type], definition: A) {
     self =>
@@ -50,10 +58,13 @@ object Orc {
     def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull))
 
     def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
-      copy(definition = definition.copy(resolve = Some(_ => Remote(DynamicValue(t)))))
+      copy(definition = definition.copy(resolve = Resolver.fromFunction(_ => Remote(DynamicValue(t)))))
 
     def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
-      copy(definition = definition.copy(resolve = Some(f)))
+      copy(definition = definition.copy(resolve = Resolver.fromFunction(f)))
+
+    def resolveWithParent(implicit ev: A <:< Output): Field[Output] =
+      copy(definition = definition.copy(resolve = Resolver.fromParent))
 
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
       copy(definition = definition.copy(defaultValue = Some(DynamicValue(t))))
@@ -64,7 +75,7 @@ object Orc {
 
   object Field {
     def input: Field[Input]   = Field(None, Input(None))
-    def output: Field[Output] = Field(None, Output(Nil, None))
+    def output: Field[Output] = Field(None, Output(Nil, Resolver.empty))
   }
 
   sealed trait Type
