@@ -148,7 +148,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
                 } yield a + b).toDynamic
               )
           ),
-          "Foo"   -> List("sum" -> Field.output.to("Int").resolveWithParentValue)
+          "Foo"   -> List("sum" -> Field.output.to("Int").resolveWithFunction(_.path("value").toDynamic))
         )
 
         val program = execute(orc)(
