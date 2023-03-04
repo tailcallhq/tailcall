@@ -25,7 +25,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(schema: Blueprint.SchemaDefinition, definition: List[Blueprint.Definition]) {
+final case class Blueprint(schema: Blueprint.SchemaDefinition, definitions: List[Blueprint.Definition]) {
   self =>
 
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] = GraphQLGenerator.toGraphQL(self)

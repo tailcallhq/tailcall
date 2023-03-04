@@ -52,7 +52,7 @@ object StepGenerator {
 
     override def resolve(document: Blueprint): Option[Step[Any]] = {
       val rootContext = Context(DynamicValue(()))
-      document.definition.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
+      document.definitions.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
         stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
       }
 
