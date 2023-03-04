@@ -6,7 +6,7 @@ import tailcall.gateway.remote.Remote
 import zio.schema.DynamicValue
 import zio.{IO, ZIO}
 
-object OrcCodec {
+object OrcBlueprint {
   def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
     val nonNull = !isNull
     t match {

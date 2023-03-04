@@ -15,7 +15,7 @@ final case class Orc(
   types: List[Orc.Obj] = Nil
 ) {
   self =>
-  def toBlueprint: Task[Blueprint] = OrcCodec.toDocument(self).mapError(new RuntimeException(_))
+  def toBlueprint: Task[Blueprint] = OrcBlueprint.toDocument(self).mapError(new RuntimeException(_))
   def withQuery(name: String): Orc = self.copy(query = Some(name))
   def withType(obj: Orc.Obj*): Orc = self.copy(types = obj.toList ++ types)
 }
