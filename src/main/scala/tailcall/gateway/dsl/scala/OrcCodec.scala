@@ -2,6 +2,8 @@ package tailcall.gateway.dsl.scala
 
 import tailcall.gateway.ast.Document
 import tailcall.gateway.dsl.scala.Orc._
+import tailcall.gateway.remote.Remote
+import zio.schema.DynamicValue
 import zio.{IO, ZIO}
 
 object OrcCodec {
@@ -19,13 +21,19 @@ object OrcCodec {
       ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Input type must be named")
     } yield Document.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
 
-  def toFieldDefinition(lField: LabelledField[Output]): IO[String, Document.FieldDefinition] = {
+  def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
+    lfield.field.definition.resolve match {
+      case Resolver.Empty           => None
+      case Resolver.FromFunction(f) => Some(f)
+      case Resolver.FromParent      => Some(_.path("value", lfield.name).toDynamic)
+    }
+  def toFieldDefinition(lField: LabelledField[Output]): IO[String, Document.FieldDefinition]          = {
     for {
       ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
       args   <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
     } yield {
       val resolver = lField.field.definition.resolve
-      Document.FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = resolver)
+      Document.FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = toResolver(lField))
     }
   }
 
