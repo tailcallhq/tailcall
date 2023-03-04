@@ -27,7 +27,7 @@ object TypeGenerator {
       CalibanDocument(
         CalibanDefinition.TypeSystemDefinition
           .SchemaDefinition(Nil, document.schema.query, document.schema.mutation, document.schema.subscription) ::
-          document.definition.map {
+          document.definitions.map {
             case Blueprint.ObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
                 .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
             case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
