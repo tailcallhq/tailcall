@@ -26,11 +26,11 @@ object StepGenerator {
           case Some(resolver) =>
             val step = for {
               value <- rtm.evaluate(resolver(Remote(DynamicValue(context))))
-              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx)))
+              step = fromType(field.ofType, context.copy(value = value, parent = Option(context)))
             } yield step
 
             Step.QueryStep(ZQuery.fromZIO(step))
-          case None           => fromType(field.ofType, context)
+          case None           => fromType(field.ofType, context.copy(parent = Option(context)))
         }
       }
     }

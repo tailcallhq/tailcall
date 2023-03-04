@@ -47,6 +47,8 @@ object Orc {
     def fromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Resolver = FromFunction(f)
     def empty: Resolver                                                         = Empty
     def fromParent: Resolver                                                    = FromParent
+
+    def fromParentValue: Resolver = FromFunction(_.path("value").toDynamic)
   }
 
   final case class Field[A](ofType: Option[Type], definition: A) {
@@ -65,6 +67,9 @@ object Orc {
 
     def resolveWithParent(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromParent))
+
+    def resolveWithParentValue(implicit ev: A <:< Output): Field[Output] =
+      copy(definition = definition.copy(resolve = Resolver.fromParentValue))
 
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
       copy(definition = definition.copy(defaultValue = Some(DynamicValue(t))))
