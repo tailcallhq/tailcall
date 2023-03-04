@@ -278,7 +278,7 @@ object RemoteSpec extends ZIOSpecDefault {
           val program = Remote(Option.empty[Int]).toDynamic
           assertZIO(program.evaluate)(equalTo(DynamicValue(Option.empty[Int])))
         }
-      )
+      ),
 //      test("record") {
 //        val program = Remote.record(
 //          "a" -> Remote(DynamicValue(1)),
@@ -539,16 +539,20 @@ object RemoteSpec extends ZIOSpecDefault {
 //          assertZIO(program.evaluate)(equalTo(expected))
 //        }
 //      ),
-//      suite("map")(
-//        test("get some") {
-//          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("a"))
-//          assertZIO(program.evaluate)(equalTo(Option(1)))
-//        },
-//        test("get none") {
-//          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("c"))
-//          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
-//        }
-//      ),
+      suite("map")(
+        test("get some") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("a"))
+          assertZIO(program.evaluate)(equalTo(Option(1)))
+        },
+        test("get none") {
+          val program = Remote(Map("a" -> 1, "b" -> 2)).get(Remote("c"))
+          assertZIO(program.evaluate)(equalTo(Option.empty[Int]))
+        },
+        test("concatenate") {
+          val program = Remote(Map("a" -> 1)) ++ Remote(Map("b" -> 2))
+          assertZIO(program.evaluate)(equalTo(Map("a" -> 1, "b" -> 2)))
+        }
+      )
 //      test("flatten") {
 //        val program = Remote.flatten(Remote(Remote(1)))
 //        assertZIO(program.evaluate)(equalTo(1))
