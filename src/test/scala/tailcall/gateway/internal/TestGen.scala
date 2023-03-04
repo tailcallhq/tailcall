@@ -49,11 +49,11 @@ object TestGen {
   def genOperation: Gen[Any, Config.Operation] =
     for { http <- genHttp } yield http
 
-  def genFieldDefinition: Gen[Any, FieldDefinition] =
+  def genFieldDefinition: Gen[Any, Field] =
     for {
       typeName  <- genTypeName
       operation <- Gen.option(Gen.listOf(genOperation))
-    } yield FieldDefinition(typeName, operation)
+    } yield Field(typeName, operation)
 
   def fromIterableRandom[A](seq: A*): Gen[Any, A] =
     Gen.fromRandom { random =>

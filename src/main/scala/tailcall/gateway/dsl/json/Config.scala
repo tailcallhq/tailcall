@@ -12,13 +12,13 @@ object Config {
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
   final case class GraphQL(
     schema: SchemaDefinition = SchemaDefinition(),
-    types: Map[String, Map[String, FieldDefinition]] = Map.empty
+    types: Map[String, Map[String, Field]] = Map.empty
   )
 
-  final case class FieldDefinition(as: String, resolve: Option[List[Operation]] = None)
-  object FieldDefinition {
-    def apply(str: String, operations: Operation*): FieldDefinition =
-      FieldDefinition(str, if (operations.isEmpty) None else Option(operations.toList))
+  final case class Field(as: String, resolve: Option[List[Operation]] = None)
+  object Field {
+    def apply(str: String, operations: Operation*): Field =
+      Field(str, if (operations.isEmpty) None else Option(operations.toList))
   }
 
   @jsonDiscriminator("type")
@@ -44,7 +44,7 @@ object Config {
    */
 
   implicit val operationCodec: JsonCodec[Operation]               = DeriveJsonCodec.gen[Operation]
-  implicit val fieldDefinitionCodec: JsonCodec[FieldDefinition]   = DeriveJsonCodec.gen[FieldDefinition]
+  implicit val fieldDefinitionCodec: JsonCodec[Field]             = DeriveJsonCodec.gen[Field]
   implicit val schemaDefinitionCodec: JsonCodec[SchemaDefinition] = DeriveJsonCodec.gen[SchemaDefinition]
   implicit val graphQLCodec: JsonCodec[GraphQL]                   = DeriveJsonCodec.gen[GraphQL]
   implicit val serverCodec: JsonCodec[Server]                     = DeriveJsonCodec.gen[Server]

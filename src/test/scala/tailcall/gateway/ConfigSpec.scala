@@ -30,61 +30,61 @@ object ConfigSpec extends ZIOSpecDefault {
         schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
         types = Map(
           "Query"   -> Map(
-            "users"    -> Config.FieldDefinition("User", getUsers),
-            "posts"    -> Config.FieldDefinition("Post", getPosts),
-            "comments" -> Config.FieldDefinition("Comment", getComments),
-            "albums"   -> Config.FieldDefinition("Album", getAlbums),
-            "photos"   -> Config.FieldDefinition("Photo", getPhotos)
+            "users"    -> Config.Field("User", getUsers),
+            "posts"    -> Config.Field("Post", getPosts),
+            "comments" -> Config.Field("Comment", getComments),
+            "albums"   -> Config.Field("Album", getAlbums),
+            "photos"   -> Config.Field("Photo", getPhotos)
           ),
           "User"    ->
             Map(
-              "id"       -> Config.FieldDefinition("String"),
-              "name"     -> Config.FieldDefinition("String"),
-              "email"    -> Config.FieldDefinition("String"),
-              "address"  -> Config.FieldDefinition("Address"),
-              "phone"    -> Config.FieldDefinition("String"),
-              "website"  -> Config.FieldDefinition("String"),
-              "company"  -> Config.FieldDefinition("Company"),
-              "posts"    -> Config.FieldDefinition("Post", userPosts),
-              "comments" -> Config.FieldDefinition("Comment", userComments),
-              "albums"   -> Config.FieldDefinition("Album", userAlbums)
+              "id"       -> Config.Field("String"),
+              "name"     -> Config.Field("String"),
+              "email"    -> Config.Field("String"),
+              "address"  -> Config.Field("Address"),
+              "phone"    -> Config.Field("String"),
+              "website"  -> Config.Field("String"),
+              "company"  -> Config.Field("Company"),
+              "posts"    -> Config.Field("Post", userPosts),
+              "comments" -> Config.Field("Comment", userComments),
+              "albums"   -> Config.Field("Album", userAlbums)
             ),
           "Post"    -> Map(
-            "id"       -> Config.FieldDefinition("String"),
-            "userId"   -> Config.FieldDefinition("Id"),
-            "title"    -> Config.FieldDefinition("String"),
-            "body"     -> Config.FieldDefinition("String"),
-            "user"     -> Config.FieldDefinition("User", postUser),
-            "comments" -> Config.FieldDefinition("Comment", postComments)
+            "id"       -> Config.Field("String"),
+            "userId"   -> Config.Field("Id"),
+            "title"    -> Config.Field("String"),
+            "body"     -> Config.Field("String"),
+            "user"     -> Config.Field("User", postUser),
+            "comments" -> Config.Field("Comment", postComments)
           ),
           "Address" -> Map(
-            "street"  -> Config.FieldDefinition("String"),
-            "suite"   -> Config.FieldDefinition("String"),
-            "city"    -> Config.FieldDefinition("String"),
-            "zipcode" -> Config.FieldDefinition("String"),
-            "geo"     -> Config.FieldDefinition("Geo")
+            "street"  -> Config.Field("String"),
+            "suite"   -> Config.Field("String"),
+            "city"    -> Config.Field("String"),
+            "zipcode" -> Config.Field("String"),
+            "geo"     -> Config.Field("Geo")
           ),
           "Company" -> Map(
-            "name"        -> Config.FieldDefinition("String"),
-            "catchPhrase" -> Config.FieldDefinition("String"),
-            "bs"          -> Config.FieldDefinition("String")
+            "name"        -> Config.Field("String"),
+            "catchPhrase" -> Config.Field("String"),
+            "bs"          -> Config.Field("String")
           ),
-          "Geo"     -> Map("lat" -> Config.FieldDefinition("String"), "lng" -> Config.FieldDefinition("String")),
+          "Geo"     -> Map("lat" -> Config.Field("String"), "lng" -> Config.Field("String")),
           "Comment" -> Map(
-            "id"     -> Config.FieldDefinition("String"),
-            "postId" -> Config.FieldDefinition("Id"),
-            "name"   -> Config.FieldDefinition("String"),
-            "email"  -> Config.FieldDefinition("String"),
-            "body"   -> Config.FieldDefinition("String"),
-            "post"   -> Config.FieldDefinition("Post", commentPost)
+            "id"     -> Config.Field("String"),
+            "postId" -> Config.Field("Id"),
+            "name"   -> Config.Field("String"),
+            "email"  -> Config.Field("String"),
+            "body"   -> Config.Field("String"),
+            "post"   -> Config.Field("Post", commentPost)
           ),
           "Photo"   -> Map(
-            "id"           -> Config.FieldDefinition("String"),
-            "albumId"      -> Config.FieldDefinition("Id"),
-            "title"        -> Config.FieldDefinition("String"),
-            "url"          -> Config.FieldDefinition("String"),
-            "thumbnailUrl" -> Config.FieldDefinition("String"),
-            "album"        -> Config.FieldDefinition("Album", photoAlbum)
+            "id"           -> Config.Field("String"),
+            "albumId"      -> Config.Field("Id"),
+            "title"        -> Config.Field("String"),
+            "url"          -> Config.Field("String"),
+            "thumbnailUrl" -> Config.Field("String"),
+            "album"        -> Config.Field("Album", photoAlbum)
           )
         )
       )
