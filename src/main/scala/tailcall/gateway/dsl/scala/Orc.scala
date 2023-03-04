@@ -1,6 +1,6 @@
 package tailcall.gateway.dsl.scala
 
-import tailcall.gateway.ast.Document
+import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.remote.Remote
 import zio.Task
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
@@ -15,7 +15,7 @@ final case class Orc(
   types: List[Orc.Obj] = Nil
 ) {
   self =>
-  def toDocument: Task[Document]   = OrcCodec.toDocument(self).mapError(new RuntimeException(_))
+  def toBlueprint: Task[Blueprint] = OrcCodec.toDocument(self).mapError(new RuntimeException(_))
   def withQuery(name: String): Orc = self.copy(query = Some(name))
   def withType(obj: Orc.Obj*): Orc = self.copy(types = obj.toList ++ types)
 }

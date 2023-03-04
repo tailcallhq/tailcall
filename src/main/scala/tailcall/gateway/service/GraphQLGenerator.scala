@@ -4,16 +4,16 @@ import caliban.GraphQL
 import caliban.introspection.adt.__Directive
 import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.wrappers.Wrapper
-import tailcall.gateway.ast.Document
+import tailcall.gateway.ast.Blueprint
 import zio.{ZIO, ZLayer}
 
 trait GraphQLGenerator {
-  def toGraphQL(document: Document): GraphQL[Any]
+  def toGraphQL(document: Blueprint): GraphQL[Any]
 }
 
 object GraphQLGenerator {
   final case class Live(tGen: TypeGenerator, sGen: StepGenerator) extends GraphQLGenerator {
-    override def toGraphQL(document: Document): GraphQL[Any] =
+    override def toGraphQL(document: Blueprint): GraphQL[Any] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
           val queryOperation = for {
@@ -29,6 +29,6 @@ object GraphQLGenerator {
 
   def live: ZLayer[TypeGenerator with StepGenerator, Nothing, GraphQLGenerator] = ZLayer.fromFunction(Live.apply _)
 
-  def toGraphQL(document: Document): ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] =
+  def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] =
     ZIO.serviceWith(_.toGraphQL(document))
 }

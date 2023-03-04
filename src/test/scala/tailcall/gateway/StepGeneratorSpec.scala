@@ -1,6 +1,6 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Document
+import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.remote._
@@ -135,9 +135,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
   }
 
   def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
-    orc.toDocument.flatMap(execute(_)(query))
+    orc.toBlueprint.flatMap(execute(_)(query))
 
-  def execute(doc: Document)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
+  def execute(doc: Blueprint)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
     for {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter

@@ -43,5 +43,5 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
       }
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
 
-  def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toDocument.flatMap(_.toGraphQL).map(_.render)
+  def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
 }
