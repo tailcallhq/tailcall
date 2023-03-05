@@ -10,9 +10,9 @@ object OrcBlueprint {
   def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
     val nonNull = !isNull
     t match {
-      case Type.NonNull(ofType)  => toType(ofType, nonNull)
+      case Type.NonNull(ofType)  => toType(ofType, false)
       case Type.NamedType(name)  => Blueprint.NamedType(name, nonNull)
-      case Type.ListType(ofType) => Blueprint.ListType(toType(ofType, nonNull), nonNull)
+      case Type.ListType(ofType) => Blueprint.ListType(toType(ofType, isNull), nonNull)
     }
   }
 

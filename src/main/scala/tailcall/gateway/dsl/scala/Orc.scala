@@ -16,7 +16,7 @@ final case class Orc(
 ) {
   self =>
   def toBlueprint: Task[Blueprint] = OrcBlueprint.toBlueprint(self).mapError(new RuntimeException(_))
-  def withQuery(name: String): Orc = self.copy(query = Some(name))
+  def withQuery(name: String): Orc = self.copy(query = Option(name))
   def withType(obj: Orc.Obj*): Orc = self.copy(types = obj.toList ++ types)
 }
 
@@ -51,9 +51,9 @@ object Orc {
 
   final case class Field[A](ofType: Option[Type], definition: A) {
     self =>
-    def to(name: String): Field[A] = copy(ofType = Some(Type.NamedType(name)))
+    def to(name: String): Field[A] = copy(ofType = Option(Type.NamedType(name)))
 
-    def toList(name: String): Field[A] = copy(ofType = Some(Type.ListType(Type.NamedType(name))))
+    def asList: Field[A] = copy(ofType = ofType.map(Type.ListType))
 
     def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull))
 
