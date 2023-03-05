@@ -20,7 +20,7 @@ sealed trait Remote[+A] {
   def toDynamic[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
     Remote(self.toLambda >>> Lambda.dynamic.toDynamic)
 
-  def debug(message: String): Remote[A] = Remote(self.toLambda >>> Lambda.debug(message))
+  def debug(message: String): Remote[A] = Remote(self.toLambda >>> Lambda.unsafe.debug(message))
 }
 
 object Remote {
@@ -32,7 +32,7 @@ object Remote {
 
   def bind[A, B](ab: Remote[A] => Remote[B]): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> Remote.toLambda(ab))
 
-  def die(reason: String): Remote[Nothing] = Remote(Lambda.die(reason))
+  def die(reason: String): Remote[Nothing] = Remote(Lambda.unsafe.die(reason))
 
   def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
 

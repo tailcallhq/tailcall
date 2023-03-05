@@ -36,9 +36,7 @@ object Lambda {
     }
   }
 
-  def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Identity)
-  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Die(reason)))
-  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
+  def identity[A]: A ~> A = Lambda.unsafe.attempt[A, A](_ => Identity)
 
   def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
     Lambda.unsafe.attempt { ctx =>
@@ -139,6 +137,10 @@ object Lambda {
       }
     def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Unsafe(Unsafe.EndpointCall(endpoint)))
+
+    def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Die(reason)))
+
+    def debug[A](prefix: String): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
   }
 
   implicit val anySchema: Schema[_ ~> _] = Schema[Expression]
