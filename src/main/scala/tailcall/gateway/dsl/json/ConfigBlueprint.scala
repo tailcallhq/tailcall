@@ -24,10 +24,10 @@ object ConfigBlueprint {
     steps match {
       case Nil   => None
       case steps => Option {
-          steps.map {
-            case Step.Http(_, _, _, _) => ???
-            case Step.Constant(json)   => (_: Remote[DynamicValue]) => Remote(json).toDynamic
-          }.reduce((a, b) => (r: Remote[DynamicValue]) => b(a(r)))
+          steps.map[Resolver] {
+            case Step.Http(_, _, _, _) => _ => Remote.die("Http not implemented")
+            case Step.Constant(json)   => _ => Remote(json).toDynamic
+          }.reduce((a, b) => r => b(a(r)))
         }
     }
 
