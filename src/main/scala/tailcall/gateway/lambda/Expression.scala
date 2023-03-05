@@ -1,5 +1,6 @@
 package tailcall.gateway.lambda
 
+import tailcall.gateway.ast.Endpoint
 import tailcall.gateway.service.EvaluationContext.Binding
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
@@ -42,6 +43,9 @@ object Expression {
       case object Negate extends Operation
     }
   }
+
+  // Todo: this is a bit of a hack, we should not have
+  final case class EndpointCall(endpoint: Endpoint) extends Expression
 
   object Logical {
     sealed trait Operation

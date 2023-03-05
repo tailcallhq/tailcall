@@ -1,5 +1,6 @@
 package tailcall.gateway.lambda
 
+import tailcall.gateway.ast.Endpoint
 import tailcall.gateway.lambda.Expression._
 import tailcall.gateway.service.EvaluationContext.Binding
 import tailcall.gateway.service.EvaluationRuntime
@@ -132,10 +133,12 @@ object Lambda {
   }
 
   object unsafe {
-    def attempt[A, B](eval: CompilationContext => Expression): A ~> B =
+    def attempt[A, B](eval: CompilationContext => Expression): A ~> B  =
       new Lambda[A, B] {
         override def compile(context: CompilationContext): Expression = eval(context)
       }
+    def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
+      Lambda.unsafe.attempt(_ => Expression.EndpointCall(endpoint))
   }
 
   implicit val anySchema: Schema[_ ~> _] = Schema[Expression]
