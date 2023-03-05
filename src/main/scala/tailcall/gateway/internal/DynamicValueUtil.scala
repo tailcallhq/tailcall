@@ -1,6 +1,7 @@
 package tailcall.gateway.internal
 
 import caliban.{InputValue, ResponseValue, Value}
+import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 
 import scala.collection.immutable.ListMap
@@ -122,4 +123,7 @@ object DynamicValueUtil {
 
   def record(fields: (String, DynamicValue)*): DynamicValue =
     DynamicValue.Record(TypeId.Structural, ListMap.from(fields))
+
+  def fromJson(json: Json): DynamicValue = ???
+  def toJson(d: DynamicValue): Json      = ???
 }
