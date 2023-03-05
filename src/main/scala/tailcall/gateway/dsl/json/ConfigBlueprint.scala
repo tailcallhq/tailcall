@@ -49,7 +49,7 @@ final class ConfigBlueprint(config: Config) {
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
-      def bFields: List[Blueprint.FieldDefinition] = {
+      val bFields: List[Blueprint.FieldDefinition] = {
         fields.toList.map { case (name, input) =>
           val args: List[Blueprint.InputValueDefinition] = {
             input.args.getOrElse(Map.empty).toList.map { case (name, inputType) =>
