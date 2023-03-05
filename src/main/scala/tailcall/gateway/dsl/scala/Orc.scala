@@ -67,7 +67,7 @@ object Orc {
       copy(definition = definition.copy(resolve = Resolver.fromParent))
 
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
-      copy(definition = definition.copy(defaultValue = Some(DynamicValue(t))))
+      copy(definition = definition.copy(defaultValue = Option(DynamicValue(t))))
 
     def withArgument(fields: (String, Field[Input])*)(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(arguments = fields.toList.map(f => LabelledField(f._1, f._2))))
@@ -87,8 +87,8 @@ object Orc {
 
   def apply(spec: (String, List[(String, Field[Output])])*): Orc = {
     Orc(
-      query = Some("Query"),
-      mutation = Some("Mutation"),
+      query = Option("Query"),
+      mutation = Option("Mutation"),
       types = spec.toList.map { case (name, fields) =>
         Orc.Obj(name, FieldSet.OutputSet(fields.map { case (name, field) => LabelledField(name, field) }))
       }

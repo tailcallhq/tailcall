@@ -24,8 +24,8 @@ object OrcBlueprint {
   def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     lfield.field.definition.resolve match {
       case Resolver.Empty           => None
-      case Resolver.FromFunction(f) => Some(f)
-      case Resolver.FromParent      => Some(_.path("value", lfield.name).toDynamic)
+      case Resolver.FromFunction(f) => Option(f)
+      case Resolver.FromParent      => Option(_.path("value", lfield.name).toDynamic)
     }
   def toFieldDefinition(lField: LabelledField[Output]): IO[String, Blueprint.FieldDefinition]         = {
     for {
