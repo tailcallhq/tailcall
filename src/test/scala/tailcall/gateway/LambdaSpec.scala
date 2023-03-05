@@ -287,12 +287,22 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate(0))(equalTo(None))
         }
       ),
-      suite("endpoint")(test("/users/1") {
-        val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-          .withOutput[JsonPlaceholder.User]
-        val program  = Lambda.unsafe.fromEndpoint(endpoint)
-        val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
-        assertZIO(program.evaluate(DynamicValue(Map("id" -> 1))))(equalTo(expected))
-      })
+      suite("endpoint")(
+        test("/users/1") {
+          val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
+            .withOutput[JsonPlaceholder.User]
+          val program  = Lambda.unsafe.fromEndpoint(endpoint)
+          val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
+          assertZIO(program.evaluate(DynamicValue(Map("id" -> 1))))(equalTo(expected))
+        },
+        test("error") {
+          val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
+            .withOutput[JsonPlaceholder.User]
+          val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluate(DynamicValue(Map("id" -> 100))).flip
+            .map(_.getMessage)
+
+          assertZIO(program)(equalTo("HTTP Error: 404"))
+        }
+      )
     ).provide(EvaluationRuntime.live)
 }

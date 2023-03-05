@@ -137,10 +137,12 @@ object EvaluationRuntime {
                 out   <- LExit.fromZIO {
                   for {
 
-                    array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
-                      HttpClient.make.request(endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest)(
-                        (_, _, body) => cb(ZIO.succeed(body))
-                      )
+                    array <- ZIO.async[Any, Throwable, Array[Byte]](cb =>
+                      HttpClient.make
+                        .request(endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest)((status, _, body) =>
+                          if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
+                          else cb(ZIO.succeed(body))
+                        )
                     )
                     outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
                     any <- ZIO.fromEither(
