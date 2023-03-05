@@ -18,22 +18,28 @@ object Config {
     types: Map[String, Map[String, Field]] = Map.empty
   )
 
+  // TODO: Field and Argument can be merged
   final case class Field(
-    @jsonField("type") as: String,
+    @jsonField("type") typeOf: String,
     isList: Option[Boolean] = None,
     isRequired: Option[Boolean] = None,
     steps: Option[List[Step]] = None,
-    args: Option[Map[String, TSchema]] = None
+    args: Option[Map[String, Argument]] = None
   ) {
-    def withList: Field                                  = copy(isList = Option(true))
-    def withRequired: Field                              = copy(isRequired = Option(true))
-    def withArguments(args: Map[String, TSchema]): Field = copy(args = Option(args))
-    def apply(args: (String, TSchema)*): Field           = copy(args = Option(args.toMap))
+    def asList: Field                                     = copy(isList = Option(true))
+    def asRequired: Field                                 = copy(isRequired = Option(true))
+    def withArguments(args: Map[String, Argument]): Field = copy(args = Option(args))
+    def apply(args: (String, Argument)*): Field           = copy(args = Option(args.toMap))
   }
 
   object Field {
     def apply(str: String, operations: Step*): Field =
-      Field(as = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+
+    def string: Field = Field(typeOf = "String")
+    def int: Field    = Field(typeOf = "Int")
+    def id: Field     = Field(typeOf = "ID")
+    def bool: Field   = Field(typeOf = "Boolean")
   }
 
   sealed trait Step
@@ -50,6 +56,23 @@ object Config {
     final case class Constant(json: zio.json.ast.Json) extends Step
   }
 
+  final case class Argument(
+    @jsonField("type") typeOf: String,
+    isList: Option[Boolean] = None,
+    isRequired: Option[Boolean] = None
+  ) {
+    self =>
+    def asList: Argument     = self.copy(isList = Option(true))
+    def asRequired: Argument = self.copy(isRequired = Option(true))
+  }
+
+  object Argument {
+    val string: Argument = Argument("String")
+    val int: Argument    = Argument("Int")
+    val id: Argument     = Argument("ID")
+    val bool: Argument   = Argument("Boolean")
+  }
+
   /**
    * Json Codecs
    *
@@ -61,6 +84,7 @@ object Config {
    */
 
   implicit val operationCodec: JsonCodec[Step]                    = DeriveJsonCodec.gen[Step]
+  implicit val inputTypeCodec: JsonCodec[Argument]                = DeriveJsonCodec.gen[Argument]
   implicit val fieldDefinitionCodec: JsonCodec[Field]             = DeriveJsonCodec.gen[Field]
   implicit val schemaDefinitionCodec: JsonCodec[SchemaDefinition] = DeriveJsonCodec.gen[SchemaDefinition]
   implicit val graphQLCodec: JsonCodec[GraphQL]                   = DeriveJsonCodec.gen[GraphQL]

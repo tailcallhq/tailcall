@@ -53,7 +53,7 @@ object TestGen {
     for {
       typeName <- genTypeName
       steps    <- Gen.option(Gen.listOf(genStep))
-    } yield Field(as = typeName, steps = steps)
+    } yield Field(typeOf = typeName, steps = steps)
 
   def fromIterableRandom[A](seq: A*): Gen[Any, A] =
     Gen.fromRandom { random =>
