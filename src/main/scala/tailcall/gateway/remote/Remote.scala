@@ -1,5 +1,6 @@
 package tailcall.gateway.remote
 
+import tailcall.gateway.ast.Endpoint
 import tailcall.gateway.lambda.{Lambda, ~>}
 import tailcall.gateway.service.EvaluationRuntime
 import zio.ZIO
@@ -30,6 +31,9 @@ object Remote {
   def fromLambda[A, B](ab: A ~> B): Remote[A] => Remote[B] = a => Remote(a.toLambda >>> ab)
 
   def fromOption[A](a: Option[Remote[A]]): Remote[Option[A]] = Remote(Lambda.option(a.map(_.toLambda)))
+
+  def fromEndpoint(endpoint: Endpoint, input: Remote[DynamicValue]): Remote[DynamicValue] =
+    Remote(input.toLambda >>> Lambda.unsafe.fromEndpoint(endpoint))
 
   def toLambda[A, B](ab: Remote[A] => Remote[B]): A ~> B = Lambda.fromLambdaFunction[A, B](a => ab(Remote(a)).toLambda)
 

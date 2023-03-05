@@ -6,12 +6,7 @@ import tailcall.gateway.dsl.json.Config.{Argument, Step}
 
 object JsonPlaceholderConfig {
 
-  import zio.json.ast.Json
-
-  val users           = Config.Step.Constant(Json.Arr(
-    Json.Obj("id" -> Json.Num(1), "name" -> Json.Str("Leanne Graham")),
-    Json.Obj("id" -> Json.Num(2), "name" -> Json.Str("Ervin Howell"))
-  ))
+  val users           = Config.Step.Http(Path.unsafe.fromString("/users"))
   val posts           = Config.Step.Http(Path.unsafe.fromString("/posts"))
   val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{id}}/posts"))
   val postUser: Step  = Config.Step.Http(Path.unsafe.fromString("/posts/{{id}}/user"))
