@@ -35,7 +35,7 @@ object OrcBlueprint {
       .FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = toResolver(lField))
   }
 
-  def toDocument(o: Orc): IO[String, Blueprint] = {
+  def toBlueprint(o: Orc): IO[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
