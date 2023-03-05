@@ -79,15 +79,15 @@ object JsonPlaceholder {
     // scalafmt: {maxColumn: 80}
     Orc(
       "Query" -> List(
-        "users" -> Field.output.toList("User"),
-        "posts" -> Field.output.toList("Post")
+        "users" -> Field.output.to("User").asList,
+        "posts" -> Field.output.to("Post").asList
       ),
       "User"  -> List(
-        "posts"    -> Field.output.toList("Post"),
-        "fullName" -> Field.output.toList("String"),
-        "comments" -> Field.output.toList("Comment"),
-        "albums"   -> Field.output.toList("Album"),
-        "todos"    -> Field.output.toList("Todo")
+        "posts"    -> Field.output.to("Post").asList,
+        "fullName" -> Field.output.to("String").asList,
+        "comments" -> Field.output.to("Comment").asList,
+        "albums"   -> Field.output.to("Album").asList,
+        "todos"    -> Field.output.to("Todo").asList
       )
     )
 
