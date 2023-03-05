@@ -3,7 +3,6 @@ package tailcall.gateway.ast
 import tailcall.gateway.ast.Path.Segment
 import tailcall.gateway.http.{Method, Request}
 import zio.Chunk
-import zio.schema.meta.MetaSchema
 import zio.schema.{DynamicValue, Schema}
 
 final case class Endpoint(
@@ -11,8 +10,8 @@ final case class Endpoint(
   path: Path = Path.empty,
   query: Chunk[(String, String)] = Chunk.empty,
   address: Endpoint.InetAddress,
-  input: MetaSchema = Schema[Unit].ast,
-  output: MetaSchema = Schema[Unit].ast,
+  input: Option[TSchema] = None,
+  output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
   protocol: Endpoint.Protocol = Endpoint.Protocol.Http,
   body: Option[String] = None
@@ -30,9 +29,13 @@ final case class Endpoint(
 
   def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
 
-  def withInput[A](implicit schema: Schema[A]): Endpoint = copy(input = schema.ast)
+  def withInput(schema: Option[TSchema]): Endpoint = copy(input = schema)
 
-  def withOutput[A](implicit schema: Schema[A]): Endpoint = copy(output = schema.ast)
+  def withOutput(schema: Option[TSchema]): Endpoint = copy(output = schema)
+
+  def withOutput[O](implicit schema: Schema[O]): Endpoint = copy(output = Option(TSchema.fromZIOSchema(schema)))
+
+  def withInput[I](implicit schema: Schema[I]): Endpoint = copy(input = Option(TSchema.fromZIOSchema(schema)))
 
   def withProtocol(protocol: Endpoint.Protocol): Endpoint = copy(protocol = protocol)
 
@@ -46,9 +49,9 @@ final case class Endpoint(
 
   def withBody(body: String): Endpoint = copy(body = Option(body))
 
-  def outputSchema: Schema[_] = output.toSchema
+  def outputSchema: Schema[_] = TSchema.toZIOSchema(output.getOrElse(TSchema.unit))
 
-  def inputSchema: Schema[_] = input.toSchema
+  def inputSchema: Schema[_] = TSchema.toZIOSchema(input.getOrElse(TSchema.unit))
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
 }

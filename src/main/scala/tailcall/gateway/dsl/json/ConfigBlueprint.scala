@@ -1,12 +1,15 @@
 package tailcall.gateway.dsl.json
 
-import tailcall.gateway.ast.Blueprint
+import tailcall.gateway.ast.{Blueprint, Endpoint}
+import tailcall.gateway.http.Method
 import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.remote.Remote
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
-object ConfigBlueprint {
+// TODO: use ZLayer service pattern
+final class ConfigBlueprint(config: Config) {
+
   import Config._
 
   type Resolver = Remote[DynamicValue] => Remote[DynamicValue]
@@ -26,18 +29,22 @@ object ConfigBlueprint {
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
+  def toEndpoint(http: Step.Http): Endpoint =
+    Endpoint.make(config.server.baseURL).withPath(http.path).withMethod(http.method.getOrElse(Method.GET))
+      .withInput(http.input).withOutput(http.output)
+
   def toResolver(steps: List[Step]): Option[Resolver] =
     steps match {
       case Nil   => None
       case steps => Option {
           steps.map[Resolver] {
-            case Step.Http(_, _, _, _) => _ => Remote.die("Http not implemented")
-            case Step.Constant(json)   => _ => Remote(json).toDynamic
+            case http @ Step.Http(_, _, _, _) => input => Remote.fromEndpoint(toEndpoint(http), input)
+            case Step.Constant(json)          => _ => Remote(json).toDynamic
           }.reduce((a, b) => r => b(a(r)))
         }
     }
 
-  def toBlueprint(config: Config): Blueprint = {
+  def toBlueprint: Blueprint = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
@@ -63,4 +70,8 @@ object ConfigBlueprint {
 
     Blueprint(rootSchema, definitions)
   }
+}
+
+object ConfigBlueprint {
+  def make(config: Config): ConfigBlueprint = new ConfigBlueprint(config)
 }

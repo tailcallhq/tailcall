@@ -7,7 +7,7 @@ import zio.json._
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = ConfigBlueprint.toBlueprint(self)
+  def toBlueprint: Blueprint = ConfigBlueprint.make(self).toBlueprint
 }
 
 object Config {
