@@ -30,8 +30,8 @@ final class ConfigBlueprint(config: Config) {
   }
 
   def toEndpoint(http: Step.Http): Endpoint =
-    Endpoint.make(config.server.baseURL).withPath(http.path).withMethod(http.method.getOrElse(Method.GET))
-      .withInput(http.input).withOutput(http.output)
+    Endpoint.make(config.server.host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
+      .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
   def toResolver(steps: List[Step]): Option[Resolver] =
     steps match {

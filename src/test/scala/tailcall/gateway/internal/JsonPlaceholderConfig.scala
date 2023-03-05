@@ -54,6 +54,6 @@ object JsonPlaceholderConfig {
     )
   )
 
-  val server = Config.Server("https://jsonplaceholder.typicode.com/")
+  val server = Config.Server(host = "jsonplaceholder.typicode.com", port = Option(443))
   val config = Config(server = server, graphQL = graphQL)
 }
