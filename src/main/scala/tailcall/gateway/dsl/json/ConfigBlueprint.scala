@@ -15,8 +15,14 @@ object ConfigBlueprint {
     Schema[DynamicValue].transform[Json](DynamicValueUtil.toJson, DynamicValueUtil.fromJson)
 
   def toType(field: Field): Blueprint.Type = {
-    val ofType = Blueprint.NamedType(field.as, field.isRequired.getOrElse(false))
+    val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
     val isList = field.isList.getOrElse(false)
+    if (isList) Blueprint.ListType(ofType, false) else ofType
+  }
+
+  def toType(inputType: Argument): Blueprint.Type = {
+    val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired.getOrElse(false))
+    val isList = inputType.isList.getOrElse(false)
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
@@ -39,8 +45,8 @@ object ConfigBlueprint {
       def bFields: List[Blueprint.FieldDefinition] = {
         fields.toList.map { case (name, input) =>
           val args: List[Blueprint.InputValueDefinition] = {
-            input.args.getOrElse(Map.empty).toList.map { case (name, _) =>
-              Blueprint.InputValueDefinition(name, toType(input), None)
+            input.args.getOrElse(Map.empty).toList.map { case (name, inputType) =>
+              Blueprint.InputValueDefinition(name, toType(inputType), None)
             }
           }
 
