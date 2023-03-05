@@ -1,6 +1,7 @@
 package tailcall.gateway
 
-import tailcall.gateway.ast.Context
+import tailcall.gateway.ast.{Context, Endpoint}
+import tailcall.gateway.internal.JsonPlaceholder
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
 import tailcall.gateway.service.EvaluationRuntime
@@ -285,6 +286,13 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = Lambda.option(Option.empty[Int ~> Int])
           assertZIO(program.evaluate(0))(equalTo(None))
         }
-      )
+      ),
+      suite("endpoint")(test("/users/1") {
+        val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
+          .withOutput[JsonPlaceholder.User]
+        val program  = Lambda.unsafe.fromEndpoint(endpoint)
+        val expected = DynamicValue(JsonPlaceholder.User(1, "Leanne Graham"))
+        assertZIO(program.evaluate(DynamicValue(Map("id" -> 1))))(equalTo(expected))
+      })
     ).provide(EvaluationRuntime.live)
 }

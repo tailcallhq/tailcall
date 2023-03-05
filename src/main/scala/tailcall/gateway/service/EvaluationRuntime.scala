@@ -1,10 +1,14 @@
 package tailcall.gateway.service
 
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import tailcall.gateway.remote.Remote
 import zio._
-import zio.schema.DynamicValue
+import zio.schema.codec.JsonCodec
+import zio.schema.{DynamicValue, Schema}
+
+import java.nio.charset.StandardCharsets
 
 trait EvaluationRuntime {
   final def evaluate[A](remote: Remote[A]): Task[A] = evaluate(remote.toLambda) {}
@@ -89,25 +93,25 @@ object EvaluationRuntime {
             } yield res
           }
 
-        case Immediate(eval0)   => for {
+        case Immediate(eval0)       => for {
             eval1 <- evaluateAs[Expression](eval0, ctx)
             eval2 <- evaluate(eval1, ctx)
           } yield eval2
-        case Defer(value)       => LExit.succeed(value)
-        case Dynamic(operation) => LExit.input[Any].map(input =>
+        case Defer(value)           => LExit.succeed(value)
+        case Dynamic(operation)     => LExit.input[Any].map(input =>
             operation match {
               case Dynamic.Typed(schema)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(schema)
               case Dynamic.ToDynamic(schema) => schema.toDynamic(input)
               case Dynamic.Path(path)        => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
-        case Dict(operation)    => operation match {
+        case Dict(operation)        => operation match {
             case Dict.Get(key, map) => for {
                 k <- evaluate(key, ctx)
                 m <- evaluateAs[Map[Any, Any]](map, ctx)
               } yield m.get(k)
           }
-        case Opt(operation)     => operation match {
+        case Opt(operation)         => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
             case Opt.IsNone                  => LExit.input.map(_.asInstanceOf[Option[_]].isEmpty)
             case Opt.Fold(value, none, some) => for {
@@ -122,11 +126,30 @@ object EvaluationRuntime {
                 case Some(value) => for { any <- evaluate(value, ctx) } yield Option(any)
               }
           }
-        case Die(message)       => LExit.fail(EvaluationError.Death(message))
-        case Debug(prefix)      => for {
+        case Die(message)           => LExit.fail(EvaluationError.Death(message))
+        case Debug(prefix)          => for {
             input <- LExit.input[Any]
             _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
           } yield input
+        case EndpointCall(endpoint) => for {
+            input <- LExit.input[Any]
+            out   <- LExit.fromZIO {
+              for {
+
+                array <- ZIO.async[Any, Nothing, Array[Byte]](cb =>
+                  HttpClient.make
+                    .request(endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest)((_, _, body) =>
+                      cb(ZIO.succeed(body))
+                    )
+                )
+                outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
+                any <- ZIO.fromEither(
+                  JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))
+                    .map(outputSchema.toDynamic)
+                ).mapError(EvaluationError.DecodingError)
+              } yield any
+            }
+          } yield out
       }
     }
   }
