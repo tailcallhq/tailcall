@@ -20,8 +20,15 @@ object Expression {
   final case class Lookup(binding: Binding)                                           extends Expression
   final case class Math(operation: Math.Operation, tag: Numeric[Any])                 extends Expression
   final case class Pipe(left: Expression, right: Expression)                          extends Expression
-  final case class Die(reason: String)                                                extends Expression
-  final case class Debug(prefix: String)                                              extends Expression
+
+  // TODO: Lambda should not have any unsafe operations
+  final case class Unsafe(operation: Unsafe.Operation) extends Expression
+  object Unsafe {
+    sealed trait Operation
+    final case class Die(reason: String)              extends Operation
+    final case class Debug(prefix: String)            extends Operation
+    final case class EndpointCall(endpoint: Endpoint) extends Operation
+  }
 
   object Math {
     sealed trait Operation
@@ -43,9 +50,6 @@ object Expression {
       case object Negate extends Operation
     }
   }
-
-  // Todo: this is a bit of a hack, we should not have
-  final case class EndpointCall(endpoint: Endpoint) extends Expression
 
   object Logical {
     sealed trait Operation

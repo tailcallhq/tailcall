@@ -37,8 +37,8 @@ object Lambda {
   }
 
   def identity[A]: A ~> A                 = Lambda.unsafe.attempt[A, A](_ => Identity)
-  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Die(reason))
-  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Debug(prefix))
+  def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Die(reason)))
+  def debug[A](prefix: String): A ~> A    = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
 
   def recurse[A, B](f: (A ~> B) => A ~> B): A ~> B =
     Lambda.unsafe.attempt { ctx =>
@@ -138,7 +138,7 @@ object Lambda {
         override def compile(context: CompilationContext): Expression = eval(context)
       }
     def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
-      Lambda.unsafe.attempt(_ => Expression.EndpointCall(endpoint))
+      Lambda.unsafe.attempt(_ => Unsafe(Unsafe.EndpointCall(endpoint)))
   }
 
   implicit val anySchema: Schema[_ ~> _] = Schema[Expression]
