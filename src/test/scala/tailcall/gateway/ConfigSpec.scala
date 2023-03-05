@@ -1,10 +1,21 @@
 package tailcall.gateway
 
+import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.internal.{Extension, JsonPlaceholderConfig}
 import tailcall.gateway.service.{EvaluationRuntime, GraphQLGenerator, StepGenerator, TypeGenerator}
-import zio.test.{ZIOSpecDefault, assertCompletes, assertTrue}
+import zio.ZIO
+import zio.test.Assertion.equalTo
+import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
 
 object ConfigSpec extends ZIOSpecDefault {
+
+  def execute(config: Config)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
+    for {
+      graphQL     <- config.toBlueprint.toGraphQL
+      interpreter <- graphQL.interpreter
+      response    <- interpreter.execute(query)
+    } yield response.data.toString
+
   override def spec =
     suite("ConfigSpec")(
       test("encoding") {
@@ -15,7 +26,7 @@ object ConfigSpec extends ZIOSpecDefault {
           decoded <- extension.decode(encoded)
         } yield assertTrue(decoded == config)
       },
-      test("render") {
+      test("schema") {
         val config   = JsonPlaceholderConfig.config
         val expected = """
                          |schema {
@@ -73,14 +84,19 @@ object ConfigSpec extends ZIOSpecDefault {
 
         for { graphQL <- config.toBlueprint.toGraphQL } yield assertTrue(graphQL.render == expected)
       },
-      suite("execute")(test("users name") {
-        val query = """ query { users { name } } """
-        for {
-          graphQL     <- JsonPlaceholderConfig.config.toBlueprint.toGraphQL
-          interpreter <- graphQL.interpreter
-          response    <- interpreter.execute(query)
-          _ = pprint.pprintln(response)
-        } yield assertCompletes
-      })
+      suite("execute")(
+        test("users name") {
+          val program = execute(JsonPlaceholderConfig.config)(""" query { users { name } } """)
+          assertZIO(program)(equalTo("""{}"""))
+        },
+        test("posts body") {
+          val program = execute(JsonPlaceholderConfig.config)(""" query { posts { body } } """)
+          assertZIO(program)(equalTo("""{}"""))
+        },
+        test("users company") {
+          val program = execute(JsonPlaceholderConfig.config)(""" query {  } """)
+          assertZIO(program)(equalTo("""{}"""))
+        }
+      )
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
 }
