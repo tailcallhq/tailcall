@@ -5,7 +5,10 @@ import tailcall.gateway.dsl.json.Config._
 import tailcall.gateway.http.Method
 import zio.json._
 
-final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL())
+final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
+  self =>
+  def toBlueprint: Blueprint = ConfigBlueprint.toBlueprint(self)
+}
 
 object Config {
   final case class Server(baseURL: String)
@@ -42,6 +45,9 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None
     ) extends Step
+
+    @jsonHint("$const")
+    final case class Constant(json: zio.json.ast.Json) extends Step
   }
 
   /**
