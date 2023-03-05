@@ -1,6 +1,7 @@
 package tailcall.gateway.ast
 
 import zio.json._
+import zio.schema.Schema
 
 /**
  * Represents the structure of a value. It allows us to
@@ -103,6 +104,10 @@ object TSchema {
   def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
+
+  def fromZIOSchema(schema: Schema[_]): TSchema = ???
+
+  def toZIOSchema(schema: TSchema): Schema[Any] = ???
 
   implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
