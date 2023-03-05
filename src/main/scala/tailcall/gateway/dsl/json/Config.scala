@@ -11,7 +11,7 @@ final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = Gra
 }
 
 object Config {
-  final case class Server(baseURL: String)
+  final case class Server(host: String, port: Option[Int] = None)
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
   final case class GraphQL(
     schema: SchemaDefinition = SchemaDefinition(),
@@ -50,7 +50,10 @@ object Config {
       method: Option[Method] = None,
       input: Option[TSchema] = None,
       output: Option[TSchema] = None
-    ) extends Step
+    ) extends Step {
+      def withOutput(output: TSchema): Http = copy(output = Option(output))
+      def withInput(input: TSchema): Http   = copy(input = Option(input))
+    }
 
     @jsonHint("$const")
     final case class Constant(json: zio.json.ast.Json) extends Step
