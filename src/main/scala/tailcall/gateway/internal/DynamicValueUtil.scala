@@ -84,6 +84,7 @@ object DynamicValueUtil {
 
   def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
+  // TODO: add unit tests
   def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
@@ -175,9 +176,7 @@ object DynamicValueUtil {
       case DynamicValue.Record(_, values) => Json.Obj(Chunk.from(values.map { case (k, v) => k -> toJson(v) }))
       case DynamicValue.Enumeration(_, (name, value))  => Json.Obj(Chunk(name -> toJson(value)))
       case DynamicValue.Sequence(values)               => Json.Arr(Chunk.from(values.map(toJson)))
-      case DynamicValue.Dictionary(entries)            => Json.Obj(Chunk.from(entries.map { case (k, v) =>
-          k.toString -> toJson(v)
-        }))
+      case DynamicValue.Dictionary(_)                  => ???
       case DynamicValue.SetValue(values)               => Json.Arr(Chunk.from(values.map(toJson)))
       case DynamicValue.Primitive(value, standardType) => toJson(value, standardType)
       case DynamicValue.Singleton(_)                   => ???
