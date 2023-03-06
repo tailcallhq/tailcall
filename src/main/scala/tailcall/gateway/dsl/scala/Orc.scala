@@ -3,7 +3,9 @@ package tailcall.gateway.dsl.scala
 import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.remote.Remote
 import zio.Task
-import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.schema.{DeriveSchema, DynamicValue, Schema, TypeId}
+
+import scala.collection.immutable.ListMap
 
 /**
  * A scala DSL to create an orchestration specification.
@@ -59,6 +61,9 @@ object Orc {
 
     def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(_ => Remote(DynamicValue(t)))))
+
+    def resolveWithRecord(fields: (String, DynamicValue)*)(implicit ev: A <:< Output): Field[Output] =
+      self.resolveWith(DynamicValue.Record(TypeId.Structural, ListMap.from(fields.toList)): DynamicValue)
 
     def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(f)))
