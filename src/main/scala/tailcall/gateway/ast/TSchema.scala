@@ -1,7 +1,10 @@
 package tailcall.gateway.ast
 
+import zio.Chunk
 import zio.json._
-import zio.schema.Schema
+import zio.schema.meta.ExtensibleMetaSchema.Labelled
+import zio.schema.meta.{ExtensibleMetaSchema, NodePath}
+import zio.schema.{Schema, StandardType, TypeId}
 
 /**
  * Represents the structure of a value. It allows us to
@@ -27,9 +30,6 @@ object TSchema {
 
     @jsonHint("Integer")
     case object Int extends Scalar
-
-    @jsonHint("ID")
-    case object Id extends Scalar
 
     @jsonHint("null")
     case object Null extends Scalar
@@ -105,9 +105,71 @@ object TSchema {
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
-  def fromZIOSchema(schema: Schema[_]): TSchema = ???
+  def fromZIOSchema(schema: Schema[_]): TSchema =
+    schema.ast match {
+      case ExtensibleMetaSchema.Product(id, path, fields, optional) =>
+        val nfields = fields.map(f => TSchema.Field(f.label, fromZIOSchema(f.schema.toSchema)))
+        TSchema.Obj(nfields.toList)
 
-  def toZIOSchema(schema: TSchema): Schema[Any] = ???
+      case ExtensibleMetaSchema.Tuple(_, _, _, _)      => ???
+      case ExtensibleMetaSchema.Sum(_, _, _, _)        => ???
+      case ExtensibleMetaSchema.Either(_, _, _, _)     => ???
+      case ExtensibleMetaSchema.FailNode(_, _, _)      => ???
+      case ExtensibleMetaSchema.ListNode(_, _, _)      => ???
+      case ExtensibleMetaSchema.Dictionary(_, _, _, _) => ???
+      case ExtensibleMetaSchema.Value(valueType, _, _) => valueType match {
+          case StandardType.UnitType           => TSchema.string
+          case StandardType.StringType         => TSchema.string
+          case StandardType.BoolType           => TSchema.bool
+          case StandardType.ByteType           => TSchema.string
+          case StandardType.ShortType          => TSchema.string
+          case StandardType.IntType            => TSchema.int
+          case StandardType.LongType           => TSchema.string
+          case StandardType.FloatType          => TSchema.string
+          case StandardType.DoubleType         => TSchema.string
+          case StandardType.BinaryType         => TSchema.string
+          case StandardType.CharType           => TSchema.string
+          case StandardType.UUIDType           => TSchema.string
+          case StandardType.BigDecimalType     => TSchema.string
+          case StandardType.BigIntegerType     => TSchema.string
+          case StandardType.DayOfWeekType      => TSchema.string
+          case StandardType.MonthType          => TSchema.string
+          case StandardType.MonthDayType       => TSchema.string
+          case StandardType.PeriodType         => TSchema.string
+          case StandardType.YearType           => TSchema.string
+          case StandardType.YearMonthType      => TSchema.string
+          case StandardType.ZoneIdType         => TSchema.string
+          case StandardType.ZoneOffsetType     => TSchema.string
+          case StandardType.DurationType       => TSchema.string
+          case StandardType.InstantType        => TSchema.string
+          case StandardType.LocalDateType      => TSchema.string
+          case StandardType.LocalTimeType      => TSchema.string
+          case StandardType.LocalDateTimeType  => TSchema.string
+          case StandardType.OffsetTimeType     => TSchema.string
+          case StandardType.OffsetDateTimeType => TSchema.string
+          case StandardType.ZonedDateTimeType  => TSchema.string
+        }
+      case ExtensibleMetaSchema.Ref(_, _, _)           => ???
+      case ExtensibleMetaSchema.Known(_, _, _)         => ???
+    }
+
+  def toZIOSchema(schema: TSchema): Schema[_] =
+    schema match {
+      case scalar: Scalar => scalar match {
+          case Scalar.Str     => Schema[String]
+          case Scalar.Int     => Schema[Int]
+          case Scalar.Null    => ???
+          case Scalar.Unit    => Schema[Unit]
+          case Scalar.Boolean => Schema[Boolean]
+        }
+      case Obj(fields)    =>
+        val nfields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
+        ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nfields).toSchema
+
+      case Arr(item)          => Schema.chunk(toZIOSchema(item))
+      case Union(_, _)        => ???
+      case Intersection(_, _) => ???
+    }
 
   implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
