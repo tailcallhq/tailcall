@@ -3,9 +3,10 @@ package tailcall.gateway
 import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.internal.{Extension, JsonPlaceholderConfig}
 import tailcall.gateway.service.{EvaluationRuntime, GraphQLGenerator, StepGenerator, TypeGenerator}
-import zio.ZIO
 import zio.test.Assertion.equalTo
+import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
+import zio.{ZIO, durationInt}
 
 object ConfigSpec extends ZIOSpecDefault {
 
@@ -84,17 +85,60 @@ object ConfigSpec extends ZIOSpecDefault {
       },
       suite("execute")(
         test("users name") {
-          val program = execute(JsonPlaceholderConfig.config)(""" query { users { name } } """)
-          assertZIO(program)(equalTo("""{}"""))
+          val program = execute(JsonPlaceholderConfig.config)(""" query { users {name} } """)
+
+          val expected = """{"users":[
+                           |{"name":"Leanne Graham"},
+                           |{"name":"Ervin Howell"},
+                           |{"name":"Clementine Bauch"},
+                           |{"name":"Patricia Lebsack"},
+                           |{"name":"Chelsey Dietrich"},
+                           |{"name":"Mrs. Dennis Schulist"},
+                           |{"name":"Kurtis Weissnat"},
+                           |{"name":"Nicholas Runolfsdottir V"},
+                           |{"name":"Glenna Reichert"},
+                           |{"name":"Clementina DuBuque"}
+                           |]}""".stripMargin.replace("\n", "").trim
+          assertZIO(program)(equalTo(expected))
         },
-        test("posts body") {
-          val program = execute(JsonPlaceholderConfig.config)(""" query { posts { body } } """)
-          assertZIO(program)(equalTo("""{}"""))
+        test("user name") {
+          val program = execute(JsonPlaceholderConfig.config)(""" query { user(id: 1) {name} } """)
+          assertZIO(program)(equalTo("""{"user":{"name":"Leanne Graham"}}"""))
         },
-        test("users company") {
-          val program = execute(JsonPlaceholderConfig.config)(""" query {  } """)
-          assertZIO(program)(equalTo("""{}"""))
+        test("post body") {
+          val program  = execute(JsonPlaceholderConfig.config)(""" query { post(id: 1) { title } } """)
+          val expected =
+            """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}"""
+          assertZIO(program)(equalTo(expected))
+        },
+        test("user company") {
+          val program  = execute(JsonPlaceholderConfig.config)(""" query {user(id: 1) { company { name } } }""")
+          val expected = """{"user":{"company":{"name":"Romaguera-Crona"}}}"""
+          assertZIO(program)(equalTo(expected))
+        },
+        test("user posts") {
+          val program  = execute(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
+          val expected =
+            """{"user":{"posts":[{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},
+              |{"title":"qui est esse"},
+              |{"title":"ea molestias quasi exercitationem repellat qui ipsa sit aut"},
+              |{"title":"eum et est occaecati"},
+              |{"title":"nesciunt quas odio"},
+              |{"title":"dolorem eum magni eos aperiam quia"},
+              |{"title":"magnam facilis autem"},
+              |{"title":"dolorem dolore est ipsam"},
+              |{"title":"nesciunt iure omnis dolorem tempora et accusantium"},
+              |{"title":"optio molestias id quia eum"}]}}""".stripMargin.replace("\n", "").trim
+          assertZIO(program)(equalTo(expected))
+        },
+        test("post user") {
+          val program  = execute(JsonPlaceholderConfig.config)(""" query {post(id: 1) { title user { name } } }""")
+          val expected =
+            """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
+          assertZIO(program)(equalTo(expected))
         }
       )
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
+    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live) @@ timeout(
+      10 seconds
+    )
 }
