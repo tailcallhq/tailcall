@@ -51,9 +51,7 @@ object Reader {
                 schemaDirectives = Nil
               ))
           }
-
-          _ <- Validator.validateSchema(rootSchemaBuilder)
-
+          _                 <- Validator.validateSchema(rootSchemaBuilder)
         } yield document
       }
     }

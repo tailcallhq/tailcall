@@ -1,219 +1,319 @@
 version: 0
 server:
-  baseURL: "https://jsonplacholder.typicode.com"
-operations:
-  - &getUsers:
-    type: Http
-    method: GET
-    path: /users
-    output:
-      type: User
-      list: true
-  - &getUserById:
-    type: Http
-    path: /users/${id}
-    output:
-      type: User
-  - &getPosts:
-    type: Http
-    path: /posts
-    output:
-      type: Post
-      list: true
-  - &getPostById:
-    type: Http
-    path: /posts/${id}
-    output:
-      type: Post
-  - &getComments:
-    type: Http
-    path: /comments
-    output:
-      type: Comment
-      list: true
-  - &getPostComments:
-    type: Http
-    path: /comments?postId=${postId}
-    output:
-      type: Comment
-      list: true
-  - &getUserPosts:
-    type: Http
-    path: /posts?userId=${userId}
-    output:
-      type: Post
-      list: true
-  - &getUserComments:
-    type: Http
-    path: /comments?userId=${userId}
-    output:
-      type: Comment
-      list: true
-  - &getAlbums:
-    type: Http
-    path: /albums
-    output:
-      type: Album
-      list: true
-  - &getUserAlbums:
-    type: Http
-    path: /albums?userId=${userId}
-    output:
-      type: Album
-      list: true
-  - &getPhotos:
-    type: Http
-    path: /photos
-    output:
-      type: Photo
-      list: true
-  - &getAlbumPhotos:
-    type: Http
-    path: /photos?albumId=${albumId}
-    output:
-      type: Photo
-      list: true
-  - &getAlbumById:
-    type: Http
-    path: /albums/${id}
-    output:
-      type: Album
-  - &user:
-    compose:
-      - *getUserById
-      - applySpec:
-          id:
-            prop: id
-  - &post:
-    compose:
-      - *getPostById
-      - applySpec:
-          id:
-            prop: id
-  - &userPosts:
-    compose:
-      - *getUserPosts
-      - applySpec:
-          userId:
-            prop: id
-  - &userComments:
-    compose:
-      - *getUserComments
-      - applySpec:
-          userId:
-            prop: id
-  - &userAlbums:
-    compose:
-      - *getUserAlbums
-      - applySpec:
-          userId:
-            prop: id
-  - &postComments:
-    compose:
-      - *getPostComments
-      - applySpec:
-          postId:
-            prop: id
-
+  host: jsonplaceholder.typicode.com
+  port: 443
 graphQL:
-  Query:
-    users:
-      operations: *getUsers
-    user:
-      arguments:
-        id: Int
-      operations: *user
-    posts:
-      operations: *getPosts
-    comments:
-      operations: *getComments
-    albums:
-      operations: *getAlbums
-    post:
-      input:
-        id: Int
-      operations: *post
-    photos:
-      operations: *getPhotos
-  User:
-    id: Int
-    name: String
-    email: String
-    address: Address
-    phone: String
-    website: String
-    company: Company
-    posts:
-      operations: *userPosts
-    comments:
-      operations: *userComments
-    albums:
-      operations: *userAlbums
-  Post:
-    id: Int
-    userId: Int
-    title: String
-    body: String
-    user:
-      operations:
-        compose:
-          - *user
-          - prop: userId
-    comments:
-      operations: *postComments
-  Address:
-    street: String
-    suite: String
-    city: String
-    zipcode: String
-    geo:
-      type: Geo
-  Company:
-    name: String
-    catchPhrase: String
-    bs: String
-  Album:
-    id: Int
-    userId: Int
-    title: String
-    photos:
-      operations:
-        compose:
-          - *getAlbumPhotos
-          - applySpec:
-              albumId:
-                prop: id
-    user:
-      operations:
-        compose:
-          - *getUserById
-          - applySpec:
-              id:
-                prop: userId
-  Comment:
-    id: Int
-    postId: Int
-    name: String
-    email: String
-    body: String
-    post:
-      operations:
-        compose:
-          - *getPosts
-          - applySpec:
-              id:
-                prop: postId
-  Photo:
-    id: Int
-    albumId: Int
-    title: String
-    url: String
-    thumbnailUrl: String
-    album:
-      operations:
-        compose:
-          - *getAlbumById
-          - applySpec:
-              id:
-                prop: albumId
-
+  schema:
+    query: Query
+    mutation: Mutation
+  types:
+    Geo:
+      lat:
+        type: String
+      lng:
+        type: String
+    Company:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+    Address:
+      geo:
+        type: Geo
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
+        type: String
+    Query:
+      posts:
+        type: Post
+        isList: true
+        steps:
+          - $http:
+              path: /posts
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: userId
+                      schema:
+                        type: Integer
+                    - name: title
+                      schema:
+                        type: String
+                    - name: body
+                      schema:
+                        type: String
+                  type: object
+                type: array
+      users:
+        type: User
+        isList: true
+        steps:
+          - $http:
+              path: /users
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: name
+                      schema:
+                        type: String
+                    - name: username
+                      schema:
+                        type: String
+                    - name: email
+                      schema:
+                        type: String
+                    - name: address
+                      schema:
+                        fields:
+                          - name: street
+                            schema:
+                              type: String
+                          - name: suite
+                            schema:
+                              type: String
+                          - name: city
+                            schema:
+                              type: String
+                          - name: zipcode
+                            schema:
+                              type: String
+                          - name: geo
+                            schema:
+                              fields:
+                                - name: lat
+                                  schema:
+                                    type: String
+                                - name: lng
+                                  schema:
+                                    type: String
+                              type: object
+                        type: object
+                    - name: company
+                      schema:
+                        fields:
+                          - name: name
+                            schema:
+                              type: String
+                          - name: catchPhrase
+                            schema:
+                              type: String
+                          - name: bs
+                            schema:
+                              type: String
+                        type: object
+                  type: object
+                type: array
+      post:
+        type: Post
+        steps:
+          - $http:
+              path: /posts/{{args.id}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: userId
+                    schema:
+                      type: Integer
+                  - name: title
+                    schema:
+                      type: String
+                  - name: body
+                    schema:
+                      type: String
+                type: object
+        args:
+          id:
+            type: Int
+            isRequired: true
+      user:
+        type: User
+        steps:
+          - $http:
+              path: /users/{{args.id}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: name
+                    schema:
+                      type: String
+                  - name: username
+                    schema:
+                      type: String
+                  - name: email
+                    schema:
+                      type: String
+                  - name: address
+                    schema:
+                      fields:
+                        - name: street
+                          schema:
+                            type: String
+                        - name: suite
+                          schema:
+                            type: String
+                        - name: city
+                          schema:
+                            type: String
+                        - name: zipcode
+                          schema:
+                            type: String
+                        - name: geo
+                          schema:
+                            fields:
+                              - name: lat
+                                schema:
+                                  type: String
+                              - name: lng
+                                schema:
+                                  type: String
+                            type: object
+                      type: object
+                  - name: company
+                    schema:
+                      fields:
+                        - name: name
+                          schema:
+                            type: String
+                        - name: catchPhrase
+                          schema:
+                            type: String
+                        - name: bs
+                          schema:
+                            type: String
+                      type: object
+                type: object
+        args:
+          id:
+            type: Int
+            isRequired: true
+    Post:
+      body:
+        type: String
+      id:
+        type: Int
+        isRequired: true
+      user:
+        type: User
+        steps:
+          - $http:
+              path: /users/{{value.userId}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: name
+                    schema:
+                      type: String
+                  - name: username
+                    schema:
+                      type: String
+                  - name: email
+                    schema:
+                      type: String
+                  - name: address
+                    schema:
+                      fields:
+                        - name: street
+                          schema:
+                            type: String
+                        - name: suite
+                          schema:
+                            type: String
+                        - name: city
+                          schema:
+                            type: String
+                        - name: zipcode
+                          schema:
+                            type: String
+                        - name: geo
+                          schema:
+                            fields:
+                              - name: lat
+                                schema:
+                                  type: String
+                              - name: lng
+                                schema:
+                                  type: String
+                            type: object
+                      type: object
+                  - name: company
+                    schema:
+                      fields:
+                        - name: name
+                          schema:
+                            type: String
+                        - name: catchPhrase
+                          schema:
+                            type: String
+                        - name: bs
+                          schema:
+                            type: String
+                      type: object
+                type: object
+      userId:
+        type: Int
+        isRequired: true
+      title:
+        type: String
+    User:
+      website:
+        type: String
+      name:
+        type: String
+        isRequired: true
+      posts:
+        type: Post
+        isList: true
+        steps:
+          - $http:
+              path: /users/{{value.id}}/posts
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: userId
+                      schema:
+                        type: Integer
+                    - name: title
+                      schema:
+                        type: String
+                    - name: body
+                      schema:
+                        type: String
+                  type: object
+                type: array
+      email:
+        type: String
+        isRequired: true
+      username:
+        type: String
+        isRequired: true
+      company:
+        type: Company
+      id:
+        type: Int
+        isRequired: true
+      address:
+        type: Address
+      phone:
+        type: String

@@ -1,63 +1,591 @@
 {
-  "version": "1.0.0",
-  "endpoints": {
-    "http": {
-      "baseURL": "https://jsonplaceholder.typicode.com"
+  "version": 0,
+  "server": {
+    "host": "jsonplaceholder.typicode.com",
+    "port": 443
+  },
+  "graphQL": {
+    "schema": {
+      "query": "Query",
+      "mutation": "Mutation"
     },
-    "definitions": [
-      {
-        "name": "getUsers",
-        "http": {
-          "method": "GET",
-          "path": "/users"
+    "types": {
+      "Geo": {
+        "lat": {
+          "type": "String"
         },
-        "output": {
-          "schema": {
-            "list": {
-              "item": {
-                "id": "Int",
-                "name": "String",
-                "username": "String",
-                "email": "String",
-                "phone": "String",
-                "website": "String"
+        "lng": {
+          "type": "String"
+        }
+      },
+      "Company": {
+        "name": {
+          "type": "String"
+        },
+        "catchPhrase": {
+          "type": "String"
+        },
+        "bs": {
+          "type": "String"
+        }
+      },
+      "Address": {
+        "geo": {
+          "type": "Geo"
+        },
+        "street": {
+          "type": "String"
+        },
+        "suite": {
+          "type": "String"
+        },
+        "city": {
+          "type": "String"
+        },
+        "zipcode": {
+          "type": "String"
+        }
+      },
+      "Query": {
+        "posts": {
+          "type": "Post",
+          "isList": true,
+          "steps": [
+            {
+              "$http": {
+                "path": "/posts",
+                "output": {
+                  "type": "array",
+                  "item": {
+                    "type": "object",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "schema": {
+                          "type": "Integer"
+                        }
+                      },
+                      {
+                        "name": "userId",
+                        "schema": {
+                          "type": "Integer"
+                        }
+                      },
+                      {
+                        "name": "title",
+                        "schema": {
+                          "type": "String"
+                        }
+                      },
+                      {
+                        "name": "body",
+                        "schema": {
+                          "type": "String"
+                        }
+                      }
+                    ]
+                  }
+                }
               }
+            }
+          ]
+        },
+        "users": {
+          "type": "User",
+          "isList": true,
+          "steps": [
+            {
+              "$http": {
+                "path": "/users",
+                "output": {
+                  "type": "array",
+                  "item": {
+                    "type": "object",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "schema": {
+                          "type": "Integer"
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "schema": {
+                          "type": "String"
+                        }
+                      },
+                      {
+                        "name": "username",
+                        "schema": {
+                          "type": "String"
+                        }
+                      },
+                      {
+                        "name": "email",
+                        "schema": {
+                          "type": "String"
+                        }
+                      },
+                      {
+                        "name": "address",
+                        "schema": {
+                          "type": "object",
+                          "fields": [
+                            {
+                              "name": "street",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "suite",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "city",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "zipcode",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "geo",
+                              "schema": {
+                                "type": "object",
+                                "fields": [
+                                  {
+                                    "name": "lat",
+                                    "schema": {
+                                      "type": "String"
+                                    }
+                                  },
+                                  {
+                                    "name": "lng",
+                                    "schema": {
+                                      "type": "String"
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "company",
+                        "schema": {
+                          "type": "object",
+                          "fields": [
+                            {
+                              "name": "name",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "catchPhrase",
+                              "schema": {
+                                "type": "String"
+                              }
+                            },
+                            {
+                              "name": "bs",
+                              "schema": {
+                                "type": "String"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "post": {
+          "type": "Post",
+          "steps": [
+            {
+              "$http": {
+                "path": "/posts/{{args.id}}",
+                "output": {
+                  "type": "object",
+                  "fields": [
+                    {
+                      "name": "id",
+                      "schema": {
+                        "type": "Integer"
+                      }
+                    },
+                    {
+                      "name": "userId",
+                      "schema": {
+                        "type": "Integer"
+                      }
+                    },
+                    {
+                      "name": "title",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "body",
+                      "schema": {
+                        "type": "String"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "args": {
+            "id": {
+              "type": "Int",
+              "isRequired": true
+            }
+          }
+        },
+        "user": {
+          "type": "User",
+          "steps": [
+            {
+              "$http": {
+                "path": "/users/{{args.id}}",
+                "output": {
+                  "type": "object",
+                  "fields": [
+                    {
+                      "name": "id",
+                      "schema": {
+                        "type": "Integer"
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "username",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "email",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "address",
+                      "schema": {
+                        "type": "object",
+                        "fields": [
+                          {
+                            "name": "street",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "suite",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "city",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "zipcode",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "geo",
+                            "schema": {
+                              "type": "object",
+                              "fields": [
+                                {
+                                  "name": "lat",
+                                  "schema": {
+                                    "type": "String"
+                                  }
+                                },
+                                {
+                                  "name": "lng",
+                                  "schema": {
+                                    "type": "String"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "name": "company",
+                      "schema": {
+                        "type": "object",
+                        "fields": [
+                          {
+                            "name": "name",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "catchPhrase",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "bs",
+                            "schema": {
+                              "type": "String"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "args": {
+            "id": {
+              "type": "Int",
+              "isRequired": true
             }
           }
         }
       },
-      {
-        "name": "getUserById",
-        "http": {
-          "method": "GET",
-          "path": "/users/${id}"
-        }
-      },
-      {
-        "name": "getPosts",
-        "http": {
-          "method": "GET",
-          "path": "/posts"
+      "Post": {
+        "body": {
+          "type": "String"
         },
-        "input": {
-          "query": {
-            "userId": {
-              "list": "Int"
+        "id": {
+          "type": "Int",
+          "isRequired": true
+        },
+        "user": {
+          "type": "User",
+          "steps": [
+            {
+              "$http": {
+                "path": "/users/{{value.userId}}",
+                "output": {
+                  "type": "object",
+                  "fields": [
+                    {
+                      "name": "id",
+                      "schema": {
+                        "type": "Integer"
+                      }
+                    },
+                    {
+                      "name": "name",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "username",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "email",
+                      "schema": {
+                        "type": "String"
+                      }
+                    },
+                    {
+                      "name": "address",
+                      "schema": {
+                        "type": "object",
+                        "fields": [
+                          {
+                            "name": "street",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "suite",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "city",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "zipcode",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "geo",
+                            "schema": {
+                              "type": "object",
+                              "fields": [
+                                {
+                                  "name": "lat",
+                                  "schema": {
+                                    "type": "String"
+                                  }
+                                },
+                                {
+                                  "name": "lng",
+                                  "schema": {
+                                    "type": "String"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "name": "company",
+                      "schema": {
+                        "type": "object",
+                        "fields": [
+                          {
+                            "name": "name",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "catchPhrase",
+                            "schema": {
+                              "type": "String"
+                            }
+                          },
+                          {
+                            "name": "bs",
+                            "schema": {
+                              "type": "String"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
             }
-          },
-          "params": "GetPostsParams"
+          ]
         },
-        "output": {
+        "userId": {
+          "type": "Int",
+          "isRequired": true
+        },
+        "title": {
+          "type": "String"
         }
       },
-      {
-        "name": "getPostsById",
-        "http": {
-          "method": "GET",
-          "path": "/posts/${id}"
+      "User": {
+        "website": {
+          "type": "String"
+        },
+        "name": {
+          "type": "String",
+          "isRequired": true
+        },
+        "posts": {
+          "type": "Post",
+          "isList": true,
+          "steps": [
+            {
+              "$http": {
+                "path": "/users/{{value.id}}/posts",
+                "output": {
+                  "type": "array",
+                  "item": {
+                    "type": "object",
+                    "fields": [
+                      {
+                        "name": "id",
+                        "schema": {
+                          "type": "Integer"
+                        }
+                      },
+                      {
+                        "name": "userId",
+                        "schema": {
+                          "type": "Integer"
+                        }
+                      },
+                      {
+                        "name": "title",
+                        "schema": {
+                          "type": "String"
+                        }
+                      },
+                      {
+                        "name": "body",
+                        "schema": {
+                          "type": "String"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "email": {
+          "type": "String",
+          "isRequired": true
+        },
+        "username": {
+          "type": "String",
+          "isRequired": true
+        },
+        "company": {
+          "type": "Company"
+        },
+        "id": {
+          "type": "Int",
+          "isRequired": true
+        },
+        "address": {
+          "type": "Address"
+        },
+        "phone": {
+          "type": "String"
         }
       }
-    ]
-  },
-  "graphQL": {}
+    }
+  }
 }
