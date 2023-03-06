@@ -30,15 +30,19 @@ object StepGenerator {
             } yield step
 
             Step.QueryStep(ZQuery.fromZIO(step))
-          case None           => fromType(field.ofType, context)
+          case None           =>
+            val value = DynamicValue(DynamicValueUtil.getPath(context.value, field.name :: Nil))
+            fromType(field.ofType, context.copy(value = value))
         }
       }
     }
 
     def fromType(tpe: ast.Blueprint.Type, ctx: Context): Step[Any] =
       tpe match {
-        case ast.Blueprint.NamedType(name, _)  => stepRef
-            .getOrElse(name, (ctx: Context) => Step.PureStep(DynamicValueUtil.toValue(ctx.value)))(ctx)
+        case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
+            case Some(value) => value(ctx)
+            case None        => Step.PureStep(DynamicValueUtil.toValue(ctx.value))
+          }
         case ast.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
                 .ListStep(values.map(value => fromType(ofType, ctx.copy(value = value))).toList)
