@@ -122,8 +122,8 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val orc     = Orc(
           "Query" -> List("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
           "Foo"   -> List(
-            "a" -> Field.output.to("Int").resolveWithParent,
-            "b" -> Field.output.to("Int").resolveWithParent,
+            "a" -> Field.output.to("Int"),
+            "b" -> Field.output.to("Int"),
             "c" -> Field.output.to("Int").resolveWith(3)
           )
         )

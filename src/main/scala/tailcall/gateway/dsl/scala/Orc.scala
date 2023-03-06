@@ -3,9 +3,7 @@ package tailcall.gateway.dsl.scala
 import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.remote.Remote
 import zio.Task
-import zio.schema.{DeriveSchema, DynamicValue, Schema, TypeId}
-
-import scala.collection.immutable.ListMap
+import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 /**
  * A scala DSL to create an orchestration specification.
@@ -44,11 +42,8 @@ object Orc {
     case object Empty                                                              extends Resolver
     final case class FromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]) extends Resolver
 
-    case object FromParent extends Resolver
-
     def fromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Resolver = FromFunction(f)
     def empty: Resolver                                                         = Empty
-    def fromParent: Resolver                                                    = FromParent
   }
 
   final case class Field[A](ofType: Option[Type], definition: A) {
@@ -62,14 +57,8 @@ object Orc {
     def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(_ => Remote(DynamicValue(t)))))
 
-    def resolveWithRecord(fields: (String, DynamicValue)*)(implicit ev: A <:< Output): Field[Output] =
-      self.resolveWith(DynamicValue.Record(TypeId.Structural, ListMap.from(fields.toList)): DynamicValue)
-
     def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(f)))
-
-    def resolveWithParent(implicit ev: A <:< Output): Field[Output] =
-      copy(definition = definition.copy(resolve = Resolver.fromParent))
 
     def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
       copy(definition = definition.copy(defaultValue = Option(DynamicValue(t))))
