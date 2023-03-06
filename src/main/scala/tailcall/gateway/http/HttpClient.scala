@@ -14,6 +14,7 @@ trait HttpClient {
   def request(req: HttpRequest): HttpClient.AsyncHandler
 }
 
+// TODO: handle cancellation
 object HttpClient {
   final class NettyHttpClient() extends HttpClient {
     def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
