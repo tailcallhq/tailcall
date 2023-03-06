@@ -136,12 +136,13 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    array <- ZIO.async[Any, Throwable, Array[Byte]] { cb =>
+                    array <- ZIO.asyncInterrupt[Any, Throwable, Array[Byte]] { cb =>
                       val request = endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest
-                      HttpClient.make.request(request)((status, _, body) =>
+                      val close   = HttpClient.make.request(request)((status, _, body) =>
                         if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
                         else cb(ZIO.succeed(body))
                       )
+                      Left(ZIO.succeed(close))
                     }
                     outputSchema = endpoint.outputSchema
                     any   <- ZIO.fromEither(

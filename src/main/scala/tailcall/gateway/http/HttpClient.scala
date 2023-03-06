@@ -30,31 +30,32 @@ object HttpClient {
         }
       })
 
-    override def request(request: HttpRequest): AsyncHandler =
-      cb => {
-        val url  = new URL(request.uri())
-        val host = url.getHost
-        val port = Math.max(url.getPort, 80)
+    override def request(request: HttpRequest): AsyncHandler = { cb =>
+      val url  = new URL(request.uri())
+      val host = url.getHost
+      val port = Math.max(url.getPort, 80)
 
-        var close: Option[ChannelFuture] = None
+      var close: Option[ChannelFuture] = None
 
-        request.headers().set(HttpHeaderNames.HOST, host)
-        val future = bootstrapConnection(request) { response =>
-          val status  = response.status().code()
-          val body    = ByteBufUtil.getBytes(response.content)
-          val headers = response.headers().entries().asScala
-            .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
+      request.headers().set(HttpHeaderNames.HOST, host)
+      val future = bootstrapConnection(request) { response =>
+        val status  = response.status().code()
+        val body    = ByteBufUtil.getBytes(response.content)
+        val headers = response.headers().entries().asScala
+          .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
 
-          close.foreach(_.cancel(true))
-          cb(status, headers, body)
-        }.connect(host, port)
+        close.foreach(_.cancel(true))
+        cb(status, headers, body)
+      }.connect(host, port)
 
-        close = Some(future)
-      }
+      close = Some(future)
+      () => future.cancel(true)
+    }
 
   }
 
-  type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Any
+  type Close        = () => Unit
+  type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Close
 
   def make: HttpClient = new NettyHttpClient()
 }
