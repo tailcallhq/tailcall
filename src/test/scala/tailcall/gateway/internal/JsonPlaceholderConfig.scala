@@ -17,11 +17,11 @@ object JsonPlaceholderConfig {
       "Query"   -> Map(
         "posts" -> Config.Field("Post", posts).asList,
         "users" -> Config.Field("User", users).asList,
-        "post"  -> Config.Field("Post", posts)("id" -> Argument.id.asRequired),
-        "user"  -> Config.Field("User", users)("id" -> Argument.id.asRequired)
+        "post"  -> Config.Field("Post", postsById)("id" -> Argument.int.asRequired),
+        "user"  -> Config.Field("User", userById)("id" -> Argument.int.asRequired)
       ),
       "User"    -> Map(
-        "id"       -> Config.Field.id.asRequired,
+        "id"       -> Config.Field.int.asRequired,
         "name"     -> Config.Field.string.asRequired,
         "username" -> Config.Field.string.asRequired,
         "email"    -> Config.Field.string.asRequired,
@@ -32,8 +32,8 @@ object JsonPlaceholderConfig {
         "posts"    -> Config.Field("Post", userPosts).asList
       ),
       "Post"    -> Map(
-        "id"     -> Config.Field.id.asRequired,
-        "userId" -> Config.Field("ID!"),
+        "id"     -> Config.Field.int.asRequired,
+        "userId" -> Config.Field.int.asRequired,
         "title"  -> Config.Field.string,
         "body"   -> Config.Field.string,
         "user"   -> Config.Field("User", postUser)

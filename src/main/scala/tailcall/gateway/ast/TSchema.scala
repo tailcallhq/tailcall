@@ -91,7 +91,7 @@ object TSchema {
     case object Structural         extends Id
   }
 
-  def str: TSchema    = TSchema.Scalar.Str
+  def string: TSchema = TSchema.Scalar.Str
   def int: TSchema    = TSchema.Scalar.Int
   def `null`: TSchema = TSchema.Scalar.Null
   def unit: TSchema   = TSchema.Scalar.Unit

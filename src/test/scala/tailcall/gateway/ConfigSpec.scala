@@ -33,8 +33,6 @@ object ConfigSpec extends ZIOSpecDefault {
                          |  query: Query
                          |}
                          |
-                         |scalar ID!
-                         |
                          |type Address {
                          |  geo: Geo
                          |  street: String
@@ -56,17 +54,17 @@ object ConfigSpec extends ZIOSpecDefault {
                          |
                          |type Post {
                          |  body: String
-                         |  id: ID!
+                         |  id: Int!
                          |  user: User
-                         |  userId: ID!
+                         |  userId: Int!
                          |  title: String
                          |}
                          |
                          |type Query {
                          |  posts: [Post]
                          |  users: [User]
-                         |  post(id: ID!): Post
-                         |  user(id: ID!): User
+                         |  post(id: Int!): Post
+                         |  user(id: Int!): User
                          |}
                          |
                          |type User {
@@ -76,7 +74,7 @@ object ConfigSpec extends ZIOSpecDefault {
                          |  email: String!
                          |  username: String!
                          |  company: Company
-                         |  id: ID!
+                         |  id: Int!
                          |  address: Address
                          |  phone: String
                          |}
