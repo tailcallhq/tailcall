@@ -139,6 +139,6 @@ object ConfigSpec extends ZIOSpecDefault {
         }
       )
     ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live) @@ timeout(
-      10 seconds
+      3 seconds
     )
 }
