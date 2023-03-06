@@ -5,8 +5,8 @@ import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import tailcall.gateway.remote.Remote
 import zio._
+import zio.schema.DynamicValue
 import zio.schema.codec.JsonCodec
-import zio.schema.{DynamicValue, Schema}
 
 import java.nio.charset.StandardCharsets
 
@@ -136,16 +136,15 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-
-                    array <- ZIO.async[Any, Throwable, Array[Byte]](cb =>
-                      HttpClient.make
-                        .request(endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest)((status, _, body) =>
-                          if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
-                          else cb(ZIO.succeed(body))
-                        )
-                    )
-                    outputSchema = endpoint.outputSchema.asInstanceOf[Schema[Any]]
-                    any <- ZIO.fromEither(
+                    array <- ZIO.async[Any, Throwable, Array[Byte]] { cb =>
+                      val request = endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest
+                      HttpClient.make.request(request)((status, _, body) =>
+                        if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
+                        else cb(ZIO.succeed(body))
+                      )
+                    }
+                    outputSchema = endpoint.outputSchema
+                    any   <- ZIO.fromEither(
                       JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))
                         .map(outputSchema.toDynamic)
                     ).mapError(EvaluationError.DecodingError)

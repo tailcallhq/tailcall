@@ -49,9 +49,9 @@ final case class Endpoint(
 
   def withBody(body: String): Endpoint = copy(body = Option(body))
 
-  def outputSchema: Schema[_] = TSchema.toZIOSchema(output.getOrElse(TSchema.unit))
+  lazy val outputSchema: Schema[Any] = TSchema.toZIOSchema(output.getOrElse(TSchema.unit)).asInstanceOf[Schema[Any]]
 
-  def inputSchema: Schema[_] = TSchema.toZIOSchema(input.getOrElse(TSchema.unit))
+  lazy val inputSchema: Schema[Any] = TSchema.toZIOSchema(input.getOrElse(TSchema.unit)).asInstanceOf[Schema[Any]]
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
 }
