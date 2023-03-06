@@ -107,7 +107,7 @@ object TSchema {
 
   def fromZIOSchema(schema: Schema[_]): TSchema =
     schema.ast match {
-      case ExtensibleMetaSchema.Product(id, path, fields, optional) =>
+      case ExtensibleMetaSchema.Product(_, _, fields, _) =>
         val nfields = fields.map(f => TSchema.Field(f.label, fromZIOSchema(f.schema.toSchema)))
         TSchema.Obj(nfields.toList)
 
