@@ -1,15 +1,40 @@
 package tailcall.gateway.internal
 
-import tailcall.gateway.ast.Path
+import tailcall.gateway.ast.{Path, TSchema}
 import tailcall.gateway.dsl.json.Config
 import tailcall.gateway.dsl.json.Config.Step
 
 object JsonPlaceholderConfig {
 
-  val users           = Config.Step.Http(Path.unsafe.fromString("/users"))
-  val posts           = Config.Step.Http(Path.unsafe.fromString("/posts"))
-  val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{id}}/posts"))
-  val postUser: Step  = Config.Step.Http(Path.unsafe.fromString("/posts/{{id}}/user"))
+  val Address: TSchema = TSchema.obj(
+    "street"  -> TSchema.string,
+    "suite"   -> TSchema.string,
+    "city"    -> TSchema.string,
+    "zipcode" -> TSchema.string,
+    "geo"     -> TSchema.obj("lat" -> TSchema.string, "lng" -> TSchema.string)
+  )
+
+  val Company: TSchema = TSchema.obj("name" -> TSchema.string, "catchPhrase" -> TSchema.string, "bs" -> TSchema.string)
+
+  val User: TSchema = TSchema.obj(
+    "id"       -> TSchema.int,
+    "name"     -> TSchema.string,
+    "username" -> TSchema.string,
+    "email"    -> TSchema.string,
+    "address"  -> Address,
+    "company"  -> Company
+  )
+
+  val Post = TSchema
+    .obj("id" -> TSchema.int, "userId" -> TSchema.int, "title" -> TSchema.string, "body" -> TSchema.string)
+
+  val users           = Config.Step.Http(Path.unsafe.fromString("/users")).withOutput(TSchema.arr(User))
+  val userById        = Config.Step.Http(Path.unsafe.fromString("/users/{{args.id}}")).withOutput(User)
+  val postsById       = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}")).withOutput(Post)
+  val posts           = Config.Step.Http(Path.unsafe.fromString("/posts")).withOutput(TSchema.arr(Post))
+  val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
+    .withOutput(TSchema.arr(Post))
+  val postUser: Step  = Config.Step.Http(Path.unsafe.fromString("/users/{{value.userId}}")).withOutput(User)
 
   val graphQL = Config.GraphQL(
     schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
