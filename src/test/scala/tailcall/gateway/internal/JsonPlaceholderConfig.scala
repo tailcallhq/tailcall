@@ -2,7 +2,7 @@ package tailcall.gateway.internal
 
 import tailcall.gateway.ast.{Path, TSchema}
 import tailcall.gateway.dsl.json.Config
-import tailcall.gateway.dsl.json.Config.Step
+import tailcall.gateway.dsl.json.Config.{Argument, Step}
 
 object JsonPlaceholderConfig {
 
@@ -41,9 +41,9 @@ object JsonPlaceholderConfig {
     types = Map(
       "Query"   -> Map(
         "posts" -> Config.Field("Post", posts).asList,
-        "users" -> Config.Field("User", users).asList
-        // "post"  -> Config.Field("Post", postsById)("id" -> Argument.int.asRequired),
-        // "user"  -> Config.Field("User", userById)("id" -> Argument.int.asRequired)
+        "users" -> Config.Field("User", users).asList,
+        "post"  -> Config.Field("Post", postsById)("id" -> Argument.int.asRequired),
+        "user"  -> Config.Field("User", userById)("id" -> Argument.int.asRequired)
       ),
       "User"    -> Map(
         "id"       -> Config.Field.int.asRequired,
