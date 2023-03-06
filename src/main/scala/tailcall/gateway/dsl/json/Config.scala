@@ -38,7 +38,6 @@ object Config {
 
     def string: Field = Field(typeOf = "String")
     def int: Field    = Field(typeOf = "Int")
-    def id: Field     = Field(typeOf = "ID")
     def bool: Field   = Field(typeOf = "Boolean")
   }
 
@@ -72,7 +71,6 @@ object Config {
   object Argument {
     val string: Argument = Argument("String")
     val int: Argument    = Argument("Int")
-    val id: Argument     = Argument("ID")
     val bool: Argument   = Argument("Boolean")
   }
 
