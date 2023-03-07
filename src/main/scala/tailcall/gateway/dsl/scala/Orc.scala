@@ -50,9 +50,9 @@ object Orc {
     self =>
     def to(name: String): Field[A] = copy(ofType = Option(Type.NamedType(name)))
 
-    def asList: Field[A] = copy(ofType = ofType.map(Type.ListType))
+    def asList: Field[A] = copy(ofType = ofType.map(Type.ListType(_)))
 
-    def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull))
+    def asRequired: Field[A] = copy(ofType = ofType.map(Type.NonNull(_)))
 
     def resolveWith[T](t: T)(implicit s: Schema[T], ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(_ => Remote(DynamicValue(t)))))
