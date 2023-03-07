@@ -148,7 +148,7 @@ object EvaluationRuntime {
                     any   <- ZIO.fromEither(
                       JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))
                         .map(outputSchema.toDynamic)
-                    ).mapError(EvaluationError.DecodingError)
+                    ).mapError(EvaluationError.DecodingError(_))
                   } yield any
                 }
               } yield out

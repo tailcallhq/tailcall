@@ -2,7 +2,7 @@ package tailcall.gateway.ast
 
 import zio.Chunk
 import zio.json.JsonCodec
-import zio.parser.Syntax
+import zio.parser._
 import zio.schema.DynamicValue
 
 final case class Path(segments: List[Path.Segment]) {
@@ -32,7 +32,7 @@ object Path {
 
     val param = Mustache.syntax.transform[Segment.Param](Segment.Param(_), _.value)
 
-    val literal = segment.transform[Segment.Literal](Segment.Literal, _.value)
+    val literal = segment.transform[Segment.Literal](Segment.Literal(_), _.value)
 
     val segmentChunk = (Syntax.char('/') ~ (literal.widen[Segment] | param.widen[Segment])).repeat
 

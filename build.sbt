@@ -1,4 +1,8 @@
-ThisBuild / scalaVersion := "2.13.10"
+val scala2Version = "2.13.10"
+val scala3Version = "3.2.2"
+
+ThisBuild / scalaVersion       := scala2Version
+ThisBuild / crossScalaVersions := Seq(scala2Version, scala3Version)
 
 val zioJson   = "0.4.2"
 val zioSchema = "0.4.7"
@@ -8,7 +12,11 @@ val zio       = "2.0.6"
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions       := {
-  Seq("-language:postfixOps", "-Ywarn-unused") ++ (if (sys.env.contains("CI")) Seq("-Xfatal-warnings") else Seq())
+  Seq("-language:postfixOps") ++
+    (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq("-Ywarn-unused")
+      case _            => Seq.empty
+    }) ++ { if (sys.env.contains("CI")) Seq("-Xfatal-warnings") else Seq() }
 }
 
 ThisBuild / libraryDependencies := Seq(
@@ -20,7 +28,6 @@ ThisBuild / libraryDependencies := Seq(
   "com.github.ghostdogpr" %% "caliban"               % caliban,
   "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
   "dev.zio"               %% "zio-json"              % zioJson,
-  "dev.zio"               %% "zio-json-macros"       % zioJson,
   "dev.zio"               %% "zio-json-yaml"         % zioJson,
   "dev.zio"               %% "zio-parser"            % "0.1.8",
   "io.netty"               % "netty-all"             % "4.1.68.Final",

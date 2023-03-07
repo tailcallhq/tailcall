@@ -1,7 +1,7 @@
 package tailcall.gateway.remote.operations
 
 import tailcall.gateway.lambda.Lambda
-import tailcall.gateway.remote.Remote
+import tailcall.gateway.remote._
 import zio.schema.{DynamicValue, Schema}
 
 trait DynamicValueOps {

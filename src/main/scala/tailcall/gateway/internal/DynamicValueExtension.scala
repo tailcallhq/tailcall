@@ -2,6 +2,7 @@ package tailcall.gateway.internal
 
 import zio.schema.DynamicValue
 
+// TODO: move to DynamicValueUtils
 object DynamicValueExtension {
   implicit final class DynamicValueExtension(dv: DynamicValue) {
     def asString: Option[String] =
