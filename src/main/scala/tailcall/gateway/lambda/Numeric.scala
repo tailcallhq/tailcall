@@ -3,7 +3,8 @@ package tailcall.gateway.lambda
 import zio.schema.DeriveSchema.gen
 import zio.schema.Schema
 
-sealed trait Numeric[A] {
+// TODO: use dependant types instead of Tag
+sealed trait Numeric[A] extends Numeric.Tag {
   def add(left: A, right: A): A
   def negate(value: A): A
   def multiply(left: A, right: A): A
@@ -19,6 +20,10 @@ sealed trait Numeric[A] {
 
 // TODO: add more numeric types
 object Numeric {
+  sealed trait Tag {
+    self =>
+    def numeric: Numeric[Any] = self match { case self: Numeric[_] => self.any }
+  }
 
   implicit case object IntTag extends Numeric[Int] {
     override def add(left: Int, right: Int): Int                  = left + right
