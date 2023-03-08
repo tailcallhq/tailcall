@@ -16,7 +16,7 @@ ThisBuild / scalacOptions       := {
     (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, _)) => Seq("-Ywarn-unused")
       case _            => Seq.empty
-    }) ++ { if (sys.env.contains("CI")) Seq("-Xfatal-warnings") else Seq() }
+    })
 }
 
 ThisBuild / libraryDependencies := Seq(
