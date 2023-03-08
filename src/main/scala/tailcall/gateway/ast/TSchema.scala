@@ -22,24 +22,21 @@ sealed trait TSchema {
 }
 
 object TSchema {
-  sealed trait Scalar extends TSchema
 
-  object Scalar {
-    @jsonHint("String")
-    case object Str extends Scalar
+  @jsonHint("String")
+  case object String extends TSchema
 
-    @jsonHint("Integer")
-    case object Int extends Scalar
+  @jsonHint("Integer")
+  case object Int extends TSchema
 
-    @jsonHint("null")
-    case object Null extends Scalar
+  @jsonHint("null")
+  case object Null extends TSchema
 
-    @jsonHint("Unit")
-    case object Unit extends Scalar
+  @jsonHint("Unit")
+  case object Unit extends TSchema
 
-    @jsonHint("Boolean")
-    case object Boolean extends Scalar
-  }
+  @jsonHint("Boolean")
+  case object Boolean extends TSchema
 
   @jsonHint("object")
   final case class Obj(fields: List[Field]) extends TSchema
@@ -67,21 +64,17 @@ object TSchema {
     }
 
     (s1, s2) match {
-      case (_, Scalar.Null) => true
-
-      case (Scalar.Null, _) => false
-
-      case (s1: Scalar, s2: Scalar) => s1 == s2
-
-      case (Obj(fields1), Obj(fields2)) => checkFields(fields1, fields2)
-
-      case (Arr(item1), Arr(item2)) => isSubType(item1, item2)
-
-      case (Union(s1a, s1b), _) => isSubType(s1a, s2) || isSubType(s1b, s2)
-
-      case (Intersection(s1a, s1b), _) => isSubType(s1a, s2) && isSubType(s1b, s2)
-
-      case _ => false
+      case (_, TSchema.Null)                  => true
+      case (TSchema.Null, _)                  => false
+      case (TSchema.String, TSchema.String)   => true
+      case (TSchema.Int, TSchema.Int)         => true
+      case (TSchema.Unit, TSchema.Unit)       => true
+      case (TSchema.Boolean, TSchema.Boolean) => true
+      case (Obj(fields1), Obj(fields2))       => checkFields(fields1, fields2)
+      case (Arr(item1), Arr(item2))           => isSubType(item1, item2)
+      case (Union(s1a, s1b), _)               => isSubType(s1a, s2) || isSubType(s1b, s2)
+      case (Intersection(s1a, s1b), _)        => isSubType(s1a, s2) && isSubType(s1b, s2)
+      case _                                  => false
     }
   }
 
@@ -91,12 +84,12 @@ object TSchema {
     case object Structural         extends Id
   }
 
-  def string: TSchema = TSchema.Scalar.Str
-  def int: TSchema    = TSchema.Scalar.Int
-  def `null`: TSchema = TSchema.Scalar.Null
-  def unit: TSchema   = TSchema.Scalar.Unit
+  def string: TSchema = TSchema.String
+  def int: TSchema    = TSchema.Int
+  def `null`: TSchema = TSchema.Null
+  def unit: TSchema   = TSchema.Unit
 
-  def bool: TSchema = TSchema.Scalar.Boolean
+  def bool: TSchema = TSchema.Boolean
 
   def obj(fields: (String, TSchema)*): TSchema =
     TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
@@ -155,14 +148,13 @@ object TSchema {
 
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {
-      case scalar: Scalar => scalar match {
-          case Scalar.Str     => Schema[String]
-          case Scalar.Int     => Schema[Int]
-          case Scalar.Null    => ???
-          case Scalar.Unit    => Schema[Unit]
-          case Scalar.Boolean => Schema[Boolean]
-        }
-      case Obj(fields)    =>
+      case TSchema.String  => Schema[String]
+      case TSchema.Int     => Schema[Int]
+      case TSchema.Null    => ???
+      case TSchema.Unit    => Schema[Unit]
+      case TSchema.Boolean => Schema[Boolean]
+
+      case Obj(fields) =>
         val nfields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nfields).toSchema
 
