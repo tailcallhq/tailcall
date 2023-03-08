@@ -109,7 +109,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
           "Foo"   -> List("bar" -> Field.output.to("Bar").resolveWith(100)),
           "Bar"   -> List("baz" -> Field.output.to("Baz").resolveWith(200)),
           "Baz"   -> List("value" -> Field.output.to("Int").resolveWithFunction {
-            _.path("parent", "value").map(_.toTyped[Int]).toDynamic
+            _.path("parent", "value").map(_.toTyped[Int]).flatten.toDynamic
           })
         )
         val program = execute(orc)("query {foo { bar { baz {value} }}}")

@@ -1,17 +1,24 @@
 package tailcall.gateway.lambda
 
-// TODO: use dependant types instead of Tag
-sealed trait Equatable[A] extends Equatable.Tag {
+sealed trait Equatable[A] {
+  self =>
+  def tag: Equatable.Tag
   def equal(a: A, b: A): Boolean
-  def any: Equatable[Any] = this.asInstanceOf[Equatable[Any]]
 }
 
 object Equatable {
   sealed trait Tag {
-    self =>
-    final def toEquatable: Equatable[Any] = { self match { case self: Equatable[_] => self.any } }
+    def toEquatable: Equatable[Any] = Equatable.fromTag(this).asInstanceOf[Equatable[Any]]
   }
-  implicit case object IntEquatable extends Equatable[Int] {
+
+  object Tag {
+    case object IntTag extends Tag
+  }
+
+  def fromTag(tag: Tag): Equatable[_] = tag match { case Tag.IntTag => IntEquatable }
+
+  implicit object IntEquatable extends Equatable[Int] {
+    override def tag: Tag                       = Tag.IntTag
     override def equal(a: Int, b: Int): Boolean = a == b
   }
 }
