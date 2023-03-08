@@ -3,6 +3,7 @@ package tailcall.gateway
 import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.dsl.scala.Orc
 import tailcall.gateway.dsl.scala.Orc.Field
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.remote._
 import tailcall.gateway.service._
 import zio.ZIO
@@ -142,7 +143,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
 
       }
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
+    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live, HttpClient.live)
   }
 
   def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =

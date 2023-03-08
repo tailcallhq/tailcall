@@ -6,6 +6,7 @@ import io.netty.channel._
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http._
+import zio.{ZIO, ZLayer}
 
 import java.net.URL
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -16,15 +17,22 @@ trait HttpClient {
 
 // TODO: handle cancellation
 object HttpClient {
-  final class NettyHttpClient() extends HttpClient {
-    def bootstrapConnection(request: HttpRequest)(cb: FullHttpResponse => Any): Bootstrap =
-      new Bootstrap().group(new NioEventLoopGroup()).channelFactory(new ChannelFactory[Channel] {
-        override def newChannel(): Channel = new NioSocketChannel()
-      }).handler(new ChannelInitializer[Channel] {
+  final class Live(bootstrap: Bootstrap) extends HttpClient {
+    def bootstrapConnection(request: HttpRequest)(cb: Response => Any): Bootstrap =
+      bootstrap.handler(new ChannelInitializer[Channel] {
         override def initChannel(ch: Channel): Unit = {
-          ch.pipeline().addLast(new HttpClientCodec()).addLast(new HttpObjectAggregator(1024 * 100))
-            .addLast(new SimpleChannelInboundHandler[FullHttpResponse]() {
-              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = cb(msg)
+          ch.pipeline().addLast(new HttpClientCodec()).addLast(new HttpObjectAggregator(1024 * 1000))
+            .addLast(new SimpleChannelInboundHandler[FullHttpResponse](false) {
+              override def channelRead0(ctx: ChannelHandlerContext, msg: FullHttpResponse): Unit = {
+                val code    = msg.status().code
+                val headers = msg.headers().entries().asScala
+                  .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
+                val bytes   = ByteBufUtil.getBytes(msg.content())
+                msg.content().release(msg.content().refCnt())
+                cb((code, headers, bytes))
+                ctx.close()
+              }
+
               override def channelActive(ctx: ChannelHandlerContext): Unit = ctx.writeAndFlush(request)
             })
         }
@@ -38,12 +46,10 @@ object HttpClient {
       var close: Option[ChannelFuture] = None
 
       request.headers().set(HttpHeaderNames.HOST, host)
-      val future = bootstrapConnection(request) { response =>
-        val status  = response.status().code()
-        val body    = ByteBufUtil.getBytes(response.content)
-        val headers = response.headers().entries().asScala
-          .foldLeft(Map.empty[String, String])((acc, h) => acc + (h.getKey -> h.getValue))
-
+      request.headers().set(HttpHeaderNames.USER_AGENT, "tailcall-gateway/netty")
+      request.headers().set(HttpHeaderNames.ACCEPT, "*/*")
+      request.headers().set(HttpHeaderNames.CONNECTION, "close")
+      val future = bootstrapConnection(request) { case (status, headers, body) =>
         close.foreach(_.cancel(true))
         cb(status, headers, body)
       }.connect(host, port)
@@ -55,7 +61,19 @@ object HttpClient {
   }
 
   type Close        = () => Unit
-  type AsyncHandler = ((Int, Map[String, String], Array[Byte]) => Unit) => Close
+  type Response     = (Int, Map[String, String], Array[Byte])
+  type AsyncHandler = (Response => Unit) => Close
 
-  def make: HttpClient = new NettyHttpClient()
+  def live: ZLayer[Any, Nothing, HttpClient] = {
+    ZLayer.scoped {
+      for {
+        group <- ZIO.succeed(new NioEventLoopGroup())
+        _     <- ZIO.addFinalizer(ZIO.succeed(group.shutdownGracefully()))
+      } yield new Live(new Bootstrap().group(group).channelFactory {
+        new ChannelFactory[Channel] {
+          override def newChannel(): Channel = new NioSocketChannel()
+        }
+      })
+    }
+  }
 }
