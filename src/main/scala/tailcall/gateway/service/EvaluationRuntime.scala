@@ -5,8 +5,8 @@ import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import tailcall.gateway.remote.Remote
 import zio._
-import zio.schema.DynamicValue
 import zio.schema.codec.JsonCodec
+import zio.schema.{DynamicValue, Schema}
 
 import java.nio.charset.StandardCharsets
 
@@ -36,8 +36,8 @@ object EvaluationRuntime {
 
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Literal(value, schema)            => value.toTypedValue(schema) match {
-            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, schema))
+        case Literal(value, meta)              => value.toTypedValue(meta.toSchema.asInstanceOf[Schema[Any]]) match {
+            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, meta.toSchema))
             case Right(value) => LExit.succeed(value)
           }
         case EqualTo(left, right, tag)         => for {
@@ -100,9 +100,9 @@ object EvaluationRuntime {
         case Defer(value)       => LExit.succeed(value)
         case Dynamic(operation) => LExit.input[Any].map(input =>
             operation match {
-              case Dynamic.Typed(schema)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(schema)
-              case Dynamic.ToDynamic(schema) => schema.toDynamic(input)
-              case Dynamic.Path(path)        => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
+              case Dynamic.Typed(meta)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(meta.toSchema)
+              case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
+              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
         case Dict(operation)    => operation match {

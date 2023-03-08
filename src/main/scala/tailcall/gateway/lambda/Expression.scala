@@ -2,6 +2,7 @@ package tailcall.gateway.lambda
 
 import tailcall.gateway.ast.Endpoint
 import tailcall.gateway.service.EvaluationContext.Binding
+import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 // scalafmt: { maxColumn = 240 }
@@ -15,7 +16,7 @@ object Expression {
   final case class EqualTo(left: Expression, right: Expression, tag: Equatable.Tag)   extends Expression
   final case class FunctionDef(binding: Binding, body: Expression, input: Expression) extends Expression
   final case class Immediate(value: Expression)                                       extends Expression
-  final case class Literal(value: DynamicValue, schema: Schema[Any])                  extends Expression
+  final case class Literal(value: DynamicValue, schema: MetaSchema)                   extends Expression
   final case class Logical(operation: Logical.Operation)                              extends Expression
   final case class Lookup(binding: Binding)                                           extends Expression
   final case class Math(operation: Math.Operation, tag: Numeric.Tag)                  extends Expression
@@ -72,9 +73,9 @@ object Expression {
   final case class Dynamic(operation: Dynamic.Operation) extends Expression
   object Dynamic {
     sealed trait Operation
-    final case class Typed(ctor: Schema[Any])     extends Operation
-    final case class Path(name: List[String])     extends Operation
-    final case class ToDynamic(ctor: Schema[Any]) extends Operation
+    final case class Typed(ctor: MetaSchema)     extends Operation
+    final case class Path(name: List[String])    extends Operation
+    final case class ToDynamic(ctor: MetaSchema) extends Operation
   }
 
   final case class Dict(operation: Dict.Operation) extends Expression
