@@ -30,9 +30,9 @@ object EvaluationRuntime {
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
+  def live: ZLayer[HttpClient, Nothing, EvaluationRuntime] = ZLayer.fromFunction(new Live(_))
 
-  final class Live() extends EvaluationRuntime {
+  final class Live(client: HttpClient) extends EvaluationRuntime {
 
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any] = {
       plan match {
@@ -138,10 +138,10 @@ object EvaluationRuntime {
                   for {
                     array <- ZIO.asyncInterrupt[Any, Throwable, Array[Byte]] { cb =>
                       val request = endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest
-                      val close   = HttpClient.make.request(request)((status, _, body) =>
+                      val close   = client.request(request) { case (status, _, body) =>
                         if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
                         else cb(ZIO.succeed(body))
-                      )
+                      }
                       Left(ZIO.succeed(close))
                     }
                     outputSchema = endpoint.outputSchema

@@ -1,6 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.ast.{Context, Endpoint}
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.{DynamicValueUtil, JsonPlaceholder}
 import tailcall.gateway.lambda.Lambda.{logic, math}
 import tailcall.gateway.lambda.{Lambda, ~>}
@@ -306,5 +307,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo("HTTP Error: 404"))
         }
       ) @@ timeout(5 seconds)
-    ).provide(EvaluationRuntime.live)
+    ).provide(EvaluationRuntime.live, HttpClient.live)
 }

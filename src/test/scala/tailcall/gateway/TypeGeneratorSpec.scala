@@ -4,6 +4,7 @@ import tailcall.gateway.ast.Blueprint
 import tailcall.gateway.dsl.scala.Orc.Field
 import tailcall.gateway.dsl.scala.Orc.Type.{ListType, NamedType, NonNull}
 import tailcall.gateway.dsl.scala.{Orc, OrcBlueprint}
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.service._
 import zio.ZIO
 import zio.test.Assertion._
@@ -147,7 +148,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
           assert(tpe)(equalTo(expected))
         }
       )
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live)
+    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live, HttpClient.live)
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
 }
