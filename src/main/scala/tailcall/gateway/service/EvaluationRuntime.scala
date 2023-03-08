@@ -43,22 +43,22 @@ object EvaluationRuntime {
         case EqualTo(left, right, tag)         => for {
             leftValue  <- evaluate(left, ctx)
             rightValue <- evaluate(right, ctx)
-          } yield tag.equal(leftValue, rightValue)
+          } yield tag.toEquatable.equal(leftValue, rightValue)
         case Math(operation, tag)              => operation match {
             case Math.Binary(operation, left, right) =>
               for {
                 leftValue  <- evaluate(left, ctx)
                 rightValue <- evaluate(right, ctx)
               } yield operation match {
-                case Math.Binary.Add              => tag.add(leftValue, rightValue)
-                case Math.Binary.Multiply         => tag.multiply(leftValue, rightValue)
-                case Math.Binary.Divide           => tag.divide(leftValue, rightValue)
-                case Math.Binary.Modulo           => tag.modulo(leftValue, rightValue)
-                case Math.Binary.GreaterThan      => tag.greaterThan(leftValue, rightValue)
-                case Math.Binary.GreaterThanEqual => tag.greaterThanEqual(leftValue, rightValue)
+                case Math.Binary.Add              => tag.numeric.add(leftValue, rightValue)
+                case Math.Binary.Multiply         => tag.numeric.multiply(leftValue, rightValue)
+                case Math.Binary.Divide           => tag.numeric.divide(leftValue, rightValue)
+                case Math.Binary.Modulo           => tag.numeric.modulo(leftValue, rightValue)
+                case Math.Binary.GreaterThan      => tag.numeric.greaterThan(leftValue, rightValue)
+                case Math.Binary.GreaterThanEqual => tag.numeric.greaterThanEqual(leftValue, rightValue)
               }
             case Math.Unary(operation, value)        =>
-              for { value <- evaluate(value, ctx) } yield operation match { case Math.Unary.Negate => tag.negate(value) }
+              for { value <- evaluate(value, ctx) } yield operation match { case Math.Unary.Negate => tag.numeric.negate(value) }
           }
         case Logical(operation)                => operation match {
             case Logical.Binary(operation, left, right) =>

@@ -12,13 +12,13 @@ object Expression {
 
   case object Identity                                                                extends Expression
   final case class Defer(value: Expression)                                           extends Expression
-  final case class EqualTo(left: Expression, right: Expression, tag: Equatable[Any])  extends Expression
+  final case class EqualTo(left: Expression, right: Expression, tag: Equatable.Tag)   extends Expression
   final case class FunctionDef(binding: Binding, body: Expression, input: Expression) extends Expression
   final case class Immediate(value: Expression)                                       extends Expression
   final case class Literal(value: DynamicValue, schema: Schema[Any])                  extends Expression
   final case class Logical(operation: Logical.Operation)                              extends Expression
   final case class Lookup(binding: Binding)                                           extends Expression
-  final case class Math(operation: Math.Operation, tag: Numeric[Any])                 extends Expression
+  final case class Math(operation: Math.Operation, tag: Numeric.Tag)                  extends Expression
   final case class Pipe(left: Expression, right: Expression)                          extends Expression
 
   // TODO: Lambda should not have any unsafe operations
