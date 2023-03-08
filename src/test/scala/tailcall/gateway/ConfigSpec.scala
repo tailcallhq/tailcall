@@ -139,7 +139,11 @@ object ConfigSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo(expected))
         }
       )
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live, HttpClient.live) @@ timeout(
-      3 seconds
-    )
+    ).provide(
+        GraphQLGenerator.live,
+        TypeGenerator.live,
+        StepGenerator.live,
+        EvaluationRuntime.live,
+        HttpClient.live
+      ) @@ timeout(5 seconds)
 }

@@ -38,7 +38,7 @@ ThisBuild / libraryDependencies := Seq(
 )
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-
+ThisBuild / Test / fork         := true
 Global / semanticdbEnabled      := true
 Global / onChangedBuildSource   := ReloadOnSourceChanges
 
