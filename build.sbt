@@ -49,5 +49,6 @@ addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 
-ThisBuild / githubWorkflowBuild += WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"))
+ThisBuild / githubWorkflowBuild += WorkflowStep
+  .Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
