@@ -57,4 +57,5 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
 
       - name: Lint
+        if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
