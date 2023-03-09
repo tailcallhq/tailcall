@@ -5,8 +5,8 @@ import tailcall.gateway.internal.DynamicValueUtil
 import tailcall.gateway.lambda._
 import tailcall.gateway.remote.Remote
 import zio._
-import zio.schema.DynamicValue
 import zio.schema.codec.JsonCodec
+import zio.schema.{DynamicValue, Schema}
 
 import java.nio.charset.StandardCharsets
 
@@ -30,35 +30,35 @@ object EvaluationRuntime {
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
+  def live: ZLayer[HttpClient, Nothing, EvaluationRuntime] = ZLayer.fromFunction(new Live(_))
 
-  final class Live() extends EvaluationRuntime {
+  final class Live(client: HttpClient) extends EvaluationRuntime {
 
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any] = {
       plan match {
-        case Literal(value, schema)            => value.toTypedValue(schema) match {
-            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, schema))
+        case Literal(value, meta)              => value.toTypedValue(meta.toSchema.asInstanceOf[Schema[Any]]) match {
+            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, meta.toSchema))
             case Right(value) => LExit.succeed(value)
           }
         case EqualTo(left, right, tag)         => for {
             leftValue  <- evaluate(left, ctx)
             rightValue <- evaluate(right, ctx)
-          } yield tag.equal(leftValue, rightValue)
+          } yield tag.toEquatable.equal(leftValue, rightValue)
         case Math(operation, tag)              => operation match {
             case Math.Binary(operation, left, right) =>
               for {
                 leftValue  <- evaluate(left, ctx)
                 rightValue <- evaluate(right, ctx)
               } yield operation match {
-                case Math.Binary.Add              => tag.add(leftValue, rightValue)
-                case Math.Binary.Multiply         => tag.multiply(leftValue, rightValue)
-                case Math.Binary.Divide           => tag.divide(leftValue, rightValue)
-                case Math.Binary.Modulo           => tag.modulo(leftValue, rightValue)
-                case Math.Binary.GreaterThan      => tag.greaterThan(leftValue, rightValue)
-                case Math.Binary.GreaterThanEqual => tag.greaterThanEqual(leftValue, rightValue)
+                case Math.Binary.Add              => tag.numeric.add(leftValue, rightValue)
+                case Math.Binary.Multiply         => tag.numeric.multiply(leftValue, rightValue)
+                case Math.Binary.Divide           => tag.numeric.divide(leftValue, rightValue)
+                case Math.Binary.Modulo           => tag.numeric.modulo(leftValue, rightValue)
+                case Math.Binary.GreaterThan      => tag.numeric.greaterThan(leftValue, rightValue)
+                case Math.Binary.GreaterThanEqual => tag.numeric.greaterThanEqual(leftValue, rightValue)
               }
             case Math.Unary(operation, value)        =>
-              for { value <- evaluate(value, ctx) } yield operation match { case Math.Unary.Negate => tag.negate(value) }
+              for { value <- evaluate(value, ctx) } yield operation match { case Math.Unary.Negate => tag.numeric.negate(value) }
           }
         case Logical(operation)                => operation match {
             case Logical.Binary(operation, left, right) =>
@@ -100,9 +100,9 @@ object EvaluationRuntime {
         case Defer(value)       => LExit.succeed(value)
         case Dynamic(operation) => LExit.input[Any].map(input =>
             operation match {
-              case Dynamic.Typed(schema)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(schema)
-              case Dynamic.ToDynamic(schema) => schema.toDynamic(input)
-              case Dynamic.Path(path)        => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
+              case Dynamic.Typed(meta)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(meta.toSchema)
+              case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
+              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }
           )
         case Dict(operation)    => operation match {
@@ -138,17 +138,17 @@ object EvaluationRuntime {
                   for {
                     array <- ZIO.asyncInterrupt[Any, Throwable, Array[Byte]] { cb =>
                       val request = endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest
-                      val close   = HttpClient.make.request(request)((status, _, body) =>
+                      val close   = client.request(request) { case (status, _, body) =>
                         if (status >= 400) cb(ZIO.fail(new Throwable(s"HTTP Error: $status")))
                         else cb(ZIO.succeed(body))
-                      )
+                      }
                       Left(ZIO.succeed(close))
                     }
                     outputSchema = endpoint.outputSchema
                     any   <- ZIO.fromEither(
                       JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))
                         .map(outputSchema.toDynamic)
-                    ).mapError(EvaluationError.DecodingError)
+                    ).mapError(EvaluationError.DecodingError(_))
                   } yield any
                 }
               } yield out

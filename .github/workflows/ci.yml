@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.10]
+        scala: [2.13.10, 3.2.2]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
@@ -57,4 +57,5 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
 
       - name: Lint
+        if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck

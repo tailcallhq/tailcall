@@ -2,7 +2,7 @@ package tailcall.gateway.ast
 
 import tailcall.gateway.internal.DynamicValueUtil.DynamicValueExtension
 import zio.Chunk
-import zio.parser.Syntax
+import zio.parser._
 import zio.schema.DynamicValue
 
 /**

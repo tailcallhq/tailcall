@@ -1,6 +1,7 @@
 package tailcall.gateway
 
 import tailcall.gateway.dsl.json.Config
+import tailcall.gateway.http.HttpClient
 import tailcall.gateway.internal.{Extension, JsonPlaceholderConfig}
 import tailcall.gateway.service.{EvaluationRuntime, GraphQLGenerator, StepGenerator, TypeGenerator}
 import zio.test.Assertion.equalTo
@@ -138,7 +139,11 @@ object ConfigSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo(expected))
         }
       )
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live) @@ timeout(
-      3 seconds
-    )
+    ).provide(
+        GraphQLGenerator.live,
+        TypeGenerator.live,
+        StepGenerator.live,
+        EvaluationRuntime.live,
+        HttpClient.live
+      ) @@ timeout(5 seconds)
 }

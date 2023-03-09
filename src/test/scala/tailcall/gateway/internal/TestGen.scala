@@ -34,7 +34,7 @@ object TestGen {
     for { name <- Gen.chunkOfN(2)(genName) } yield Mustache(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
-    Gen.oneOf(genName.map(Path.Segment.Literal), genMustache.map(Path.Segment.Param(_)))
+    Gen.oneOf(genName.map(Path.Segment.Literal(_)), genMustache.map(Path.Segment.Param(_)))
 
   def genPath: Gen[Any, Path] = Gen.listOfN(2)(genSegment).map(Path(_))
 
