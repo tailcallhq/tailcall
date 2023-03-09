@@ -136,7 +136,7 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    array <- client.request(endpoint.evaluate(input.asInstanceOf[DynamicValue]).toHttpRequest)
+                    array <- client.request(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                       .flatMap(x => if (x._1 >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x._1}")) else x._3)
                     outputSchema = endpoint.outputSchema
                     any <- ZIO.fromEither(
