@@ -7,6 +7,7 @@ import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.{Lambda, ~>}
 import tailcall.runtime.service.EvaluationRuntime
 import zio.durationInt
+import zio.http.Client
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test.TestAspect.timeout
@@ -307,5 +308,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo("HTTP Error: 404"))
         }
       ) @@ timeout(5 seconds)
-    ).provide(EvaluationRuntime.live, HttpClient.live)
+    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default)
 }
