@@ -19,7 +19,8 @@ object SchemaRegistry {
       bd  <- ZIO.service[BinaryDigest]
     } yield Memory(ref, bd))
 
-  def rocksDB: ZLayer[RocksDB with BinaryDigest, Nothing, SchemaRegistry] = ZLayer.fromFunction(Persistence.apply _)
+  def persistent(path: String): ZLayer[BinaryDigest, Throwable, SchemaRegistry] =
+    RocksDB.live(path) >>> ZLayer.fromFunction(Persistence.apply _)
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
