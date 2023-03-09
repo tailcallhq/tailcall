@@ -1,14 +1,27 @@
 package tailcall.server
 
+import tailcall.runtime.ast.Blueprint
 import zio._
 import zio.http._
-import zio.http.model.Method
+import zio.http.model.{HttpError, Method}
 
-object HelloWorld extends ZIOAppDefault {
+object Main extends ZIOAppDefault {
 
-  val app: HttpApp[Any, Nothing] = Http.collect[Request] { case Method.GET -> !! / "text" =>
-    Response.text("Hello World!")
+  // TODO: add all registry routes
+  val app = Http.collectZIO[Request] { case req @ Method.PUT -> !! / "registry" / "create" =>
+    for {
+      body      <- req.body.asCharSeq
+      blueprint <- Blueprint.decode(body) match {
+        case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
+        case Right(value) => ZIO.succeed(value)
+      }
+    } yield Response.ok
   }
 
-  override val run = Server.serve(app).provide(Server.default)
+  val sanitized = app.mapError {
+    case error: HttpError => Response.fromHttpError(error)
+    case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
+  }
+
+  override val run = Server.serve(sanitized).provide(Server.default)
 }

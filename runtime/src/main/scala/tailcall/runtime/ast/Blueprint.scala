@@ -4,6 +4,7 @@ import caliban.GraphQL
 import tailcall.runtime.remote.Remote
 import tailcall.runtime.service.GraphQLGenerator
 import zio.ZIO
+import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 /**
@@ -51,4 +52,8 @@ object Blueprint {
   final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
 
   implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]
+
+  val codec: JsonCodec[Blueprint]                            = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
+  def encode(value: Blueprint): CharSequence                 = codec.encodeJson(value, None)
 }
