@@ -7,7 +7,6 @@ import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method}
 import zio.json.EncoderOps
-import zio.rocksdb.RocksDB
 
 object Main extends ZIOAppDefault {
   // TODO: use API DSL
@@ -54,9 +53,8 @@ object Main extends ZIOAppDefault {
   val adminServer = Server.serve(sanitized(registry)).provide(
     ServerConfig.live.map(_.update(_.port(8080))),
     Server.live,
-    RocksDB.live(this.getClass.getResource("/").getPath),
-    SchemaRegistry.rocksDB,
-    BinaryDigest.algorithm("SHA-256")
+    BinaryDigest.algorithm("SHA-256"),
+    SchemaRegistry.persistent(this.getClass.getResource("/").getPath)
   )
 
   val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(gql))
