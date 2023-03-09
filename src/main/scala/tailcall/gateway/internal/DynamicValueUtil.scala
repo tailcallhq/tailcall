@@ -9,10 +9,10 @@ import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
   def asString(dv: DynamicValue): Option[String] =
-      dv match {
-        case DynamicValue.Primitive(value, _) => Some(value.toString)
-        case _                                => None
-      }
+    dv match {
+      case DynamicValue.Primitive(value, _) => Some(value.toString)
+      case _                                => None
+    }
 
   def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
