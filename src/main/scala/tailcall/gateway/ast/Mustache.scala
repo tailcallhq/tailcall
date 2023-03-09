@@ -1,6 +1,6 @@
 package tailcall.gateway.ast
 
-import tailcall.gateway.internal.DynamicValueExtension._
+import tailcall.gateway.internal.DynamicValueUtil.DynamicValueExtension
 import zio.Chunk
 import zio.parser.Syntax
 import zio.schema.DynamicValue
