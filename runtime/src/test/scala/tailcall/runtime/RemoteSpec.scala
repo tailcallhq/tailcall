@@ -3,6 +3,7 @@ package tailcall.runtime
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.remote._
 import tailcall.runtime.service.EvaluationRuntime
+import zio.http.Client
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
@@ -554,5 +555,5 @@ object RemoteSpec extends ZIOSpecDefault {
 //        val program = Remote.flatten(Remote(Remote(1)))
 //        assertZIO(program.evaluate)(equalTo(1))
 //      }
-    ).provide(EvaluationRuntime.live, HttpClient.live)
+    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default)
 }

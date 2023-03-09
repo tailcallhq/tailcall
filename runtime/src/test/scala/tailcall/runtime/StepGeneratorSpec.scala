@@ -7,6 +7,7 @@ import tailcall.runtime.http.HttpClient
 import tailcall.runtime.remote._
 import tailcall.runtime.service._
 import zio.ZIO
+import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
@@ -143,7 +144,14 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
 
       }
-    ).provide(GraphQLGenerator.live, TypeGenerator.live, StepGenerator.live, EvaluationRuntime.live, HttpClient.live)
+    ).provide(
+      GraphQLGenerator.live,
+      TypeGenerator.live,
+      StepGenerator.live,
+      EvaluationRuntime.live,
+      HttpClient.live,
+      Client.default
+    )
   }
 
   def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =

@@ -7,17 +7,27 @@ sealed trait Method {
 }
 
 object Method {
-  case object GET    extends Method
-  case object POST   extends Method
-  case object PUT    extends Method
-  case object DELETE extends Method
+  case object GET     extends Method
+  case object POST    extends Method
+  case object PUT     extends Method
+  case object DELETE  extends Method
+  case object HEAD    extends Method
+  case object OPTIONS extends Method
+  case object PATCH   extends Method
+  case object CONNECT extends Method
+  case object TRACE   extends Method
 
   def encode(method: Method): String =
     method match {
-      case Method.GET    => "GET"
-      case Method.POST   => "POST"
-      case Method.PUT    => "PUT"
-      case Method.DELETE => "DELETE"
+      case Method.GET     => "GET"
+      case Method.POST    => "POST"
+      case Method.PUT     => "PUT"
+      case Method.DELETE  => "DELETE"
+      case Method.HEAD    => "HEAD"
+      case Method.OPTIONS => "OPTIONS"
+      case Method.PATCH   => "PATCH"
+      case Method.CONNECT => "CONNECT"
+      case Method.TRACE   => "TRACE"
     }
 
   def decode(method: String): Either[String, Method] =
