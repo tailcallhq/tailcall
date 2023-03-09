@@ -91,14 +91,9 @@ object DynamicValueUtil {
       case head :: tail => d match {
           case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
           case DynamicValue.SomeValue(a)  => getPath(a, path)
-          // I merged the getPath methods in DynamicValueExtension and DynamicValueUtil.
-          // Not sure whether this case is required. I added it as a prophylactic.
           case DynamicValue.Sequence(a)   =>
             if (withIndex) head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail))
             else Option(DynamicValue(a.flatMap(getPath(_, tail))))
-          // I merged the getPath methods in DynamicValueExtension and DynamicValueUtil.
-          // This case had a merge conflict. Hence, I chose the DynamicValueUtil implementation.
-          // As far as I understood, both the implementations did the same thing.
           case DynamicValue.Dictionary(b) =>
             val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
             b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
