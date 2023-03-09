@@ -14,7 +14,7 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / scalacOptions       := {
   Seq("-language:postfixOps") ++
     (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq("-Ywarn-unused")
+      case Some((2, _)) => Seq("-Ywarn-unused", "-Xfatal-warnings")
       case _            => Seq.empty
     })
 }
