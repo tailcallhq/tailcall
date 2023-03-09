@@ -1,13 +1,13 @@
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
+val zioJson       = "0.4.2"
+val zioSchema     = "0.4.7"
+val caliban       = "2.0.2"
+val zio           = "2.0.6"
+val zioHttp       = "0.0.4"
 
 ThisBuild / scalaVersion       := scala2Version
 ThisBuild / crossScalaVersions := Seq(scala2Version, scala3Version)
-
-val zioJson   = "0.4.2"
-val zioSchema = "0.4.7"
-val caliban   = "2.0.2"
-val zio       = "2.0.6"
 
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
@@ -35,7 +35,7 @@ ThisBuild / githubWorkflowBuild += WorkflowStep
   .Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
-lazy val root = (project in file(".")).aggregate(runtime)
+lazy val root = (project in file(".")).aggregate(runtime, server)
 
 lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies := Seq(
@@ -57,3 +57,6 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio" %% "zio-test-sbt" % zio % Test
   )
 )
+
+lazy val server = (project in file("server"))
+  .settings(libraryDependencies := Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)).dependsOn(runtime)
