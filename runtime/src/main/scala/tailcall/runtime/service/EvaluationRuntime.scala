@@ -136,8 +136,10 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    array <- client.request(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
-                      .flatMap(x => if (x._1 >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x._1}")) else x._3)
+                    array <- client.request(endpoint.evaluate(input.asInstanceOf[DynamicValue])).flatMap(x =>
+                      if (x.status.code >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x.status.code}"))
+                      else x.body.asArray
+                    )
                     outputSchema = endpoint.outputSchema
                     any <- ZIO.fromEither(
                       JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))

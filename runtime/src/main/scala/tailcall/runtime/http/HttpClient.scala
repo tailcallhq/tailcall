@@ -1,23 +1,16 @@
 package tailcall.runtime.http
 
-import zio.http.Client
-import zio.{Task, ZIO, ZLayer}
+import zio.http.{Client, Response}
+import zio.{ZIO, ZLayer}
 
 trait HttpClient {
-  def request(req: Request): HttpClient.AsyncHandler
+  def request(req: Request): ZIO[Any, Throwable, Response]
 }
 
 // TODO: handle cancellation
 object HttpClient {
-
-  type Response     = (Int, Map[CharSequence, CharSequence], Task[Array[Byte]])
-  type AsyncHandler = ZIO[Any, Throwable, Response]
   final case class Live(client: Client) extends HttpClient {
-    def request(req: Request): AsyncHandler = {
-      client.request(req.toZHttpRequest).map(response =>
-        (response.status.code, response.headers.map(header => header.key -> header.value).toMap, response.body.asArray)
-      )
-    }
+    def request(req: Request): ZIO[Any, Throwable, Response] = { client.request(req.toZHttpRequest) }
   }
   def live: ZLayer[Client, Throwable, HttpClient] = ZLayer.fromFunction(client => Live(client))
 }

@@ -3,7 +3,7 @@ package tailcall.runtime.http
 import zio.http.model.{Method => ZMethod}
 import zio.json.JsonCodec
 sealed trait Method {
-  def name: String = Method.encode(this)
+  def name: String       = Method.encode(this)
   def toZMethod: ZMethod = ZMethod.fromString(name)
 }
 
