@@ -58,5 +58,10 @@ lazy val runtime = (project in file("runtime")).settings(
   )
 )
 
-lazy val server = (project in file("server"))
-  .settings(libraryDependencies := Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)).dependsOn(runtime)
+lazy val server = (project in file("server")).settings(
+  libraryDependencies := Seq(
+    "dev.zio" %% "zio"         % zio,
+    "dev.zio" %% "zio-http"    % zioHttp,
+    "dev.zio" %% "zio-rocksdb" % "0.4.2"
+  )
+).dependsOn(runtime)

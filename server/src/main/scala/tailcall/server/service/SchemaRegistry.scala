@@ -2,6 +2,7 @@ package tailcall.server.service
 
 import tailcall.runtime.ast.Blueprint
 import tailcall.server.service.BinaryDigest.Digest
+import zio.rocksdb.RocksDB
 import zio.{Ref, Task, UIO, ZIO, ZLayer}
 
 trait SchemaRegistry {
@@ -9,7 +10,6 @@ trait SchemaRegistry {
   def get(id: Digest): Task[Option[Blueprint]]
   def list(index: Int, max: Int): Task[List[Blueprint]]
   def drop(digest: Digest): Task[Boolean]
-  def contains(digest: Digest): Task[Boolean]
 }
 
 object SchemaRegistry {
@@ -18,6 +18,8 @@ object SchemaRegistry {
       ref <- Ref.make(Map.empty[Digest, Blueprint])
       bd  <- ZIO.service[BinaryDigest]
     } yield Memory(ref, bd))
+
+  def rocksDB: ZLayer[RocksDB with BinaryDigest, Nothing, SchemaRegistry] = ZLayer.fromFunction(Persistence.apply _)
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
@@ -29,8 +31,12 @@ object SchemaRegistry {
 
   def drop(digest: Digest): ZIO[SchemaRegistry, Throwable, Boolean] = ZIO.serviceWithZIO[SchemaRegistry](_.drop(digest))
 
-  def contains(digest: Digest): ZIO[SchemaRegistry, Throwable, Boolean] =
-    ZIO.serviceWithZIO[SchemaRegistry](_.contains(digest))
+  private def decode(bytes: Array[Byte]): Task[Blueprint] = {
+    Blueprint.decode(new String(bytes)) match {
+      case Left(value)  => ZIO.fail(new RuntimeException(value))
+      case Right(value) => ZIO.succeed(value)
+    }
+  }
 
   final case class Memory(ref: Ref[Map[Digest, Blueprint]], bd: BinaryDigest) extends SchemaRegistry {
 
@@ -45,7 +51,34 @@ object SchemaRegistry {
 
     override def drop(digest: Digest): UIO[Boolean] =
       ref.modify(map => if (map.contains(digest)) (true, map - digest) else (false, map))
+  }
 
-    override def contains(digest: Digest): Task[Boolean] = ref.get.map(_.contains(digest))
+  final case class Persistence(db: RocksDB, bd: BinaryDigest) extends SchemaRegistry {
+    override def add(blueprint: Blueprint): Task[Digest] = {
+      val digest = bd.digest(blueprint)
+      val value  = Blueprint.encode(blueprint).toString.getBytes()
+      db.put(digest.value, value).as(digest)
+    }
+
+    override def get(id: Digest): Task[Option[Blueprint]] = {
+      for {
+        bytes     <- db.get(id.value)
+        blueprint <- bytes.fold(ZIO.attempt(Option.empty[Blueprint]))(decode(_).map(Option(_)))
+      } yield blueprint
+    }
+
+    override def list(index: Int, max: Int): Task[List[Blueprint]] = {
+      for {
+        chunk      <- db.newIterator.take(max).runCollect
+        blueprints <- ZIO.foreach(chunk) { case (_, value) => decode(value) }
+      } yield blueprints.toList
+    }
+
+    override def drop(digest: Digest): Task[Boolean] = {
+      for {
+        contains <- db.get(digest.value).map(_.isEmpty)
+        _        <- db.delete(digest.value).when(contains)
+      } yield !contains
+    }
   }
 }

@@ -7,18 +7,19 @@ import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method}
 import zio.json.EncoderOps
+import zio.rocksdb.RocksDB
 
 object Main extends ZIOAppDefault {
   // TODO: use API DSL
-  val registery = Http.collectZIO[Request] {
-    case req @ Method.PUT -> !! / "schema" => for {
+  val registry = Http.collectZIO[Request] {
+    case req @ Method.PUT -> !! / "schemas" => for {
         body      <- req.body.asCharSeq
         blueprint <- Blueprint.decode(body) match {
           case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
           case Right(value) => ZIO.succeed(value)
         }
         digest    <- SchemaRegistry.add(blueprint)
-      } yield Response.json(digest.toJson)
+      } yield Response.json(digest.toHex.toJson)
 
     case Method.GET -> !! / "schemas" => for {
         list <- SchemaRegistry.list(0, Int.MaxValue)
@@ -42,20 +43,24 @@ object Main extends ZIOAppDefault {
 
   private val graphiql = Http.fromResource("graphiql.html")
 
-  val Gql = Http.collectRoute[Request] { case _ @Method.GET -> !! / "graphiql" => graphiql }.mapError {
-    case error: HttpError => Response.fromHttpError(error)
-    case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
-  }
+  val gql = Http.collectRoute[Request] { case Method.GET -> !! / "graphiql" => graphiql }
 
-  val sanitized = registery.mapError {
-    case error: HttpError => Response.fromHttpError(error)
-    case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
-  }
+  def sanitized[R](http: HttpApp[R, Throwable]): App[R] =
+    http.mapError {
+      case error: HttpError => Response.fromHttpError(error)
+      case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
+    }
 
-  override val run: ZIO[Any, Throwable, ExitCode] = for {
-    a  <- Server.serve(sanitized).exitCode
-      .provide(Server.default, SchemaRegistry.memory, BinaryDigest.algorithm("SHA-256")).fork
-    b  <- Server.serve(Gql).exitCode.provide(Server.live, ZLayer.succeed(ServerConfig.default.port(8081))).fork
-    ec <- a.join.zipPar(b.join).exitCode
-  } yield ec
+  val adminServer = Server.serve(sanitized(registry)).provide(
+    ServerConfig.live.map(_.update(_.port(8080))),
+    Server.live,
+    RocksDB.live(this.getClass.getResource("/").getPath),
+    SchemaRegistry.rocksDB,
+    BinaryDigest.algorithm("SHA-256")
+  )
+
+  val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(gql))
+    .provide(ServerConfig.live.map(_.update(_.port(8081))), Server.live)
+
+  override val run = (adminServer zipPar userServer).exitCode
 }
