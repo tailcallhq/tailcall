@@ -8,6 +8,12 @@ import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
+  def asString(dv: DynamicValue): Option[String] =
+    dv match {
+      case DynamicValue.Primitive(value, _) => Some(value.toString)
+      case _                                => None
+    }
+
   def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
@@ -82,15 +88,18 @@ object DynamicValueUtil {
     }
   }
 
-  def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
+  def toTyped[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
   // TODO: add unit tests
-  def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
+  def getPath(d: DynamicValue, path: List[String], withIndex: Boolean = false): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
       case head :: tail => d match {
           case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
           case DynamicValue.SomeValue(a)  => getPath(a, path)
+          case DynamicValue.Sequence(a)   =>
+            if (withIndex) head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail))
+            else Option(DynamicValue(a.flatMap(getPath(_, tail))))
           case DynamicValue.Dictionary(b) =>
             val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
             b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
