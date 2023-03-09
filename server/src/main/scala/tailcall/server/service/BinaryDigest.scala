@@ -12,7 +12,8 @@ trait BinaryDigest {
 
 object BinaryDigest {
   final case class Digest(value: Array[Byte]) {
-    def toHex: String = value.map("%02x".format(_)).mkString
+    def toHex: String            = value.map("%02x".format(_)).mkString
+    override def hashCode(): Int = toHex.hashCode
   }
 
   object Digest {
