@@ -9,8 +9,7 @@ import zio.http.model.{HttpError, Method}
 import zio.json.EncoderOps
 
 object Main extends ZIOAppDefault {
-
-  // TODO: add all registry routes
+  // TODO: use API DSL
   val registery = Http.collectZIO[Request] {
     case req @ Method.PUT -> !! / "schema" => for {
         body      <- req.body.asCharSeq
@@ -26,14 +25,15 @@ object Main extends ZIOAppDefault {
       } yield Response.json(list.toJson)
 
     case Method.DELETE -> !! / "schemas" / digest => for {
-        deleted <- SchemaRegistry.drop(Digest.fromHex(digest))
-      } yield Response.json(deleted.toJson)
+        found <- SchemaRegistry.drop(Digest.fromHex(digest))
+        _     <- ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found")).when(found)
+      } yield Response.ok
 
     case Method.GET -> !! / "schemas" / digest => for {
         schema    <- SchemaRegistry.get(Digest.fromHex(digest))
         blueprint <- schema match {
           case Some(blueprint) => ZIO.succeed(blueprint)
-          case None            => ZIO.fail(HttpError.NotFound("Schema not found"))
+          case None            => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
         }
       } yield Response.json(blueprint.toJson)
   }

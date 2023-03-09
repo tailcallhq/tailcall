@@ -2,7 +2,7 @@ package tailcall.server.service
 
 import tailcall.runtime.ast.Blueprint
 import tailcall.server.service.BinaryDigest.Digest
-import zio.{Ref, Task, ZIO, ZLayer}
+import zio.{Ref, Task, UIO, ZIO, ZLayer}
 
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
@@ -34,14 +34,18 @@ object SchemaRegistry {
 
   final case class Memory(ref: Ref[Map[Digest, Blueprint]], bd: BinaryDigest) extends SchemaRegistry {
 
-    override def add(blueprint: Blueprint): Task[Digest] = ???
+    override def add(blueprint: Blueprint): Task[Digest] = {
+      val digest: Digest = bd.digest(blueprint)
+      ref.update(_.+(digest -> blueprint)).as(digest)
+    }
 
-    override def get(id: Digest): Task[Option[Blueprint]] = ???
+    override def get(id: Digest): Task[Option[Blueprint]] = ref.get.map(_.get(id))
 
-    override def list(index: Int, max: Int): Task[List[Blueprint]] = ???
+    override def list(index: Int, max: Int): Task[List[Blueprint]] = ref.get.map(_.values.toList)
 
-    override def drop(digest: Digest): Task[Boolean] = ???
+    override def drop(digest: Digest): UIO[Boolean] =
+      ref.modify(map => if (map.contains(digest)) (true, map - digest) else (false, map))
 
-    override def contains(digest: Digest): Task[Boolean] = ???
+    override def contains(digest: Digest): Task[Boolean] = ref.get.map(_.contains(digest))
   }
 }
