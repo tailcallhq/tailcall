@@ -50,7 +50,7 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio"               %% "zio-json-yaml"         % zioJson,
     "dev.zio"               %% "zio-parser"            % "0.1.8",
     "io.netty"               % "netty-all"             % "4.1.68.Final",
-  "dev.zio"               %% "zio-http"              % "0.0.4",
+    "dev.zio"               %% "zio-http"              % "0.0.4",
 
     // Testing
     "dev.zio" %% "zio-test"     % zio % Test,
