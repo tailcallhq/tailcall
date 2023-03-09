@@ -8,12 +8,6 @@ import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
-  def asString(dv: DynamicValue): Option[String] =
-    dv match {
-      case DynamicValue.Primitive(value, _) => Some(value.toString)
-      case _                                => None
-    }
-
   def toValue(value: Any, standardType: StandardType[_]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
@@ -88,7 +82,7 @@ object DynamicValueUtil {
     }
   }
 
-  def as[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
+  def toTyped[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
   // TODO: add unit tests
   def getPath(d: DynamicValue, path: List[String], withIndex: Boolean = false): Option[DynamicValue] =

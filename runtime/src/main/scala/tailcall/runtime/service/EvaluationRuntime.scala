@@ -100,7 +100,7 @@ object EvaluationRuntime {
         case Defer(value)       => LExit.succeed(value)
         case Dynamic(operation) => LExit.input[Any].map(input =>
             operation match {
-              case Dynamic.Typed(meta)     => DynamicValueUtil.as(input.asInstanceOf[DynamicValue])(meta.toSchema)
+              case Dynamic.Typed(meta)     => DynamicValueUtil.toTyped(input.asInstanceOf[DynamicValue])(meta.toSchema)
               case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
               case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
             }

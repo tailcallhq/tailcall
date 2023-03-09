@@ -1,6 +1,6 @@
 package tailcall.runtime.ast
 
-import tailcall.runtime.internal.DynamicValueUtil.{asString, getPath}
+import tailcall.runtime.internal.DynamicValueUtil.{toTyped, getPath}
 import zio.Chunk
 import zio.parser._
 import zio.schema.DynamicValue
@@ -10,7 +10,7 @@ import zio.schema.DynamicValue
  */
 final case class Mustache(path: Chunk[String]) {
   self =>
-  def evaluate(input: DynamicValue): Option[String] = getPath(input, self.path.toList).flatMap(asString(_))
+  def evaluate(input: DynamicValue): Option[String] = getPath(input, self.path.toList).flatMap(toTyped[String](_))
 }
 
 object Mustache {
