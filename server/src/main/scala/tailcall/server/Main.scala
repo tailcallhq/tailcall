@@ -36,6 +36,15 @@ object Main extends ZIOAppDefault {
           case None            => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
         }
       } yield Response.json(blueprint.toJson)
+
+    case Method.GET -> !! / "health" => ZIO.succeed(Response.ok)
+  }
+
+  private val graphiql = Http.fromResource("graphiql.html")
+
+  val Gql = Http.collectRoute[Request] { case _ @Method.GET -> !! / "graphiql" => graphiql }.mapError {
+    case error: HttpError => Response.fromHttpError(error)
+    case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
   }
 
   val sanitized = registery.mapError {
@@ -43,6 +52,10 @@ object Main extends ZIOAppDefault {
     case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
   }
 
-  override val run = Server.serve(sanitized).exitCode
-    .provide(Server.default, SchemaRegistry.memory, BinaryDigest.algorithm("SHA-256"))
+  override val run: ZIO[Any, Throwable, ExitCode] = for {
+    a  <- Server.serve(sanitized).exitCode
+      .provide(Server.default, SchemaRegistry.memory, BinaryDigest.algorithm("SHA-256")).fork
+    b  <- Server.serve(Gql).exitCode.provide(Server.live, ZLayer.succeed(ServerConfig.default.port(8081))).fork
+    ec <- a.join.zipPar(b.join).exitCode
+  } yield ec
 }
