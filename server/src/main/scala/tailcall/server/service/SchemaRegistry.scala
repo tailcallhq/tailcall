@@ -5,7 +5,7 @@ import tailcall.server.service.BinaryDigest.Digest
 import zio.{Ref, Task, ZIO, ZLayer}
 
 trait SchemaRegistry {
-  def add(blueprint: Blueprint): Task[Unit]
+  def add(blueprint: Blueprint): Task[Digest]
   def get(id: Digest): Task[Option[Blueprint]]
   def list(index: Int, max: Int): Task[List[Blueprint]]
   def drop(digest: Digest): Task[Boolean]
@@ -17,9 +17,9 @@ object SchemaRegistry {
     ZLayer.fromZIO(for {
       ref <- Ref.make(Map.empty[Digest, Blueprint])
       bd  <- ZIO.service[BinaryDigest]
-    } yield new Memory(ref, bd))
+    } yield Memory(ref, bd))
 
-  def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Unit] =
+  def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
 
   def get(id: Digest): ZIO[SchemaRegistry, Throwable, Option[Blueprint]] = ZIO.serviceWithZIO[SchemaRegistry](_.get(id))
@@ -34,7 +34,7 @@ object SchemaRegistry {
 
   final case class Memory(ref: Ref[Map[Digest, Blueprint]], bd: BinaryDigest) extends SchemaRegistry {
 
-    override def add(blueprint: Blueprint): Task[Unit] = ???
+    override def add(blueprint: Blueprint): Task[Digest] = ???
 
     override def get(id: Digest): Task[Option[Blueprint]] = ???
 
