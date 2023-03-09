@@ -1,16 +1,19 @@
 package tailcall.server
 
+import caliban.GraphQLRequest
 import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.http.HttpClient
+import tailcall.runtime.service._
 import tailcall.server.service.BinaryDigest.Digest
 import tailcall.server.service.{BinaryDigest, SchemaRegistry}
 import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method}
-import zio.json.EncoderOps
+import zio.json.{DecoderOps, EncoderOps}
 
 object Main extends ZIOAppDefault {
   // TODO: use API DSL
-  val registry = Http.collectZIO[Request] {
+  val registry                                                    = Http.collectZIO[Request] {
     case req @ Method.PUT -> !! / "schemas" => for {
         body      <- req.body.asCharSeq
         blueprint <- Blueprint.decode(body) match {
@@ -39,10 +42,33 @@ object Main extends ZIOAppDefault {
 
     case Method.GET -> !! / "health" => ZIO.succeed(Response.ok)
   }
+  def decodeBody(body: Body): ZIO[Any, HttpError, GraphQLRequest] =
+    (for {
+      text <- body.asCharSeq
+      req  <- ZIO.fromEither(text.fromJson[GraphQLRequest])
+    } yield req).orElseFail(HttpError.BadRequest("Bad request"))
 
-  private val graphiql = Http.fromResource("graphiql.html")
+  private def graphql(digest: Digest, body: Body) =
+    Http.collectZIO[Request] { _ =>
+      for {
+        schema      <- SchemaRegistry.get(digest)
+        query       <- decodeBody(body).flatMap(_.query match {
+          case Some(value) => ZIO.succeed(value)
+          case None        => ZIO.fail(HttpError.BadRequest("Query is required"))
+        })
+        result      <- schema match {
+          case Some(value) => value.toGraphQL
+          case None        => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
+        }
+        interpreter <- result.interpreter
+        res         <- interpreter.execute(query)
+      } yield Response.json(res.toJson)
+    }
 
-  val gql = Http.collectRoute[Request] { case Method.GET -> !! / "graphiql" => graphiql }
+  val gql = Http.collectRoute[Request] {
+    case Method.GET -> !! / "graphiql"            => Http.fromResource("graphiql.html")
+    case req @ Method.POST -> !! / "graphql" / id => graphql(Digest.fromHex(id), req.body)
+  }
 
   def sanitized[R](http: HttpApp[R, Throwable]): App[R] =
     http.mapError {
@@ -50,15 +76,18 @@ object Main extends ZIOAppDefault {
       case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
     }
 
-  val adminServer = Server.serve(sanitized(registry)).provide(
-    ServerConfig.live.map(_.update(_.port(8080))),
-    Server.live,
+  val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(gql ++ registry)).provide(
+    ServerConfig.live.map(_.update(_.port(8081))),
+    SchemaRegistry.persistent(this.getClass.getResource("/").getPath),
+    GraphQLGenerator.live,
+    TypeGenerator.live,
+    StepGenerator.live,
+    EvaluationRuntime.live,
+    HttpClient.live,
+    Client.default,
     BinaryDigest.algorithm("SHA-256"),
-    SchemaRegistry.persistent(this.getClass.getResource("/").getPath)
+    Server.live
   )
 
-  val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(gql))
-    .provide(ServerConfig.live.map(_.update(_.port(8081))), Server.live)
-
-  override val run = (adminServer zipPar userServer).exitCode
+  override val run = userServer.exitCode
 }
