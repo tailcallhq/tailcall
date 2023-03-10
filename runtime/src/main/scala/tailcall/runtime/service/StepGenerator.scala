@@ -4,7 +4,6 @@ import caliban.schema.Step
 import tailcall.runtime.ast
 import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.remote.Remote
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
@@ -25,7 +24,7 @@ object StepGenerator {
         field.resolver match {
           case Some(resolver) =>
             val step = for {
-              value <- rtm.evaluate(resolver(Remote(DynamicValue(context))))
+              value <- rtm.evaluate(resolver)(DynamicValue(context))
               step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx)))
             } yield step
 

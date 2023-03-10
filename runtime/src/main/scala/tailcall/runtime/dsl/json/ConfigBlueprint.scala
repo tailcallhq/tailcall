@@ -61,7 +61,7 @@ final class ConfigBlueprint(config: Config) {
 
           val resolver = toResolver(input.steps.getOrElse(Nil))
 
-          Blueprint.FieldDefinition(name, args, ofType, resolver)
+          Blueprint.FieldDefinition(name, args, ofType, resolver.map(Remote.toLambda(_)))
         }
       }
 

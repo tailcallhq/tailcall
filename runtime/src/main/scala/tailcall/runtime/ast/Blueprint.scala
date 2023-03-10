@@ -1,7 +1,7 @@
 package tailcall.runtime.ast
 
 import caliban.GraphQL
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.lambda.~>
 import tailcall.runtime.service.GraphQLGenerator
 import zio.ZIO
 import zio.json.{JsonCodec, JsonDecoder, JsonEncoder}
@@ -44,7 +44,7 @@ object Blueprint {
   final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
 
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
-  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[Remote[DynamicValue] => Remote[DynamicValue]] = None)
+  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None)
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None)
 
   sealed trait Type

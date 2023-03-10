@@ -13,12 +13,12 @@ trait GraphQLGenerator {
 
 object GraphQLGenerator {
   final case class Live(tGen: TypeGenerator, sGen: StepGenerator) extends GraphQLGenerator {
-    override def toGraphQL(document: Blueprint): GraphQL[Any] =
+    override def toGraphQL(input: Blueprint): GraphQL[Any] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
           val queryOperation = for {
-            __type  <- tGen.__type(document)
-            resolve <- sGen.resolve(document)
+            __type  <- tGen.__type(input)
+            resolve <- sGen.resolve(input)
           } yield Operation(__type, resolve)
           RootSchemaBuilder(query = queryOperation, None, None)
         }
