@@ -22,6 +22,8 @@ object BinaryDigest {
     def fromHex(hex: String): Digest = Digest(hex)
   }
 
+  def sha256: ULayer[BinaryDigest] = algorithm("SHA-256")
+
   def algorithm(name: String): ULayer[BinaryDigest] =
     ZLayer.succeed(new BinaryDigest {
       override def digestWith[A](a: A, encoder: JsonEncoder[A]): Digest = {
