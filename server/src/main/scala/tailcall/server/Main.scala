@@ -60,7 +60,7 @@ object Main extends ZIOAppDefault {
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / "user" / id =>
       val digest = Digest.fromHex(id)
       for {
-        schema <- SchemaRegistry.get(digest)
+        schema      <- SchemaRegistry.get(digest)
         result      <- schema match {
           case Some(value) => value.toGraphQL
           case None        => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
