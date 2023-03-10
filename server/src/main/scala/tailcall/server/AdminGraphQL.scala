@@ -20,7 +20,7 @@ object AdminGraphQL {
   final case class BlueprintSpec(digest: Digest, source: Blueprint, url: String)
   object BlueprintSpec {
     def apply(digest: Digest, source: Blueprint): BlueprintSpec =
-      BlueprintSpec(digest, source, s"http://localhost:8080/graphql/user/${digest.hex}")
+      BlueprintSpec(digest, source, s"http://localhost:8080/graphql/${digest.alg.name}/${digest.hex}")
   }
 
   @GQLName("Query")
