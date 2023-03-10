@@ -21,7 +21,7 @@ object Main extends ZIOAppDefault {
           case Right(value) => ZIO.succeed(value)
         }
         digest    <- SchemaRegistry.add(blueprint)
-      } yield Response.json(digest.toHex.toJson)
+      } yield Response.json(digest.toJson)
 
     case Method.GET -> !! / "schemas" => for {
         list <- SchemaRegistry.list(0, Int.MaxValue)
