@@ -2,6 +2,7 @@ package tailcall.runtime.lambda
 
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
+import zio.json.JsonCodec
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
@@ -93,5 +94,6 @@ object Expression {
     final case class Apply(value: Option[Expression])                            extends Operation
   }
 
-  implicit val schema: Schema[Expression] = DeriveSchema.gen[Expression]
+  implicit val schema: Schema[Expression]       = DeriveSchema.gen[Expression]
+  implicit val jsonCodec: JsonCodec[Expression] = zio.schema.codec.JsonCodec.jsonCodec(schema)
 }

@@ -3,13 +3,15 @@ package tailcall.server
 import caliban.introspection.adt.{__Type, __TypeKind}
 import caliban.schema.Annotations.GQLName
 import caliban.schema.{GenericSchema, Schema, Step}
-import caliban.{GraphQL, RootResolver, Value}
+import caliban.{GraphQL, ResponseValue, RootResolver}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.~>
 import tailcall.server.service.BinaryDigest.Digest
 import tailcall.server.service.{BinaryDigest, SchemaRegistry}
 import zio.ZIO
+import zio.json.EncoderOps
+import zio.query.ZQuery
 import zio.schema.DynamicValue
 
 object AdminGraphQL {
@@ -32,9 +34,20 @@ object AdminGraphQL {
 
   implicit val lambdaSchema: Schema[Any, DynamicValue ~> DynamicValue] = new Schema[Any, DynamicValue ~> DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
-      __Type(kind = __TypeKind.SCALAR, name = Some("ExecutableFunction"))
-    override def resolve(value: DynamicValue ~> DynamicValue): Step[Any]                   =
-      Step.PureStep(Value.StringValue("[Binary Data]"))
+      __Type(kind = __TypeKind.SCALAR, name = Some("Lambda"))
+
+    override def resolve(value: DynamicValue ~> DynamicValue): Step[Any] = {
+      Step.QueryStep {
+        ZQuery.fromZIO {
+          value.compile.toJsonAST flatMap { jsonAst =>
+            ResponseValue.responseValueZioJsonDecoder.fromJsonAST(jsonAst)
+          } match {
+            case Left(value)  => ZIO.fail(new RuntimeException(value))
+            case Right(value) => ZIO.succeed(Step.PureStep(value))
+          }
+        }
+      }
+    }
   }
 
   implicit val dynamicValueSchema: Schema[Any, DynamicValue] = new Schema[Any, DynamicValue] {
