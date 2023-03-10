@@ -21,6 +21,13 @@ sealed trait Lambda[-A, +B] {
   def compile(context: CompilationContext): Expression
 
   final def evaluate: LExit[EvaluationRuntime, Throwable, A, B] = EvaluationRuntime.evaluate(self)
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case other: Lambda[_, _] => self.compile == other.compile
+      case _                   => false
+    }
+  }
 }
 
 object Lambda {
