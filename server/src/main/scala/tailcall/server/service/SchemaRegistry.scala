@@ -30,6 +30,9 @@ object SchemaRegistry {
   def list(index: Int, max: Int): ZIO[SchemaRegistry, Throwable, List[Blueprint]] =
     ZIO.serviceWithZIO[SchemaRegistry](_.list(index, max))
 
+  def digests(index: Int, max: Int): ZIO[SchemaRegistry with BinaryDigest, Throwable, List[Digest]] =
+    list(index, max).flatMap(ZIO.foreach(_)(blueprint => ZIO.serviceWith[BinaryDigest](_.digest(blueprint))))
+
   def drop(digest: Digest): ZIO[SchemaRegistry, Throwable, Boolean] = ZIO.serviceWithZIO[SchemaRegistry](_.drop(digest))
 
   private def decode(bytes: Array[Byte]): Task[Blueprint] = {
@@ -58,12 +61,12 @@ object SchemaRegistry {
     override def add(blueprint: Blueprint): Task[Digest] = {
       val digest = bd.digest(blueprint)
       val value  = Blueprint.encode(blueprint).toString.getBytes()
-      db.put(digest.value, value).as(digest)
+      db.put(digest.getBytes, value).as(digest)
     }
 
     override def get(id: Digest): Task[Option[Blueprint]] = {
       for {
-        bytes     <- db.get(id.value)
+        bytes     <- db.get(id.getBytes)
         blueprint <- bytes.fold(ZIO.attempt(Option.empty[Blueprint]))(decode(_).map(Option(_)))
       } yield blueprint
     }
@@ -77,8 +80,8 @@ object SchemaRegistry {
 
     override def drop(digest: Digest): Task[Boolean] = {
       for {
-        contains <- db.get(digest.value).map(_.isEmpty)
-        _        <- db.delete(digest.value).when(contains)
+        contains <- db.get(digest.getBytes).map(_.isEmpty)
+        _        <- db.delete(digest.getBytes).when(contains)
       } yield !contains
     }
   }
