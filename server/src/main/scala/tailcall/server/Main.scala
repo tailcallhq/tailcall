@@ -13,7 +13,7 @@ import zio.json.{DecoderOps, EncoderOps}
 
 object Main extends ZIOAppDefault {
   // TODO: use API DSL
-  val registry                                                    = Http.collectZIO[Request] {
+  val adminREST = Http.collectZIO[Request] {
     case req @ Method.PUT -> !! / "schemas" => for {
         body      <- req.body.asCharSeq
         blueprint <- Blueprint.decode(body) match {
@@ -42,32 +42,47 @@ object Main extends ZIOAppDefault {
 
     case Method.GET -> !! / "health" => ZIO.succeed(Response.ok)
   }
-  def decodeBody(body: Body): ZIO[Any, HttpError, GraphQLRequest] =
-    (for {
-      text <- body.asCharSeq
-      req  <- ZIO.fromEither(text.fromJson[GraphQLRequest])
-    } yield req).orElseFail(HttpError.BadRequest("Bad request"))
 
-  private def graphql(digest: Digest, body: Body) =
-    Http.collectZIO[Request] { _ =>
+  private def decodeQuery(body: Body): ZIO[Any, Throwable, String] =
+    for {
+      text  <- body.asCharSeq
+      req   <- text.fromJson[GraphQLRequest] match {
+        case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
+        case Right(value) => ZIO.succeed(value)
+      }
+      query <- req.query match {
+        case Some(value) => ZIO.succeed(value)
+        case None        => ZIO.fail(HttpError.BadRequest("Query is required"))
+      }
+    } yield query
+
+  private def userGraphQL =
+    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / "user" / id =>
+      val digest = Digest.fromHex(id)
       for {
-        schema      <- SchemaRegistry.get(digest)
-        query       <- decodeBody(body).flatMap(_.query match {
-          case Some(value) => ZIO.succeed(value)
-          case None        => ZIO.fail(HttpError.BadRequest("Query is required"))
-        })
+        schema <- SchemaRegistry.get(digest)
         result      <- schema match {
           case Some(value) => value.toGraphQL
           case None        => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
         }
+        query       <- decodeQuery(req.body)
         interpreter <- result.interpreter
         res         <- interpreter.execute(query)
       } yield Response.json(res.toJson)
     }
 
-  val gql = Http.collectRoute[Request] {
-    case Method.GET -> !! / "graphiql"            => Http.fromResource("graphiql.html")
-    case req @ Method.POST -> !! / "graphql" / id => graphql(Digest.fromHex(id), req.body)
+  private val adminGraphQL = Http.collectZIO[Request] { case req =>
+    for {
+      query       <- decodeQuery(req.body)
+      interpreter <- AdminGraphQL.graphQL.interpreter
+      res         <- interpreter.execute(query)
+    } yield Response.json(res.toJson)
+  }
+
+  val graphQL = Http.collectRoute[Request] {
+    case Method.GET -> !! / "graphql"               => Http.fromResource("graphiql.html")
+    case Method.POST -> !! / "graphql"              => adminGraphQL
+    case Method.POST -> !! / "graphql" / "user" / _ => userGraphQL
   }
 
   def sanitized[R](http: HttpApp[R, Throwable]): App[R] =
@@ -76,8 +91,8 @@ object Main extends ZIOAppDefault {
       case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
     }
 
-  val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(gql ++ registry)).provide(
-    ServerConfig.live.map(_.update(_.port(8081))),
+  val userServer: ZIO[Any, Throwable, Nothing] = Server.serve(sanitized(graphQL ++ adminREST)).provide(
+    ServerConfig.live.map(_.update(_.port(8080))),
     SchemaRegistry.persistent(this.getClass.getResource("/").getPath),
     GraphQLGenerator.live,
     TypeGenerator.live,

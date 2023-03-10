@@ -61,13 +61,17 @@ object SchemaRegistry {
     override def add(blueprint: Blueprint): Task[Digest] = {
       val digest = bd.digest(blueprint)
       val value  = Blueprint.encode(blueprint).toString.getBytes()
+
       db.put(digest.getBytes, value).as(digest)
     }
 
-    override def get(id: Digest): Task[Option[Blueprint]] = {
+    override def get(digest: Digest): Task[Option[Blueprint]] = {
       for {
-        bytes     <- db.get(id.getBytes)
-        blueprint <- bytes.fold(ZIO.attempt(Option.empty[Blueprint]))(decode(_).map(Option(_)))
+        option    <- db.get(digest.getBytes)
+        blueprint <- option match {
+          case Some(bytes) => decode(bytes).map(Option(_))
+          case None        => ZIO.succeed(None)
+        }
       } yield blueprint
     }
 
