@@ -30,8 +30,12 @@ object OrcBlueprint {
     for {
       ofType <- ZIO.fromOption(lField.field.ofType) <> ZIO.fail("Output type must be named")
       args   <- ZIO.foreach(lField.field.definition.arguments)(toInputValueDefinition)
-    } yield Blueprint
-      .FieldDefinition(name = lField.name, ofType = toType(ofType), args = args, resolver = toResolver(lField))
+    } yield Blueprint.FieldDefinition(
+      name = lField.name,
+      ofType = toType(ofType),
+      args = args,
+      resolver = toResolver(lField).map(Remote.toLambda(_))
+    )
   }
 
   def toBlueprint(o: Orc): IO[String, Blueprint] = {
