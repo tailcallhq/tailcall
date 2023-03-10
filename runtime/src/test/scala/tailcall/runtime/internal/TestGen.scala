@@ -65,7 +65,7 @@ object TestGen {
     fromIterableRandom("Query", "User", "Post", "Comment", "Album", "Photo", "Todo")
   }
 
-  def schemaDefinition: Gen[Any, SchemaDefinition] = Gen.const(SchemaDefinition(Option("Query"), None))
+  def schemaDefinition: Gen[Any, SchemaDefinition] = Gen.const(SchemaDefinition(Option("Query"), Option("Mutation")))
 
   def genGraphQL: Gen[Any, Config.GraphQL] =
     for {

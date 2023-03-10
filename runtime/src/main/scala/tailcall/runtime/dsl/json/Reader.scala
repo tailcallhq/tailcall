@@ -46,7 +46,7 @@ object Reader {
             case Some(__schema) => ZIO.succeed(RootSchemaBuilder(
                 query = Some(Operation(__schema.queryType, Step.NullStep)),
                 mutation = __schema.mutationType.map(Operation(_, Step.NullStep)),
-                subscription = __schema.mutationType.map(Operation(_, Step.NullStep)),
+                subscription = __schema.subscriptionType.map(Operation(_, Step.NullStep)),
                 additionalTypes = __schema.types,
                 schemaDirectives = Nil
               ))

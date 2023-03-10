@@ -8,6 +8,7 @@ import tailcall.runtime.remote._
 import tailcall.runtime.service._
 import zio.ZIO
 import zio.http.Client
+import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
@@ -143,6 +144,34 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         val program = execute(orc)("query {foo { a }}")
         assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
 
+      },
+      test("mutation with input type") {
+        // mutation createFoo(input: FooInput){foo: String}
+        // input FooInput {a: Int, b: Int, c: Int}
+        val orc     = Blueprint(
+          Blueprint.SchemaDefinition(query = Option("Query"), mutation = Option("Mutation"), subscription = None),
+          List(
+            Blueprint.ObjectTypeDefinition(
+              name = "Query",
+              fields = List(Blueprint.FieldDefinition(name = "foo", Nil, Blueprint.NamedType("Foo", false)))
+            ),
+            Blueprint.ObjectTypeDefinition(
+              name = "Mutation",
+              fields = List(Blueprint.FieldDefinition(
+                name = "createFoo",
+                List(Blueprint.InputValueDefinition(name = "input", Blueprint.NamedType("FooInput", false), None)),
+                Blueprint.NamedType("Foo", false),
+                Option(Remote.toLambda((_: Remote[DynamicValue]) => Remote(Map("a" -> 1)).toDynamic))
+              ))
+            ),
+            Blueprint.InputObjectTypeDefinition(
+              name = "FooInput",
+              fields = List(Blueprint.InputValueDefinition(name = "a", Blueprint.NamedType("Int", false), None))
+            )
+          )
+        )
+        val program = execute(orc)("mutation {createFoo(input: {a: 1}){a}}")
+        assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       }
     ).provide(
       GraphQLGenerator.live,

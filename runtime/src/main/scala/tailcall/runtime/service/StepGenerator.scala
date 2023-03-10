@@ -12,6 +12,7 @@ import scala.collection.mutable
 
 trait StepGenerator {
   def resolve(document: Blueprint): Option[Step[Any]]
+  def resolveMutation(document: Blueprint): Option[Step[Any]]
 }
 
 object StepGenerator {
@@ -64,6 +65,18 @@ object StepGenerator {
         step  <- stepRef.get(query)
       } yield step(rootContext)
     }
+
+    override def resolveMutation(document: Blueprint): Option[Step[Any]] = {
+      val rootContext = Context(DynamicValue(()))
+      document.definitions.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
+        stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
+      }
+
+      for {
+        query <- document.schema.mutation
+        step  <- stepRef.get(query)
+      } yield step(rootContext)
+    }
   }
 
   def live: ZLayer[EvaluationRuntime, Nothing, StepGenerator] = {
@@ -72,4 +85,7 @@ object StepGenerator {
 
   def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, Option[Step[Any]]] =
     ZIO.serviceWith(_.resolve(document))
+
+  def resolveMutation(document: Blueprint): ZIO[StepGenerator, Nothing, Option[Step[Any]]] =
+    ZIO.serviceWith(_.resolveMutation(document))
 }
