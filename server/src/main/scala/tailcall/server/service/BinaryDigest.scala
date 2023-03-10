@@ -11,7 +11,25 @@ trait BinaryDigest {
 }
 
 object BinaryDigest {
-  final case class Digest(hex: String) {
+  sealed trait Algorithm {
+    self =>
+    final def name: String = self match { case Algorithm.SHA_256 => "SHA-256" }
+  }
+
+  object Algorithm {
+    case object SHA_256 extends Algorithm
+
+    implicit val encoder: JsonEncoder[Algorithm] = DeriveJsonEncoder.gen[Algorithm]
+    implicit val decoder: JsonDecoder[Algorithm] = DeriveJsonDecoder.gen[Algorithm]
+
+    def fromString(s: String): Option[Algorithm] =
+      s.toUpperCase match {
+        case "SHA-256" => Some(SHA_256)
+        case _         => None
+      }
+  }
+
+  final case class Digest(alg: Algorithm, hex: String) {
     def getBytes: Array[Byte] = hex.getBytes
   }
 
@@ -19,16 +37,16 @@ object BinaryDigest {
     implicit val encoder: JsonEncoder[Digest] = DeriveJsonEncoder.gen[Digest]
     implicit val decoder: JsonDecoder[Digest] = DeriveJsonDecoder.gen[Digest]
 
-    def fromHex(hex: String): Digest = Digest(hex)
+    def fromHex(algorithm: Algorithm, hex: String): Digest = Digest(algorithm, hex)
   }
 
-  def sha256: ULayer[BinaryDigest] = algorithm("SHA-256")
+  def sha256: ULayer[BinaryDigest] = algorithm(Algorithm.SHA_256)
 
-  def algorithm(name: String): ULayer[BinaryDigest] =
+  def algorithm(algorithm: Algorithm): ULayer[BinaryDigest] =
     ZLayer.succeed(new BinaryDigest {
       override def digestWith[A](a: A, encoder: JsonEncoder[A]): Digest = {
         val encoded = String.valueOf(encoder.encodeJson(a)).getBytes()
-        Digest(MessageDigest.getInstance(name).digest(encoded).map("%02x".format(_)).mkString)
+        Digest(algorithm, MessageDigest.getInstance(algorithm.name).digest(encoded).map("%02x".format(_)).mkString)
       }
     })
 

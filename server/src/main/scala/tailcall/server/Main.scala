@@ -4,7 +4,7 @@ import caliban.GraphQLRequest
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
-import tailcall.server.service.BinaryDigest.Digest
+import tailcall.server.service.BinaryDigest.{Algorithm, Digest}
 import tailcall.server.service.{BinaryDigest, SchemaRegistry}
 import zio._
 import zio.http._
@@ -12,7 +12,6 @@ import zio.http.model.{HttpError, Method}
 import zio.json.{DecoderOps, EncoderOps}
 
 object Main extends ZIOAppDefault {
-  // TODO: use API DSL
   val adminREST = Http.collectZIO[Request] {
     case req @ Method.PUT -> !! / "schemas" => for {
         body      <- req.body.asCharSeq
@@ -27,13 +26,17 @@ object Main extends ZIOAppDefault {
         list <- SchemaRegistry.list(0, Int.MaxValue)
       } yield Response.json(list.toJson)
 
-    case Method.DELETE -> !! / "schemas" / digest => for {
-        found <- SchemaRegistry.drop(Digest.fromHex(digest))
-        _     <- ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found")).when(found)
+    case Method.DELETE -> !! / "schemas" / alg / digest => for {
+        algorithm <- ZIO.fromOption(Algorithm.fromString(alg))
+          .orElseFail(HttpError.BadRequest(s"Invalid algorithm ${alg}"))
+        found     <- SchemaRegistry.drop(Digest.fromHex(algorithm, digest))
+        _         <- ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found")).when(found)
       } yield Response.ok
 
-    case Method.GET -> !! / "schemas" / digest => for {
-        schema    <- SchemaRegistry.get(Digest.fromHex(digest))
+    case Method.GET -> !! / "schemas" / alg / digest => for {
+        algorithm <- ZIO.fromOption(Algorithm.fromString(alg))
+          .orElseFail(HttpError.BadRequest(s"Invalid algorithm ${alg}"))
+        schema    <- SchemaRegistry.get(Digest.fromHex(algorithm, digest))
         blueprint <- schema match {
           case Some(blueprint) => ZIO.succeed(blueprint)
           case None            => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
@@ -57,13 +60,18 @@ object Main extends ZIOAppDefault {
     } yield query
 
   private def userGraphQL =
-    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / "user" / id =>
-      val digest = Digest.fromHex(id)
+    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / alg / id =>
+      pprint.pprintln(alg)
       for {
+        alg         <- Algorithm.fromString(alg) match {
+          case Some(value) => ZIO.succeed(value)
+          case None        => ZIO.fail(HttpError.BadRequest("Invalid algorithm"))
+        }
+        digest = Digest.fromHex(alg, id)
         schema      <- SchemaRegistry.get(digest)
         result      <- schema match {
           case Some(value) => value.toGraphQL
-          case None        => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
+          case None        => ZIO.fail(HttpError.NotFound(s"Schema ${id} not found"))
         }
         query       <- decodeQuery(req.body)
         interpreter <- result.interpreter
@@ -80,13 +88,13 @@ object Main extends ZIOAppDefault {
   }
 
   val graphQL = Http.collectRoute[Request] {
-    case Method.GET -> !! / "graphql"               => Http.fromResource("graphiql.html")
-    case Method.POST -> !! / "graphql"              => adminGraphQL
-    case Method.POST -> !! / "graphql" / "user" / _ => userGraphQL
+    case Method.GET -> !! / "graphql"          => Http.fromResource("graphiql.html")
+    case Method.POST -> !! / "graphql"         => adminGraphQL
+    case Method.POST -> !! / "graphql" / _ / _ => userGraphQL
   }
 
   def sanitized[R](http: HttpApp[R, Throwable]): App[R] =
-    http.mapError {
+    http.tapErrorZIO(err => ZIO.succeed(pprint.pprintln(err))).mapError {
       case error: HttpError => Response.fromHttpError(error)
       case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
     }
@@ -100,7 +108,7 @@ object Main extends ZIOAppDefault {
     EvaluationRuntime.live,
     HttpClient.live,
     Client.default,
-    BinaryDigest.algorithm("SHA-256"),
+    BinaryDigest.sha256,
     Server.live
   )
 
