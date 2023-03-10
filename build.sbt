@@ -6,9 +6,8 @@ val caliban       = "2.0.2"
 val zio           = "2.0.6"
 val zioHttp       = "0.0.4"
 
-ThisBuild / scalaVersion       := scala2Version
-ThisBuild / crossScalaVersions := Seq(scala2Version, scala3Version)
-
+ThisBuild / scalaVersion                                   := scala2Version
+ThisBuild / crossScalaVersions                             := Seq(scala2Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions     := {

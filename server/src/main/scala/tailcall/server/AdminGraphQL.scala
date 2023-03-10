@@ -30,19 +30,6 @@ object AdminGraphQL {
     digests: ZIO[R, E, List[Digest]]
   )
 
-  private val root: RootResolver[Query[BinaryDigest with SchemaRegistry, Throwable], Unit, Unit] = RootResolver(Query(
-    digest =>
-      SchemaRegistry.get(digest).map {
-        case Some(blueprint) => Option(BlueprintSpec(digest, blueprint))
-        case None            => None
-      },
-    for {
-      blueprints <- SchemaRegistry.list(0, Int.MaxValue)
-      schemas <- ZIO.foreach(blueprints)(blueprint => BinaryDigest.digest(blueprint).map(BlueprintSpec(_, blueprint)))
-    } yield schemas,
-    SchemaRegistry.digests(0, Int.MaxValue)
-  ))
-
   implicit val lambdaSchema: Schema[Any, DynamicValue ~> DynamicValue] = new Schema[Any, DynamicValue ~> DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
       __Type(kind = __TypeKind.SCALAR, name = Some("ExecutableFunction"))
@@ -56,5 +43,16 @@ object AdminGraphQL {
     override def resolve(value: DynamicValue): Step[Any] = Step.PureStep(DynamicValueUtil.toValue(value))
   }
 
-  val graphQL: GraphQL[AdminGraphQLEnv] = GraphQL.graphQL(root)
+  val graphQL = GraphQL.graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(
+    digest =>
+      SchemaRegistry.get(digest).map {
+        case Some(blueprint) => Option(BlueprintSpec(digest, blueprint))
+        case None            => None
+      },
+    for {
+      blueprints <- SchemaRegistry.list(0, Int.MaxValue)
+      schemas <- ZIO.foreach(blueprints)(blueprint => BinaryDigest.digest(blueprint).map(BlueprintSpec(_, blueprint)))
+    } yield schemas,
+    SchemaRegistry.digests(0, Int.MaxValue)
+  )))
 }
