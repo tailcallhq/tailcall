@@ -1,8 +1,8 @@
 package tailcall.runtime
 
-import caliban.Value
+import caliban.{ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
-import zio.schema.{DynamicValue, StandardType}
+import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 import zio.test._
 
 import java.math.{BigDecimal, BigInteger}
@@ -33,6 +33,12 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   val binaryHelloWorld     = helloWorld.getBytes()
   val halfLifeActinium225  = Duration.ofDays(10)
   val myBirthDayOfWeek     = DayOfWeek.WEDNESDAY;
+
+  final case class Foobar(foo: List[Int], bar: DynamicValue)
+
+  object Foobar {
+    implicit val schema: Schema[Foobar] = DeriveSchema.gen[Foobar]
+  }
 
   override def spec =
     suite("DynamicValueUtilSpec")(
@@ -81,6 +87,12 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(toValue(binaryHelloWorld, StandardType.BinaryType) == Value.StringValue("SGVsbG8gV29ybGQh")) &&
         assertTrue(toValue(halfLifeActinium225, StandardType.DurationType) == Value.StringValue("PT240H")) &&
         assertTrue(toValue(myBirthDayOfWeek, StandardType.DayOfWeekType) == Value.StringValue("WEDNESDAY"))
+      },
+      test("toResponseValue") {
+        assertTrue(
+          toResponseValue(DynamicValue(Foobar(List(meaningOfLife), DynamicValue(())))) == ResponseValue
+            .ObjectValue(List(("foo", ResponseValue.ListValue(List(Value.IntValue(42)))), ("bar", Value.NullValue)))
+        )
       }
     )
 }
