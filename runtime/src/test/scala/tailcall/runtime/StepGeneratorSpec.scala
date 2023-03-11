@@ -1,5 +1,6 @@
 package tailcall.runtime
 
+import caliban.InputValue
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.Field
@@ -170,7 +171,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
             )
           )
         )
-        val program = execute(orc)("mutation {createFoo(input: {a: 1}){a}}")
+        val program = execute(orc, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       }
     ).provide(
@@ -183,15 +184,24 @@ object StepGeneratorSpec extends ZIOSpecDefault {
     )
   }
 
-  def execute(orc: Orc)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
-    orc.toBlueprint.flatMap(execute(_)(query))
+  def execute(orc: Orc, variables: Map[String, InputValue] = Map.empty)(
+    query: String
+  ): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(execute(_, variables)(query))
 
-  def execute(doc: Blueprint)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
+  def execute(doc: Blueprint, variables: Map[String, InputValue])(
+    query: String
+  ): ZIO[GraphQLGenerator, Throwable, String] =
     for {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter
-      result <- interpreter.execute(query, skipValidation = true) // TODO: enable validation after __type is available
-      _      <- result.errors.headOption match {
+      result      <-
+        interpreter
+          .execute(
+            query,
+            skipValidation = true,
+            variables = variables
+          ) // TODO: enable validation after __type is available
+      _           <- result.errors.headOption match {
         case Some(error) => ZIO.fail(error)
         case None        => ZIO.unit
       }
