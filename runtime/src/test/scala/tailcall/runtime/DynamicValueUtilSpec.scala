@@ -105,6 +105,10 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "baz" -> InputValue.ListValue(List()))
           )
         )
+      },
+      test("toTyped") {
+        assertTrue(toTyped[String](DynamicValue(helloWorld)) == Some("Hello World!")) &&
+        assertTrue(toTyped[String](DynamicValue(meaningOfLife)) == None)
       }
     )
 }
