@@ -75,12 +75,9 @@ object DynamicValueUtil {
     input match {
       case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
-      case DynamicValue.Dictionary(chunks)             => chunks.map { case (k, v) =>
+      case DynamicValue.Dictionary(chunks)             => InputValue.ObjectValue(chunks.map { case (k, v) =>
           as[String](k).getOrElse(throw new Error("could not transform")) -> toInputValue(v)
-        }.toList match {
-          case Nil  => ???
-          case list => InputValue.ObjectValue(ListMap(list: _*))
-        }
+        }.toMap)
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.NoneValue                      => ???
       case DynamicValue.DynamicAst(_)                  => ???
