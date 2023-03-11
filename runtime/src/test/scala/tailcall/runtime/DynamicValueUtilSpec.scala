@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import caliban.{ResponseValue, Value}
+import caliban.{InputValue, ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
 import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 import zio.test._
@@ -35,9 +35,14 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   val myBirthDayOfWeek     = DayOfWeek.WEDNESDAY;
 
   final case class Foobar(foo: List[Int], bar: DynamicValue)
+  final case class Foobaz(foo: List[Int], baz: List[String])
 
   object Foobar {
     implicit val schema: Schema[Foobar] = DeriveSchema.gen[Foobar]
+  }
+
+  object Foobaz {
+    implicit val schema: Schema[Foobaz] = DeriveSchema.gen[Foobaz]
   }
 
   override def spec =
@@ -92,6 +97,13 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(
           toResponseValue(DynamicValue(Foobar(List(meaningOfLife), DynamicValue(())))) == ResponseValue
             .ObjectValue(List(("foo", ResponseValue.ListValue(List(Value.IntValue(42)))), ("bar", Value.NullValue)))
+        )
+      },
+      test("toInputValue") {
+        assertTrue(
+          toInputValue(DynamicValue(Foobaz(List(meaningOfLife), List()))) == InputValue.ObjectValue(
+            Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "baz" -> InputValue.ListValue(List()))
+          )
         )
       }
     )
