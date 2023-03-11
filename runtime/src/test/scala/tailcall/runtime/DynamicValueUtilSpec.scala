@@ -41,7 +41,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(asString(DynamicValue(meaningOfLife)) == Some("42")) &&
         assertTrue(asString(DynamicValue(List(meaningOfLife))) == None)
       },
-      test("toValue given standardType") {
+      test("toValue") {
         assertTrue(toValue(helloWorld, StandardType.StringType) == Value.StringValue("Hello World!")) &&
         assertTrue(toValue(Int.MaxValue, StandardType.IntType) == Value.IntValue(2147483647)) &&
         assertTrue(toValue(myBirthDay, StandardType.MonthDayType) == Value.StringValue("--09-02")) &&

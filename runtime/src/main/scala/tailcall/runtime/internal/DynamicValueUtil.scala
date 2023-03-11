@@ -49,9 +49,9 @@ object DynamicValueUtil {
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
 
-  def toValue(input: DynamicValue): ResponseValue = {
+  def toResponseValue(input: DynamicValue): ResponseValue = {
     input match {
-      case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toValue).toList)
+      case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toResponseValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
       case DynamicValue.Dictionary(chunks)             => ResponseValue.ObjectValue(chunks.map { case (k, v) =>
           toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toValue(v)
@@ -60,14 +60,15 @@ object DynamicValueUtil {
       case DynamicValue.NoneValue                      => Value.NullValue
       case DynamicValue.DynamicAst(_)                  => ???
       case DynamicValue.SetValue(_)                    => ???
-      case DynamicValue.Record(_, fields) => ResponseValue.ObjectValue(fields.map { case (k, v) => k -> toValue(v) }
-          .toList)
-      case DynamicValue.Enumeration(_, _) => ???
-      case DynamicValue.RightValue(_)     => ???
-      case DynamicValue.SomeValue(input)  => toValue(input)
-      case DynamicValue.Tuple(_, _)       => ???
-      case DynamicValue.LeftValue(_)      => ???
-      case DynamicValue.Error(_)          => ???
+      case DynamicValue.Record(_, fields)              => ResponseValue.ObjectValue(fields.map { case (k, v) =>
+          k -> toResponseValue(v)
+        }.toList)
+      case DynamicValue.Enumeration(_, _)              => ???
+      case DynamicValue.RightValue(_)                  => ???
+      case DynamicValue.SomeValue(input)               => toResponseValue(input)
+      case DynamicValue.Tuple(_, _)                    => ???
+      case DynamicValue.LeftValue(_)                   => ???
+      case DynamicValue.Error(_)                       => ???
     }
   }
 

@@ -76,7 +76,7 @@ object StepGenerator {
       tpe match {
         case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
             case Some(value) => value(ctx)
-            case None        => Step.PureStep(DynamicValueUtil.toValue(ctx.value))
+            case None        => Step.PureStep(DynamicValueUtil.toResponseValue(ctx.value))
           }
         case ast.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
