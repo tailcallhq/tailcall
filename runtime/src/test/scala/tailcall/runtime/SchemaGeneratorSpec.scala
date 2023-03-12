@@ -13,7 +13,7 @@ import zio.test._
 
 object SchemaGeneratorSpec extends ZIOSpecDefault {
   override def spec =
-    suite("DocumentTypeGenerator")(
+    suite("SchemaGenerator")(
       test("document type generation") {
         val orc = Orc("Query" -> FieldSet("test" -> Field.output.to("String").resolveWith("test")))
 
