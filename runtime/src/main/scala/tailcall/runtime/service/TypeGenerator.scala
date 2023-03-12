@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import caliban.introspection.adt.{__Schema, __Type}
+import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
@@ -10,21 +10,18 @@ import tailcall.runtime.internal.DynamicValueUtil
 import zio.{ZIO, ZLayer}
 
 trait TypeGenerator {
-  def __type(doc: Blueprint): Option[__Type] = __Schema(doc).map(_.queryType)
-  def __Schema(doc: Blueprint): Option[__Schema]
+  def __schema(doc: Blueprint): Option[__Schema]
 }
 
 object TypeGenerator {
-  def __type(document: Blueprint): ZIO[TypeGenerator, Nothing, Option[__Type]] =
-    ZIO.serviceWith[TypeGenerator](_.__type(document))
+
+  def __schema(document: Blueprint): ZIO[TypeGenerator, Nothing, Option[__Schema]] =
+    ZIO.serviceWith[TypeGenerator](_.__schema(document))
 
   def live: ZLayer[Any, Nothing, TypeGenerator] = ZLayer.succeed(new Live())
 
   final class Live extends TypeGenerator {
-    // TODO: fix this implementation
-    override def __type(doc: Blueprint): Option[__Type] = __Schema(doc).map(_.queryType)
-
-    override def __Schema(doc: Blueprint): Option[__Schema] = parseRemoteSchema(toCalibanDocument(doc))
+    override def __schema(doc: Blueprint): Option[__Schema] = parseRemoteSchema(toCalibanDocument(doc))
 
     private def toCalibanDocument(document: Blueprint): CalibanDocument = {
       CalibanDocument(

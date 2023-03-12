@@ -19,12 +19,12 @@ object GraphQLGenerator {
           val stepResult = sGen.resolve(input)
 
           val queryOperation = for {
-            __type  <- tGen.__type(input)
+            __type  <- tGen.__schema(input).map(_.queryType)
             resolve <- stepResult.query
           } yield Operation(__type, resolve)
 
           val mutationOperation = for {
-            __type  <- tGen.__Schema(input).flatMap(_.mutationType)
+            __type  <- tGen.__schema(input).flatMap(_.mutationType)
             resolve <- stepResult.mutation
           } yield Operation(__type, resolve)
           RootSchemaBuilder(query = queryOperation, mutationOperation, None)
