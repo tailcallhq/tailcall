@@ -33,10 +33,6 @@ final case class Orc(
 object Orc {
   val empty: Orc = Orc(Option("Query"), Option("Mutation"), None, Nil)
 
-  def input(spec: (String, List[(String, Field[Input])])*): Orc = Orc.empty.withInput(spec: _*)
-
-  def output(spec: (String, List[(String, Field[Output])])*): Orc = Orc.empty.withOutput(spec: _*)
-
   def apply(spec: (String, FieldSet)*): Orc =
     Orc.empty.copy(types = spec.toList.map { case (name, fields) => Obj(name, fields) })
 
