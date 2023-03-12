@@ -3,7 +3,7 @@ package tailcall.runtime
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.{Extension, JsonPlaceholderConfig}
-import tailcall.runtime.service.{EvaluationRuntime, GraphQLGenerator, StepGenerator, TypeGenerator}
+import tailcall.runtime.service.{EvaluationRuntime, GraphQLGenerator, SchemaGenerator, StepGenerator}
 import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
@@ -142,7 +142,7 @@ object ConfigSpec extends ZIOSpecDefault {
       )
     ).provide(
       GraphQLGenerator.live,
-      TypeGenerator.live,
+      SchemaGenerator.live,
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,

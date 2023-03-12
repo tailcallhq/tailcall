@@ -102,7 +102,7 @@ object Main extends ZIOAppDefault {
     ServerConfig.live.map(_.update(_.port(8080))),
     SchemaRegistry.persistent(this.getClass.getResource("/").getPath),
     GraphQLGenerator.live,
-    TypeGenerator.live,
+    SchemaGenerator.live,
     StepGenerator.live,
     EvaluationRuntime.live,
     HttpClient.live,

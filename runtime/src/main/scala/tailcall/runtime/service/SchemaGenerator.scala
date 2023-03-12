@@ -9,18 +9,18 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.DynamicValueUtil
 import zio.{ZIO, ZLayer}
 
-trait TypeGenerator {
+trait SchemaGenerator {
   def __schema(doc: Blueprint): Option[__Schema]
 }
 
-object TypeGenerator {
+object SchemaGenerator {
 
-  def __schema(document: Blueprint): ZIO[TypeGenerator, Nothing, Option[__Schema]] =
-    ZIO.serviceWith[TypeGenerator](_.__schema(document))
+  def __schema(document: Blueprint): ZIO[SchemaGenerator, Nothing, Option[__Schema]] =
+    ZIO.serviceWith[SchemaGenerator](_.__schema(document))
 
-  def live: ZLayer[Any, Nothing, TypeGenerator] = ZLayer.succeed(new Live())
+  def live: ZLayer[Any, Nothing, SchemaGenerator] = ZLayer.succeed(new Live())
 
-  final class Live extends TypeGenerator {
+  final class Live extends SchemaGenerator {
     override def __schema(doc: Blueprint): Option[__Schema] = parseRemoteSchema(toCalibanDocument(doc))
 
     private def toCalibanDocument(document: Blueprint): CalibanDocument = {

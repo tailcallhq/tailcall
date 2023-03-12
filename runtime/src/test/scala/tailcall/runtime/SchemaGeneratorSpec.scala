@@ -11,7 +11,7 @@ import zio.http.Client
 import zio.test.Assertion._
 import zio.test._
 
-object TypeGeneratorSpec extends ZIOSpecDefault {
+object SchemaGeneratorSpec extends ZIOSpecDefault {
   override def spec =
     suite("DocumentTypeGenerator")(
       test("document type generation") {
@@ -229,7 +229,7 @@ object TypeGeneratorSpec extends ZIOSpecDefault {
       )
     ).provide(
       GraphQLGenerator.live,
-      TypeGenerator.live,
+      SchemaGenerator.live,
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,
