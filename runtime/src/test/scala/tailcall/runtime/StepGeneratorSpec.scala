@@ -168,6 +168,10 @@ object StepGeneratorSpec extends ZIOSpecDefault {
             Blueprint.InputObjectTypeDefinition(
               name = "FooInput",
               fields = List(Blueprint.InputValueDefinition(name = "a", Blueprint.NamedType("Int", false), None))
+            ),
+            Blueprint.ObjectTypeDefinition(
+              name = "Foo",
+              fields = List(Blueprint.FieldDefinition(name = "a", Nil, Blueprint.NamedType("Int", false)))
             )
           )
         )
@@ -194,13 +198,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
     for {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter
-      result      <-
-        interpreter
-          .execute(
-            query,
-            skipValidation = true,
-            variables = variables
-          ) // TODO: enable validation after __type is available
+      result      <- interpreter.execute(query, variables = variables)
       _           <- result.errors.headOption match {
         case Some(error) => ZIO.fail(error)
         case None        => ZIO.unit
