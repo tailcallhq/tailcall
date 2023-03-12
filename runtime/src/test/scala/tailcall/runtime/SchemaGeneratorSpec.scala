@@ -153,11 +153,12 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
         test("mutation with primitive input") {
           // mutation createFoo(input: String){foo: Foo}
           // type Foo {a: Int, b: Int, c: Int}
-          val orc    = Orc(
+          val orc = Orc(
             "Query"    -> List("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1))),
             "Foo"      -> List("a" -> Field.output.to("Int")),
             "Mutation" -> List("createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("String")))
           )
+
           val schema = render(orc)
           assertZIO(schema)(equalTo("""|schema {
                                        |  query: Query
@@ -177,34 +178,20 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
                                        |}""".stripMargin))
         },
         test("mutation with input type") {
-          // mutation createFoo(input: FooInput){foo: String}
+          // schema {mutation: Mutation}
+          // type Mutation { createFoo(input: FooInput) Foo }
+          // type Foo { foo: String }
           // input FooInput {a: Int, b: Int, c: Int}
-          val orc    = Blueprint(
-            Blueprint.SchemaDefinition(query = Option("Query"), mutation = Option("Mutation"), subscription = None),
-            List(
-              Blueprint.ObjectTypeDefinition(
-                name = "Query",
-                fields = List(Blueprint.FieldDefinition(name = "foo", Nil, Blueprint.NamedType("Foo", false)))
-              ),
-              Blueprint.ObjectTypeDefinition(
-                name = "Mutation",
-                fields = List(Blueprint.FieldDefinition(
-                  name = "createFoo",
-                  List(Blueprint.InputValueDefinition(name = "input", Blueprint.NamedType("FooInput", false), None)),
-                  Blueprint.NamedType("Foo", false)
-                ))
-              ),
-              Blueprint.ObjectTypeDefinition(
-                name = "Foo",
-                fields = List(Blueprint.FieldDefinition(name = "a", Nil, Blueprint.NamedType("Int", false)))
-              ),
-              Blueprint.InputObjectTypeDefinition(
-                name = "FooInput",
-                fields = List(Blueprint.InputValueDefinition(name = "a", Blueprint.NamedType("Int", false), None))
-              )
-            )
-          )
-          val schema = orc.toGraphQL.map(_.render)
+
+          val orc = Orc(
+            "Query"    -> Nil,
+            "Mutation" -> List(
+              "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("FooInput"))
+            ),
+            "Foo"      -> List("a" -> Field.output.to("Int"))
+          ).withInput("FooInput" -> List("a" -> Field.input.to("Int")))
+
+          val schema = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
           assertZIO(schema)(equalTo("""|schema {
                                        |  query: Query
                                        |  mutation: Mutation
@@ -222,9 +209,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
                                        |  createFoo(input: FooInput): Foo
                                        |}
                                        |
-                                       |type Query {
-                                       |  foo: Foo
-                                       |}""".stripMargin))
+                                       |type Query""".stripMargin))
         }
       )
     ).provide(
