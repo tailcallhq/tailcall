@@ -40,10 +40,6 @@ object Orc {
   def apply(spec: (String, FieldSet)*): Orc =
     Orc.empty.copy(types = spec.toList.map { case (name, fields) => Obj(name, fields) })
 
-  sealed trait Dir[A]
-  case object In  extends Dir[Input]
-  case object Out extends Dir[Output]
-
   final case class LabelledField[A](name: String, field: Field[A])
   final case class Obj(name: String, fields: FieldSet = FieldSet.Empty) {
     def withFields(fields: LabelledField[Output]*): Obj = copy(fields = FieldSet.OutputSet(fields.toList))
