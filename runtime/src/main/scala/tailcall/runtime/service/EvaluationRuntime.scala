@@ -110,6 +110,12 @@ object EvaluationRuntime {
                 k <- evaluate(key, ctx)
                 m <- evaluateAs[Map[Any, Any]](map, ctx)
               } yield m.get(k)
+
+            case Dict.Put(key, value, map) => for {
+                k <- evaluate(key, ctx)
+                v <- evaluate(value, ctx)
+                m <- evaluateAs[Map[Any, Any]](map, ctx)
+              } yield m.updated(k, v)
           }
         case Opt(operation)     => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)

@@ -82,7 +82,8 @@ object Expression {
   final case class Dict(operation: Dict.Operation) extends Expression
   object Dict {
     sealed trait Operation
-    final case class Get(key: Expression, map: Expression) extends Operation
+    final case class Get(key: Expression, map: Expression)                    extends Operation
+    final case class Put(key: Expression, value: Expression, map: Expression) extends Operation
   }
 
   final case class Opt(operation: Opt.Operation) extends Expression

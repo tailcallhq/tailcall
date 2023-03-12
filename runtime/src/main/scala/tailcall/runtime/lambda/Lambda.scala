@@ -123,6 +123,9 @@ object Lambda {
   object dict {
     def get[A, K, V](key: A ~> K, map: A ~> Map[K, V]): A ~> Option[V] =
       Lambda.unsafe.attempt(ctx => Dict(Dict.Get(key.compile(ctx), map.compile(ctx))))
+
+    def put[A, K, V](key: A ~> K, value: A ~> V, map: A ~> Map[K, V]): A ~> Map[K, V] =
+      Lambda.unsafe.attempt(ctx => Dict(Dict.Put(key.compile(ctx), value.compile(ctx), map.compile(ctx))))
   }
 
   object option {
