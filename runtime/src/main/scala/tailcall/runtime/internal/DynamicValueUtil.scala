@@ -96,15 +96,13 @@ object DynamicValueUtil {
   def toTyped[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
   // TODO: add unit tests
-  def getPath(d: DynamicValue, path: List[String], withIndex: Boolean = false): Option[DynamicValue] =
+  def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
       case head :: tail => d match {
           case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
           case DynamicValue.SomeValue(a)  => getPath(a, path)
-          case DynamicValue.Sequence(a)   =>
-            if (withIndex) head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail))
-            else Option(DynamicValue(a.flatMap(getPath(_, tail))))
+          case DynamicValue.Sequence(a)   => head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail))
           case DynamicValue.Dictionary(b) =>
             val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
             b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
