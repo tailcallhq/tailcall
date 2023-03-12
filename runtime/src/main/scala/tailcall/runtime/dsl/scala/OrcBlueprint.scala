@@ -43,9 +43,10 @@ object OrcBlueprint {
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
     for {
-      objectDefinitions <- ZIO.foreach(o.types.collect {
+      objectDefinitions <- ZIO.foreach(o.types.map {
         case Orc.Obj(name, FieldSet.InputSet(fields))  => toInputObjectTypeDefinition(name, fields)
         case Orc.Obj(name, FieldSet.OutputSet(fields)) => toObjectTypeDefinition(name, fields)
+        case Orc.Obj(name, FieldSet.Empty)             => toObjectTypeDefinition(name, Nil)
       })(identity)
     } yield Blueprint(schemaDefinition, objectDefinitions)
   }
