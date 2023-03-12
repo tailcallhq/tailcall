@@ -95,7 +95,6 @@ object DynamicValueUtil {
 
   def toTyped[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
-  // TODO: add unit tests
   def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
