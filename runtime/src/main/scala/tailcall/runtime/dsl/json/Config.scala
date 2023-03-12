@@ -7,16 +7,37 @@ import zio.json._
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = ConfigBlueprint.make(self).toBlueprint
+  def toBlueprint: Blueprint            = ConfigBlueprint.make(self).toBlueprint
+  def mergeRight(other: Config): Config = {
+    Config(
+      version = other.version,
+      server = self.server.mergeRight(other.server),
+      graphQL = self.graphQL.mergeRight(other.graphQL)
+    )
+  }
 }
 
 object Config {
-  final case class Server(host: String, port: Option[Int] = None)
+  final case class Server(host: String, port: Option[Int] = None) {
+    self =>
+    def mergeRight(other: Server): Server = Server(host = other.host, port = other.port.orElse(self.port))
+  }
+
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
   final case class GraphQL(
     schema: SchemaDefinition = SchemaDefinition(),
     types: Map[String, Map[String, Field]] = Map.empty
-  )
+  ) {
+    self =>
+    def mergeRight(other: GraphQL): GraphQL =
+      GraphQL(
+        schema = SchemaDefinition(
+          query = other.schema.query.orElse(self.schema.query),
+          mutation = other.schema.mutation.orElse(self.schema.mutation)
+        ),
+        types = self.types ++ other.types
+      )
+  }
 
   // TODO: Field and Argument can be merged
   final case class Field(
