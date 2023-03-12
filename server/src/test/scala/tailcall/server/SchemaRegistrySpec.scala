@@ -1,5 +1,6 @@
 package tailcall.server
 import tailcall.runtime.dsl.scala.Orc
+import tailcall.runtime.dsl.scala.Orc.FieldSet
 import tailcall.server.service.{BinaryDigest, SchemaRegistry}
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
@@ -8,7 +9,7 @@ import zio.test._
 object SchemaRegistrySpec extends ZIOSpecDefault {
 
   val orc = Orc(
-    "Query" -> List(
+    "Query" -> FieldSet(
       "name" -> Orc.Field.output.to("String").resolveWith("John Doe"),
       "age"  -> Orc.Field.output.to("Int").resolveWith(100)
     )

@@ -2,7 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.Field
+import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
 import zio.schema.{DeriveSchema, Schema}
 
 object JsonPlaceholder {
@@ -78,11 +78,11 @@ object JsonPlaceholder {
   val orc = {
     // scalafmt: {maxColumn: 80}
     Orc(
-      "Query" -> List(
+      "Query" -> FieldSet(
         "users" -> Field.output.to("User").asList,
         "posts" -> Field.output.to("Post").asList
       ),
-      "User"  -> List(
+      "User"  -> FieldSet(
         "posts"    -> Field.output.to("Post").asList,
         "fullName" -> Field.output.to("String").asList,
         "comments" -> Field.output.to("Comment").asList,

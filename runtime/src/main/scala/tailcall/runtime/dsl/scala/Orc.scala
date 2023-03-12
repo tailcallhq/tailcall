@@ -37,7 +37,8 @@ object Orc {
 
   def output(spec: (String, List[(String, Field[Output])])*): Orc = Orc.empty.withOutput(spec: _*)
 
-  def apply(spec: (String, List[(String, Field[Output])])*): Orc = Orc.empty.withOutput(spec: _*)
+  def apply(spec: (String, FieldSet)*): Orc =
+    Orc.empty.copy(types = spec.toList.map { case (name, fields) => Obj(name, fields) })
 
   sealed trait Dir[A]
   case object In  extends Dir[Input]
@@ -52,6 +53,7 @@ object Orc {
 
   final case class Input(defaultValue: Option[DynamicValue])
   final case class Output(arguments: List[LabelledField[Input]] = Nil, resolve: Resolver)
+
   final case class Field[A](ofType: Option[Type], definition: A) {
     self =>
     def to(name: String): Field[A] = copy(ofType = Option(Type.NamedType(name)))
@@ -73,11 +75,34 @@ object Orc {
       copy(definition = definition.copy(arguments = fields.toList.map(f => LabelledField(f._1, f._2))))
   }
 
+  object Field {
+    def input: Field[Input]   = Field(None, Input(None))
+    def output: Field[Output] = Field(None, Output(Nil, Resolver.empty))
+  }
+
   sealed trait FieldSet
   object FieldSet {
     final case class InputSet(fields: List[LabelledField[Input]])   extends FieldSet
     final case class OutputSet(fields: List[LabelledField[Output]]) extends FieldSet
     case object Empty                                               extends FieldSet
+
+    def apply[A](fields: (String, Field[A])*)(implicit ev: IsField[A]): FieldSet = ev(fields.toList)
+  }
+
+  sealed trait IsField[A] {
+    def apply(fields: List[(String, Field[A])]): FieldSet
+  }
+
+  object IsField {
+    implicit case object IsInput extends IsField[Input] {
+      override def apply(fields: List[(String, Field[Input])]): FieldSet =
+        FieldSet.InputSet(fields.map(f => LabelledField(f._1, f._2)))
+    }
+
+    implicit case object IsOutput extends IsField[Output] {
+      override def apply(fields: List[(String, Field[Output])]): FieldSet =
+        FieldSet.OutputSet(fields.map(f => LabelledField(f._1, f._2)))
+    }
   }
 
   sealed trait Resolver
@@ -86,11 +111,6 @@ object Orc {
     def empty: Resolver                                                         = Empty
     final case class FromFunction(f: Remote[DynamicValue] => Remote[DynamicValue]) extends Resolver
     case object Empty                                                              extends Resolver
-  }
-
-  object Field {
-    def input: Field[Input]   = Field(None, Input(None))
-    def output: Field[Output] = Field(None, Output(Nil, Resolver.empty))
   }
 
   sealed trait Type

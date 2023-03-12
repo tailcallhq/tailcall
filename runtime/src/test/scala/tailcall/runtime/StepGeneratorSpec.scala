@@ -3,7 +3,7 @@ package tailcall.runtime
 import caliban.InputValue
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.Field
+import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.remote._
 import tailcall.runtime.service._
@@ -17,13 +17,13 @@ object StepGeneratorSpec extends ZIOSpecDefault {
   def spec = {
     suite("StepGenerator")(
       test("static value") {
-        val orc     = Orc("Query" -> List("id" -> Field.output.to("String").resolveWith(100)))
+        val orc     = Orc("Query" -> FieldSet("id" -> Field.output.to("String").resolveWith(100)))
         val program = execute(orc)("query {id}")
         assertZIO(program)(equalTo("""{"id":100}"""))
       },
       test("with args") {
         val orc     = Orc(
-          "Query" -> List(
+          "Query" -> FieldSet(
             "sum" -> Field.output.to("Int").withArgument("a" -> Field.input.to("Int"), "b" -> Field.input.to("Int"))
               .resolveWithFunction { ctx =>
                 {
@@ -44,9 +44,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
 
         val orc = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo")),
-          "Foo"   -> List("bar" -> Field.output.to("Bar")),
-          "Bar"   -> List("value" -> Field.output.to("Int").resolveWith(100))
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar")),
+          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWith(100))
         )
 
         val program = execute(orc)("query {foo { bar { value }}}")
@@ -58,9 +58,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
 
         val orc = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo")),
-          "Foo"   -> List("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> List("value" -> Field.output.to("Int").resolveWith(100))
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWith(100))
         )
 
         val program = execute(orc)("query {foo { bar { value }}}")
@@ -71,9 +71,9 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Foo {bar: [Bar]}
         // type Bar {value: Int}
         val orc = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo")),
-          "Foo"   -> List("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> List("value" -> Field.output.to("Int").resolveWithFunction {
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWithFunction {
             _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           })
         )
@@ -87,12 +87,12 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar {baz: [Baz]}
         // type Baz{value: Int}
         val orc = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo")),
-          "Foo"   -> List("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> List("baz" -> Field.output.to("Baz").asList.resolveWithFunction {
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> FieldSet("baz" -> Field.output.to("Baz").asList.resolveWithFunction {
             _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           }),
-          "Baz"   -> List("value" -> Field.output.to("Int").resolveWithFunction {
+          "Baz"   -> FieldSet("value" -> Field.output.to("Int").resolveWithFunction {
             _.toTypedPath[Option[Int]]("value").flatten.map(_ + Remote(1)).toDynamic
           })
         )
@@ -108,10 +108,10 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Bar{baz: Baz}
         // type Baz{value: Int}
         val orc     = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo")),
-          "Foo"   -> List("bar" -> Field.output.to("Bar").resolveWith(100)),
-          "Bar"   -> List("baz" -> Field.output.to("Baz").resolveWith(200)),
-          "Baz"   -> List("value" -> Field.output.to("Int").resolveWithFunction {
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").resolveWith(100)),
+          "Bar"   -> FieldSet("baz" -> Field.output.to("Baz").resolveWith(200)),
+          "Baz"   -> FieldSet("value" -> Field.output.to("Int").resolveWithFunction {
             _.path("parent", "value").map(_.toTyped[Int]).flatten.toDynamic
           })
         )
@@ -123,8 +123,8 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Query {foo: Foo}
         // type Foo {a: Int, b: Int, c: Int}
         val orc     = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
-          "Foo"   -> List(
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
+          "Foo"   -> FieldSet(
             "a" -> Field.output.to("Int"),
             "b" -> Field.output.to("Int"),
             "c" -> Field.output.to("Int").resolveWith(3)
@@ -138,8 +138,8 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Query {foo: Foo}
         // type Foo {a: Int, b: Int, c: Int}
         val orc     = Orc(
-          "Query" -> List("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1))),
-          "Foo"   -> List("a" -> Field.output.to("Int"))
+          "Query" -> FieldSet("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1))),
+          "Foo"   -> FieldSet("a" -> Field.output.to("Int"))
         )
         val program = execute(orc)("query {foo { a }}")
         assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
@@ -150,16 +150,20 @@ object StepGeneratorSpec extends ZIOSpecDefault {
         // type Foo {a : Int}
         // input FooInput {a: Int, b: Int, c: Int}
 
-        val orc     = Orc(
-          "Query"    -> List("foo" -> Field.output.to("Foo")),
-          "Mutation" -> List(
+        val orc = Orc(
+          "Query"    -> FieldSet("foo" -> Field.output.to("Foo")),
+          "Mutation" -> FieldSet(
             "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("FooInput"))
               .resolveWith(Map("a" -> 1))
           ),
-          "Foo"      -> List("a" -> Field.output.to("Int"))
-        ).withInput(
-          "FooInput" -> List("a" -> Field.input.to("Int"), "b" -> Field.input.to("Int"), "c" -> Field.input.to("Int"))
+          "Foo"      -> FieldSet("a" -> Field.output.to("Int")),
+          "FooInput" -> FieldSet(
+            "a" -> Field.input.to("Int"),
+            "b" -> Field.input.to("Int"),
+            "c" -> Field.input.to("Int")
+          )
         )
+
         val program = execute(orc, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       }
