@@ -9,17 +9,43 @@ import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
 
-import scala.collection.mutable
-
 trait StepGenerator {
   def resolve(document: Blueprint): StepResult[Any]
 }
 
 object StepGenerator {
+  def live: ZLayer[EvaluationRuntime, Nothing, StepGenerator] = {
+    ZLayer(ZIO.service[EvaluationRuntime].map(rtm =>
+      new StepGenerator {
+        override def resolve(document: Blueprint): StepResult[Any] = BlueprintGenerator(rtm, document).resolve
+      }
+    ))
+  }
+
+  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[Any]] = ZIO.serviceWith(_.resolve(document))
+
   final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
 
-  final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
-    private val stepRef: mutable.Map[String, Context => Step[Any]] = mutable.Map.empty
+  final case class BlueprintGenerator(rtm: EvaluationRuntime, document: Blueprint) {
+    val rootContext: Context = Context(DynamicValue(()))
+
+    val stepRef: Map[String, Context => Step[Any]] = document.definitions
+      .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }.toMap
+
+    def resolve: StepResult[Any] = {
+
+      val queryStep = for {
+        query <- document.schema.query
+        qStep <- stepRef.get(query)
+      } yield qStep(rootContext)
+
+      val mutationStep = for {
+        mutation <- document.schema.mutation
+        mStep    <- stepRef.get(mutation)
+      } yield mStep(rootContext)
+
+      StepResult(queryStep, mutationStep)
+    }
 
     def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[Any] = {
       Step.FunctionStep { args =>
@@ -39,6 +65,10 @@ object StepGenerator {
       }
     }
 
+    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[Any] = {
+      Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
+    }
+
     def fromType(tpe: ast.Blueprint.Type, ctx: Context): Step[Any] =
       tpe match {
         case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
@@ -51,34 +81,5 @@ object StepGenerator {
             case _                             => Step.ListStep(List(fromType(ofType, ctx)))
           }
       }
-
-    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[Any] = {
-      Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
-    }
-
-    override def resolve(document: Blueprint): StepResult[Any] = {
-      val rootContext = Context(DynamicValue(()))
-      document.definitions.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
-        stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
-      }
-
-      val queryStep = for {
-        query <- document.schema.query
-        qStep <- stepRef.get(query)
-      } yield qStep(rootContext)
-
-      val mutationStep = for {
-        mutation <- document.schema.mutation
-        mStep    <- stepRef.get(mutation)
-      } yield mStep(rootContext)
-
-      StepResult(queryStep, mutationStep)
-    }
   }
-
-  def live: ZLayer[EvaluationRuntime, Nothing, StepGenerator] = {
-    ZLayer(ZIO.service[EvaluationRuntime].map(rtm => Live(rtm)))
-  }
-
-  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[Any]] = ZIO.serviceWith(_.resolve(document))
 }
