@@ -109,6 +109,14 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       test("toTyped") {
         assertTrue(toTyped[String](DynamicValue(helloWorld)) == Some("Hello World!")) &&
         assertTrue(toTyped[String](DynamicValue(meaningOfLife)) == None)
+      },
+      test("getPath") {
+        val d = DynamicValue(Foobar(List(meaningOfLife), DynamicValue(Option(Map("baz" -> helloWorld)))))
+        assertTrue(getPath(d, List("foo", "0")) == Some(DynamicValue(42))) &&
+        assertTrue(getPath(d, List("bar", "baz")) == Some(DynamicValue("Hello World!"))) &&
+        assertTrue(getPath(d, List("foo", "1")) == None) &&
+        assertTrue(getPath(d, List("bar", "qux")) == None) &&
+        assertTrue(getPath(d, List("quux")) == None)
       }
     )
 }
