@@ -61,7 +61,6 @@ object Main extends ZIOAppDefault {
 
   private def userGraphQL =
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / alg / id =>
-      pprint.pprintln(alg)
       for {
         alg         <- Algorithm.fromString(alg) match {
           case Some(value) => ZIO.succeed(value)
