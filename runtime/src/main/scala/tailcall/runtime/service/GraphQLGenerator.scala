@@ -12,7 +12,7 @@ trait GraphQLGenerator {
 }
 
 object GraphQLGenerator {
-  final case class Live(tGen: TypeGenerator, sGen: StepGenerator) extends GraphQLGenerator {
+  final case class Live(tGen: SchemaGenerator, sGen: StepGenerator) extends GraphQLGenerator {
     override def toGraphQL(input: Blueprint): GraphQL[Any] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
@@ -34,7 +34,7 @@ object GraphQLGenerator {
       }
   }
 
-  def live: ZLayer[TypeGenerator with StepGenerator, Nothing, GraphQLGenerator] = ZLayer.fromFunction(Live.apply _)
+  def live: ZLayer[SchemaGenerator with StepGenerator, Nothing, GraphQLGenerator] = ZLayer.fromFunction(Live.apply _)
 
   def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] =
     ZIO.serviceWith(_.toGraphQL(document))
