@@ -4,6 +4,7 @@ import caliban.schema.Step
 import tailcall.runtime.ast
 import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.service.StepGenerator.StepResult
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
@@ -11,11 +12,12 @@ import zio.{ZIO, ZLayer}
 import scala.collection.mutable
 
 trait StepGenerator {
-  def resolve(document: Blueprint): Option[Step[Any]]
-  def resolveMutation(document: Blueprint): Option[Step[Any]]
+  def resolve(document: Blueprint): StepResult[Any]
 }
 
 object StepGenerator {
+  final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
+
   final case class Live(rtm: EvaluationRuntime) extends StepGenerator {
     private val stepRef: mutable.Map[String, Context => Step[Any]] = mutable.Map.empty
 
@@ -54,28 +56,23 @@ object StepGenerator {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
-    override def resolve(document: Blueprint): Option[Step[Any]] = {
+    override def resolve(document: Blueprint): StepResult[Any] = {
       val rootContext = Context(DynamicValue(()))
       document.definitions.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
         stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
       }
 
-      for {
+      val queryStep = for {
         query <- document.schema.query
-        step  <- stepRef.get(query)
-      } yield step(rootContext)
-    }
+        qStep <- stepRef.get(query)
+      } yield qStep(rootContext)
 
-    override def resolveMutation(document: Blueprint): Option[Step[Any]] = {
-      val rootContext = Context(DynamicValue(()))
-      document.definitions.collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) =>
-        stepRef.put(obj.name, ctx => fromObjectDef(obj, ctx))
-      }
+      val mutationStep = for {
+        mutation <- document.schema.mutation
+        mStep    <- stepRef.get(mutation)
+      } yield mStep(rootContext)
 
-      for {
-        query <- document.schema.mutation
-        step  <- stepRef.get(query)
-      } yield step(rootContext)
+      StepResult(queryStep, mutationStep)
     }
   }
 
@@ -83,9 +80,5 @@ object StepGenerator {
     ZLayer(ZIO.service[EvaluationRuntime].map(rtm => Live(rtm)))
   }
 
-  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, Option[Step[Any]]] =
-    ZIO.serviceWith(_.resolve(document))
-
-  def resolveMutation(document: Blueprint): ZIO[StepGenerator, Nothing, Option[Step[Any]]] =
-    ZIO.serviceWith(_.resolveMutation(document))
+  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[Any]] = ZIO.serviceWith(_.resolve(document))
 }

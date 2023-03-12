@@ -16,13 +16,16 @@ object GraphQLGenerator {
     override def toGraphQL(input: Blueprint): GraphQL[Any] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
-          val queryOperation    = for {
+          val stepResult = sGen.resolve(input)
+
+          val queryOperation = for {
             __type  <- tGen.__type(input)
-            resolve <- sGen.resolve(input)
+            resolve <- stepResult.query
           } yield Operation(__type, resolve)
+
           val mutationOperation = for {
             __type  <- tGen.__Schema(input).flatMap(_.mutationType)
-            resolve <- sGen.resolveMutation(input)
+            resolve <- stepResult.mutation
           } yield Operation(__type, resolve)
           RootSchemaBuilder(query = queryOperation, mutationOperation, None)
         }
