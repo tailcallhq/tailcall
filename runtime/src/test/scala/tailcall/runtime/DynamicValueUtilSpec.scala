@@ -10,6 +10,7 @@ import java.math.{BigDecimal, BigInteger}
 import java.time._
 import java.util.{Random, UUID}
 import scala.collection.immutable.ListMap
+import scala.util.Try
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
   val helloWorld           = "Hello World!"
@@ -107,15 +108,32 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       test("toResponseValue") {
         assertTrue(
           toResponseValue(DynamicValue(Foobar(List(meaningOfLife), DynamicValue(())))) == ResponseValue
-            .ObjectValue(List(("foo", ResponseValue.ListValue(List(Value.IntValue(42)))), ("bar", Value.NullValue)))
-        )
+            .ObjectValue(List("foo" -> ResponseValue.ListValue(List(Value.IntValue(42))), "bar" -> Value.NullValue))
+        ) &&
+        assertTrue(
+          toResponseValue(
+            DynamicValue(Map("foo" -> DynamicValue(List(meaningOfLife)), "bar" -> DynamicValue(())))
+          ) == ResponseValue
+            .ObjectValue(List("foo" -> ResponseValue.ListValue(List(Value.IntValue(42))), "bar" -> Value.NullValue))
+        ) &&
+        assert(Try(toResponseValue(DynamicValue(Map(meaningOfLife -> helloWorld)))))(Assertion.isFailure(
+          Assertion.hasMessage(Assertion.equalTo("could not transform"))
+        ))
       },
       test("toInputValue") {
         assertTrue(
           toInputValue(DynamicValue(Foobaz(List(meaningOfLife), List()))) == InputValue.ObjectValue(
             Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "baz" -> InputValue.ListValue(List()))
           )
-        )
+        ) &&
+        assertTrue(
+          toInputValue(DynamicValue(Map("foo" -> List(meaningOfLife), "bar" -> List()))) == InputValue.ObjectValue(
+            Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "bar" -> InputValue.ListValue(List()))
+          )
+        ) &&
+        assert(Try(toInputValue(DynamicValue(Map(meaningOfLife -> helloWorld)))))(Assertion.isFailure(
+          Assertion.hasMessage(Assertion.equalTo("could not transform"))
+        ))
       },
       test("toTyped") {
         assertTrue(toTyped[String](DynamicValue(helloWorld)) == Some("Hello World!")) &&
@@ -131,24 +149,28 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       },
       test("fromInputValue") {
         assertTrue(
-          fromInputValue(InputValue.ListValue(List(
-            Value.StringValue(helloWorld),
-            Value.BooleanValue(true),
-            Value.FloatValue.BigDecimalNumber(avogadrosNumber),
-            Value.FloatValue.DoubleNumber(Double.MaxValue),
-            Value.FloatValue.FloatNumber(Float.MaxValue),
-            Value.IntValue.BigIntNumber(probablePrime),
-            Value.IntValue.IntNumber(Int.MaxValue),
-            Value.IntValue.LongNumber(Long.MaxValue)
-          ))) == DynamicValue(List(
-            DynamicValue("Hello World!"),
-            DynamicValue(true),
-            DynamicValue(BigDecimal.valueOf(6.0221408e+23)),
-            DynamicValue(1.7976931348623157e308),
-            DynamicValue(3.4028235e38.toFloat),
-            DynamicValue(new BigInteger("799058976649937674302168095891")),
-            DynamicValue(2147483647),
-            DynamicValue(9223372036854775807L)
+          fromInputValue(InputValue.ObjectValue(Map(
+            "foo" -> InputValue.ListValue(List(
+              Value.StringValue(helloWorld),
+              Value.BooleanValue(true),
+              Value.FloatValue.BigDecimalNumber(avogadrosNumber),
+              Value.FloatValue.DoubleNumber(Double.MaxValue),
+              Value.FloatValue.FloatNumber(Float.MaxValue),
+              Value.IntValue.BigIntNumber(probablePrime),
+              Value.IntValue.IntNumber(Int.MaxValue),
+              Value.IntValue.LongNumber(Long.MaxValue)
+            ))
+          ))) == DynamicValue(Map(
+            "foo" -> List(
+              DynamicValue("Hello World!"),
+              DynamicValue(true),
+              DynamicValue(BigDecimal.valueOf(6.0221408e+23)),
+              DynamicValue(1.7976931348623157e308),
+              DynamicValue(3.4028235e38.toFloat),
+              DynamicValue(new BigInteger("799058976649937674302168095891")),
+              DynamicValue(2147483647),
+              DynamicValue(9223372036854775807L)
+            )
           ))
         )
       },
