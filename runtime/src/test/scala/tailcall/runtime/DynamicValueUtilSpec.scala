@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import caliban.{InputValue, ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
+import zio.json.ast.Json
 import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType, TypeId}
 import zio.test._
 
@@ -146,6 +147,22 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(
           record("foo" -> DynamicValue(List(meaningOfLife)), "bar" -> DynamicValue(helloWorld)) == DynamicValue
             .Record(TypeId.Structural, ListMap("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")))
+        )
+      },
+      test("fromJson") {
+        assertTrue(
+          fromJson(Json.Obj(
+            "foo" -> Json.Arr(Json.Str(helloWorld), Json.Num(meaningOfLife), Json.Bool(true)),
+            "bar" -> Json.Null
+          )) == DynamicValue.Record(
+            TypeId.Structural,
+            ListMap(
+              "foo" -> DynamicValue(
+                List(DynamicValue("Hello World!"), DynamicValue(BigDecimal.valueOf(42L)), DynamicValue(true))
+              ),
+              "bar" -> DynamicValue.NoneValue
+            )
+          )
         )
       }
     )
