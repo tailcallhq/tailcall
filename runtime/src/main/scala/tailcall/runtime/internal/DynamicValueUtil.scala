@@ -14,7 +14,7 @@ object DynamicValueUtil {
       case _                                => None
     }
 
-  def toValue(value: Any, standardType: StandardType[_]): Value =
+  def toValue[A](value: A, standardType: StandardType[A]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
       case StandardType.IntType            => Value.IntValue(value.toString.toInt)
@@ -44,7 +44,7 @@ object DynamicValueUtil {
       case StandardType.YearMonthType      => Value.StringValue(value.toString)
       case StandardType.CharType           => Value.StringValue(value.toString)
       case StandardType.BinaryType         => Value
-          .StringValue(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Array[Byte]]))
+          .StringValue(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Chunk[Byte]].toArray))
       case StandardType.DurationType       => Value.StringValue(value.toString)
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
@@ -148,7 +148,7 @@ object DynamicValueUtil {
       case Json.Null          => DynamicValue.NoneValue
     }
 
-  def toJsonPrimitive(value: Any, standardType: StandardType[_]): Json =
+  def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Str(value.toString)
       case StandardType.StringType         => Json.Str(value.toString)
@@ -160,7 +160,7 @@ object DynamicValueUtil {
       case StandardType.FloatType          => Json.Num(value.asInstanceOf[Float])
       case StandardType.DoubleType         => Json.Num(value.asInstanceOf[Double])
       case StandardType.BinaryType         => Json
-          .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Array[Byte]]))
+          .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Chunk[Byte]].toArray))
       case StandardType.CharType           => Json.Str(value.toString)
       case StandardType.UUIDType           => Json.Str(value.toString)
       case StandardType.BigDecimalType     => Json.Str(value.toString)
