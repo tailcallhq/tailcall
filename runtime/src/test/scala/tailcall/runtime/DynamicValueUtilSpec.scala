@@ -36,8 +36,17 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   val halfLifeActinium225  = Duration.ofDays(10)
   val myBirthDayOfWeek     = DayOfWeek.WEDNESDAY;
 
+  sealed trait Foo
+
   final case class Foobar(foo: List[Int], bar: DynamicValue)
   final case class Foobaz(foo: List[Int], baz: List[String])
+
+  object Foo {
+    final case class Bar(bar: List[Option[Int]])        extends Foo
+    final case class Baz(baz: Set[Either[Int, String]]) extends Foo
+
+    implicit val schema: Schema[Foo] = DeriveSchema.gen[Foo]
+  }
 
   object Foobar {
     implicit val schema: Schema[Foobar] = DeriveSchema.gen[Foobar]
@@ -204,6 +213,16 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(
           toJsonPrimitive(myBirthZonedDateTime, StandardType.ZonedDateTimeType) == Json
             .Str("1992-09-02T20:40+05:30[UTC+05:30]")
+        )
+      },
+      test("toJson") {
+        val bar: Foo = Foo.Bar(List(Some(meaningOfLife), None))
+        val baz: Foo = Foo.Baz(Set(Left(meaningOfLife), Right(helloWorld)))
+        assertTrue(
+          toJson(DynamicValue((bar, baz))) == Json.Arr(
+            Json.Obj("Bar" -> Json.Obj("bar" -> Json.Arr(Json.Num(42), Json.Null))),
+            Json.Obj("Baz" -> Json.Obj("baz" -> Json.Arr(Json.Num(42), Json.Str("Hello World!"))))
+          )
         )
       }
     )
