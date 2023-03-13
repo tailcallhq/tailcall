@@ -1,8 +1,10 @@
 package tailcall.runtime
 
-import tailcall.runtime.dsl.json.Config
+import caliban.CalibanError
+import tailcall.runtime.dsl.json.service.ConfigBlueprint
+import tailcall.runtime.dsl.json.{Config, Extension}
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.internal.{Extension, JsonPlaceholderConfig}
+import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.service.{EvaluationRuntime, GraphQLGenerator, SchemaGenerator, StepGenerator}
 import zio.http.Client
 import zio.test.Assertion.equalTo
@@ -12,9 +14,12 @@ import zio.{ZIO, durationInt}
 
 object ConfigSpec extends ZIOSpecDefault {
 
-  def execute(config: Config)(query: String): ZIO[GraphQLGenerator, Throwable, String] =
+  def execute(
+    config: Config
+  )(query: String): ZIO[GraphQLGenerator with ConfigBlueprint, CalibanError.ValidationError, String] =
     for {
-      graphQL     <- config.toBlueprint.toGraphQL
+      blueprint   <- config.toBlueprint
+      graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       response    <- interpreter.execute(query)
     } yield response.data.toString
@@ -83,7 +88,7 @@ object ConfigSpec extends ZIOSpecDefault {
                          |}
                          |""".stripMargin.trim
 
-        for { graphQL <- config.toBlueprint.toGraphQL } yield assertTrue(graphQL.render == expected)
+        for { graphQL <- config.toBlueprint.flatMap(_.toGraphQL) } yield assertTrue(graphQL.render == expected)
       },
       suite("execute")(
         test("users name") {
@@ -146,6 +151,7 @@ object ConfigSpec extends ZIOSpecDefault {
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,
-      Client.default
+      Client.default,
+      ConfigBlueprint.live
     ) @@ timeout(5 seconds)
 }

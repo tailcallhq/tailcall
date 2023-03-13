@@ -1,10 +1,10 @@
-package tailcall.runtime.dsl.json
+package tailcall.runtime.dsl.json.service
 
 import caliban.parsing.Parser
 import caliban.parsing.adt.Document
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.validation.Validator
-import tailcall.runtime.internal.Extension
+import tailcall.runtime.dsl.json.{Config, Extension}
 import zio.{Task, ZIO}
 
 import java.io.File
@@ -15,17 +15,17 @@ import scala.io.Source
 /**
  * Reads configuration from a file.
  */
-trait Reader[A] {
+trait ConfigReader[A] {
   def readFile(file: => File): Task[A]
   final def readPath(path: => Path): Task[A] = readFile(path.toFile)
   final def readURL(url: => URL): Task[A]    = readFile(new File(url.getPath))
 }
 
-object Reader {
+object ConfigReader {
 
   // TODO: replace the custom implementation with ZIO Config.
-  def config: Reader[Config] =
-    new Reader[Config] {
+  def config: ConfigReader[Config] =
+    new ConfigReader[Config] {
       override def readFile(file: => File): Task[Config] = {
         for {
           ext    <- Extension.detect(file.getName)
@@ -35,8 +35,8 @@ object Reader {
       }
     }
 
-  def document: Reader[Document] =
-    new Reader[Document] {
+  def document: ConfigReader[Document] =
+    new ConfigReader[Document] {
       override def readFile(file: => File): Task[Document] = {
         for {
           string            <- ZIO.attemptBlocking(Source.fromFile(file).mkString(""))
