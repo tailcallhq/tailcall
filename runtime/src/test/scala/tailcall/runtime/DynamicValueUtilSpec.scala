@@ -2,12 +2,13 @@ package tailcall.runtime
 
 import caliban.{InputValue, ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
-import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
+import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType, TypeId}
 import zio.test._
 
 import java.math.{BigDecimal, BigInteger}
 import java.time._
 import java.util.{Random, UUID}
+import scala.collection.immutable.ListMap
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
   val helloWorld           = "Hello World!"
@@ -139,6 +140,12 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             DynamicValue(2147483647),
             DynamicValue(9223372036854775807L)
           ))
+        )
+      },
+      test("record") {
+        assertTrue(
+          record("foo" -> DynamicValue(List(meaningOfLife)), "bar" -> DynamicValue(helloWorld)) == DynamicValue
+            .Record(TypeId.Structural, ListMap("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")))
         )
       }
     )
