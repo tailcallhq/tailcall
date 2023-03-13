@@ -54,7 +54,7 @@ object DynamicValueUtil {
       case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toResponseValue).toList)
       case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
       case DynamicValue.Dictionary(chunks)             => ResponseValue.ObjectValue(chunks.map { case (k, v) =>
-          toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toValue(v)
+          toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toResponseValue(v)
         }.toList)
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.NoneValue                      => Value.NullValue
