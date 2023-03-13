@@ -148,7 +148,7 @@ object DynamicValueUtil {
       case Json.Null          => DynamicValue.NoneValue
     }
 
-  def toJson(value: Any, standardType: StandardType[_]): Json =
+  def toJsonPrimitive(value: Any, standardType: StandardType[_]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Str(value.toString)
       case StandardType.StringType         => Json.Str(value.toString)
@@ -189,7 +189,7 @@ object DynamicValueUtil {
       case DynamicValue.Sequence(values)               => Json.Arr(Chunk.from(values.map(toJson)))
       case DynamicValue.Dictionary(_)                  => ???
       case DynamicValue.SetValue(values)               => Json.Arr(Chunk.from(values.map(toJson)))
-      case DynamicValue.Primitive(value, standardType) => toJson(value, standardType)
+      case DynamicValue.Primitive(value, standardType) => toJsonPrimitive(value, standardType)
       case DynamicValue.Singleton(_)                   => ???
       case DynamicValue.SomeValue(value)               => toJson(value)
       case DynamicValue.NoneValue                      => Json.Null
