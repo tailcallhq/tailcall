@@ -159,7 +159,8 @@ object DynamicValueUtil {
       case StandardType.LongType           => Json.Num(value.asInstanceOf[Long])
       case StandardType.FloatType          => Json.Num(value.asInstanceOf[Float])
       case StandardType.DoubleType         => Json.Num(value.asInstanceOf[Double])
-      case StandardType.BinaryType         => Json.Str(value.toString)
+      case StandardType.BinaryType         => Json
+          .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Array[Byte]]))
       case StandardType.CharType           => Json.Str(value.toString)
       case StandardType.UUIDType           => Json.Str(value.toString)
       case StandardType.BigDecimalType     => Json.Str(value.toString)
