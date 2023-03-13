@@ -3,6 +3,7 @@ package tailcall.runtime
 import caliban.{InputValue, ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.Primitive
+import zio.Chunk
 import zio.json.ast.Json
 import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType, TypeId}
 import zio.test._
@@ -34,7 +35,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   val myBirthTimeWithZone  = OffsetTime.of(myBirthTime, myBirthTimeZone)
   val epoch                = Instant.EPOCH
   val myBirthZonedDateTime = ZonedDateTime.of(myBirthDateTime, myBirthTimeZoneId)
-  val binaryHelloWorld     = helloWorld.getBytes()
+  val binaryHelloWorld     = Chunk.fromArray(helloWorld.getBytes())
   val halfLifeActinium225  = Duration.ofDays(10)
   val myBirthDayOfWeek     = DayOfWeek.WEDNESDAY;
 
