@@ -85,7 +85,7 @@ object Config {
       implicit val codec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
     }
 
-    @jsonHint("objectPath")
+    @jsonHint("$objectPath")
     final case class ObjPath(map: Map[String, List[String]]) extends Step
     object ObjPath {
       def apply(map: (String, List[String])*): ObjPath = ObjPath(map.toMap)
