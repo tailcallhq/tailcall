@@ -1,6 +1,7 @@
-package tailcall.runtime.dsl.scala
+package tailcall.runtime.dsl.scala.service
 
 import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc._
 import tailcall.runtime.remote._
 import zio.schema.DynamicValue

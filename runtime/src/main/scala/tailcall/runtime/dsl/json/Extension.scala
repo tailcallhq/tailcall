@@ -1,4 +1,4 @@
-package tailcall.runtime.internal
+package tailcall.runtime.dsl.json
 
 import tailcall.runtime.dsl.json.Config
 import zio.json._

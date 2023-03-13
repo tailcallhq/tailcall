@@ -2,6 +2,7 @@ package tailcall.runtime.dsl.scala
 
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet, Input, LabelledField, Output}
+import tailcall.runtime.dsl.scala.service.OrcBlueprint
 import tailcall.runtime.remote.Remote
 import zio.Task
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
