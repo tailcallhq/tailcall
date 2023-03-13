@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import caliban.{InputValue, ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
+import tailcall.runtime.internal.Primitive
 import zio.json.ast.Json
 import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType, TypeId}
 import zio.test._
@@ -60,8 +61,9 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   override def spec =
     suite("DynamicValueUtilSpec")(
       test("asString") {
-        assertTrue(asString(DynamicValue(helloWorld)) == Some("Hello World!")) &&
-        assertTrue(asString(DynamicValue(meaningOfLife)) == Some("42")) &&
+        check(Primitive.gen) { primitive =>
+          assertTrue(asString(primitive.toDynamicValue) == Some(primitive.value.toString))
+        } &&
         assertTrue(asString(DynamicValue(List(meaningOfLife))) == None)
       },
       test("toValue") {
