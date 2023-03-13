@@ -117,6 +117,29 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(getPath(d, List("foo", "1")) == None) &&
         assertTrue(getPath(d, List("bar", "qux")) == None) &&
         assertTrue(getPath(d, List("quux")) == None)
+      },
+      test("fromInputValue") {
+        assertTrue(
+          fromInputValue(InputValue.ListValue(List(
+            Value.StringValue(helloWorld),
+            Value.BooleanValue(true),
+            Value.FloatValue.BigDecimalNumber(avogadrosNumber),
+            Value.FloatValue.DoubleNumber(Double.MaxValue),
+            Value.FloatValue.FloatNumber(Float.MaxValue),
+            Value.IntValue.BigIntNumber(probablePrime),
+            Value.IntValue.IntNumber(Int.MaxValue),
+            Value.IntValue.LongNumber(Long.MaxValue)
+          ))) == DynamicValue(List(
+            DynamicValue("Hello World!"),
+            DynamicValue(true),
+            DynamicValue(BigDecimal.valueOf(6.0221408e+23)),
+            DynamicValue(1.7976931348623157e308),
+            DynamicValue(3.4028235e38.toFloat),
+            DynamicValue(new BigInteger("799058976649937674302168095891")),
+            DynamicValue(2147483647),
+            DynamicValue(9223372036854775807L)
+          ))
+        )
       }
     )
 }
