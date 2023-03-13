@@ -164,6 +164,47 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             )
           )
         )
+      },
+      test("toJsonPrimitive") {
+        assertTrue(toJsonPrimitive((), StandardType.UnitType) == Json.Str("()")) &&
+        assertTrue(toJsonPrimitive(helloWorld, StandardType.StringType) == Json.Str("Hello World!")) &&
+        assertTrue(toJsonPrimitive(true, StandardType.BoolType) == Json.Bool(true)) &&
+        assertTrue(toJsonPrimitive(Byte.MaxValue, StandardType.ByteType) == Json.Str("127")) &&
+        assertTrue(toJsonPrimitive(Short.MaxValue, StandardType.ShortType) == Json.Str("32767")) &&
+        assertTrue(toJsonPrimitive(Int.MaxValue, StandardType.IntType) == Json.Num(2147483647)) &&
+        assertTrue(toJsonPrimitive(Long.MaxValue, StandardType.LongType) == Json.Num(9223372036854775807L)) &&
+        assertTrue(toJsonPrimitive(Float.MaxValue, StandardType.FloatType) == Json.Num(3.4028234663852886e+38)) &&
+        assertTrue(toJsonPrimitive(Double.MaxValue, StandardType.DoubleType) == Json.Num(1.7976931348623157e308)) &&
+        assertTrue(toJsonPrimitive(binaryHelloWorld, StandardType.BinaryType) == Json.Str("SGVsbG8gV29ybGQh")) &&
+        assertTrue(toJsonPrimitive(Char.MaxValue, StandardType.CharType) == Json.Str("￿")) &&
+        assertTrue(
+          toJsonPrimitive(randomUUID, StandardType.UUIDType) == Json.Str("137f0cfc-b664-412b-a4ac-9086755ccce5")
+        ) &&
+        assertTrue(toJsonPrimitive(avogadrosNumber, StandardType.BigDecimalType) == Json.Str("6.0221408E+23")) &&
+        assertTrue(
+          toJsonPrimitive(probablePrime, StandardType.BigIntegerType) == Json.Str("799058976649937674302168095891")
+        ) &&
+        assertTrue(toJsonPrimitive(myBirthDayOfWeek, StandardType.DayOfWeekType) == Json.Str("WEDNESDAY")) &&
+        assertTrue(toJsonPrimitive(myBirthMonth, StandardType.MonthType) == Json.Str("SEPTEMBER")) &&
+        assertTrue(toJsonPrimitive(myBirthDay, StandardType.MonthDayType) == Json.Str("--09-02")) &&
+        assertTrue(toJsonPrimitive(halfLifeTitanium44, StandardType.PeriodType) == Json.Str("P63Y")) &&
+        assertTrue(toJsonPrimitive(myBirthYear, StandardType.YearType) == Json.Str("1992")) &&
+        assertTrue(toJsonPrimitive(myBirthYearMonth, StandardType.YearMonthType) == Json.Str("1992-09")) &&
+        assertTrue(toJsonPrimitive(myBirthTimeZoneId, StandardType.ZoneIdType) == Json.Str("UTC+05:30")) &&
+        assertTrue(toJsonPrimitive(myBirthTimeZone, StandardType.ZoneOffsetType) == Json.Str("+05:30")) &&
+        assertTrue(toJsonPrimitive(halfLifeActinium225, StandardType.DurationType) == Json.Str("PT240H")) &&
+        assertTrue(toJsonPrimitive(epoch, StandardType.InstantType) == Json.Str("1970-01-01T00:00:00Z")) &&
+        assertTrue(toJsonPrimitive(myBirthDate, StandardType.LocalDateType) == Json.Str("1992-09-02")) &&
+        assertTrue(toJsonPrimitive(myBirthTime, StandardType.LocalTimeType) == Json.Str("20:40")) &&
+        assertTrue(toJsonPrimitive(myBirthDateTime, StandardType.LocalDateTimeType) == Json.Str("1992-09-02T20:40")) &&
+        assertTrue(toJsonPrimitive(myBirthTimeWithZone, StandardType.OffsetTimeType) == Json.Str("20:40+05:30")) &&
+        assertTrue(
+          toJsonPrimitive(myBirthDateTimeZone, StandardType.OffsetDateTimeType) == Json.Str("1992-09-02T20:40+05:30")
+        ) &&
+        assertTrue(
+          toJsonPrimitive(myBirthZonedDateTime, StandardType.ZonedDateTimeType) == Json
+            .Str("1992-09-02T20:40+05:30[UTC+05:30]")
+        )
       }
     )
 }
