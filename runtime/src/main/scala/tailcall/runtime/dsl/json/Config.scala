@@ -4,6 +4,7 @@ import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import zio.json._
+import zio.json.ast.Json
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
@@ -76,7 +77,17 @@ object Config {
     }
 
     @jsonHint("$const")
-    final case class Constant(json: zio.json.ast.Json) extends Step
+    final case class Constant(json: Json) extends Step
+    object Constant {
+      implicit val codec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
+    }
+
+    @jsonHint("objectPath")
+    final case class ObjPath(map: Map[String, List[String]]) extends Step
+    object ObjPath {
+      def apply(map: (String, List[String])*): ObjPath = ObjPath(map.toMap)
+      implicit val codec: JsonCodec[ObjPath] = JsonCodec[Map[String, List[String]]].transform(ObjPath(_), _.map)
+    }
   }
 
   final case class Argument(
