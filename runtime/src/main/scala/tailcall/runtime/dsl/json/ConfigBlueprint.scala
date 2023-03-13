@@ -33,6 +33,11 @@ final class ConfigBlueprint(config: Config) {
     Endpoint.make(config.server.host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
+  def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
+    map.foldLeft(Remote(Map.empty[String, DynamicValue])) { case (to, (key, path)) =>
+      lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
+    }.toDynamic
+
   def toResolver(steps: List[Step]): Option[Resolver] =
     steps match {
       case Nil   => None
@@ -40,6 +45,7 @@ final class ConfigBlueprint(config: Config) {
           steps.map[Resolver] {
             case http @ Step.Http(_, _, _, _) => input => Remote.fromEndpoint(toEndpoint(http), input)
             case Step.Constant(json)          => _ => Remote(json).toDynamic
+            case Step.ObjPath(map)            => input => toRemoteMap(input, map)
           }.reduce((a, b) => r => b(a(r)))
         }
     }

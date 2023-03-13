@@ -2,180 +2,6 @@ version: 0
 server:
   host: jsonplaceholder.typicode.com
   port: 443
-
-endpoints:
-  - $http: &posts
-    path: /posts
-    output:
-      item:
-        fields:
-          - name: id
-            schema:
-              type: Integer
-          - name: userId
-            schema:
-              type: Integer
-          - name: title
-            schema:
-              type: String
-          - name: body
-            schema:
-              type: String
-        type: object
-      type: array
-  - $http: &users
-      path: /users
-      output:
-        item:
-          fields:
-            - name: id
-              schema:
-                type: Integer
-            - name: name
-              schema:
-                type: String
-            - name: username
-              schema:
-                type: String
-            - name: email
-              schema:
-                type: String
-            - name: address
-              schema:
-                fields:
-                  - name: street
-                    schema:
-                      type: String
-                  - name: suite
-                    schema:
-                      type: String
-                  - name: city
-                    schema:
-                      type: String
-                  - name: zipcode
-                    schema:
-                      type: String
-                  - name: geo
-                    schema:
-                      fields:
-                        - name: lat
-                          schema:
-                            type: String
-                        - name: lng
-                          schema:
-                            type: String
-                      type: object
-                type: object
-            - name: company
-              schema:
-                fields:
-                  - name: name
-                    schema:
-                      type: String
-                  - name: catchPhrase
-                    schema:
-                      type: String
-                  - name: bs
-                    schema:
-                      type: String
-                type: object
-          type: object
-        type: array
-
-  - $http: &postById
-      path: /posts/{{postId}}
-      output:
-        fields:
-          - name: id
-            schema:
-              type: Integer
-          - name: userId
-            schema:
-              type: Integer
-          - name: title
-            schema:
-              type: String
-          - name: body
-            schema:
-              type: String
-        type: object
-
-  - $http: &userById
-      path: /users/{{id}}
-      output:
-        fields:
-          - name: id
-            schema:
-              type: Integer
-          - name: name
-            schema:
-              type: String
-          - name: username
-            schema:
-              type: String
-          - name: email
-            schema:
-              type: String
-          - name: address
-            schema:
-              fields:
-                - name: street
-                  schema:
-                    type: String
-                - name: suite
-                  schema:
-                    type: String
-                - name: city
-                  schema:
-                    type: String
-                - name: zipcode
-                  schema:
-                    type: String
-                - name: geo
-                  schema:
-                    fields:
-                      - name: lat
-                        schema:
-                          type: String
-                      - name: lng
-                        schema:
-                          type: String
-                    type: object
-              type: object
-          - name: company
-            schema:
-              fields:
-                - name: name
-                  schema:
-                    type: String
-                - name: catchPhrase
-                  schema:
-                    type: String
-                - name: bs
-                  schema:
-                    type: String
-              type: object
-        type: object
-
-  - $http: &userPosts
-      path: /users/{{userId}}/posts
-      output:
-        item:
-          fields:
-            - name: id
-              schema:
-                type: Integer
-            - name: userId
-              schema:
-                type: Integer
-            - name: title
-              schema:
-                type: String
-            - name: body
-              schema:
-                type: String
-          type: object
-        type: array
 graphQL:
   schema:
     query: Query
@@ -209,18 +35,107 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - *posts
+          - $http:
+              path: /posts
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: userId
+                      schema:
+                        type: Integer
+                    - name: title
+                      schema:
+                        type: String
+                    - name: body
+                      schema:
+                        type: String
+                  type: object
+                type: array
       users:
         type: User
         isList: true
         steps:
-          - *users
+          - $http:
+              path: /users
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: name
+                      schema:
+                        type: String
+                    - name: username
+                      schema:
+                        type: String
+                    - name: email
+                      schema:
+                        type: String
+                    - name: address
+                      schema:
+                        fields:
+                          - name: street
+                            schema:
+                              type: String
+                          - name: suite
+                            schema:
+                              type: String
+                          - name: city
+                            schema:
+                              type: String
+                          - name: zipcode
+                            schema:
+                              type: String
+                          - name: geo
+                            schema:
+                              fields:
+                                - name: lat
+                                  schema:
+                                    type: String
+                                - name: lng
+                                  schema:
+                                    type: String
+                              type: object
+                        type: object
+                    - name: company
+                      schema:
+                        fields:
+                          - name: name
+                            schema:
+                              type: String
+                          - name: catchPhrase
+                            schema:
+                              type: String
+                          - name: bs
+                            schema:
+                              type: String
+                        type: object
+                  type: object
+                type: array
       post:
         type: Post
         steps:
-          - $obj:
-            postId: {{args.id}}
-          - *postById
+          - $http:
+              path: /posts/{{args.id}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: userId
+                    schema:
+                      type: Integer
+                  - name: title
+                    schema:
+                      type: String
+                  - name: body
+                    schema:
+                      type: String
+                type: object
         args:
           id:
             type: Int
@@ -228,10 +143,66 @@ graphQL:
       user:
         type: User
         steps:
-          - $obj:
-            name: userId
-            path: {{args.id}}
-          - *userById
+          - objectPath:
+              userId:
+                - args
+                - id
+          - $http:
+              path: /users/{{userId}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: name
+                    schema:
+                      type: String
+                  - name: username
+                    schema:
+                      type: String
+                  - name: email
+                    schema:
+                      type: String
+                  - name: address
+                    schema:
+                      fields:
+                        - name: street
+                          schema:
+                            type: String
+                        - name: suite
+                          schema:
+                            type: String
+                        - name: city
+                          schema:
+                            type: String
+                        - name: zipcode
+                          schema:
+                            type: String
+                        - name: geo
+                          schema:
+                            fields:
+                              - name: lat
+                                schema:
+                                  type: String
+                              - name: lng
+                                schema:
+                                  type: String
+                            type: object
+                      type: object
+                  - name: company
+                    schema:
+                      fields:
+                        - name: name
+                          schema:
+                            type: String
+                        - name: catchPhrase
+                          schema:
+                            type: String
+                        - name: bs
+                          schema:
+                            type: String
+                      type: object
+                type: object
         args:
           id:
             type: Int
@@ -245,9 +216,66 @@ graphQL:
       user:
         type: User
         steps:
-          - $obj:
-              userId: {{value.userId}}
-          - *userById
+          - objectPath:
+              userId:
+                - value
+                - userId
+          - $http:
+              path: /users/{{userId}}
+              output:
+                fields:
+                  - name: id
+                    schema:
+                      type: Integer
+                  - name: name
+                    schema:
+                      type: String
+                  - name: username
+                    schema:
+                      type: String
+                  - name: email
+                    schema:
+                      type: String
+                  - name: address
+                    schema:
+                      fields:
+                        - name: street
+                          schema:
+                            type: String
+                        - name: suite
+                          schema:
+                            type: String
+                        - name: city
+                          schema:
+                            type: String
+                        - name: zipcode
+                          schema:
+                            type: String
+                        - name: geo
+                          schema:
+                            fields:
+                              - name: lat
+                                schema:
+                                  type: String
+                              - name: lng
+                                schema:
+                                  type: String
+                            type: object
+                      type: object
+                  - name: company
+                    schema:
+                      fields:
+                        - name: name
+                          schema:
+                            type: String
+                        - name: catchPhrase
+                          schema:
+                            type: String
+                        - name: bs
+                          schema:
+                            type: String
+                      type: object
+                type: object
       userId:
         type: Int
         isRequired: true
@@ -263,9 +291,25 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - $obj:
-              userId: {{value.id}}
-          - *userPosts
+          - $http:
+              path: /users/{{value.id}}/posts
+              output:
+                item:
+                  fields:
+                    - name: id
+                      schema:
+                        type: Integer
+                    - name: userId
+                      schema:
+                        type: Integer
+                    - name: title
+                      schema:
+                        type: String
+                    - name: body
+                      schema:
+                        type: String
+                  type: object
+                type: array
       email:
         type: String
         isRequired: true

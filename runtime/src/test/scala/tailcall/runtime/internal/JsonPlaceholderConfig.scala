@@ -29,12 +29,11 @@ object JsonPlaceholderConfig {
     .obj("id" -> TSchema.int, "userId" -> TSchema.int, "title" -> TSchema.string, "body" -> TSchema.string)
 
   val users           = Config.Step.Http(Path.unsafe.fromString("/users")).withOutput(TSchema.arr(User))
-  val userById        = Config.Step.Http(Path.unsafe.fromString("/users/{{args.id}}")).withOutput(User)
+  val userById        = Config.Step.Http(Path.unsafe.fromString("/users/{{userId}}")).withOutput(User)
   val postsById       = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}")).withOutput(Post)
   val posts           = Config.Step.Http(Path.unsafe.fromString("/posts")).withOutput(TSchema.arr(Post))
   val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
     .withOutput(TSchema.arr(Post))
-  val postUser: Step  = Config.Step.Http(Path.unsafe.fromString("/users/{{value.userId}}")).withOutput(User)
 
   val graphQL = Config.GraphQL(
     schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
@@ -43,7 +42,8 @@ object JsonPlaceholderConfig {
         "posts" -> Config.Field("Post", posts).asList,
         "users" -> Config.Field("User", users).asList,
         "post"  -> Config.Field("Post", postsById)("id" -> Argument.int.asRequired),
-        "user"  -> Config.Field("User", userById)("id" -> Argument.int.asRequired)
+        "user"  -> Config
+          .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Argument.int.asRequired)
       ),
       "User"    -> Map(
         "id"       -> Config.Field.int.asRequired,
@@ -61,7 +61,7 @@ object JsonPlaceholderConfig {
         "userId" -> Config.Field.int.asRequired,
         "title"  -> Config.Field.string,
         "body"   -> Config.Field.string,
-        "user"   -> Config.Field("User", postUser)
+        "user"   -> Config.Field("User", Config.Step.ObjPath("userId" -> List("value", "userId")), userById)
       ),
       "Address" -> Map(
         "street"  -> Config.Field.string,
