@@ -82,8 +82,6 @@ jobs:
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: ./build
-
       - uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           api_token: ${{ secrets.FLY_API_TOKEN }}

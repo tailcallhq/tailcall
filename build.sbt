@@ -96,16 +96,12 @@ scriptClasspath := Seq((server / assembly / assemblyJarName).value)
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
 
-
 ThisBuild / githubWorkflowAddedJobs := Seq(WorkflowJob(
   id = "deploy",
   name = "fly.io deployment",
   cond = Some(s"matrix.scala == '${scala2Version}'"),
-  steps = List(
-    WorkflowStep.Use(UseRef.Local("build")),
-    WorkflowStep.Use(
-      UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
-      params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}")
-    )
-  )
+  steps = List(WorkflowStep.Use(
+    UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
+    params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}")
+  ))
 ))
