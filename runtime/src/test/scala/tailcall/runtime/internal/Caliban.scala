@@ -1,6 +1,6 @@
 package tailcall.runtime.internal
 
-import caliban.{InputValue, Value}
+import caliban.{InputValue, ResponseValue, Value}
 import zio.test.Gen
 
 import java.math.BigInteger
@@ -35,9 +35,18 @@ object Caliban {
   )
 
   val genInputValue: Gen[Any, InputValue] = Gen.suspend(Gen.oneOf(
-    Gen.listOfBounded(0, 3)(genInputValue).map(InputValue.ListValue),
-    Gen.mapOfBounded(0, 3)(genName, genInputValue).map(InputValue.ObjectValue),
+    Gen.listOfBounded(0, 2)(genInputValue).map(InputValue.ListValue),
+    Gen.mapOfBounded(0, 2)(genName, genInputValue).map(InputValue.ObjectValue),
     // genName.map(InputValue.VariableValue),
+    genValue
+  ))
+
+  val genResponseValue: Gen[Any, ResponseValue] = Gen.suspend(Gen.oneOf(
+    Gen.listOfBounded(0, 2)(genResponseValue).map(ResponseValue.ListValue),
+    Gen.listOfBounded(0, 2)(for {
+      key   <- genName
+      value <- genResponseValue
+    } yield key -> value).map(ResponseValue.ObjectValue),
     genValue
   ))
 }
