@@ -29,6 +29,7 @@ addCommandAlias("sFix", "scalafixAll; Test / scalafixAll")
 addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
+enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild += WorkflowStep
   .Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
@@ -48,7 +49,6 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio"               %% "zio-json"              % zioJson,
     "dev.zio"               %% "zio-json-yaml"         % zioJson,
     "dev.zio"               %% "zio-parser"            % "0.1.8",
-    "io.netty"               % "netty-all"             % "4.1.68.Final",
     "dev.zio"               %% "zio-http"              % "0.0.4",
 
     // Testing
@@ -56,6 +56,9 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio" %% "zio-test-sbt" % zio % Test
   )
 )
+
+Compile / mainClass := Some("tailcall.server.Main")
+maintainer := "tushar@tailcall.in"
 
 lazy val server = (project in file("server")).settings(
   libraryDependencies := Seq(
@@ -68,3 +71,25 @@ lazy val server = (project in file("server")).settings(
     "dev.zio" %% "zio-test-sbt" % zio % Test
   )
 ).dependsOn(runtime)
+
+// the assembly settings
+// we specify the name for our fat jar
+ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }
+
+// removes all jar mappings in universal and appends the fat jar
+Universal / mappings := {
+  // universalMappings: Seq[(File,String)]
+  val universalMappings = (Universal / mappings).value
+  val fatJar            = (server / Compile / assembly).value
+  // removing means filtering
+  val filtered          = universalMappings filter { case (file, name) => !name.endsWith(".jar") }
+
+  // add the fat jar
+  filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+}
+
+// the bash scripts classpath only needs the fat jar
+scriptClasspath := Seq((server / assembly / assemblyJarName).value)
+
+dockerBaseImage    := "eclipse-temurin:11"
+dockerExposedPorts := Seq(8080)
