@@ -25,7 +25,7 @@ object GenericServer {
         }
         query       <- GraphQLUtils.decodeQuery(req.body)
         interpreter <- result.interpreter
-        res         <- interpreter.execute(query).provideSomeLayer(DataLoader.http.fresh)
+        res         <- interpreter.execute(query).provideLayer(DataLoader.http)
       } yield Response.json(res.toJson)
     }
 }
