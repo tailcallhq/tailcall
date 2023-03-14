@@ -18,41 +18,40 @@ object Primitive {
     type Value = A
   }
 
-  private val hashMagicNumber = 0x9e3779b1L
-  private val probablePrime   = BigInteger.probablePrime(100, new Random(hashMagicNumber))
-  private val bigDecimalGen   = Gen.bigDecimalJava(BigDecimal.ZERO, new BigDecimal(probablePrime))
-  private val bigIntegerGen   = Gen.bigIntegerJava(BigInteger.ZERO, probablePrime)
+  private val probablePrime = BigInteger.probablePrime(100, new Random(0x9e3779b1L))
+  private val genBigDecimal = Gen.bigDecimalJava(BigDecimal.ZERO, new BigDecimal(probablePrime))
+  private val genBigInteger = Gen.bigIntegerJava(BigInteger.ZERO, probablePrime)
 
   val gen: Gen[Any, Primitive] = Gen.oneOf(
-    Gen.unit.map(value => Value(value, StandardType.UnitType)),
-    Gen.string.map(value => Value(value, StandardType.StringType)),
-    Gen.boolean.map(value => Value(value, StandardType.BoolType)),
-    Gen.byte.map(value => Value(value, StandardType.ByteType)),
-    Gen.short.map(value => Value(value, StandardType.ShortType)),
-    Gen.int.map(value => Value(value, StandardType.IntType)),
-    Gen.long.map(value => Value(value, StandardType.LongType)),
-    Gen.float.map(value => Value(value, StandardType.FloatType)),
-    Gen.double.map(value => Value(value, StandardType.DoubleType)),
-    Gen.chunkOf(Gen.byte).map(value => Value(value, StandardType.BinaryType)),
-    Gen.char.map(value => Value(value, StandardType.CharType)),
-    Gen.uuid.map(value => Value(value, StandardType.UUIDType)),
-    bigDecimalGen.map(value => Value(value, StandardType.BigDecimalType)),
-    bigIntegerGen.map(value => Value(value, StandardType.BigIntegerType)),
-    Gen.dayOfWeek.map(value => Value(value, StandardType.DayOfWeekType)),
-    Gen.month.map(value => Value(value, StandardType.MonthType)),
-    Gen.monthDay.map(value => Value(value, StandardType.MonthDayType)),
-    Gen.period.map(value => Value(value, StandardType.PeriodType)),
-    Gen.year.map(value => Value(value, StandardType.YearType)),
-    Gen.yearMonth.map(value => Value(value, StandardType.YearMonthType)),
-    Gen.zoneId.map(value => Value(value, StandardType.ZoneIdType)),
-    Gen.zoneOffset.map(value => Value(value, StandardType.ZoneOffsetType)),
-    Gen.finiteDuration.map(value => Value(value, StandardType.DurationType)),
-    Gen.instant.map(value => Value(value, StandardType.InstantType)),
-    Gen.localDate.map(value => Value(value, StandardType.LocalDateType)),
-    Gen.localTime.map(value => Value(value, StandardType.LocalTimeType)),
-    Gen.localDateTime.map(value => Value(value, StandardType.LocalDateTimeType)),
-    Gen.offsetTime.map(value => Value(value, StandardType.OffsetTimeType)),
-    Gen.offsetDateTime.map(value => Value(value, StandardType.OffsetDateTimeType)),
-    Gen.zonedDateTime.map(value => Value(value, StandardType.ZonedDateTimeType))
+    Gen.unit.map(Value(_, StandardType.UnitType)),
+    Gen.string.map(Value(_, StandardType.StringType)),
+    Gen.boolean.map(Value(_, StandardType.BoolType)),
+    Gen.byte.map(Value(_, StandardType.ByteType)),
+    Gen.short.map(Value(_, StandardType.ShortType)),
+    Gen.int.map(Value(_, StandardType.IntType)),
+    Gen.long.map(Value(_, StandardType.LongType)),
+    Gen.float.map(Value(_, StandardType.FloatType)),
+    Gen.double.map(Value(_, StandardType.DoubleType)),
+    Gen.chunkOf(Gen.byte).map(Value(_, StandardType.BinaryType)),
+    Gen.char.map(Value(_, StandardType.CharType)),
+    Gen.uuid.map(Value(_, StandardType.UUIDType)),
+    genBigDecimal.map(Value(_, StandardType.BigDecimalType)),
+    genBigInteger.map(Value(_, StandardType.BigIntegerType)),
+    Gen.dayOfWeek.map(Value(_, StandardType.DayOfWeekType)),
+    Gen.month.map(Value(_, StandardType.MonthType)),
+    Gen.monthDay.map(Value(_, StandardType.MonthDayType)),
+    Gen.period.map(Value(_, StandardType.PeriodType)),
+    Gen.year.map(Value(_, StandardType.YearType)),
+    Gen.yearMonth.map(Value(_, StandardType.YearMonthType)),
+    Gen.zoneId.map(Value(_, StandardType.ZoneIdType)),
+    Gen.zoneOffset.map(Value(_, StandardType.ZoneOffsetType)),
+    Gen.finiteDuration.map(Value(_, StandardType.DurationType)),
+    Gen.instant.map(Value(_, StandardType.InstantType)),
+    Gen.localDate.map(Value(_, StandardType.LocalDateType)),
+    Gen.localTime.map(Value(_, StandardType.LocalTimeType)),
+    Gen.localDateTime.map(Value(_, StandardType.LocalDateTimeType)),
+    Gen.offsetTime.map(Value(_, StandardType.OffsetTimeType)),
+    Gen.offsetDateTime.map(Value(_, StandardType.OffsetDateTimeType)),
+    Gen.zonedDateTime.map(Value(_, StandardType.ZonedDateTimeType))
   )
 }
