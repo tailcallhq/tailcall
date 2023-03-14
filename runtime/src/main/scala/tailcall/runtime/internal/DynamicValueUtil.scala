@@ -81,7 +81,7 @@ object DynamicValueUtil {
           toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toInputValue(v)
         }.toMap)
       case DynamicValue.Singleton(_)                   => ???
-      case DynamicValue.NoneValue                      => ???
+      case DynamicValue.NoneValue                      => Value.NullValue
       case DynamicValue.DynamicAst(_)                  => ???
       case DynamicValue.SetValue(_)                    => ???
       case DynamicValue.Record(_, b)      => InputValue.ObjectValue(b.map { case (k, v) => k -> toInputValue(v) })
@@ -122,7 +122,7 @@ object DynamicValueUtil {
       case ListValue(values)       => DynamicValue(values.map(fromInputValue(_)))
       case ObjectValue(fields)     => DynamicValue(fields.map { case (k, v) => k -> fromInputValue(v) })
       case StringValue(value)      => DynamicValue(value)
-      case NullValue               => ???
+      case NullValue               => DynamicValue.NoneValue
       case BooleanValue(value)     => DynamicValue(value)
       case BigDecimalNumber(value) => DynamicValue(value)
       case DoubleNumber(value)     => DynamicValue(value)
