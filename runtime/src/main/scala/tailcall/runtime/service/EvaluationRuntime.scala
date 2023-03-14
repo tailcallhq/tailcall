@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.HttpClient
+import tailcall.runtime.http.Request
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda._
 import tailcall.runtime.remote.Remote
@@ -11,7 +11,7 @@ import zio.schema.{DynamicValue, Schema}
 import java.nio.charset.StandardCharsets
 
 trait EvaluationRuntime {
-  final def evaluate[A](remote: Remote[A]): Task[A] = evaluate(remote.toLambda) {}
+  final def evaluate[A](remote: Remote[A]): ZIO[Any, Throwable, A] = evaluate(remote.toLambda) {}
 
   final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] = evaluate(lambda, EvaluationContext.make)
 
@@ -30,9 +30,10 @@ object EvaluationRuntime {
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[HttpClient, Nothing, EvaluationRuntime] = ZLayer.fromFunction(new Live(_))
+  def live: ZLayer[DataLoader[Any, Throwable, Request, Chunk[Byte]], Nothing, EvaluationRuntime] =
+    ZLayer.fromFunction(new Live(_))
 
-  final class Live(client: HttpClient) extends EvaluationRuntime {
+  final class Live(dataLoader: DataLoader[Any, Throwable, Request, Chunk[Byte]]) extends EvaluationRuntime {
 
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any] = {
       plan match {
@@ -142,13 +143,11 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    array <- client.request(endpoint.evaluate(input.asInstanceOf[DynamicValue])).flatMap(x =>
-                      if (x.status.code >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x.status.code}"))
-                      else x.body.asArray
-                    )
+                    chunk <- dataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     outputSchema = endpoint.outputSchema
                     any <- ZIO.fromEither(
-                      JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(array, StandardCharsets.UTF_8))
+                      JsonCodec.jsonDecoder(outputSchema)
+                        .decodeJson(new String(chunk.asInstanceOf[Chunk[Byte]].toArray, StandardCharsets.UTF_8))
                         .map(outputSchema.toDynamic)
                     ).mapError(EvaluationError.DecodingError(_))
                   } yield any

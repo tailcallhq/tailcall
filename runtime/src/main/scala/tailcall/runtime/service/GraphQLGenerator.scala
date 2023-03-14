@@ -5,15 +5,16 @@ import caliban.introspection.adt.__Directive
 import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.wrappers.Wrapper
 import tailcall.runtime.ast.Blueprint
-import zio.{ZIO, ZLayer}
+import tailcall.runtime.http.Request
+import zio.{Chunk, ZIO, ZLayer}
 
 trait GraphQLGenerator {
-  def toGraphQL(document: Blueprint): GraphQL[Any]
+  def toGraphQL(document: Blueprint): GraphQL[DataLoader[Any, Throwable, Request, Chunk[Byte]]]
 }
 
 object GraphQLGenerator {
   final case class Live(tGen: SchemaGenerator, sGen: StepGenerator) extends GraphQLGenerator {
-    override def toGraphQL(input: Blueprint): GraphQL[Any] =
+    override def toGraphQL(input: Blueprint): GraphQL[DataLoader[Any, Throwable, Request, Chunk[Byte]]] =
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
           val stepResult = sGen.resolve(input)
@@ -36,6 +37,8 @@ object GraphQLGenerator {
 
   def live: ZLayer[SchemaGenerator with StepGenerator, Nothing, GraphQLGenerator] = ZLayer.fromFunction(Live.apply _)
 
-  def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] =
+  def toGraphQL(
+    document: Blueprint
+  ): ZIO[GraphQLGenerator, Nothing, GraphQL[DataLoader[Any, Throwable, Request, Chunk[Byte]]]] =
     ZIO.serviceWith(_.toGraphQL(document))
 }
