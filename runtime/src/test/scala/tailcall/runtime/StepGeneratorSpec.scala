@@ -1,16 +1,17 @@
 package tailcall.runtime
 
-import caliban.InputValue
+import caliban.{CalibanError, InputValue}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.remote._
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
+import zio.ZIO
 import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
-import zio.{ZIO, ZLayer}
 
 object StepGeneratorSpec extends ZIOSpecDefault {
 
@@ -173,22 +174,23 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,
-      Client.default
+      Client.default,
+      DataLoader.http
     )
   }
 
   def execute(orc: Orc, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpClient with GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(execute(_, variables)(query))
+  ): ZIO[HttpDataLoader with GraphQLGenerator, Throwable, String] =
+    orc.toBlueprint.flatMap(execute(_, variables)(query))
 
   def execute(doc: Blueprint, variables: Map[String, InputValue])(
     query: String
-  ): ZIO[HttpClient with GraphQLGenerator, Throwable, String] =
+  ): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError, String] =
     for {
       graphQL     <- doc.toGraphQL
       interpreter <- graphQL.interpreter
-      result      <- interpreter.execute(query, variables = variables) provideSomeLayer (ZLayer
-        .fromZIO(ZIO.service[HttpClient]) ++ DataLoader.http)
+      result      <- interpreter.execute(query, variables = variables)
       _           <- result.errors.headOption match {
         case Some(error) => ZIO.fail(error)
         case None        => ZIO.unit

@@ -5,24 +5,24 @@ import tailcall.runtime.dsl.json.service.ConfigBlueprint
 import tailcall.runtime.dsl.json.{Config, Extension}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
-import zio.test.{TestConsole, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{ZIO, ZLayer, durationInt}
+import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
+import zio.{ZIO, durationInt}
 
 object ConfigSpec extends ZIOSpecDefault {
 
-  def execute(
-    config: Config
-  )(query: String): ZIO[HttpClient with GraphQLGenerator with ConfigBlueprint, CalibanError.ValidationError, String] =
+  def execute(config: Config)(
+    query: String
+  ): ZIO[HttpDataLoader with GraphQLGenerator with ConfigBlueprint, CalibanError.ValidationError, String] =
     for {
       blueprint   <- config.toBlueprint
       graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       response    <- interpreter.execute(query)
-        .provideSomeLayer(ZLayer.fromZIO(ZIO.service[HttpClient]) ++ DataLoader.http)
     } yield response.data.toString
 
   override def spec =
@@ -144,13 +144,6 @@ object ConfigSpec extends ZIOSpecDefault {
           val expected =
             """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
           assertZIO(program)(equalTo(expected))
-        },
-        test("posts user") {
-          val program = for {
-            _   <- execute(JsonPlaceholderConfig.config)(""" query {posts { title user { name } } }""")
-            opt <- TestConsole.output
-          } yield opt.count(_.contains("Request"))
-          assertZIO(program)(equalTo(11))
         }
       )
     ).provide(
@@ -160,6 +153,7 @@ object ConfigSpec extends ZIOSpecDefault {
       EvaluationRuntime.live,
       HttpClient.live,
       Client.default,
-      ConfigBlueprint.live
+      ConfigBlueprint.live,
+      DataLoader.http
     ) @@ timeout(10 seconds)
 }

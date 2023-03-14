@@ -27,7 +27,6 @@ object Main extends ZIOAppDefault {
     HttpClient.live,
     Client.default,
     BinaryDigest.sha256,
-    Server.live,
-    DataLoader.http
+    Server.live
   )
 }
