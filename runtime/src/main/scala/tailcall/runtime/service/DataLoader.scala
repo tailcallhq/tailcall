@@ -27,7 +27,7 @@ object DataLoader {
   def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
     ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
 
-  def http: ZLayer[HttpClient, Nothing, DataLoader[Any, Throwable, Request, Chunk[Byte]]] =
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       for {
         client <- ZIO.service[HttpClient]
@@ -35,7 +35,7 @@ object DataLoader {
         resolver = (request: Request) =>
           client.request(request).flatMap { x =>
             if (x.status.code >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x.status.code}")) else { x.body.asChunk }
-          } <* Console.printLine(s"Request: ${request}")
+          }
       } yield DataLoader(map, resolver)
     }
 }
