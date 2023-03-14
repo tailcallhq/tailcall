@@ -63,24 +63,8 @@ jobs:
         if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
 
-      - name: Compress target directories
-        run: tar cf targets.tar target runtime/target server/target project/target
-
-      - name: Upload target directories
-        uses: actions/upload-artifact@v2
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
-          path: targets.tar
-
-  deploy:
-    name: fly.io deployment
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.13.6]
-        java: [temurin@11]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy on fly.io
+        if: github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'
+        uses: superfly/flyctl-actions/setup-flyctl@master
         with:
           api_token: ${{ secrets.FLY_API_TOKEN }}

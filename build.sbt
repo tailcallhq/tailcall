@@ -6,16 +6,11 @@ val caliban       = "2.0.2"
 val zio           = "2.0.6"
 val zioHttp       = "0.0.4"
 
-ThisBuild / scalaVersion                                   := scala2Version
+ThisBuild / scalaVersion := scala2Version
+
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions     := {
-  Seq("-language:postfixOps") ++
-    (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq("-Ywarn-unused", "-Xfatal-warnings")
-      case _            => Seq.empty
-    })
-}
+ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings")
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 ThisBuild / Test / fork       := true
@@ -32,7 +27,13 @@ enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("Docker/stage"), name = Some("Generate Docker Files")),
-  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
+  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'")),
+  WorkflowStep.Use(
+    UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
+    name = Some("Deploy on fly.io"),
+    params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}"),
+    cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'")
+  )
 )
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
@@ -94,12 +95,3 @@ scriptClasspath := Seq((server / assembly / assemblyJarName).value)
 
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
-
-ThisBuild / githubWorkflowAddedJobs := Seq(WorkflowJob(
-  id = "deploy",
-  name = "fly.io deployment",
-  steps = List(WorkflowStep.Use(
-    UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
-    params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}")
-  ))
-))
