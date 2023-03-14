@@ -173,8 +173,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,
-      Client.default,
-      DataLoader.http
+      Client.default
     )
   }
 

@@ -160,7 +160,6 @@ object ConfigSpec extends ZIOSpecDefault {
       EvaluationRuntime.live,
       HttpClient.live,
       Client.default,
-      DataLoader.http,
       ConfigBlueprint.live
     ) @@ timeout(10 seconds)
 }

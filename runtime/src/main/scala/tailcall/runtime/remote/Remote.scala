@@ -2,6 +2,7 @@ package tailcall.runtime.remote
 
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.lambda.{Lambda, ~>}
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationRuntime
 import zio.ZIO
 import zio.schema.{DynamicValue, Schema}
@@ -15,7 +16,7 @@ import zio.schema.{DynamicValue, Schema}
  */
 final case class Remote[+A](toLambda: Any ~> A) {
   self =>
-  def evaluate: ZIO[EvaluationRuntime, Throwable, A] = toLambda.evaluate {}
+  def evaluate: ZIO[EvaluationRuntime with HttpDataLoader, Throwable, A] = toLambda.evaluate {}
 
   def toDynamic[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
     Remote(self.toLambda >>> Lambda.dynamic.toDynamic)

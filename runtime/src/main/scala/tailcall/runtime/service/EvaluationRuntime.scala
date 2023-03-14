@@ -1,9 +1,9 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.Request
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda._
 import tailcall.runtime.remote.Remote
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import zio._
 import zio.schema.codec.JsonCodec
 import zio.schema.{DynamicValue, Schema}
@@ -11,31 +11,30 @@ import zio.schema.{DynamicValue, Schema}
 import java.nio.charset.StandardCharsets
 
 trait EvaluationRuntime {
-  final def evaluate[A](remote: Remote[A]): ZIO[Any, Throwable, A] = evaluate(remote.toLambda) {}
+  final def evaluate[A](remote: Remote[A]): ZIO[HttpDataLoader, Throwable, A] = evaluate(remote.toLambda) {}
 
-  final def evaluate[A, B](lambda: A ~> B): LExit[Any, Throwable, A, B] = evaluate(lambda, EvaluationContext.make)
+  final def evaluate[A, B](lambda: A ~> B): LExit[HttpDataLoader, Throwable, A, B] =
+    evaluate(lambda, EvaluationContext.make)
 
-  final def evaluate[A, B](lambda: A ~> B, ctx: EvaluationContext): LExit[Any, Throwable, A, B] =
+  final def evaluate[A, B](lambda: A ~> B, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial), ctx).asInstanceOf[LExit[Any, Throwable, A, B]]
 
-  def evaluate(dynamicEval: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any]
+  def evaluate(dynamicEval: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any]
 
-  final def evaluateAs[A](eval: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, A] =
+  final def evaluateAs[A](eval: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, A] =
     evaluate(eval, ctx).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
 object EvaluationRuntime {
   import Expression._
 
-  def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime, Throwable, A, B] =
+  def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpDataLoader, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[DataLoader[Any, Throwable, Request, Chunk[Byte]], Nothing, EvaluationRuntime] =
-    ZLayer.fromFunction(new Live(_))
+  def live: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
-  final class Live(dataLoader: DataLoader[Any, Throwable, Request, Chunk[Byte]]) extends EvaluationRuntime {
-
-    override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[Any, Throwable, Any, Any] = {
+  final class Live extends EvaluationRuntime {
+    override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any] = {
       plan match {
         case Literal(value, meta)              => value.toTypedValue(meta.toSchema.asInstanceOf[Schema[Any]]) match {
             case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, meta.toSchema))
@@ -143,7 +142,7 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    chunk <- dataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
+                    chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     outputSchema = endpoint.outputSchema
                     any <- ZIO.fromEither(
                       JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(chunk.toArray, StandardCharsets.UTF_8))
