@@ -1,23 +1,18 @@
 package tailcall.runtime
 
-import caliban.{InputValue, ResponseValue, Value}
+import caliban.{ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil._
-import tailcall.runtime.internal.Primitive
+import tailcall.runtime.internal.{Caliban, Primitive}
 import zio.json.ast.Json
 import zio.schema.{DeriveSchema, DynamicValue, Schema, TypeId}
 import zio.test._
 
-import java.math.{BigDecimal, BigInteger}
-import java.util.Random
 import scala.collection.immutable.ListMap
 import scala.util.Try
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
-  val helloWorld         = "Hello World!"
-  val meaningOfLife      = 42
-  val avogadrosNumber    = BigDecimal.valueOf(6.0221408e+23)
-  val magicNumberHashing = 0x9e3779b1L
-  val probablePrime      = BigInteger.probablePrime(100, new Random(magicNumberHashing))
+  val helloWorld    = "Hello World!"
+  val meaningOfLife = 42
 
   val genJson: Gen[Any, Json] = Gen.suspend(Gen.oneOf(
     Gen.chunkOfBounded(0, 5)(for {
@@ -34,7 +29,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   sealed trait Foo
 
   final case class Foobar(foo: List[Int], bar: DynamicValue)
-  final case class Foobaz(foo: List[Int], baz: List[String])
 
   object Foo {
     final case class Bar(bar: List[Option[Int]])        extends Foo
@@ -45,10 +39,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
 
   object Foobar {
     implicit val schema: Schema[Foobar] = DeriveSchema.gen[Foobar]
-  }
-
-  object Foobaz {
-    implicit val schema: Schema[Foobaz] = DeriveSchema.gen[Foobaz]
   }
 
   override def spec =
@@ -74,21 +64,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
           Assertion.hasMessage(Assertion.equalTo("could not transform"))
         ))
       },
-      test("toInputValue") {
-        assertTrue(
-          toInputValue(DynamicValue(Foobaz(List(meaningOfLife), List()))) == InputValue.ObjectValue(
-            Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "baz" -> InputValue.ListValue(List()))
-          )
-        ) &&
-        assertTrue(
-          toInputValue(DynamicValue(Map("foo" -> List(meaningOfLife), "bar" -> List()))) == InputValue.ObjectValue(
-            Map("foo" -> InputValue.ListValue(List(Value.IntValue(42))), "bar" -> InputValue.ListValue(List()))
-          )
-        ) &&
-        assert(Try(toInputValue(DynamicValue(Map(meaningOfLife -> helloWorld)))))(Assertion.isFailure(
-          Assertion.hasMessage(Assertion.equalTo("could not transform"))
-        ))
-      },
       test("toTyped") {
         assertTrue(toTyped[String](DynamicValue(helloWorld)) == Some("Hello World!")) &&
         assertTrue(toTyped[String](DynamicValue(meaningOfLife)) == None)
@@ -101,32 +76,10 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         assertTrue(getPath(d, List("bar", "qux")) == None) &&
         assertTrue(getPath(d, List("quux")) == None)
       },
-      test("fromInputValue") {
-        assertTrue(
-          fromInputValue(InputValue.ObjectValue(Map(
-            "foo" -> InputValue.ListValue(List(
-              Value.StringValue(helloWorld),
-              Value.BooleanValue(true),
-              Value.FloatValue.BigDecimalNumber(avogadrosNumber),
-              Value.FloatValue.DoubleNumber(Double.MaxValue),
-              Value.FloatValue.FloatNumber(Float.MaxValue),
-              Value.IntValue.BigIntNumber(probablePrime),
-              Value.IntValue.IntNumber(Int.MaxValue),
-              Value.IntValue.LongNumber(Long.MaxValue)
-            ))
-          ))) == DynamicValue(Map(
-            "foo" -> List(
-              DynamicValue("Hello World!"),
-              DynamicValue(true),
-              DynamicValue(BigDecimal.valueOf(6.0221408e+23)),
-              DynamicValue(1.7976931348623157e308),
-              DynamicValue(3.4028235e38.toFloat),
-              DynamicValue(new BigInteger("799058976649937674302168095891")),
-              DynamicValue(2147483647),
-              DynamicValue(9223372036854775807L)
-            )
-          ))
-        )
+      test("toInputValue compose fromInputValue == identity") {
+        check(Caliban.genInputValue) { inputValue =>
+          assertTrue(toInputValue(fromInputValue(inputValue)) == inputValue)
+        }
       },
       test("record") {
         assertTrue(
