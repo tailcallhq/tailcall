@@ -112,6 +112,30 @@ object DynamicValueUtil {
     }
 
   // TODO: clean up
+  def fromResponseValue(input: ResponseValue): DynamicValue = {
+    import caliban.ResponseValue.{ListValue, ObjectValue, StreamValue}
+    import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
+    import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
+    import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
+
+    input match {
+      case ListValue(values)       => DynamicValue(values.map(fromResponseValue(_)))
+      case ObjectValue(fields)     => DynamicValue(fields.toMap.map { case (k, v) => k -> fromResponseValue(v) })
+      case StringValue(value)      => DynamicValue(value)
+      case NullValue               => DynamicValue.NoneValue
+      case BooleanValue(value)     => DynamicValue(value)
+      case BigDecimalNumber(value) => DynamicValue(value)
+      case DoubleNumber(value)     => DynamicValue(value)
+      case FloatNumber(value)      => DynamicValue(value)
+      case BigIntNumber(value)     => DynamicValue(value)
+      case IntNumber(value)        => DynamicValue(value)
+      case LongNumber(value)       => DynamicValue(value)
+      case EnumValue(_)            => ???
+      case StreamValue(_)          => ???
+    }
+  }
+
+  // TODO: clean up
   def fromInputValue(input: InputValue): DynamicValue = {
     import caliban.InputValue.{ListValue, ObjectValue, VariableValue}
     import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
