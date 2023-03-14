@@ -96,6 +96,7 @@ scriptClasspath := Seq((server / assembly / assemblyJarName).value)
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
 
+
 ThisBuild / githubWorkflowAddedJobs := Seq(WorkflowJob(
   id = "deploy",
   name = "fly.io deployment",
