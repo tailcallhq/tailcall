@@ -19,6 +19,18 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
   val magicNumberHashing = 0x9e3779b1L
   val probablePrime      = BigInteger.probablePrime(100, new Random(magicNumberHashing))
 
+  val genJson: Gen[Any, Json] = Gen.suspend(Gen.oneOf(
+    Gen.chunkOfBounded(0, 5)(for {
+      key   <- Gen.string1(Gen.alphaChar)
+      value <- genJson
+    } yield (key, value)).map(Json.Obj(_)),
+    Gen.chunkOfBounded(0, 5)(genJson).map(Json.Arr(_)),
+    Gen.boolean.map(Json.Bool(_)),
+    Gen.string.map(Json.Str(_)),
+    Gen.double.map(Json.Num(_)),
+    Gen.const(Json.Null)
+  ))
+
   sealed trait Foo
 
   final case class Foobar(foo: List[Int], bar: DynamicValue)
@@ -122,31 +134,8 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             .Record(TypeId.Structural, ListMap("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")))
         )
       },
-      test("fromJson") {
-        assertTrue(
-          fromJson(Json.Obj(
-            "foo" -> Json.Arr(Json.Str(helloWorld), Json.Num(meaningOfLife), Json.Bool(true)),
-            "bar" -> Json.Null
-          )) == DynamicValue.Record(
-            TypeId.Structural,
-            ListMap(
-              "foo" -> DynamicValue(
-                List(DynamicValue("Hello World!"), DynamicValue(BigDecimal.valueOf(42L)), DynamicValue(true))
-              ),
-              "bar" -> DynamicValue.NoneValue
-            )
-          )
-        )
-      },
-      test("toJson") {
-        val bar: Foo = Foo.Bar(List(Some(meaningOfLife), None))
-        val baz: Foo = Foo.Baz(Set(Left(meaningOfLife), Right(helloWorld)))
-        assertTrue(
-          toJson(DynamicValue((bar, baz))) == Json.Arr(
-            Json.Obj("Bar" -> Json.Obj("bar" -> Json.Arr(Json.Num(42), Json.Null))),
-            Json.Obj("Baz" -> Json.Obj("baz" -> Json.Arr(Json.Num(42), Json.Str("Hello World!"))))
-          )
-        )
+      test("toJson compose fromJson == identity") {
+        check(genJson)(json => assertTrue(toJson(fromJson(json)) == json))
       }
     )
 }
