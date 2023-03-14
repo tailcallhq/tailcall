@@ -63,7 +63,7 @@ jobs:
         if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
 
-      - name: Deploy on fly.io
+      - name: Deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'
         uses: superfly/flyctl-actions/setup-flyctl@master
         with:

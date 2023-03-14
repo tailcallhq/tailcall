@@ -30,7 +30,7 @@ ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'")),
   WorkflowStep.Use(
     UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
-    name = Some("Deploy on fly.io"),
+    name = Some("Deploy"),
     params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}"),
     cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'")
   )
