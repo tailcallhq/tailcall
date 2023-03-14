@@ -56,15 +56,15 @@ jobs:
       - name: Build project
         run: sbt ++${{ matrix.scala }} test
 
-      - name: Generate Docker Files
-        run: sbt ++${{ matrix.scala }} Docker/stage
-
       - name: Lint
         if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
 
+      - name: Docker
+        run: sbt ++${{ matrix.scala }} Docker/stage
+
       - name: Deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         uses: superfly/flyctl-actions/setup-flyctl@master
-        with:
-          api_token: ${{ secrets.FLY_API_TOKEN }}
