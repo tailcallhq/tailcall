@@ -31,8 +31,10 @@ addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 enablePlugins(JavaAppPackaging)
 
-ThisBuild / githubWorkflowBuild += WorkflowStep
-  .Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
+ThisBuild / githubWorkflowBuild ++= Seq(
+  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Generate Docker Files")),
+  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
+)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 lazy val root = (project in file(".")).aggregate(runtime, server)
@@ -93,3 +95,16 @@ scriptClasspath := Seq((server / assembly / assemblyJarName).value)
 
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
+
+ThisBuild / githubWorkflowAddedJobs := Seq(WorkflowJob(
+  id = "deploy",
+  name = "fly.io deployment",
+  cond = Some(s"matrix.scala == '${scala2Version}'"),
+  steps = List(
+    WorkflowStep.Use(UseRef.Local("build")),
+    WorkflowStep.Use(
+      UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
+      params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}")
+    )
+  )
+))

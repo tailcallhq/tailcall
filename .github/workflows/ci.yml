@@ -56,6 +56,34 @@ jobs:
       - name: Build project
         run: sbt ++${{ matrix.scala }} test
 
+      - name: Generate Docker Files
+        run: sbt ++${{ matrix.scala }} Docker/stage
+
       - name: Lint
         if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
+
+      - name: Compress target directories
+        run: tar cf targets.tar target runtime/target server/target project/target
+
+      - name: Upload target directories
+        uses: actions/upload-artifact@v2
+        with:
+          name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
+          path: targets.tar
+
+  deploy:
+    name: fly.io deployment
+    if: matrix.scala == '2.13.10'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.6]
+        java: [temurin@11]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: ./build
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          api_token: ${{ secrets.FLY_API_TOKEN }}
