@@ -134,8 +134,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             .Record(TypeId.Structural, ListMap("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")))
         )
       },
-      test("toJson compose fromJson == identity") {
-        check(genJson)(json => assertTrue(toJson(fromJson(json)) == json))
-      }
+      test("toJson compose fromJson == identity")(check(genJson)(json => assertTrue(toJson(fromJson(json)) == json)))
     )
 }
