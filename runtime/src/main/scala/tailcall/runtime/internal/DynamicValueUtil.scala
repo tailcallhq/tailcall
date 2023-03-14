@@ -5,7 +5,7 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 
-import java.math.BigDecimal
+import java.math.{BigDecimal => BigDecimalJava}
 import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
@@ -27,14 +27,14 @@ object DynamicValueUtil {
       case StandardType.MonthType          => Value.StringValue(value.toString)
       case StandardType.ShortType          => Value.IntValue(value.toString.toShort)
       case StandardType.ZoneIdType         => Value.StringValue(value.toString)
-      case StandardType.BigDecimalType     => Value.StringValue(value.toString)
+      case StandardType.BigDecimalType     => Value.FloatValue(BigDecimal(value.toString))
       case StandardType.YearType           => Value.IntValue(value.toString.toInt)
       case StandardType.ByteType           => Value.IntValue(value.toString.toByte)
       case StandardType.UUIDType           => Value.StringValue(value.toString)
       case StandardType.PeriodType         => Value.StringValue(value.toString)
-      case StandardType.LongType           => Value.StringValue(value.toString)
+      case StandardType.LongType           => Value.IntValue(value.toString.toLong)
       case StandardType.ZoneOffsetType     => Value.StringValue(value.toString)
-      case StandardType.BigIntegerType     => Value.StringValue(value.toString)
+      case StandardType.BigIntegerType     => Value.IntValue(BigInt(value.toString))
       case StandardType.OffsetTimeType     => Value.StringValue(value.toString)
       case StandardType.UnitType           => Value.NullValue
       case StandardType.DoubleType         => Value.FloatValue(value.toString.toDouble)
@@ -164,7 +164,7 @@ object DynamicValueUtil {
           .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Chunk[Byte]].toArray))
       case StandardType.CharType           => Json.Str(value.toString)
       case StandardType.UUIDType           => Json.Str(value.toString)
-      case StandardType.BigDecimalType     => Json.Num(value.asInstanceOf[BigDecimal])
+      case StandardType.BigDecimalType     => Json.Num(value.asInstanceOf[BigDecimalJava])
       case StandardType.BigIntegerType     => Json.Str(value.toString)
       case StandardType.DayOfWeekType      => Json.Str(value.toString)
       case StandardType.MonthType          => Json.Str(value.toString)
