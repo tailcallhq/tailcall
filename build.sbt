@@ -26,12 +26,12 @@ addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild ++= Seq(
-  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Generate Docker Files")),
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'")),
+  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker")),
   WorkflowStep.Use(
     UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
     name = Some("Deploy"),
-    params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}"),
+    env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
     cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'")
   )
 )
