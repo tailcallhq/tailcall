@@ -32,7 +32,7 @@ ThisBuild / githubWorkflowBuild ++= Seq(
     UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
     name = Some("Deploy"),
     env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
-    cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/packaging-to-fly'")
+    cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   )
 )
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
