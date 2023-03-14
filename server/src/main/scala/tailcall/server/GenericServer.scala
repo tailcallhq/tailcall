@@ -1,5 +1,6 @@
 package tailcall.server
 
+import tailcall.runtime.service.DataLoader
 import tailcall.server.internal.GraphQLUtils
 import tailcall.server.service.BinaryDigest.{Algorithm, Digest}
 import tailcall.server.service.SchemaRegistry
@@ -24,7 +25,7 @@ object GenericServer {
         }
         query       <- GraphQLUtils.decodeQuery(req.body)
         interpreter <- result.interpreter
-        res         <- interpreter.execute(query)
+        res         <- interpreter.execute(query).provideSomeLayer(DataLoader.http.fresh)
       } yield Response.json(res.toJson)
     }
 }
