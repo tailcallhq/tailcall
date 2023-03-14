@@ -5,6 +5,7 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 
+import java.math.BigDecimal
 import scala.collection.immutable.ListMap
 
 object DynamicValueUtil {
@@ -163,7 +164,7 @@ object DynamicValueUtil {
           .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Chunk[Byte]].toArray))
       case StandardType.CharType           => Json.Str(value.toString)
       case StandardType.UUIDType           => Json.Str(value.toString)
-      case StandardType.BigDecimalType     => Json.Str(value.toString)
+      case StandardType.BigDecimalType     => Json.Num(value.asInstanceOf[BigDecimal])
       case StandardType.BigIntegerType     => Json.Str(value.toString)
       case StandardType.DayOfWeekType      => Json.Str(value.toString)
       case StandardType.MonthType          => Json.Str(value.toString)
