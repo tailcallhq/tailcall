@@ -1,11 +1,12 @@
 package tailcall.runtime.ast
 
 import caliban.GraphQL
+import tailcall.runtime.http.Request
 import tailcall.runtime.lambda.~>
-import tailcall.runtime.service.GraphQLGenerator
-import zio.ZIO
+import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
 import zio.json.{JsonCodec, JsonDecoder, JsonEncoder}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.{Chunk, ZIO}
 
 /**
  * Document is an intermediate representation of a GraphQL
@@ -29,7 +30,8 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 final case class Blueprint(schema: Blueprint.SchemaDefinition, definitions: List[Blueprint.Definition]) {
   self =>
 
-  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[Any]] = GraphQLGenerator.toGraphQL(self)
+  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[DataLoader[Any, Throwable, Request, Chunk[Byte]]]] =
+    GraphQLGenerator.toGraphQL(self)
 }
 
 // scalafmt: {maxColumn = 240}

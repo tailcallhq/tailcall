@@ -222,7 +222,8 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,
-      Client.default
+      Client.default,
+      DataLoader.http
     )
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)

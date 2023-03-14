@@ -5,7 +5,7 @@ import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.{DynamicValueUtil, JsonPlaceholder}
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.{Lambda, ~>}
-import tailcall.runtime.service.EvaluationRuntime
+import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
 import zio.durationInt
 import zio.http.Client
 import zio.schema.DynamicValue
@@ -312,5 +312,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo("HTTP Error: 404"))
         }
       ) @@ timeout(5 seconds)
-    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default)
+    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default, DataLoader.http)
 }
