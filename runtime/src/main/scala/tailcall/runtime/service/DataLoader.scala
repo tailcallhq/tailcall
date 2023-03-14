@@ -34,7 +34,8 @@ object DataLoader {
         map    <- Ref.make(Map.empty[Request, Promise[Throwable, Chunk[Byte]]])
         resolver = (request: Request) =>
           client.request(request).flatMap { x =>
-            if (x.status.code >= 400) ZIO.fail(new Throwable(s"HTTP Error: ${x.status.code}")) else { x.body.asChunk }
+            if (x.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${x.status.code}"))
+            else { x.body.asChunk }
           }
       } yield DataLoader(map, resolver)
     }
