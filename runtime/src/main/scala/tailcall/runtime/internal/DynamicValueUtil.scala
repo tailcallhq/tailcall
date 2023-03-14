@@ -14,7 +14,7 @@ object DynamicValueUtil {
       case _                                => None
     }
 
-  def toValue[A](value: A, standardType: StandardType[A]): Value =
+  private def toValue[A](value: A, standardType: StandardType[A]): Value =
     standardType match {
       case StandardType.StringType         => Value.StringValue(value.toString)
       case StandardType.IntType            => Value.IntValue(value.toString.toInt)
@@ -148,7 +148,7 @@ object DynamicValueUtil {
       case Json.Null          => DynamicValue.NoneValue
     }
 
-  def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
+  private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Str(value.toString)
       case StandardType.StringType         => Json.Str(value.toString)
