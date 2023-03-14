@@ -5,6 +5,8 @@ import tailcall.server.service.BinaryDigest.Digest
 import zio.rocksdb.RocksDB
 import zio.{Ref, Task, UIO, ZIO, ZLayer}
 
+import java.nio.file.Files
+
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
   def get(id: Digest): Task[Option[Blueprint]]
@@ -19,8 +21,9 @@ object SchemaRegistry {
       bd  <- ZIO.service[BinaryDigest]
     } yield Memory(ref, bd))
 
-  def persistent(path: String): ZLayer[BinaryDigest, Throwable, SchemaRegistry] =
-    RocksDB.live(path) >>> ZLayer.fromFunction(Persistence.apply _)
+  def persistent: ZLayer[BinaryDigest, Throwable, SchemaRegistry] =
+    RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
+      .fromFunction(Persistence.apply _)
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))

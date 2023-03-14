@@ -24,10 +24,9 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
   }
 
   override def spec: Spec[TestEnvironment with Scope, Any] = {
-    val path = this.getClass.getResource("/").getPath
     suite("SchemaRegistrySpec")(
       suite("InMemory")(registrySpec).provide(SchemaRegistry.memory, BinaryDigest.sha256),
-      suite("Persistent")(registrySpec).provide(SchemaRegistry.persistent(path), BinaryDigest.sha256)
+      suite("Persistent")(registrySpec).provide(SchemaRegistry.persistent, BinaryDigest.sha256)
     )
   }
 }

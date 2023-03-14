@@ -12,14 +12,14 @@ object Main extends ZIOAppDefault {
     case Method.GET -> !! / "graphql"          => Http.fromResource("graphiql.html")
     case Method.POST -> !! / "graphql"         => AdminServer.graphQL
     case Method.POST -> !! / "graphql" / _ / _ => GenericServer.graphQL
-  }).tapErrorZIO(err => ZIO.succeed(pprint.pprintln(err))).mapError {
+  }).tapErrorZIO(err => ZIO.succeed(pprint.pprintln(s"HttpError: ${err}"))).mapError {
     case error: HttpError => Response.fromHttpError(error)
     case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
   }
 
-  override val run = Server.serve(server).provide(
-    ServerConfig.live.map(_.update(_.port(8080))),
-    SchemaRegistry.persistent(this.getClass.getResource("/").getPath),
+  override val run = Server.serve(server).exitCode.provide(
+    ServerConfig.live,
+    SchemaRegistry.persistent,
     GraphQLGenerator.live,
     SchemaGenerator.live,
     StepGenerator.live,
@@ -28,5 +28,5 @@ object Main extends ZIOAppDefault {
     Client.default,
     BinaryDigest.sha256,
     Server.live
-  ).exitCode
+  )
 }
