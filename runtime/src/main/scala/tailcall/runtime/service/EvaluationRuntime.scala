@@ -146,8 +146,7 @@ object EvaluationRuntime {
                     chunk <- dataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     outputSchema = endpoint.outputSchema
                     any <- ZIO.fromEither(
-                      JsonCodec.jsonDecoder(outputSchema)
-                        .decodeJson(new String(chunk.asInstanceOf[Chunk[Byte]].toArray, StandardCharsets.UTF_8))
+                      JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(chunk.toArray, StandardCharsets.UTF_8))
                         .map(outputSchema.toDynamic)
                     ).mapError(EvaluationError.DecodingError(_))
                   } yield any
