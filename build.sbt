@@ -7,7 +7,6 @@ val zio           = "2.0.6"
 val zioHttp       = "0.0.4"
 
 ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions     := {
@@ -99,7 +98,6 @@ dockerExposedPorts := Seq(8080)
 ThisBuild / githubWorkflowAddedJobs := Seq(WorkflowJob(
   id = "deploy",
   name = "fly.io deployment",
-  cond = Some(s"matrix.scala == '${scala2Version}'"),
   steps = List(WorkflowStep.Use(
     UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
     params = Map("api_token" -> "${{ secrets.FLY_API_TOKEN }}")
