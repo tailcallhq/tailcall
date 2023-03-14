@@ -5,10 +5,8 @@ import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.Type.{ListType, NamedType, NonNull}
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
 import tailcall.runtime.dsl.scala.service.OrcBlueprint
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio.ZIO
-import zio.http.Client
 import zio.test.Assertion._
 import zio.test._
 
@@ -216,15 +214,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
                                        |type Query""".stripMargin))
         }
       )
-    ).provide(
-      GraphQLGenerator.live,
-      SchemaGenerator.live,
-      StepGenerator.live,
-      EvaluationRuntime.live,
-      HttpClient.live,
-      Client.default,
-      DataLoader.http
-    )
+    ).provide(GraphQLGenerator.live, SchemaGenerator.live, StepGenerator.live, EvaluationRuntime.live)
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
 }

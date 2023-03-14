@@ -2,6 +2,7 @@ package tailcall.runtime.lambda
 
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.lambda.Expression._
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationContext.Binding
 import tailcall.runtime.service.EvaluationRuntime
 import zio.schema.{DynamicValue, Schema}
@@ -20,7 +21,7 @@ sealed trait Lambda[-A, +B] {
 
   def compile(context: CompilationContext): Expression
 
-  final def evaluate: LExit[EvaluationRuntime, Throwable, A, B] = EvaluationRuntime.evaluate(self)
+  final def evaluate: LExit[EvaluationRuntime with HttpDataLoader, Throwable, A, B] = EvaluationRuntime.evaluate(self)
 
   override def equals(obj: Any): Boolean = {
     obj match {

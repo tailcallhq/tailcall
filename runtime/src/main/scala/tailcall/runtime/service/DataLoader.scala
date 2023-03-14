@@ -20,7 +20,13 @@ case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A =
     } yield chunk
   }
 }
-object DataLoader                                                                               {
+
+object DataLoader {
+  type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
+
+  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
+    ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
+
   def http: ZLayer[HttpClient, Nothing, DataLoader[Any, Throwable, Request, Chunk[Byte]]] =
     ZLayer {
       for {
