@@ -5,12 +5,11 @@ import caliban.introspection.adt.__Directive
 import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.wrappers.Wrapper
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.http.Request
 import tailcall.runtime.service.DataLoader.HttpDataLoader
-import zio.{Chunk, ZIO, ZLayer}
+import zio.{ZIO, ZLayer}
 
 trait GraphQLGenerator {
-  def toGraphQL(document: Blueprint): GraphQL[DataLoader[Any, Throwable, Request, Chunk[Byte]]]
+  def toGraphQL(document: Blueprint): GraphQL[HttpDataLoader]
 }
 
 object GraphQLGenerator {
