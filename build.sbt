@@ -1,10 +1,40 @@
+lazy val root    = (project in file(".")).aggregate(runtime, server, cli)
+lazy val runtime = (project in file("runtime")).settings(
+  libraryDependencies := Seq(
+    "dev.zio"               %% "zio-schema"            % zioSchema,
+    "dev.zio"               %% "zio-schema-derivation" % zioSchema,
+    "dev.zio"               %% "zio-schema-json"       % zioSchema,
+    "com.lihaoyi"           %% "pprint"                % "0.8.1",
+    "dev.zio"               %% "zio"                   % zio,
+    "com.github.ghostdogpr" %% "caliban"               % caliban,
+    "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
+    "dev.zio"               %% "zio-json"              % zioJson,
+    "dev.zio"               %% "zio-json-yaml"         % zioJson,
+    "dev.zio"               %% "zio-parser"            % "0.1.8",
+    "dev.zio"               %% "zio-http"              % "0.0.4"
+
+    // Testing
+
+  ),
+  libraryDependencies ++= Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
+)
+
+lazy val cli = (project in file("cli")).settings(
+  libraryDependencies := zioTestDependencies ++
+    Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-cli" % "0.4.0")
+).dependsOn(runtime)
+
+lazy val server = (project in file("server")).settings(
+  libraryDependencies := zioTestDependencies ++ Seq(
+    "dev.zio" %% "zio"         % zio,
+    "dev.zio" %% "zio-http"    % zioHttp,
+    "dev.zio" %% "zio-rocksdb" % "0.4.2"
+  )
+).dependsOn(runtime)
+
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
 val zioJson       = "0.4.2"
-val zioSchema     = "0.4.7"
-val caliban       = "2.0.2"
-val zio           = "2.0.6"
-val zioHttp       = "0.0.4"
 
 ThisBuild / scalaVersion := scala2Version
 
@@ -13,6 +43,7 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings")
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+
 ThisBuild / Test / fork       := true
 Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -35,44 +66,16 @@ ThisBuild / githubWorkflowBuild ++= Seq(
     cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   )
 )
+
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-
-lazy val root = (project in file(".")).aggregate(runtime, server)
-
-lazy val runtime = (project in file("runtime")).settings(
-  libraryDependencies := Seq(
-    "dev.zio"               %% "zio-schema"            % zioSchema,
-    "dev.zio"               %% "zio-schema-derivation" % zioSchema,
-    "dev.zio"               %% "zio-schema-json"       % zioSchema,
-    "com.lihaoyi"           %% "pprint"                % "0.8.1",
-    "dev.zio"               %% "zio"                   % zio,
-    "com.github.ghostdogpr" %% "caliban"               % caliban,
-    "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
-    "dev.zio"               %% "zio-json"              % zioJson,
-    "dev.zio"               %% "zio-json-yaml"         % zioJson,
-    "dev.zio"               %% "zio-parser"            % "0.1.8",
-    "dev.zio"               %% "zio-http"              % "0.0.4",
-
-    // Testing
-    "dev.zio" %% "zio-test"     % zio % Test,
-    "dev.zio" %% "zio-test-sbt" % zio % Test
-  )
-)
+val zioSchema           = "0.4.7"
+val caliban             = "2.0.2"
+val zio                 = "2.0.6"
+val zioHttp             = "0.0.4"
+val zioTestDependencies = Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
 
 Compile / mainClass := Some("tailcall.server.Main")
-maintainer := "tushar@tailcall.in"
-
-lazy val server = (project in file("server")).settings(
-  libraryDependencies := Seq(
-    "dev.zio" %% "zio"         % zio,
-    "dev.zio" %% "zio-http"    % zioHttp,
-    "dev.zio" %% "zio-rocksdb" % "0.4.2",
-
-    // Testing
-    "dev.zio" %% "zio-test"     % zio % Test,
-    "dev.zio" %% "zio-test-sbt" % zio % Test
-  )
-).dependsOn(runtime)
+maintainer          := "tushar@tailcall.in"
 
 // the assembly settings
 // we specify the name for our fat jar
@@ -89,9 +92,7 @@ Universal / mappings := {
   // add the fat jar
   filtered :+ (fatJar -> ("lib/" + fatJar.getName))
 }
-
 // the bash scripts classpath only needs the fat jar
-scriptClasspath := Seq((server / assembly / assemblyJarName).value)
-
-dockerBaseImage    := "eclipse-temurin:11"
-dockerExposedPorts := Seq(8080)
+scriptClasspath      := Seq((server / assembly / assemblyJarName).value)
+dockerBaseImage      := "eclipse-temurin:11"
+dockerExposedPorts   := Seq(8080)
