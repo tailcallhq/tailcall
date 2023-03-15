@@ -44,7 +44,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         test("valid") {
           val gen = Gen.fromIterable(Seq(
             toTyped[String](DynamicValue("Hello World!")) -> Some("Hello World!"),
-            toTyped[Int](DynamicValue(42)) -> Some(42)
+            toTyped[Int](DynamicValue(42))                -> Some(42)
           ))
 
           checkAll(gen) { case (dynamicValue, expected) => assertTrue(dynamicValue == expected) }
@@ -58,11 +58,11 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       suite("getPath")(
         test("valid") {
           val gen = Gen.fromIterable(Seq(
-            DynamicValue(Map("a" -> 1)) -> List("a") -> 1,
-            DynamicValue(Map("a" -> Map("b" -> 1))) -> List("a", "b") -> 1,
+            DynamicValue(Map("a" -> 1))                         -> List("a")           -> 1,
+            DynamicValue(Map("a" -> Map("b" -> 1)))             -> List("a", "b")      -> 1,
             DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "b", "c") -> 1,
-            DynamicValue(Map("a" -> List(Map("b" -> 1)))) -> List("a", "0", "b") -> 1,
-            record("a" -> DynamicValue(1)) -> List("a") -> 1
+            DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "0", "b") -> 1,
+            record("a" -> DynamicValue(1))                      -> List("a")           -> 1
             // TODO: options
 
           ))
@@ -84,7 +84,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         }
       },
       test("toJson compose fromJson == identity")(check(genJson)(json => {
-        val actual = toJson(fromJson(json))
+        val actual   = toJson(fromJson(json))
         val expected = json
         assertTrue(actual == expected)
       }))
