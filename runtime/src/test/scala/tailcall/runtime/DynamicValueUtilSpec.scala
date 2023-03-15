@@ -1,7 +1,8 @@
 package tailcall.runtime
 
+import tailcall.runtime.internal.CalibanGen
 import tailcall.runtime.internal.DynamicValueUtil._
-import tailcall.runtime.internal.{CalibanGen, Primitive}
+import tailcall.runtime.internal.PrimitiveGen.Primitive
 import zio.json.ast.Json
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 import zio.test._
