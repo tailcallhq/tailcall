@@ -74,19 +74,23 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         },
         test("invalid")(assertCompletes)
       ),
-      test("toResponseValue compose fromResponseValue == identity") {
+      test("fromResponseValue >=> toResponseValue == Option") {
         check(CalibanGen.genResponseValue) { responseValue =>
-          assertTrue(toResponseValue(fromResponseValue(responseValue)) == responseValue)
+          val actual   = fromResponseValue(responseValue).flatMap(toResponseValue)
+          val expected = Option(responseValue)
+          assertTrue(actual == expected)
         }
       },
-      test("toInputValue compose fromInputValue == identity") {
+      test("fromInputValue >=> toInputValue == Option") {
         check(CalibanGen.genInputValue) { inputValue =>
-          assertTrue(toInputValue(fromInputValue(inputValue)) == inputValue)
+          val actual   = fromInputValue(inputValue).flatMap(toInputValue)
+          val expected = Option(inputValue)
+          assertTrue(actual == expected)
         }
       },
-      test("toJson compose fromJson == identity")(check(genJson)(json => {
+      test("fromJson >>> toJson == Option")(check(genJson)(json => {
         val actual   = toJson(fromJson(json))
-        val expected = json
+        val expected = Option(json)
         assertTrue(actual == expected)
       }))
     )
