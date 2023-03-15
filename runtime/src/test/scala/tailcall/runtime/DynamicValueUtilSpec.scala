@@ -41,17 +41,30 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
           val gen = Gen.fromIterable(Seq(
             DynamicValue(Map("a" -> 1))                         -> List("a")           -> 1,
             DynamicValue(Map("a" -> Map("b" -> 1)))             -> List("a", "b")      -> 1,
+            DynamicValue(Map("a" -> Option(Map("b" -> 1))))     -> List("a", "b")      -> 1,
             DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "b", "c") -> 1,
             DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "0", "b") -> 1,
             record("a" -> DynamicValue(1))                      -> List("a")           -> 1
-            // TODO: options
           ))
 
           checkAll(gen) { case dynamic -> path -> expected =>
             assertTrue(getPath(dynamic, path) == Some(DynamicValue(expected)))
           }
         },
-        test("invalid")(assertCompletes)
+        test("invalid") {
+          val gen = Gen.fromIterable(Seq(
+            DynamicValue(Map("a" -> 1))                         -> List("b"),
+            DynamicValue(Map("a" -> Map("b" -> 1)))             -> List("b", "b"),
+            DynamicValue(Map("a" -> Option(Map("b" -> 1))))     -> List("a", "c"),
+            DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "c", "e"),
+            DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "1", "b"),
+            record("a" -> DynamicValue(1))                      -> List("d")
+          ))
+
+          checkAll(gen) { case dynamic -> path =>
+            assertTrue(getPath(dynamic, path) == None)
+          }
+        }
       ),
       test("fromResponseValue >=> toResponseValue == Option") {
         check(CalibanGen.genResponseValue) { responseValue =>
