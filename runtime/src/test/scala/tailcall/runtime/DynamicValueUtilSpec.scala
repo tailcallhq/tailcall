@@ -4,7 +4,7 @@ import tailcall.runtime.internal.CalibanGen
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.PrimitiveGen.Primitive
 import zio.json.ast.Json
-import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.schema.DynamicValue
 import zio.test._
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
@@ -19,12 +19,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
     Gen.double.map(Json.Num(_)),
     Gen.const(Json.Null)
   ))
-
-  final case class Foobar(foo: List[Int], bar: DynamicValue)
-
-  object Foobar {
-    implicit val schema: Schema[Foobar] = DeriveSchema.gen[Foobar]
-  }
 
   override def spec =
     suite("DynamicValueUtilSpec")(
@@ -65,7 +59,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "0", "b") -> 1,
             record("a" -> DynamicValue(1))                      -> List("a")           -> 1
             // TODO: options
-
           ))
 
           checkAll(gen) { case dynamic -> path -> expected =>
