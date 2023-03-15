@@ -1,30 +1,16 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.CalibanGen
 import tailcall.runtime.internal.DynamicValueUtil._
-import tailcall.runtime.internal.PrimitiveGen.Primitive
-import zio.json.ast.Json
+import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen}
 import zio.schema.DynamicValue
 import zio.test._
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
-  val genJson: Gen[Any, Json] = Gen.suspend(Gen.oneOf(
-    Gen.chunkOfBounded(0, 5)(for {
-      key   <- Gen.string1(Gen.alphaChar)
-      value <- genJson
-    } yield (key, value)).map(Json.Obj(_)),
-    Gen.chunkOfBounded(0, 5)(genJson).map(Json.Arr(_)),
-    Gen.boolean.map(Json.Bool(_)),
-    Gen.string.map(Json.Str(_)),
-    Gen.double.map(Json.Num(_)),
-    Gen.const(Json.Null)
-  ))
-
   override def spec =
     suite("DynamicValueUtilSpec")(
       suite("asString")(
         test("valid") {
-          val dynamics: Gen[Any, (DynamicValue, String)] = Gen.oneOf(Primitive.gen.map { primitive =>
+          val dynamics: Gen[Any, (DynamicValue, String)] = Gen.oneOf(PrimitiveGen.genPrimitive.map { primitive =>
             primitive.toDynamicValue -> primitive.value.toString
           })
 
@@ -81,7 +67,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
           assertTrue(actual == expected)
         }
       },
-      test("fromJson >>> toJson == Option")(check(genJson)(json => {
+      test("fromJson >>> toJson == Option")(check(JsonGen.genJson)(json => {
         val actual   = toJson(fromJson(json))
         val expected = Option(json)
         assertTrue(actual == expected)
