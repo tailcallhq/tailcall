@@ -8,6 +8,12 @@ import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 import java.math.{BigDecimal => BigDecimalJava}
 import scala.collection.immutable.ListMap
 
+import InputValue.{ListValue => InputList, ObjectValue => InputObject, VariableValue}
+import ResponseValue.{ListValue => ResponseList, ObjectValue => ResponseObject, StreamValue}
+import Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
+import Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
+import Value.{BooleanValue, EnumValue, NullValue, StringValue}
+
 object DynamicValueUtil {
   def asString(dv: DynamicValue): Option[String] =
     dv match {
@@ -113,16 +119,10 @@ object DynamicValueUtil {
         }
     }
 
-  // TODO: clean up
   def fromResponseValue(input: ResponseValue): Option[DynamicValue] = {
-    import caliban.ResponseValue.{ListValue, ObjectValue, StreamValue}
-    import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
-    import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
-    import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
-
     input match {
-      case ListValue(values)       => Some(DynamicValue(values.map(fromResponseValue(_))))
-      case ObjectValue(fields)     => Some(DynamicValue(fields.toMap.map { case (k, v) => k -> fromResponseValue(v) }))
+      case ResponseList(values)    => Some(DynamicValue(values.map(fromResponseValue(_))))
+      case ResponseObject(fields)  => Some(DynamicValue(fields.toMap.map { case (k, v) => k -> fromResponseValue(v) }))
       case StringValue(value)      => Some(DynamicValue(value))
       case NullValue               => Some(DynamicValue.NoneValue)
       case BooleanValue(value)     => Some(DynamicValue(value))
@@ -137,16 +137,10 @@ object DynamicValueUtil {
     }
   }
 
-  // TODO: clean up
   def fromInputValue(input: InputValue): Option[DynamicValue] = {
-    import caliban.InputValue.{ListValue, ObjectValue, VariableValue}
-    import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
-    import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
-    import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
-
     input match {
-      case ListValue(values)       => Some(DynamicValue(values.map(fromInputValue(_))))
-      case ObjectValue(fields)     => Some(DynamicValue(fields.map { case (k, v) => k -> fromInputValue(v) }))
+      case InputList(values)       => Some(DynamicValue(values.map(fromInputValue(_))))
+      case InputObject(fields)     => Some(DynamicValue(fields.map { case (k, v) => k -> fromInputValue(v) }))
       case StringValue(value)      => Some(DynamicValue(value))
       case NullValue               => Some(DynamicValue.NoneValue)
       case BooleanValue(value)     => Some(DynamicValue(value))
