@@ -61,9 +61,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             record("a" -> DynamicValue(1))                      -> List("d")
           ))
 
-          checkAll(gen) { case dynamic -> path =>
-            assertTrue(getPath(dynamic, path) == None)
-          }
+          checkAll(gen) { case dynamic -> path => assertTrue(getPath(dynamic, path) == None) }
         }
       ),
       test("fromResponseValue >=> toResponseValue == Option") {
