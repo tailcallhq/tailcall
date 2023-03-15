@@ -6,7 +6,7 @@ import zio.test.Gen
 import java.math.BigInteger
 import java.util.Random
 
-object Caliban {
+object CalibanGen {
   val probablePrime = BigInt(BigInteger.probablePrime(100, new Random(0x9e3779b1L)))
 
   val genName   = Gen.string1(Gen.alphaChar)
