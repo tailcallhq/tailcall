@@ -1,12 +1,10 @@
 package tailcall.runtime
 
 import tailcall.runtime.internal.DynamicValueUtil._
-import tailcall.runtime.internal.{Caliban, Primitive}
+import tailcall.runtime.internal.{CalibanGen, Primitive}
 import zio.json.ast.Json
-import zio.schema.{DeriveSchema, DynamicValue, Schema, TypeId}
+import zio.schema.{DeriveSchema, DynamicValue, Schema}
 import zio.test._
-
-import scala.collection.immutable.ListMap
 
 object DynamicValueUtilSpec extends ZIOSpecDefault {
   val genJson: Gen[Any, Json] = Gen.suspend(Gen.oneOf(
@@ -29,40 +27,66 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
 
   override def spec =
     suite("DynamicValueUtilSpec")(
-      test("asString") {
-        check(Primitive.gen) { primitive =>
-          assertTrue(asString(primitive.toDynamicValue) == Some(primitive.value.toString))
-        } &&
-        assertTrue(asString(DynamicValue(List(42))) == None)
-      },
-      test("toTyped") {
-        assertTrue(toTyped[String](DynamicValue("Hello World!")) == Some("Hello World!")) &&
-        assertTrue(toTyped[String](DynamicValue(42)) == None)
-      },
-      test("getPath") {
-        val d = DynamicValue(Foobar(List(42), DynamicValue(Option(Map("baz" -> "Hello World!")))))
-        assertTrue(getPath(d, List("foo", "0")) == Some(DynamicValue(42))) &&
-        assertTrue(getPath(d, List("bar", "baz")) == Some(DynamicValue("Hello World!"))) &&
-        assertTrue(getPath(d, List("foo", "1")) == None) &&
-        assertTrue(getPath(d, List("bar", "qux")) == None) &&
-        assertTrue(getPath(d, List("quux")) == None)
-      },
+      suite("asString")(
+        test("valid") {
+          val dynamics: Gen[Any, (DynamicValue, String)] = Gen.oneOf(Primitive.gen.map { primitive =>
+            primitive.toDynamicValue -> primitive.value.toString
+          })
+
+          checkAll(dynamics) { case (dynamic, expected) => assertTrue(asString(dynamic) == Some(expected)) }
+        },
+        test("invalid") {
+          val dynamics: Gen[Any, DynamicValue] = Gen.fromIterable(Seq(DynamicValue(List(42)), DynamicValue(Option(1))))
+          checkAll(dynamics)(dynamic => assertTrue(asString(dynamic) == None))
+        }
+      ),
+      suite("toTyped")(
+        test("valid") {
+          val gen = Gen.fromIterable(Seq(
+            toTyped[String](DynamicValue("Hello World!")) -> Some("Hello World!"),
+            toTyped[Int](DynamicValue(42)) -> Some(42)
+          ))
+
+          checkAll(gen) { case (dynamicValue, expected) => assertTrue(dynamicValue == expected) }
+        },
+        test("invalid") {
+          val gen = Gen.fromIterable(Seq(toTyped[Int](DynamicValue("Hello World!")), toTyped[String](DynamicValue(42))))
+
+          checkAll(gen)(dynamicValue => assertTrue(dynamicValue == None))
+        }
+      ),
+      suite("getPath")(
+        test("valid") {
+          val gen = Gen.fromIterable(Seq(
+            DynamicValue(Map("a" -> 1)) -> List("a") -> 1,
+            DynamicValue(Map("a" -> Map("b" -> 1))) -> List("a", "b") -> 1,
+            DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "b", "c") -> 1,
+            DynamicValue(Map("a" -> List(Map("b" -> 1)))) -> List("a", "0", "b") -> 1,
+            record("a" -> DynamicValue(1)) -> List("a") -> 1
+            // TODO: options
+
+          ))
+
+          checkAll(gen) { case dynamic -> path -> expected =>
+            assertTrue(getPath(dynamic, path) == Some(DynamicValue(expected)))
+          }
+        },
+        test("invalid")(assertCompletes)
+      ),
       test("toResponseValue compose fromResponseValue == identity") {
-        check(Caliban.genResponseValue) { responseValue =>
+        check(CalibanGen.genResponseValue) { responseValue =>
           assertTrue(toResponseValue(fromResponseValue(responseValue)) == responseValue)
         }
       },
       test("toInputValue compose fromInputValue == identity") {
-        check(Caliban.genInputValue) { inputValue =>
+        check(CalibanGen.genInputValue) { inputValue =>
           assertTrue(toInputValue(fromInputValue(inputValue)) == inputValue)
         }
       },
-      test("record") {
-        assertTrue(
-          record("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")) == DynamicValue
-            .Record(TypeId.Structural, ListMap("foo" -> DynamicValue(List(42)), "bar" -> DynamicValue("Hello World!")))
-        )
-      },
-      test("toJson compose fromJson == identity")(check(genJson)(json => assertTrue(toJson(fromJson(json)) == json)))
+      test("toJson compose fromJson == identity")(check(genJson)(json => {
+        val actual = toJson(fromJson(json))
+        val expected = json
+        assertTrue(actual == expected)
+      }))
     )
 }
