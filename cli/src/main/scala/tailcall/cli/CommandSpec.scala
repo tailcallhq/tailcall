@@ -1,17 +1,16 @@
 package tailcall.cli
 
-import tailcall.cli.CommandADT.Deploy
 import tailcall.cli.service.CommandExecutor
 import zio.cli._
 
 object CommandSpec {
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
-    // Validate Command
-    Command("validate", Options.file("file").alias("f")).map(CommandADT.Validate),
+    Command("compile", Options.file("config").alias("c") ++ Options.directory("output-directory").alias("o").optional)
+      .withHelp("Compiles a .yml or .json file into an .orc file").map(CommandADT.Compile.tupled),
 
-    // Deploy Command
-    Command("deploy", Options.text("endpoint").alias("e") ++ CustomOptions.digest("digest").alias("d"))
-      .map(Deploy.tupled)
+    // Schema
+    Command("schema", Options.file("blueprint").alias("b")).map(CommandADT.GraphQLSchema)
+      .withHelp("Generates a GraphQL schema from a .orc file")
   )
 
   val app: CliApp[CommandExecutor, Throwable, CommandADT] = CliApp
