@@ -4,18 +4,17 @@ import caliban.introspection.adt.{__Type, __TypeKind}
 import caliban.schema.Annotations.GQLName
 import caliban.schema.{GenericSchema, Schema, Step}
 import caliban.{GraphQL, ResponseValue, RootResolver}
-import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.~>
-import tailcall.server.service.BinaryDigest.Digest
-import tailcall.server.service.{BinaryDigest, SchemaRegistry}
+import tailcall.server.service.SchemaRegistry
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 
 object AdminGraphQL {
-  type AdminGraphQLEnv = BinaryDigest with SchemaRegistry
+  type AdminGraphQLEnv = SchemaRegistry
   object schema extends GenericSchema[AdminGraphQLEnv]
   import schema._
 
@@ -62,10 +61,7 @@ object AdminGraphQL {
         case Some(blueprint) => Option(BlueprintSpec(digest, blueprint))
         case None            => None
       },
-    for {
-      blueprints <- SchemaRegistry.list(0, Int.MaxValue)
-      schemas <- ZIO.foreach(blueprints)(blueprint => BinaryDigest.digest(blueprint).map(BlueprintSpec(_, blueprint)))
-    } yield schemas,
+    SchemaRegistry.list(0, Int.MaxValue).map(_.map(blueprint => BlueprintSpec(blueprint.digest, blueprint))),
     SchemaRegistry.digests(0, Int.MaxValue)
   )))
 }

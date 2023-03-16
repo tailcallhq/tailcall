@@ -1,8 +1,9 @@
 package tailcall.server
 
+import tailcall.runtime.ast.Digest
+import tailcall.runtime.ast.Digest.Algorithm
 import tailcall.runtime.service.DataLoader
 import tailcall.server.internal.GraphQLUtils
-import tailcall.server.service.BinaryDigest.{Algorithm, Digest}
 import tailcall.server.service.SchemaRegistry
 import zio._
 import zio.http._

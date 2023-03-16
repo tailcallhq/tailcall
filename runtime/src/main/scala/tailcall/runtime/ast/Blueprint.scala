@@ -29,7 +29,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
  */
 final case class Blueprint(schema: Blueprint.SchemaDefinition, definitions: List[Blueprint.Definition]) {
   self =>
-
+  def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
 }
 

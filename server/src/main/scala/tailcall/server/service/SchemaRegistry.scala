@@ -1,7 +1,6 @@
 package tailcall.server.service
 
-import tailcall.runtime.ast.Blueprint
-import tailcall.server.service.BinaryDigest.Digest
+import tailcall.runtime.ast.{Blueprint, Digest}
 import zio.rocksdb.RocksDB
 import zio.{Ref, Task, UIO, ZIO, ZLayer}
 
@@ -15,13 +14,10 @@ trait SchemaRegistry {
 }
 
 object SchemaRegistry {
-  def memory: ZLayer[BinaryDigest, Nothing, SchemaRegistry] =
-    ZLayer.fromZIO(for {
-      ref <- Ref.make(Map.empty[Digest, Blueprint])
-      bd  <- ZIO.service[BinaryDigest]
-    } yield Memory(ref, bd))
+  def memory: ZLayer[Any, Nothing, SchemaRegistry] =
+    ZLayer.fromZIO(for { ref <- Ref.make(Map.empty[Digest, Blueprint]) } yield Memory(ref))
 
-  def persistent: ZLayer[BinaryDigest, Throwable, SchemaRegistry] =
+  def persistent: ZLayer[Any, Throwable, SchemaRegistry] =
     RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
       .fromFunction(Persistence.apply _)
 
@@ -33,8 +29,8 @@ object SchemaRegistry {
   def list(index: Int, max: Int): ZIO[SchemaRegistry, Throwable, List[Blueprint]] =
     ZIO.serviceWithZIO[SchemaRegistry](_.list(index, max))
 
-  def digests(index: Int, max: Int): ZIO[SchemaRegistry with BinaryDigest, Throwable, List[Digest]] =
-    list(index, max).flatMap(ZIO.foreach(_)(blueprint => ZIO.serviceWith[BinaryDigest](_.digest(blueprint))))
+  def digests(index: Int, max: Int): ZIO[SchemaRegistry, Throwable, List[Digest]] =
+    list(index, max).flatMap(ZIO.foreach(_)(blueprint => ZIO.succeed(Digest.fromBlueprint(blueprint))))
 
   def drop(digest: Digest): ZIO[SchemaRegistry, Throwable, Boolean] = ZIO.serviceWithZIO[SchemaRegistry](_.drop(digest))
 
@@ -45,10 +41,10 @@ object SchemaRegistry {
     }
   }
 
-  final case class Memory(ref: Ref[Map[Digest, Blueprint]], bd: BinaryDigest) extends SchemaRegistry {
+  final case class Memory(ref: Ref[Map[Digest, Blueprint]]) extends SchemaRegistry {
 
     override def add(blueprint: Blueprint): Task[Digest] = {
-      val digest: Digest = bd.digest(blueprint)
+      val digest: Digest = blueprint.digest
       ref.update(_.+(digest -> blueprint)).as(digest)
     }
 
@@ -60,9 +56,9 @@ object SchemaRegistry {
       ref.modify(map => if (map.contains(digest)) (true, map - digest) else (false, map))
   }
 
-  final case class Persistence(db: RocksDB, bd: BinaryDigest) extends SchemaRegistry {
+  final case class Persistence(db: RocksDB) extends SchemaRegistry {
     override def add(blueprint: Blueprint): Task[Digest] = {
-      val digest = bd.digest(blueprint)
+      val digest = blueprint.digest
       val value  = Blueprint.encode(blueprint).toString.getBytes()
 
       db.put(digest.getBytes, value).as(digest)

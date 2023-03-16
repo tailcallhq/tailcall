@@ -1,8 +1,8 @@
 package tailcall.server
 
-import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.ast.Digest.Algorithm
+import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.server.internal.GraphQLUtils
-import tailcall.server.service.BinaryDigest.{Algorithm, Digest}
 import tailcall.server.service.SchemaRegistry
 import zio._
 import zio.http._
