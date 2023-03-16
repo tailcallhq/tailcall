@@ -28,13 +28,11 @@ object CalibanGen {
     genFloatValue,
     Gen.string.map(Value.StringValue),
     Gen.boolean.map(Value.BooleanValue)
-    // genName.map(Value.EnumValue)
   )
 
   val genInputValue: Gen[Any, InputValue] = Gen.suspend(Gen.oneOf(
     Gen.listOfBounded(0, 2)(genInputValue).map(InputValue.ListValue),
     Gen.mapOfBounded(0, 2)(genName, genInputValue).map(InputValue.ObjectValue),
-    // genName.map(InputValue.VariableValue),
     genValue
   ))
 
