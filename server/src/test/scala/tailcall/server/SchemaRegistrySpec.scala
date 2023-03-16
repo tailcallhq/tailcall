@@ -1,7 +1,7 @@
 package tailcall.server
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.FieldSet
-import tailcall.server.service.{BinaryDigest, SchemaRegistry}
+import tailcall.server.service.SchemaRegistry
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
@@ -25,8 +25,8 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
 
   override def spec: Spec[TestEnvironment with Scope, Any] = {
     suite("SchemaRegistrySpec")(
-      suite("InMemory")(registrySpec).provide(SchemaRegistry.memory, BinaryDigest.sha256),
-      suite("Persistent")(registrySpec).provide(SchemaRegistry.persistent, BinaryDigest.sha256)
+      suite("InMemory")(registrySpec).provide(SchemaRegistry.memory),
+      suite("Persistent")(registrySpec).provide(SchemaRegistry.persistent)
     )
   }
 }
