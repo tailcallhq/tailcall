@@ -45,7 +45,7 @@ object SchemaGenerator {
         None,
         inputValue.name,
         toCalibanType(inputValue.ofType),
-        inputValue.defaultValue.map(DynamicValueUtil.toInputValue(_).get),
+        inputValue.defaultValue.map(DynamicValueUtil.toInputValue),
         Nil
       )
 
