@@ -33,6 +33,6 @@ object Extension {
   def detect(name: String): Task[Extension] = {
     if (name.endsWith(".json")) ZIO.succeed(JSON)
     else if (name.endsWith(".yml")) ZIO.succeed(YML)
-    else ZIO.fail(new RuntimeException(s"Unsupported file format: ${name}"))
+    else ZIO.fail(new RuntimeException(s"Unsupported file: ${name}"))
   }
 }

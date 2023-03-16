@@ -1,6 +1,7 @@
 package tailcall.cli
 
 import tailcall.cli.CommandADT.Deploy
+import tailcall.cli.service.CommandExecutor
 import zio.cli._
 
 object CommandSpec {
