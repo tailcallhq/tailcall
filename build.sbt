@@ -74,25 +74,52 @@ val zio                 = "2.0.6"
 val zioHttp             = "0.0.4"
 val zioTestDependencies = Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
 
-Compile / mainClass := Some("tailcall.server.Main")
-maintainer          := "tushar@tailcall.in"
+maintainer := "tushar@tailcall.in"
 
-// the assembly settings
-// we specify the name for our fat jar
+// The assembly merge settings
 ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }
 
-// removes all jar mappings in universal and appends the fat jar
+// Disable the main class discovery such that only the CLI is used as it's main class
+// That way the executable script is only created for the CLI
+Compile / discoveredMainClasses := (cli / Compile / mainClass).value.toSeq ++ (server / Compile / mainClass).value.toSeq
+
+// The bash scripts classpath only needs the fat jar
+// Script class path is used in stage command and not not docker stage
+// So we add only the CLI application because only that's needed for the bash script
+scriptClasspath := Seq((cli / assembly / assemblyJarName).value, (server / assembly / assemblyJarName).value)
+
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+// UNIVERSAL PACKAGE SETTINGS
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+// This is where we can add or remove files from the final package
 Universal / mappings := {
-  // universalMappings: Seq[(File,String)]
-  val universalMappings = (Universal / mappings).value
-  val fatJar            = (server / Compile / assembly).value
+  // The fat jar of the CLI
+  val cliJar    = (cli / Compile / assembly).value
+  val serverJar = (server / Compile / assembly).value
+
+  // removing all the jars from the universal package
+  val filtered = (Universal / mappings).value filter { case (file, name) => !name.endsWith(".jar") }
+
+  // add only the cli fat jar
+  filtered ++: Seq(cliJar -> ("lib/" + cliJar.getName), serverJar -> ("lib/" + serverJar.getName))
+}
+
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+// DOCKER SETTINGS
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+// This is where we can add or remove files from the final package
+Docker / mappings := {
+  val serverJar = (server / Compile / assembly).value
   // removing means filtering
-  val filtered          = universalMappings filter { case (file, name) => !name.endsWith(".jar") }
+  val filtered  = (Universal / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
+    .filter { case (file, name) => name.contains("bin/tailcall_server_main") }
 
   // add the fat jar
-  filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+  filtered ++: Seq(serverJar -> ("lib/" + serverJar.getName))
 }
-// the bash scripts classpath only needs the fat jar
-scriptClasspath      := Seq((server / assembly / assemblyJarName).value)
-dockerBaseImage      := "eclipse-temurin:11"
-dockerExposedPorts   := Seq(8080)
+
+dockerEntrypoint   := Seq("tailcall_server_main")
+dockerBaseImage    := "eclipse-temurin:11"
+dockerExposedPorts := Seq(8080)
