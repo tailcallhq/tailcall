@@ -1,12 +1,20 @@
 package tailcall.cli
 
 import tailcall.cli.service.{CommandExecutor, Logger}
-import zio.{ExitCode, Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
+import tailcall.runtime.service.{EvaluationRuntime, GraphQLGenerator, SchemaGenerator, StepGenerator}
+import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 object Main extends ZIOAppDefault {
   self =>
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
     ZIOAppArgs.getArgs.flatMap(args =>
-      (CommandSpec.app.run(args.toList) <> self.exit(ExitCode.failure)).provide(CommandExecutor.live, Logger.live)
+      CommandSpec.app.run(args.toList).provide(
+        CommandExecutor.live,
+        Logger.live,
+        GraphQLGenerator.live,
+        SchemaGenerator.live,
+        StepGenerator.live,
+        EvaluationRuntime.live
+      )
     )
 }
