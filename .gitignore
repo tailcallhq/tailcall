@@ -33,3 +33,4 @@ metals.sbt
 
 *.class
 *.log
+*.orc
