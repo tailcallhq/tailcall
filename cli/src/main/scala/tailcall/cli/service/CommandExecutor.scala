@@ -28,9 +28,11 @@ object CommandExecutor {
         command match {
           case CommandADT.Deploy(digest, endpoint) => ZIO.attempt(println(s"Deploying $digest to $endpoint"))
           case CommandADT.Validate(file)           => for {
-              _ <- log(spans(text("Running file validation on: "), uri(file.toAbsolutePath.toUri)))
-              _ <- ConfigReader.config.readFile(file.toFile).tapError(log.error(_))
-              _ <- log(strong("\uD83D\uDC4D File is valid and is ready to be deployed."))
+              _      <- log(spans(text("Running file validation on: "), uri(file.toAbsolutePath.toUri)))
+              config <- ConfigReader.config.readFile(file.toFile).tapError(log.error(_))
+              digest = config.toBlueprint.digest
+              _ <- log(spans(text("Digest: "), strong(s"${digest.alg}:${digest.hex}")))
+              _ <- log(strong(s"\uD83D\uDC4D File is valid."))
             } yield ()
         }
       }
