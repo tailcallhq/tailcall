@@ -14,12 +14,11 @@ import zio.{ZIO, durationInt}
 
 object ConfigSpec extends ZIOSpecDefault {
 
-  def execute(config: Config)(
-    query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator with ConfigBlueprint, CalibanError.ValidationError, String] =
+  def execute(
+    config: Config
+  )(query: String): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError.ValidationError, String] =
     for {
-      blueprint   <- config.toBlueprint
-      graphQL     <- blueprint.toGraphQL
+      graphQL     <- config.toBlueprint.toGraphQL
       interpreter <- graphQL.interpreter
       response    <- interpreter.execute(query)
     } yield response.data.toString
@@ -88,7 +87,7 @@ object ConfigSpec extends ZIOSpecDefault {
                          |}
                          |""".stripMargin.trim
 
-        for { graphQL <- config.toBlueprint.flatMap(_.toGraphQL) } yield assertTrue(graphQL.render == expected)
+        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
       suite("execute")(
         test("users name") {
@@ -152,7 +151,6 @@ object ConfigSpec extends ZIOSpecDefault {
       EvaluationRuntime.live,
       HttpClient.live,
       Client.default,
-      ConfigBlueprint.live,
       DataLoader.http
     ) @@ timeout(10 seconds)
 }

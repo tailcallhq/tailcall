@@ -3,14 +3,13 @@ package tailcall.runtime.dsl.json
 import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
-import tailcall.runtime.service.ConfigBlueprint
-import zio.ZIO
+import tailcall.runtime.service.ConfigBlueprintGenerator
 import zio.json._
 import zio.json.ast.Json
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: ZIO[ConfigBlueprint, Nothing, Blueprint] = ConfigBlueprint.toBlueprint(self)
+  def toBlueprint: Blueprint = ConfigBlueprintGenerator.toBlueprint(self)
 
   def mergeRight(other: Config): Config = {
     Config(
