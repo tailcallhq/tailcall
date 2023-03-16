@@ -4,7 +4,6 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.Type.{ListType, NamedType, NonNull}
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
-import tailcall.runtime.dsl.scala.service.OrcBlueprint
 import tailcall.runtime.service._
 import zio.ZIO
 import zio.test.Assertion._

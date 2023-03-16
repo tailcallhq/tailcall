@@ -1,4 +1,4 @@
-package tailcall.runtime.dsl.json.service
+package tailcall.runtime.service
 
 import tailcall.runtime.ast.{Blueprint, Endpoint}
 import tailcall.runtime.dsl.json.Config

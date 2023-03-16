@@ -2,7 +2,7 @@ package tailcall.runtime
 
 import caliban.parsing.adt.Document
 import tailcall.runtime.dsl.json.TypeChecker
-import tailcall.runtime.dsl.json.service.ConfigReader
+import tailcall.runtime.service.ConfigReader
 import zio._
 import zio.test.TestAspect.failing
 import zio.test._

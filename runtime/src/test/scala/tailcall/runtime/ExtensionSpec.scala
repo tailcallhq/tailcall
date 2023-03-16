@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.dsl.json.Extension
+import tailcall.runtime.service.Extension
 import zio.test.TestAspect.failing
 import zio.test._
 import zio.{Task, ZIO}

@@ -2,8 +2,8 @@ package tailcall.runtime.dsl.json
 
 import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
-import tailcall.runtime.dsl.json.service.ConfigBlueprint
 import tailcall.runtime.http.Method
+import tailcall.runtime.service.ConfigBlueprint
 import zio.ZIO
 import zio.json._
 import zio.json.ast.Json

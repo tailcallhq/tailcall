@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.dsl.json.service.ConfigReader
+import tailcall.runtime.service.ConfigReader
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, durationInt}

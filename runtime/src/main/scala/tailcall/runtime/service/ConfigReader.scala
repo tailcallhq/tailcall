@@ -1,10 +1,10 @@
-package tailcall.runtime.dsl.json.service
+package tailcall.runtime.service
 
 import caliban.parsing.Parser
 import caliban.parsing.adt.Document
 import caliban.schema.{Operation, RootSchemaBuilder, Step}
 import caliban.validation.Validator
-import tailcall.runtime.dsl.json.{Config, Extension}
+import tailcall.runtime.dsl.json.Config
 import zio.{Task, ZIO}
 
 import java.io.File

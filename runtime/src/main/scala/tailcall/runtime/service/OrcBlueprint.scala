@@ -1,4 +1,4 @@
-package tailcall.runtime.dsl.scala.service
+package tailcall.runtime.service
 
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc

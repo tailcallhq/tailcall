@@ -1,8 +1,7 @@
 package tailcall.runtime
 
 import caliban.CalibanError
-import tailcall.runtime.dsl.json.service.ConfigBlueprint
-import tailcall.runtime.dsl.json.{Config, Extension}
+import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.service.DataLoader.HttpDataLoader
