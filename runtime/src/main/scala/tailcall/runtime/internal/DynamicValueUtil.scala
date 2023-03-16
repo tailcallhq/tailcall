@@ -56,49 +56,47 @@ object DynamicValueUtil {
       case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
     }
 
-  def toResponseValue(input: DynamicValue): Option[ResponseValue] = {
+  def toResponseValue(input: DynamicValue): ResponseValue = {
     input match {
-      case DynamicValue.Sequence(values) => Some(ResponseValue.ListValue(values.flatMap(toResponseValue).toList))
-      case DynamicValue.Primitive(value, standardType) => Some(toValue(value, standardType))
-      case DynamicValue.Dictionary(chunks)             => Some(ResponseValue.ObjectValue(chunks.flatMap { case (k, v) =>
-          toResponseValue(v).map(toTyped[String](k).getOrElse(throw new Error("could not transform")) -> _)
-        }.toList))
-      case DynamicValue.Singleton(_)                   => None
-      case DynamicValue.NoneValue                      => Some(Value.NullValue)
-      case DynamicValue.DynamicAst(_)                  => None
-      case DynamicValue.SetValue(_)                    => None
-      case DynamicValue.Record(_, fields)              => Some(ResponseValue.ObjectValue(fields.flatMap { case (k, v) =>
-          toResponseValue(v).map(k -> _)
-        }.toList))
-      case DynamicValue.Enumeration(_, _)              => None
-      case DynamicValue.RightValue(_)                  => None
+      case DynamicValue.Sequence(values)               => ResponseValue.ListValue(values.map(toResponseValue).toList)
+      case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
+      case DynamicValue.Dictionary(chunks)             => ResponseValue.ObjectValue(chunks.map { case (k, v) =>
+          toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toResponseValue(v)
+        }.toList)
+      case DynamicValue.Singleton(_)                   => Value.NullValue
+      case DynamicValue.NoneValue                      => Value.NullValue
+      case DynamicValue.DynamicAst(_)                  => Value.NullValue
+      case DynamicValue.SetValue(_)                    => Value.NullValue
+      case DynamicValue.Record(_, fields)              => ResponseValue.ObjectValue(fields.map { case (k, v) =>
+          k -> toResponseValue(v)
+        }.toList)
+      case DynamicValue.Enumeration(_, _)              => Value.NullValue
+      case DynamicValue.RightValue(_)                  => Value.NullValue
       case DynamicValue.SomeValue(input)               => toResponseValue(input)
-      case DynamicValue.Tuple(_, _)                    => None
-      case DynamicValue.LeftValue(_)                   => None
-      case DynamicValue.Error(_)                       => None
+      case DynamicValue.Tuple(_, _)                    => Value.NullValue
+      case DynamicValue.LeftValue(_)                   => Value.NullValue
+      case DynamicValue.Error(_)                       => Value.NullValue
     }
   }
 
-  def toInputValue(input: DynamicValue): Option[InputValue] = {
+  def toInputValue(input: DynamicValue): InputValue = {
     input match {
-      case DynamicValue.Sequence(values) => Some(InputValue.ListValue(values.flatMap(toInputValue).toList))
-      case DynamicValue.Primitive(value, standardType) => Some(toValue(value, standardType))
-      case DynamicValue.Dictionary(chunks)             => Some(InputValue.ObjectValue(chunks.flatMap { case (k, v) =>
-          toInputValue(v).map(toTyped[String](k).getOrElse(throw new Error("could not transform")) -> _)
-        }.toMap))
-      case DynamicValue.Singleton(_)                   => None
-      case DynamicValue.NoneValue                      => Some(Value.NullValue)
-      case DynamicValue.DynamicAst(_)                  => None
-      case DynamicValue.SetValue(_)                    => None
-      case DynamicValue.Record(_, b)                   => Some(InputValue.ObjectValue(b.flatMap { case (k, v) =>
-          toInputValue(v).map(k -> _)
-        }))
-      case DynamicValue.Enumeration(_, _)              => None
-      case DynamicValue.RightValue(_)                  => None
-      case DynamicValue.SomeValue(input)               => toInputValue(input)
-      case DynamicValue.Tuple(_, _)                    => None
-      case DynamicValue.LeftValue(_)                   => None
-      case DynamicValue.Error(_)                       => None
+      case DynamicValue.Sequence(values)               => InputValue.ListValue(values.map(toInputValue).toList)
+      case DynamicValue.Primitive(value, standardType) => toValue(value, standardType)
+      case DynamicValue.Dictionary(chunks)             => InputValue.ObjectValue(chunks.map { case (k, v) =>
+          toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toInputValue(v)
+        }.toMap)
+      case DynamicValue.Singleton(_)                   => Value.NullValue
+      case DynamicValue.NoneValue                      => Value.NullValue
+      case DynamicValue.DynamicAst(_)                  => Value.NullValue
+      case DynamicValue.SetValue(_)                    => Value.NullValue
+      case DynamicValue.Record(_, b)      => InputValue.ObjectValue(b.map { case (k, v) => k -> toInputValue(v) })
+      case DynamicValue.Enumeration(_, _) => Value.NullValue
+      case DynamicValue.RightValue(_)     => Value.NullValue
+      case DynamicValue.SomeValue(input)  => toInputValue(input)
+      case DynamicValue.Tuple(_, _)       => Value.NullValue
+      case DynamicValue.LeftValue(_)      => Value.NullValue
+      case DynamicValue.Error(_)          => Value.NullValue
     }
   }
 
@@ -119,39 +117,39 @@ object DynamicValueUtil {
         }
     }
 
-  def fromResponseValue(input: ResponseValue): Option[DynamicValue] = {
+  def fromResponseValue(input: ResponseValue): DynamicValue = {
     input match {
-      case ResponseList(values)    => Some(DynamicValue(values.map(fromResponseValue(_))))
-      case ResponseObject(fields)  => Some(DynamicValue(fields.toMap.map { case (k, v) => k -> fromResponseValue(v) }))
-      case StringValue(value)      => Some(DynamicValue(value))
-      case NullValue               => Some(DynamicValue.NoneValue)
-      case BooleanValue(value)     => Some(DynamicValue(value))
-      case BigDecimalNumber(value) => Some(DynamicValue(value))
-      case DoubleNumber(value)     => Some(DynamicValue(value))
-      case FloatNumber(value)      => Some(DynamicValue(value))
-      case BigIntNumber(value)     => Some(DynamicValue(value))
-      case IntNumber(value)        => Some(DynamicValue(value))
-      case LongNumber(value)       => Some(DynamicValue(value))
-      case EnumValue(_)            => None
-      case StreamValue(_)          => None
+      case ResponseList(values)    => DynamicValue(values.map(fromResponseValue(_)))
+      case ResponseObject(fields)  => DynamicValue(fields.toMap.map { case (k, v) => k -> fromResponseValue(v) })
+      case StringValue(value)      => DynamicValue(value)
+      case NullValue               => DynamicValue.NoneValue
+      case BooleanValue(value)     => DynamicValue(value)
+      case BigDecimalNumber(value) => DynamicValue(value)
+      case DoubleNumber(value)     => DynamicValue(value)
+      case FloatNumber(value)      => DynamicValue(value)
+      case BigIntNumber(value)     => DynamicValue(value)
+      case IntNumber(value)        => DynamicValue(value)
+      case LongNumber(value)       => DynamicValue(value)
+      case EnumValue(_)            => DynamicValue.NoneValue
+      case StreamValue(_)          => DynamicValue.NoneValue
     }
   }
 
-  def fromInputValue(input: InputValue): Option[DynamicValue] = {
+  def fromInputValue(input: InputValue): DynamicValue = {
     input match {
-      case InputList(values)       => Some(DynamicValue(values.map(fromInputValue(_))))
-      case InputObject(fields)     => Some(DynamicValue(fields.map { case (k, v) => k -> fromInputValue(v) }))
-      case StringValue(value)      => Some(DynamicValue(value))
-      case NullValue               => Some(DynamicValue.NoneValue)
-      case BooleanValue(value)     => Some(DynamicValue(value))
-      case BigDecimalNumber(value) => Some(DynamicValue(value))
-      case DoubleNumber(value)     => Some(DynamicValue(value))
-      case FloatNumber(value)      => Some(DynamicValue(value))
-      case BigIntNumber(value)     => Some(DynamicValue(value))
-      case IntNumber(value)        => Some(DynamicValue(value))
-      case LongNumber(value)       => Some(DynamicValue(value))
-      case EnumValue(_)            => None
-      case VariableValue(_)        => None
+      case InputList(values)       => DynamicValue(values.map(fromInputValue(_)))
+      case InputObject(fields)     => DynamicValue(fields.map { case (k, v) => k -> fromInputValue(v) })
+      case StringValue(value)      => DynamicValue(value)
+      case NullValue               => DynamicValue.NoneValue
+      case BooleanValue(value)     => DynamicValue(value)
+      case BigDecimalNumber(value) => DynamicValue(value)
+      case DoubleNumber(value)     => DynamicValue(value)
+      case FloatNumber(value)      => DynamicValue(value)
+      case BigIntNumber(value)     => DynamicValue(value)
+      case IntNumber(value)        => DynamicValue(value)
+      case LongNumber(value)       => DynamicValue(value)
+      case EnumValue(_)            => DynamicValue.NoneValue
+      case VariableValue(_)        => DynamicValue.NoneValue
     }
   }
 
@@ -204,23 +202,21 @@ object DynamicValueUtil {
       case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
     }
 
-  def toJson(d: DynamicValue): Option[Json] =
+  def toJson(d: DynamicValue): Json =
     d match {
-      case DynamicValue.Record(_, values)              => Some(Json.Obj(Chunk.from(values.flatMap { case (k, v) =>
-          toJson(v).map(k -> _)
-        })))
-      case DynamicValue.Enumeration(_, (name, value))  => Some(Json.Obj(Chunk(toJson(value).map(name -> _)).flatten))
-      case DynamicValue.Sequence(values)               => Some(Json.Arr(Chunk.from(values.flatMap(toJson))))
-      case DynamicValue.Dictionary(_)                  => None
-      case DynamicValue.SetValue(values)               => Some(Json.Arr(Chunk.from(values.flatMap(toJson))))
-      case DynamicValue.Primitive(value, standardType) => Some(toJsonPrimitive(value, standardType))
-      case DynamicValue.Singleton(_)                   => None
+      case DynamicValue.Record(_, values) => Json.Obj(Chunk.from(values.map { case (k, v) => k -> toJson(v) }))
+      case DynamicValue.Enumeration(_, (name, value))  => Json.Obj(Chunk(name -> toJson(value)))
+      case DynamicValue.Sequence(values)               => Json.Arr(Chunk.from(values.map(toJson)))
+      case DynamicValue.Dictionary(_)                  => Json.Null
+      case DynamicValue.SetValue(values)               => Json.Arr(Chunk.from(values.map(toJson)))
+      case DynamicValue.Primitive(value, standardType) => toJsonPrimitive(value, standardType)
+      case DynamicValue.Singleton(_)                   => Json.Null
       case DynamicValue.SomeValue(value)               => toJson(value)
-      case DynamicValue.NoneValue                      => Some(Json.Null)
-      case DynamicValue.Tuple(left, right)             => Some(Json.Arr(Chunk(toJson(left), toJson(right)).flatten))
+      case DynamicValue.NoneValue                      => Json.Null
+      case DynamicValue.Tuple(left, right)             => Json.Arr(Chunk(toJson(left), toJson(right)))
       case DynamicValue.LeftValue(value)               => toJson(value)
       case DynamicValue.RightValue(value)              => toJson(value)
-      case DynamicValue.DynamicAst(_)                  => None
-      case DynamicValue.Error(_)                       => None
+      case DynamicValue.DynamicAst(_)                  => Json.Null
+      case DynamicValue.Error(_)                       => Json.Null
     }
 }

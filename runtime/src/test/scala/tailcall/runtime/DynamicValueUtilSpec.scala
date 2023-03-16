@@ -64,23 +64,23 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
           checkAll(gen) { case dynamic -> path => assertTrue(getPath(dynamic, path) == None) }
         }
       ),
-      test("fromResponseValue >=> toResponseValue == Option") {
+      test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
-          val actual   = fromResponseValue(responseValue).flatMap(toResponseValue)
-          val expected = Option(responseValue)
+          val actual   = toResponseValue(fromResponseValue(responseValue))
+          val expected = responseValue
           assertTrue(actual == expected)
         }
       },
-      test("fromInputValue >=> toInputValue == Option") {
+      test("fromInputValue >>> toInputValue == identity") {
         check(CalibanGen.genInputValue) { inputValue =>
-          val actual   = fromInputValue(inputValue).flatMap(toInputValue)
-          val expected = Option(inputValue)
+          val actual   = toInputValue(fromInputValue(inputValue))
+          val expected = inputValue
           assertTrue(actual == expected)
         }
       },
-      test("fromJson >>> toJson == Option")(check(JsonGen.genJson)(json => {
+      test("fromJson >>> toJson == identity")(check(JsonGen.genJson)(json => {
         val actual   = toJson(fromJson(json))
-        val expected = Option(json)
+        val expected = json
         assertTrue(actual == expected)
       }))
     )
