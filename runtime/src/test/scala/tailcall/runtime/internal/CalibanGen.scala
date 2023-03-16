@@ -3,11 +3,8 @@ package tailcall.runtime.internal
 import caliban.{InputValue, ResponseValue, Value}
 import zio.test.Gen
 
-import java.math.BigInteger
-import java.util.Random
-
 object CalibanGen {
-  val probablePrime = BigInt(BigInteger.probablePrime(100, new Random(0x9e3779b1L)))
+  val probablePrime = BigInt("799058976649937674302168095891")
 
   val genName   = Gen.string1(Gen.alphaChar)
   val genBigInt = Gen.bigInt(BigInt(0), probablePrime)
