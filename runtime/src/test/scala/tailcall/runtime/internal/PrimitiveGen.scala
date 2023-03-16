@@ -4,7 +4,6 @@ import zio.schema.{DynamicValue, StandardType}
 import zio.test.Gen
 
 import java.math.{BigDecimal, BigInteger}
-import java.util.Random
 
 object PrimitiveGen {
   sealed trait Primitive {
@@ -18,7 +17,7 @@ object PrimitiveGen {
     type Value = A
   }
 
-  private val probablePrime = BigInteger.probablePrime(100, new Random(0x9e3779b1L))
+  private val probablePrime = new BigInteger("799058976649937674302168095891")
   private val genBigDecimal = Gen.bigDecimalJava(BigDecimal.ZERO, new BigDecimal(probablePrime))
   private val genBigInteger = Gen.bigIntegerJava(BigInteger.ZERO, probablePrime)
 
