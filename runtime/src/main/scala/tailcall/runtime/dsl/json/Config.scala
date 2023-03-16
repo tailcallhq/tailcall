@@ -3,9 +3,12 @@ package tailcall.runtime.dsl.json
 import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
-import tailcall.runtime.service.ConfigBlueprintGenerator
+import tailcall.runtime.service.{ConfigBlueprintGenerator, ConfigReader}
+import zio.Task
 import zio.json._
 import zio.json.ast.Json
+
+import java.io.File
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
@@ -107,6 +110,8 @@ object Config {
     val int: Argument    = Argument("Int")
     val bool: Argument   = Argument("Boolean")
   }
+
+  def fromFile(file: File): Task[Config] = ConfigReader.config.readFile(file)
 
   /**
    * Json Codecs
