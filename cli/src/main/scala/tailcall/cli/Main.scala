@@ -1,10 +1,11 @@
 package tailcall.cli
 
-import tailcall.cli.service.{CommandExecutor, Logger, RemoteExecutor}
+import tailcall.cli.service.{CommandExecutor, ConfigStore, Logger, RemoteExecutor}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio.http.Client
+import zio.rocksdb.RocksDB
 import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 object Main extends ZIOAppDefault {
@@ -23,7 +24,9 @@ object Main extends ZIOAppDefault {
         FileIO.live,
         SchemaRegistry.client("locahost:8080"),
         HttpClient.live,
-        Client.default
+        Client.default,
+        ConfigStore.live,
+        RocksDB.live("/etc/tailcall")
       )
     )
 }
