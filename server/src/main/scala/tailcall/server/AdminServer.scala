@@ -1,9 +1,9 @@
 package tailcall.server
 
+import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Digest.Algorithm
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.server.internal.GraphQLUtils
-import tailcall.server.service.SchemaRegistry
 import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method}

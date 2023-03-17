@@ -1,4 +1,4 @@
-package tailcall.server.service
+package tailcall.registry
 
 import tailcall.runtime.ast.Endpoint.InetAddress
 import tailcall.runtime.ast.{Blueprint, Digest}

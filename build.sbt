@@ -1,4 +1,4 @@
-lazy val root    = (project in file(".")).aggregate(runtime, server, cli)
+lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry)
 lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies := Seq(
     "dev.zio"               %% "zio-schema"            % zioSchema,
@@ -22,9 +22,13 @@ lazy val runtime = (project in file("runtime")).settings(
 lazy val cli = (project in file("cli")).settings(
   libraryDependencies := zioTestDependencies ++
     Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-cli" % "0.4.0")
-).dependsOn(runtime)
+).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
+  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)
+).dependsOn(runtime, registry)
+
+lazy val registry = (project in file("registry")).settings(
   libraryDependencies := zioTestDependencies ++ Seq(
     "dev.zio" %% "zio"         % zio,
     "dev.zio" %% "zio-http"    % zioHttp,

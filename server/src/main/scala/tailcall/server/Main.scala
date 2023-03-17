@@ -1,8 +1,8 @@
 package tailcall.server
 
+import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
-import tailcall.server.service.SchemaRegistry
 import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method}
