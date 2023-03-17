@@ -37,7 +37,7 @@ object CommandExecutor {
         }
       } yield a
 
-    def remoteServer: ZIO[Any, Throwable, String] = config.getOrDefault(Key.RemoteServer)
+    def getBaseURL: ZIO[Any, Throwable, String] = config.getOrDefault(Key.RemoteServer)
 
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
@@ -60,24 +60,24 @@ object CommandExecutor {
           case CommandADT.Deploy(path)          => for {
               blueprint <- fileIO.readJson[Blueprint](path.toFile)
               digest    <- registry.add(blueprint)
-              server    <- remoteServer
+              base      <- getBaseURL
               _         <- logSucceed("Deployment was completed successfully.")
               _         <- logLabeled(
-                "Remote Server:" -> server,
+                "Remote Server:" -> base,
                 "Digest: "       -> s"${digest.alg}:${digest.hex}",
-                "URL: "          -> s"http://${server}/graphQL/${digest.alg}/${digest.hex}"
+                "URL: "          -> s"${base}/graphQL/${digest.alg}/${digest.hex}"
               )
             } yield ()
           case CommandADT.Drop(digest)          => for {
               _      <- registry.drop(digest)
-              server <- remoteServer
+              server <- getBaseURL
               _      <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
               _      <- logLabeled("Remote Server" -> server, "Digest: " -> s"${digest.alg}:${digest.hex}")
             } yield ()
 
           case CommandADT.GetAll(index, offset) => for {
               blueprints <- registry.list(index, offset)
-              server     <- remoteServer
+              server     <- getBaseURL
               _          <- logSucceed("Listing all blueprints.")
               _          <- logLabeled("Remote Server" -> server, "Total Count: " -> s"${blueprints.length}")
               _          <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
@@ -85,7 +85,7 @@ object CommandExecutor {
 
           case CommandADT.GetOne(digest) => for {
               info   <- registry.get(digest)
-              server <- remoteServer
+              server <- getBaseURL
               _      <- logLabeled(
                 "Remote Server" -> server,
                 "Digest"        -> s"${digest.alg}:${digest.hex}",
