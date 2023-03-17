@@ -1,5 +1,6 @@
 package tailcall.server
 
+import tailcall.runtime.dsl.json.service.ConfigBlueprint
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import tailcall.server.service.{BinaryDigest, SchemaRegistry}
@@ -27,6 +28,7 @@ object Main extends ZIOAppDefault {
     HttpClient.live,
     Client.default,
     BinaryDigest.sha256,
-    Server.live
+    Server.live,
+    ConfigBlueprint.live
   )
 }

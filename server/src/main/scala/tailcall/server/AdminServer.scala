@@ -46,9 +46,10 @@ object AdminServer {
 
   val graphQL = Http.collectZIO[Request] { case req =>
     for {
-      query       <- GraphQLUtils.decodeQuery(req.body)
+      gqlReq      <- GraphQLUtils.decode(req.body)
       interpreter <- AdminGraphQL.graphQL.interpreter
-      res         <- interpreter.execute(query)
+      res         <- interpreter
+        .execute(gqlReq.query.getOrElse(""), gqlReq.operationName, gqlReq.variables.getOrElse(Map.empty))
     } yield Response.json(res.toJson)
   }
 

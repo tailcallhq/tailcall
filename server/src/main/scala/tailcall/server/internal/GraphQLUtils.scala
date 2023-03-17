@@ -7,7 +7,15 @@ import zio.http.model.HttpError
 import zio.json.DecoderOps
 
 object GraphQLUtils {
-  def decodeQuery(body: Body): ZIO[Any, Throwable, String] =
+  def decode(body: Body): ZIO[Any, Throwable, GraphQLRequest] =
+    for {
+      text <- body.asCharSeq
+      req  <- text.fromJson[GraphQLRequest] match {
+        case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
+        case Right(value) => ZIO.succeed(value)
+      }
+    } yield req
+  def decodeQuery(body: Body): ZIO[Any, Throwable, String]    =
     for {
       text  <- body.asCharSeq
       req   <- text.fromJson[GraphQLRequest] match {
