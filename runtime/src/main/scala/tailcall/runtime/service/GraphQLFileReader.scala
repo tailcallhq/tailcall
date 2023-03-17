@@ -7,12 +7,19 @@ import caliban.validation.Validator
 import zio.{Task, ZIO, ZLayer}
 
 import java.io.File
+import java.net.URL
 
 trait GraphQLFileReader {
   def read(file: File): Task[Document]
 }
 
 object GraphQLFileReader {
+  def readFile(file: File): ZIO[GraphQLFileReader, Throwable, Document] = ZIO.serviceWithZIO(_.read(file))
+
+  def readURL(url: URL): ZIO[GraphQLFileReader, Throwable, Document] = ZIO.serviceWithZIO(_.read(new File(url.getPath)))
+
+  def live: ZLayer[FileIO, Nothing, GraphQLFileReader] = ZLayer.fromFunction(Live(_))
+
   final case class Live(fileIO: FileIO) extends GraphQLFileReader {
     override def read(file: File): Task[Document] =
       for {
@@ -31,6 +38,4 @@ object GraphQLFileReader {
         _                 <- Validator.validateSchema(rootSchemaBuilder)
       } yield document
   }
-
-  def live: ZLayer[FileIO, Nothing, GraphQLFileReader] = ZLayer.fromFunction(Live(_))
 }
