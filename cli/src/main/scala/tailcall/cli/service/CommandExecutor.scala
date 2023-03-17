@@ -10,11 +10,11 @@ import zio.{Duration, ExitCode, ZIO, ZLayer}
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 trait CommandExecutor {
-  def execute(command: CommandADT): ZIO[Any, Nothing, ExitCode]
+  def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode]
 }
 
 object CommandExecutor {
-  final case class Live(log: Logger, graphQL: GraphQLGenerator) extends CommandExecutor {
+  final case class Live(log: Logger, graphQL: GraphQLGenerator, remoteExec: RemoteExecutor) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
         start <- zio.Clock.nanoTime
@@ -34,7 +34,7 @@ object CommandExecutor {
       }
     }
 
-    override def execute(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
+    override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
           case CommandADT.Remote(_, _)          => ???
@@ -67,7 +67,8 @@ object CommandExecutor {
   }
 
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
-    ZIO.serviceWithZIO[CommandExecutor](_.execute(command))
+    ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  def live: ZLayer[Logger with GraphQLGenerator, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
+  def live: ZLayer[Logger with GraphQLGenerator with RemoteExecutor, Nothing, CommandExecutor] =
+    ZLayer.fromFunction(Live.apply _)
 }
