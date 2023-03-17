@@ -1,6 +1,7 @@
 package tailcall.cli.service
 
 import tailcall.cli.CommandADT
+import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileReader, FileIO, GraphQLGenerator}
 import zio.cli.HelpDoc.Span.{spans, strong, text, uri}
@@ -19,7 +20,8 @@ object CommandExecutor {
     graphQL: GraphQLGenerator,
     remoteExec: RemoteExecutor,
     configReader: ConfigFileReader,
-    fileIO: FileIO
+    fileIO: FileIO,
+    registry: SchemaRegistry
   ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -75,9 +77,7 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  def live: ZLayer[
-    Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO,
-    Nothing,
-    CommandExecutor
-  ] = ZLayer.fromFunction(Live.apply _)
+  type Env = Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO with SchemaRegistry
+
+  def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }

@@ -1,7 +1,10 @@
 package tailcall.cli
 
 import tailcall.cli.service.{CommandExecutor, Logger, RemoteExecutor}
+import tailcall.registry.SchemaRegistry
+import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
+import zio.http.Client
 import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 object Main extends ZIOAppDefault {
@@ -17,7 +20,10 @@ object Main extends ZIOAppDefault {
         EvaluationRuntime.live,
         RemoteExecutor.live,
         ConfigFileReader.live,
-        FileIO.live
+        FileIO.live,
+        SchemaRegistry.client("locahost:8080"),
+        HttpClient.live,
+        Client.default
       )
     )
 }
