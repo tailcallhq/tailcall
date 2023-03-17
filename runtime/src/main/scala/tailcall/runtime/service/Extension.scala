@@ -8,11 +8,12 @@ import zio.{Task, ZIO}
 sealed private[tailcall] trait Extension {
   self =>
 
-  def name: String                            =
-    this match {
+  def name: String =
+    self match {
       case Extension.JSON => "json"
       case Extension.YML  => "yml"
     }
+
   def decode[A](string: String): Task[Config] =
     ZIO.fromEither(self match {
       case Extension.JSON => string.fromJson[Config]
