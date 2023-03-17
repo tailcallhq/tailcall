@@ -29,7 +29,7 @@ object SchemaRegistry {
     RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
       .fromFunction(Persistence.apply _)
 
-  def client(host: String): ZLayer[HttpClient, Nothing, SchemaRegistry] = ZLayer.fromFunction(Client(host, _))
+  def client: ZLayer[HttpClient with String, Nothing, SchemaRegistry] = ZLayer.fromFunction(Client.apply _)
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))

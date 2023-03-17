@@ -22,7 +22,7 @@ object Main extends ZIOAppDefault {
         EvaluationRuntime.live,
         ConfigFileReader.live,
         FileIO.live,
-        ZLayer.fromZIO(ConfigStore.getOrDefault(Key.RemoteServer)).flatMap(env => SchemaRegistry.client(env.get)),
+        ZLayer.fromZIO(ConfigStore.getOrDefault(Key.RemoteServer)) >>> SchemaRegistry.client,
         HttpClient.live,
         Client.default,
         ConfigStore.live,
