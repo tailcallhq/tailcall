@@ -8,10 +8,10 @@ trait Logger {
   self =>
   def log(doc: HelpDoc): UIO[Unit]
   def apply(doc: HelpDoc): UIO[Unit]     = log(doc)
-  def apply(doc: Span): UIO[Unit]        = apply(doc)
-  def apply(text: String): UIO[Unit]     = apply(Span.text(text))
+  def apply(doc: Span): UIO[Unit]        = log(HelpDoc.p(doc))
+  def apply(text: String): UIO[Unit]     = log(HelpDoc.p(Span.text(text)))
   def error(error: Throwable): UIO[Unit] =
-    ZIO.logErrorCause(Cause.fail(error)) *> apply(Span.Error(Span.Text(error.getMessage)))
+    ZIO.logErrorCause(Cause.fail(error)) *> log(HelpDoc.p(Span.Error(Span.Text(error.getMessage))))
 }
 
 object Logger {
