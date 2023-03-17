@@ -9,9 +9,9 @@ import zio.http.model.{HttpError, Method}
 
 object Main extends ZIOAppDefault {
   val server = (AdminServer.rest ++ Http.collectRoute[Request] {
-    case Method.GET -> !! / "graphql"          => Http.fromResource("graphiql.html")
-    case Method.POST -> !! / "graphql"         => AdminServer.graphQL
-    case Method.POST -> !! / "graphql" / _ / _ => GenericServer.graphQL
+    case Method.GET -> !! / "graphql"      => Http.fromResource("graphiql.html")
+    case Method.POST -> !! / "graphql"     => AdminServer.graphQL
+    case Method.POST -> !! / "graphql" / _ => GenericServer.graphQL
   }).tapErrorZIO(err => ZIO.succeed(pprint.pprintln(s"HttpError: ${err}"))).mapError {
     case error: HttpError => Response.fromHttpError(error)
     case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))

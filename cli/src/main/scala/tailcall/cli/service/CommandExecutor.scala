@@ -123,7 +123,7 @@ object CommandExecutor {
       log(HelpDoc.blocks(labels.map { case (key, value) => HelpDoc.p(spans(text(key + ": "), strong(value))) }))
     }
 
-    private def logSucceed(message: String): UIO[Unit] = log(strong(message))
+    private def logSucceed(message: String): UIO[Unit] = log(text(message))
   }
 
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
