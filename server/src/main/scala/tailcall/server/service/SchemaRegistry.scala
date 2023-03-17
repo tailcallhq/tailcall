@@ -1,6 +1,8 @@
 package tailcall.server.service
 
+import tailcall.runtime.ast.Endpoint.InetAddress
 import tailcall.runtime.ast.{Blueprint, Digest}
+import tailcall.runtime.http.HttpClient
 import zio.rocksdb.RocksDB
 import zio.{Ref, Task, UIO, ZIO, ZLayer}
 
@@ -20,6 +22,9 @@ object SchemaRegistry {
   def persistent: ZLayer[Any, Throwable, SchemaRegistry] =
     RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
       .fromFunction(Persistence.apply _)
+
+  def client(address: InetAddress): ZLayer[HttpClient, Nothing, SchemaRegistry] =
+    ZLayer.fromFunction(Client(address, _))
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
@@ -87,5 +92,12 @@ object SchemaRegistry {
         _        <- db.delete(digest.getBytes).when(contains)
       } yield !contains
     }
+  }
+
+  final case class Client(address: InetAddress, http: HttpClient) extends SchemaRegistry {
+    override def add(blueprint: Blueprint): Task[Digest]           = ???
+    override def get(id: Digest): Task[Option[Blueprint]]          = ???
+    override def list(index: Int, max: Int): Task[List[Blueprint]] = ???
+    override def drop(digest: Digest): Task[Boolean]               = ???
   }
 }
