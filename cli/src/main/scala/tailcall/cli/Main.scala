@@ -1,12 +1,13 @@
 package tailcall.cli
 
+import tailcall.cli.service.ConfigStore.Key
 import tailcall.cli.service.{CommandExecutor, ConfigStore, Logger, RemoteExecutor}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio.http.Client
 import zio.rocksdb.RocksDB
-import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
+import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
 
 object Main extends ZIOAppDefault {
   self =>
@@ -22,7 +23,7 @@ object Main extends ZIOAppDefault {
         RemoteExecutor.live,
         ConfigFileReader.live,
         FileIO.live,
-        SchemaRegistry.client("locahost:8080"),
+        ZLayer.fromZIO(ConfigStore.getOrDefault(Key.RemoteServer)).flatMap(env => SchemaRegistry.client(env.get)),
         HttpClient.live,
         Client.default,
         ConfigStore.live,
