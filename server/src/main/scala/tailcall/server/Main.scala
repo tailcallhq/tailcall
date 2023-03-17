@@ -18,7 +18,7 @@ object Main extends ZIOAppDefault {
   }
 
   override val run = Server.serve(server).exitCode.provide(
-    ServerConfig.live,
+    ServerConfig.live.update(_.port(SchemaRegistry.PORT)),
     SchemaRegistry.persistent,
     GraphQLGenerator.live,
     SchemaGenerator.live,
