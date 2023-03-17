@@ -27,7 +27,7 @@ object Main extends ZIOAppDefault {
         HttpClient.live,
         Client.default,
         ConfigStore.live,
-        RocksDB.live("/etc/tailcall")
+        RocksDB.live(System.getProperty("user.home") + "/tailcall")
       )
     )
 }

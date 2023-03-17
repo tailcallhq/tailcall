@@ -72,14 +72,14 @@ object CommandExecutor {
               _      <- registry.drop(digest)
               server <- remoteServer
               _      <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
-              _      <- logLabeled("Remote Server:" -> server, "Digest: " -> s"${digest.alg}:${digest.hex}")
+              _      <- logLabeled("Remote Server" -> server, "Digest: " -> s"${digest.alg}:${digest.hex}")
             } yield ()
 
           case CommandADT.GetAll(index, offset) => for {
               blueprints <- registry.list(index, offset)
               server     <- remoteServer
               _          <- logSucceed("Listing all blueprints.")
-              _          <- logLabeled("Remote Server:" -> server, "Total Count: " -> s"${blueprints.length}")
+              _          <- logLabeled("Remote Server" -> server, "Total Count: " -> s"${blueprints.length}")
               _          <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
             } yield ()
 
@@ -87,9 +87,9 @@ object CommandExecutor {
               info   <- registry.get(digest)
               server <- remoteServer
               _      <- logLabeled(
-                "Remote Server:" -> server,
-                "Digest: "       -> s"${digest.alg}:${digest.hex}",
-                "Status: "       -> (if (info.nonEmpty) "Found" else "Not Found")
+                "Remote Server" -> server,
+                "Digest"        -> s"${digest.alg}:${digest.hex}",
+                "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
               )
               _      <- info match {
                 case Some(blueprint) => logBlueprint(blueprint)
@@ -102,7 +102,7 @@ object CommandExecutor {
             for {
               before <- config.get(key)
               _      <- logSucceed("Configuration loaded successfully.")
-              _      <- logLabeled("Config Name: " -> key.name, "Value: " -> before.getOrElse(""))
+              _      <- logLabeled("Config Name" -> key.name, "Value" -> before.getOrElse(""))
             } yield ()
 
           case CommandADT.SetRemoteServer(value) =>
@@ -111,7 +111,7 @@ object CommandExecutor {
               before <- config.get(key)
               _      <- config.set(key, value)
               _      <- logSucceed("Configuration updated successfully.")
-              _      <- logLabeled("Config Name: " -> key.name, "Before: " -> before.getOrElse(""), "After: " -> value)
+              _      <- logLabeled("Config Name" -> key.name, "Before" -> before.getOrElse(""), "After" -> value)
             } yield ()
         }
       }.tapError(log.error(_)).exitCode
@@ -119,7 +119,7 @@ object CommandExecutor {
     private def logBlueprint(blueprint: Blueprint): UIO[Unit] = { log(text(graphQL.toGraphQL(blueprint).render)) }
 
     private def logLabeled(labels: (String, String)*): UIO[Unit] = {
-      log(HelpDoc.blocks(labels.map { case (key, value) => HelpDoc.p(spans(text(key), strong(value))) }))
+      log(HelpDoc.blocks(labels.map { case (key, value) => HelpDoc.p(spans(text(key + ": "), strong(value))) }))
     }
 
     private def logSucceed(message: String): UIO[Unit] = log(strong(message))

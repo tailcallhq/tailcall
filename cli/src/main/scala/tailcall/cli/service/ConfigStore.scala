@@ -37,7 +37,7 @@ object ConfigStore {
     case object RemoteServer extends Key[String] {
       override def schemaA: Schema[String] = Schema[String]
       override def name: String            = "RemoteServer"
-      override def default: String         = "localhost:8080"
+      override def default: String         = "http://localhost:8080"
     }
   }
 
