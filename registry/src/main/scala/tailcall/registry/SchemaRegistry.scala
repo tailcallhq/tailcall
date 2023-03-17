@@ -3,11 +3,11 @@ package tailcall.registry
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.http.{HttpClient, Method, Request}
 import tailcall.runtime.service.EvaluationError
+import zio._
 import zio.http.{Body, Response}
-import zio.schema.codec.JsonCodec
 import zio.rocksdb.RocksDB
 import zio.schema.Schema
-import zio.{Chunk, Ref, Task, UIO, ZIO, ZLayer}
+import zio.schema.codec.JsonCodec
 
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -114,7 +114,6 @@ object SchemaRegistry {
         digestString <- body.asString
         digest       <- ZIO.fromEither(JsonCodec.jsonDecoder(Digest.schema).decodeJson(digestString))
           .mapError(EvaluationError.DecodingError(_))
-        _ = pprint.pprintln(digest)
       } yield digest
     override def get(id: Digest): Task[Option[Blueprint]] =
       for {
