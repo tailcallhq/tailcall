@@ -4,10 +4,10 @@ import caliban.introspection.adt.{__Type, __TypeKind}
 import caliban.schema.Annotations.GQLName
 import caliban.schema.{GenericSchema, Schema, Step}
 import caliban.{GraphQL, ResponseValue, RootResolver}
+import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.~>
-import tailcall.server.service.SchemaRegistry
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.query.ZQuery

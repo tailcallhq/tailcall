@@ -1,7 +1,7 @@
-package tailcall.server
+package tailcall.registry
+
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.FieldSet
-import tailcall.server.service.SchemaRegistry
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
