@@ -15,7 +15,7 @@ object Digest {
   implicit val decoder: JsonDecoder[Digest] = DeriveJsonDecoder.gen[Digest]
   implicit val schema: Schema[Digest]       = DeriveSchema.gen[Digest]
 
-  def fromHex(algorithm: Algorithm, hex: String): Digest = Digest(algorithm, hex)
+  def fromHex(hex: String): Digest = Digest(Algorithm.SHA_256, hex)
 
   def fromBlueprint(blueprint: Blueprint, algorithm: Algorithm = Algorithm.SHA_256): Digest = {
     val encoded = String.valueOf(Blueprint.encode(blueprint)).getBytes()

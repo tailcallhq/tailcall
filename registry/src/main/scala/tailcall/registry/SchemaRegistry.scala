@@ -117,7 +117,7 @@ object SchemaRegistry {
       } yield digest
     override def get(id: Digest): Task[Option[Blueprint]] =
       for {
-        response  <- http.request(Request(s"${host}/schemas/${id.alg.name}/${id.hex}"))
+        response  <- http.request(Request(s"${host}/schemas/${id.hex}"))
         body      <- toBody(response)
         bpString  <- body.asString
         blueprint <- ZIO.fromEither(JsonCodec.jsonDecoder(Blueprint.schema).decodeJson(bpString))
@@ -135,7 +135,7 @@ object SchemaRegistry {
 
     override def drop(digest: Digest): Task[Boolean] =
       for {
-        response <- http.request(Request(s"${host}/schemas/${digest.alg.name}/${digest.hex}", Method.DELETE))
+        response <- http.request(Request(s"${host}/schemas/${digest.hex}", Method.DELETE))
         out      <-
           if (response.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${response.status.code}"))
           else ZIO.succeed(response.status.code == 200)

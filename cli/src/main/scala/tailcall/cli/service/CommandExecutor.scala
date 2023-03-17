@@ -45,11 +45,11 @@ object CommandExecutor {
               config <- configReader.read(file.toFile)
               blueprint        = config.toBlueprint
               digest           = blueprint.digest
-              fileName         = "tc-" + digest.alg + "-" + digest.hex + ".orc"
+              fileName         = "tc-" + digest.hex + ".orc"
               outputFile: Path = output.getOrElse(file.getParent).resolve(fileName).toAbsolutePath
               _ <- fileIO.write(outputFile.toFile, blueprint.toJson, FileIO.defaultFlag.withCreate.withTruncateExisting)
               _ <- logSucceed("Compilation completed successfully.")
-              _ <- logLabeled("Digest" -> s"${digest.alg}:${digest.hex}", "Generated File" -> fileName)
+              _ <- logLabeled("Digest" -> s"${digest.hex}", "Generated File" -> fileName)
             } yield ()
           case CommandADT.GraphQLSchema(path)   => for {
               blueprint <- fileIO.readJson[Blueprint](path.toFile)
@@ -63,15 +63,15 @@ object CommandExecutor {
               _         <- logSucceed("Deployment was completed successfully.")
               _         <- logLabeled(
                 "Remote Server:" -> base,
-                "Digest"         -> s"${digest.alg}:${digest.hex}",
-                "URL"            -> s"${base}/graphQL/${digest.alg}/${digest.hex}"
+                "Digest"         -> s"${digest.hex}",
+                "URL"            -> s"${base}/graphql/${digest.hex}"
               )
             } yield ()
           case CommandADT.Drop(digest)          => for {
               _      <- registry.drop(digest)
               server <- getBaseURL
               _      <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
-              _      <- logLabeled("Remote Server" -> server, "Digest" -> s"${digest.alg}:${digest.hex}")
+              _      <- logLabeled("Remote Server" -> server, "Digest" -> s"${digest.hex}")
             } yield ()
 
           case CommandADT.GetAll(index, offset) => for {
@@ -89,7 +89,7 @@ object CommandExecutor {
               server <- getBaseURL
               _      <- logLabeled(
                 "Remote Server" -> server,
-                "Digest"        -> s"${digest.alg}:${digest.hex}",
+                "Digest"        -> s"${digest.hex}",
                 "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
               )
               _      <- info match {

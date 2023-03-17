@@ -2,7 +2,6 @@ package tailcall.server
 
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Digest
-import tailcall.runtime.ast.Digest.Algorithm
 import tailcall.runtime.service.DataLoader
 import tailcall.server.internal.GraphQLUtils
 import zio._
@@ -12,14 +11,9 @@ import zio.json.EncoderOps
 
 object GenericServer {
   def graphQL =
-    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / alg / id =>
+    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
       for {
-        alg         <- Algorithm.fromString(alg) match {
-          case Some(value) => ZIO.succeed(value)
-          case None        => ZIO.fail(HttpError.BadRequest("Invalid algorithm"))
-        }
-        digest = Digest.fromHex(alg, id)
-        schema      <- SchemaRegistry.get(digest)
+        schema      <- SchemaRegistry.get(Digest.fromHex(id))
         result      <- schema match {
           case Some(value) => value.toGraphQL
           case None        => ZIO.fail(HttpError.NotFound(s"Schema ${id} not found"))
