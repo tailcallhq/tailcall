@@ -5,6 +5,10 @@ import zio.{Task, ZIO, ZLayer}
 
 import java.net.InetAddress
 
+/**
+ * A service that can execute commands on a remote Tailcall
+ * instance.
+ */
 trait RemoteExecutor {
   def deploy(address: InetAddress, blueprint: Blueprint): Task[Unit]
   def drop(address: InetAddress, digest: Digest): Task[Unit]
