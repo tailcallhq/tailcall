@@ -43,7 +43,6 @@ object CommandExecutor {
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
-          case CommandADT.Remote(_, _)          => ???
           case CommandADT.Compile(file, output) => for {
               _      <- log(spans(text("Compiling: "), uri(wrtCWD(file).toUri)))
               config <- configReader.read(file.toFile)
@@ -63,6 +62,12 @@ object CommandExecutor {
               }
               _         <- log(spans(text(graphQL.toGraphQL(blueprint).render)))
             } yield ()
+          case CommandADT.Deploy(_)             => ???
+          case CommandADT.Drop(_)               => ???
+          case CommandADT.Activate(_)           => ???
+          case CommandADT.Deactivate(_)         => ???
+          case CommandADT.List                  => ???
+          case CommandADT.Info(_)               => ???
         }
       }.tapError(log.error(_)).exitCode
   }

@@ -1,6 +1,5 @@
 package tailcall.registry
 
-import tailcall.runtime.ast.Endpoint.InetAddress
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.http.HttpClient
 import zio.rocksdb.RocksDB
@@ -16,6 +15,8 @@ trait SchemaRegistry {
 }
 
 object SchemaRegistry {
+  val PORT = 8080
+
   def memory: ZLayer[Any, Nothing, SchemaRegistry] =
     ZLayer.fromZIO(for { ref <- Ref.make(Map.empty[Digest, Blueprint]) } yield Memory(ref))
 
@@ -23,8 +24,7 @@ object SchemaRegistry {
     RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
       .fromFunction(Persistence.apply _)
 
-  def client(address: InetAddress): ZLayer[HttpClient, Nothing, SchemaRegistry] =
-    ZLayer.fromFunction(Client(address, _))
+  def client(host: String): ZLayer[HttpClient, Nothing, SchemaRegistry] = ZLayer.fromFunction(Client(host, _))
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
@@ -94,7 +94,7 @@ object SchemaRegistry {
     }
   }
 
-  final case class Client(address: InetAddress, http: HttpClient) extends SchemaRegistry {
+  final case class Client(host: String, http: HttpClient) extends SchemaRegistry {
     override def add(blueprint: Blueprint): Task[Digest]           = ???
     override def get(id: Digest): Task[Option[Blueprint]]          = ???
     override def list(index: Int, max: Int): Task[List[Blueprint]] = ???
