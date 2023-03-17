@@ -2,12 +2,12 @@ package tailcall.cli.service
 
 import tailcall.cli.CommandADT
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.service.{ConfigFileReader, GraphQLGenerator}
+import tailcall.runtime.service.{ConfigFileReader, FileIO, GraphQLGenerator}
 import zio.cli.HelpDoc.Span.{spans, strong, text, uri}
 import zio.json.{DecoderOps, EncoderOps}
 import zio.{Duration, ExitCode, ZIO, ZLayer}
 
-import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+import java.nio.file.{Files, Path, Paths}
 
 trait CommandExecutor {
   def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode]
@@ -18,7 +18,8 @@ object CommandExecutor {
     log: Logger,
     graphQL: GraphQLGenerator,
     remoteExec: RemoteExecutor,
-    configReader: ConfigFileReader
+    configReader: ConfigFileReader,
+    fileIO: FileIO
   ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -50,12 +51,7 @@ object CommandExecutor {
               digest           = blueprint.digest
               fileName         = "tc-" + digest.alg + "-" + digest.hex + ".orc"
               outputFile: Path = output.getOrElse(file.getParent).resolve(fileName).toAbsolutePath
-              _ <- ZIO.attemptBlocking(Files.writeString(
-                outputFile,
-                blueprint.toJson,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING
-              ))
+              _ <- fileIO.write(outputFile.toFile, blueprint.toJson, FileIO.defaultFlag.withCreate.withTruncateExisting)
               _ <- log(spans(text("Digest: "), strong(s"${digest.alg}:${digest.hex}")))
               _ <- log(spans(text("Generated File: "), strong(s"${fileName}")))
             } yield ()
@@ -74,6 +70,9 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  def live: ZLayer[Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader, Nothing, CommandExecutor] =
-    ZLayer.fromFunction(Live.apply _)
+  def live: ZLayer[
+    Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO,
+    Nothing,
+    CommandExecutor
+  ] = ZLayer.fromFunction(Live.apply _)
 }
