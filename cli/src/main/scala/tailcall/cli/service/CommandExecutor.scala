@@ -50,7 +50,7 @@ object CommandExecutor {
               outputFile: Path = output.getOrElse(file.getParent).resolve(fileName).toAbsolutePath
               _ <- fileIO.write(outputFile.toFile, blueprint.toJson, FileIO.defaultFlag.withCreate.withTruncateExisting)
               _ <- logSucceed("Compilation completed successfully.")
-              _ <- logLabeled("Digest: " -> s"${digest.alg}:${digest.hex}", "Generated File: " -> fileName)
+              _ <- logLabeled("Digest" -> s"${digest.alg}:${digest.hex}", "Generated File" -> fileName)
             } yield ()
           case CommandADT.GraphQLSchema(path)   => for {
               blueprint <- fileIO.readJson[Blueprint](path.toFile)
@@ -64,22 +64,22 @@ object CommandExecutor {
               _         <- logSucceed("Deployment was completed successfully.")
               _         <- logLabeled(
                 "Remote Server:" -> base,
-                "Digest: "       -> s"${digest.alg}:${digest.hex}",
-                "URL: "          -> s"${base}/graphQL/${digest.alg}/${digest.hex}"
+                "Digest"         -> s"${digest.alg}:${digest.hex}",
+                "URL"            -> s"${base}/graphQL/${digest.alg}/${digest.hex}"
               )
             } yield ()
           case CommandADT.Drop(digest)          => for {
               _      <- registry.drop(digest)
               server <- getBaseURL
               _      <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
-              _      <- logLabeled("Remote Server" -> server, "Digest: " -> s"${digest.alg}:${digest.hex}")
+              _      <- logLabeled("Remote Server" -> server, "Digest" -> s"${digest.alg}:${digest.hex}")
             } yield ()
 
           case CommandADT.GetAll(index, offset) => for {
               blueprints <- registry.list(index, offset)
               server     <- getBaseURL
               _          <- logSucceed("Listing all blueprints.")
-              _          <- logLabeled("Remote Server" -> server, "Total Count: " -> s"${blueprints.length}")
+              _          <- logLabeled("Remote Server" -> server, "Total Count" -> s"${blueprints.length}")
               _          <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
             } yield ()
 
