@@ -2,6 +2,7 @@ package tailcall.runtime.ast
 
 import tailcall.runtime.ast.Digest.Algorithm
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
+import zio.schema.{DeriveSchema, Schema}
 
 import java.security.MessageDigest
 
@@ -12,6 +13,7 @@ final case class Digest(alg: Algorithm, hex: String) {
 object Digest {
   implicit val encoder: JsonEncoder[Digest] = DeriveJsonEncoder.gen[Digest]
   implicit val decoder: JsonDecoder[Digest] = DeriveJsonDecoder.gen[Digest]
+  implicit val schema: Schema[Digest]       = DeriveSchema.gen[Digest]
 
   def fromHex(algorithm: Algorithm, hex: String): Digest = Digest(algorithm, hex)
 
