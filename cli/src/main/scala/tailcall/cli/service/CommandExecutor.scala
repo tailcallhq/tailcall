@@ -20,7 +20,6 @@ object CommandExecutor {
   final case class Live(
     log: Logger,
     graphQL: GraphQLGenerator,
-    remoteExec: RemoteExecutor,
     configReader: ConfigFileReader,
     fileIO: FileIO,
     registry: SchemaRegistry,
@@ -79,7 +78,9 @@ object CommandExecutor {
               blueprints <- registry.list(index, offset)
               server     <- getBaseURL
               _          <- logSucceed("Listing all blueprints.")
-              _          <- ZIO.foreachDiscard(blueprints.zipWithIndex)({ case (blueprint, id)  => log(s"${id + 1}.\t${blueprint.digest.hex}") })
+              _          <- ZIO.foreachDiscard(blueprints.zipWithIndex) { case (blueprint, id) =>
+                log(s"${id + 1}.\t${blueprint.digest.hex}")
+              }
               _          <- logLabeled("Remote Server" -> server, "Total Count" -> s"${blueprints.length}")
             } yield ()
 
@@ -128,8 +129,7 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = Logger
-    with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO with SchemaRegistry with ConfigStore
+  type Env = Logger with GraphQLGenerator with ConfigFileReader with FileIO with SchemaRegistry with ConfigStore
 
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }

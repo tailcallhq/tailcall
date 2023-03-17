@@ -1,7 +1,7 @@
 package tailcall.cli
 
 import tailcall.cli.service.ConfigStore.Key
-import tailcall.cli.service.{CommandExecutor, ConfigStore, Logger, RemoteExecutor}
+import tailcall.cli.service.{CommandExecutor, ConfigStore, Logger}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
@@ -20,7 +20,6 @@ object Main extends ZIOAppDefault {
         SchemaGenerator.live,
         StepGenerator.live,
         EvaluationRuntime.live,
-        RemoteExecutor.live,
         ConfigFileReader.live,
         FileIO.live,
         ZLayer.fromZIO(ConfigStore.getOrDefault(Key.RemoteServer)).flatMap(env => SchemaRegistry.client(env.get)),
