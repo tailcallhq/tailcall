@@ -20,8 +20,11 @@ lazy val runtime = (project in file("runtime")).settings(
 )
 
 lazy val cli = (project in file("cli")).settings(
-  libraryDependencies := zioTestDependencies ++
-    Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-cli" % "0.4.0")
+  libraryDependencies := zioTestDependencies ++ Seq(
+    "dev.zio" %% "zio"         % zio,
+    "dev.zio" %% "zio-cli"     % "0.4.0",
+    "dev.zio" %% "zio-rocksdb" % rocksDB
+  )
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
@@ -32,13 +35,14 @@ lazy val registry = (project in file("registry")).settings(
   libraryDependencies := zioTestDependencies ++ Seq(
     "dev.zio" %% "zio"         % zio,
     "dev.zio" %% "zio-http"    % zioHttp,
-    "dev.zio" %% "zio-rocksdb" % "0.4.2"
+    "dev.zio" %% "zio-rocksdb" % rocksDB
   )
 ).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
 val zioJson       = "0.4.2"
+val rocksDB       = "0.4.2"
 
 ThisBuild / scalaVersion := scala2Version
 
