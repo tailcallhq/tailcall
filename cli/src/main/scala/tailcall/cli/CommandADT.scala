@@ -9,9 +9,7 @@ sealed trait CommandADT extends Serializable with Product
 object CommandADT {
   final case class Deploy(orc: Path)                          extends CommandADT
   final case class Drop(digest: Digest)                       extends CommandADT
-  final case class Activate(digest: Digest)                   extends CommandADT
-  final case class Deactivate(digest: Digest)                 extends CommandADT
-  final case object List                                      extends CommandADT
+  final case class List(index: Int, offset: Int)              extends CommandADT
   final case class Info(digest: Digest)                       extends CommandADT
   final case class Compile(input: Path, output: Option[Path]) extends CommandADT
   final case class GraphQLSchema(blueprint: Path)             extends CommandADT

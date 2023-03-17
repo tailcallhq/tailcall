@@ -4,11 +4,12 @@ import tailcall.cli.CommandADT
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileReader, FileIO, GraphQLGenerator}
-import zio.cli.HelpDoc.Span.{spans, strong, text, uri}
-import zio.json.{DecoderOps, EncoderOps}
-import zio.{Duration, ExitCode, ZIO, ZLayer}
+import zio.cli.HelpDoc
+import zio.cli.HelpDoc.Span.{spans, strong, text}
+import zio.json.EncoderOps
+import zio.{Duration, ExitCode, UIO, ZIO, ZLayer}
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Path
 
 trait CommandExecutor {
   def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode]
@@ -34,44 +35,69 @@ object CommandExecutor {
         }
       } yield a
 
-    def wrtCWD(path: Path): Path = {
-      val cwd = Paths.get("").toAbsolutePath.toString
-      path.toAbsolutePath.toString.stripPrefix(cwd) match {
-        case "" => Paths.get(".")
-        case s  => Paths.get(s)
-      }
-    }
-
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
           case CommandADT.Compile(file, output) => for {
-              _      <- log(spans(text("Compiling: "), uri(wrtCWD(file).toUri)))
               config <- configReader.read(file.toFile)
               blueprint        = config.toBlueprint
               digest           = blueprint.digest
               fileName         = "tc-" + digest.alg + "-" + digest.hex + ".orc"
               outputFile: Path = output.getOrElse(file.getParent).resolve(fileName).toAbsolutePath
               _ <- fileIO.write(outputFile.toFile, blueprint.toJson, FileIO.defaultFlag.withCreate.withTruncateExisting)
-              _ <- log(spans(text("Digest: "), strong(s"${digest.alg}:${digest.hex}")))
-              _ <- log(spans(text("Generated File: "), strong(s"${fileName}")))
+              _ <- logSucceed("Compilation completed successfully.")
+              _ <- logLabeled("Digest: " -> s"${digest.alg}:${digest.hex}", "Generated File: " -> fileName)
             } yield ()
           case CommandADT.GraphQLSchema(path)   => for {
-              json      <- ZIO.attemptBlocking(Files.readString(path))
-              blueprint <- json.fromJson[Blueprint] match {
-                case Left(err)        => ZIO.fail(new RuntimeException(err))
-                case Right(blueprint) => ZIO.succeed(blueprint)
-              }
-              _         <- log(spans(text(graphQL.toGraphQL(blueprint).render)))
+              blueprint <- fileIO.readJson[Blueprint](path.toFile)
+              _         <- logSucceed("GraphQL schema was successfully generated.")
+              _         <- logBlueprint(blueprint)
             } yield ()
-          case CommandADT.Deploy(_)             => ???
-          case CommandADT.Drop(_)               => ???
-          case CommandADT.Activate(_)           => ???
-          case CommandADT.Deactivate(_)         => ???
-          case CommandADT.List                  => ???
-          case CommandADT.Info(_)               => ???
+          case CommandADT.Deploy(path)          => for {
+              blueprint <- fileIO.readJson[Blueprint](path.toFile)
+              digest    <- registry.add(blueprint)
+              _         <- logSucceed("Deployment was completed successfully.")
+              _         <- logLabeled(
+                "Remote Server:" -> "http://localhost:8080",
+                "Digest: "       -> s"${digest.alg}:${digest.hex}",
+                "URL: "          -> s"http://localhost:8080/graphQL/${digest.alg}/${digest.hex}"
+              )
+            } yield ()
+          case CommandADT.Drop(digest)          => for {
+              _ <- registry.drop(digest)
+              _ <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
+              _ <- logLabeled("Remote Server:" -> "http://localhost:8080", "Digest: " -> s"${digest.alg}:${digest.hex}")
+            } yield ()
+
+          case CommandADT.List(index, offset) => for {
+              blueprints <- registry.list(index, offset)
+              _          <- logSucceed("Listing all blueprints.")
+              _ <- logLabeled("Remote Server:" -> "http://localhost:8080", "Total Count: " -> s"${blueprints.length}")
+              _ <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
+            } yield ()
+
+          case CommandADT.Info(digest) => for {
+              info <- registry.get(digest)
+              _    <- logLabeled(
+                "Remote Server:" -> "http://localhost:8080",
+                "Digest: "       -> s"${digest.alg}:${digest.hex}",
+                "Status: "       -> (if (info.nonEmpty) "Found" else "Not Found")
+              )
+              _    <- info match {
+                case Some(blueprint) => logBlueprint(blueprint)
+                case None            => ZIO.unit
+              }
+            } yield ()
         }
       }.tapError(log.error(_)).exitCode
+
+    private def logBlueprint(blueprint: Blueprint): UIO[Unit] = { log(text(graphQL.toGraphQL(blueprint).render)) }
+
+    private def logLabeled(labels: (String, String)*): UIO[Unit] = {
+      log(HelpDoc.blocks(labels.map { case (key, value) => HelpDoc.p(spans(text(key), strong(value))) }))
+    }
+
+    private def logSucceed(message: String): UIO[Unit] = log(strong(message))
   }
 
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =

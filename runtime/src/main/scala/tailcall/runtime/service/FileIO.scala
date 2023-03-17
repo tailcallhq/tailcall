@@ -1,6 +1,7 @@
 package tailcall.runtime.service
 
 import tailcall.runtime.service.FileIO.Flags
+import zio.json.{DecoderOps, JsonDecoder}
 import zio.{Task, ZIO, ZLayer}
 
 import java.io.File
@@ -9,12 +10,19 @@ import java.nio.file.{Files, StandardOpenOption}
 trait FileIO {
   def read(file: File): Task[String]
   def write(file: File, content: String, flags: Flags = FileIO.defaultFlag): Task[Unit]
+  def readJson[A: JsonDecoder](file: File): Task[A] =
+    read(file).flatMap(_.fromJson[A] match {
+      case Left(value)  => ZIO.fail(new RuntimeException(value))
+      case Right(value) => ZIO.succeed(value)
+    })
 }
 
 object FileIO {
   def defaultFlag: Flags = Flags(Nil)
 
   def read(file: File): ZIO[FileIO, Throwable, String] = ZIO.serviceWithZIO(_.read(file))
+
+  def readJson[A: JsonDecoder](file: File): ZIO[FileIO, Throwable, A] = ZIO.serviceWithZIO(_.readJson(file))
 
   def write(file: File, content: String): ZIO[FileIO, Throwable, Unit] = ZIO.serviceWithZIO(_.write(file, content))
 
