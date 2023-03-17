@@ -3,8 +3,8 @@ package tailcall.runtime.dsl.json
 import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
-import tailcall.runtime.service.{ConfigBlueprintGenerator, ConfigReader}
-import zio.Task
+import tailcall.runtime.service.{ConfigBlueprintGenerator, ConfigFileReader}
+import zio.ZIO
 import zio.json._
 import zio.json.ast.Json
 
@@ -111,7 +111,7 @@ object Config {
     val bool: Argument   = Argument("Boolean")
   }
 
-  def fromFile(file: File): Task[Config] = ConfigReader.config.readFile(file)
+  def fromFile(file: File): ZIO[ConfigFileReader, Throwable, Config] = ConfigFileReader.readFile(file)
 
   /**
    * Json Codecs
