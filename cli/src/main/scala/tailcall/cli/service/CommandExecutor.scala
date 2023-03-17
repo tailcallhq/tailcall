@@ -1,6 +1,7 @@
 package tailcall.cli.service
 
 import tailcall.cli.CommandADT
+import tailcall.cli.service.ConfigStore.Key
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileReader, FileIO, GraphQLGenerator}
@@ -22,7 +23,8 @@ object CommandExecutor {
     remoteExec: RemoteExecutor,
     configReader: ConfigFileReader,
     fileIO: FileIO,
-    registry: SchemaRegistry
+    registry: SchemaRegistry,
+    config: ConfigStore
   ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -88,6 +90,23 @@ object CommandExecutor {
                 case None            => ZIO.unit
               }
             } yield ()
+
+          case CommandADT.GetRemoteServer =>
+            val key = Key.RemoteServer
+            for {
+              before <- config.get(key)
+              _      <- logSucceed("Configuration loaded successfully.")
+              _      <- logLabeled("Config Name: " -> key.name, "Value: " -> before.getOrElse(""))
+            } yield ()
+
+          case CommandADT.SetRemoteServer(value) =>
+            val key = Key.RemoteServer
+            for {
+              before <- config.get(key)
+              _      <- config.set(key, value)
+              _      <- logSucceed("Configuration updated successfully.")
+              _      <- logLabeled("Config Name: " -> key.name, "Before: " -> before.getOrElse(""), "After: " -> value)
+            } yield ()
         }
       }.tapError(log.error(_)).exitCode
 
@@ -103,7 +122,8 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO with SchemaRegistry
+  type Env = Logger
+    with GraphQLGenerator with RemoteExecutor with ConfigFileReader with FileIO with SchemaRegistry with ConfigStore
 
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }
