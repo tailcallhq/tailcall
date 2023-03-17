@@ -2,7 +2,7 @@ package tailcall.cli.service
 
 import tailcall.cli.CommandADT
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.service.{ConfigReader, GraphQLGenerator}
+import tailcall.runtime.service.{ConfigFileReader, GraphQLGenerator}
 import zio.cli.HelpDoc.Span.{spans, strong, text, uri}
 import zio.json.{DecoderOps, EncoderOps}
 import zio.{Duration, ExitCode, ZIO, ZLayer}
@@ -14,7 +14,12 @@ trait CommandExecutor {
 }
 
 object CommandExecutor {
-  final case class Live(log: Logger, graphQL: GraphQLGenerator, remoteExec: RemoteExecutor) extends CommandExecutor {
+  final case class Live(
+    log: Logger,
+    graphQL: GraphQLGenerator,
+    remoteExec: RemoteExecutor,
+    configReader: ConfigFileReader
+  ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
         start <- zio.Clock.nanoTime
@@ -40,7 +45,7 @@ object CommandExecutor {
           case CommandADT.Remote(_, _)          => ???
           case CommandADT.Compile(file, output) => for {
               _      <- log(spans(text("Compiling: "), uri(wrtCWD(file).toUri)))
-              config <- ConfigReader.config.readFile(file.toFile)
+              config <- configReader.read(file.toFile)
               blueprint        = config.toBlueprint
               digest           = blueprint.digest
               fileName         = "tc-" + digest.alg + "-" + digest.hex + ".orc"
@@ -69,6 +74,6 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  def live: ZLayer[Logger with GraphQLGenerator with RemoteExecutor, Nothing, CommandExecutor] =
+  def live: ZLayer[Logger with GraphQLGenerator with RemoteExecutor with ConfigFileReader, Nothing, CommandExecutor] =
     ZLayer.fromFunction(Live.apply _)
 }
