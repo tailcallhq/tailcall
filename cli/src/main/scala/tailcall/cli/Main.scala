@@ -1,6 +1,6 @@
 package tailcall.cli
 
-import tailcall.cli.service.{CommandExecutor, Logger}
+import tailcall.cli.service.{CommandExecutor, Logger, RemoteExecutor}
 import tailcall.runtime.service.{EvaluationRuntime, GraphQLGenerator, SchemaGenerator, StepGenerator}
 import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
@@ -14,7 +14,8 @@ object Main extends ZIOAppDefault {
         GraphQLGenerator.live,
         SchemaGenerator.live,
         StepGenerator.live,
-        EvaluationRuntime.live
+        EvaluationRuntime.live,
+        RemoteExecutor.live
       )
     )
 }
