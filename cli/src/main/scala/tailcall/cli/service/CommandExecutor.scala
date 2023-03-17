@@ -79,8 +79,8 @@ object CommandExecutor {
               blueprints <- registry.list(index, offset)
               server     <- getBaseURL
               _          <- logSucceed("Listing all blueprints.")
+              _          <- ZIO.foreachDiscard(blueprints.zipWithIndex)({ case (blueprint, id)  => log(s"${id + 1}.\t${blueprint.digest.hex}") })
               _          <- logLabeled("Remote Server" -> server, "Total Count" -> s"${blueprints.length}")
-              _          <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
             } yield ()
 
           case CommandADT.GetOne(digest) => for {
