@@ -75,7 +75,7 @@ object CommandExecutor {
               _      <- logLabeled("Remote Server:" -> server, "Digest: " -> s"${digest.alg}:${digest.hex}")
             } yield ()
 
-          case CommandADT.List(index, offset) => for {
+          case CommandADT.GetAll(index, offset) => for {
               blueprints <- registry.list(index, offset)
               server     <- remoteServer
               _          <- logSucceed("Listing all blueprints.")
@@ -83,7 +83,7 @@ object CommandExecutor {
               _          <- ZIO.foreachDiscard(blueprints)(blueprint => log(blueprint.digest.hex))
             } yield ()
 
-          case CommandADT.Info(digest) => for {
+          case CommandADT.GetOne(digest) => for {
               info   <- registry.get(digest)
               server <- remoteServer
               _      <- logLabeled(

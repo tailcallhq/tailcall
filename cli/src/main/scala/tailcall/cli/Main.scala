@@ -13,7 +13,7 @@ object Main extends ZIOAppDefault {
   self =>
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
     ZIOAppArgs.getArgs.flatMap(args =>
-      CommandSpec.app.run(args.toList).provide(
+      CommandDoc.app.run(args.toList).provide(
         CommandExecutor.live,
         Logger.live,
         GraphQLGenerator.live,
