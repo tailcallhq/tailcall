@@ -35,57 +35,57 @@ object ConfigSpec extends ZIOSpecDefault {
       },
       test("schema") {
         val config   = JsonPlaceholderConfig.config
-        val expected = """
-                         |schema {
-                         |  query: Query
-                         |}
-                         |
-                         |type Address {
-                         |  geo: Geo
-                         |  street: String
-                         |  suite: String
-                         |  city: String
-                         |  zipcode: String
-                         |}
-                         |
-                         |type Company {
-                         |  name: String
-                         |  catchPhrase: String
-                         |  bs: String
-                         |}
-                         |
-                         |type Geo {
-                         |  lat: String
-                         |  lng: String
-                         |}
-                         |
-                         |type Post {
-                         |  body: String
-                         |  id: Int!
-                         |  user: User
-                         |  userId: Int!
-                         |  title: String
-                         |}
-                         |
-                         |type Query {
-                         |  posts: [Post]
-                         |  users: [User]
-                         |  post(id: Int!): Post
-                         |  user(id: Int!): User
-                         |}
-                         |
-                         |type User {
-                         |  website: String
-                         |  name: String!
-                         |  posts: [Post]
-                         |  email: String!
-                         |  username: String!
-                         |  company: Company
-                         |  id: Int!
-                         |  address: Address
-                         |  phone: String
-                         |}
-                         |""".stripMargin.trim
+        val expected =
+          """|schema {
+             |  query: Query
+             |}
+             |
+             |type Address {
+             |  geo: Geo
+             |  street: String
+             |  suite: String
+             |  city: String
+             |  zipcode: String
+             |}
+             |
+             |type Company {
+             |  name: String
+             |  catchPhrase: String
+             |  bs: String
+             |}
+             |
+             |type Geo {
+             |  lat: String
+             |  lng: String
+             |}
+             |
+             |type Post {
+             |  body: String
+             |  id: Int!
+             |  user: User @steps(value: [{objectPath: {userId: ["value","userId"]}},{http: {path: "/users/{{userId}}"}}])
+             |  userId: Int!
+             |  title: String
+             |}
+             |
+             |type Query {
+             |  posts: [Post] @steps(value: [{http: {path: "/posts"}}])
+             |  users: [User] @steps(value: [{http: {path: "/users"}}])
+             |  post(id: Int!): Post @steps(value: [{http: {path: "/posts/{{args.id}}"}}])
+             |  user(id: Int!): User @steps(value: [{objectPath: {userId: ["args","id"]}},{http: {path: "/users/{{userId}}"}}])
+             |}
+             |
+             |type User {
+             |  website: String
+             |  name: String!
+             |  posts: [Post] @steps(value: [{http: {path: "/users/{{value.id}}/posts"}}])
+             |  email: String!
+             |  username: String!
+             |  company: Company
+             |  id: Int!
+             |  address: Address
+             |  phone: String
+             |}
+             |""".stripMargin.trim
 
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
