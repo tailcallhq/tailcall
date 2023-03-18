@@ -82,8 +82,6 @@ val zio                 = "2.0.10"
 val zioHttp             = "0.0.4"
 val zioTestDependencies = Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
 
-maintainer := "tushar@tailcall.in"
-
 // The assembly merge settings
 ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }
 
@@ -118,16 +116,16 @@ Universal / mappings := {
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 // This is where we can add or remove files from the final package
-Docker / mappings := {
+Docker / mappings   := {
   val serverJar = (server / Compile / assembly).value
   // removing means filtering
-  val filtered  = (Universal / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
-    .filter { case (file, name) => name.contains("bin/tailcall_server_main") }
+  val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
 
   // add the fat jar
-  filtered ++: Seq(serverJar -> ("lib/" + serverJar.getName))
+  filtered ++: Seq(serverJar -> ("4/opt/docker/lib/" + serverJar.getName))
 }
 
-dockerEntrypoint   := Seq("tailcall_server_main")
-dockerBaseImage    := "eclipse-temurin:11"
-dockerExposedPorts := Seq(8080)
+Docker / maintainer := "tushar@tailcall.in"
+dockerCmd           := Seq("-d", "-main", "tailcall.server.Main")
+dockerBaseImage     := "eclipse-temurin:11"
+dockerExposedPorts  := Seq(8080)
