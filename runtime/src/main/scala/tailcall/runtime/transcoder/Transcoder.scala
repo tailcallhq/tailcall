@@ -22,7 +22,7 @@ object Transcoder {
 
   def collectEither[A]: PartiallyAppliedCollectEither[A] = new PartiallyAppliedCollectEither[A]()
 
-  def make[A, B](f: A => TExit[B]): Transcoder[A, B] = Transcoder(f)
+  def fromExit[A, B](f: A => TExit[B]): Transcoder[A, B] = Transcoder(f)
 
   def total[A]: PartiallyAppliedTotal[A] = new PartiallyAppliedTotal[A]()
 

@@ -4,14 +4,13 @@ import tailcall.runtime.ast.{Blueprint, Endpoint}
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
-import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
 object Config2Blueprint {
   implicit private def jsonSchema: Schema[Json] =
-    Schema[DynamicValue].transform[Json](_.transcode[Json].getOrElse(Json.Null), DynamicValueUtil.fromJson)
+    Schema[DynamicValue].transformOrFail[Json](_.transcode[Json].toEither, _.transcode[DynamicValue].toEither)
 
   private def toType(field: Field): Blueprint.Type = {
     val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))

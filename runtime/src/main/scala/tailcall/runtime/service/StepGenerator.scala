@@ -1,11 +1,13 @@
 package tailcall.runtime.service
 
+import caliban.ResponseValue
 import caliban.schema.Step
 import tailcall.runtime.ast
 import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
+import tailcall.runtime.transcoder.Syntax
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
@@ -52,7 +54,11 @@ object StepGenerator {
 
     def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
       Step.FunctionStep { args =>
-        val context = ctx.copy(args = args.view.mapValues(DynamicValueUtil.fromInputValue).toMap)
+        val context = ctx.copy(args =
+          args.view.mapValues(
+            _.transcode[DynamicValue].getOrElse(throw new RuntimeException("transcoding to dynamic value failed"))
+          ).toMap
+        )
         field.resolver match {
           case Some(resolver) =>
             val step = for {
@@ -76,7 +82,7 @@ object StepGenerator {
       tpe match {
         case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
             case Some(value) => value(ctx)
-            case None        => Step.PureStep(DynamicValueUtil.toResponseValue(ctx.value))
+            case None        => Step.PureStep(ctx.value.transcode[ResponseValue].getOrElse(???))
           }
         case ast.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
