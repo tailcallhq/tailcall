@@ -2,58 +2,56 @@ package tailcall.runtime.transcoder
 
 import zio.Chunk
 
-sealed trait TExit[+A] {
+sealed trait TExit[+E, +A] {
   self =>
-
-  def map[B](ab: A => B): TExit[B] = self.flatMap(a => TExit.succeed(ab(a)))
-
-  def flatMap[B](ab: A => TExit[B]): TExit[B] = self.fold(TExit.empty, TExit.fail(_), ab)
-
-  def orElse[A1 >: A](other: TExit[A1]): TExit[A1] = self.fold[TExit[A1]](other, _ => other, TExit.succeed(_))
-
-  def <>[A1 >: A](other: TExit[A1]): TExit[A1] = self orElse other
-
-  def toEither: Either[String, A] = self.fold[Either[String, A]](Left("Empty"), Left(_), Right(_))
-
-  def toOption: Option[A] = self.fold[Option[A]](None, _ => None, Some(_))
-
-  def fold[B](isEmpty: => B, isError: String => B, isSucceed: A => B): B =
+  def get(implicit ev: E <:< Nothing): A =
     self match {
-      case TExit.Empty            => isEmpty
+      case TExit.Failure(_)     => throw new NoSuchElementException("Failure does not exist")
+      case TExit.Succeed(value) => value
+    }
+
+  def map[B](ab: A => B): TExit[E, B] = self.flatMap(a => TExit.succeed(ab(a)))
+
+  def flatMap[E1 >: E, B](ab: A => TExit[E1, B]): TExit[E1, B] = self.fold(TExit.fail(_), ab)
+
+  def orElse[E1, A1 >: A](other: TExit[E1, A1]): TExit[E1, A1] = self.fold[TExit[E1, A1]](_ => other, TExit.succeed(_))
+
+  def <>[E1, A1 >: A](other: TExit[E1, A1]): TExit[E1, A1] = self orElse other
+
+  def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
+
+  def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
+
+  def fold[B](isError: E => B, isSucceed: A => B): B =
+    self match {
       case TExit.Failure(message) => isError(message)
       case TExit.Succeed(value)   => isSucceed(value)
     }
 
-  def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](default, _ => default, identity)
-
-  def transcode[B](implicit ev: Transcoder[A, B]): TExit[B] = self.flatMap(ev(_))
+  def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
 }
 
 object TExit {
-  def empty: TExit[Nothing] = Empty
+  def fail[E](message: E): TExit[E, Nothing] = Failure(message)
 
-  def fail(message: String): TExit[Nothing] = Failure(message)
+  def succeed[A](value: A): TExit[Nothing, A] = Succeed(value)
 
-  def succeed[A](value: A): TExit[A] = Succeed(value)
+  def fromOption[A](option: Option[A]): TExit[Unit, A] = option.fold[TExit[Unit, A]](TExit.fail(()))(Succeed(_))
 
-  def fromOption[A](option: Option[A]): TExit[A] = option.fold[TExit[A]](Empty)(Succeed(_))
+  def foreach[A, E, B](list: List[A])(f: A => TExit[E, B]): TExit[E, List[B]] = foreachIterable(list)(f).map(_.toList)
 
-  def foreach[A, B](list: List[A])(f: A => TExit[B]): TExit[List[B]] = foreachIterable(list)(f).map(_.toList)
-
-  def foreachChunk[A, B](chunk: Chunk[A])(f: A => TExit[B]): TExit[Chunk[B]] =
+  def foreachChunk[A, E, B](chunk: Chunk[A])(f: A => TExit[E, B]): TExit[E, Chunk[B]] =
     foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
 
-  def foreachIterable[A, B](iter: Iterable[A])(f: A => TExit[B]): TExit[Iterable[B]] = {
+  def foreachIterable[A, E, B](iter: Iterable[A])(f: A => TExit[E, B]): TExit[E, Iterable[B]] = {
     val builder = Iterable.newBuilder[B]
-    iter.foldLeft[TExit[Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
+    iter.foldLeft[TExit[E, Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
       .map(_ => builder.result())
   }
 
-  def fromEither[A](either: Either[String, A]): TExit[A] = either.fold[TExit[A]](fail(_), succeed(_))
+  def fromEither[E, A](either: Either[E, A]): TExit[E, A] = either.fold[TExit[E, A]](fail(_), succeed(_))
 
-  final case class Failure(message: String) extends TExit[Nothing]
+  final case class Failure[E](message: E) extends TExit[E, Nothing]
 
-  final case class Succeed[A](value: A) extends TExit[A]
-
-  case object Empty extends TExit[Nothing]
+  final case class Succeed[A](value: A) extends TExit[Nothing, A]
 }

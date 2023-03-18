@@ -9,8 +9,9 @@ object DynamicValue2ResponseValue {
   def toResponseValue(input: DynamicValue): ResponseValue = {
     input match {
       case DynamicValue.Sequence(values)        => ResponseValue.ListValue(values.map(toResponseValue).toList)
-      case input @ DynamicValue.Primitive(_, _) => input.transcode[Value].getOrElse(???)
+      case input @ DynamicValue.Primitive(_, _) => input.transcode[Value]
       case DynamicValue.Dictionary(chunks)      => ResponseValue.ObjectValue(chunks.map { case (k, v) =>
+          // TODO: use TExit.fail
           toTyped[String](k).getOrElse(throw new Error("could not transform")) -> toResponseValue(v)
         }.toList)
       case DynamicValue.Singleton(_)            => Value.NullValue

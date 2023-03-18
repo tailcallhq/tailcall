@@ -42,7 +42,7 @@ object DynamicValue2JsonAST {
       case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
     }
 
-  def toJson(d: DynamicValue): TExit[Json] =
+  def toJson(d: DynamicValue): TExit[String, Json] =
     d match {
       case DynamicValue.Record(_, values) => TExit.foreachChunk(Chunk.fromIterable(values)) { case (name, value) =>
           toJson(value).map(name -> _)
@@ -50,11 +50,11 @@ object DynamicValue2JsonAST {
       case DynamicValue.Enumeration(_, (name, value))  => toJson(value).map(value => Json.Obj(Chunk(name -> value)))
       case DynamicValue.Sequence(values)               => TExit.foreachChunk(values)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
-      case DynamicValue.Dictionary(_)                  => TExit.empty
+      case DynamicValue.Dictionary(_)                  => TExit.fail("Can not transcoder Dictionary to a DynamicValue")
       case DynamicValue.SetValue(values)               => TExit.foreach(values.toList)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
       case DynamicValue.Primitive(value, standardType) => TExit.succeed(toJsonPrimitive(value, standardType))
-      case DynamicValue.Singleton(_)                   => TExit.empty
+      case DynamicValue.Singleton(_)                   => TExit.fail("Can not transcoder Singleton to a DynamicValue")
       case DynamicValue.SomeValue(value)               => toJson(value)
       case DynamicValue.NoneValue                      => TExit.succeed(Json.Null)
       case DynamicValue.Tuple(left, right)             => for {
@@ -63,7 +63,7 @@ object DynamicValue2JsonAST {
         } yield Json.Arr(Chunk(left, right))
       case DynamicValue.LeftValue(value)               => toJson(value)
       case DynamicValue.RightValue(value)              => toJson(value)
-      case DynamicValue.DynamicAst(_)                  => TExit.empty
-      case DynamicValue.Error(_)                       => TExit.empty
+      case DynamicValue.DynamicAst(_)                  => TExit.fail("Can not transcoder DynamicAst to a DynamicValue")
+      case DynamicValue.Error(_)                       => TExit.fail("Can not transcoder Error to a DynamicValue")
     }
 }

@@ -46,7 +46,7 @@ object SchemaGenerator {
         None,
         inputValue.name,
         toCalibanType(inputValue.ofType),
-        inputValue.defaultValue.map(_.transcode[InputValue].getOrElse(???)),
+        inputValue.defaultValue.map(_.transcode[InputValue]),
         Nil
       )
 

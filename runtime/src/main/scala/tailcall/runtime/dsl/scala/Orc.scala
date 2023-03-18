@@ -18,7 +18,7 @@ final case class Orc(
 ) {
   self =>
   def toBlueprint: Task[Blueprint] = {
-    self.transcode[Blueprint].toEither match {
+    self.transcodeOrFailWith[Blueprint, String] match {
       case Left(err) => ZIO.fail(new RuntimeException(err))
       case Right(b)  => ZIO.succeed(b)
     }
