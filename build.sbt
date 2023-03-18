@@ -66,14 +66,21 @@ enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'")),
-  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker")),
-  WorkflowStep.Use(
-    UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master"),
-    name = Some("Deploy"),
-    env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
-    cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  )
+  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker"))
 )
+
+ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
+  "deploy",
+  "Deploy",
+  List(
+    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
+    WorkflowStep.Run(
+      commands = List("flyctl deploy --remote-only"),
+      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
+      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
+    )
+  )
+))
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 val zioSchema           = "0.4.7"
