@@ -2,6 +2,8 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen}
+import tailcall.runtime.transcoder.Syntax
+import zio.json.ast.Json
 import zio.schema.DynamicValue
 import zio.test._
 
@@ -79,7 +81,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         }
       },
       test("fromJson >>> toJson == identity")(check(JsonGen.genJson)(json => {
-        val actual   = toJson(fromJson(json))
+        val actual   = fromJson(json).transcode[Json].getOrElse(Json.Null)
         val expected = json
         assertTrue(actual == expected)
       }))
