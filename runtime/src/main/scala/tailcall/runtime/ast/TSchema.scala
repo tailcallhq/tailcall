@@ -78,12 +78,6 @@ object TSchema {
     }
   }
 
-  sealed trait Id
-  object Id {
-    case class Named(name: String) extends Id
-    case object Structural         extends Id
-  }
-
   def string: TSchema = TSchema.String
   def int: TSchema    = TSchema.Int
   def `null`: TSchema = TSchema.Null
@@ -163,7 +157,6 @@ object TSchema {
       case Intersection(_, _) => ???
     }
 
-  implicit lazy val idSchema: JsonCodec[TSchema.Id]          = DeriveJsonCodec.gen[TSchema.Id]
   implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
 }
