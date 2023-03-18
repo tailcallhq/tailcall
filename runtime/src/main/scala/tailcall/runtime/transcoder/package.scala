@@ -7,7 +7,7 @@ import tailcall.runtime.dsl.scala.Orc
 import zio.json.ast.Json
 import zio.schema.DynamicValue
 
-package object transcoder extends TranscoderSyntax {
+package object transcoder {
   implicit val orc2Blueprint: Transcoder[Orc, String, Blueprint] = Transcoder.fromExit(Orc2Blueprint.toBlueprint)
 
   implicit val config2Blueprint: Transcoder[Config, Nothing, Blueprint] = Transcoder.total(Config2Blueprint.toBlueprint)

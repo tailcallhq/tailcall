@@ -4,6 +4,7 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc._
 import tailcall.runtime.remote._
+import tailcall.runtime.transcoder.Transcoder.TExit
 import zio.schema.DynamicValue
 
 object Orc2Blueprint {
