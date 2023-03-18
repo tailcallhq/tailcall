@@ -74,6 +74,7 @@ jobs:
 
   deploy:
     name: Deploy
+    needs: [build]
     strategy:
       matrix:
         os: [ubuntu-latest]

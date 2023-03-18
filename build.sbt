@@ -79,7 +79,8 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
       cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
-  )
+  ),
+  needs = List("build")
 ))
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
