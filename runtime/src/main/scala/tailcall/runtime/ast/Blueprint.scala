@@ -48,8 +48,9 @@ object Blueprint {
   final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
 
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
-  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None)
+  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil)
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None)
+  final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
   sealed trait Type
   final case class NamedType(name: String, nonNull: Boolean) extends Type
