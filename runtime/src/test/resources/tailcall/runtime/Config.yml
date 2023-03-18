@@ -35,18 +35,18 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - $http:
+          - http:
               path: /posts
       users:
         type: User
         isList: true
         steps:
-          - $http:
+          - http:
               path: /users
       post:
         type: Post
         steps:
-          - $http:
+          - http:
               path: /posts/{{args.id}}
         args:
           id:
@@ -55,11 +55,11 @@ graphQL:
       user:
         type: User
         steps:
-          - $objectPath:
+          - objectPath:
               userId:
                 - args
                 - id
-          - $http:
+          - http:
               path: /users/{{userId}}
         args:
           id:
@@ -74,11 +74,11 @@ graphQL:
       user:
         type: User
         steps:
-          - $objectPath:
+          - objectPath:
               userId:
                 - value
                 - userId
-          - $http:
+          - http:
               path: /users/{{userId}}
       userId:
         type: Int
@@ -95,7 +95,7 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - $http:
+          - http:
               path: /users/{{value.id}}/posts
       email:
         type: String

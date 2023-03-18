@@ -52,7 +52,7 @@
           "isList": true,
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/posts",
                 "output": {
                   "type": "array",
@@ -95,7 +95,7 @@
           "isList": true,
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/users",
                 "output": {
                   "type": "array",
@@ -215,7 +215,7 @@
           "type": "Post",
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/posts/{{args.id}}",
                 "output": {
                   "type": "object",
@@ -260,7 +260,7 @@
           "type": "User",
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/users/{{args.id}}",
                 "output": {
                   "type": "object",
@@ -392,7 +392,7 @@
           "type": "User",
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/users/{{value.userId}}",
                 "output": {
                   "type": "object",
@@ -526,7 +526,7 @@
           "isList": true,
           "steps": [
             {
-              "$http": {
+              "http": {
                 "path": "/users/{{value.id}}/posts",
                 "output": {
                   "type": "array",
