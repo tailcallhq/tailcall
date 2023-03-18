@@ -3,7 +3,8 @@ package tailcall.runtime.dsl.json
 import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
-import tailcall.runtime.service.{ConfigBlueprintGenerator, ConfigFileReader}
+import tailcall.runtime.service.ConfigFileReader
+import tailcall.runtime.transcoder.Syntax
 import zio.ZIO
 import zio.json._
 import zio.json.ast.Json
@@ -12,7 +13,8 @@ import java.io.File
 
 final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = ConfigBlueprintGenerator.toBlueprint(self)
+  def toBlueprint: Blueprint =
+    self.transcode[Blueprint].getOrElse(throw new RuntimeException("Failed to transcode config to blueprint"))
 
   def mergeRight(other: Config): Config = {
     Config(

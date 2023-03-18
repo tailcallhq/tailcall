@@ -3,9 +3,9 @@ package tailcall.runtime.dsl.scala
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet, Input, LabelledField, Output}
 import tailcall.runtime.remote.Remote
-import tailcall.runtime.service.OrcBlueprint
-import zio.Task
+import tailcall.runtime.transcoder.Syntax
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.{Task, ZIO}
 
 /**
  * A scala DSL to create an orchestration specification.
@@ -17,7 +17,12 @@ final case class Orc(
   types: List[Orc.Obj] = Nil
 ) {
   self =>
-  def toBlueprint: Task[Blueprint] = OrcBlueprint.toBlueprint(self).mapError(new RuntimeException(_))
+  def toBlueprint: Task[Blueprint] = {
+    self.transcode[Blueprint].toEither match {
+      case Left(err) => ZIO.fail(new RuntimeException(err))
+      case Right(b)  => ZIO.succeed(b)
+    }
+  }
 
   def withQuery(name: String): Orc = self.copy(query = Option(name))
 

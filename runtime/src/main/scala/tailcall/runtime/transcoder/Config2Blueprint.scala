@@ -9,7 +9,7 @@ import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
-trait Config2Blueprint {
+object Config2Blueprint {
   implicit private def jsonSchema: Schema[Json] =
     Schema[DynamicValue].transform[Json](DynamicValueUtil.toJson, DynamicValueUtil.fromJson)
 
@@ -73,5 +73,4 @@ trait Config2Blueprint {
     Blueprint(rootSchema, definitions)
   }
 
-  implicit val transcoder: Transcoder[Config, Blueprint] = Transcoder.total(toBlueprint)
 }
