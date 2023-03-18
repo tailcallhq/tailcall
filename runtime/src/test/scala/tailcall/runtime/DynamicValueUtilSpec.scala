@@ -69,20 +69,22 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       ),
       test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
-          val actual   = responseValue.transcode[DynamicValue].transcode[ResponseValue]
-          val expected = responseValue
+          val actual   = responseValue.transcodeOrFailWith[DynamicValue, String] flatMap (_
+            .transcodeOrFailWith[ResponseValue, String])
+          val expected = Right(responseValue)
           assertTrue(actual == expected)
         }
       },
       test("fromInputValue >>> toInputValue == identity") {
         check(CalibanGen.genInputValue) { inputValue =>
-          val actual   = inputValue.transcode[DynamicValue].transcode[InputValue]
-          val expected = inputValue
+          val actual   = inputValue.transcodeOrFailWith[DynamicValue, String]
+            .flatMap(_.transcodeOrFailWith[InputValue, String])
+          val expected = Right(inputValue)
           assertTrue(actual == expected)
         }
       },
       test("fromJson >>> toJson == identity")(check(JsonGen.genJson)(json => {
-        val actual   = json.transcode[DynamicValue].transcodeOrFailWith[Json, String]
+        val actual   = json.transcodeOrFailWith[DynamicValue, String] flatMap (_.transcodeOrFailWith[Json, String])
         val expected = Right(json)
         assertTrue(actual == expected)
       }))

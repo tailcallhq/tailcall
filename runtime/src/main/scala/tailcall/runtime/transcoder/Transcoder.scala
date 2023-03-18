@@ -84,6 +84,7 @@ object Transcoder {
     def transcode[B](implicit transcoder: Transcoder[A, Nothing, B]): B = transcoder.run(a).get
 
     def transcodeOrFailWith[B, E](implicit transcoder: Transcoder[A, E, B]): Either[E, B] = transcoder.run(a).toEither
-  }
 
+    def transcodeOrDefault[B](b: => B)(implicit transcoder: Transcoder[A, _, B]): B = transcoder.run(a).getOrElse(b)
+  }
 }
