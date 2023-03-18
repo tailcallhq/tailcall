@@ -3,7 +3,7 @@ package tailcall.runtime.dsl.scala
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet, Input, LabelledField, Output}
 import tailcall.runtime.remote.Remote
-import tailcall.runtime.transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 import zio.{Task, ZIO}
 

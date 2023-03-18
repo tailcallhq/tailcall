@@ -7,7 +7,7 @@ import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
-import tailcall.runtime.transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}

@@ -1,5 +1,6 @@
 package tailcall.runtime.transcoder
 
+import tailcall.runtime.transcoder.Transcoder.TExit
 import zio.Chunk
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, StandardType}

@@ -7,7 +7,7 @@ import caliban.{GraphQL, ResponseValue, RootResolver}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.lambda.~>
-import tailcall.runtime.transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.query.ZQuery

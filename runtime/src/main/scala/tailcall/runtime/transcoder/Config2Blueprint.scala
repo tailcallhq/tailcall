@@ -5,6 +5,7 @@ import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.remote.Remote
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 

@@ -4,7 +4,7 @@ import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.service.ConfigFileReader
-import tailcall.runtime.transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.ZIO
 import zio.json._
 import zio.json.ast.Json

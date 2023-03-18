@@ -2,6 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.{ResponseValue, Value}
 import tailcall.runtime.internal.DynamicValueUtil.toTyped
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 object DynamicValue2ResponseValue {

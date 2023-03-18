@@ -7,7 +7,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{Field
 import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
 import caliban.tools.RemoteSchema.parseRemoteSchema
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.{ZIO, ZLayer}
 
 trait SchemaGenerator {
