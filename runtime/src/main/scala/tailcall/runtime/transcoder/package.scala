@@ -15,20 +15,21 @@ package object transcoder {
   implicit val dynamicValue2JsonAST: Transcoder[DynamicValue, String, Json] = Transcoder
     .fromExit(DynamicValue2JsonAST.toJson)
 
-  implicit val json2DynamicValue: Transcoder[Json, Nothing, DynamicValue] = Transcoder.total(Json2DynamicValue.fromJson)
+  implicit val json2DynamicValue: Transcoder[Json, String, DynamicValue] = Transcoder
+    .fromExit(Json2DynamicValue.fromJson)
 
-  implicit val responseValue2DynamicValue: Transcoder[ResponseValue, Nothing, DynamicValue] = Transcoder
-    .total(ResponseValue2DynamicValue.fromResponseValue)
+  implicit val responseValue2DynamicValue: Transcoder[ResponseValue, String, DynamicValue] = Transcoder
+    .fromExit(ResponseValue2DynamicValue.fromResponseValue)
 
-  implicit val inputValue2DynamicValue: Transcoder[InputValue, Nothing, DynamicValue] = Transcoder
-    .total(InputValue2DynamicValue.fromInputValue)
+  implicit val inputValue2DynamicValue: Transcoder[InputValue, String, DynamicValue] = Transcoder
+    .fromExit(InputValue2DynamicValue.fromInputValue)
 
   implicit def primitive2Value[A]: Transcoder[DynamicValue.Primitive[A], Nothing, Value] =
     Transcoder.total(Primitive2Value.toValue)
 
-  implicit val dynamicValue2InputValue: Transcoder[DynamicValue, Nothing, InputValue] = Transcoder
-    .total(DynamicValue2InputValue.toInputValue)
+  implicit val dynamicValue2InputValue: Transcoder[DynamicValue, String, InputValue] = Transcoder
+    .fromExit(DynamicValue2InputValue.toInputValue)
 
-  implicit val dynamicValue2ResponseValue: Transcoder[DynamicValue, Nothing, ResponseValue] = Transcoder
-    .total(DynamicValue2ResponseValue.toResponseValue)
+  implicit val dynamicValue2ResponseValue: Transcoder[DynamicValue, String, ResponseValue] = Transcoder
+    .fromExit(DynamicValue2ResponseValue.toResponseValue)
 }

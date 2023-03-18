@@ -1,11 +1,11 @@
 package tailcall.runtime.service
 
-import caliban.InputValue
 import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
 import caliban.tools.RemoteSchema.parseRemoteSchema
+import caliban.{InputValue, Value}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.{ZIO, ZLayer}
@@ -46,7 +46,7 @@ object SchemaGenerator {
         None,
         inputValue.name,
         toCalibanType(inputValue.ofType),
-        inputValue.defaultValue.map(_.transcode[InputValue]),
+        inputValue.defaultValue.map(_.transcodeOrDefault[InputValue](Value.NullValue)),
         Nil
       )
 
