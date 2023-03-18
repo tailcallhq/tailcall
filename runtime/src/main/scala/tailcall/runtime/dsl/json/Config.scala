@@ -72,7 +72,7 @@ object Config {
 
   sealed trait Step
   object Step {
-    @jsonHint("$http")
+    @jsonHint("http")
     final case class Http(
       path: Path,
       method: Option[Method] = None,
@@ -83,13 +83,13 @@ object Config {
       def withInput(input: TSchema): Http   = copy(input = Option(input))
     }
 
-    @jsonHint("$const")
+    @jsonHint("const")
     final case class Constant(json: Json) extends Step
     object Constant {
       implicit val codec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
     }
 
-    @jsonHint("$objectPath")
+    @jsonHint("objectPath")
     final case class ObjPath(map: Map[String, List[String]]) extends Step
     object ObjPath {
       def apply(map: (String, List[String])*): ObjPath = ObjPath(map.toMap)
