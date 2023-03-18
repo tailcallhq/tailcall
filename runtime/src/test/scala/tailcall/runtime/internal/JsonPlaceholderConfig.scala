@@ -1,39 +1,15 @@
 package tailcall.runtime.internal
 
-import tailcall.runtime.ast.{Path, TSchema}
+import tailcall.runtime.ast.Path
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config.{Argument, Step}
 
 object JsonPlaceholderConfig {
-
-  val Address: TSchema = TSchema.obj(
-    "street"  -> TSchema.string,
-    "suite"   -> TSchema.string,
-    "city"    -> TSchema.string,
-    "zipcode" -> TSchema.string,
-    "geo"     -> TSchema.obj("lat" -> TSchema.string, "lng" -> TSchema.string)
-  )
-
-  val Company: TSchema = TSchema.obj("name" -> TSchema.string, "catchPhrase" -> TSchema.string, "bs" -> TSchema.string)
-
-  val User: TSchema = TSchema.obj(
-    "id"       -> TSchema.int,
-    "name"     -> TSchema.string,
-    "username" -> TSchema.string,
-    "email"    -> TSchema.string,
-    "address"  -> Address,
-    "company"  -> Company
-  )
-
-  val Post = TSchema
-    .obj("id" -> TSchema.int, "userId" -> TSchema.int, "title" -> TSchema.string, "body" -> TSchema.string)
-
-  val users           = Config.Step.Http(Path.unsafe.fromString("/users")).withOutput(TSchema.arr(User))
-  val userById        = Config.Step.Http(Path.unsafe.fromString("/users/{{userId}}")).withOutput(User)
-  val postsById       = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}")).withOutput(Post)
-  val posts           = Config.Step.Http(Path.unsafe.fromString("/posts")).withOutput(TSchema.arr(Post))
+  val users           = Config.Step.Http(Path.unsafe.fromString("/users"))
+  val userById        = Config.Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
+  val postsById       = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
+  val posts           = Config.Step.Http(Path.unsafe.fromString("/posts"))
   val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
-    .withOutput(TSchema.arr(Post))
 
   val graphQL = Config.GraphQL(
     schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
