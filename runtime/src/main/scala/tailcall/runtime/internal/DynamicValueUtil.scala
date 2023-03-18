@@ -1,18 +1,16 @@
 package tailcall.runtime.internal
 
+import caliban.InputValue.{ListValue => InputList, ObjectValue => InputObject, VariableValue}
+import caliban.ResponseValue.{ListValue => ResponseList, ObjectValue => ResponseObject, StreamValue}
+import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
+import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
+import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 import caliban.{InputValue, ResponseValue, Value}
 import zio.Chunk
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 
-import java.math.{BigDecimal => BigDecimalJava}
 import scala.collection.immutable.ListMap
-
-import InputValue.{ListValue => InputList, ObjectValue => InputObject, VariableValue}
-import ResponseValue.{ListValue => ResponseList, ObjectValue => ResponseObject, StreamValue}
-import Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
-import Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
-import Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
 object DynamicValueUtil {
   def asString(dv: DynamicValue): Option[String] =
@@ -165,58 +163,5 @@ object DynamicValueUtil {
       case Json.Str(value)    => DynamicValue(value)
       case Json.Num(value)    => DynamicValue(value)
       case Json.Null          => DynamicValue.NoneValue
-    }
-
-  private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
-    standardType match {
-      case StandardType.UnitType           => Json.Str(value.toString)
-      case StandardType.StringType         => Json.Str(value.toString)
-      case StandardType.BoolType           => Json.Bool(value.asInstanceOf[Boolean])
-      case StandardType.ByteType           => Json.Str(value.toString)
-      case StandardType.ShortType          => Json.Str(value.toString)
-      case StandardType.IntType            => Json.Num(value.asInstanceOf[Int])
-      case StandardType.LongType           => Json.Num(value.asInstanceOf[Long])
-      case StandardType.FloatType          => Json.Num(value.asInstanceOf[Float])
-      case StandardType.DoubleType         => Json.Num(value.asInstanceOf[Double])
-      case StandardType.BinaryType         => Json
-          .Str(java.util.Base64.getEncoder.encodeToString(value.asInstanceOf[Chunk[Byte]].toArray))
-      case StandardType.CharType           => Json.Str(value.toString)
-      case StandardType.UUIDType           => Json.Str(value.toString)
-      case StandardType.BigDecimalType     => Json.Num(value.asInstanceOf[BigDecimalJava])
-      case StandardType.BigIntegerType     => Json.Str(value.toString)
-      case StandardType.DayOfWeekType      => Json.Str(value.toString)
-      case StandardType.MonthType          => Json.Str(value.toString)
-      case StandardType.MonthDayType       => Json.Str(value.toString)
-      case StandardType.PeriodType         => Json.Str(value.toString)
-      case StandardType.YearType           => Json.Str(value.toString)
-      case StandardType.YearMonthType      => Json.Str(value.toString)
-      case StandardType.ZoneIdType         => Json.Str(value.toString)
-      case StandardType.ZoneOffsetType     => Json.Str(value.toString)
-      case StandardType.DurationType       => Json.Str(value.toString)
-      case StandardType.InstantType        => Json.Str(value.toString)
-      case StandardType.LocalDateType      => Json.Str(value.toString)
-      case StandardType.LocalTimeType      => Json.Str(value.toString)
-      case StandardType.LocalDateTimeType  => Json.Str(value.toString)
-      case StandardType.OffsetTimeType     => Json.Str(value.toString)
-      case StandardType.OffsetDateTimeType => Json.Str(value.toString)
-      case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
-    }
-
-  def toJson(d: DynamicValue): Json =
-    d match {
-      case DynamicValue.Record(_, values) => Json.Obj(Chunk.from(values.map { case (k, v) => k -> toJson(v) }))
-      case DynamicValue.Enumeration(_, (name, value))  => Json.Obj(Chunk(name -> toJson(value)))
-      case DynamicValue.Sequence(values)               => Json.Arr(Chunk.from(values.map(toJson)))
-      case DynamicValue.Dictionary(_)                  => Json.Null
-      case DynamicValue.SetValue(values)               => Json.Arr(Chunk.from(values.map(toJson)))
-      case DynamicValue.Primitive(value, standardType) => toJsonPrimitive(value, standardType)
-      case DynamicValue.Singleton(_)                   => Json.Null
-      case DynamicValue.SomeValue(value)               => toJson(value)
-      case DynamicValue.NoneValue                      => Json.Null
-      case DynamicValue.Tuple(left, right)             => Json.Arr(Chunk(toJson(left), toJson(right)))
-      case DynamicValue.LeftValue(value)               => toJson(value)
-      case DynamicValue.RightValue(value)              => toJson(value)
-      case DynamicValue.DynamicAst(_)                  => Json.Null
-      case DynamicValue.Error(_)                       => Json.Null
     }
 }

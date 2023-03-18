@@ -1,5 +1,7 @@
 package tailcall.runtime.transcoder
 
+import zio.Chunk
+
 sealed trait TExit[+A] {
   self =>
 
@@ -34,10 +36,18 @@ object TExit {
 
   def fromOption[A](option: Option[A]): TExit[A] = option.fold[TExit[A]](Empty)(Succeed(_))
 
-  def foreach[A, B](list: List[A])(f: A => TExit[B]): TExit[List[B]] =
-    list.foldRight[TExit[List[B]]](succeed(Nil))((exit, output) => output.flatMap(list => f(exit) map (_ :: list)))
+  def foreach[A, B](list: List[A])(f: A => TExit[B]): TExit[List[B]] = foreachIterable(list)(f).map(_.toList)
 
-  def fromEither[A](either: Either[String, A]): TExit[A] = either.fold[TExit[A]](Failure(_), Succeed(_))
+  def foreachChunk[A, B](chunk: Chunk[A])(f: A => TExit[B]): TExit[Chunk[B]] =
+    foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
+
+  def foreachIterable[A, B](iter: Iterable[A])(f: A => TExit[B]): TExit[Iterable[B]] = {
+    val builder = Iterable.newBuilder[B]
+    iter.foldLeft[TExit[Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
+      .map(_ => builder.result())
+  }
+
+  def fromEither[A](either: Either[String, A]): TExit[A] = either.fold[TExit[A]](fail(_), succeed(_))
 
   final case class Failure(message: String) extends TExit[Nothing]
 
