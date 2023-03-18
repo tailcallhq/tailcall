@@ -10,7 +10,7 @@ import java.math.{BigDecimal => BigDecimalJava}
 object DynamicValue2JsonAST {
   private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
-      case StandardType.UnitType           => Json.Str(value.toString)
+      case StandardType.UnitType           => Json.Null
       case StandardType.StringType         => Json.Str(value.toString)
       case StandardType.BoolType           => Json.Bool(value.asInstanceOf[Boolean])
       case StandardType.ByteType           => Json.Str(value.toString)

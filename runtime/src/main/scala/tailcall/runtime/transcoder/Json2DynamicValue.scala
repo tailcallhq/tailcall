@@ -15,7 +15,7 @@ object Json2DynamicValue {
       case Json.Bool(value)   => TExit.succeed(DynamicValue(value))
       case Json.Str(value)    => TExit.succeed(DynamicValue(value))
       case Json.Num(value)    => TExit.succeed(DynamicValue(value))
-      case Json.Null          => TExit.fail("Null is not a valid DynamicValue")
+      case Json.Null          => TExit.succeed(DynamicValue(()))
     }
   }
 }
