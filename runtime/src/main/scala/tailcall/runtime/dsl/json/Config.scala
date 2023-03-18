@@ -11,7 +11,7 @@ import zio.json.ast.Json
 
 import java.io.File
 
-final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = GraphQL()) {
+final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
   def toBlueprint: Blueprint = self.transcode[Blueprint]
 
@@ -25,9 +25,10 @@ final case class Config(version: Int = 0, server: Server, graphQL: GraphQL = Gra
 }
 
 object Config {
-  final case class Server(host: String, port: Option[Int] = None) {
+  final case class Server(host: Option[String] = None, port: Option[Int] = None) {
     self =>
-    def mergeRight(other: Server): Server = Server(host = other.host, port = other.port.orElse(self.port))
+    def mergeRight(other: Server): Server =
+      Server(host = other.host.orElse(self.host), port = other.port.orElse(self.port))
   }
 
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
