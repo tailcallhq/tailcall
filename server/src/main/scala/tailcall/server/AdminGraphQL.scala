@@ -52,7 +52,7 @@ object AdminGraphQL {
   implicit val dynamicValueSchema: Schema[Any, DynamicValue] = new Schema[Any, DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
       __Type(kind = __TypeKind.SCALAR, name = Some("DynamicValue"))
-    override def resolve(value: DynamicValue): Step[Any] = Step.PureStep(value.transcode[ResponseValue].getOrElse(???))
+    override def resolve(value: DynamicValue): Step[Any] = Step.PureStep(value.transcode[ResponseValue])
   }
 
   val graphQL = GraphQL.graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(

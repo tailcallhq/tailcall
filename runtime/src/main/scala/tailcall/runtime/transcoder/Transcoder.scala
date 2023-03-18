@@ -8,39 +8,21 @@ package tailcall.runtime.transcoder
  * such that a transcoder from A ~> B exists and a
  * transcoder from B ~> C already exists.
  */
-final case class Transcoder[-A, +B](run: A => TExit[B]) {
+final case class Transcoder[-A, +E, +B](run: A => TExit[E, B]) {
   self =>
-  def apply(a: A): TExit[B] = run(a)
+  def apply(a: A): TExit[E, B] = run(a)
 
-  def >>>[C](other: Transcoder[B, C]): Transcoder[A, C] = Transcoder(self(_).flatMap(other(_)))
+  def >>>[E1 >: E, C](other: Transcoder[B, E1, C]): Transcoder[A, E1, C] = Transcoder(self(_).flatMap(other(_)))
 }
 
 object Transcoder {
-  def apply[A, B](implicit ev: Transcoder[A, B]): Transcoder[A, B] = ev
+  def apply[A, E, B](implicit ev: Transcoder[A, E, B]): Transcoder[A, E, B] = ev
 
-  def collect[A]: PartiallyAppliedCollect[A] = new PartiallyAppliedCollect[A]()
-
-  def collectEither[A]: PartiallyAppliedCollectEither[A] = new PartiallyAppliedCollectEither[A]()
-
-  def fromExit[A, B](f: A => TExit[B]): Transcoder[A, B] = Transcoder(f)
+  def fromExit[A, E, B](f: A => TExit[E, B]): Transcoder[A, E, B] = Transcoder(f)
 
   def total[A]: PartiallyAppliedTotal[A] = new PartiallyAppliedTotal[A]()
 
-  final class PartiallyAppliedCollect[A] {
-    def apply[B](pf: PartialFunction[A, B]): Transcoder[A, B] = Transcoder(a => TExit.fromOption(pf.lift(a)))
-  }
-
-  final class PartiallyAppliedCollectEither[A] {
-    def apply[B](pf: PartialFunction[A, Either[String, B]]): Transcoder[A, B] =
-      Transcoder(a =>
-        pf.lift(a) match {
-          case Some(value) => TExit.fromEither(value)
-          case None        => TExit.empty
-        }
-      )
-  }
-
   final class PartiallyAppliedTotal[A] {
-    def apply[B](f: A => B): Transcoder[A, B] = Transcoder(a => TExit.succeed(f(a)))
+    def apply[E, B](f: A => B): Transcoder[A, E, B] = Transcoder(a => TExit.succeed(f(a)))
   }
 }

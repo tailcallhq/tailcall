@@ -10,7 +10,10 @@ import zio.schema.{DynamicValue, Schema}
 
 object Config2Blueprint {
   implicit private def jsonSchema: Schema[Json] =
-    Schema[DynamicValue].transformOrFail[Json](_.transcode[Json].toEither, _.transcode[DynamicValue].toEither)
+    Schema[DynamicValue].transformOrFail[Json](
+      a => a.transcodeOrFailWith[Json, String],
+      b => b.transcodeOrFailWith[DynamicValue, Nothing]
+    )
 
   private def toType(field: Field): Blueprint.Type = {
     val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))

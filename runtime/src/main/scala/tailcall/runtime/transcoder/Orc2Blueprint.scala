@@ -16,7 +16,7 @@ object Orc2Blueprint {
     }
   }
 
-  def toInputValueDefinition(lField: LabelledField[Input]): TExit[Blueprint.InputValueDefinition] =
+  def toInputValueDefinition(lField: LabelledField[Input]): TExit[String, Blueprint.InputValueDefinition] =
     for {
       ofType <- TExit.fromOption(lField.field.ofType) <> TExit.fail("Input type must be named")
     } yield Blueprint.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
@@ -26,7 +26,7 @@ object Orc2Blueprint {
       case Resolver.Empty           => Option(_.path("value", lfield.name).toDynamic)
       case Resolver.FromFunction(f) => Option(f)
     }
-  def toFieldDefinition(lField: LabelledField[Output]): TExit[Blueprint.FieldDefinition]              = {
+  def toFieldDefinition(lField: LabelledField[Output]): TExit[String, Blueprint.FieldDefinition]      = {
     for {
       ofType <- TExit.fromOption(lField.field.ofType) <> TExit.fail("Output type must be named")
       args   <- TExit.foreach(lField.field.definition.arguments)(toInputValueDefinition)
@@ -38,7 +38,7 @@ object Orc2Blueprint {
     )
   }
 
-  def toBlueprint(o: Orc): TExit[Blueprint] = {
+  def toBlueprint(o: Orc): TExit[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 

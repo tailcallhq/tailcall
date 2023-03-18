@@ -54,11 +54,7 @@ object StepGenerator {
 
     def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
       Step.FunctionStep { args =>
-        val context = ctx.copy(args =
-          args.view.mapValues(
-            _.transcode[DynamicValue].getOrElse(throw new RuntimeException("transcoding to dynamic value failed"))
-          ).toMap
-        )
+        val context = ctx.copy(args = args.view.mapValues(_.transcode[DynamicValue]).toMap)
         field.resolver match {
           case Some(resolver) =>
             val step = for {
@@ -82,7 +78,7 @@ object StepGenerator {
       tpe match {
         case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
             case Some(value) => value(ctx)
-            case None        => Step.PureStep(ctx.value.transcode[ResponseValue].getOrElse(???))
+            case None        => Step.PureStep(ctx.value.transcode[ResponseValue])
           }
         case ast.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
