@@ -6,6 +6,7 @@ import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.remote.Remote
 import tailcall.runtime.transcoder.Transcoder.Syntax
+import zio.json.EncoderOps
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
@@ -58,8 +59,10 @@ final case class Config2Blueprint(config: Config) {
 
   private def toResolver(steps: List[Step], field: Field): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     steps match {
-      case Nil   => None
+      case Nil => None
+
       case steps => config.server.host match {
+          // TODO: should fail if Http is used without server.host
           case None if steps.exists(_.isInstanceOf[Step.Http]) => None
           case option                                          => option.map { host =>
               steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
@@ -75,6 +78,16 @@ final case class Config2Blueprint(config: Config) {
             }
         }
     }
+
+  private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
+    // TODO: should fail on error
+    val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
+    if (errors.nonEmpty || jsons.isEmpty) None
+    else Json.Arr(jsons: _*).transcodeOrFailWith[DynamicValue, String] match {
+      case Left(_)             => None
+      case Right(dynamicValue) => Option(Blueprint.Directive(name = "steps", arguments = Map("value" -> dynamicValue)))
+    }
+  }
 
   def toBlueprint: Blueprint = {
     val rootSchema = Blueprint
@@ -93,7 +106,13 @@ final case class Config2Blueprint(config: Config) {
 
           val resolver = toResolver(field.steps.getOrElse(Nil), field)
 
-          Blueprint.FieldDefinition(name, args, ofType, resolver.map(Remote.toLambda(_)))
+          Blueprint.FieldDefinition(
+            name = name,
+            args = args,
+            ofType = ofType,
+            resolver = resolver.map(Remote.toLambda(_)),
+            directives = toDirective(field.steps.getOrElse(Nil)).toList
+          )
         }
       }
 

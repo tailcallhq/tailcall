@@ -3,7 +3,12 @@ package tailcall.runtime.service
 import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{Definition => CalibanDefinition, Document => CalibanDocument, Type => CalibanType}
+import caliban.parsing.adt.{
+  Definition => CalibanDefinition,
+  Directive,
+  Document => CalibanDocument,
+  Type => CalibanType
+}
 import caliban.tools.RemoteSchema.parseRemoteSchema
 import caliban.{InputValue, Value}
 import tailcall.runtime.ast.Blueprint
@@ -38,8 +43,17 @@ object SchemaGenerator {
       )
     }
 
-    private def toCalibanField(field: Blueprint.FieldDefinition): FieldDefinition =
-      FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), Nil)
+    private def toCalibanDirective(directive: Blueprint.Directive): Directive = {
+      Directive(
+        directive.name,
+        directive.arguments.map { case (key, value) => key -> value.transcodeOrDefault[InputValue](Value.NullValue) }
+      )
+    }
+
+    private def toCalibanField(field: Blueprint.FieldDefinition): FieldDefinition = {
+      val directives = field.directives.map(toCalibanDirective(_))
+      FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), directives)
+    }
 
     private def toCalibanInputValue(inputValue: Blueprint.InputValueDefinition): InputValueDefinition =
       CalibanDefinition.TypeSystemDefinition.TypeDefinition.InputValueDefinition(
