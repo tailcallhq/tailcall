@@ -72,7 +72,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "deploy",
   "Deploy",
   List(
-    WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker")),
+    WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
       commands = List("flyctl deploy --remote-only"),

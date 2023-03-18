@@ -79,8 +79,7 @@ jobs:
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Docker
-        run: sbt ++${{ matrix.scala }} Docker/stage
+      - run: sbt ++${{ matrix.scala }} Docker/stage
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
