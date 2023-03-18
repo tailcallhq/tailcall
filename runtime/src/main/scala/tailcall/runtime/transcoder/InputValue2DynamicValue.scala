@@ -19,7 +19,7 @@ object InputValue2DynamicValue {
       case ObjectValue(fields)     => TExit.foreachIterable(fields) { case (k, v) => fromInputValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries.toList: _*))
       case StringValue(value)      => TExit.succeed(DynamicValue(value))
-      case NullValue               => TExit.fail("Can not transcode NullValue to DynamicValue")
+      case NullValue               => TExit.succeed(DynamicValue(()))
       case BooleanValue(value)     => TExit.succeed(DynamicValue(value))
       case BigDecimalNumber(value) => TExit.succeed(DynamicValue(value))
       case DoubleNumber(value)     => TExit.succeed(DynamicValue(value))
