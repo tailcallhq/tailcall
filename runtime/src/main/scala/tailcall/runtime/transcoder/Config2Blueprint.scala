@@ -47,8 +47,8 @@ final case class Config2Blueprint(config: Config) {
     }
   }
 
-  private def toEndpoint(config: Config, http: Step.Http): Endpoint =
-    Endpoint.make(config.server.host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
+  private def toEndpoint(http: Step.Http, host: String): Endpoint =
+    Endpoint.make(host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
   private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
@@ -56,23 +56,23 @@ final case class Config2Blueprint(config: Config) {
       lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
     }.toDynamic
 
-  private def toResolver(
-    config: Config,
-    steps: List[Step],
-    field: Field
-  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
+  private def toResolver(steps: List[Step], field: Field): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     steps match {
       case Nil   => None
-      case steps => Option {
-          steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
-            case http @ Step.Http(_, _, _, _) => input =>
-                val endpoint           = toEndpoint(config, http)
-                val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-                val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(field))) else endpoint
-                Remote.fromEndpoint(endpointWithOutput, input)
-            case Step.Constant(json)          => _ => Remote(json).toDynamic
-            case Step.ObjPath(map)            => input => toRemoteMap(input, map)
-          }.reduce((a, b) => r => b(a(r)))
+      case steps => config.server.host match {
+          case None if steps.exists(_.isInstanceOf[Step.Http]) => None
+          case option                                          => option.map { host =>
+              steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
+                case http @ Step.Http(_, _, _, _) => input =>
+                    val endpoint           = toEndpoint(http, host)
+                    val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
+                    val endpointWithOutput =
+                      if (inferOutput) endpoint.withOutput(Option(toTSchema(field))) else endpoint
+                    Remote.fromEndpoint(endpointWithOutput, input)
+                case Step.Constant(json)          => _ => Remote(json).toDynamic
+                case Step.ObjPath(map)            => input => toRemoteMap(input, map)
+              }.reduce((a, b) => r => b(a(r)))
+            }
         }
     }
 
@@ -91,7 +91,7 @@ final case class Config2Blueprint(config: Config) {
 
           val ofType = toType(field)
 
-          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
+          val resolver = toResolver(field.steps.getOrElse(Nil), field)
 
           Blueprint.FieldDefinition(name, args, ofType, resolver.map(Remote.toLambda(_)))
         }

@@ -25,7 +25,7 @@ object TestGen {
 
   def genSchema: Gen[Any, TSchema] = genObj
 
-  def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(baseURL))
+  def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(Option(baseURL)))
 
   def genMethod: Gen[Any, Method] =
     Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
