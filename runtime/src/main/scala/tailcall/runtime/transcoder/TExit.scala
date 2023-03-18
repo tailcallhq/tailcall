@@ -25,6 +25,8 @@ sealed trait TExit[+A] {
     }
 
   def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](default, _ => default, identity)
+
+  def transcode[B](implicit ev: Transcoder[A, B]): TExit[B] = self.flatMap(ev(_))
 }
 
 object TExit {

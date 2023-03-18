@@ -1,5 +1,6 @@
 package tailcall.runtime
 
+import caliban.{InputValue, ResponseValue}
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen}
 import tailcall.runtime.transcoder.Syntax
@@ -68,20 +69,20 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       ),
       test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
-          val actual   = toResponseValue(fromResponseValue(responseValue))
+          val actual   = responseValue.transcode[DynamicValue].getOrElse(???).transcode[ResponseValue].getOrElse(???)
           val expected = responseValue
           assertTrue(actual == expected)
         }
       },
       test("fromInputValue >>> toInputValue == identity") {
         check(CalibanGen.genInputValue) { inputValue =>
-          val actual   = toInputValue(fromInputValue(inputValue))
+          val actual   = inputValue.transcode[DynamicValue].getOrElse(???).transcode[InputValue].getOrElse(???)
           val expected = inputValue
           assertTrue(actual == expected)
         }
       },
       test("fromJson >>> toJson == identity")(check(JsonGen.genJson)(json => {
-        val actual   = fromJson(json).transcode[Json].getOrElse(Json.Null)
+        val actual   = (json.transcode[DynamicValue]).transcode[Json].getOrElse(Json.Null)
         val expected = json
         assertTrue(actual == expected)
       }))

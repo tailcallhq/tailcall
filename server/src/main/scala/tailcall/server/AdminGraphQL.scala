@@ -6,8 +6,8 @@ import caliban.schema.{GenericSchema, Schema, Step}
 import caliban.{GraphQL, ResponseValue, RootResolver}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.{Blueprint, Digest}
-import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.~>
+import tailcall.runtime.transcoder.Syntax
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.query.ZQuery
@@ -52,7 +52,7 @@ object AdminGraphQL {
   implicit val dynamicValueSchema: Schema[Any, DynamicValue] = new Schema[Any, DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
       __Type(kind = __TypeKind.SCALAR, name = Some("DynamicValue"))
-    override def resolve(value: DynamicValue): Step[Any] = Step.PureStep(DynamicValueUtil.toResponseValue(value))
+    override def resolve(value: DynamicValue): Step[Any] = Step.PureStep(value.transcode[ResponseValue].getOrElse(???))
   }
 
   val graphQL = GraphQL.graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(
