@@ -65,14 +65,14 @@ addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild ++= Seq(
-  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'")),
-  WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker"))
+  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
 
 ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "deploy",
   "Deploy",
   List(
+    WorkflowStep.Sbt(List("Docker/stage"), name = Some("Docker")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
       commands = List("flyctl deploy --remote-only"),

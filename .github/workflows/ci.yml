@@ -60,9 +60,6 @@ jobs:
         if: matrix.scala == '2.13.10'
         run: sbt ++${{ matrix.scala }} lintCheck
 
-      - name: Docker
-        run: sbt ++${{ matrix.scala }} Docker/stage
-
       - name: Compress target directories
         run: tar cf targets.tar registry/target server/target target cli/target runtime/target project/target
 
@@ -82,6 +79,9 @@ jobs:
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Docker
+        run: sbt ++${{ matrix.scala }} Docker/stage
+
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
