@@ -1,4 +1,4 @@
-package tailcall.runtime.service
+package tailcall.runtime.transcoder
 
 import tailcall.runtime.ast.{Blueprint, Endpoint}
 import tailcall.runtime.dsl.json.Config
@@ -9,7 +9,7 @@ import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
-object ConfigBlueprintGenerator {
+trait Config2Blueprint {
   implicit private def jsonSchema: Schema[Json] =
     Schema[DynamicValue].transform[Json](DynamicValueUtil.toJson, DynamicValueUtil.fromJson)
 
@@ -72,4 +72,6 @@ object ConfigBlueprintGenerator {
 
     Blueprint(rootSchema, definitions)
   }
+
+  implicit val transcoder: Transcoder[Config, Blueprint] = Transcoder.total(toBlueprint)
 }
