@@ -36,6 +36,3 @@ grace_period = "1s"
 interval = "15s"
 restart_limit = 0
 timeout = "2s"
-
-[build]
-dockerfile = "target/docker/stage/Dockerfile"
