@@ -9,8 +9,10 @@ package tailcall.runtime.transcoder
  * transcoder from B ~> C already exists.
  */
 sealed trait Transcoder
-    extends Config2Blueprint
+    extends Blueprint2Document
+    with Config2Blueprint
     with Document2Blueprint
+    with Document2Config
     with DynamicValue2InputValue
     with DynamicValue2JsonAST
     with DynamicValue2ResponseValue
@@ -19,6 +21,5 @@ sealed trait Transcoder
     with Orc2Blueprint
     with Primitive2Value
     with ResponseValue2DynamicValue
-    with Document2Config
 
 object Transcoder extends Transcoder
