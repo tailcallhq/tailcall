@@ -8,8 +8,7 @@ package tailcall.runtime.transcoder
  * such that a transcoder from A ~> B exists and a
  * transcoder from B ~> C already exists.
  */
-
-object Transcoder
+sealed trait Transcoder
     extends Config2Blueprint
     with Document2Blueprint
     with DynamicValue2InputValue
@@ -20,3 +19,5 @@ object Transcoder
     with Orc2Blueprint
     with Primitive2Value
     with ResponseValue2DynamicValue
+
+object Transcoder extends Transcoder

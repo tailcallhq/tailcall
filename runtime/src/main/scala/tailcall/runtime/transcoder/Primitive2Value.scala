@@ -6,7 +6,7 @@ import zio.Chunk
 import zio.schema.{DynamicValue, StandardType}
 
 trait Primitive2Value {
-  final private def run(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
+  final def toValue(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
     TValid.succeed {
       val value = primitive.value
       primitive.standardType match {
@@ -44,5 +44,4 @@ trait Primitive2Value {
       }
     }
 
-  final def toValue(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] = run(primitive)
 }
