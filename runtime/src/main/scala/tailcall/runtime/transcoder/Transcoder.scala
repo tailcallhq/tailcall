@@ -15,7 +15,17 @@ trait Transcoder[-A, +E, +B] {
   def apply(a: A): TValid[E, B] = run(a)
 }
 
-object Transcoder {
+object Transcoder
+    extends Config2Blueprint
+    with Document2Blueprint
+    with DynamicValue2InputValue
+    with DynamicValue2JsonAST
+    with DynamicValue2ResponseValue
+    with InputValue2DynamicValue
+    with Json2DynamicValue
+    with Orc2Blueprint
+    with Primitive2Value
+    with ResponseValue2DynamicValue {
   implicit final class Syntax[A](private val a: A) {
     def transcode[B, E](implicit transcoder: Transcoder[A, E, B]): TValid[E, B]           = transcoder.run(a)
     def transcodeOrFailWith[B, E](implicit transcoder: Transcoder[A, E, B]): Either[E, B] = transcoder.run(a).toEither

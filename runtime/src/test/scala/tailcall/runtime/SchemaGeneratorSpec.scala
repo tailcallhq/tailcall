@@ -5,7 +5,7 @@ import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc.Type.{ListType, NamedType, NonNull}
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
 import tailcall.runtime.service._
-import tailcall.runtime.transcoder.Orc2Blueprint
+import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.test.Assertion._
 import zio.test._
@@ -112,28 +112,28 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
       },
       suite("toType")(
         test("NamedType") {
-          val tpe      = Orc2Blueprint.toType(NamedType("Foo"))
+          val tpe      = Transcoder.toType(NamedType("Foo"))
           val expected = Blueprint.NamedType("Foo", false)
           assert(tpe)(equalTo(expected))
         },
         test("NamedType with List") {
-          val tpe      = Orc2Blueprint.toType(ListType(NonNull(NamedType("Foo"))))
+          val tpe      = Transcoder.toType(ListType(NonNull(NamedType("Foo"))))
           val expected = Blueprint.ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = true), nonNull = false)
           assert(tpe)(equalTo(expected))
         },
         test("NamedType with List nullable") {
-          val tpe      = Orc2Blueprint.toType(ListType(NamedType("Foo")))
+          val tpe      = Transcoder.toType(ListType(NamedType("Foo")))
           val expected = Blueprint
             .ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = false), nonNull = false)
           assert(tpe)(equalTo(expected))
         },
         test("nested non-null") {
-          val tpe      = Orc2Blueprint.toType(NonNull(NonNull(NonNull(NonNull(NamedType("Foo"))))))
+          val tpe      = Transcoder.toType(NonNull(NonNull(NonNull(NonNull(NamedType("Foo"))))))
           val expected = Blueprint.NamedType(name = "Foo", nonNull = true)
           assert(tpe)(equalTo(expected))
         },
         test("nested listType") {
-          val tpe      = Orc2Blueprint.toType(ListType(ListType(ListType(ListType(NamedType("Foo"))))))
+          val tpe      = Transcoder.toType(ListType(ListType(ListType(ListType(NamedType("Foo"))))))
           val expected = Blueprint.ListType(
             Blueprint.ListType(
               ofType = Blueprint.ListType(

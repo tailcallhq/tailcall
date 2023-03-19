@@ -5,8 +5,8 @@ import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
-object DynamicValue2ResponseValue extends Transcoder[DynamicValue, String, ResponseValue] {
-  override def run(input: DynamicValue): TValid[String, ResponseValue] = {
+trait DynamicValue2ResponseValue {
+  private def run(input: DynamicValue): TValid[String, ResponseValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run).map(ResponseValue.ListValue)
       case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
@@ -30,4 +30,6 @@ object DynamicValue2ResponseValue extends Transcoder[DynamicValue, String, Respo
       case DynamicValue.Error(_)                => TValid.fail("Can not transcode Error to ResponseValue")
     }
   }
+
+  def toResponseValue(input: DynamicValue): TValid[String, ResponseValue] = run(input)
 }

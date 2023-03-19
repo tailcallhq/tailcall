@@ -8,7 +8,7 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
-object Document2Blueprint extends Transcoder[Document, String, Blueprint] {
+trait Document2Blueprint {
   private def toBlueprintType(tpe: Type): Blueprint.Type = {
     tpe match {
       case Type.NamedType(name, nonNull)  => Blueprint.NamedType(name, nonNull)
@@ -53,8 +53,7 @@ object Document2Blueprint extends Transcoder[Document, String, Blueprint] {
     }
   }
 
-  override def run(document: Document): TValid[String, Blueprint] = {
+  final def toBlueprint(document: Document): TValid[String, Blueprint] =
     TValid.foreach(document.definitions)(toBlueprintDefinition(_))
       .map(defs => Blueprint(defs.collect { case Some(d) => d }))
-  }
 }

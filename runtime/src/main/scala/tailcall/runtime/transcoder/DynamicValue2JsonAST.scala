@@ -6,7 +6,7 @@ import zio.schema.{DynamicValue, StandardType}
 
 import java.math.{BigDecimal => BigDecimalJava}
 
-object DynamicValue2JsonAST extends Transcoder[DynamicValue, String, Json] {
+trait DynamicValue2JsonAST {
   private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Null
@@ -42,7 +42,7 @@ object DynamicValue2JsonAST extends Transcoder[DynamicValue, String, Json] {
       case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
     }
 
-  override def run(d: DynamicValue): TValid[String, Json] =
+  private def run(d: DynamicValue): TValid[String, Json] =
     d match {
       case DynamicValue.Record(_, values) => TValid.foreachChunk(Chunk.fromIterable(values)) { case (name, value) =>
           run(value).map(name -> _)
@@ -66,4 +66,6 @@ object DynamicValue2JsonAST extends Transcoder[DynamicValue, String, Json] {
       case DynamicValue.DynamicAst(_)                  => TValid.fail("Can not transcoder DynamicAst to a DynamicValue")
       case DynamicValue.Error(_)                       => TValid.fail("Can not transcoder Error to a DynamicValue")
     }
+
+  def toJson(d: DynamicValue): TValid[String, Json] = run(d)
 }

@@ -5,8 +5,8 @@ import zio.schema.{DynamicValue, TypeId}
 
 import scala.collection.immutable.ListMap
 
-object Json2DynamicValue extends Transcoder[Json, String, DynamicValue] {
-  override def run(json: Json): TValid[String, DynamicValue] = {
+trait Json2DynamicValue {
+  private def run(json: Json): TValid[String, DynamicValue] = {
     json match {
       case Json.Obj(fields) => TValid.foreach(fields.toList) { case (k, v) => run(v).map(k -> _) }.map(ListMap.from(_))
           .map(DynamicValue.Record(TypeId.Structural, _))
@@ -17,4 +17,6 @@ object Json2DynamicValue extends Transcoder[Json, String, DynamicValue] {
       case Json.Null          => TValid.succeed(DynamicValue(()))
     }
   }
+
+  def toDynamicValue(json: Json): TValid[String, DynamicValue] = run(json)
 }

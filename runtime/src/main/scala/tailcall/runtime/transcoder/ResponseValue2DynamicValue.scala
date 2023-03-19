@@ -1,18 +1,17 @@
 package tailcall.runtime.transcoder
 
-import caliban.ResponseValue
 import tailcall.runtime.internal.DynamicValueUtil
 import zio.Chunk
 import zio.schema.DynamicValue
 
-object ResponseValue2DynamicValue extends Transcoder[ResponseValue, String, DynamicValue] {
+trait ResponseValue2DynamicValue {
   import caliban.ResponseValue
   import caliban.ResponseValue.{StreamValue, ListValue => ResponseList, ObjectValue => ResponseObject}
   import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
   import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
   import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-  def run(input: ResponseValue): TValid[String, DynamicValue] = {
+  private def run(input: ResponseValue): TValid[String, DynamicValue] = {
     input match {
       case ResponseList(values)    => TValid.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
       case ResponseObject(fields)  => TValid.foreach(fields) { case (k, v) => run(v).map(k -> _) }
@@ -30,4 +29,6 @@ object ResponseValue2DynamicValue extends Transcoder[ResponseValue, String, Dyna
       case StreamValue(_)          => TValid.fail("Can not transcode StreamValue to DynamicValue")
     }
   }
+
+  def toDynamicValue(input: ResponseValue): TValid[String, DynamicValue] = run(input)
 }

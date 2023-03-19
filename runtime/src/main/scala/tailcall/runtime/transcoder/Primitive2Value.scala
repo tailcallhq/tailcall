@@ -4,8 +4,8 @@ import caliban.Value
 import zio.Chunk
 import zio.schema.{DynamicValue, StandardType}
 
-object Primitive2Value extends Transcoder[DynamicValue.Primitive[_], Nothing, Value] {
-  override def run(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
+trait Primitive2Value {
+  private def run(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
     TValid.succeed {
       val value = primitive.value
       primitive.standardType match {
@@ -42,4 +42,6 @@ object Primitive2Value extends Transcoder[DynamicValue.Primitive[_], Nothing, Va
         case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
       }
     }
+
+  def toValue(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] = run(primitive)
 }
