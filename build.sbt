@@ -44,8 +44,8 @@ val scala3Version = "3.2.2"
 val zioJson       = "0.4.2"
 val rocksDB       = "0.4.2"
 
-ThisBuild / scalaVersion := scala2Version
-
+ThisBuild / scalaVersion                                   := scala2Version
+ThisBuild / crossScalaVersions                             := Seq(scala2Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings")
@@ -81,7 +81,8 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
   ),
-  needs = List("build")
+  needs = List("build"),
+  scalas = List(scala2Version)
 ))
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
