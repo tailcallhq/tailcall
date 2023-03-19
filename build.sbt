@@ -77,7 +77,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
     WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
-      commands = List("flyctl deploy --remote-only ./target/docker/stage --config fly.toml"),
+      commands = List("flyctl deploy --remote-only ./target/docker/stage --config ./fly.toml"),
       cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
