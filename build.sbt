@@ -132,7 +132,7 @@ Docker / mappings   := {
   val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
 
   // add the fat jar
-  filtered ++: Seq(serverJar -> ("4/opt/docker/lib/" + serverJar.getName))
+  filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
 }
 
 Docker / maintainer := "tushar@tailcall.in"
