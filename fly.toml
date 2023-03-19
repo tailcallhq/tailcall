@@ -1,5 +1,5 @@
 # fly.toml file generated for monotail on 2023-03-14T14:09:46+05:30
-app = "fly-builder-ancient-shadow-3123"
+app = "monotail"
 kill_signal = "SIGINT"
 kill_timeout = 5
 primary_region = "lhr"
