@@ -33,6 +33,8 @@ object Transcoder {
         case TExit.Succeed(value) => value
       }
 
+    def some: TExit[E, Option[A]] = self.map(Some(_))
+
     def map[B](ab: A => B): TExit[E, B] = self.flatMap(a => TExit.succeed(ab(a)))
 
     def flatMap[E1 >: E, B](ab: A => TExit[E1, B]): TExit[E1, B] = self.fold(TExit.fail(_), ab)
@@ -60,6 +62,8 @@ object Transcoder {
 
     def succeed[A](value: A): TExit[Nothing, A] = Succeed(value)
 
+    def none: TExit[Nothing, Option[Nothing]] = succeed(None)
+
     def fromOption[A](option: Option[A]): TExit[Unit, A] = option.fold[TExit[Unit, A]](TExit.fail(()))(Succeed(_))
 
     def foreach[A, E, B](list: List[A])(f: A => TExit[E, B]): TExit[E, List[B]] = foreachIterable(list)(f).map(_.toList)
@@ -81,10 +85,9 @@ object Transcoder {
   }
 
   implicit final class Syntax[A](private val a: A) {
-    def transcode[B](implicit transcoder: Transcoder[A, Nothing, B]): B = transcoder.run(a).get
-
+    def transcode[B](implicit transcoder: Transcoder[A, Nothing, B]): B                   = transcoder.run(a).get
+    def transcode[B, E](implicit transcoder: Transcoder[A, E, B]): TExit[E, B]            = transcoder.run(a)
     def transcodeOrFailWith[B, E](implicit transcoder: Transcoder[A, E, B]): Either[E, B] = transcoder.run(a).toEither
-
     def transcodeOrDefault[B](b: => B)(implicit transcoder: Transcoder[A, _, B]): B = transcoder.run(a).getOrElse(b)
   }
 }
