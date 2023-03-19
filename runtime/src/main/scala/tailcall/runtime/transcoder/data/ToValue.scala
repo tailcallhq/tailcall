@@ -1,15 +1,14 @@
-package tailcall.runtime.transcoder
+package tailcall.runtime.transcoder.data
 
 import caliban.Value
 import tailcall.runtime.internal.TValid
 import zio.Chunk
-import zio.schema.{DynamicValue, StandardType}
+import zio.schema.StandardType
 
-trait Primitive2Value {
-  final def toValue(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
+trait ToValue {
+  final def toValue[A](value: A, standardType: StandardType[A]): TValid[Nothing, Value] =
     TValid.succeed {
-      val value = primitive.value
-      primitive.standardType match {
+      standardType match {
         case StandardType.StringType         => Value.StringValue(value.toString)
         case StandardType.IntType            => Value.IntValue(value.toString.toInt)
         case StandardType.MonthDayType       => Value.StringValue(value.toString)
@@ -43,5 +42,4 @@ trait Primitive2Value {
         case StandardType.DayOfWeekType      => Value.StringValue(value.toString)
       }
     }
-
 }

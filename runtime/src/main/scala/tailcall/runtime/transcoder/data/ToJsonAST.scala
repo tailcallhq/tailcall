@@ -1,4 +1,4 @@
-package tailcall.runtime.transcoder
+package tailcall.runtime.transcoder.data
 
 import tailcall.runtime.internal.TValid
 import zio.Chunk
@@ -7,7 +7,7 @@ import zio.schema.{DynamicValue, StandardType}
 
 import java.math.{BigDecimal => BigDecimalJava}
 
-trait DynamicValue2JsonAST {
+trait ToJsonAST {
   final private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Null
