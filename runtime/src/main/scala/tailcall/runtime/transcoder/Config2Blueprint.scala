@@ -10,7 +10,7 @@ import zio.json.EncoderOps
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
-object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
+trait Config2Blueprint {
 
   implicit private def jsonSchema: Schema[Json] =
     Schema[DynamicValue]
@@ -91,7 +91,7 @@ object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
     }
   }
 
-  override def run(config: Config): TValid[Nothing, Blueprint] = {
+  def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
@@ -123,5 +123,4 @@ object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
 
     TValid.succeed(Blueprint(rootSchema :: definitions))
   }
-
 }

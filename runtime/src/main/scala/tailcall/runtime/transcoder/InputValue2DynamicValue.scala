@@ -5,14 +5,14 @@ import tailcall.runtime.internal.DynamicValueUtil
 import zio.Chunk
 import zio.schema.DynamicValue
 
-object InputValue2DynamicValue extends Transcoder[InputValue, String, DynamicValue] {
+trait InputValue2DynamicValue {
 
   import caliban.InputValue.{ListValue, ObjectValue, VariableValue}
   import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
   import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
   import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-  override def run(input: InputValue): TValid[String, DynamicValue] = {
+  private def run(input: InputValue): TValid[String, DynamicValue] = {
     input match {
       case ListValue(values)       => TValid.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
       case ObjectValue(fields)     => TValid.foreachIterable(fields) { case (k, v) => run(v).map(k -> _) }
@@ -30,4 +30,6 @@ object InputValue2DynamicValue extends Transcoder[InputValue, String, DynamicVal
       case VariableValue(_)        => TValid.fail("Can not transcode VariableValue to DynamicValue")
     }
   }
+
+  def toDynamicValue(input: InputValue): TValid[String, DynamicValue] = run(input)
 }
