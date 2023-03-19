@@ -71,7 +71,6 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: [build]
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -81,6 +80,10 @@ jobs:
     steps:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v2
+
+      - run: |
+          pwd
+          ls -la
 
       - run: sbt ++${{ matrix.scala }} Docker/stage
 

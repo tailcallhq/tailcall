@@ -73,6 +73,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "Deploy",
   List(
     WorkflowStep.Checkout,
+    WorkflowStep.Run(commands = List("pwd", "ls -la")),
     WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
@@ -81,7 +82,8 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
   ),
-  needs = List("build"),
+  // TODO: this should be a needed
+  //needs = List("build"),
   scalas = List(scala2Version)
 ))
 
