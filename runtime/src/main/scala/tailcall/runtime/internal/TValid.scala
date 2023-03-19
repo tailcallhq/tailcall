@@ -16,10 +16,10 @@ sealed trait TValid[+E, +A] {
 
   final def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
 
+  final def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
+
   final def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
-
-  final def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
   final def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
 
@@ -31,20 +31,20 @@ sealed trait TValid[+E, +A] {
       case TValid.Succeed(value)   => isSucceed(value)
     }
 
+  final def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
+
   final def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
 }
 
 object TValid {
-  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
-
   def unsupported(from: String, to: String): TValid[String, Nothing] =
     fail(s"Conversion from ${from} to ${to} is not yet supported")
-
-  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
   def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
+
+  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
 
   def foreach[A, E, B](list: List[A])(f: A => TValid[E, B]): TValid[E, List[B]] = foreachIterable(list)(f).map(_.toList)
 
@@ -56,6 +56,8 @@ object TValid {
     iter.foldLeft[TValid[E, Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
       .map(_ => builder.result())
   }
+
+  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
 
