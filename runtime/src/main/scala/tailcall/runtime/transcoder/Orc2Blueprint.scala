@@ -3,6 +3,7 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc._
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote._
 import zio.schema.DynamicValue
 

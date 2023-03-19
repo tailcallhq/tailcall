@@ -4,6 +4,7 @@ import tailcall.runtime.ast.{Blueprint, Endpoint, TSchema}
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote.Remote
 import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.json.EncoderOps

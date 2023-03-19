@@ -1,5 +1,7 @@
 package tailcall.runtime.transcoder
 
+import tailcall.runtime.internal.TValid
+
 /**
  * A transcoder is a function that takes an A and returns a
  * B, or an error. It can be composed using the >>> operator
