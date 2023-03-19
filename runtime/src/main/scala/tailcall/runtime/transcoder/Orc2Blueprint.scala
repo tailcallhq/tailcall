@@ -16,9 +16,9 @@ object Orc2Blueprint extends Transcoder[Orc, String, Blueprint] {
     }
   }
 
-  def toInputValueDefinition(lField: LabelledField[Input]): TExit[String, Blueprint.InputValueDefinition] =
+  def toInputValueDefinition(lField: LabelledField[Input]): TValid[String, Blueprint.InputValueDefinition] =
     for {
-      ofType <- TExit.fromOption(lField.field.ofType) <> TExit.fail("Input type must be named")
+      ofType <- TValid.fromOption(lField.field.ofType) <> TValid.fail("Input type must be named")
     } yield Blueprint.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
 
   def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
@@ -26,10 +26,10 @@ object Orc2Blueprint extends Transcoder[Orc, String, Blueprint] {
       case Resolver.Empty           => Option(_.path("value", lfield.name).toDynamic)
       case Resolver.FromFunction(f) => Option(f)
     }
-  def toFieldDefinition(lField: LabelledField[Output]): TExit[String, Blueprint.FieldDefinition]      = {
+  def toFieldDefinition(lField: LabelledField[Output]): TValid[String, Blueprint.FieldDefinition]     = {
     for {
-      ofType <- TExit.fromOption(lField.field.ofType) <> TExit.fail("Output type must be named")
-      args   <- TExit.foreach(lField.field.definition.arguments)(toInputValueDefinition)
+      ofType <- TValid.fromOption(lField.field.ofType) <> TValid.fail("Output type must be named")
+      args   <- TValid.foreach(lField.field.definition.arguments)(toInputValueDefinition)
     } yield Blueprint.FieldDefinition(
       name = lField.name,
       ofType = toType(ofType),
@@ -38,12 +38,12 @@ object Orc2Blueprint extends Transcoder[Orc, String, Blueprint] {
     )
   }
 
-  override def run(o: Orc): TExit[String, Blueprint] = {
+  override def run(o: Orc): TValid[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
     for {
-      objectDefinitions <- TExit.foreach(o.types.map {
+      objectDefinitions <- TValid.foreach(o.types.map {
         case Orc.Obj(name, FieldSet.InputSet(fields))  => toInputObjectTypeDefinition(name, fields)
         case Orc.Obj(name, FieldSet.OutputSet(fields)) => toObjectTypeDefinition(name, fields)
         case Orc.Obj(name, FieldSet.Empty)             => toObjectTypeDefinition(name, Nil)
@@ -52,10 +52,10 @@ object Orc2Blueprint extends Transcoder[Orc, String, Blueprint] {
   }
 
   private def toObjectTypeDefinition(name: String, fields: List[LabelledField[Output]]) = {
-    TExit.foreach(fields)(toFieldDefinition).map(Blueprint.ObjectTypeDefinition(name, _))
+    TValid.foreach(fields)(toFieldDefinition).map(Blueprint.ObjectTypeDefinition(name, _))
   }
 
   private def toInputObjectTypeDefinition(name: String, fields: List[LabelledField[Input]]) = {
-    TExit.foreach(fields)(toInputValueDefinition).map(Blueprint.InputObjectTypeDefinition(name, _))
+    TValid.foreach(fields)(toInputValueDefinition).map(Blueprint.InputObjectTypeDefinition(name, _))
   }
 }

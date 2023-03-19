@@ -91,7 +91,7 @@ object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
     }
   }
 
-  override def run(config: Config): TExit[Nothing, Blueprint] = {
+  override def run(config: Config): TValid[Nothing, Blueprint] = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
@@ -121,7 +121,7 @@ object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
       Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
     }
 
-    TExit.succeed(Blueprint(rootSchema :: definitions))
+    TValid.succeed(Blueprint(rootSchema :: definitions))
   }
 
 }
