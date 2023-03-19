@@ -3,7 +3,12 @@ package tailcall.runtime.transcoder
 import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{Definition => CalibanDefinition, Directive, Document => CalibanDocument, Type => CalibanType}
+import caliban.parsing.adt.{
+  Definition => CalibanDefinition,
+  Directive,
+  Document => CalibanDocument,
+  Type => CalibanType
+}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
 
