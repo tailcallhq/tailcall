@@ -3,12 +3,7 @@ package tailcall.runtime.service
 import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
-  Directive,
-  Document => CalibanDocument,
-  Type => CalibanType
-}
+import caliban.parsing.adt.{Definition => CalibanDefinition, Directive, Document => CalibanDocument, Type => CalibanType}
 import caliban.tools.RemoteSchema.parseRemoteSchema
 import caliban.{InputValue, Value}
 import tailcall.runtime.ast.Blueprint
@@ -31,14 +26,14 @@ object SchemaGenerator {
 
     private def toCalibanDocument(document: Blueprint): CalibanDocument = {
       CalibanDocument(
-        CalibanDefinition.TypeSystemDefinition
-          .SchemaDefinition(Nil, document.schema.query, document.schema.mutation, document.schema.subscription) ::
-          document.definitions.map {
-            case Blueprint.ObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
-                .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
-            case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
-                .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
-          },
+        document.definitions.map {
+          case Blueprint.SchemaDefinition(query, mutation, subscription) => CalibanDefinition.TypeSystemDefinition
+              .SchemaDefinition(Nil, query, mutation, subscription)
+          case Blueprint.ObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
+              .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
+          case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
+              .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
+        },
         SourceMapper.empty
       )
     }

@@ -49,7 +49,7 @@ object Orc2Blueprint {
         case Orc.Obj(name, FieldSet.OutputSet(fields)) => toObjectTypeDefinition(name, fields)
         case Orc.Obj(name, FieldSet.Empty)             => toObjectTypeDefinition(name, Nil)
       })(identity)
-    } yield Blueprint(schemaDefinition, objectDefinitions)
+    } yield Blueprint(schemaDefinition :: objectDefinitions)
   }
 
   private def toObjectTypeDefinition(name: String, fields: List[LabelledField[Output]]) = {

@@ -40,12 +40,12 @@ object StepGenerator {
     def resolve: StepResult[HttpDataLoader] = {
 
       val queryStep = for {
-        query <- document.schema.query
+        query <- document.schema.flatMap(_.query)
         qStep <- stepRef.get(query)
       } yield qStep(rootContext)
 
       val mutationStep = for {
-        mutation <- document.schema.mutation
+        mutation <- document.schema.flatMap(_.mutation)
         mStep    <- stepRef.get(mutation)
       } yield mStep(rootContext)
 

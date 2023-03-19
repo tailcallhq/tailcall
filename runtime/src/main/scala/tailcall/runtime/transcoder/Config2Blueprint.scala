@@ -119,7 +119,7 @@ final case class Config2Blueprint(config: Config) {
       Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
     }
 
-    Blueprint(rootSchema, definitions)
+    Blueprint(rootSchema :: definitions)
   }
 
 }
