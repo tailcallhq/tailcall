@@ -19,7 +19,7 @@ object Main extends ZIOAppDefault {
         GraphQLGenerator.live,
         StepGenerator.live,
         EvaluationRuntime.live,
-        ConfigFileReader.live,
+        ConfigFileIO.live,
         FileIO.live,
         ZLayer.fromZIO(ConfigStore.getOrDefault(Key.RemoteServer)) >>> SchemaRegistry.client,
         HttpClient.live,

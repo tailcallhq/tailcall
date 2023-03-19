@@ -4,7 +4,7 @@ import tailcall.cli.CommandADT
 import tailcall.cli.service.ConfigStore.Key
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.service.{ConfigFileReader, FileIO, GraphQLGenerator}
+import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
 import zio.cli.HelpDoc
 import zio.cli.HelpDoc.Span.{spans, strong, text}
 import zio.json.EncoderOps
@@ -20,7 +20,7 @@ object CommandExecutor {
   final case class Live(
     log: Logger,
     graphQL: GraphQLGenerator,
-    configReader: ConfigFileReader,
+    configReader: ConfigFileIO,
     fileIO: FileIO,
     registry: SchemaRegistry,
     config: ConfigStore
@@ -129,7 +129,7 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = Logger with GraphQLGenerator with ConfigFileReader with FileIO with SchemaRegistry with ConfigStore
+  type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistry with ConfigStore
 
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }
