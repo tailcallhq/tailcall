@@ -22,6 +22,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       graphQL = self.graphQL.mergeRight(other.graphQL)
     )
   }
+
+  def compress: Config = self.copy(graphQL = self.graphQL.compress)
 }
 
 object Config {
@@ -45,6 +47,9 @@ object Config {
         ),
         types = self.types ++ other.types
       )
+
+    def compress: GraphQL =
+      self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
   }
 
   // TODO: Field and Argument can be merged
@@ -55,10 +60,34 @@ object Config {
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Argument]] = None
   ) {
+    self =>
     def asList: Field                                     = copy(isList = Option(true))
     def asRequired: Field                                 = copy(isRequired = Option(true))
     def withArguments(args: Map[String, Argument]): Field = copy(args = Option(args))
     def apply(args: (String, Argument)*): Field           = copy(args = Option(args.toMap))
+    def compress: Field                                   = {
+      val isList = self.isList match {
+        case Some(true) => Some(true)
+        case _          => None
+      }
+
+      val isRequired = self.isRequired match {
+        case Some(true) => Some(true)
+        case _          => None
+      }
+
+      val steps = self.steps match {
+        case Some(steps) if steps.nonEmpty => Some(steps)
+        case _                             => None
+      }
+
+      val args = self.args match {
+        case Some(args) if args.nonEmpty => Some(args.map { case (k, v) => (k, v.compress) })
+        case _                           => None
+      }
+
+      self.copy(isList = isList, isRequired = isRequired, steps = steps, args = args)
+    }
   }
 
   object Field {
@@ -105,6 +134,19 @@ object Config {
     self =>
     def asList: Argument     = self.copy(isList = Option(true))
     def asRequired: Argument = self.copy(isRequired = Option(true))
+    def compress: Argument   = {
+      val isList = self.isList match {
+        case Some(true) => Some(true)
+        case _          => None
+      }
+
+      val isRequired = self.isRequired match {
+        case Some(true) => Some(true)
+        case _          => None
+      }
+
+      self.copy(isList = isList, isRequired = isRequired)
+    }
   }
 
   object Argument {
