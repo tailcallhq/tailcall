@@ -1,4 +1,7 @@
 # monotail
+
+[![Continuous Integration](https://github.com/tailcallhq/monotail/actions/workflows/ci.yml/badge.svg)](https://github.com/tailcallhq/monotail/actions/workflows/ci.yml)
+
 API Orchestration for Scale
 
 Tailcall is solving the problem of API composition in microservices architecture. In a microservices architecture, different services are developed and deployed separately. However, when you are building a rich client application, it needs to access multiple services. The backend for frontend (BFF) layer becomes necessary to provide an abstraction layer that can aggregate data from multiple services. This layer is critical for providing a good user experience, but building it manually can be expensive, time-consuming, and error-prone.
