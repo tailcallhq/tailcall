@@ -2,21 +2,20 @@ package tailcall.runtime.transcoder
 
 import caliban.InputValue
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.transcoder.Transcoder.TExit
 import zio.Chunk
 import zio.schema.DynamicValue
 
-object InputValue2DynamicValue {
+object InputValue2DynamicValue extends Transcoder[InputValue, String, DynamicValue] {
 
   import caliban.InputValue.{ListValue, ObjectValue, VariableValue}
   import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
   import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
   import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-  def fromInputValue(input: InputValue): TExit[String, DynamicValue] = {
+  override def run(input: InputValue): TExit[String, DynamicValue] = {
     input match {
-      case ListValue(values)       => TExit.foreachChunk(Chunk.from(values))(fromInputValue).map(DynamicValue.Sequence)
-      case ObjectValue(fields)     => TExit.foreachIterable(fields) { case (k, v) => fromInputValue(v).map(k -> _) }
+      case ListValue(values)       => TExit.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
+      case ObjectValue(fields)     => TExit.foreachIterable(fields) { case (k, v) => run(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries.toList: _*))
       case StringValue(value)      => TExit.succeed(DynamicValue(value))
       case NullValue               => TExit.succeed(DynamicValue(()))

@@ -4,10 +4,9 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc
 import tailcall.runtime.dsl.scala.Orc._
 import tailcall.runtime.remote._
-import tailcall.runtime.transcoder.Transcoder.TExit
 import zio.schema.DynamicValue
 
-object Orc2Blueprint {
+object Orc2Blueprint extends Transcoder[Orc, String, Blueprint] {
   def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
     val nonNull = !isNull
     t match {
@@ -39,7 +38,7 @@ object Orc2Blueprint {
     )
   }
 
-  def toBlueprint(o: Orc): TExit[String, Blueprint] = {
+  override def run(o: Orc): TExit[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 

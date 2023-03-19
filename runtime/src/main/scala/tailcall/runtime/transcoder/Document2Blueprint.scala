@@ -5,10 +5,10 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputValueDefinition
 import caliban.parsing.adt.{Definition, Document, Type}
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.transcoder.Transcoder.{Syntax, TExit}
+import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
-object Document2Blueprint {
+object Document2Blueprint extends Transcoder[Document, String, Blueprint] {
   private def toBlueprintType(tpe: Type): Blueprint.Type = {
     tpe match {
       case Type.NamedType(name, nonNull)  => Blueprint.NamedType(name, nonNull)
@@ -53,7 +53,7 @@ object Document2Blueprint {
     }
   }
 
-  def toBlueprint(document: Document): TExit[String, Blueprint] = {
+  override def run(document: Document): TExit[String, Blueprint] = {
     TExit.foreach(document.definitions)(toBlueprintDefinition(_))
       .map(defs => Blueprint(defs.collect { case Some(d) => d }))
   }

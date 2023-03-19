@@ -10,9 +10,7 @@ import zio.json.EncoderOps
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
-final case class Config2Blueprint(config: Config) {
-
-  val graphQLSchemaMap: Map[String, Map[String, Field]] = config.graphQL.types
+object Config2Blueprint extends Transcoder[Config, Nothing, Blueprint] {
 
   implicit private def jsonSchema: Schema[Json] =
     Schema[DynamicValue]
@@ -30,11 +28,11 @@ final case class Config2Blueprint(config: Config) {
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
-  private def toTSchema(field: Field): TSchema = {
-    graphQLSchemaMap.get(field.typeOf) match {
+  private def toTSchema(config: Config, field: Field): TSchema = {
+    config.graphQL.types.get(field.typeOf) match {
       case Some(value) =>
         val schema = TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          TSchema.Field(fieldName, toTSchema(field))
+          TSchema.Field(fieldName, toTSchema(config, field))
         })
 
         if (field.isList.getOrElse(false)) schema.arr else schema
@@ -48,7 +46,7 @@ final case class Config2Blueprint(config: Config) {
     }
   }
 
-  private def toEndpoint(http: Step.Http, host: String): Endpoint =
+  private def toEndpoint(config: Config, http: Step.Http, host: String): Endpoint =
     Endpoint.make(host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
@@ -57,7 +55,11 @@ final case class Config2Blueprint(config: Config) {
       lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
     }.toDynamic
 
-  private def toResolver(steps: List[Step], field: Field): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
+  private def toResolver(
+    config: Config,
+    steps: List[Step],
+    field: Field
+  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     steps match {
       case Nil => None
 
@@ -67,10 +69,10 @@ final case class Config2Blueprint(config: Config) {
           case option                                          => option.map { host =>
               steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
                 case http @ Step.Http(_, _, _, _) => input =>
-                    val endpoint           = toEndpoint(http, host)
+                    val endpoint           = toEndpoint(config, http, host)
                     val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
                     val endpointWithOutput =
-                      if (inferOutput) endpoint.withOutput(Option(toTSchema(field))) else endpoint
+                      if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
                     Remote.fromEndpoint(endpointWithOutput, input)
                 case Step.Constant(json)          => _ => Remote(json).toDynamic
                 case Step.ObjPath(map)            => input => toRemoteMap(input, map)
@@ -89,7 +91,7 @@ final case class Config2Blueprint(config: Config) {
     }
   }
 
-  def toBlueprint: Blueprint = {
+  override def run(config: Config): TExit[Nothing, Blueprint] = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
@@ -104,7 +106,7 @@ final case class Config2Blueprint(config: Config) {
 
           val ofType = toType(field)
 
-          val resolver = toResolver(field.steps.getOrElse(Nil), field)
+          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
 
           Blueprint.FieldDefinition(
             name = name,
@@ -119,7 +121,7 @@ final case class Config2Blueprint(config: Config) {
       Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
     }
 
-    Blueprint(rootSchema :: definitions)
+    TExit.succeed(Blueprint(rootSchema :: definitions))
   }
 
 }
