@@ -12,11 +12,8 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio"               %% "zio-json-yaml"         % zioJson,
     "dev.zio"               %% "zio-parser"            % "0.1.8",
     "dev.zio"               %% "zio-http"              % "0.0.4"
-
-    // Testing
-
   ),
-  libraryDependencies ++= Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
+  libraryDependencies ++= zioTestDependencies
 )
 
 lazy val cli = (project in file("cli")).settings(
@@ -73,17 +70,17 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "Deploy",
   List(
     WorkflowStep.Checkout,
-    WorkflowStep.Run(commands = List("pwd", "ls -la")),
     WorkflowStep.Sbt(List("Docker/stage")),
+    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
-      commands = List("flyctl deploy --remote-only ./target/docker/stage --config ./fly.toml"),
+      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
       cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
   ),
   // TODO: this should be a needed
-  //needs = List("build"),
+  // needs = List("build"),
   scalas = List(scala2Version)
 ))
 

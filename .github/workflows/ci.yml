@@ -81,15 +81,13 @@ jobs:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v2
 
-      - run: |
-          pwd
-          ls -la
-
       - run: sbt ++${{ matrix.scala }} Docker/stage
+
+      - run: cp ./fly.toml target/docker/stage/
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --remote-only ./target/docker/stage --config ./fly.toml
+        run: flyctl deploy --remote-only ./target/docker/stage
