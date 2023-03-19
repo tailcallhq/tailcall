@@ -27,13 +27,11 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(
-  schema: Blueprint.SchemaDefinition = Blueprint.SchemaDefinition(),
-  definitions: List[Blueprint.Definition] = Nil
-) {
+final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
   self =>
   def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
+  def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
 }
 
 // scalafmt: {maxColumn = 240}
@@ -44,12 +42,12 @@ object Blueprint {
 
   sealed trait Definition
 
-  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])           extends Definition
-  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition]) extends Definition
+  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                    extends Definition
+  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition])                                          extends Definition
+  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None) extends Definition
 
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
   final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil)
-  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None)
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
   sealed trait Type
