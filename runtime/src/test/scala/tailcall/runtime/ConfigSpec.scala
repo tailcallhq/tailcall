@@ -26,7 +26,7 @@ object ConfigSpec extends ZIOSpecDefault {
   override def spec =
     suite("ConfigSpec")(
       test("encoding") {
-        val extension = Extension.YML
+        val extension = DSLFormat.YML
         val config    = JsonPlaceholderConfig.config
         for {
           encoded <- extension.encode(config)
