@@ -19,5 +19,6 @@ sealed trait Transcoder
     with Orc2Blueprint
     with Primitive2Value
     with ResponseValue2DynamicValue
+    with Document2Config
 
 object Transcoder extends Transcoder
