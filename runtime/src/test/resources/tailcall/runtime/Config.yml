@@ -35,19 +35,19 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - http:
-              path: /posts
+        - http:
+            path: /posts
       users:
         type: User
         isList: true
         steps:
-          - http:
-              path: /users
+        - http:
+            path: /users
       post:
         type: Post
         steps:
-          - http:
-              path: /posts/{{args.id}}
+        - http:
+            path: /posts/{{args.id}}
         args:
           id:
             type: Int
@@ -55,12 +55,12 @@ graphQL:
       user:
         type: User
         steps:
-          - objectPath:
-              userId:
-                - args
-                - id
-          - http:
-              path: /users/{{userId}}
+        - objectPath:
+            userId:
+            - args
+            - id
+        - http:
+            path: /users/{{userId}}
         args:
           id:
             type: Int
@@ -74,12 +74,12 @@ graphQL:
       user:
         type: User
         steps:
-          - objectPath:
-              userId:
-                - value
-                - userId
-          - http:
-              path: /users/{{userId}}
+        - objectPath:
+            userId:
+            - value
+            - userId
+        - http:
+            path: /users/{{userId}}
       userId:
         type: Int
         isRequired: true
@@ -95,8 +95,8 @@ graphQL:
         type: Post
         isList: true
         steps:
-          - http:
-              path: /users/{{value.id}}/posts
+        - http:
+            path: /users/{{value.id}}/posts
       email:
         type: String
         isRequired: true
