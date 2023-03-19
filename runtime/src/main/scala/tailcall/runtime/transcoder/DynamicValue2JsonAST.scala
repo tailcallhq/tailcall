@@ -43,30 +43,28 @@ trait DynamicValue2JsonAST {
       case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
     }
 
-  final private def run(d: DynamicValue): TValid[String, Json] =
+  final def toJson(d: DynamicValue): TValid[String, Json] =
     d match {
       case DynamicValue.Record(_, values) => TValid.foreachChunk(Chunk.fromIterable(values)) { case (name, value) =>
-          run(value).map(name -> _)
+          toJson(value).map(name -> _)
         }.map(list => Json.Obj(Chunk.from(list)))
-      case DynamicValue.Enumeration(_, (name, value))  => run(value).map(value => Json.Obj(Chunk(name -> value)))
-      case DynamicValue.Sequence(values)               => TValid.foreachChunk(values)(run(_))
+      case DynamicValue.Enumeration(_, (name, value))  => toJson(value).map(value => Json.Obj(Chunk(name -> value)))
+      case DynamicValue.Sequence(values)               => TValid.foreachChunk(values)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
       case DynamicValue.Dictionary(_)                  => TValid.fail("Can not transcoder Dictionary to a DynamicValue")
-      case DynamicValue.SetValue(values)               => TValid.foreach(values.toList)(run(_))
+      case DynamicValue.SetValue(values)               => TValid.foreach(values.toList)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
       case DynamicValue.Primitive(value, standardType) => TValid.succeed(toJsonPrimitive(value, standardType))
       case DynamicValue.Singleton(_)                   => TValid.fail("Can not transcoder Singleton to a DynamicValue")
-      case DynamicValue.SomeValue(value)               => run(value)
+      case DynamicValue.SomeValue(value)               => toJson(value)
       case DynamicValue.NoneValue                      => TValid.succeed(Json.Null)
       case DynamicValue.Tuple(left, right)             => for {
-          left  <- run(left)
-          right <- run(right)
+          left  <- toJson(left)
+          right <- toJson(right)
         } yield Json.Arr(Chunk(left, right))
-      case DynamicValue.LeftValue(value)               => run(value)
-      case DynamicValue.RightValue(value)              => run(value)
+      case DynamicValue.LeftValue(value)               => toJson(value)
+      case DynamicValue.RightValue(value)              => toJson(value)
       case DynamicValue.DynamicAst(_)                  => TValid.fail("Can not transcoder DynamicAst to a DynamicValue")
       case DynamicValue.Error(_)                       => TValid.fail("Can not transcoder Error to a DynamicValue")
     }
-
-  final def toJson(d: DynamicValue): TValid[String, Json] = run(d)
 }

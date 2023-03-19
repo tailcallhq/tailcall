@@ -41,7 +41,7 @@ trait Orc2Blueprint {
     )
   }
 
-  final private def run(o: Orc): TValid[String, Blueprint] = {
+  final def toBlueprint(o: Orc): TValid[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
@@ -62,5 +62,4 @@ trait Orc2Blueprint {
     TValid.foreach(fields)(toInputValueDefinition).map(Blueprint.InputObjectTypeDefinition(name, _))
   }
 
-  final def toBlueprint(o: Orc): TValid[String, Blueprint] = run(o)
 }

@@ -12,10 +12,10 @@ trait InputValue2DynamicValue {
   import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
   import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-  final private def run(input: InputValue): TValid[String, DynamicValue] = {
+  final def toDynamicValue(input: InputValue): TValid[String, DynamicValue] = {
     input match {
-      case ListValue(values)       => TValid.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
-      case ObjectValue(fields)     => TValid.foreachIterable(fields) { case (k, v) => run(v).map(k -> _) }
+      case ListValue(values)       => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence)
+      case ObjectValue(fields)     => TValid.foreachIterable(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries.toList: _*))
       case StringValue(value)      => TValid.succeed(DynamicValue(value))
       case NullValue               => TValid.succeed(DynamicValue(()))
@@ -31,5 +31,4 @@ trait InputValue2DynamicValue {
     }
   }
 
-  final def toDynamicValue(input: InputValue): TValid[String, DynamicValue] = run(input)
 }
