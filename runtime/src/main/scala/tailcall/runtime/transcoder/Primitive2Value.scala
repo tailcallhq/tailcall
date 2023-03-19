@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import caliban.Value
+import tailcall.runtime.internal.TValid
 import zio.Chunk
 import zio.schema.{DynamicValue, StandardType}
 

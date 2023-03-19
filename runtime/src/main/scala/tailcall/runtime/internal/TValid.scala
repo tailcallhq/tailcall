@@ -1,4 +1,4 @@
-package tailcall.runtime.transcoder
+package tailcall.runtime.internal
 
 import zio.Chunk
 

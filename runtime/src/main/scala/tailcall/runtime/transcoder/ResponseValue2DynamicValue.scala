@@ -1,6 +1,6 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.internal.{DynamicValueUtil, TValid}
 import zio.Chunk
 import zio.schema.DynamicValue
 
