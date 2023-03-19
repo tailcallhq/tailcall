@@ -7,7 +7,7 @@ import zio.schema.DynamicValue
 
 trait DynamicValue2InputValue {
 
-  private def run(input: DynamicValue): TValid[String, InputValue] = {
+  final private def run(input: DynamicValue): TValid[String, InputValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run(_)).map(InputValue.ListValue(_))
       case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
@@ -32,5 +32,5 @@ trait DynamicValue2InputValue {
     }
   }
 
-  def toInputValue(input: DynamicValue): TValid[String, InputValue] = run(input)
+  final def toInputValue(input: DynamicValue): TValid[String, InputValue] = run(input)
 }

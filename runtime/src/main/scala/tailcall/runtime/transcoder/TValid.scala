@@ -4,34 +4,34 @@ import zio.Chunk
 
 sealed trait TValid[+E, +A] {
   self =>
-  def get(implicit ev: E <:< Nothing): A =
+  final def get(implicit ev: E <:< Nothing): A =
     self match {
       case TValid.Failure(_)     => throw new NoSuchElementException("Failure does not exist")
       case TValid.Succeed(value) => value
     }
 
-  def some: TValid[E, Option[A]] = self.map(Some(_))
+  final def some: TValid[E, Option[A]] = self.map(Some(_))
 
-  def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
+  final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
-  def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+  final def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
 
-  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
+  final def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
 
-  def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
+  final def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
-  def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
+  final def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
 
-  def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
+  final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
-  def fold[B](isError: E => B, isSucceed: A => B): B =
+  final def fold[B](isError: E => B, isSucceed: A => B): B =
     self match {
       case TValid.Failure(message) => isError(message)
       case TValid.Succeed(value)   => isSucceed(value)
     }
 
-  def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
+  final def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
 }
 
 object TValid {

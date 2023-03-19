@@ -7,7 +7,7 @@ import tailcall.runtime.remote._
 import zio.schema.DynamicValue
 
 trait Orc2Blueprint {
-  def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
+  final def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
     val nonNull = !isNull
     t match {
       case Type.NonNull(ofType)  => toType(ofType, false)
@@ -16,17 +16,19 @@ trait Orc2Blueprint {
     }
   }
 
-  private def toInputValueDefinition(lField: LabelledField[Input]): TValid[String, Blueprint.InputValueDefinition] =
+  final private def toInputValueDefinition(
+    lField: LabelledField[Input]
+  ): TValid[String, Blueprint.InputValueDefinition] =
     for {
       ofType <- TValid.fromOption(lField.field.ofType) <> TValid.fail("Input type must be named")
     } yield Blueprint.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
 
-  private def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
+  final private def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     lfield.field.definition.resolve match {
       case Resolver.Empty           => Option(_.path("value", lfield.name).toDynamic)
       case Resolver.FromFunction(f) => Option(f)
     }
-  private def toFieldDefinition(lField: LabelledField[Output]): TValid[String, Blueprint.FieldDefinition]     = {
+  final private def toFieldDefinition(lField: LabelledField[Output]): TValid[String, Blueprint.FieldDefinition]     = {
     for {
       ofType <- TValid.fromOption(lField.field.ofType) <> TValid.fail("Output type must be named")
       args   <- TValid.foreach(lField.field.definition.arguments)(toInputValueDefinition)
@@ -38,7 +40,7 @@ trait Orc2Blueprint {
     )
   }
 
-  private def run(o: Orc): TValid[String, Blueprint] = {
+  final private def run(o: Orc): TValid[String, Blueprint] = {
     val schemaDefinition = Blueprint
       .SchemaDefinition(query = o.query, mutation = o.mutation, subscription = o.subscription)
 
@@ -51,13 +53,13 @@ trait Orc2Blueprint {
     } yield Blueprint(schemaDefinition :: objectDefinitions)
   }
 
-  private def toObjectTypeDefinition(name: String, fields: List[LabelledField[Output]]) = {
+  final private def toObjectTypeDefinition(name: String, fields: List[LabelledField[Output]]) = {
     TValid.foreach(fields)(toFieldDefinition).map(Blueprint.ObjectTypeDefinition(name, _))
   }
 
-  private def toInputObjectTypeDefinition(name: String, fields: List[LabelledField[Input]]) = {
+  final private def toInputObjectTypeDefinition(name: String, fields: List[LabelledField[Input]]) = {
     TValid.foreach(fields)(toInputValueDefinition).map(Blueprint.InputObjectTypeDefinition(name, _))
   }
 
-  def toBlueprint(o: Orc): TValid[String, Blueprint] = run(o)
+  final def toBlueprint(o: Orc): TValid[String, Blueprint] = run(o)
 }
