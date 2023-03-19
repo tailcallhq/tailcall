@@ -7,7 +7,7 @@ import caliban.{GraphQL, ResponseValue, RootResolver, Value}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.lambda.~>
-import tailcall.runtime.transcoder.Transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.query.ZQuery
@@ -53,7 +53,7 @@ object AdminGraphQL {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
       __Type(kind = __TypeKind.SCALAR, name = Some("DynamicValue"))
     override def resolve(value: DynamicValue): Step[Any]                                   =
-      Step.PureStep(value.transcodeOrDefault[ResponseValue](Value.NullValue))
+      Step.PureStep(Transcoder.toResponseValue(value).getOrElse(Value.NullValue))
   }
 
   val graphQL = GraphQL.graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(

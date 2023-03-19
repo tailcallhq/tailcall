@@ -3,7 +3,7 @@ package tailcall.runtime.dsl.scala
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet, Input, LabelledField, Output}
 import tailcall.runtime.remote.Remote
-import tailcall.runtime.transcoder.Transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 import zio.{Task, ZIO}
 
@@ -18,7 +18,7 @@ final case class Orc(
 ) {
   self =>
   def toBlueprint: Task[Blueprint] = {
-    self.transcodeOrFailWith[Blueprint, String] match {
+    Transcoder.toBlueprint(self).toEither match {
       case Left(err) => ZIO.fail(new RuntimeException(err))
       case Right(b)  => ZIO.succeed(b)
     }

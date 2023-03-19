@@ -6,7 +6,6 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputV
 import caliban.parsing.adt.{Definition, Document, Type}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 trait Document2Blueprint {
@@ -21,7 +20,7 @@ trait Document2Blueprint {
     inputValueDefinition: InputValueDefinition
   ): TValid[String, Blueprint.InputValueDefinition] =
     inputValueDefinition.defaultValue
-      .fold[TValid[String, Option[DynamicValue]]](TValid.none)(_.transcode[DynamicValue, String].some)
+      .fold[TValid[String, Option[DynamicValue]]](TValid.none)(Transcoder.toDynamicValue(_).some)
       .map(Blueprint.InputValueDefinition(inputValueDefinition.name, toBlueprintType(inputValueDefinition.ofType), _))
 
   final private def toBlueprintFieldDefinition(
