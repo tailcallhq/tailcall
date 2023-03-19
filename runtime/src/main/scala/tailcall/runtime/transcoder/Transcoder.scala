@@ -1,5 +1,7 @@
 package tailcall.runtime.transcoder
 
+import tailcall.runtime.transcoder.data._
+
 /**
  * A transcoder is a function that takes an A and returns a
  * B, or an error. It can be composed using the >>> operator
@@ -13,13 +15,11 @@ sealed trait Transcoder
     with Config2Blueprint
     with Document2Blueprint
     with Document2Config
-    with DynamicValue2InputValue
-    with DynamicValue2JsonAST
-    with DynamicValue2ResponseValue
-    with InputValue2DynamicValue
-    with Json2DynamicValue
     with Orc2Blueprint
-    with Primitive2Value
-    with ResponseValue2DynamicValue
+    with ToDynamicValue
+    with ToInputValue
+    with ToJsonAST
+    with ToResponseValue
+    with ToValue
 
 object Transcoder extends Transcoder
