@@ -214,7 +214,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
                                        |type Query""".stripMargin))
         }
       )
-    ).provide(GraphQLGenerator.live, SchemaGenerator.live, StepGenerator.live, EvaluationRuntime.live)
+    ).provide(GraphQLGenerator.live, StepGenerator.live, EvaluationRuntime.live)
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
 }

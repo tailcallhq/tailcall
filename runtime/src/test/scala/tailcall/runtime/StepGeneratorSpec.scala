@@ -170,7 +170,6 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       }
     ).provide(
       GraphQLGenerator.live,
-      SchemaGenerator.live,
       StepGenerator.live,
       EvaluationRuntime.live,
       HttpClient.live,

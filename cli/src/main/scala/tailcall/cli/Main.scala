@@ -17,7 +17,6 @@ object Main extends ZIOAppDefault {
         CommandExecutor.live,
         Logger.live,
         GraphQLGenerator.live,
-        SchemaGenerator.live,
         StepGenerator.live,
         EvaluationRuntime.live,
         ConfigFileReader.live,

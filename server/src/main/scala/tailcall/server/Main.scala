@@ -21,7 +21,6 @@ object Main extends ZIOAppDefault {
     ServerConfig.live.update(_.port(SchemaRegistry.PORT)),
     SchemaRegistry.persistent,
     GraphQLGenerator.live,
-    SchemaGenerator.live,
     StepGenerator.live,
     EvaluationRuntime.live,
     HttpClient.live,
