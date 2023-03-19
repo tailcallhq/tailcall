@@ -4,7 +4,7 @@ import tailcall.runtime.ast._
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.service.ConfigFileReader
-import tailcall.runtime.transcoder.Transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json._
 import zio.json.ast.Json
@@ -13,7 +13,7 @@ import java.io.File
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = self.transcode[Blueprint, Nothing].get
+  def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
 
   def mergeRight(other: Config): Config = {
     Config(

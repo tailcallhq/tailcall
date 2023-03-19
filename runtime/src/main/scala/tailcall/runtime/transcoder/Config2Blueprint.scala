@@ -6,7 +6,6 @@ import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote.Remote
-import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.json.EncoderOps
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
@@ -15,7 +14,7 @@ trait Config2Blueprint {
 
   implicit final private def jsonSchema: Schema[Json] =
     Schema[DynamicValue]
-      .transformOrFail[Json](a => a.transcodeOrFailWith[Json, String], b => b.transcodeOrFailWith[DynamicValue, String])
+      .transformOrFail[Json](a => Transcoder.toJson(a).toEither, b => Transcoder.toDynamicValue(b).toEither)
 
   final private def toType(field: Field): Blueprint.Type = {
     val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
@@ -86,7 +85,7 @@ trait Config2Blueprint {
     // TODO: should fail on error
     val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
     if (errors.nonEmpty || jsons.isEmpty) None
-    else Json.Arr(jsons: _*).transcodeOrFailWith[DynamicValue, String] match {
+    else Transcoder.toDynamicValue(Json.Arr(jsons: _*)).toEither match {
       case Left(_)             => None
       case Right(dynamicValue) => Option(Blueprint.Directive(name = "steps", arguments = Map("value" -> dynamicValue)))
     }

@@ -1,5 +1,6 @@
 package tailcall.runtime.service
 
+import caliban.Value
 import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
@@ -10,9 +11,8 @@ import caliban.parsing.adt.{
   Type => CalibanType
 }
 import caliban.tools.RemoteSchema.parseRemoteSchema
-import caliban.{InputValue, Value}
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.transcoder.Transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder
 import zio.{ZIO, ZLayer}
 
 trait SchemaGenerator {
@@ -46,7 +46,9 @@ object SchemaGenerator {
     private def toCalibanDirective(directive: Blueprint.Directive): Directive = {
       Directive(
         directive.name,
-        directive.arguments.map { case (key, value) => key -> value.transcodeOrDefault[InputValue](Value.NullValue) }
+        directive.arguments.map { case (key, value) =>
+          key -> Transcoder.toInputValue(value).getOrElse(Value.NullValue)
+        }
       )
     }
 
@@ -60,7 +62,7 @@ object SchemaGenerator {
         None,
         inputValue.name,
         toCalibanType(inputValue.ofType),
-        inputValue.defaultValue.map(_.transcodeOrDefault[InputValue](Value.NullValue)),
+        inputValue.defaultValue.map(Transcoder.toInputValue(_).getOrElse(Value.NullValue)),
         Nil
       )
 

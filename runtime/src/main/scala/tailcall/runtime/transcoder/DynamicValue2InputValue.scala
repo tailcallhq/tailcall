@@ -1,8 +1,7 @@
 package tailcall.runtime.transcoder
 
-import caliban.{InputValue, Value}
+import caliban.InputValue
 import tailcall.runtime.internal.{DynamicValueUtil, TValid}
-import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 trait DynamicValue2InputValue {
@@ -10,7 +9,7 @@ trait DynamicValue2InputValue {
   final private def run(input: DynamicValue): TValid[String, InputValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run(_)).map(InputValue.ListValue(_))
-      case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
+      case input @ DynamicValue.Primitive(_, _) => Transcoder.toValue(input)
       case DynamicValue.Dictionary(chunks)      => TValid.foreachChunk(chunks) { case (k, v) =>
           DynamicValueUtil.toTyped[String](k) match {
             case Some(key) => run(v).map(key -> _)

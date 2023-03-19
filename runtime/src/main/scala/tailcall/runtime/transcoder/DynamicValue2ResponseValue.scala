@@ -1,15 +1,14 @@
 package tailcall.runtime.transcoder
 
-import caliban.{ResponseValue, Value}
+import caliban.ResponseValue
 import tailcall.runtime.internal.{DynamicValueUtil, TValid}
-import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 trait DynamicValue2ResponseValue {
   final private def run(input: DynamicValue): TValid[String, ResponseValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run).map(ResponseValue.ListValue)
-      case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
+      case input @ DynamicValue.Primitive(_, _) => Transcoder.toResponseValue(input)
       case DynamicValue.Dictionary(chunks)      => TValid.foreachChunk(chunks) { case (k, v) =>
           DynamicValueUtil.toTyped[String](k) match {
             case Some(key) => run(v).map(key -> _)

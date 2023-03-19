@@ -1,10 +1,8 @@
 package tailcall.runtime
 
-import caliban.{InputValue, ResponseValue}
 import tailcall.runtime.internal.DynamicValueUtil._
-import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen}
-import tailcall.runtime.transcoder.Transcoder.Syntax
-import zio.json.ast.Json
+import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen, TValid}
+import tailcall.runtime.transcoder.Transcoder
 import zio.schema.DynamicValue
 import zio.test._
 
@@ -69,23 +67,21 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
       ),
       test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
-          val actual   = responseValue.transcodeOrFailWith[DynamicValue, String] flatMap (_
-            .transcodeOrFailWith[ResponseValue, String])
-          val expected = Right(responseValue)
+          val actual   = Transcoder.toDynamicValue(responseValue).flatMap(Transcoder.toResponseValue(_))
+          val expected = TValid.succeed(responseValue)
           assertTrue(actual == expected)
         }
       },
       test("fromInputValue >>> toInputValue == identity") {
         check(CalibanGen.genInputValue) { inputValue =>
-          val actual   = inputValue.transcodeOrFailWith[DynamicValue, String]
-            .flatMap(_.transcodeOrFailWith[InputValue, String])
-          val expected = Right(inputValue)
+          val actual   = Transcoder.toDynamicValue(inputValue).flatMap(Transcoder.toInputValue(_))
+          val expected = TValid.succeed(inputValue)
           assertTrue(actual == expected)
         }
       },
       test("fromJson >>> toJson == identity")(check(JsonGen.genJson)(json => {
-        val actual   = json.transcodeOrFailWith[DynamicValue, String] flatMap (_.transcodeOrFailWith[Json, String])
-        val expected = Right(json)
+        val actual   = Transcoder.toDynamicValue(json).flatMap(Transcoder.toJson(_))
+        val expected = TValid.succeed(json)
         assertTrue(actual == expected)
       }))
     )

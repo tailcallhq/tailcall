@@ -1,13 +1,13 @@
 package tailcall.runtime.service
 
+import caliban.Value
 import caliban.schema.Step
-import caliban.{ResponseValue, Value}
 import tailcall.runtime.ast
 import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
-import tailcall.runtime.transcoder.Transcoder.Syntax
+import tailcall.runtime.transcoder.Transcoder
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
@@ -54,7 +54,8 @@ object StepGenerator {
 
     def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
       Step.FunctionStep { args =>
-        val context = ctx.copy(args = args.view.mapValues(_.transcodeOrDefault[DynamicValue](DynamicValue(()))).toMap)
+        val context = ctx
+          .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
         field.resolver match {
           case Some(resolver) =>
             val step = for {
@@ -78,7 +79,7 @@ object StepGenerator {
       tpe match {
         case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
             case Some(value) => value(ctx)
-            case None        => Step.PureStep(ctx.value.transcodeOrDefault[ResponseValue](Value.NullValue))
+            case None        => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
           }
         case ast.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
