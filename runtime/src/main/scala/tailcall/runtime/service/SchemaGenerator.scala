@@ -3,7 +3,12 @@ package tailcall.runtime.service
 import caliban.introspection.adt.__Schema
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{Definition => CalibanDefinition, Directive, Document => CalibanDocument, Type => CalibanType}
+import caliban.parsing.adt.{
+  Definition => CalibanDefinition,
+  Directive,
+  Document => CalibanDocument,
+  Type => CalibanType
+}
 import caliban.tools.RemoteSchema.parseRemoteSchema
 import caliban.{InputValue, Value}
 import tailcall.runtime.ast.Blueprint
