@@ -1,5 +1,8 @@
 package tailcall.runtime.transcoder
 
+import caliban.parsing.adt.Document
+import tailcall.runtime.dsl.json.Config
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.data._
 
 /**
@@ -15,6 +18,7 @@ sealed trait Transcoder
     with Config2Blueprint
     with Document2Blueprint
     with Document2Config
+    with Document2GraphQLSchema
     with Orc2Blueprint
     with ToDynamicValue
     with ToInputValue
@@ -22,4 +26,9 @@ sealed trait Transcoder
     with ToResponseValue
     with ToValue
 
-object Transcoder extends Transcoder
+object Transcoder extends Transcoder {
+  def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
+
+  def toDocument(config: Config): TValid[Nothing, Document] =
+    Transcoder.toBlueprint(config).flatMap(Transcoder.toDocument(_))
+}
