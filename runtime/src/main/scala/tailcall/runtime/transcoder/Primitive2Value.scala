@@ -5,8 +5,8 @@ import zio.Chunk
 import zio.schema.{DynamicValue, StandardType}
 
 object Primitive2Value extends Transcoder[DynamicValue.Primitive[_], Nothing, Value] {
-  override def run(primitive: DynamicValue.Primitive[_]): TExit[Nothing, Value] =
-    TExit.succeed {
+  override def run(primitive: DynamicValue.Primitive[_]): TValid[Nothing, Value] =
+    TValid.succeed {
       val value = primitive.value
       primitive.standardType match {
         case StandardType.StringType         => Value.StringValue(value.toString)

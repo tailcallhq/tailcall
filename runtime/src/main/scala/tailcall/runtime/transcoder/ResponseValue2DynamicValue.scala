@@ -12,22 +12,22 @@ object ResponseValue2DynamicValue extends Transcoder[ResponseValue, String, Dyna
   import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
   import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
 
-  def run(input: ResponseValue): TExit[String, DynamicValue] = {
+  def run(input: ResponseValue): TValid[String, DynamicValue] = {
     input match {
-      case ResponseList(values)    => TExit.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
-      case ResponseObject(fields)  => TExit.foreach(fields) { case (k, v) => run(v).map(k -> _) }
+      case ResponseList(values)    => TValid.foreachChunk(Chunk.from(values))(run).map(DynamicValue.Sequence)
+      case ResponseObject(fields)  => TValid.foreach(fields) { case (k, v) => run(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries: _*))
-      case StringValue(value)      => TExit.succeed(DynamicValue(value))
-      case NullValue               => TExit.succeed(DynamicValue(()))
-      case BooleanValue(value)     => TExit.succeed(DynamicValue(value))
-      case BigDecimalNumber(value) => TExit.succeed(DynamicValue(value))
-      case DoubleNumber(value)     => TExit.succeed(DynamicValue(value))
-      case FloatNumber(value)      => TExit.succeed(DynamicValue(value))
-      case BigIntNumber(value)     => TExit.succeed(DynamicValue(value))
-      case IntNumber(value)        => TExit.succeed(DynamicValue(value))
-      case LongNumber(value)       => TExit.succeed(DynamicValue(value))
-      case EnumValue(_)            => TExit.fail("Can not transcode EnumValue to DynamicValue")
-      case StreamValue(_)          => TExit.fail("Can not transcode StreamValue to DynamicValue")
+      case StringValue(value)      => TValid.succeed(DynamicValue(value))
+      case NullValue               => TValid.succeed(DynamicValue(()))
+      case BooleanValue(value)     => TValid.succeed(DynamicValue(value))
+      case BigDecimalNumber(value) => TValid.succeed(DynamicValue(value))
+      case DoubleNumber(value)     => TValid.succeed(DynamicValue(value))
+      case FloatNumber(value)      => TValid.succeed(DynamicValue(value))
+      case BigIntNumber(value)     => TValid.succeed(DynamicValue(value))
+      case IntNumber(value)        => TValid.succeed(DynamicValue(value))
+      case LongNumber(value)       => TValid.succeed(DynamicValue(value))
+      case EnumValue(_)            => TValid.fail("Can not transcode EnumValue to DynamicValue")
+      case StreamValue(_)          => TValid.fail("Can not transcode StreamValue to DynamicValue")
     }
   }
 }
