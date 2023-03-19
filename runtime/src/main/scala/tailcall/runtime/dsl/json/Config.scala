@@ -13,7 +13,7 @@ import java.io.File
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = self.transcode[Blueprint]
+  def toBlueprint: Blueprint = self.transcode[Blueprint, Nothing].get
 
   def mergeRight(other: Config): Config = {
     Config(
