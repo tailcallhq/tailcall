@@ -10,7 +10,7 @@ object DynamicValue2InputValue extends Transcoder[DynamicValue, String, InputVal
   override def run(input: DynamicValue): TValid[String, InputValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run(_)).map(InputValue.ListValue(_))
-      case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value])
+      case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
       case DynamicValue.Dictionary(chunks)      => TValid.foreachChunk(chunks) { case (k, v) =>
           DynamicValueUtil.toTyped[String](k) match {
             case Some(key) => run(v).map(key -> _)

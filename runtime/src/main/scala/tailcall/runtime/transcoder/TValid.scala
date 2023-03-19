@@ -37,6 +37,9 @@ sealed trait TValid[+E, +A] {
 object TValid {
   def fail[E](message: E): TValid[E, Nothing] = Failure(message)
 
+  def unsupported(from: String, to: String): TValid[String, Nothing] =
+    fail(s"Conversion from ${from} to ${to} is not yet supported")
+
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
