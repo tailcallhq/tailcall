@@ -53,39 +53,7 @@
           "steps": [
             {
               "http": {
-                "path": "/posts",
-                "output": {
-                  "type": "array",
-                  "item": {
-                    "type": "object",
-                    "fields": [
-                      {
-                        "name": "id",
-                        "schema": {
-                          "type": "Integer"
-                        }
-                      },
-                      {
-                        "name": "userId",
-                        "schema": {
-                          "type": "Integer"
-                        }
-                      },
-                      {
-                        "name": "title",
-                        "schema": {
-                          "type": "String"
-                        }
-                      },
-                      {
-                        "name": "body",
-                        "schema": {
-                          "type": "String"
-                        }
-                      }
-                    ]
-                  }
-                }
+                "path": "/posts"
               }
             }
           ]
@@ -96,117 +64,7 @@
           "steps": [
             {
               "http": {
-                "path": "/users",
-                "output": {
-                  "type": "array",
-                  "item": {
-                    "type": "object",
-                    "fields": [
-                      {
-                        "name": "id",
-                        "schema": {
-                          "type": "Integer"
-                        }
-                      },
-                      {
-                        "name": "name",
-                        "schema": {
-                          "type": "String"
-                        }
-                      },
-                      {
-                        "name": "username",
-                        "schema": {
-                          "type": "String"
-                        }
-                      },
-                      {
-                        "name": "email",
-                        "schema": {
-                          "type": "String"
-                        }
-                      },
-                      {
-                        "name": "address",
-                        "schema": {
-                          "type": "object",
-                          "fields": [
-                            {
-                              "name": "street",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "suite",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "city",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "zipcode",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "geo",
-                              "schema": {
-                                "type": "object",
-                                "fields": [
-                                  {
-                                    "name": "lat",
-                                    "schema": {
-                                      "type": "String"
-                                    }
-                                  },
-                                  {
-                                    "name": "lng",
-                                    "schema": {
-                                      "type": "String"
-                                    }
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "name": "company",
-                        "schema": {
-                          "type": "object",
-                          "fields": [
-                            {
-                              "name": "name",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "catchPhrase",
-                              "schema": {
-                                "type": "String"
-                              }
-                            },
-                            {
-                              "name": "bs",
-                              "schema": {
-                                "type": "String"
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                }
+                "path": "/users"
               }
             }
           ]
@@ -216,36 +74,7 @@
           "steps": [
             {
               "http": {
-                "path": "/posts/{{args.id}}",
-                "output": {
-                  "type": "object",
-                  "fields": [
-                    {
-                      "name": "id",
-                      "schema": {
-                        "type": "Integer"
-                      }
-                    },
-                    {
-                      "name": "userId",
-                      "schema": {
-                        "type": "Integer"
-                      }
-                    },
-                    {
-                      "name": "title",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "body",
-                      "schema": {
-                        "type": "String"
-                      }
-                    }
-                  ]
-                }
+                "path": "/posts/{{args.id}}"
               }
             }
           ],
@@ -260,115 +89,16 @@
           "type": "User",
           "steps": [
             {
+              "objectPath": {
+                "userId": [
+                  "args",
+                  "id"
+                ]
+              }
+            },
+            {
               "http": {
-                "path": "/users/{{args.id}}",
-                "output": {
-                  "type": "object",
-                  "fields": [
-                    {
-                      "name": "id",
-                      "schema": {
-                        "type": "Integer"
-                      }
-                    },
-                    {
-                      "name": "name",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "username",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "email",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "address",
-                      "schema": {
-                        "type": "object",
-                        "fields": [
-                          {
-                            "name": "street",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "suite",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "city",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "zipcode",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "geo",
-                            "schema": {
-                              "type": "object",
-                              "fields": [
-                                {
-                                  "name": "lat",
-                                  "schema": {
-                                    "type": "String"
-                                  }
-                                },
-                                {
-                                  "name": "lng",
-                                  "schema": {
-                                    "type": "String"
-                                  }
-                                }
-                              ]
-                            }
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "name": "company",
-                      "schema": {
-                        "type": "object",
-                        "fields": [
-                          {
-                            "name": "name",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "catchPhrase",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "bs",
-                            "schema": {
-                              "type": "String"
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
+                "path": "/users/{{userId}}"
               }
             }
           ],
@@ -392,115 +122,16 @@
           "type": "User",
           "steps": [
             {
+              "objectPath": {
+                "userId": [
+                  "value",
+                  "userId"
+                ]
+              }
+            },
+            {
               "http": {
-                "path": "/users/{{value.userId}}",
-                "output": {
-                  "type": "object",
-                  "fields": [
-                    {
-                      "name": "id",
-                      "schema": {
-                        "type": "Integer"
-                      }
-                    },
-                    {
-                      "name": "name",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "username",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "email",
-                      "schema": {
-                        "type": "String"
-                      }
-                    },
-                    {
-                      "name": "address",
-                      "schema": {
-                        "type": "object",
-                        "fields": [
-                          {
-                            "name": "street",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "suite",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "city",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "zipcode",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "geo",
-                            "schema": {
-                              "type": "object",
-                              "fields": [
-                                {
-                                  "name": "lat",
-                                  "schema": {
-                                    "type": "String"
-                                  }
-                                },
-                                {
-                                  "name": "lng",
-                                  "schema": {
-                                    "type": "String"
-                                  }
-                                }
-                              ]
-                            }
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "name": "company",
-                      "schema": {
-                        "type": "object",
-                        "fields": [
-                          {
-                            "name": "name",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "catchPhrase",
-                            "schema": {
-                              "type": "String"
-                            }
-                          },
-                          {
-                            "name": "bs",
-                            "schema": {
-                              "type": "String"
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                }
+                "path": "/users/{{userId}}"
               }
             }
           ]
@@ -527,39 +158,7 @@
           "steps": [
             {
               "http": {
-                "path": "/users/{{value.id}}/posts",
-                "output": {
-                  "type": "array",
-                  "item": {
-                    "type": "object",
-                    "fields": [
-                      {
-                        "name": "id",
-                        "schema": {
-                          "type": "Integer"
-                        }
-                      },
-                      {
-                        "name": "userId",
-                        "schema": {
-                          "type": "Integer"
-                        }
-                      },
-                      {
-                        "name": "title",
-                        "schema": {
-                          "type": "String"
-                        }
-                      },
-                      {
-                        "name": "body",
-                        "schema": {
-                          "type": "String"
-                        }
-                      }
-                    ]
-                  }
-                }
+                "path": "/users/{{value.id}}/posts"
               }
             }
           ]
