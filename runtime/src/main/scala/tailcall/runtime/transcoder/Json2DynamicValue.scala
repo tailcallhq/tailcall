@@ -6,7 +6,7 @@ import zio.schema.{DynamicValue, TypeId}
 import scala.collection.immutable.ListMap
 
 trait Json2DynamicValue {
-  private def run(json: Json): TValid[String, DynamicValue] = {
+  final private def run(json: Json): TValid[String, DynamicValue] = {
     json match {
       case Json.Obj(fields) => TValid.foreach(fields.toList) { case (k, v) => run(v).map(k -> _) }.map(ListMap.from(_))
           .map(DynamicValue.Record(TypeId.Structural, _))
@@ -18,5 +18,5 @@ trait Json2DynamicValue {
     }
   }
 
-  def toDynamicValue(json: Json): TValid[String, DynamicValue] = run(json)
+  final def toDynamicValue(json: Json): TValid[String, DynamicValue] = run(json)
 }

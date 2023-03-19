@@ -6,7 +6,7 @@ import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 trait DynamicValue2ResponseValue {
-  private def run(input: DynamicValue): TValid[String, ResponseValue] = {
+  final private def run(input: DynamicValue): TValid[String, ResponseValue] = {
     input match {
       case DynamicValue.Sequence(values)        => TValid.foreach(values.toList)(run).map(ResponseValue.ListValue)
       case input @ DynamicValue.Primitive(_, _) => TValid.succeed(input.transcode[Value, Nothing].get)
@@ -31,5 +31,5 @@ trait DynamicValue2ResponseValue {
     }
   }
 
-  def toResponseValue(input: DynamicValue): TValid[String, ResponseValue] = run(input)
+  final def toResponseValue(input: DynamicValue): TValid[String, ResponseValue] = run(input)
 }

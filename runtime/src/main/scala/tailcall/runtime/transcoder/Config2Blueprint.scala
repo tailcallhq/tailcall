@@ -12,23 +12,23 @@ import zio.schema.{DynamicValue, Schema}
 
 trait Config2Blueprint {
 
-  implicit private def jsonSchema: Schema[Json] =
+  implicit final private def jsonSchema: Schema[Json] =
     Schema[DynamicValue]
       .transformOrFail[Json](a => a.transcodeOrFailWith[Json, String], b => b.transcodeOrFailWith[DynamicValue, String])
 
-  private def toType(field: Field): Blueprint.Type = {
+  final private def toType(field: Field): Blueprint.Type = {
     val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
     val isList = field.isList.getOrElse(false)
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
-  private def toType(inputType: Argument): Blueprint.Type = {
+  final private def toType(inputType: Argument): Blueprint.Type = {
     val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired.getOrElse(false))
     val isList = inputType.isList.getOrElse(false)
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
-  private def toTSchema(config: Config, field: Field): TSchema = {
+  final private def toTSchema(config: Config, field: Field): TSchema = {
     config.graphQL.types.get(field.typeOf) match {
       case Some(value) =>
         val schema = TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
@@ -46,16 +46,16 @@ trait Config2Blueprint {
     }
   }
 
-  private def toEndpoint(config: Config, http: Step.Http, host: String): Endpoint =
+  final private def toEndpoint(config: Config, http: Step.Http, host: String): Endpoint =
     Endpoint.make(host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
-  private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
+  final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
     map.foldLeft(Remote(Map.empty[String, DynamicValue])) { case (to, (key, path)) =>
       lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
     }.toDynamic
 
-  private def toResolver(
+  final private def toResolver(
     config: Config,
     steps: List[Step],
     field: Field
@@ -81,7 +81,7 @@ trait Config2Blueprint {
         }
     }
 
-  private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
+  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
     // TODO: should fail on error
     val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
     if (errors.nonEmpty || jsons.isEmpty) None
@@ -91,7 +91,7 @@ trait Config2Blueprint {
     }
   }
 
-  def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
+  final def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 

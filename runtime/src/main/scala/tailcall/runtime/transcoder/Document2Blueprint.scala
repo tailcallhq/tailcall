@@ -9,27 +9,27 @@ import tailcall.runtime.transcoder.Transcoder.Syntax
 import zio.schema.DynamicValue
 
 trait Document2Blueprint {
-  private def toBlueprintType(tpe: Type): Blueprint.Type = {
+  final private def toBlueprintType(tpe: Type): Blueprint.Type = {
     tpe match {
       case Type.NamedType(name, nonNull)  => Blueprint.NamedType(name, nonNull)
       case Type.ListType(ofType, nonNull) => Blueprint.ListType(toBlueprintType(ofType), nonNull)
     }
   }
 
-  private def toBlueprintInputValueDefinition(
+  final private def toBlueprintInputValueDefinition(
     inputValueDefinition: InputValueDefinition
   ): TValid[String, Blueprint.InputValueDefinition] =
     inputValueDefinition.defaultValue
       .fold[TValid[String, Option[DynamicValue]]](TValid.none)(_.transcode[DynamicValue, String].some)
       .map(Blueprint.InputValueDefinition(inputValueDefinition.name, toBlueprintType(inputValueDefinition.ofType), _))
 
-  private def toBlueprintFieldDefinition(
+  final private def toBlueprintFieldDefinition(
     fieldDefinition: Definition.TypeSystemDefinition.TypeDefinition.FieldDefinition
   ): TValid[String, Blueprint.FieldDefinition] =
     TValid.foreach(fieldDefinition.args)(toBlueprintInputValueDefinition(_))
       .map(args => Blueprint.FieldDefinition(fieldDefinition.name, args, toBlueprintType(fieldDefinition.ofType)))
 
-  private def toBlueprintDefinition(definition: Definition): TValid[String, Option[Blueprint.Definition]] = {
+  final private def toBlueprintDefinition(definition: Definition): TValid[String, Option[Blueprint.Definition]] = {
     definition match {
       case _: Definition.ExecutableDefinition          => TValid.fail("Executable definitions are not supported yet")
       case definition: Definition.TypeSystemDefinition => definition match {

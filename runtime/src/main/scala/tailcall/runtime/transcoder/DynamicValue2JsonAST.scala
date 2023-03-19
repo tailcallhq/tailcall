@@ -7,7 +7,7 @@ import zio.schema.{DynamicValue, StandardType}
 import java.math.{BigDecimal => BigDecimalJava}
 
 trait DynamicValue2JsonAST {
-  private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
+  final private def toJsonPrimitive[A](value: A, standardType: StandardType[A]): Json =
     standardType match {
       case StandardType.UnitType           => Json.Null
       case StandardType.StringType         => Json.Str(value.toString)
@@ -42,7 +42,7 @@ trait DynamicValue2JsonAST {
       case StandardType.ZonedDateTimeType  => Json.Str(value.toString)
     }
 
-  private def run(d: DynamicValue): TValid[String, Json] =
+  final private def run(d: DynamicValue): TValid[String, Json] =
     d match {
       case DynamicValue.Record(_, values) => TValid.foreachChunk(Chunk.fromIterable(values)) { case (name, value) =>
           run(value).map(name -> _)
@@ -67,5 +67,5 @@ trait DynamicValue2JsonAST {
       case DynamicValue.Error(_)                       => TValid.fail("Can not transcoder Error to a DynamicValue")
     }
 
-  def toJson(d: DynamicValue): TValid[String, Json] = run(d)
+  final def toJson(d: DynamicValue): TValid[String, Json] = run(d)
 }
