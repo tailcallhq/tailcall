@@ -1,4 +1,4 @@
-package tailcall.runtime.transcoder.data
+package tailcall.runtime.transcoder.value
 
 import caliban.ResponseValue
 import tailcall.runtime.internal.{DynamicValueUtil, TValid}

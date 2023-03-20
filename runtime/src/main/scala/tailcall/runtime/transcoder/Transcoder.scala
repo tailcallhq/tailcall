@@ -3,7 +3,7 @@ package tailcall.runtime.transcoder
 import caliban.parsing.adt.Document
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.transcoder.data._
+import tailcall.runtime.transcoder.value._
 
 /**
  * A transcoder is a function that takes an A and returns a
