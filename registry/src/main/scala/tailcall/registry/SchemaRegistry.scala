@@ -9,8 +9,8 @@ import zio.rocksdb.RocksDB
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec
 
+import java.lang.System.getProperty
 import java.nio.charset.Charset
-import java.nio.file.Files
 
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
@@ -26,8 +26,7 @@ object SchemaRegistry {
     ZLayer.fromZIO(for { ref <- Ref.make(Map.empty[Digest, Blueprint]) } yield Memory(ref))
 
   def persistent: ZLayer[Any, Throwable, SchemaRegistry] =
-    RocksDB.live(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath) >>> ZLayer
-      .fromFunction(Persistence.apply _)
+    RocksDB.live(getProperty("user.home") + "/tailcall/db") >>> ZLayer.fromFunction(Persistence.apply _)
 
   def client: ZLayer[HttpClient with String, Nothing, SchemaRegistry] = ZLayer.fromFunction(Client.apply _)
 
