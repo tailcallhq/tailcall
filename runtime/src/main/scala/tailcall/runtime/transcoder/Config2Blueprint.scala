@@ -1,13 +1,14 @@
 package tailcall.runtime.transcoder
 
+import caliban.InputValue
 import tailcall.runtime.ast.{Blueprint, Endpoint, TSchema}
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote.Remote
-import zio.json.EncoderOps
 import zio.json.ast.Json
+import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
 
 trait Config2Blueprint {
@@ -90,9 +91,24 @@ trait Config2Blueprint {
     }
   }
 
+  final private def toDirective(config: Config): Option[Blueprint.Directive] = {
+    val map = config.server.toJson.fromJson[Map[String, InputValue]]
+
+    val serverArgs = (map match {
+      case Left(_)     => TValid.succeed(Nil)
+      case Right(args) => TValid.foreach(args.toList) { case (k, v) => Transcoder.toDynamicValue(v).map(k -> _) }
+    }).map(_.toMap).toOption
+
+    serverArgs.map(args => Blueprint.Directive(name = "server", arguments = args))
+
+  }
+
   final def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
-    val rootSchema = Blueprint
-      .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
+    val rootSchema = Blueprint.SchemaDefinition(
+      query = config.graphQL.schema.query,
+      mutation = config.graphQL.schema.mutation,
+      directives = toDirective(config).toList
+    )
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
       val bFields: List[Blueprint.FieldDefinition] = {

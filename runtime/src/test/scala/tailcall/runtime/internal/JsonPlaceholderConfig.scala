@@ -12,7 +12,7 @@ object JsonPlaceholderConfig {
   val userPosts: Step = Config.Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
 
   val graphQL = Config.GraphQL(
-    schema = Config.SchemaDefinition(query = Some("Query"), mutation = Some("Mutation")),
+    schema = Config.SchemaDefinition(query = Some("Query")),
     types = Map(
       "Query"   -> Map(
         "posts" -> Config.Field("Post", posts).asList,

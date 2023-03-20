@@ -8,7 +8,6 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.dsl.json.Config
-import tailcall.runtime.dsl.json.Config.GraphQL
 import tailcall.runtime.internal.TValid
 import zio.json.{DecoderOps, EncoderOps}
 
@@ -17,7 +16,15 @@ trait Document2Config {
     for {
       schema <- toSchemaDefinition(document)
       types  <- toTypes(document)
-    } yield Config(graphQL = GraphQL(schema = schema, types = types))
+      server <- toServer(document)
+    } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
+
+  final private def toServer(document: Document): TValid[String, Config.Server] = {
+    document.schemaDefinition.flatMap(_.directives.find(_.name == "server")) match {
+      case Some(directive) => TValid.fromEither(directive.arguments.toJson.fromJson[Config.Server])
+      case None            => TValid.succeed(Config.Server())
+    }
+  }
 
   final private def toSchemaDefinition(document: Document): TValid[String, Config.SchemaDefinition] = {
     document.schemaDefinition match {

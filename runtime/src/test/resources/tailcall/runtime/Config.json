@@ -6,8 +6,7 @@
   },
   "graphQL": {
     "schema": {
-      "query": "Query",
-      "mutation": "Mutation"
+      "query": "Query"
     },
     "types": {
       "Geo": {

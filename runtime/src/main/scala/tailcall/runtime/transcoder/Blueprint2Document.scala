@@ -17,8 +17,9 @@ trait Blueprint2Document {
     TValid.succeed {
       CalibanDocument(
         document.definitions.map {
-          case Blueprint.SchemaDefinition(query, mutation, subscription) => CalibanDefinition.TypeSystemDefinition
-              .SchemaDefinition(Nil, query, mutation, subscription)
+          case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
+              .TypeSystemDefinition
+              .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
           case Blueprint.ObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
               .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
           case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition

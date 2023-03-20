@@ -5,7 +5,6 @@ server:
 graphQL:
   schema:
     query: Query
-    mutation: Mutation
   types:
     Geo:
       lat:
