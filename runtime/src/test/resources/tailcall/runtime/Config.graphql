@@ -2,7 +2,6 @@ schema @server(host: "jsonplaceholder.typicode.com", port: 443, version: 0) {
   query: Query
 }
 
-
 type Address {
   geo: Geo
   street: String

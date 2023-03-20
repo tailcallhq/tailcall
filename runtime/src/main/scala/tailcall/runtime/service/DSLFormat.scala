@@ -25,11 +25,11 @@ sealed trait DSLFormat {
     }
 
   def decode(string: String): IO[String, Config] =
-    self match {
+    (self match {
       case DSLFormat.JSON    => ZIO.fromEither(string.fromJson[Config])
       case DSLFormat.YML     => ZIO.fromEither(string.fromYaml[Config])
       case DSLFormat.GRAPHQL => Parser.parseQuery(string).mapError(_.toString()).flatMap(Transcoder.toConfig(_).toZIO)
-    }
+    }).map(_.compress)
 
   def endsWith(file: String): Boolean = file.endsWith(s".${ext}")
 }
@@ -39,8 +39,8 @@ object DSLFormat {
   case object YML     extends DSLFormat
   case object GRAPHQL extends DSLFormat
 
-  def formats: List[DSLFormat] = List(JSON, YML, GRAPHQL)
+  def all: List[DSLFormat] = List(JSON, YML, GRAPHQL)
 
   def detect(name: String): IO[String, DSLFormat] =
-    formats.find(_.endsWith(name)).fold[IO[String, DSLFormat]](ZIO.fail(s"Unsupported file: ${name}"))(ZIO.succeed(_))
+    all.find(_.endsWith(name)).fold[IO[String, DSLFormat]](ZIO.fail(s"Unsupported file: ${name}"))(ZIO.succeed(_))
 }
