@@ -17,7 +17,7 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         ConfigFileIO.readURL(getClass.getResource("Config.graphql")).as(assertCompletes)
       ),
       test("read write identity") {
-        checkAll(Gen.fromIterable(Seq(DSLFormat.YML, DSLFormat.JSON, DSLFormat.GRAPHQL))) { format =>
+        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
           for {
             config  <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}"))
             string  <- format.encode(config)
@@ -26,13 +26,7 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         }
       },
       test("equals placeholder config") {
-        val gen = Gen.fromIterable(Seq(
-          DSLFormat.YML,    //
-          DSLFormat.JSON,   //
-          DSLFormat.GRAPHQL //
-        ))
-
-        checkAll(gen) { format =>
+        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
           for {
             actual <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
             expected = JsonPlaceholderConfig.config.compress
