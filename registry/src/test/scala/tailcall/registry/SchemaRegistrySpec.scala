@@ -6,6 +6,8 @@ import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
 
+import java.nio.file.Files
+
 object SchemaRegistrySpec extends ZIOSpecDefault {
 
   val orc = Orc(
@@ -26,7 +28,8 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] = {
     suite("SchemaRegistrySpec")(
       suite("InMemory")(registrySpec).provide(SchemaRegistry.memory),
-      suite("Persistent")(registrySpec).provide(SchemaRegistry.persistent)
+      suite("Persistent")(registrySpec)
+        .provide(SchemaRegistry.persistent(Files.createTempDirectory("rocksDB-").toFile.getAbsolutePath))
     )
   }
 }
