@@ -42,9 +42,9 @@ object Blueprint {
 
   sealed trait Definition
 
-  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                    extends Definition
-  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition])                                          extends Definition
-  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None) extends Definition
+  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                                                       extends Definition
+  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition])                                                                             extends Definition
+  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None, directives: List[Directive] = Nil) extends Definition
 
   final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
   final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil)

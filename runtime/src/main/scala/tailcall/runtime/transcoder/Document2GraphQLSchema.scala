@@ -11,13 +11,15 @@ import tailcall.runtime.internal.TValid
 trait Document2GraphQLSchema {
   final def toGraphQLSchema(document: Document): TValid[Nothing, String] =
     TValid.succeed {
+
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
           val schema = RemoteSchema.parseRemoteSchema(document)
           RootSchemaBuilder(
             schema.map(_.queryType).map(__type => Operation(__type, Step.NullStep)),
             schema.flatMap(_.mutationType).map(__type => Operation(__type, Step.NullStep)),
-            None
+            None,
+            schemaDirectives = document.schemaDefinition.map(_.directives).getOrElse(Nil)
           )
         }
         override protected val wrappers: List[Wrapper[Any]]            = Nil

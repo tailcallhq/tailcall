@@ -8,7 +8,7 @@ import zio.{Scope, durationInt}
 
 object ConfigFileIOSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("Reader")(
+    suite("ConfigFileIO")(
       test("Config.yml is valid Config")(ConfigFileIO.readURL(getClass.getResource("Config.yml")).as(assertCompletes)),
       test("Config.json is valid Config")(
         ConfigFileIO.readURL(getClass.getResource("Config.json")).as(assertCompletes)
