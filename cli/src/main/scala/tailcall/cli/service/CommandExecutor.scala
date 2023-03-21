@@ -1,7 +1,7 @@
 package tailcall.cli.service
 
 import tailcall.cli.CommandADT
-import tailcall.registry.SchemaRegistry
+import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
 import zio.cli.HelpDoc
@@ -21,7 +21,7 @@ object CommandExecutor {
     graphQL: GraphQLGenerator,
     configReader: ConfigFileIO,
     fileIO: FileIO,
-    registry: SchemaRegistry
+    registry: SchemaRegistryClient
   ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -35,7 +35,7 @@ object CommandExecutor {
       } yield a
 
     // fixme: to fool the compiler
-    private def getBaseURL = ZIO.succeed("http://localhost:8080")
+    private def getBaseURL: UIO[String] = ZIO.succeed("http://localhost:8080")
 
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
@@ -57,8 +57,8 @@ object CommandExecutor {
             } yield ()
           case CommandADT.Deploy(path)          => for {
               blueprint <- fileIO.readJson[Blueprint](path.toFile)
-              digest    <- registry.add(blueprint)
               base      <- getBaseURL
+              digest    <- registry.add(base, blueprint)
               _         <- logSucceed("Deployment was completed successfully.")
               _         <- logLabeled(
                 "Remote Server:" -> base,
@@ -67,31 +67,31 @@ object CommandExecutor {
               )
             } yield ()
           case CommandADT.Drop(digest)          => for {
-              _      <- registry.drop(digest)
-              server <- getBaseURL
-              _      <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
-              _      <- logLabeled("Remote Server" -> server, "Digest" -> s"${digest.hex}")
+              base <- getBaseURL
+              _    <- registry.drop(base, digest)
+              _    <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
+              _    <- logLabeled("Remote Server" -> base, "Digest" -> s"${digest.hex}")
             } yield ()
 
           case CommandADT.GetAll(index, offset) => for {
-              blueprints <- registry.list(index, offset)
-              server     <- getBaseURL
+              base       <- getBaseURL
+              blueprints <- registry.list(base, index, offset)
               _          <- logSucceed("Listing all blueprints.")
               _          <- ZIO.foreachDiscard(blueprints.zipWithIndex) { case (blueprint, id) =>
                 log(s"${id + 1}.\t${blueprint.digest.hex}")
               }
-              _          <- logLabeled("Remote Server" -> server, "Total Count" -> s"${blueprints.length}")
+              _          <- logLabeled("Remote Server" -> base, "Total Count" -> s"${blueprints.length}")
             } yield ()
 
           case CommandADT.GetOne(digest) => for {
-              info   <- registry.get(digest)
-              server <- getBaseURL
-              _      <- logLabeled(
-                "Remote Server" -> server,
+              base <- getBaseURL
+              info <- registry.get(base, digest)
+              _    <- logLabeled(
+                "Remote Server" -> base,
                 "Digest"        -> s"${digest.hex}",
                 "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
               )
-              _      <- info match {
+              _    <- info match {
                 case Some(blueprint) => logBlueprint(blueprint)
                 case None            => ZIO.unit
               }
@@ -111,7 +111,7 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistry
+  type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistryClient
 
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }
