@@ -20,5 +20,10 @@ object Logger {
       ZIO.succeed(println(doc.toPlaintext(color = true, columnWidth = Int.MaxValue)))
   }
 
+  def log(doc: HelpDoc): ZIO[Logger, Nothing, Unit]       = ZIO.serviceWithZIO(_.log(doc))
+  def log(doc: Span): ZIO[Logger, Nothing, Unit]          = ZIO.serviceWithZIO(_(doc))
+  def log(doc: String): ZIO[Logger, Nothing, Unit]        = ZIO.serviceWithZIO(_(doc))
+  def error(error: Throwable): ZIO[Logger, Nothing, Unit] = ZIO.serviceWithZIO(_.error(error))
+
   def live: ZLayer[Any, Nothing, Logger] = ZLayer.succeed(new Live)
 }
