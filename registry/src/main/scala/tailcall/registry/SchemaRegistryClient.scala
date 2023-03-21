@@ -3,6 +3,7 @@ package tailcall.registry
 import tailcall.runtime.ast.{Blueprint, Digest}
 import tailcall.runtime.service.EvaluationError
 import zio.http._
+import zio.http.model.Status
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec
 import zio.{Chunk, Task, ZIO, ZLayer}
@@ -19,8 +20,8 @@ trait SchemaRegistryClient {
 object SchemaRegistryClient {
   final case class Live(client: Client) extends SchemaRegistryClient {
 
-    private def toBody(res: Response): ZIO[Any, Throwable, Body] =
-      if (res.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}"))
+    private def assertStatusCodeIsAbove(code: Int, res: Response): ZIO[Any, Throwable, Body] =
+      if (res.status.code >= code) ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}"))
       else ZIO.succeed(res.body)
 
     private def buildURL(base: URL, path: String): ZIO[Any, RuntimeException, URL] = {
@@ -34,7 +35,7 @@ object SchemaRegistryClient {
           Body.fromChunk(Chunk.fromIterable(Blueprint.encode(blueprint).toString.getBytes(Charset.defaultCharset()))),
           url
         ))
-        body         <- toBody(response)
+        body         <- assertStatusCodeIsAbove(400, response)
         digestString <- body.asString
         digest       <- ZIO.fromEither(JsonCodec.jsonDecoder(Digest.schema).decodeJson(digestString))
           .mapError(EvaluationError.DecodingError(_))
@@ -42,19 +43,24 @@ object SchemaRegistryClient {
 
     override def get(base: URL, id: Digest): Task[Option[Blueprint]] =
       for {
-        url       <- buildURL(base, s"/schemas/${id.hex}")
-        response  <- client.request(Request.get(url))
-        body      <- toBody(response)
-        bpString  <- body.asString
-        blueprint <- ZIO.fromEither(JsonCodec.jsonDecoder(Blueprint.schema).decodeJson(bpString))
-          .mapError(EvaluationError.DecodingError(_))
-      } yield Option(blueprint)
+        url      <- buildURL(base, s"/schemas/${id.hex}")
+        response <- client.request(Request.get(url))
+        maybe    <- response.status match {
+          case Status.NotFound => ZIO.succeed(None)
+          case _               => for {
+              body      <- assertStatusCodeIsAbove(400, response)
+              bpString  <- body.asString
+              blueprint <- ZIO.fromEither(JsonCodec.jsonDecoder(Blueprint.schema).decodeJson(bpString))
+                .mapError(EvaluationError.DecodingError(_))
+            } yield Option(blueprint)
+        }
+      } yield maybe
 
     override def list(base: URL, index: Int, max: Int): Task[List[Blueprint]] =
       for {
         url        <- buildURL(base, s"/schemas?index=${index}&max=${max}")
         response   <- client.request(Request.get(url))
-        body       <- toBody(response)
+        body       <- assertStatusCodeIsAbove(400, response)
         ls         <- body.asString
         blueprints <- ZIO.fromEither(JsonCodec.jsonDecoder(Schema[List[Blueprint]]).decodeJson(ls))
           .mapError(EvaluationError.DecodingError(_))

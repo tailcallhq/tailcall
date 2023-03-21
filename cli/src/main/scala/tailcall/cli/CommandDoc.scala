@@ -6,19 +6,22 @@ import tailcall.runtime.ast.Digest
 import zio.cli._
 import zio.http.URL
 
+import java.nio.file.Path
+
 object CommandDoc {
 
-  private val remoteOption: Options[URL]    = CustomOptions.url("remote").alias("-r")
-  private val digestOption: Options[Digest] = CustomOptions.digest("hash")
+  private val remoteOption: Options[URL]      = CustomOptions.url("remote").alias("r")
+  private val digestOption: Options[Digest]   = CustomOptions.digest("hash")
+  private val configFileOption: Options[Path] = Options.file("config").alias("c")
 
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
-    Command("check", Options.file("config").alias("c") ++ remoteOption.optional)
+    Command("check", configFileOption ++ remoteOption.optional)
       .withHelp("Validate a composition spec, display its status when remote is passed.").map { case (config, remote) =>
         CommandADT.Check(config, remote)
       },
 
     // publish
-    Command("publish", Options.file("config") ++ remoteOption)
+    Command("publish", configFileOption ++ remoteOption)
       .withHelp("Publish the configuration file to the remote environment.").map { case (config, remote) =>
         Remote(remote, Remote.Publish(config))
       },
