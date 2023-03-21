@@ -12,13 +12,6 @@ object CommandDoc {
     Command("schema", Options.file("blueprint").alias("b")).map(CommandADT.GraphQLSchema)
       .withHelp("Generates a GraphQL schema from a .orc file"),
 
-    // Config
-    Command("config", Options.text("key") ++ (Options.text("value").optional))
-      .withHelp("Gets and sets CLI configurations").map {
-        case (_, Some(value)) => CommandADT.SetRemoteServer(value)
-        case (_, None)        => CommandADT.GetRemoteServer
-      },
-
     // Deploy
     Command("deploy", Options.file("orc").alias("o")).withHelp("Deploys an .orc file").map(CommandADT.Deploy),
 

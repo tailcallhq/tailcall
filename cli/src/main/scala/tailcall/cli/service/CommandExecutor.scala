@@ -1,7 +1,6 @@
 package tailcall.cli.service
 
 import tailcall.cli.CommandADT
-import tailcall.cli.service.ConfigStore.Key
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
@@ -22,8 +21,7 @@ object CommandExecutor {
     graphQL: GraphQLGenerator,
     configReader: ConfigFileIO,
     fileIO: FileIO,
-    registry: SchemaRegistry,
-    config: ConfigStore
+    registry: SchemaRegistry
   ) extends CommandExecutor {
     def timed[R, E, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -36,7 +34,8 @@ object CommandExecutor {
         }
       } yield a
 
-    def getBaseURL: ZIO[Any, Throwable, String] = config.getOrDefault(Key.RemoteServer)
+    // fixme: to fool the compiler
+    private def getBaseURL = ZIO.succeed("http://localhost:8080")
 
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
@@ -97,23 +96,6 @@ object CommandExecutor {
                 case None            => ZIO.unit
               }
             } yield ()
-
-          case CommandADT.GetRemoteServer =>
-            val key = Key.RemoteServer
-            for {
-              before <- config.get(key)
-              _      <- logSucceed("Configuration loaded successfully.")
-              _      <- logLabeled("Config Name" -> key.name, "Value" -> before.getOrElse(""))
-            } yield ()
-
-          case CommandADT.SetRemoteServer(value) =>
-            val key = Key.RemoteServer
-            for {
-              before <- config.get(key)
-              _      <- config.set(key, value)
-              _      <- logSucceed("Configuration updated successfully.")
-              _      <- logLabeled("Config Name" -> key.name, "Before" -> before.getOrElse(""), "After" -> value)
-            } yield ()
         }
       }.tapError(log.error(_)).exitCode
 
@@ -129,7 +111,7 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistry with ConfigStore
+  type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistry
 
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 }
