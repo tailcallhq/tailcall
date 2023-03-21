@@ -77,16 +77,16 @@ object CommandExecutor {
                   _          <- logLabeled("Remote Server" -> base.encode, "Total Count" -> s"${blueprints.length}")
                 } yield ()
 
-              case Remote.ShowOne(digest) => for {
-                  info <- registry.get(base, digest)
-                  _    <- logLabeled(
+              case Remote.ShowOne(digest, showSchema) => for {
+                  maybe <- registry.get(base, digest)
+                  _     <- logLabeled(
                     "Remote Server" -> base.encode,
                     "Digest"        -> s"${digest.hex}",
-                    "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
+                    "Status"        -> (if (maybe.nonEmpty) "Found" else "Not Found")
                   )
-                  _    <- info match {
-                    case Some(blueprint) => logBlueprint(blueprint)
-                    case None            => ZIO.unit
+                  _     <- maybe match {
+                    case Some(blueprint) if showSchema => logBlueprint(blueprint)
+                    case _                             => ZIO.unit
                   }
                 } yield ()
             }

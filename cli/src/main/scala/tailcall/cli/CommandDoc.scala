@@ -10,9 +10,10 @@ import java.nio.file.Path
 
 object CommandDoc {
 
-  private val remoteOption: Options[URL]      = CustomOptions.url("remote").alias("r")
-  private val digestOption: Options[Digest]   = CustomOptions.digest("hash")
-  private val configFileOption: Options[Path] = Options.file("config").alias("c")
+  private val remoteOption: Options[URL]         = CustomOptions.url("remote").alias("r")
+  private val digestOption: Options[Digest]      = CustomOptions.digest("hash")
+  private val configFileOption: Options[Path]    = Options.file("config").alias("c")
+  private val showSchemaOption: Options[Boolean] = Options.boolean("schema").alias("s").withDefault(false)
 
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
     Command("check", configFileOption ++ remoteOption.optional)
@@ -43,9 +44,9 @@ object CommandDoc {
     },
 
     // info
-    Command("show", digestOption ++ remoteOption)
+    Command("show", digestOption ++ remoteOption ++ showSchemaOption)
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.").map {
-        case (digest, remote) => Remote(remote, Remote.ShowOne(digest))
+        case (digest, remote, showSchema) => Remote(remote, Remote.ShowOne(digest, showSchema))
       }
   )
 

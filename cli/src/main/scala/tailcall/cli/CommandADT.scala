@@ -12,9 +12,9 @@ object CommandADT {
   final case class Remote(server: URL, command: Remote.Command) extends CommandADT
   object Remote {
     sealed trait Command
-    final case class Publish(config: Path)            extends Command
-    final case class Drop(digest: Digest)             extends Command
-    final case class ShowAll(offset: Int, limit: Int) extends Command
-    final case class ShowOne(digest: Digest)          extends Command
+    final case class Publish(config: Path)                           extends Command
+    final case class Drop(digest: Digest)                            extends Command
+    final case class ShowAll(offset: Int, limit: Int)                extends Command
+    final case class ShowOne(digest: Digest, graphQLSchema: Boolean) extends Command
   }
 }
