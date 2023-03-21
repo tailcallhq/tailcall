@@ -5,6 +5,7 @@ import tailcall.cli.CommandADT.Remote
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
+import tailcall.runtime.transcoder.Transcoder
 import zio.cli.HelpDoc
 import zio.cli.HelpDoc.Span.{spans, strong, text}
 import zio.{Duration, ExitCode, UIO, ZIO, ZLayer}
@@ -41,27 +42,24 @@ object CommandExecutor {
               digest    = blueprint.digest
               remoteStatus <- remote match {
                 case Some(value) => registry.get(value, digest).map {
-                    case Some(_) => Option("Found")
-                    case None    => Option("Not Found")
+                    case Some(_) => Option(s"${value.encode}/graphql/${digest.hex}.")
+                    case None    => Option(s"GraphQL is NOT available on ${value.encode}.")
                   }
                 case None        => ZIO.succeed(None)
               }
 
               _ <- logSucceed("Compilation completed successfully.")
-              _ <- logLabeled(
-                "Digest"             -> s"${digest.hex}",
-                "Remote Environment" -> remoteStatus.getOrElse("Not Specified")
-              )
+              _ <- logLabeled("Digest" -> s"${digest.hex}", "Remote Schema" -> remoteStatus.getOrElse("Not Specified"))
             } yield ()
           case CommandADT.Remote(base, command) => command match {
               case Remote.Publish(path) => for {
-                  blueprint <- fileIO.readJson[Blueprint](path.toFile)
+                  config    <- configReader.read(path.toFile)
+                  blueprint <- Transcoder.toBlueprint(config).toZIO
                   digest    <- registry.add(base, blueprint)
                   _         <- logSucceed("Deployment was completed successfully.")
                   _         <- logLabeled(
-                    "Remote Server:" -> base.encode,
                     "Digest"         -> s"${digest.hex}",
-                    "URL"            -> s"${base}/graphql/${digest.hex}"
+                    "Remote Schema:" -> s"${base.encode}/graphql/${digest.hex}"
                   )
                 } yield ()
               case Remote.Drop(digest)  => for {
