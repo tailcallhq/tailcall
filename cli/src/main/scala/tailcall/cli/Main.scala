@@ -1,11 +1,9 @@
 package tailcall.cli
 
 import tailcall.cli.service.{CommandExecutor, Logger}
-import tailcall.registry.SchemaRegistry
-import tailcall.runtime.http.HttpClient
+import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.service._
-import zio.http.Client
-import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 object Main extends ZIOAppDefault {
   self =>
@@ -19,9 +17,7 @@ object Main extends ZIOAppDefault {
         EvaluationRuntime.live,
         ConfigFileIO.live,
         FileIO.live,
-        HttpClient.live,
-        Client.default,
-        ZLayer.succeed("http://localhost:8080") >>> SchemaRegistry.client
+        SchemaRegistryClient.default
       )
     )
 }

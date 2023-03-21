@@ -1,15 +1,8 @@
 package tailcall.registry
 
 import tailcall.runtime.ast.{Blueprint, Digest}
-import tailcall.runtime.http.{HttpClient, Method, Request}
-import tailcall.runtime.service.EvaluationError
 import zio._
-import zio.http.{Body, Response}
 import zio.rocksdb.RocksDB
-import zio.schema.Schema
-import zio.schema.codec.JsonCodec
-
-import java.nio.charset.Charset
 
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
@@ -26,8 +19,6 @@ object SchemaRegistry {
 
   def persistent(path: String): ZLayer[Any, Throwable, SchemaRegistry] =
     RocksDB.live(path) >>> ZLayer.fromFunction(Persistence.apply _)
-
-  def client: ZLayer[HttpClient with String, Nothing, SchemaRegistry] = ZLayer.fromFunction(Client.apply _)
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
@@ -95,48 +86,5 @@ object SchemaRegistry {
         _        <- db.delete(digest.getBytes).when(contains)
       } yield !contains
     }
-  }
-
-  private def toBody(res: Response): ZIO[Any, Throwable, Body] =
-    if (res.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}"))
-    else ZIO.succeed(res.body)
-  final case class Client(host: String, http: HttpClient) extends SchemaRegistry {
-    override def add(blueprint: Blueprint): Task[Digest]  =
-      for {
-        response     <- http.request(Request(
-          host + "/schemas",
-          Method.PUT,
-          body = Chunk.fromIterable(Blueprint.encode(blueprint).toString.getBytes(Charset.defaultCharset()))
-        ))
-        body         <- toBody(response)
-        digestString <- body.asString
-        digest       <- ZIO.fromEither(JsonCodec.jsonDecoder(Digest.schema).decodeJson(digestString))
-          .mapError(EvaluationError.DecodingError(_))
-      } yield digest
-    override def get(id: Digest): Task[Option[Blueprint]] =
-      for {
-        response  <- http.request(Request(s"${host}/schemas/${id.hex}"))
-        body      <- toBody(response)
-        bpString  <- body.asString
-        blueprint <- ZIO.fromEither(JsonCodec.jsonDecoder(Blueprint.schema).decodeJson(bpString))
-          .mapError(EvaluationError.DecodingError(_))
-      } yield Option(blueprint)
-
-    override def list(index: Int, max: Int): Task[List[Blueprint]] =
-      for {
-        response   <- http.request(Request(host + "/schemas"))
-        body       <- toBody(response)
-        ls         <- body.asString
-        blueprints <- ZIO.fromEither(JsonCodec.jsonDecoder(Schema[List[Blueprint]]).decodeJson(ls))
-          .mapError(EvaluationError.DecodingError(_))
-      } yield blueprints
-
-    override def drop(digest: Digest): Task[Boolean] =
-      for {
-        response <- http.request(Request(s"${host}/schemas/${digest.hex}", Method.DELETE))
-        out      <-
-          if (response.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${response.status.code}"))
-          else ZIO.succeed(response.status.code == 200)
-      } yield out
   }
 }
