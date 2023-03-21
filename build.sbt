@@ -1,27 +1,29 @@
 lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry)
 lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies := Seq(
-    "dev.zio"               %% "zio-schema"            % zioSchema,
-    "dev.zio"               %% "zio-schema-derivation" % zioSchema,
-    "dev.zio"               %% "zio-schema-json"       % zioSchema,
-    "com.lihaoyi"           %% "pprint"                % "0.8.1",
-    "dev.zio"               %% "zio"                   % zio,
-    "com.github.ghostdogpr" %% "caliban"               % caliban,
-    "com.github.ghostdogpr" %% "caliban-tools"         % caliban,
-    "dev.zio"               %% "zio-json"              % zioJson,
-    "dev.zio"               %% "zio-json-yaml"         % zioJson,
-    "dev.zio"               %% "zio-parser"            % "0.1.8",
-    "dev.zio"               %% "zio-http"              % "0.0.4"
+    "dev.zio"                %% "zio-schema"            % zioSchema,
+    "dev.zio"                %% "zio-schema-derivation" % zioSchema,
+    "dev.zio"                %% "zio-schema-json"       % zioSchema,
+    "com.lihaoyi"            %% "pprint"                % "0.8.1",
+    "dev.zio"                %% "zio"                   % zio,
+    "com.github.ghostdogpr"  %% "caliban"               % caliban,
+    ("com.github.ghostdogpr" %% "caliban-tools"         % caliban)
+      .exclude("com.softwaremill.sttp.client3", "async-http-client-backend-zio_2.13")
+      .exclude("com.softwaremill.sttp.client3", "zio_2.13")
+      .exclude("com.github.ghostdogpr", "caliban-client_2.13")
+      .exclude("dev.zio", "zio-config_2.13")
+      .exclude("dev.zio", "zio-config-magnolia_2.13")
+      .exclude("org.slf4j", "slf4j-api"),
+    "dev.zio"                %% "zio-json"              % zioJson,
+    "dev.zio"                %% "zio-json-yaml"         % zioJson,
+    "dev.zio"                %% "zio-parser"            % "0.1.8",
+    "dev.zio"                %% "zio-http"              % "0.0.4"
   ),
   libraryDependencies ++= zioTestDependencies
 )
 
 lazy val cli = (project in file("cli")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq(
-    "dev.zio" %% "zio"         % zio,
-    "dev.zio" %% "zio-cli"     % "0.4.0",
-    "dev.zio" %% "zio-rocksdb" % rocksDB
-  )
+  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-cli" % "0.4.0")
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
@@ -29,11 +31,7 @@ lazy val server = (project in file("server")).settings(
 ).dependsOn(runtime, registry)
 
 lazy val registry = (project in file("registry")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq(
-    "dev.zio" %% "zio"         % zio,
-    "dev.zio" %% "zio-http"    % zioHttp,
-    "dev.zio" %% "zio-rocksdb" % rocksDB
-  )
+  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)
 ).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
