@@ -3,6 +3,8 @@ package tailcall.cli
 import tailcall.runtime.ast.Digest
 import zio.cli._
 
+import java.net.URL
+
 object CustomOptions {
   def digest(name: String): Options[Digest] =
     Options.text(name).mapOrFail { digest =>
@@ -14,5 +16,14 @@ object CustomOptions {
     Options.text(name).mapOrFail { int =>
       if ("^[0-9]+$".r.matches(int)) Right(int.toInt)
       else Left(ValidationError(ValidationErrorType.InvalidArgument, HelpDoc.p("Integer must be a positive number.")))
+    }
+
+  def url(name: String): Options[URL] =
+    Options.text(name).mapOrFail { string =>
+      try Right(new URL(string))
+      catch {
+        case _: Throwable =>
+          Left(ValidationError(ValidationErrorType.InvalidArgument, HelpDoc.p(s"Invalid URL: ${string}")))
+      }
     }
 }
