@@ -10,10 +10,10 @@ import zio.{Chunk, Task, ZIO, ZLayer}
 import java.nio.charset.Charset
 
 trait SchemaRegistryClient {
-  def add(base: String, blueprint: Blueprint): Task[Digest]
-  def get(base: String, id: Digest): Task[Option[Blueprint]]
-  def list(base: String, index: Int, max: Int): Task[List[Blueprint]]
-  def drop(base: String, digest: Digest): Task[Boolean]
+  def add(base: URL, blueprint: Blueprint): Task[Digest]
+  def get(base: URL, id: Digest): Task[Option[Blueprint]]
+  def list(base: URL, index: Int, max: Int): Task[List[Blueprint]]
+  def drop(base: URL, digest: Digest): Task[Boolean]
 }
 
 object SchemaRegistryClient {
@@ -23,12 +23,11 @@ object SchemaRegistryClient {
       if (res.status.code >= 400) ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}"))
       else ZIO.succeed(res.body)
 
-    private def buildURL(base: String, path: String): ZIO[Any, RuntimeException, URL] =
-      URL.fromString(base + path) match {
-        case Left(value)  => ZIO.fail(new RuntimeException(value))
-        case Right(value) => ZIO.succeed(value)
-      }
-    override def add(base: String, blueprint: Blueprint): Task[Digest]                =
+    private def buildURL(base: URL, path: String): ZIO[Any, RuntimeException, URL] = {
+      ZIO.succeed(base.copy(path = base.path / path))
+    }
+
+    override def add(base: URL, blueprint: Blueprint): Task[Digest] =
       for {
         url          <- buildURL(base, "/schemas")
         response     <- client.request(Request.put(
@@ -41,7 +40,7 @@ object SchemaRegistryClient {
           .mapError(EvaluationError.DecodingError(_))
       } yield digest
 
-    override def get(base: String, id: Digest): Task[Option[Blueprint]] =
+    override def get(base: URL, id: Digest): Task[Option[Blueprint]] =
       for {
         url       <- buildURL(base, s"/schemas/${id.hex}")
         response  <- client.request(Request.get(url))
@@ -51,7 +50,7 @@ object SchemaRegistryClient {
           .mapError(EvaluationError.DecodingError(_))
       } yield Option(blueprint)
 
-    override def list(base: String, index: Int, max: Int): Task[List[Blueprint]] =
+    override def list(base: URL, index: Int, max: Int): Task[List[Blueprint]] =
       for {
         url        <- buildURL(base, s"/schemas?index=${index}&max=${max}")
         response   <- client.request(Request.get(url))
@@ -61,7 +60,7 @@ object SchemaRegistryClient {
           .mapError(EvaluationError.DecodingError(_))
       } yield blueprints
 
-    override def drop(base: String, digest: Digest): Task[Boolean] =
+    override def drop(base: URL, digest: Digest): Task[Boolean] =
       for {
         url      <- buildURL(base, s"/schemas/${digest.hex}")
         response <- client.request(Request.delete(url))
