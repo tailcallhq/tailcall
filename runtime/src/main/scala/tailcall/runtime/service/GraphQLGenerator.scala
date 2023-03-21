@@ -40,6 +40,8 @@ object GraphQLGenerator {
 
   def live: ZLayer[StepGenerator, Nothing, GraphQLGenerator] = ZLayer.fromFunction(Live.apply _)
 
+  def default: ZLayer[Any, Nothing, GraphQLGenerator] = StepGenerator.default >>> live
+
   def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] =
     ZIO.serviceWith(_.toGraphQL(document))
 }

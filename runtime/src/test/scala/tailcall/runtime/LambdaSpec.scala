@@ -312,5 +312,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo("HTTP Error: 404"))
         }
       ) @@ timeout(5 seconds)
-    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default, DataLoader.http)
+    ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http)
 }

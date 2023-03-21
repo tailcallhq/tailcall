@@ -35,9 +35,9 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
       }
     ).provide(
         ConfigFileIO.live,
-        FileIO.live,
+        FileIO.default,
         GraphQLGenerator.live,
         StepGenerator.live,
-        EvaluationRuntime.live
+        EvaluationRuntime.default
       ) @@ timeout(5 seconds)
 }

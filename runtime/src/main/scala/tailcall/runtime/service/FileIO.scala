@@ -26,7 +26,7 @@ object FileIO {
 
   def write(file: File, content: String): ZIO[FileIO, Throwable, Unit] = ZIO.serviceWithZIO(_.write(file, content))
 
-  def live: ZLayer[Any, Nothing, FileIO] =
+  def default: ZLayer[Any, Nothing, FileIO] =
     ZLayer.succeed(new FileIO {
       override def read(file: File): Task[String] = ZIO.attemptBlocking(Files.readString(file.toPath))
       override def write(file: File, content: String, flags: Flags): Task[Unit] =

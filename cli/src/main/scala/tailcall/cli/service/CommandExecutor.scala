@@ -108,5 +108,8 @@ object CommandExecutor {
 
   type Env = Logger with GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistryClient
 
-  def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
+  def live: ZLayer[Env, Nothing, CommandExecutor]      = ZLayer.fromFunction(Live.apply _)
+  def default: ZLayer[Any, Throwable, CommandExecutor] =
+    (Logger.live ++ GraphQLGenerator.default ++ ConfigFileIO.default ++ FileIO.default ++ SchemaRegistryClient
+      .default) >>> live
 }

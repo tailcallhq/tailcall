@@ -147,7 +147,7 @@ object ConfigSpec extends ZIOSpecDefault {
     ).provide(
       GraphQLGenerator.live,
       StepGenerator.live,
-      EvaluationRuntime.live,
+      EvaluationRuntime.default,
       HttpClient.live,
       Client.default,
       DataLoader.http

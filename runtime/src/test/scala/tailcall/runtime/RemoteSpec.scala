@@ -555,5 +555,5 @@ object RemoteSpec extends ZIOSpecDefault {
 //        val program = Remote.flatten(Remote(Remote(1)))
 //        assertZIO(program.evaluate)(equalTo(1))
 //      }
-    ).provide(EvaluationRuntime.live, HttpClient.live, Client.default, DataLoader.http)
+    ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http)
 }

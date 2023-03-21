@@ -14,6 +14,7 @@ object ConfigFileIO {
   def readURL(url: URL): ZIO[ConfigFileIO, Throwable, Config]           = readFile(new File(url.getPath))
   def readFile(file: File): ZIO[ConfigFileIO, Throwable, Config]        = ZIO.serviceWithZIO(_.read(file))
   def live: ZLayer[FileIO with GraphQLGenerator, Nothing, ConfigFileIO] = ZLayer.fromFunction(Live.apply _)
+  def default: ZLayer[Any, Nothing, ConfigFileIO] = (FileIO.default ++ GraphQLGenerator.default) >>> live
 
   final case class Live(fileIO: FileIO, graphQLGenerator: GraphQLGenerator) extends ConfigFileIO {
     override def read(file: File): Task[Config] =

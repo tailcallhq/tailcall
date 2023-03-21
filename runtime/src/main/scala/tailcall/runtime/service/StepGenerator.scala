@@ -17,6 +17,8 @@ trait StepGenerator {
 }
 
 object StepGenerator {
+  def default: ZLayer[Any, Nothing, StepGenerator] = EvaluationRuntime.default >>> live
+
   def live: ZLayer[EvaluationRuntime, Nothing, StepGenerator] = {
     ZLayer(ZIO.service[EvaluationRuntime].map(rtm =>
       new StepGenerator {

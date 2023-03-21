@@ -31,7 +31,7 @@ object EvaluationRuntime {
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpDataLoader, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
-  def live: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
+  def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
   final class Live extends EvaluationRuntime {
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any] = {
