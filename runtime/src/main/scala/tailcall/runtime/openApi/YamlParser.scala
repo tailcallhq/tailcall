@@ -1,7 +1,6 @@
 package tailcall.runtime.openApi
 
 import tailcall.runtime.openApi.OpenapiModels.OpenapiDocument
-import io.circe.yaml.parser
 
 object YamlParser {
   import io.circe._

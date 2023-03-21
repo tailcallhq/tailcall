@@ -1,5 +1,7 @@
 package tailcall.runtime.openApi
 
+import scala.annotation.unused
+
 // https://swagger.io/specification/
 object OpenapiModels {
 
@@ -118,6 +120,7 @@ object OpenapiModels {
   }
 
   implicit val OpenapiRequestBodyDecoder: Decoder[OpenapiRequestBody] = { (c: HCursor) =>
+    @unused
     implicit val InnerDecoder: Decoder[(String, Seq[OpenapiRequestBodyContent])] = { (c: HCursor) =>
       for {
         description <- c.downField("description").as[String]
