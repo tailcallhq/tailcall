@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
+import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.value._
@@ -31,4 +32,6 @@ object Transcoder extends Transcoder {
 
   def toDocument(config: Config): TValid[Nothing, Document] =
     Transcoder.toBlueprint(config).flatMap(Transcoder.toDocument(_))
+
+  def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 }
