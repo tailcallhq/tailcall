@@ -1,37 +1,52 @@
 package tailcall.cli
 
+import tailcall.cli.CommandADT.Remote
 import tailcall.cli.service.CommandExecutor
+import tailcall.runtime.ast.Digest
 import zio.cli._
+import zio.http.URL
 
 object CommandDoc {
+
+  private val remoteOption: Options[URL]    = CustomOptions.url("remote").alias("-r")
+  private val digestOption: Options[Digest] = CustomOptions.digest("hash")
+
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
-    Command("compile", Options.file("config").alias("c") ++ Options.directory("output-directory").alias("o").optional)
-      .withHelp("Compiles a .yml or .json file into an .orc file").map(CommandADT.Compile.tupled),
+    Command("check", Options.file("config").alias("c") ++ remoteOption.optional)
+      .withHelp("Validate a composition spec, display its status when remote is passed.").map { case (config, remote) =>
+        CommandADT.Check(config, remote)
+      },
 
-    // Schema
-    Command("schema", Options.file("blueprint").alias("b")).map(CommandADT.GraphQLSchema)
-      .withHelp("Generates a GraphQL schema from a .orc file"),
+    // publish
+    Command("publish", Options.file("config") ++ remoteOption)
+      .withHelp("Publish the configuration file to the remote environment.").map { case (config, remote) =>
+        Remote(remote, Remote.Publish(config))
+      },
 
-    // Deploy
-    Command("deploy", Options.file("orc").alias("o")).withHelp("Deploys an .orc file").map(CommandADT.Deploy),
+    // drop
+    Command("drop", digestOption ++ remoteOption)
+      .withHelp("Remove the composition spec from the remote environments using its SHA-256 hash.").map {
+        case (digest, remote) => Remote(remote, Remote.Drop(digest))
+      },
 
-    // Drop
-    Command("drop", CustomOptions.digest("digest").alias("d")).withHelp("Drops a blueprint by its digest")
-      .map(CommandADT.Drop(_)),
-
-    // List
+    // list
     Command(
       "list",
-      CustomOptions.integer("index").alias("i").withDefault(0) ++
-        CustomOptions.integer("offset").alias("f").withDefault(0)
-    ).withHelp("Lists blueprints with pagination (index and offset)").map(CommandADT.GetAll.tupled),
+      remoteOption ++
+        CustomOptions.integer("offset").withDefault(0) ++
+        CustomOptions.integer("limit").withDefault(Int.MaxValue)
+    ).withHelp("List all published composition specs on the remote address.").map { case (remote, offset, limit) =>
+      Remote(remote, Remote.ShowAll(offset = offset, limit = limit))
+    },
 
-    // Info
-    Command("info", CustomOptions.digest("digest").alias("d"))
-      .withHelp("Displays information about a blueprint by its digest").map(CommandADT.GetOne)
+    // info
+    Command("show", digestOption ++ remoteOption)
+      .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.").map {
+        case (digest, remote) => Remote(remote, Remote.ShowOne(digest))
+      }
   )
 
-  val app: CliApp[CommandExecutor, Throwable, CommandADT] = CliApp
+  val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
     .make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
     .summary(HelpDoc.Span.Text("Tailcall CLI"))
 }

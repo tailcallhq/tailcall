@@ -1,15 +1,13 @@
 package tailcall.cli.service
 
 import tailcall.cli.CommandADT
+import tailcall.cli.CommandADT.Remote
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
 import zio.cli.HelpDoc
 import zio.cli.HelpDoc.Span.{spans, strong, text}
-import zio.json.EncoderOps
 import zio.{Duration, ExitCode, UIO, ZIO, ZLayer}
-
-import java.nio.file.Path
 
 trait CommandExecutor {
   def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode]
@@ -34,68 +32,67 @@ object CommandExecutor {
         }
       } yield a
 
-    // fixme: to fool the compiler
-    private def getBaseURL: UIO[String] = ZIO.succeed("http://localhost:8080")
-
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
-          case CommandADT.Compile(file, output) => for {
+          case CommandADT.Check(file, remote)   => for {
               config <- configReader.read(file.toFile)
-              blueprint        = config.toBlueprint
-              digest           = blueprint.digest
-              fileName         = "tc-" + digest.hex + ".orc"
-              outputFile: Path = output.getOrElse(file.getParent).resolve(fileName).toAbsolutePath
-              _ <- fileIO.write(outputFile.toFile, blueprint.toJson, FileIO.defaultFlag.withCreate.withTruncateExisting)
+              blueprint = config.toBlueprint
+              digest    = blueprint.digest
+              remoteStatus <- remote match {
+                case Some(value) => registry.get(value, digest).map {
+                    case Some(_) => Option("Found")
+                    case None    => Option("Not Found")
+                  }
+                case None        => ZIO.succeed(None)
+              }
+
               _ <- logSucceed("Compilation completed successfully.")
-              _ <- logLabeled("Digest" -> s"${digest.hex}", "Generated File" -> fileName)
-            } yield ()
-          case CommandADT.GraphQLSchema(path)   => for {
-              blueprint <- fileIO.readJson[Blueprint](path.toFile)
-              _         <- logSucceed("GraphQL schema was successfully generated.")
-              _         <- logBlueprint(blueprint)
-            } yield ()
-          case CommandADT.Deploy(path)          => for {
-              blueprint <- fileIO.readJson[Blueprint](path.toFile)
-              base      <- getBaseURL
-              digest    <- registry.add(base, blueprint)
-              _         <- logSucceed("Deployment was completed successfully.")
-              _         <- logLabeled(
-                "Remote Server:" -> base,
-                "Digest"         -> s"${digest.hex}",
-                "URL"            -> s"${base}/graphql/${digest.hex}"
+              _ <- logLabeled(
+                "Digest"             -> s"${digest.hex}",
+                "Remote Environment" -> remoteStatus.getOrElse("Not Specified")
               )
             } yield ()
-          case CommandADT.Drop(digest)          => for {
-              base <- getBaseURL
-              _    <- registry.drop(base, digest)
-              _    <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
-              _    <- logLabeled("Remote Server" -> base, "Digest" -> s"${digest.hex}")
-            } yield ()
+          case CommandADT.Remote(base, command) => command match {
+              case Remote.Publish(path) => for {
+                  blueprint <- fileIO.readJson[Blueprint](path.toFile)
+                  digest    <- registry.add(base, blueprint)
+                  _         <- logSucceed("Deployment was completed successfully.")
+                  _         <- logLabeled(
+                    "Remote Server:" -> base.encode,
+                    "Digest"         -> s"${digest.hex}",
+                    "URL"            -> s"${base}/graphql/${digest.hex}"
+                  )
+                } yield ()
+              case Remote.Drop(digest)  => for {
+                  _ <- registry.drop(base, digest)
+                  _ <- logSucceed(s"Blueprint with ID '$digest' was dropped successfully.")
+                  _ <- logLabeled("Remote Server" -> base.encode, "Digest" -> s"${digest.hex}")
+                } yield ()
 
-          case CommandADT.GetAll(index, offset) => for {
-              base       <- getBaseURL
-              blueprints <- registry.list(base, index, offset)
-              _          <- logSucceed("Listing all blueprints.")
-              _          <- ZIO.foreachDiscard(blueprints.zipWithIndex) { case (blueprint, id) =>
-                log(s"${id + 1}.\t${blueprint.digest.hex}")
-              }
-              _          <- logLabeled("Remote Server" -> base, "Total Count" -> s"${blueprints.length}")
-            } yield ()
+              case Remote.ShowAll(index, offset) => for {
+                  blueprints <- registry.list(base, index, offset)
+                  _          <- logSucceed("Listing all blueprints.")
+                  _          <- ZIO.foreachDiscard(blueprints.zipWithIndex) { case (blueprint, id) =>
+                    log(s"${id + 1}.\t${blueprint.digest.hex}")
+                  }
+                  _          <- logLabeled("Remote Server" -> base.encode, "Total Count" -> s"${blueprints.length}")
+                } yield ()
 
-          case CommandADT.GetOne(digest) => for {
-              base <- getBaseURL
-              info <- registry.get(base, digest)
-              _    <- logLabeled(
-                "Remote Server" -> base,
-                "Digest"        -> s"${digest.hex}",
-                "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
-              )
-              _    <- info match {
-                case Some(blueprint) => logBlueprint(blueprint)
-                case None            => ZIO.unit
-              }
-            } yield ()
+              case Remote.ShowOne(digest) => for {
+                  info <- registry.get(base, digest)
+                  _    <- logLabeled(
+                    "Remote Server" -> base.encode,
+                    "Digest"        -> s"${digest.hex}",
+                    "Status"        -> (if (info.nonEmpty) "Found" else "Not Found")
+                  )
+                  _    <- info match {
+                    case Some(blueprint) => logBlueprint(blueprint)
+                    case None            => ZIO.unit
+                  }
+                } yield ()
+            }
+
         }
       }.tapError(log.error(_)).exitCode
 
