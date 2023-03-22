@@ -4,7 +4,7 @@ import caliban.InputValue
 import tailcall.runtime.ast.{Blueprint, Endpoint, TSchema}
 import tailcall.runtime.dsl.json.Config
 import tailcall.runtime.dsl.json.Config._
-import tailcall.runtime.http.Method
+import tailcall.runtime.http.{Method, Protocol}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
@@ -48,6 +48,7 @@ trait Config2Blueprint {
 
   final private def toEndpoint(config: Config, http: Step.Http, host: String): Endpoint =
     Endpoint.make(host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
+      .withProtocol(if (config.server.port.contains(443)) Protocol.Https else Protocol.Http)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
   final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
