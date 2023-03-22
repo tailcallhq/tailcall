@@ -61,6 +61,7 @@ addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 enablePlugins(JavaAppPackaging)
 
+ThisBuild / githubWorkflowEnv ++= Map("SBT_NATIVE_CLIENT" -> "true")
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
