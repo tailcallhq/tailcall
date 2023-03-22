@@ -7,23 +7,21 @@ import zio.cli._
 object CommandDoc {
 
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
-    Command(
-      "check",
-      CustomOptions.configFileOption ++ CustomOptions.remoteOption.optional ++ CustomOptions.blueprintOptions
-    ).withHelp("Validate a composition spec, display its status when remote is passed.").map {
-      case (config, remote, blueprintOptions) => CommandADT.Check(config, remote, blueprintOptions)
-    },
+    Command("check", CustomOptions.remoteOption.optional ++ CustomOptions.blueprintOptions, Args.file)
+      .withHelp("Validate a composition spec, display its status when remote is passed.").map {
+        case (remote, blueprintOptions) -> config => CommandADT.Check(config, remote, blueprintOptions)
+      },
 
     // publish
-    Command("publish", CustomOptions.configFileOption ++ CustomOptions.remoteOption)
-      .withHelp("Publish the configuration file to the remote environment.").map { case (config, remote) =>
+    Command("publish", CustomOptions.remoteOption, Args.file)
+      .withHelp("Publish the configuration file to the remote environment.").map { case (remote, config) =>
         Remote(remote, Remote.Publish(config))
       },
 
     // drop
-    Command("drop", CustomOptions.digestOption ++ CustomOptions.remoteOption)
+    Command("drop", CustomOptions.remoteOption, CustomArgs.digestArgs)
       .withHelp("Remove the composition spec from the remote environments using its SHA-256 hash.").map {
-        case (digest, remote) => Remote(remote, Remote.Drop(digest))
+        case (remote, digest) => Remote(remote, Remote.Drop(digest))
       },
 
     // list
@@ -37,9 +35,9 @@ object CommandDoc {
     },
 
     // info
-    Command("show", CustomOptions.digestOption ++ CustomOptions.remoteOption ++ CustomOptions.blueprintOptions)
+    Command("show", CustomOptions.remoteOption ++ CustomOptions.blueprintOptions, CustomArgs.digestArgs)
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.")
-      .map { case (digest, remote, blueprintOptions) =>
+      .map { case (remote, blueprintOptions) -> digest =>
         Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))
       }
   )
