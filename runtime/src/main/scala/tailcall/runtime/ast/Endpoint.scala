@@ -1,7 +1,7 @@
 package tailcall.runtime.ast
 
 import tailcall.runtime.ast.Path.Segment
-import tailcall.runtime.http.{Method, Request}
+import tailcall.runtime.http.{Method, Protocol, Request}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
@@ -13,7 +13,7 @@ final case class Endpoint(
   input: Option[TSchema] = None,
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
-  protocol: Endpoint.Protocol = Endpoint.Protocol.Http,
+  protocol: Protocol = Protocol.Http,
   body: Option[String] = None
 ) {
   self =>
@@ -37,11 +37,11 @@ final case class Endpoint(
 
   def withInput[I](implicit schema: Schema[I]): Endpoint = copy(input = Option(TSchema.fromZIOSchema(schema)))
 
-  def withProtocol(protocol: Endpoint.Protocol): Endpoint = copy(protocol = protocol)
+  def withProtocol(protocol: Protocol): Endpoint = copy(protocol = protocol)
 
-  def withHttp: Endpoint = withProtocol(Endpoint.Protocol.Http)
+  def withHttp: Endpoint = withProtocol(Protocol.Http)
 
-  def withHttps: Endpoint = withProtocol(Endpoint.Protocol.Https)
+  def withHttps: Endpoint = withProtocol(Protocol.Https)
 
   def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
 
@@ -54,21 +54,20 @@ final case class Endpoint(
   lazy val inputSchema: Schema[Any] = TSchema.toZIOSchema(input.getOrElse(TSchema.unit)).asInstanceOf[Schema[Any]]
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
+  def url: String                            = {
+    val portString = address.port match {
+      case 80   => ""
+      case 443  => ""
+      case port => s":$port"
+    }
+
+    val queryString        = query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=$v" }.mkString("?", "&", ""))
+    val pathString: String = path.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
+    List(protocol.name, "://", address.host, portString, pathString, queryString).mkString
+  }
 }
 
 object Endpoint {
-  sealed trait Protocol {
-    self =>
-    def name: String =
-      self match {
-        case Protocol.Http  => "http"
-        case Protocol.Https => "https"
-      }
-  }
-  object Protocol       {
-    case object Http  extends Protocol
-    case object Https extends Protocol
-  }
 
   sealed trait HttpError
 
