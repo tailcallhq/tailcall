@@ -44,6 +44,7 @@ object AdminServer {
       query       <- GraphQLUtils.decodeQuery(req.body)
       interpreter <- AdminGraphQL.graphQL.interpreter
       res         <- interpreter.execute(query)
+      _           <- ZIO.foreachDiscard(res.errors)(error => ZIO.logErrorCause("Admin Error", Cause.fail(error)))
     } yield Response.json(res.toJson)
   }
 
