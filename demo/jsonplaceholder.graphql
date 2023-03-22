@@ -1,0 +1,90 @@
+schema @server(host: "jsonplaceholder.typicode.com", port: 443) {
+  query: Query
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  address: Address
+  phone: String
+  website: String
+  company: Company
+  email: String!
+  posts: [Post] @steps(value: [{ http: { method: "GET", path: "/users/{{value.id}}/posts" } }])
+  comments: [Comment] @steps(value: [{ http: { method: "GET", path: "/users/{{value.id}}/comments" } }])
+  albums: [Album] @steps(value: [{ http: { method: "GET", path: "/users/{{value.id}}/albums" } }])
+  todos: [Todo] @steps(value: [{ http: { method: "GET", path: "/users/{{value.id}}/todos" } }])
+  photos: [Photo] @steps(value: [{ http: { method: "GET", path: "/users/{{value.id}}/photos" } }])
+}
+
+type Address {
+  street: String!
+  suite: String!
+  city: String!
+  zipcode: String!
+  geo: Geo
+}
+
+type Geo {
+  lat: String!
+  lng: String!
+}
+
+type Company {
+  name: String!
+  catchPhrase: String!
+  bs: String!
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @steps(value: [{ http: { method: "GET", path: "/users/{{value.userId}}" } }])
+  comments: [Comment] @steps(value: [{ http: { method: "GET", path: "/posts/{{value.id}}/comments" } }])
+}
+
+type Comment {
+  id: Int!
+  name: String!
+  postId: Int!
+  email: String!
+  body: String!
+  post: Post @steps(value: [{ http: { method: "GET", path: "/posts/{{value.postId}}" } }])
+}
+
+type Album {
+  id: Int!
+  title: String!
+  userId: String!
+  user: User @steps(value: [{ http: { method: "GET", path: "/users/{{value.userId}}" } }])
+  photos: [Photo] @steps(value: [{ http: { method: "GET", path: "/albums/{{value.id}}/photos" } }])
+}
+
+type Photo {
+  id: Int!
+  title: String!
+  url: String!
+  thumbnailUrl: String!
+  album: Album @steps(value: [{ http: { method: "GET", path: "/albums/{{value.id}}" } }])
+}
+
+type Todo {
+  id: Int!
+  userId: Int!
+  title: String!
+  completed: Boolean!
+  user: User @steps(value: [{ http: { method: "GET", path: "/users/{{value.userId}}" } }])
+}
+
+type Query {
+  users: [User] @steps(value: [{ http: { method: "GET", path: "/users" } }])
+  posts: [Post] @steps(value: [{ http: { method: "GET", path: "/posts" } }])
+  comments: [Comment] @steps(value: [{ http: { method: "GET", path: "/comments" } }])
+  albums: [Album] @steps(value: [{ http: { method: "GET", path: "/albums" } }])
+  todos: [Todo] @steps(value: [{ http: { method: "GET", path: "/todos" } }])
+  photos: [Photo] @steps(value: [{ http: { method: "GET", path: "/photos" } }])
+}
