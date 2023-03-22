@@ -44,10 +44,21 @@ object CommandDoc {
     },
 
     // info
-    Command("show", digestOption ++ remoteOption ++ showSchemaOption)
-      .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.").map {
-        case (digest, remote, showSchema) => Remote(remote, Remote.ShowOne(digest, showSchema))
-      }
+    Command(
+      "show",
+      digestOption ++ remoteOption ++ Options.boolean("blueprint").withDefault(false) ++ showSchemaOption ++ Options
+        .boolean("endpoints").withDefault(false)
+    ).withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.").map {
+      case (digest, remote, showBlueprint, showSchema, showEndpoints) => Remote(
+          remote,
+          Remote.ShowOne(
+            digest = digest,
+            showBlueprints = showBlueprint,
+            showSchema = showSchema,
+            showEndpoints = showEndpoints
+          )
+        )
+    }
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
