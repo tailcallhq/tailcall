@@ -27,7 +27,7 @@ object CommandExecutor {
     def timed[R, E >: IOException, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
         start <- zio.Clock.nanoTime
-        a     <- program
+        a     <- program.logError
         end   <- zio.Clock.nanoTime
         _     <- Console.printLine {
           val duration = Duration.fromNanos(end - start)
@@ -90,7 +90,7 @@ object CommandExecutor {
                 } yield ()
             }
         }
-      }.tapError(error => Console.printError(error)).exitCode
+      }.exitCode
 
     private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions) = {
       for {
@@ -142,8 +142,8 @@ object CommandExecutor {
     }
 
     def table(labels: Seq[(String, String)]): String = {
-      val maxLength = labels.map(_._1.length).max
-      val padding   = " " * maxLength
+      def maxLength = labels.map(_._1.length).max
+      def padding   = " " * maxLength
       labels.map { case (key, value) =>
         (key + padding).take(maxLength) + ": " ++ fansi.Str(value).overlay(fansi.Bold.On).render
       }.mkString("\n")
