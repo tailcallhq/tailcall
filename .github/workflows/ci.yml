@@ -58,8 +58,6 @@ jobs:
 
       - name: Lint
         if: matrix.scala == '2.13.10'
-        env:
-          SBT_NATIVE_CLIENT: true
         run: sbt ++${{ matrix.scala }} lintCheck
 
       - name: Compress target directories
