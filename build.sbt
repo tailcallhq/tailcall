@@ -83,8 +83,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
       env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
     )
   ),
-  // TODO: this should be a needed
-  // needs = List("build"),
+  needs = List("build"),
   scalas = List(scala2Version)
 ))
 

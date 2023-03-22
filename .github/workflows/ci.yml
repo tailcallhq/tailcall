@@ -15,7 +15,6 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SBT_NATIVE_CLIENT: true
 
 jobs:
   build:
@@ -59,6 +58,8 @@ jobs:
 
       - name: Lint
         if: matrix.scala == '2.13.10'
+        env:
+          SBT_NATIVE_CLIENT: true
         run: sbt ++${{ matrix.scala }} lintCheck
 
       - name: Compress target directories
@@ -72,6 +73,7 @@ jobs:
 
   deploy:
     name: Deploy
+    needs: [build]
     strategy:
       matrix:
         os: [ubuntu-latest]
