@@ -54,7 +54,9 @@ final case class Endpoint(
   lazy val inputSchema: Schema[Any] = TSchema.toZIOSchema(input.getOrElse(TSchema.unit)).asInstanceOf[Schema[Any]]
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
-  def url: String                            = {
+
+  // TODO: add unit tests
+  def url: String = {
     val portString = address.port match {
       case 80   => ""
       case 443  => ""
@@ -68,9 +70,6 @@ final case class Endpoint(
 }
 
 object Endpoint {
-
-  sealed trait HttpError
-
   final case class InetAddress(host: String, port: Int = 80)
 
   def inet(host: String, port: Int = 80): InetAddress = InetAddress(host, port)
