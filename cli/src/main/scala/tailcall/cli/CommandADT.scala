@@ -14,8 +14,8 @@ object CommandADT {
     sealed trait Command
     final case class Publish(config: Path)            extends Command
     final case class Drop(digest: Digest)             extends Command
-    final case class ShowAll(offset: Int, limit: Int) extends Command
-    final case class ShowOne(digest: Digest, showBlueprints: Boolean, showSchema: Boolean, showEndpoints: Boolean)
+    final case class ListAll(offset: Int, limit: Int) extends Command
+    final case class Show(digest: Digest, showBlueprints: Boolean, showSchema: Boolean, showEndpoints: Boolean)
         extends Command
   }
 }

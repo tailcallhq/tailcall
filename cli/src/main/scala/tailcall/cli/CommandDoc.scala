@@ -11,7 +11,7 @@ import java.nio.file.Path
 object CommandDoc {
 
   private val remoteOption: Options[URL]         = CustomOptions.url("remote").alias("r")
-  private val digestOption: Options[Digest]      = CustomOptions.digest("hash")
+  private val digestOption: Options[Digest]      = CustomOptions.digest("digest")
   private val configFileOption: Options[Path]    = Options.file("config").alias("c")
   private val showSchemaOption: Options[Boolean] = Options.boolean("schema").alias("s").withDefault(false)
 
@@ -40,7 +40,7 @@ object CommandDoc {
         CustomOptions.integer("offset").withDefault(0) ++
         CustomOptions.integer("limit").withDefault(Int.MaxValue)
     ).withHelp("List all published composition specs on the remote address.").map { case (remote, offset, limit) =>
-      Remote(remote, Remote.ShowAll(offset = offset, limit = limit))
+      Remote(remote, Remote.ListAll(offset = offset, limit = limit))
     },
 
     // info
@@ -51,7 +51,7 @@ object CommandDoc {
     ).withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.").map {
       case (digest, remote, showBlueprint, showSchema, showEndpoints) => Remote(
           remote,
-          Remote.ShowOne(
+          Remote.Show(
             digest = digest,
             showBlueprints = showBlueprint,
             showSchema = showSchema,
