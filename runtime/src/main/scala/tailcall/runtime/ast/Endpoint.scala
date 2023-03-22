@@ -1,7 +1,7 @@
 package tailcall.runtime.ast
 
 import tailcall.runtime.ast.Path.Segment
-import tailcall.runtime.http.{Method, Protocol, Request}
+import tailcall.runtime.http.{Method, Request, Scheme}
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
@@ -13,7 +13,7 @@ final case class Endpoint(
   input: Option[TSchema] = None,
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
-  protocol: Protocol = Protocol.Http,
+  protocol: Scheme = Scheme.Http,
   body: Option[String] = None
 ) {
   self =>
@@ -37,11 +37,11 @@ final case class Endpoint(
 
   def withInput[I](implicit schema: Schema[I]): Endpoint = copy(input = Option(TSchema.fromZIOSchema(schema)))
 
-  def withProtocol(protocol: Protocol): Endpoint = copy(protocol = protocol)
+  def withProtocol(protocol: Scheme): Endpoint = copy(protocol = protocol)
 
-  def withHttp: Endpoint = withProtocol(Protocol.Http)
+  def withHttp: Endpoint = withProtocol(Scheme.Http)
 
-  def withHttps: Endpoint = withProtocol(Protocol.Https)
+  def withHttps: Endpoint = withProtocol(Scheme.Https)
 
   def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
 
