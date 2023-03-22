@@ -81,7 +81,7 @@ object CommandExecutor {
                   maybe <- registry.get(base, digest)
                   _     <- Console.printLine(Fmt.table(Seq(
                     "Digest"     -> s"${digest.hex}",
-                    "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.warn("Unavailable"))
+                    "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.meta("Unavailable"))
                   )))
                   _     <- maybe match {
                     case Some(blueprint) => blueprintDetails(blueprint, options)
@@ -94,15 +94,16 @@ object CommandExecutor {
 
     private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions) = {
       for {
-        _ <- Console.printLine(Fmt.blueprint(blueprint)).when(options.blueprint)
-        _ <- Console.printLine(Fmt.graphQL(graphQLGen.toGraphQL(blueprint))).when(options.schema)
-        _ <- Console.printLine(endpoints(blueprint.endpoints)).when(options.endpoints)
+
+        _ <- Console.printLine(Fmt.heading("Blueprint:\n") ++ Fmt.blueprint(blueprint)).when(options.blueprint)
+        _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint)))
+          .when(options.schema)
+        _ <- Console.printLine(Fmt.heading("Endpoints:\n") ++ endpoints(blueprint.endpoints)).when(options.endpoints)
       } yield ()
     }
 
     private def endpoints(endpoints: List[Endpoint]): String =
       List[String](
-        "Endpoints:",
         endpoints.map[String](endpoint =>
           List[String](
             "\n",
@@ -131,7 +132,7 @@ object CommandExecutor {
 
     def caption(str: String): String = fansi.Str(str).overlay(fansi.Color.DarkGray).render
 
-    def warn(str: String): String = fansi.Str(str).overlay(fansi.Color.Magenta).render
+    def meta(str: String): String = fansi.Str(str).overlay(fansi.Color.LightYellow).render
 
     def graphQL(graphQL: GraphQL[_]): String = { graphQL.render }
 
@@ -142,11 +143,9 @@ object CommandExecutor {
     }
 
     def table(labels: Seq[(String, String)]): String = {
-      def maxLength = labels.map(_._1.length).max
+      def maxLength = labels.map(_._1.length).max + 1
       def padding   = " " * maxLength
-      labels.map { case (key, value) =>
-        (key + padding).take(maxLength) + ": " ++ fansi.Str(value).overlay(fansi.Bold.On).render
-      }.mkString("\n")
+      labels.map { case (key, value) => heading((key + ":" + padding).take(maxLength)) + " " ++ value }.mkString("\n")
     }
 
     def playground(url: URL, digest: Digest): String = s"${url.encode}/graphql/${digest.hex}."
