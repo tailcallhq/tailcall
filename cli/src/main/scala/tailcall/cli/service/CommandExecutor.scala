@@ -2,7 +2,7 @@ package tailcall.cli.service
 
 import caliban.GraphQL
 import tailcall.cli.CommandADT
-import tailcall.cli.CommandADT.Remote
+import tailcall.cli.CommandADT.{BlueprintOptions, Remote}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
@@ -38,7 +38,7 @@ object CommandExecutor {
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
-          case CommandADT.Check(file, remote)   => for {
+          case CommandADT.Check(file, remote, options) => for {
               config <- configReader.read(file.toFile)
               blueprint = config.toBlueprint
               digest    = blueprint.digest
@@ -52,8 +52,9 @@ object CommandExecutor {
               }
               _    <- Console.printLine(Fmt.success("No errors found."))
               _    <- Console.printLine(Fmt.table(seq1))
+              _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command) => command match {
+          case CommandADT.Remote(base, command)        => command match {
               case Remote.Publish(path) => for {
                   config    <- configReader.read(path.toFile)
                   blueprint <- Transcoder.toBlueprint(config).toZIO
@@ -76,24 +77,28 @@ object CommandExecutor {
                     .printLine(Fmt.table(Seq("Server" -> base.encode, "Total Count" -> s"${blueprints.length}")))
                 } yield ()
 
-              case Remote.Show(digest, showBlueprint, showSchema, showEndpoints) => for {
+              case Remote.Show(digest, options) => for {
                   maybe <- registry.get(base, digest)
                   _     <- Console.printLine(Fmt.table(Seq(
                     "Digest"     -> s"${digest.hex}",
                     "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.warn("Unavailable"))
                   )))
                   _     <- maybe match {
-                    case Some(blueprint) => for {
-                        _ <- Console.printLine(Fmt.blueprint(blueprint)).when(showBlueprint)
-                        _ <- Console.printLine(Fmt.graphQL(graphQLGen.toGraphQL(blueprint))).when(showSchema)
-                        _ <- Console.printLine(endpoints(blueprint.endpoints)).when(showEndpoints)
-                      } yield ()
+                    case Some(blueprint) => blueprintDetails(blueprint, options)
                     case _               => ZIO.unit
                   }
                 } yield ()
             }
         }
       }.tapError(error => Console.printError(error)).exitCode
+
+    private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions) = {
+      for {
+        _ <- Console.printLine(Fmt.blueprint(blueprint)).when(options.blueprint)
+        _ <- Console.printLine(Fmt.graphQL(graphQLGen.toGraphQL(blueprint))).when(options.schema)
+        _ <- Console.printLine(endpoints(blueprint.endpoints)).when(options.endpoints)
+      } yield ()
+    }
 
     private def endpoints(endpoints: List[Endpoint]): String =
       List[String](

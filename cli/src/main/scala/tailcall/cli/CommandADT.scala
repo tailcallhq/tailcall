@@ -8,15 +8,14 @@ import java.nio.file.Path
 sealed trait CommandADT extends Serializable with Product
 
 object CommandADT {
-  // TODO: should take similar options as Show
-  final case class Check(config: Path, url: Option[URL])        extends CommandADT
-  final case class Remote(server: URL, command: Remote.Command) extends CommandADT
+  final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)
+  final case class Check(config: Path, url: Option[URL], options: BlueprintOptions) extends CommandADT
+  final case class Remote(server: URL, command: Remote.Command)                     extends CommandADT
   object Remote {
     sealed trait Command
-    final case class Publish(config: Path)            extends Command
-    final case class Drop(digest: Digest)             extends Command
-    final case class ListAll(offset: Int, limit: Int) extends Command
-    final case class Show(digest: Digest, showBlueprints: Boolean, showSchema: Boolean, showEndpoints: Boolean)
-        extends Command
+    final case class Publish(config: Path)                           extends Command
+    final case class Drop(digest: Digest)                            extends Command
+    final case class ListAll(offset: Int, limit: Int)                extends Command
+    final case class Show(digest: Digest, options: BlueprintOptions) extends Command
   }
 }
