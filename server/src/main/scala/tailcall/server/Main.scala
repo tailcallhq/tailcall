@@ -12,7 +12,7 @@ object Main extends ZIOAppDefault {
     case Method.POST -> !! / "graphql"     => AdminServer.graphQL
     case Method.POST -> !! / "graphql" / _ => GenericServer.graphQL
     case Method.GET -> _                   => Http.fromResource("graphiql.html")
-  }).tapErrorZIO(err => ZIO.succeed(pprint.pprintln(s"HttpError: ${err}"))).mapError {
+  }).tapErrorZIO(error => ZIO.logWarningCause(s"HttpError", Cause.fail(error))).mapError {
     case error: HttpError => Response.fromHttpError(error)
     case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
   }
