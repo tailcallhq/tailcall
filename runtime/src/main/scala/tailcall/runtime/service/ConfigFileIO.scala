@@ -6,7 +6,10 @@ import zio.{Task, ZIO, ZLayer}
 import java.io.File
 import java.net.URL
 trait ConfigFileIO {
+  self =>
   def read(file: File): Task[Config]
+  def readAll(files: List[File]): Task[Config] =
+    ZIO.foreach(files)(file => self.read(file)).map(_.reduce(_ mergeRight _))
   def write(file: File, config: Config): Task[Unit]
 }
 

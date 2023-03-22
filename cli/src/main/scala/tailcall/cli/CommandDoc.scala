@@ -7,13 +7,13 @@ import zio.cli._
 object CommandDoc {
 
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
-    Command("check", CustomOptions.remoteOption.optional ++ CustomOptions.blueprintOptions, Args.file)
+    Command("check", CustomOptions.remoteOption.optional ++ CustomOptions.blueprintOptions, Args.file.repeat1)
       .withHelp("Validate a composition spec, display its status when remote is passed.").map {
         case (remote, blueprintOptions) -> config => CommandADT.Check(config, remote, blueprintOptions)
       },
 
     // publish
-    Command("publish", CustomOptions.remoteOption, Args.file)
+    Command("publish", CustomOptions.remoteOption, Args.file.repeat1)
       .withHelp("Publish the configuration file to the remote environment.").map { case (remote, config) =>
         Remote(remote, Remote.Publish(config))
       },
