@@ -89,9 +89,9 @@ object OpenapiModels {
     implicit val InnerDecoder: Decoder[(String, Seq[OpenapiResponseContent])] = { (c: HCursor) =>
       for {
         description <- c.downField("description").as[String]
-        content <- c.downField("content").as[Seq[OpenapiResponseContent]]
+        content <- c.downField("content").as[Option[Seq[OpenapiResponseContent]]]
       } yield {
-        (description, content)
+        (description, content.getOrElse(Seq.empty))
       }
     }
     for {
@@ -121,36 +121,42 @@ object OpenapiModels {
 
   implicit val OpenapiRequestBodyDecoder: Decoder[OpenapiRequestBody] = { (c: HCursor) =>
     @unused
-    implicit val InnerDecoder: Decoder[(String, Seq[OpenapiRequestBodyContent])] = { (c: HCursor) =>
+    implicit  val InnerDecoder: Decoder[(String, Seq[OpenapiRequestBodyContent])] =  (c: HCursor) =>
       for {
         description <- c.downField("description").as[String]
-        content <- c.downField("content").as[Seq[OpenapiRequestBodyContent]]
-      } yield {
-        (description, content)
-      }
-    }
+        content <- c.downField("content").as[Option[Seq[OpenapiRequestBodyContent]]]
+      } yield (description, content.getOrElse(Seq.empty))
+
     for {
       requiredOpt <- c.downField("required").as[Option[Boolean]]
       description <- c.downField("description").as[Option[String]]
       content <- c.downField("content").as[Seq[OpenapiRequestBodyContent]]
-    } yield {
+    } yield
       OpenapiRequestBody(required = requiredOpt.getOrElse(false), description, content)
-    }
   }
 
-
   implicit val OpenapiInfoDecoder: Decoder[OpenapiInfo] = deriveDecoder[OpenapiInfo]
-  implicit val OpenapiParameterDecoder: Decoder[OpenapiParameter] = deriveDecoder[OpenapiParameter]
+  implicit val OpenapiParameterDecoder: Decoder[OpenapiParameter] = (c: HCursor) => {
+    for {
+      name <- c.downField("name").as[String]
+      in <- c.downField("in").as[String]
+      required <- c.downField("required").as[Option[Boolean]]
+      description <- c.downField("description").as[Option[String]]
+      schema <- c.downField("schema").as[OpenapiSchemaType]
+    } yield {
+      OpenapiParameter(name, in, required.getOrElse(false), description, schema)
+    }
+  }
   implicit val OpenapiPathMethodDecoder: Decoder[Seq[OpenapiPathMethod]] = { (c: HCursor) =>
     implicit val InnerDecoder: Decoder[(Seq[OpenapiParameter], Seq[OpenapiResponse], Option[OpenapiRequestBody], Option[String])] = {
       (c: HCursor) =>
         for {
-          parameters <- c.downField("parameters").as[Seq[OpenapiParameter]]
+          parameters <- c.downField("parameters").as[Option[Seq[OpenapiParameter]]]
           responses <- c.downField("responses").as[Seq[OpenapiResponse]]
           requestBody <- c.downField("requestBody").as[Option[OpenapiRequestBody]]
           summary <- c.downField("summary").as[Option[String]]
         } yield {
-          (parameters, responses, requestBody, summary)
+          (parameters.getOrElse(Seq.empty), responses, requestBody, summary)
         }
     }
     for {

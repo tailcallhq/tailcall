@@ -1,8 +1,9 @@
 package tailcall.runtime
 
 import tailcall.runtime.openApi.YamlParser
-import tailcall.runtime.service.FileIO
+import tailcall.runtime.service.{FileIO, OpenAPI2Config}
 import zio.ZIO
+import zio.test.Assertion.anything
 import zio.test.{ZIOSpecDefault, _}
 
 import java.io.File
@@ -14,9 +15,9 @@ object OpenApiSpec extends ZIOSpecDefault {
         fileIO  <- ZIO.service[FileIO]
         yaml    <- fileIO.read(new File(getClass.getResource("OpenAPI.yml").getPath))
         encoded <- ZIO.fromEither(YamlParser.parseFile(yaml))
-        _ = pprint.pprintln(encoded)
+        _ = OpenAPI2Config.convert(encoded)
       } yield ()
-      assertCompletes
-    })
+      assertZIO(program)(anything)
+    }).provide(FileIO.live)
 
 }

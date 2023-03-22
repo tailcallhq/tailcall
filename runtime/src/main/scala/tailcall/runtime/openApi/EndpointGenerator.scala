@@ -60,7 +60,7 @@ class EndpointGenerator {
             case _ => throw new NotImplementedError("Can't create non-simple params to url yet")
           }
         }
-      } else { '"' + segment + '"' }
+      } else { s"\"${segment}\"" }
     }
     ".in((" + inPath.mkString(" / ") + "))"
   }
