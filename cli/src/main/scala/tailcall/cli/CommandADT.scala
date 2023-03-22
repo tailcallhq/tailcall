@@ -8,6 +8,7 @@ import java.nio.file.Path
 sealed trait CommandADT extends Serializable with Product
 
 object CommandADT {
+  // TODO: should take similar options as Show
   final case class Check(config: Path, url: Option[URL])        extends CommandADT
   final case class Remote(server: URL, command: Remote.Command) extends CommandADT
   object Remote {

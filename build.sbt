@@ -9,10 +9,8 @@ lazy val runtime = (project in file("runtime")).settings(
     "com.github.ghostdogpr"  %% "caliban"               % caliban,
     ("com.github.ghostdogpr" %% "caliban-tools"         % caliban)
       .exclude("com.softwaremill.sttp.client3", "async-http-client-backend-zio_2.13")
-      .exclude("com.softwaremill.sttp.client3", "zio_2.13")
-      .exclude("com.github.ghostdogpr", "caliban-client_2.13")
-      .exclude("dev.zio", "zio-config_2.13")
-      .exclude("dev.zio", "zio-config-magnolia_2.13")
+      .exclude("com.softwaremill.sttp.client3", "zio_2.13").exclude("com.github.ghostdogpr", "caliban-client_2.13")
+      .exclude("dev.zio", "zio-config_2.13").exclude("dev.zio", "zio-config-magnolia_2.13")
       .exclude("org.slf4j", "slf4j-api"),
     "dev.zio"                %% "zio-json"              % zioJson,
     "dev.zio"                %% "zio-json-yaml"         % zioJson,
@@ -23,7 +21,11 @@ lazy val runtime = (project in file("runtime")).settings(
 )
 
 lazy val cli = (project in file("cli")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-cli" % "0.4.0")
+  libraryDependencies := zioTestDependencies ++ Seq(
+    "dev.zio"     %% "zio"     % zio,
+    "dev.zio"     %% "zio-cli" % "0.4.0",
+    "com.lihaoyi" %% "fansi"   % "0.4.0"
+  )
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
