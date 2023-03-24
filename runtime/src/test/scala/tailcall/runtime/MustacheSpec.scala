@@ -29,13 +29,13 @@ object MustacheSpec extends ZIOSpecDefault {
         val input = List(
           "{{a}}"     -> DynamicValue(Map("a" -> 1)),
           "{{a.b}}"   -> DynamicValue(Map("a" -> Map("b" -> 1))),
-          "{{a.b.c}}" -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1))))
+          "{{a.b.c}}" -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))),
         )
 
         checkAll(Gen.fromIterable(input)) { case (mustache, input) =>
           val output = Mustache.evaluate(mustache, input)
           assert(output)(equalTo("1"))
         }
-      }
+      },
     )
 }

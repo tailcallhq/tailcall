@@ -29,7 +29,7 @@ object CommandDoc {
       "list",
       CustomOptions.remoteOption ++
         CustomOptions.integerOption("offset").withDefault(0) ++
-        CustomOptions.integerOption("limit").withDefault(Int.MaxValue)
+        CustomOptions.integerOption("limit").withDefault(Int.MaxValue),
     ).withHelp("List all published composition specs on the remote address.").map { case (remote, offset, limit) =>
       Remote(remote, Remote.ListAll(offset = offset, limit = limit))
     },
@@ -39,7 +39,7 @@ object CommandDoc {
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.")
       .map { case (remote, blueprintOptions) -> digest =>
         Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))
-      }
+      },
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp

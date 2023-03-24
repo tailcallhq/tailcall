@@ -80,15 +80,15 @@ object JsonPlaceholder {
     Orc(
       "Query" -> FieldSet(
         "users" -> Field.output.to("User").asList,
-        "posts" -> Field.output.to("Post").asList
+        "posts" -> Field.output.to("Post").asList,
       ),
       "User"  -> FieldSet(
         "posts"    -> Field.output.to("Post").asList,
         "fullName" -> Field.output.to("String").asList,
         "comments" -> Field.output.to("Comment").asList,
         "albums"   -> Field.output.to("Album").asList,
-        "todos"    -> Field.output.to("Todo").asList
-      )
+        "todos"    -> Field.output.to("Todo").asList,
+      ),
     )
 
 //    Orc.obj(

@@ -22,13 +22,13 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         test("invalid") {
           val dynamics: Gen[Any, DynamicValue] = Gen.fromIterable(Seq(DynamicValue(List(42)), DynamicValue(Option(1))))
           checkAll(dynamics)(dynamic => assertTrue(asString(dynamic) == None))
-        }
+        },
       ),
       suite("toTyped")(
         test("valid") {
           val gen = Gen.fromIterable(Seq(
             toTyped[String](DynamicValue("Hello World!")) -> Some("Hello World!"),
-            toTyped[Int](DynamicValue(42))                -> Some(42)
+            toTyped[Int](DynamicValue(42))                -> Some(42),
           ))
 
           checkAll(gen) { case (dynamicValue, expected) => assertTrue(dynamicValue == expected) }
@@ -37,7 +37,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
           val gen = Gen.fromIterable(Seq(toTyped[Int](DynamicValue("Hello World!")), toTyped[String](DynamicValue(42))))
 
           checkAll(gen)(dynamicValue => assertTrue(dynamicValue == None))
-        }
+        },
       ),
       suite("getPath")(
         test("valid") {
@@ -47,7 +47,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             DynamicValue(Map("a" -> Option(Map("b" -> 1))))     -> List("a", "b")      -> 1,
             DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "b", "c") -> 1,
             DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "0", "b") -> 1,
-            record("a" -> DynamicValue(1))                      -> List("a")           -> 1
+            record("a" -> DynamicValue(1))                      -> List("a")           -> 1,
           ))
 
           checkAll(gen) { case dynamic -> path -> expected =>
@@ -61,11 +61,11 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             DynamicValue(Map("a" -> Option(Map("b" -> 1))))     -> List("a", "c"),
             DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "c", "e"),
             DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "1", "b"),
-            record("a" -> DynamicValue(1))                      -> List("d")
+            record("a" -> DynamicValue(1))                      -> List("d"),
           ))
 
           checkAll(gen) { case dynamic -> path => assertTrue(getPath(dynamic, path) == None) }
-        }
+        },
       ),
       test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
@@ -85,6 +85,6 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         val actual   = Transcoder.toDynamicValue(json).flatMap(Transcoder.toJson(_))
         val expected = TValid.succeed(json)
         assertTrue(actual == expected)
-      }))
+      })),
     ) @@ timeout(10.seconds)
 }

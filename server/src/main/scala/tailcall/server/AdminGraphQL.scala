@@ -28,7 +28,7 @@ object AdminGraphQL {
   final case class Query[R, E](
     blueprint: Digest => ZIO[R, E, Option[BlueprintSpec]],
     blueprints: ZIO[R, E, List[BlueprintSpec]],
-    digests: ZIO[R, E, List[Digest]]
+    digests: ZIO[R, E, List[Digest]],
   )
 
   implicit val lambdaSchema: Schema[Any, DynamicValue ~> DynamicValue] = new Schema[Any, DynamicValue ~> DynamicValue] {
@@ -63,6 +63,6 @@ object AdminGraphQL {
         case None            => None
       },
     SchemaRegistry.list(0, Int.MaxValue).map(_.map(blueprint => BlueprintSpec(blueprint.digest, blueprint))),
-    SchemaRegistry.digests(0, Int.MaxValue)
+    SchemaRegistry.digests(0, Int.MaxValue),
   )))
 }

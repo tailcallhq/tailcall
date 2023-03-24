@@ -42,7 +42,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("greater than") {
           val program = math.gt(Lambda(2), Lambda(1))
           assertZIO(program.evaluate {})(isTrue)
-        }
+        },
       ),
       suite("logical")(
         test("and") {
@@ -64,7 +64,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("not equal") {
           val program = logic.eq(Lambda(1), Lambda(2))
           assertZIO(program.evaluate {})(equalTo(false))
-        }
+        },
       ),
       suite("diverge")(
         test("isTrue") {
@@ -74,7 +74,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("isFalse") {
           val program = logic.cond(Lambda(false))(Lambda("Yes"), Lambda("No"))
           assertZIO(program.evaluate {})(equalTo("No"))
-        }
+        },
       ),
       suite("fromFunction")(
         test("one level") {
@@ -105,14 +105,14 @@ object LambdaSpec extends ZIOSpecDefault {
             math.add(math.add(i, Lambda(1)) >>> f1, math.sub(i, Lambda(1)) >>> f2)
           }
           assertZIO(program.evaluate(10))(equalTo(200))
-        }
+        },
       ),
       suite("recursion")(
         test("sum") {
           val sum: Int ~> Int = Lambda.recurse[Int, Int] { next =>
             logic.cond(logic.eq(Lambda.identity[Int], Lambda(0)))(
               isTrue = Lambda(0),
-              isFalse = math.add(Lambda.identity[Int], math.dec(Lambda.identity[Int]) >>> next)
+              isFalse = math.add(Lambda.identity[Int], math.dec(Lambda.identity[Int]) >>> next),
             )
           }
           assertZIO(sum.evaluate(5))(equalTo(15))
@@ -122,7 +122,7 @@ object LambdaSpec extends ZIOSpecDefault {
           val factorial: Int ~> Int = Lambda.recurse[Int, Int](next =>
             logic.cond(math.gte(Lambda.identity[Int], Lambda(1)))(
               math.mul(Lambda.identity[Int], math.sub(Lambda.identity[Int], Lambda(1)) >>> next),
-              Lambda(1)
+              Lambda(1),
             )
           )
           assertZIO(factorial.evaluate(5))(equalTo(120))
@@ -132,13 +132,13 @@ object LambdaSpec extends ZIOSpecDefault {
             logic.cond(math.gte(Lambda.identity[Int], Lambda(2)))(
               math.add(
                 math.sub(Lambda.identity[Int], Lambda(1)) >>> next,
-                math.sub(Lambda.identity[Int], Lambda(2)) >>> next
+                math.sub(Lambda.identity[Int], Lambda(2)) >>> next,
               ),
-              Lambda.identity[Int]
+              Lambda.identity[Int],
             )
           }
           assertZIO(fib.evaluate(10))(equalTo(55))
-        }
+        },
       ),
       suite("map")(
         test("get some") {
@@ -152,7 +152,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("put") {
           val program = Lambda.dict.put(Lambda("key"), Lambda("value"), Lambda.identity[Map[String, String]])
           assertZIO(program.evaluate(Map("key0" -> "value")))(equalTo(Map("key" -> "value", "key0" -> "value")))
-        }
+        },
       ),
       suite("DynamicValueOps")(
         suite("AsSeq")(
@@ -171,7 +171,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("none - int") {
             val p = Lambda(DynamicValue(Seq(1, 2, 3))) >>> Lambda.dynamic.toTyped[Seq[String]]
             assertZIO(p.evaluate {})(equalTo(None))
-          }
+          },
         ),
         suite("asMap")(
           test("some - int") {
@@ -181,7 +181,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("none -int") {
             val p = Lambda(DynamicValue(Map("a" -> "1", "b" -> "2"))) >>> Lambda.dynamic.toTyped[Map[String, Int]]
             assertZIO(p.evaluate {})(equalTo(None))
-          }
+          },
         ),
         suite("asInt")(
           test("some") {
@@ -191,7 +191,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("none") {
             val p = Lambda(DynamicValue("1")) >>> Lambda.dynamic.toTyped[Int]
             assertZIO(p.evaluate {})(equalTo(None))
-          }
+          },
         ),
         suite("asBoolean")(
           test("some") {
@@ -201,7 +201,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("none") {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[Boolean]
             assertZIO(p.evaluate {})(equalTo(None))
-          }
+          },
         ),
         suite("asString")(
           test("some") {
@@ -211,7 +211,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("none") {
             val p = Lambda(DynamicValue(1)) >>> Lambda.dynamic.toTyped[String]
             assertZIO(p.evaluate {})(equalTo(None))
-          }
+          },
         ),
         suite("toDynamic")(
           test("int") {
@@ -237,7 +237,7 @@ object LambdaSpec extends ZIOSpecDefault {
           test("option") {
             val p = Lambda(Option(100)) >>> Lambda.dynamic.toDynamic
             assertZIO(p.evaluate {})(equalTo(DynamicValue(Option(100))))
-          }
+          },
         ),
         suite("path")(
           test("one level") {
@@ -258,8 +258,8 @@ object LambdaSpec extends ZIOSpecDefault {
             val p        = Lambda(DynamicValue(input)) >>> Lambda.dynamic.path("a")
             val expected = DynamicValue(100)
             assertZIO(p.evaluate {})(equalTo(Some(expected)))
-          }
-        )
+          },
+        ),
       ),
       suite("option")(
         test("isSome") {
@@ -274,7 +274,7 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = Lambda.option.fold(
             Lambda(Option(0)),
             ifNone = Lambda.math.inc(Lambda.identity[Int]),
-            ifSome = Lambda.math.inc(Lambda.identity[Int])
+            ifSome = Lambda.math.inc(Lambda.identity[Int]),
           )
           assertZIO(program.evaluate(100))(equalTo(1))
         },
@@ -282,7 +282,7 @@ object LambdaSpec extends ZIOSpecDefault {
           val program = Lambda.option.fold(
             Lambda(Option.empty[Int]),
             ifNone = Lambda.math.inc(Lambda.identity[Int]),
-            ifSome = Lambda.math.inc(Lambda.identity[Int])
+            ifSome = Lambda.math.inc(Lambda.identity[Int]),
           )
           assertZIO(program.evaluate(100))(equalTo(101))
         },
@@ -293,7 +293,7 @@ object LambdaSpec extends ZIOSpecDefault {
         test("apply none") {
           val program = Lambda.option(Option.empty[Int ~> Int])
           assertZIO(program.evaluate(0))(equalTo(None))
-        }
+        },
       ),
       suite("unsafe")(
         test("endpoint /users/1") {
@@ -310,7 +310,7 @@ object LambdaSpec extends ZIOSpecDefault {
             .map(_.getMessage)
 
           assertZIO(program)(equalTo("HTTP Error: 404"))
-        }
-      ) @@ timeout(5 seconds)
+        },
+      ) @@ timeout(5 seconds),
     ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http)
 }

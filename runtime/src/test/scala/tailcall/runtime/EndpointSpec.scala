@@ -23,7 +23,7 @@ object EndpointSpec extends ZIOSpecDefault {
           "http://abc.com:8080"     -> root.withPort(8080),
           "http://abc.com:8080/abc" -> root.withPort(8080).withPath("/abc"),
           "http://abc.com/abc"      -> root.withPath("/abc").withPort(80),
-          "http://abc.com/abc"      -> root.withPath("/abc").withPort(443)
+          "http://abc.com/abc"      -> root.withPath("/abc").withPort(443),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (expected, endpoint) =>
@@ -35,7 +35,7 @@ object EndpointSpec extends ZIOSpecDefault {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
           DynamicValue(Map("a" -> 1))             -> root.withPath("/users/{{a}}"),
-          DynamicValue(Map("a" -> Map("b" -> 1))) -> root.withPath("/users/{{a.b}}")
+          DynamicValue(Map("a" -> Map("b" -> 1))) -> root.withPath("/users/{{a.b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
@@ -47,7 +47,7 @@ object EndpointSpec extends ZIOSpecDefault {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
           DynamicValue(Map("a" -> "1"))             -> root.withHeader("X-Server" -> "{{a}}"),
-          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withHeader("X-Server" -> "{{a.b}}")
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withHeader("X-Server" -> "{{a.b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
@@ -60,13 +60,13 @@ object EndpointSpec extends ZIOSpecDefault {
         val inputs = List(
           DynamicValue(())                          -> root.withQuery("a" -> "1"),
           DynamicValue(Map("a" -> "1"))             -> root.withQuery("a" -> "{{a}}"),
-          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withQuery("a" -> "{{a.b}}")
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withQuery("a" -> "{{a.b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
           val request = endpoint.evaluate(input)
           assertTrue(request.url == "http://abc.com?a=1")
         }
-      }
+      },
     )
 }

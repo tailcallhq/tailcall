@@ -52,7 +52,7 @@ object Path {
     Path.decode,
 
     // TODO: handle this error more gracefully
-    route => Path.encode(route).getOrElse(throw new RuntimeException("Invalid Route"))
+    route => Path.encode(route).getOrElse(throw new RuntimeException("Invalid Route")),
   )
 
   object unsafe {

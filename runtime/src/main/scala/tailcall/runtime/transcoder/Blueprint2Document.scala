@@ -7,7 +7,7 @@ import caliban.parsing.adt.{
   Definition => CalibanDefinition,
   Directive,
   Document => CalibanDocument,
-  Type => CalibanType
+  Type => CalibanType,
 }
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
@@ -25,14 +25,14 @@ trait Blueprint2Document {
           case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
         },
-        SourceMapper.empty
+        SourceMapper.empty,
       )
     }
 
   final private def toCalibanDirective(directive: Blueprint.Directive): Directive = {
     Directive(
       directive.name,
-      directive.arguments.map { case (key, value) => key -> Transcoder.toInputValue(value).getOrElse(Value.NullValue) }
+      directive.arguments.map { case (key, value) => key -> Transcoder.toInputValue(value).getOrElse(Value.NullValue) },
     )
   }
 
@@ -47,7 +47,7 @@ trait Blueprint2Document {
       inputValue.name,
       toCalibanType(inputValue.ofType),
       inputValue.defaultValue.map(Transcoder.toInputValue(_).getOrElse(Value.NullValue)),
-      Nil
+      Nil,
     )
 
   final private def toCalibanType(tpe: Blueprint.Type): CalibanType =

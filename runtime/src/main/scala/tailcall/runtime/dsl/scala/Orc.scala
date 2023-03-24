@@ -14,7 +14,7 @@ final case class Orc(
   query: Option[String] = None,
   mutation: Option[String] = None,
   subscription: Option[String] = None,
-  types: List[Orc.Obj] = Nil
+  types: List[Orc.Obj] = Nil,
 ) {
   self =>
   def toBlueprint: Task[Blueprint] = {

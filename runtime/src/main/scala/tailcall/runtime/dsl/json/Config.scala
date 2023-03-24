@@ -19,7 +19,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     Config(
       version = other.version,
       server = self.server.mergeRight(other.server),
-      graphQL = self.graphQL.mergeRight(other.graphQL)
+      graphQL = self.graphQL.mergeRight(other.graphQL),
     )
   }
 
@@ -36,16 +36,16 @@ object Config {
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
   final case class GraphQL(
     schema: SchemaDefinition = SchemaDefinition(),
-    types: Map[String, Map[String, Field]] = Map.empty
+    types: Map[String, Map[String, Field]] = Map.empty,
   ) {
     self =>
     def mergeRight(other: GraphQL): GraphQL =
       GraphQL(
         schema = SchemaDefinition(
           query = other.schema.query.orElse(self.schema.query),
-          mutation = other.schema.mutation.orElse(self.schema.mutation)
+          mutation = other.schema.mutation.orElse(self.schema.mutation),
         ),
-        types = self.types ++ other.types
+        types = self.types ++ other.types,
       )
 
     def compress: GraphQL =
@@ -58,7 +58,7 @@ object Config {
     isList: Option[Boolean] = None,
     isRequired: Option[Boolean] = None,
     steps: Option[List[Step]] = None,
-    args: Option[Map[String, Argument]] = None
+    args: Option[Map[String, Argument]] = None,
   ) {
     self =>
     def asList: Field                                     = copy(isList = Option(true))
@@ -106,7 +106,7 @@ object Config {
       path: Path,
       method: Option[Method] = None,
       input: Option[TSchema] = None,
-      output: Option[TSchema] = None
+      output: Option[TSchema] = None,
     ) extends Step {
       def withOutput(output: TSchema): Http = copy(output = Option(output))
       def withInput(input: TSchema): Http   = copy(input = Option(input))
@@ -129,7 +129,7 @@ object Config {
   final case class Argument(
     @jsonField("type") typeOf: String,
     isList: Option[Boolean] = None,
-    isRequired: Option[Boolean] = None
+    isRequired: Option[Boolean] = None,
   ) {
     self =>
     def asList: Argument     = self.copy(isList = Option(true))

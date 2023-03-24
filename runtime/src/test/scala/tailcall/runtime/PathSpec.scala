@@ -22,7 +22,7 @@ object PathSpec extends ZIOSpecDefault {
           "/a/{{b}}/{{c}}"     -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
           "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
           "/{{a}}/{{b}}"       -> (Param("a") :: Param("b") :: Nil),
-          "/{{a}}"             -> (Param("a") :: Nil)
+          "/{{a}}"             -> (Param("a") :: Nil),
         )
         checkAll(Gen.fromIterable(input)) { case (input, expected) =>
           val parsed = ZIO.fromEither(syntax.parseString(input)).map(_.segments)
@@ -32,7 +32,7 @@ object PathSpec extends ZIOSpecDefault {
       test("evaluate") {
         val inputs = List(
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")),
-          "/{{a.b.c}}/b/c"     -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> "a"))))
+          "/{{a.b.c}}/b/c"     -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> "a")))),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (path, input) =>
@@ -45,6 +45,6 @@ object PathSpec extends ZIOSpecDefault {
           val program = path.encode
           assertTrue(program.isRight)
         }
-      }
+      },
     )
 }

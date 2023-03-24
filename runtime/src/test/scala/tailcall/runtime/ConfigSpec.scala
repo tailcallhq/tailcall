@@ -142,14 +142,14 @@ object ConfigSpec extends ZIOSpecDefault {
           val expected =
             """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
           assertZIO(program)(equalTo(expected))
-        }
-      )
+        },
+      ),
     ).provide(
       GraphQLGenerator.live,
       StepGenerator.live,
       EvaluationRuntime.default,
       HttpClient.live,
       Client.default,
-      DataLoader.http
+      DataLoader.http,
     ) @@ timeout(10 seconds)
 }

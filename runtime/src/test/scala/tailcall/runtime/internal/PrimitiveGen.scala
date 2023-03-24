@@ -51,6 +51,6 @@ object PrimitiveGen {
     Gen.localDateTime.map(Value(_, StandardType.LocalDateTimeType)),
     Gen.offsetTime.map(Value(_, StandardType.OffsetTimeType)),
     Gen.offsetDateTime.map(Value(_, StandardType.OffsetDateTimeType)),
-    Gen.zonedDateTime.map(Value(_, StandardType.ZonedDateTimeType))
+    Gen.zonedDateTime.map(Value(_, StandardType.ZonedDateTimeType)),
   )
 }

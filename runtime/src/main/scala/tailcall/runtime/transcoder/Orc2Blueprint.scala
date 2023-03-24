@@ -37,7 +37,7 @@ trait Orc2Blueprint {
       name = lField.name,
       ofType = toType(ofType),
       args = args,
-      resolver = toResolver(lField).map(Remote.toLambda(_))
+      resolver = toResolver(lField).map(Remote.toLambda(_)),
     )
   }
 

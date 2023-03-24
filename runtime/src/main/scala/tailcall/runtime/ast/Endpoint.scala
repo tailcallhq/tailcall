@@ -14,7 +14,7 @@ final case class Endpoint(
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
   protocol: Scheme = Scheme.Http,
-  body: Option[String] = None
+  body: Option[String] = None,
 ) {
   self =>
   def withMethod(method: Method): Endpoint = copy(method = method)

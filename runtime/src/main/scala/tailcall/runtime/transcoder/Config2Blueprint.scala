@@ -59,7 +59,7 @@ trait Config2Blueprint {
   final private def toResolver(
     config: Config,
     steps: List[Step],
-    field: Field
+    field: Field,
   ): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     steps match {
       case Nil => None
@@ -108,7 +108,7 @@ trait Config2Blueprint {
     val rootSchema = Blueprint.SchemaDefinition(
       query = config.graphQL.schema.query,
       mutation = config.graphQL.schema.mutation,
-      directives = toDirective(config).toList
+      directives = toDirective(config).toList,
     )
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
@@ -129,7 +129,7 @@ trait Config2Blueprint {
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
-            directives = toDirective(field.steps.getOrElse(Nil)).toList
+            directives = toDirective(field.steps.getOrElse(Nil)).toList,
           )
         }
       }

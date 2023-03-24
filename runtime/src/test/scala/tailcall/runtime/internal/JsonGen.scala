@@ -13,6 +13,6 @@ object JsonGen {
     Gen.boolean.map(Json.Bool(_)),
     Gen.string.map(Json.Str(_)),
     Gen.double.map(Json.Num(_)),
-    Gen.const(Json.Null)
+    Gen.const(Json.Null),
   ))
 }

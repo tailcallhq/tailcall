@@ -22,7 +22,7 @@ object CommandExecutor {
     graphQLGen: GraphQLGenerator,
     configReader: ConfigFileIO,
     fileIO: FileIO,
-    registry: SchemaRegistryClient
+    registry: SchemaRegistryClient,
   ) extends CommandExecutor {
     def timed[R, E >: IOException, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -81,7 +81,7 @@ object CommandExecutor {
                   maybe <- registry.get(base, digest)
                   _     <- Console.printLine(Fmt.table(Seq(
                     "Digest"     -> s"${digest.hex}",
-                    "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.meta("Unavailable"))
+                    "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.meta("Unavailable")),
                   )))
                   _     <- maybe match {
                     case Some(blueprint) => blueprintDetails(blueprint, options)
@@ -109,7 +109,7 @@ object CommandExecutor {
             "\n",
             Fmt.heading(s"${endpoint.method.name} ${endpoint.url}"),
             Fmt.heading(s"Input Schema: ") + s"${endpoint.input.fold("Any")("\n" + _.toJsonPretty)}",
-            Fmt.heading(s"Output Schema: ") + s" ${endpoint.output.fold("Nothing")("\n" + _.toJsonPretty)}"
+            Fmt.heading(s"Output Schema: ") + s" ${endpoint.output.fold("Nothing")("\n" + _.toJsonPretty)}",
           ).mkString("\n")
         ).mkString("\n")
       ).mkString("\n")

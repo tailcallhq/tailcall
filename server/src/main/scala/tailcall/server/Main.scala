@@ -22,6 +22,6 @@ object Main extends ZIOAppDefault {
     SchemaRegistry.memory,
     GraphQLGenerator.default,
     HttpClient.default,
-    Server.live
+    Server.live,
   )
 }

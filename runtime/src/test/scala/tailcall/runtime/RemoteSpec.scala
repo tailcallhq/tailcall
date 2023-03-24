@@ -37,7 +37,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("greater than") {
           val program = Remote(2) > Remote(1)
           assertZIO(program.evaluate)(isTrue)
-        }
+        },
       ),
       suite("logical")(
         test("and") {
@@ -51,7 +51,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("not") {
           val program = !Remote(true)
           assertZIO(program.evaluate)(isFalse)
-        }
+        },
       ),
 //      suite("equals")(
 //        test("equal") {
@@ -71,7 +71,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("isFalse") {
           val program = Remote(false).diverge(Remote("Yes"), Remote("No"))
           assertZIO(program.evaluate)(equalTo("No"))
-        }
+        },
       ),
       suite("fromFunction")(
         test("one level") {
@@ -102,7 +102,7 @@ object RemoteSpec extends ZIOSpecDefault {
             f1(i + Remote(1)) + f2(i - Remote(1))
           }(Remote(10))
           assertZIO(program.evaluate)(equalTo(200))
-        }
+        },
       ),
 //      suite("string")(
 //        test("concat") {
@@ -265,7 +265,7 @@ object RemoteSpec extends ZIOSpecDefault {
         test("fold none") {
           val program = Remote.fromOption(Option.empty[Remote[Int]]).fold(Remote(0), _ * Remote(2))
           assertZIO(program.evaluate)(equalTo(0))
-        }
+        },
       ),
       suite("dynamicValue")(
         test("int") {
@@ -279,8 +279,8 @@ object RemoteSpec extends ZIOSpecDefault {
         test("none") {
           val program = Remote(Option.empty[Int]).toDynamic
           assertZIO(program.evaluate)(equalTo(DynamicValue(Option.empty[Int])))
-        }
-      )
+        },
+      ),
 //      test("record") {
 //        val program = Remote.record(
 //          "a" -> Remote(DynamicValue(1)),

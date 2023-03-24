@@ -9,7 +9,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema}
 final case class Context(
   value: DynamicValue,
   args: Map[String, DynamicValue] = Map.empty,
-  parent: Option[Context] = None
+  parent: Option[Context] = None,
 )
 
 object Context {

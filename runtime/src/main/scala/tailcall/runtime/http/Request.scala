@@ -7,7 +7,7 @@ final case class Request(
   url: String = "",
   method: Method = Method.GET,
   headers: Map[String, String] = Map.empty,
-  body: Chunk[Byte] = Chunk.empty
+  body: Chunk[Byte] = Chunk.empty,
 ) {
   def toZHttpRequest: ZRequest =
     ZRequest(
@@ -16,6 +16,6 @@ final case class Request(
       headers = Headers(headers.map(header => Headers.Header(header._1, header._2))),
       version = zio.http.model.Version.`HTTP/1.1`,
       remoteAddress = None,
-      body = Body.fromChunk(body)
+      body = Body.fromChunk(body),
     )
 }

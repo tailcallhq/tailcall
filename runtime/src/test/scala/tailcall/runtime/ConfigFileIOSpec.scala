@@ -32,12 +32,12 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
             expected = JsonPlaceholderConfig.config.compress
           } yield assertTrue(actual == expected)
         }
-      }
+      },
     ).provide(
         ConfigFileIO.live,
         FileIO.default,
         GraphQLGenerator.live,
         StepGenerator.live,
-        EvaluationRuntime.default
+        EvaluationRuntime.default,
       ) @@ timeout(5 seconds)
 }

@@ -33,7 +33,7 @@ object SchemaRegistryClient {
         url          <- buildURL(base, "/schemas")
         response     <- client.request(Request.put(
           Body.fromChunk(Chunk.fromIterable(Blueprint.encode(blueprint).toString.getBytes(Charset.defaultCharset()))),
-          url
+          url,
         ))
         body         <- assertStatusCodeIsAbove(400, response)
         digestString <- body.asString

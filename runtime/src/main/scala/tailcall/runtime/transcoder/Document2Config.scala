@@ -3,7 +3,7 @@ package tailcall.runtime.transcoder
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
   FieldDefinition,
   InputValueDefinition,
-  ObjectTypeDefinition
+  ObjectTypeDefinition,
 }
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}

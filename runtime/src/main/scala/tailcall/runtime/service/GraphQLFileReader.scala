@@ -32,7 +32,7 @@ object GraphQLFileReader {
               mutation = __schema.mutationType.map(Operation(_, Step.NullStep)),
               subscription = __schema.subscriptionType.map(Operation(_, Step.NullStep)),
               additionalTypes = __schema.types,
-              schemaDirectives = Nil
+              schemaDirectives = Nil,
             ))
         }
         _                 <- Validator.validateSchema(rootSchemaBuilder)

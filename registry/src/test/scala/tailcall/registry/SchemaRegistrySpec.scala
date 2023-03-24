@@ -11,7 +11,7 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
   val orc = Orc(
     "Query" -> FieldSet(
       "name" -> Orc.Field.output.to("String").resolveWith("John Doe"),
-      "age"  -> Orc.Field.output.to("Int").resolveWith(100)
+      "age"  -> Orc.Field.output.to("Int").resolveWith(100),
     )
   )
 

@@ -19,7 +19,7 @@ trait Document2GraphQLSchema {
             schema.map(_.queryType).map(__type => Operation(__type, Step.NullStep)),
             schema.flatMap(_.mutationType).map(__type => Operation(__type, Step.NullStep)),
             None,
-            schemaDirectives = document.schemaDefinition.map(_.directives).getOrElse(Nil)
+            schemaDirectives = document.schemaDefinition.map(_.directives).getOrElse(Nil),
           )
         }
         override protected val wrappers: List[Wrapper[Any]]            = Nil

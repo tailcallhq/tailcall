@@ -66,7 +66,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
         val orc      = Orc(
           "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
           "Foo"   -> FieldSet("bar" -> Field.output.to("Bar")),
-          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWith(100))
+          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWith(100)),
         )
         val schema   = render(orc)
         val expected = """|schema {
@@ -90,7 +90,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
         val orc      = Orc(
           "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
           "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList),
-          "Bar"   -> FieldSet("value" -> Field.output.to("Int"))
+          "Bar"   -> FieldSet("value" -> Field.output.to("Int")),
         )
         val schema   = render(orc)
         val expected = """|schema {
@@ -139,14 +139,14 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
               ofType = Blueprint.ListType(
                 ofType = Blueprint
                   .ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = false), nonNull = false),
-                nonNull = false
+                nonNull = false,
               ),
-              nonNull = false
+              nonNull = false,
             ),
-            nonNull = false
+            nonNull = false,
           )
           assert(tpe)(equalTo(expected))
-        }
+        },
       ),
       suite("mutation")(
         test("mutation with primitive input") {
@@ -157,7 +157,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
             "Foo"      -> FieldSet("a" -> Field.output.to("Int")),
             "Mutation" -> FieldSet(
               "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("String"))
-            )
+            ),
           )
 
           val schema = render(orc)
@@ -190,7 +190,7 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
               "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("FooInput"))
             ),
             "Foo"      -> FieldSet("a" -> Field.output.to("Int")),
-            "FooInput" -> FieldSet("a" -> Field.input.to("Int"))
+            "FooInput" -> FieldSet("a" -> Field.input.to("Int")),
           )
 
           val schema = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
@@ -212,8 +212,8 @@ object SchemaGeneratorSpec extends ZIOSpecDefault {
                                        |}
                                        |
                                        |type Query""".stripMargin))
-        }
-      )
+        },
+      ),
     ).provide(GraphQLGenerator.live, StepGenerator.live, EvaluationRuntime.default)
 
   def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
