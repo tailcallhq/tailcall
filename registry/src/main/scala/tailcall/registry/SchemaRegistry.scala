@@ -2,6 +2,7 @@ package tailcall.registry
 
 import tailcall.runtime.ast.{Blueprint, Digest}
 import zio._
+import zio.redis.Redis
 
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
@@ -15,6 +16,8 @@ object SchemaRegistry {
 
   def memory: ZLayer[Any, Nothing, SchemaRegistry] =
     ZLayer.fromZIO(for { ref <- Ref.make(Map.empty[Digest, Blueprint]) } yield Memory(ref))
+
+  def redis: ZLayer[Redis, Nothing, SchemaRegistry] = ZLayer.fromFunction(FromRedis(_))
 
   def add(blueprint: Blueprint): ZIO[SchemaRegistry, Throwable, Digest] =
     ZIO.serviceWithZIO[SchemaRegistry](_.add(blueprint))
@@ -41,5 +44,22 @@ object SchemaRegistry {
 
     override def drop(digest: Digest): UIO[Boolean] =
       ref.modify(map => if (map.contains(digest)) (true, map - digest) else (false, map))
+  }
+
+  final case class FromRedis(redis: Redis) extends SchemaRegistry {
+    override def add(blueprint: Blueprint): Task[Digest] = {
+      val digest: Digest = blueprint.digest
+      for { _ <- redis.set(digest.hex, blueprint) } yield digest
+    }
+
+    override def get(id: Digest): Task[Option[Blueprint]] = redis.get(id.hex).returning[Blueprint]
+
+    override def list(index: RuntimeFlags, max: RuntimeFlags): Task[List[Blueprint]] =
+      for {
+        hexes      <- redis.keys("*").returning[String]
+        blueprints <- ZIO.foreach(hexes)(hex => redis.get(hex).returning[Blueprint])
+      } yield blueprints.slice(index, index + max).toList.flatMap(_.toList)
+
+    override def drop(digest: Digest): Task[Boolean] = redis.del(digest.hex).map(_ > 0)
   }
 }

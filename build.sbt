@@ -33,7 +33,11 @@ lazy val server = (project in file("server")).settings(
 ).dependsOn(runtime, registry)
 
 lazy val registry = (project in file("registry")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)
+  libraryDependencies := zioTestDependencies ++ Seq(
+    "dev.zio" %% "zio"       % zio,
+    "dev.zio" %% "zio-http"  % zioHttp,
+    "dev.zio" %% "zio-redis" % "0.1.0",
+  )
 ).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
