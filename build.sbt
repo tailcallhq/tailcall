@@ -15,16 +15,16 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio"                %% "zio-json"              % zioJson,
     "dev.zio"                %% "zio-json-yaml"         % zioJson,
     "dev.zio"                %% "zio-parser"            % "0.1.8",
-    "dev.zio"                %% "zio-http"              % "0.0.4"
+    "dev.zio"                %% "zio-http"              % "0.0.4",
   ),
-  libraryDependencies ++= zioTestDependencies
+  libraryDependencies ++= zioTestDependencies,
 )
 
 lazy val cli = (project in file("cli")).settings(
   libraryDependencies := zioTestDependencies ++ Seq(
     "dev.zio"     %% "zio"     % zio,
     "dev.zio"     %% "zio-cli" % "0.4.0",
-    "com.lihaoyi" %% "fansi"   % "0.4.0"
+    "com.lihaoyi" %% "fansi"   % "0.4.0",
   )
 ).dependsOn(runtime, registry)
 
@@ -77,11 +77,11 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
     WorkflowStep.Run(
       commands = List("flyctl deploy --remote-only ./target/docker/stage"),
       cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
-      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}")
-    )
+      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
+    ),
   ),
   needs = List("build"),
-  scalas = List(scala2Version)
+  scalas = List(scala2Version),
 ))
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
