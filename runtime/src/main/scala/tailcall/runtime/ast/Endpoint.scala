@@ -43,7 +43,10 @@ final case class Endpoint(
 
   def withHttps: Endpoint = withProtocol(Scheme.Https)
 
-  def withPort(port: Int): Endpoint = copy(address = address.copy(port = port))
+  def withPort(port: Int): Endpoint = {
+    if (port < 0 || port > 65535) throw new IllegalArgumentException("Port must be between 0 and 65535")
+    copy(address = address.copy(port = port))
+  }
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 

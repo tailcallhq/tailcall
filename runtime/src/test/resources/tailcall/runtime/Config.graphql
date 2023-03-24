@@ -1,4 +1,4 @@
-schema @server(host: "jsonplaceholder.typicode.com", port: 443, version: 0) {
+schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 

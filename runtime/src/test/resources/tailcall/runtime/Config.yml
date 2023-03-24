@@ -1,7 +1,6 @@
 version: 0
 server:
-  host: jsonplaceholder.typicode.com
-  port: 443
+  baseURL: https://jsonplaceholder.typicode.com
 graphQL:
   schema:
     query: Query

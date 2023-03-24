@@ -1,4 +1,5 @@
-schema @server(host: "jsonplaceholder.typicode.com", port: 443) {
+# noinspection GraphQLUnresolvedReference,GraphQLMissingType,GraphQLDuplicateDirective,GraphQLTypeRedefinition,GraphQLMemberRedefinition
+schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 

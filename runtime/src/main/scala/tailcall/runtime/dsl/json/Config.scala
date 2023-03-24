@@ -10,6 +10,7 @@ import zio.json._
 import zio.json.ast.Json
 
 import java.io.File
+import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
@@ -27,10 +28,9 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 }
 
 object Config {
-  final case class Server(host: Option[String] = None, port: Option[Int] = None) {
+  final case class Server(baseURL: Option[URL] = None) {
     self =>
-    def mergeRight(other: Server): Server =
-      Server(host = other.host.orElse(self.host), port = other.port.orElse(self.port))
+    def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
   }
 
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
@@ -167,6 +167,12 @@ object Config {
    * list of tuples.
    */
 
+  implicit val urlCodec: JsonCodec[URL]                           = JsonCodec[String].transformOrFail[URL](
+    string =>
+      try Right(new URL(string))
+      catch { case _: Throwable => Left(s"Malformed url: ${string}") },
+    _.toString,
+  )
   implicit val operationCodec: JsonCodec[Step]                    = DeriveJsonCodec.gen[Step]
   implicit val inputTypeCodec: JsonCodec[Argument]                = DeriveJsonCodec.gen[Argument]
   implicit val fieldDefinitionCodec: JsonCodec[Field]             = DeriveJsonCodec.gen[Field]

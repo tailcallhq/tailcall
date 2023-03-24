@@ -46,10 +46,10 @@ trait Config2Blueprint {
     }
   }
 
-  final private def toEndpoint(config: Config, http: Step.Http, host: String): Endpoint =
-    Endpoint.make(host).withPort(config.server.port.getOrElse(80)).withPath(http.path)
-      .withProtocol(if (config.server.port.contains(443)) Scheme.Https else Scheme.Http)
+  final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
+    Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
+  }
 
   final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
     map.foldLeft(Remote(Map.empty[String, DynamicValue])) { case (to, (key, path)) =>
@@ -64,13 +64,15 @@ trait Config2Blueprint {
     steps match {
       case Nil => None
 
-      case steps => config.server.host match {
+      case steps => config.server.baseURL match {
           // TODO: should fail if Http is used without server.host
           case None if steps.exists(_.isInstanceOf[Step.Http]) => None
-          case option                                          => option.map { host =>
+          case option                                          => option.map { baseURL =>
               steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
                 case http @ Step.Http(_, _, _, _) => input =>
-                    val endpoint           = toEndpoint(config, http, host)
+                    val host               = baseURL.getHost
+                    val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
+                    val endpoint           = toEndpoint(http, host, port)
                     val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
                     val endpointWithOutput =
                       if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint

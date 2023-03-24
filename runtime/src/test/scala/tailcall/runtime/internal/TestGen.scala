@@ -6,10 +6,12 @@ import tailcall.runtime.dsl.json.Config._
 import tailcall.runtime.http.Method
 import zio.test.Gen
 
+import java.net.URL
+
 object TestGen {
   def genName: Gen[Any, String] = fromIterableRandom("body", "completed", "email", "id", "name", "title", "url")
 
-  def genBaseURL: Gen[Any, String] = genName
+  def genBaseURL: Gen[Any, URL] = Gen.const(new URL("http://localhost:8080"))
 
   def genVersion: Gen[Any, Int] = Gen.int(0, 10)
 
