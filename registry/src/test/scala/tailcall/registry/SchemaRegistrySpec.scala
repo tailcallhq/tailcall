@@ -1,10 +1,11 @@
 package tailcall.registry
 
-import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.FieldSet
+import tailcall.runtime.dsl.Orc
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
+
+import Orc.FieldSet
 
 object SchemaRegistrySpec extends ZIOSpecDefault {
 

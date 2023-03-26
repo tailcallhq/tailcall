@@ -2,8 +2,7 @@ package tailcall.runtime
 
 import caliban.{CalibanError, InputValue}
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
+import tailcall.runtime.dsl.Orc
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.remote._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
@@ -12,6 +11,8 @@ import zio.ZIO
 import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
+
+import Orc.{Field, FieldSet}
 
 object StepGeneratorSpec extends ZIOSpecDefault {
 

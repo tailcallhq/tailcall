@@ -1,7 +1,7 @@
-package tailcall.runtime.dsl.scala
+package tailcall.runtime.dsl
 
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet, Input, LabelledField, Output}
+import tailcall.runtime.dsl.Orc.{Field, FieldSet, Input, LabelledField, Output}
 import tailcall.runtime.remote.Remote
 import tailcall.runtime.transcoder.Transcoder
 import zio.schema.{DeriveSchema, DynamicValue, Schema}

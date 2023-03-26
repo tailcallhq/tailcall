@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.dsl.json.Config
+import tailcall.runtime.dsl.Config
 import zio.{Task, ZIO, ZLayer}
 
 import java.io.File

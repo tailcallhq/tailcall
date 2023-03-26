@@ -1,11 +1,12 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc._
+import tailcall.runtime.dsl.Orc
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote._
 import zio.schema.DynamicValue
+
+import Orc._
 
 trait Orc2Blueprint {
   final def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
