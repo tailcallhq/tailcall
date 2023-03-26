@@ -1,9 +1,10 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.ast.Endpoint
-import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
+import tailcall.runtime.dsl.Orc
 import zio.schema.{DeriveSchema, Schema}
+
+import Orc.{Field, FieldSet}
 
 object JsonPlaceholder {
   final case class User(id: Int, name: String)

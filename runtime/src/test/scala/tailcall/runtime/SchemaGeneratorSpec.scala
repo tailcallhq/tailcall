@@ -1,14 +1,15 @@
 package tailcall.runtime
 
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.scala.Orc
-import tailcall.runtime.dsl.scala.Orc.Type.{ListType, NamedType, NonNull}
-import tailcall.runtime.dsl.scala.Orc.{Field, FieldSet}
+import tailcall.runtime.dsl.Orc
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.test.Assertion._
 import zio.test._
+
+import Orc.Type.{ListType, NamedType, NonNull}
+import Orc.{Field, FieldSet}
 
 object SchemaGeneratorSpec extends ZIOSpecDefault {
   override def spec =

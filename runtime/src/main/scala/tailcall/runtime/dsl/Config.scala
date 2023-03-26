@@ -1,7 +1,7 @@
-package tailcall.runtime.dsl.json
+package tailcall.runtime.dsl
 
 import tailcall.runtime.ast._
-import tailcall.runtime.dsl.json.Config._
+import tailcall.runtime.dsl.Config._
 import tailcall.runtime.http.Method
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder

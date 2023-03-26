@@ -1,8 +1,9 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.ast.Path
-import tailcall.runtime.dsl.json.Config
-import tailcall.runtime.dsl.json.Config.{Argument, Step}
+import tailcall.runtime.dsl.Config
+
+import Config.{Argument, Step}
 
 object JsonPlaceholderConfig {
   val users           = Config.Step.Http(Path.unsafe.fromString("/users"))

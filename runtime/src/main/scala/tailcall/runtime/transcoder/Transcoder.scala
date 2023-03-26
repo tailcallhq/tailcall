@@ -2,7 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.json.Config
+import tailcall.runtime.dsl.Config
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.value._
 

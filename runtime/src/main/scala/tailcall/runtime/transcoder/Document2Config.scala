@@ -7,7 +7,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 }
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
-import tailcall.runtime.dsl.json.Config
+import tailcall.runtime.dsl.Config
 import tailcall.runtime.internal.TValid
 import zio.json.{DecoderOps, EncoderOps}
 
