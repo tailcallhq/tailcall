@@ -84,7 +84,7 @@ trait Config2Blueprint {
         }
     }
 
-  final def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
+  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
     // TODO: should fail on error
     val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
     if (errors.nonEmpty || jsons.isEmpty) None
@@ -106,7 +106,7 @@ trait Config2Blueprint {
 
   }
 
-  final def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
+  final def toBlueprint(config: Config, encodeSteps: Boolean = false): TValid[Nothing, Blueprint] = {
     val rootSchema = Blueprint.SchemaDefinition(
       query = config.graphQL.schema.query,
       mutation = config.graphQL.schema.mutation,
@@ -131,7 +131,7 @@ trait Config2Blueprint {
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
-            directives = Nil,
+            directives = if (encodeSteps) toDirective(field.steps.getOrElse(Nil)).toList else Nil,
           )
         }
       }
