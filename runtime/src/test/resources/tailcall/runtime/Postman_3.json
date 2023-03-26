@@ -1,0 +1,346 @@
+{
+  "collection": {
+    "info": {
+      "_postman_id": "c405ef35-81e5-4904-8d7a-33b90ce41a49",
+      "name": "2. Patient_API_Health_Service_Basic_Testing",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "updatedAt": "2023-03-26T09:29:04.000Z"
+    },
+    "item": [
+      {
+        "name": "Add Patient Details",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "177a444a-aeba-4301-8cb0-26397eb90a45",
+              "exec": [
+                "var data = JSON.parse(request.data);",
+                "pm.globals.set(\"name\", data.name);",
+                "pm.globals.set(\"dob\", data.dateOfBirth);",
+                "pm.globals.set(\"gender\", data.gender);",
+                "pm.globals.set(\"imageBucket\", data.imageBucket);",
+                "pm.globals.set(\"imageFile\", data.imageFile);",
+                "pm.globals.set(\"smoking\", data.smoking);",
+                "pm.globals.set(\"weight\", data.weight);",
+                "pm.globals.set(\"age\", data.age);",
+                "pm.globals.set(\"maritalStatus\", data.maritalStatus);",
+                "pm.globals.set(\"TotalsleepingHabits\", data.sleepingHabits.length);",
+                "pm.globals.set(\"sleepingHabits\", data.sleepingHabits);",
+                "pm.globals.set(\"update\", \"update\");",
+                "",
+                "var jsonDataResponse = JSON.parse(responseBody);",
+                "pm.globals.set(\"id\", jsonDataResponse.data.primaryId);",
+                "pm.globals.set(\"operation\", jsonDataResponse.data.operation);",
+                "",
+                "pm.test(\"Validate Add Patient API Endpoint is executed Successfully\", function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([200, 201,202]);",
+                "});",
+                "pm.test(\"Validate Add Patient API has created the Patient Successfully\", function () {",
+                "    pm.expect(pm.response.text()).to.include(\"create\");",
+                "",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "id": "1b3d12af-ac29-4f9e-ad18-875de216de1b",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Cookie",
+              "value": "iam_jwt=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJhc2FuYWdvdWRhLmJAbW9zYWljd2VsbG5lc3MuaW4iLCJuYW1lIjoiVmluYXkiLCJhY3RpdmUiOjEsInJvbGVzIjp7ImhlYWx0aC1zZXJ2aWNlIjpbImFkbWluIl19LCJpYXQiOjE2Nzc4MjY2NjUsImV4cCI6MTY3NzgyODQ2NX0.EXqDS-1Lh_IQ8U9LKOYG3fNmlpnz0-UXtDzmofAxi0Wsq5IrahSNjl8LOyv-NmhcZ93zSdDMUqyzo8OT-SnQuVx0iMNRnKRRYTuUSVNAlQKtBvvHcAiwshXiFryI1ly9EDsawittqxZ-dUV2rMG-xq6nVMgfdy03rDUUq_apX_KzGN1OcbDeT5ybGb9lwDJTqMPQhuVXjvVheeSwQEv-nxBdvE1XITP3hmVu2UB_ccMqlvxyOTqAUZJGgsz75X98tgL9mTYufeab_ReDfb4cXkeJPazaF_vnqEfUIQhbGMEPPe8qNH7VUMZ7AvVcsggavEifmmuPBDriIQhpV9HHOA; iam_refreshtoken=c0ccd53370f86e3b68f8f711431db713a6775244099ccac8ada62aa246ad2290",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"name\": \"TC1010*&&##$__\",\n    \"dateOfBirth\": \"2025-09-23\",\n    \"gender\": \"male\",\n    \"imageBucket\": \"imagebucket TC1\",\n    \"imageFile\": \"imageFile TC1\",\n    \"smoking\": true,\n    \"age\": \"21\",\n    \"weight\": \"21\",\n    \"maritalStatus\": \"SINGLE\",\n    \"sleepingHabits\": [\n        \"good\",\n        \"takes_power_nap\",\n        \"avg sleep\"\n    ]\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/health-service/entity/patient",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "health-service",
+              "entity",
+              "patient"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Patient Details After Create",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "74fe6f88-ac01-4733-9eba-47f866c04bd5",
+              "exec": [
+                "",
+                "",
+                "pm.test(\"Validate the Patient Details created\", function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "",
+                "pm.test(\"Check for get patient - success\", function () {",
+                "    pm.expect(pm.response.text()).to.include(`\"get patient - success\"`);",
+                "",
+                "});",
+                "",
+                "var jsonData = pm.response.json();",
+                "pm.test(\"Validate the Name has added properly\", function () {",
+                "    pm.expect(jsonData.data[0].name).to.eql(pm.variables.get(\"name\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the DateOfBirth has added properly\", function () {",
+                "    pm.expect(pm.response.text()).to.include(pm.variables.get(\"dob\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Gender has added properly\", function () {",
+                "    pm.expect(jsonData.data[0].gender).to.eql(pm.variables.get(\"gender\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the ImageBucket has added properly\", function () {",
+                "    pm.expect(jsonData.data[0].imageBucket).to.eql(pm.variables.get(\"imageBucket\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the ImageFile has added properly\", function () {",
+                "    pm.expect(jsonData.data[0].imageFile).to.eql(pm.variables.get(\"imageFile\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Smoking (True/False) has added properly\", function () {",
+                "    pm.expect(jsonData.data[0].smoking).to.eql(pm.variables.get(\"smoking\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Total Number of Sleeping Habits are Added\", function () {",
+                "    pm.expect(jsonData.data[0].sleepingHabits.length).to.eql(pm.variables.get(\"TotalsleepingHabits\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Sleeping Habits are properly Added\", function () {",
+                "    var shabs = pm.variables.get(\"sleepingHabits\")",
+                "\tfor(var i=0 ; i<jsonData.data[0].sleepingHabits.length; i++){",
+                "        pm.expect(jsonData.data[0].sleepingHabits[i]).to.eql(shabs[i]);",
+                "    }   ",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "id": "4a3be459-18c0-4693-9097-2801eae075b7",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "secrethack",
+              "value": "dfasdasd",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/health-service/entity/patient/{{id}}",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "health-service",
+              "entity",
+              "patient",
+              "{{id}}"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Update Patient Details",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "a4bb828a-15cc-47c1-a48a-264af3809bbb",
+              "exec": [
+                "var data = JSON.parse(request.data);",
+                "pm.globals.set(\"name\", data.name);",
+                "pm.globals.set(\"dob\", data.dateOfBirth);",
+                "pm.globals.set(\"gender\", data.gender);",
+                "pm.globals.set(\"imageBucket\", data.imageBucket);",
+                "pm.globals.set(\"imageFile\", data.imageFile);",
+                "pm.globals.set(\"smoking\", data.smoking);",
+                "pm.globals.set(\"weight\", data.weight);",
+                "pm.globals.set(\"age\", data.age);",
+                "pm.globals.set(\"maritalStatus\", data.maritalStatus);",
+                "pm.globals.set(\"TotalsleepingHabits\", data.sleepingHabits.length);",
+                "pm.globals.set(\"sleepingHabits\", data.sleepingHabits);",
+                "",
+                "pm.test(\"Validate Update Patient API Endpoint is executed Successfully\", function () {",
+                "    pm.expect(pm.response.code).to.be.oneOf([200, 201,202]);",
+                "});",
+                "pm.test(\"Validate Add Patient API has updated the Patient Successfully\", function () {",
+                "    pm.expect(pm.response.text()).to.include(\"update\");",
+                "",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "id": "41942a82-d964-496a-9687-035b58fdfa23",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "secrethack",
+              "value": "dfasdasd",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"name\": \"Update Name\",\n    \"dateOfBirth\": \"2025-09-24\",\n    \"gender\": \"female\",\n    \"imageBucket\": \"imagebucket TC2\",\n    \"imageFile\": \"imageFile TC3\",\n    \"smoking\": false,\n    \"age\": \"25\",\n    \"weight\": \"26\",\n    \"maritalStatus\": \"MARRIED\",\n    \"sleepingHabits\": [\n        \"good\",\n        \"takes_power_nap\",\n        \"avg sleep\",\n        \"bad\"\n    ]\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/health-service/entity/patient/{{id}}",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "health-service",
+              "entity",
+              "patient",
+              "{{id}}"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Patient Details After Update",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "7b6ad55e-db6a-4f25-8290-3990a841fa1c",
+              "exec": [
+                "",
+                "",
+                "pm.test(\"Validate the Patient Details Updated\", function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "",
+                "pm.test(\"Check for get patient - success\", function () {",
+                "    pm.expect(pm.response.text()).to.include(`\"get patient - success\"`);",
+                "",
+                "});",
+                "",
+                "var jsonData = pm.response.json();",
+                "pm.test(\"Validate the Name has updated properly\", function () {",
+                "    pm.expect(jsonData.data[0].name).to.eql(pm.variables.get(\"name\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the DateOfBirth has updated properly\", function () {",
+                "    pm.expect(pm.response.text()).to.include(pm.variables.get(\"dob\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Gender has updated properly\", function () {",
+                "    pm.expect(jsonData.data[0].gender).to.eql(pm.variables.get(\"gender\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the ImageBucket has updated properly\", function () {",
+                "    pm.expect(jsonData.data[0].imageBucket).to.eql(pm.variables.get(\"imageBucket\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the ImageFile has updated properly\", function () {",
+                "    pm.expect(jsonData.data[0].imageFile).to.eql(pm.variables.get(\"imageFile\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Smoking (True/False) has updated properly\", function () {",
+                "    pm.expect(jsonData.data[0].smoking).to.eql(pm.variables.get(\"smoking\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Total Number of Sleeping Habits are updated\", function () {",
+                "    pm.expect(jsonData.data[0].sleepingHabits.length).to.eql(pm.variables.get(\"TotalsleepingHabits\"));",
+                "});",
+                "",
+                "pm.test(\"Validate the Sleeping Habits are properly updated\", function () {",
+                "    var shabs = pm.variables.get(\"sleepingHabits\")",
+                "\tfor(var i=0 ; i<jsonData.data[0].sleepingHabits.length; i++){",
+                "        pm.expect(jsonData.data[0].sleepingHabits[i]).to.eql(shabs[i]);",
+                "    }   ",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "id": "22502d30-e198-4af5-b90f-11ba29236bc1",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [
+            {
+              "key": "secrethack",
+              "value": "dfasdasd",
+              "type": "text"
+            }
+          ],
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/health-service/entity/patient/{{id}}",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "health-service",
+              "entity",
+              "patient",
+              "{{id}}"
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+}

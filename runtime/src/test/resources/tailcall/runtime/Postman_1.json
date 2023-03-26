@@ -1,0 +1,1447 @@
+{
+  "collection": {
+    "info": {
+      "_postman_id": "ae45c5c2-854e-4362-b720-52492ab94b2a",
+      "name": "DoctorDashboard",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "updatedAt": "2023-02-28T13:54:44.000Z"
+    },
+    "item": [
+      {
+        "name": "New Request",
+        "id": "99a913b3-28f4-4681-99b7-4e453e1166e2",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": []
+        },
+        "response": []
+      },
+      {
+        "name": "get Doctor",
+        "id": "4351c4b2-92d2-4d29-b1d6-774cc6ba512c",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"admin_key\":null}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/appointment-scheduler/reports/getDoctor",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "appointment-scheduler",
+              "reports",
+              "getDoctor"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/editProfile",
+        "id": "1859a4a9-f69d-4ceb-a397-efac69acbe75",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"id\":302,\"user_id\":\"500006892\",\"email\":\"bhushanbpujar@gmail.com\",\"name\":\"Bhushan P\",\"gender\":\"Female\",\"brand\":\"MM\",\"last_doctor\":420,\"doctor_id\":420,\"doctor_name\":\"Tejaswini EHR\",\"phone\":\"9945261640\",\"patient_medical_history\":null,\"age\":\"30\",\"weight\":0,\"marital_status\":\"undefined\",\"address\":\"Belagavi\",\"alt_email\":[\"bhushan.pujar@mosaicwellness.in\",\"bhushanbpujar@gmail.com\"],\"alt_phone\":[\"9945261640\"]}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/editProfile",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "editProfile"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/get_rx_timeline_images",
+        "id": "f7c669f3-9b72-4bec-8b6d-365233b60f4a",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\":\"bhushanbpujar@gmail.com\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/get_rx_timeline_images",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "get_rx_timeline_images"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/send_upload_link",
+        "id": "ac75a540-5aec-4a51-ab6b-6091ad30a14d",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"category\":\"O\",\"doctor_hash\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\",\"id\":\"21678\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/send_upload_link",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "send_upload_link"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/eventInformation",
+        "id": "1461b498-6960-4779-8ab6-35a9a193ce95",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"brand\":\"MM\",\"doctorId\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\",\"email\":\"bhushanbpujar@gmail.com\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/eventInformation",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "eventInformation"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/quickView",
+        "id": "e516ea2b-f873-446c-8a16-5a448030d2f3",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"appointmentId\":\"21678\",\"brand\":\"MM\",\"doctorId\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\",\"email\":\"bhushanbpujar@gmail.com\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/quickView",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "quickView"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/prescription",
+        "id": "0c92cbbf-bfc3-4bf4-8ac9-2799fbad8ec9",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"doctorId\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\",\"form\":\"O\",\"id\":\"21678\",\"brand\":\"MM\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/prescription",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "prescription"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/get_products",
+        "id": "a7d4d5c5-a8ea-4c88-a0c6-d15d37ad8126",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"brand\":\"MM\",\"doctorId\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/get_products",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "get_products"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getPresetData",
+        "id": "a922a68a-ffc7-4729-9d62-5ca10928629b",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getPresetData",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getPresetData"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getDoctorInfo",
+        "id": "1518457c-7bbf-419e-99e4-b5243d60a1ab",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"doctor_id\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getDoctorInfo",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getDoctorInfo"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "event-scheduler/core/reports/getDoctorsByCategory",
+        "id": "6b58b0aa-bfdd-468f-8e35-0adc2df4f2a1",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"categories\":[\"weight\"],\"brand\":\"MM\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/event-scheduler/core/reports/getDoctorsByCategory",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "event-scheduler",
+              "core",
+              "reports",
+              "getDoctorsByCategory"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "event-scheduler/core/doctor/slots",
+        "id": "c7f5ef4d-55e9-4965-a6e9-5401246d662a",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"date_range\": [\n        \"Tuesday, 28 February 23\",\n        \"Wednesday, 01 March 23\",\n        \"Thursday, 02 March 23\",\n        \"Friday, 03 March 23\",\n        \"Saturday, 04 March 23\",\n        \"Sunday, 05 March 23\",\n        \"Monday, 06 March 23\",\n        \"Tuesday, 07 March 23\",\n        \"Wednesday, 08 March 23\",\n        \"Thursday, 09 March 23\",\n        \"Friday, 10 March 23\",\n        \"Saturday, 11 March 23\",\n        \"Sunday, 12 March 23\",\n        \"Monday, 13 March 23\"\n    ],\n    \"brand\": \"MM\",\n    \"email\": \"bhushanbpujar@gmail.com\",\n    \"phone\": \"9945261640\",\n    \"category\": [\n        \"is_hc\"\n    ],\n    \"slot_time_period\": 10,\n    \"slot_length\": 10,\n    \"grouping_length\": 30,\n    \"app\": 0,\n    \"source_id\": 123456789,\n    \"patient_name\": \"Bhushan P\",\n    \"source\": \"O\",\n    \"doctorID\": 7,\n    \"language\": \"Tamil\"\n}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/event-scheduler/core/doctor/slots",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "event-scheduler",
+              "core",
+              "doctor",
+              "slots"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getPrescribedProducts",
+        "id": "39b8ac92-12d7-42e7-885b-65f67b5c4cfd",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"appointmentId\":\"21678\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getPrescribedProducts",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getPrescribedProducts"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getRecommendedProduct",
+        "id": "3857f939-2f4d-4686-842f-37afc0ee2b4b",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"brand\":\"MM\",\"age\":22,\"products\":[{\"product_id\":\"1613\",\"duration\":0,\"improvement\":false},{\"product_id\":\"1629\",\"duration\":0,\"improvement\":true},{\"product_id\":\"478815\",\"duration\":0,\"improvement\":false},{\"product_id\":\"10220967\",\"duration\":0,\"improvement\":false},{\"product_id\":\"13616983\",\"duration\":0,\"improvement\":false},{\"product_id\":\"26166747\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166749\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166752\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166784\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166797\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166798\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166832\",\"duration\":0,\"improvement\":true}],\"conditions\":[{\"condition_type\":\"concern\",\"condition_preset\":2060},{\"condition_type\":\"diagnosis\",\"condition_preset\":2004},{\"condition_type\":\"past_treatments\",\"condition_preset\":2042},{\"condition_type\":\"family_history\",\"condition_preset\":2055},{\"condition_type\":\"medical_history\",\"condition_preset\":2049},{\"condition_type\":\"other_details\",\"condition_preset\":2240},{\"condition_type\":\"allergy_environmental_specification\",\"condition_preset\":\"2038\"},{\"condition_type\":\"allergy_animal_specification\",\"condition_preset\":\"2035\"}],\"diagnosis\":2004}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getRecommendedProduct",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getRecommendedProduct"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getPrescriptionProducts",
+        "id": "9b71460e-30c8-4036-96be-72f631a230ed",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"appointmentId\":\"21678\",\"source\":\"O\",\"brand\":\"MM\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getPrescriptionProducts",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getPrescriptionProducts"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/get_products",
+        "id": "3e0ee2f0-1aa3-4db0-b1cb-f0c5e2363e5d",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"brand\":\"MM\",\"doctorId\":\"nnrqvt2auak9k47rh42wmek6f6u2sd83\"}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/get_products",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "get_products"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "prescription-generator/getRecommendedProduct",
+        "id": "fb31128c-6064-4347-8a79-baff1308608d",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "authority",
+              "value": "stg.api.mosaicwellness.in"
+            },
+            {
+              "key": "accept",
+              "value": "application/json, text/plain, */*"
+            },
+            {
+              "key": "accept-language",
+              "value": "en-GB,en-US;q=0.9,en;q=0.8"
+            },
+            {
+              "key": "authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVzZXJfaWQiOjEsImhhc2hfaWQiOiJubnJxdnQyYXVhazlrNDdyaDQyd21lazZmNnUyc2Q4MyIsInJvbGVfbmFtZSI6ImFkbWluIiwiZG9jdG9yX2lkIjo3LCJkb2N0b3JfbmFtZSI6Ik1vc2FpYyBEb2N0b3IiLCJkb2N0b3JfcGhvbmUiOiI4Njk5OTg2NDI1MCIsImRvY3Rvcl9lbWFpbCI6ImRvY2h1YkBtb3NhY2l3ZWxsbmVzcy5pbiIsInN0YW5kYnkiOjEsImltbWVkaWF0ZSI6MCwic2NoZWR1bGVkIjowLCJicmFuZHMiOlsiQlciLCJNTSJdLCJjYXRlZ29yaWVzIjpbImJlYXJkIiwiYm9keS1jYXJlIiwiZ2VuZXJhbCIsImlzX2hjIiwicGNvcyIsInNraW4iXSwibGFuZ3VhZ2VzIjpbImVuZ2xpc2giXSwibnV0cml0aW9uaXN0IjpmYWxzZX0sImlhdCI6MTY3NzU5MDIxNn0.NDS8iKu00OiBUxskn7KRKOxCJCuR5yAC3kY8Uaw_fNM"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json;charset=UTF-8"
+            },
+            {
+              "key": "origin",
+              "value": "https://stg.doctor.manmatters.com"
+            },
+            {
+              "key": "referer",
+              "value": "https://stg.doctor.manmatters.com/"
+            },
+            {
+              "key": "sec-ch-ua",
+              "value": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\""
+            },
+            {
+              "key": "sec-ch-ua-mobile",
+              "value": "?0"
+            },
+            {
+              "key": "sec-ch-ua-platform",
+              "value": "\"macOS\""
+            },
+            {
+              "key": "sec-fetch-dest",
+              "value": "empty"
+            },
+            {
+              "key": "sec-fetch-mode",
+              "value": "cors"
+            },
+            {
+              "key": "sec-fetch-site",
+              "value": "cross-site"
+            },
+            {
+              "key": "user-agent",
+              "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"brand\":\"MM\",\"age\":22,\"products\":[{\"product_id\":\"1613\",\"duration\":0,\"improvement\":false},{\"product_id\":\"1629\",\"duration\":0,\"improvement\":true},{\"product_id\":\"478815\",\"duration\":0,\"improvement\":false},{\"product_id\":\"10220967\",\"duration\":0,\"improvement\":false},{\"product_id\":\"13616983\",\"duration\":0,\"improvement\":false},{\"product_id\":\"26166747\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166749\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166752\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166784\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166797\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166798\",\"duration\":0,\"improvement\":true},{\"product_id\":\"26166832\",\"duration\":0,\"improvement\":true}],\"conditions\":[{\"condition_type\":\"concern\",\"condition_preset\":2060},{\"condition_type\":\"diagnosis\",\"condition_preset\":2004},{\"condition_type\":\"past_treatments\",\"condition_preset\":2042},{\"condition_type\":\"family_history\",\"condition_preset\":2055},{\"condition_type\":\"medical_history\",\"condition_preset\":2049},{\"condition_type\":\"other_details\",\"condition_preset\":2240},{\"condition_type\":\"allergy_environmental_specification\",\"condition_preset\":\"2038\"},{\"condition_type\":\"allergy_animal_specification\",\"condition_preset\":\"2035\"}],\"diagnosis\":2004}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/prescription-generator/getRecommendedProduct",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "prescription-generator",
+              "getRecommendedProduct"
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+}

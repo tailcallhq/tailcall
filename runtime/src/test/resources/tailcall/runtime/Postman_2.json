@@ -1,0 +1,109 @@
+{
+  "collection": {
+    "info": {
+      "_postman_id": "0952cafe-9b77-470c-b3f4-4bef48a9a32d",
+      "name": "1. Check_Health_Of_Health_service",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "updatedAt": "2023-03-26T09:37:03.000Z"
+    },
+    "item": [
+      {
+        "name": "Check the Health",
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "9f7cfea9-f4eb-4d50-9555-bd40bceaa609",
+              "exec": [
+                "pm.test(\"Validate the Health Service Endpoint is Up and Running\", function () {",
+                "    pm.response.to.have.status(200);",
+                "});",
+                "",
+                "pm.test(\"Validate the Health Service is Up and Running\", function () {",
+                "    pm.expect(pm.response.text()).to.include(\"running\");",
+                "",
+                "});",
+                "",
+                "pm.test(\"Validate the Mongo DB is OK\", function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData.mngDb.ok).to.eql(1);",
+                "});",
+                "",
+                "pm.test(\"Validate the MySQL DB is OK\", function () {",
+                "    var jsonData = pm.response.json();",
+                "    pm.expect(jsonData.msqDb.ok).to.eql(1);",
+                "});"
+              ],
+              "type": "text/javascript"
+            }
+          }
+        ],
+        "id": "c5f7f08f-8330-4020-9907-d8bc319ace09",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/health-service/health",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "health-service",
+              "health"
+            ]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "stg.api.mosaicwellness.in/prescription-generator/changeStatus Copy",
+        "id": "279b6274-55db-479b-ba8e-d9ce1a9eab45",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "cookie",
+              "value": "mwut=b6bc963f-2c7f-4aa2-b140-85247a877e47; _gcl_au=1.1.414737441.1677672912; _ga=GA1.2.407252188.1677672912; _fbp=fb.1.1677672911578.1814325068; mp_76901d3dd0c103805203e39d3f6b76a4_mixpanel=%7B%22distinct_id%22%3A%20%22186ef10189e8e1-0e2d08aeb0ac15-1f525634-1fa400-186ef10189f1e45%22%2C%22%24device_id%22%3A%20%22186ef10189e8e1-0e2d08aeb0ac15-1f525634-1fa400-186ef10189f1e45%22%2C%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%7D; _gid=GA1.2.1084331986.1679650125; _gat_UA-149836656-4=1; mp_622d6bf65dcee1d7e8534dc052770bdf_mixpanel=%7B%22distinct_id%22%3A%20%229113327155%22%2C%22%24device_id%22%3A%20%22186eebe47887b6-03996084674405-1f525634-1fa400-186eebe47891b8b%22%2C%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%2C%22%24user_id%22%3A%20%229113327155%22%2C%22utm_source%22%3A%20%22home_page_tile_DA%22%2C%22utm_medium%22%3A%20%22marketing%22%2C%22utm_campaign%22%3A%20%22paid_doc_web%22%7D; _gat_UA-149836656-3=1; WZRK_S_RZK-5WW-Z95Z=%7B%22p%22%3A1%2C%22s%22%3A1679650141%2C%22t%22%3A1679650142%7D; MM_TOKEN_U3FQ62VJGQ5GRF9Y8H5565YFWQUBHMALUGNUALTK=0xc85k2vg684b3yzkfyk15695a6ymt7j; mwjwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwMDAzNzA1MCIsImJyYW5kSWQiOiI1MDAwMzcwNTAiLCJwaG9uZSI6Ijk4ODYyOTYzOTYiLCJlbWFpbCI6InNkZnNAZmdiLmNvbSIsImJyYW5kIjoiTU0iLCJjdXN0b21lckhhc09yZGVycyI6dHJ1ZSwiZmlyc3ROYW1lIjoiZHNoZmJzZCIsImxhc3ROYW1lIjoic3NkZiIsInVuaXF1ZU5hbWUiOm51bGwsImlhdCI6MTY3OTY1MDE2NCwiZXhwIjoxNjgwOTQ2MTY0fQ.id_feAw-8cu1ctFJ-3myu9xkZOEq-_tq9F_SHuZ-niU; mp_98e27a641fb7c0549697739f03546ea5_mixpanel=%7B%22distinct_id%22%3A%20%229886296396%22%2C%22%24device_id%22%3A%20%221869d1911fa3c3-0c4a7bd99fc3ee-17525635-1d73c0-1869d1911fb1b9f%22%2C%22%24initial_referrer%22%3A%20%22%24direct%22%2C%22%24initial_referring_domain%22%3A%20%22%24direct%22%2C%22utm_source%22%3A%20%22home_page_tile_DA%22%2C%22%24user_id%22%3A%20%229886296396%22%7D; WZRK_S_TEST-KZK-5WW-Z95Z=%7B%22s%22%3A1679650165%2C%22t%22%3A1679650165%7D; WZRK_G=0985f9dbe90e43e48074db45169b0cce; MM_cart_id_U3FQ62VJGQ5GRF9Y8H5565YFWQUBHMALUGNUALTK=58710615",
+              "type": "text"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"brand\": \"MM\",\n    \"age\": 27\n}"
+          },
+          "url": {
+            "raw": "https://stg.api.mosaicwellness.in/portal/consult/patient/update",
+            "protocol": "https",
+            "host": [
+              "stg",
+              "api",
+              "mosaicwellness",
+              "in"
+            ],
+            "path": [
+              "portal",
+              "consult",
+              "patient",
+              "update"
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+}
