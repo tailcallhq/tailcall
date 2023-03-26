@@ -1,3 +1,4 @@
+# noinspection GraphQLUnresolvedReference,GraphQLMissingType,GraphQLDuplicateDirective,GraphQLTypeRedefinition,GraphQLMemberRedefinition
 schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -39,7 +40,7 @@ type Query {
 type User {
   website: String
   name: String!
-  posts: [Post] @steps(value: [{http: {path: "/users/{{value.id}}/posts"}}])
+  posts: [Post] @http(path: "/users/{{value.id}}/posts")
   email: String!
   username: String!
   company: Company

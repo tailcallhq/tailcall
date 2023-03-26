@@ -7,7 +7,9 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 }
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
+import tailcall.runtime.ast.Path
 import tailcall.runtime.dsl.Config
+import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import zio.json.{DecoderOps, EncoderOps}
 
@@ -44,23 +46,31 @@ trait Document2Config {
   final private def toLabelledField(field: FieldDefinition): TValid[String, (String, Config.Field)] =
     toField(field).map(field.name -> _)
 
-  final private def toStep(directive: Directive): List[Config.Step] = {
+  final private def toStep(directive: Directive): TValid[String, List[Config.Step]] = {
     directive.name match {
       case "steps" => directive.arguments.get("value") match {
-          case Some(inputValue) => inputValue.toJson.fromJson[List[Config.Step]].toOption.getOrElse(Nil)
-          case None             => Nil
+          case Some(inputValue) => TValid.fromEither(inputValue.toJson.fromJson[List[Config.Step]])
+          case None             => TValid.succeed(Nil)
         }
-      case _       => Nil
+
+      case "http" => for {
+          method <- TValid.fromEither(directive.arguments.get("method").toJson.fromJson[Option[Method]])
+          path   <- directive.arguments.get("path") match {
+            case None        => TValid.fail("Missing url in @http directive")
+            case Some(value) => TValid.fromEither(value.toJson.fromJson[String].flatMap(Path.decode(_)))
+          }
+        } yield List(Config.Step.Http(method = method, path = path))
+      case _      => TValid.succeed(Nil)
     }
   }
 
   final private def toField(field: FieldDefinition): TValid[String, Config.Field] =
     for {
-      args <- toArgumentMap(field.args)
+      args  <- toArgumentMap(field.args)
+      steps <- TValid.foreach(field.directives)(toStep(_)).map(_.flatten)
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
-      steps      = field.directives.map(toStep(_)).flatten
     } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps), Option(args))
 
   final private def toArgumentMap(value: List[InputValueDefinition]): TValid[String, Map[String, Config.Argument]] = {
