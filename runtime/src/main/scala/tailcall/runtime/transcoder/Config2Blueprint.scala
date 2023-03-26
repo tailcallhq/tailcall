@@ -3,14 +3,13 @@ package tailcall.runtime.transcoder
 import caliban.InputValue
 import tailcall.runtime.ast.{Blueprint, Endpoint, TSchema}
 import tailcall.runtime.dsl.Config
+import tailcall.runtime.dsl.Config._
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
-
-import Config._
 
 trait Config2Blueprint {
 
@@ -85,7 +84,7 @@ trait Config2Blueprint {
         }
     }
 
-  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
+  final def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
     // TODO: should fail on error
     val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
     if (errors.nonEmpty || jsons.isEmpty) None
@@ -132,7 +131,7 @@ trait Config2Blueprint {
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
-            directives = toDirective(field.steps.getOrElse(Nil)).toList,
+            directives = Nil,
           )
         }
       }
