@@ -30,16 +30,4 @@ object Postman {
   implicit private[Postman] lazy val infoCodec: JsonCodec[Info]             = DeriveJsonCodec.gen[Info]
   implicit private[Postman] lazy val collectionCodec: JsonCodec[Collection] = DeriveJsonCodec.gen[Collection]
   implicit lazy val postmanCodec: JsonCodec[Postman]                        = DeriveJsonCodec.gen[Postman]
-
-//  val item = Item(
-//    name = "test",
-//    id = "test",
-//    request = Request(
-//      method = Method.GET,
-//      header = List(Header("Content-Type", "application/json")),
-//      body = Body(Json.Obj("test" -> Json.Num(1))),
-//      url = Url(protocol = Scheme.Http, host = List("localhost"), path = List("test"), query = List("test" -> "test"), variable = List()),
-//    ),
-//    response = List(Response(status = "200", header = List(Header("Content-Type", "application/json")), body = "test")),
-//  )
 }
