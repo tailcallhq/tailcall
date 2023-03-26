@@ -14,7 +14,9 @@ import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
+  def toBlueprint: Blueprint = toBlueprint()
+
+  def toBlueprint(encodeSteps: Boolean = false): Blueprint = Transcoder.toBlueprint(self, encodeSteps = encodeSteps).get
 
   def mergeRight(other: Config): Config = {
     Config(
