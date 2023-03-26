@@ -20,6 +20,7 @@ sealed trait Transcoder
     with Document2Blueprint
     with Document2Config
     with Document2GraphQLSchema
+    with JsonValue2TSchema
     with Orc2Blueprint
     with ToDynamicValue
     with ToInputValue
