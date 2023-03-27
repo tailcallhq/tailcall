@@ -41,7 +41,7 @@ trait Config2Blueprint {
           case "String"  => TSchema.string
           case "Int"     => TSchema.int
           case "Boolean" => TSchema.bool
-          case _         => TSchema.NULL
+          case _         => TSchema.string // TODO: default to string?
         }
     }
   }
