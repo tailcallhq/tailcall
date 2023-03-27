@@ -35,24 +35,22 @@ object Config {
     def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
   }
 
-  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None)
-  final case class GraphQL(
-    schema: SchemaDefinition = SchemaDefinition(),
-    types: Map[String, Map[String, Field]] = Map.empty,
-  ) {
+  final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
+  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Map[String, Field]] = Map.empty) {
     self =>
     def mergeRight(other: GraphQL): GraphQL =
       GraphQL(
-        schema = SchemaDefinition(
+        schema = RootSchema(
           query = other.schema.query.orElse(self.schema.query),
           mutation = other.schema.mutation.orElse(self.schema.mutation),
         ),
         types = self.types ++ other.types,
       )
 
-    def compress: GraphQL                                           =
+    def compress: GraphQL                                                                  =
       self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
-    def withSchema(schema: SchemaDefinition): GraphQL               = copy(schema = schema)
+    def withSchema(query: Option[String] = None, mutation: Option[String] = None): GraphQL =
+      copy(schema = RootSchema(query, mutation))
     def withType(name: String, fields: Map[String, Field]): GraphQL = copy(types = types + (name -> fields))
   }
 
@@ -176,17 +174,17 @@ object Config {
    * list of tuples.
    */
 
-  implicit val urlCodec: JsonCodec[URL]                           = JsonCodec[String].transformOrFail[URL](
+  implicit val urlCodec: JsonCodec[URL]                     = JsonCodec[String].transformOrFail[URL](
     string =>
       try Right(new URL(string))
       catch { case _: Throwable => Left(s"Malformed url: ${string}") },
     _.toString,
   )
-  implicit val operationCodec: JsonCodec[Step]                    = DeriveJsonCodec.gen[Step]
-  implicit val inputTypeCodec: JsonCodec[Argument]                = DeriveJsonCodec.gen[Argument]
-  implicit val fieldDefinitionCodec: JsonCodec[Field]             = DeriveJsonCodec.gen[Field]
-  implicit val schemaDefinitionCodec: JsonCodec[SchemaDefinition] = DeriveJsonCodec.gen[SchemaDefinition]
-  implicit val graphQLCodec: JsonCodec[GraphQL]                   = DeriveJsonCodec.gen[GraphQL]
-  implicit val serverCodec: JsonCodec[Server]                     = DeriveJsonCodec.gen[Server]
-  implicit val jsonCodec: JsonCodec[Config]                       = DeriveJsonCodec.gen[Config]
+  implicit val operationCodec: JsonCodec[Step]              = DeriveJsonCodec.gen[Step]
+  implicit val inputTypeCodec: JsonCodec[Argument]          = DeriveJsonCodec.gen[Argument]
+  implicit val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
+  implicit val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
+  implicit val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
+  implicit val serverCodec: JsonCodec[Server]               = DeriveJsonCodec.gen[Server]
+  implicit val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 }
