@@ -16,17 +16,20 @@ sealed trait TSchema {
   final def =:=(other: TSchema): Boolean = self <:< other && other <:< self
   final def <:<(other: TSchema): Boolean = TSchema.isSubType(self, other)
   final def arr: TSchema                 = TSchema.arr(self)
-  final def opt: TSchema                 = TSchema.opt(self)
-  final def isNullable: Boolean          =
-    self match {
-      case _: TSchema.Optional => true
-      case _                   => false
-    }
-  final def isArray: Boolean             =
+
+  final def isArray: Boolean =
     self match {
       case TSchema.Arr(_) => true
       case _              => false
     }
+
+  final def isNullable: Boolean =
+    self match {
+      case _: TSchema.Optional => true
+      case _                   => false
+    }
+
+  final def opt: TSchema = TSchema.opt(self)
 
   final def tag: String =
     self match {
@@ -41,20 +44,22 @@ sealed trait TSchema {
 
 object TSchema {
 
-  def string: TSchema = TSchema.String
+  def arr(item: TSchema): TSchema = TSchema.Arr(item)
+
+  def bool: TSchema = TSchema.Boolean
+
+  def empty: TSchema = TSchema.Obj(Nil)
 
   def int: TSchema = TSchema.Int
 
-  def bool: TSchema = TSchema.Boolean
+  def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
 
   def obj(fields: (String, TSchema)*): TSchema =
     TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
-  def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
-
   def opt(schema: TSchema): TSchema = TSchema.Optional(schema)
 
-  def arr(item: TSchema): TSchema = TSchema.Arr(item)
+  def string: TSchema = TSchema.String
 
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {

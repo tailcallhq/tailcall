@@ -9,6 +9,40 @@ import zio.json.ast.Json
  */
 trait JsonValue2TSchema {
 
+  final def toTSchema(json: String): TValid[String, TSchema] =
+    for {
+      jsonAST <- TValid.fromEither(Json.decoder.decodeJson(json))
+      tSchema <- toTSchema(jsonAST, Nil)
+    } yield tSchema
+
+  final private def toTSchema(jsonAST: Json, stack: List[Json]): TValid[String, TSchema] = {
+    jsonAST match {
+      case Json.Obj(fields) => for {
+          fields <- TValid.foreach(fields.toList) { case (name, value) =>
+            toTSchema(value, jsonAST :: stack).map(TSchema.Field(name, _))
+          }
+        } yield TSchema.obj(fields)
+
+      case Json.Arr(element) => for {
+          chunk  <- TValid.foreachChunk(element)(json => toTSchema(json, jsonAST :: stack))
+          schema <- unify(chunk.toList)
+        } yield schema.arr
+
+      case Json.Bool(_) => TValid.succeed(TSchema.Boolean)
+      case Json.Str(_)  => TValid.succeed(TSchema.String)
+      case Json.Num(_)  => TValid.succeed(TSchema.Int)
+      case Json.Null    => TValid.succeed(TSchema.obj())
+    }
+  }
+
+  private def unify(list: List[TSchema]): TValid[String, TSchema] = {
+    list match {
+      case Nil          => TValid.fail("Cannot infer elements from an empty list")
+      case head :: Nil  => TValid.succeed(head)
+      case head :: tail => unify(tail).flatMap(unify(head, _))
+    }
+  }
+
   /**
    * Unifies two schemas into a single schema that is a
    * supertype of both. The unify function is different from
@@ -41,36 +75,8 @@ trait JsonValue2TSchema {
         } yield TSchema.obj(fields.toList)
 
       case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify(item1, item2).map(TSchema.arr(_))
-      case _                                        => TValid.fail(s"Cannot identify generate schema for ${a} and ${b}")
+      case (a, TSchema.Obj(Nil))                    => TValid.succeed(a.opt)
+      case (TSchema.Obj(Nil), b)                    => TValid.succeed(b.opt)
+      case _                                        => TValid.fail(s"Cannot generate schema from values ${a} and ${b}")
     }
-
-  private def unify(list: List[TSchema]): TValid[String, TSchema] =
-    list match {
-      case Nil          => TValid.fail("Cannot unify an empty list")
-      case head :: Nil  => TValid.succeed(head)
-      case head :: tail => unify(tail).flatMap(unify(head, _))
-    }
-
-  final def toTSchema(jsonAST: Json): TValid[String, TSchema] =
-    jsonAST match {
-      case Json.Obj(fields) => for {
-          fields <- TValid.foreach(fields.toList) { case (name, value) => toTSchema(value).map(TSchema.Field(name, _)) }
-        } yield TSchema.obj(fields)
-
-      case Json.Arr(elements) => for {
-          chunk  <- TValid.foreachChunk(elements)(toTSchema)
-          schema <- unify(chunk.toList)
-        } yield schema
-
-      case Json.Bool(_) => TValid.succeed(TSchema.Boolean)
-      case Json.Str(_)  => TValid.succeed(TSchema.String)
-      case Json.Num(_)  => TValid.succeed(TSchema.Int)
-      case Json.Null    => TValid.unsupported("NULL", "TSchema")
-    }
-
-  final def toTSchema(json: String): TValid[String, TSchema] =
-    for {
-      jsonAST <- TValid.fromEither(Json.decoder.decodeJson(json))
-      tSchema <- toTSchema(jsonAST)
-    } yield tSchema
 }
