@@ -19,6 +19,11 @@ sealed trait TSchema {
   final def <:<(other: TSchema): Boolean = TSchema.isSubType(self, other)
   final def arr: TSchema                 = TSchema.arr(self)
   final def isNullable: Boolean          = TSchema.NULL <:< self
+  final def isArray: Boolean             =
+    self match {
+      case TSchema.Arr(_) => true
+      case _              => false
+    }
 
   /**
    * Unifies two schemas into a single schema that is a
