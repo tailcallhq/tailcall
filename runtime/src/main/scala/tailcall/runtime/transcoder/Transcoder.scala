@@ -2,7 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
 import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.Config
+import tailcall.runtime.dsl.{Config, Postman}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.value._
 
@@ -20,6 +20,7 @@ sealed trait Transcoder
     with Document2Blueprint
     with Document2Config
     with Document2GraphQLSchema
+    with Endpoint2Config
     with JsonValue2TSchema
     with Orc2Blueprint
     with Postman2Endpoints
@@ -30,6 +31,12 @@ sealed trait Transcoder
     with ToValue
 
 object Transcoder extends Transcoder {
+  def toConfig(postman: Postman): TValid[String, Config] =
+    for {
+      endpoints <- toEndpoints(postman)
+      config    <- TValid.foreach(endpoints)(endpoint => toConfig(endpoint)).map(_.reduce(_ mergeRight _))
+    } yield config
+
   def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 
   def toDocument(config: Config): TValid[Nothing, Document] =
