@@ -33,10 +33,6 @@ final case class Endpoint(
 
   def withOutput(schema: Option[TSchema]): Endpoint = copy(output = schema)
 
-  def withOutput[O](implicit schema: Schema[O]): Endpoint = copy(output = Option(TSchema.fromZIOSchema(schema)))
-
-  def withInput[I](implicit schema: Schema[I]): Endpoint = copy(input = Option(TSchema.fromZIOSchema(schema)))
-
   def withProtocol(protocol: Scheme): Endpoint = copy(scheme = protocol)
 
   def withHttp: Endpoint = withProtocol(Scheme.Http)

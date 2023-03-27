@@ -1,8 +1,8 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.{Context, Endpoint}
+import tailcall.runtime.ast.{Context, Endpoint, TSchema}
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.internal.{DynamicValueUtil, JsonPlaceholder}
+import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.{Lambda, ~>}
 import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
@@ -298,14 +298,14 @@ object LambdaSpec extends ZIOSpecDefault {
       suite("unsafe")(
         test("endpoint /users/1") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput[JsonPlaceholder.User]
+            .withOutput(Option(TSchema.obj("id" -> TSchema.int, "name" -> TSchema.string)))
           val program  = Lambda.unsafe.fromEndpoint(endpoint)
           val expected = DynamicValueUtil.record("id" -> DynamicValue(1), "name" -> DynamicValue("Leanne Graham"))
           assertZIO(program.evaluate(DynamicValue(Map("id" -> 1))))(equalTo(expected))
         },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput[JsonPlaceholder.User]
+            .withOutput(Option(TSchema.obj("id" -> TSchema.int, "name" -> TSchema.string)))
           val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluate(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
