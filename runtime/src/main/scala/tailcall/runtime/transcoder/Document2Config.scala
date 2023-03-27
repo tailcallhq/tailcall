@@ -28,10 +28,10 @@ trait Document2Config {
     }
   }
 
-  final private def toSchemaDefinition(document: Document): TValid[String, Config.SchemaDefinition] = {
+  final private def toSchemaDefinition(document: Document): TValid[String, Config.RootSchema] = {
     document.schemaDefinition match {
-      case Some(value) => TValid.succeed(Config.SchemaDefinition(value.query, value.mutation))
-      case None        => TValid.succeed(Config.SchemaDefinition())
+      case Some(value) => TValid.succeed(Config.RootSchema(value.query, value.mutation))
+      case None        => TValid.succeed(Config.RootSchema())
     }
   }
 
