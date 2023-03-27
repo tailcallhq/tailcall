@@ -13,7 +13,7 @@ final case class Endpoint(
   input: Option[TSchema] = None,
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
-  protocol: Scheme = Scheme.Http,
+  scheme: Scheme = Scheme.Http,
   body: Option[String] = None,
 ) {
   self =>
@@ -37,7 +37,7 @@ final case class Endpoint(
 
   def withInput[I](implicit schema: Schema[I]): Endpoint = copy(input = Option(TSchema.fromZIOSchema(schema)))
 
-  def withProtocol(protocol: Scheme): Endpoint = copy(protocol = protocol)
+  def withProtocol(protocol: Scheme): Endpoint = copy(scheme = protocol)
 
   def withHttp: Endpoint = withProtocol(Scheme.Http)
 
@@ -68,7 +68,7 @@ final case class Endpoint(
 
     val queryString        = query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=$v" }.mkString("?", "&", ""))
     val pathString: String = path.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
-    List(protocol.name, "://", address.host, portString, pathString, queryString).mkString
+    List(scheme.name, "://", address.host, portString, pathString, queryString).mkString
   }
 }
 
@@ -106,7 +106,7 @@ object Endpoint {
           .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 
-    val url = List(endpoint.protocol.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
+    val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
 
