@@ -50,8 +50,10 @@ object Config {
         types = self.types ++ other.types,
       )
 
-    def compress: GraphQL =
+    def compress: GraphQL                                           =
       self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
+    def withSchema(schema: SchemaDefinition): GraphQL               = copy(schema = schema)
+    def withType(name: String, fields: Map[String, Field]): GraphQL = copy(types = types + (name -> fields))
   }
 
   // TODO: Field and Argument can be merged
@@ -110,8 +112,13 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
     ) extends Step {
-      def withOutput(output: TSchema): Http = copy(output = Option(output))
-      def withInput(input: TSchema): Http   = copy(input = Option(input))
+      def withOutput(output: Option[TSchema]): Http = copy(output = output)
+      def withInput(input: Option[TSchema]): Http   = copy(input = input)
+    }
+
+    object Http {
+      def fromEndpoint(endpoint: Endpoint): Http =
+        Http(path = endpoint.path, method = Option(endpoint.method), input = endpoint.input, output = endpoint.output)
     }
 
     @jsonHint("const")
