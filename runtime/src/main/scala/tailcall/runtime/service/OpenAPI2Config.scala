@@ -72,7 +72,7 @@ object OpenAPI2Config {
           path = Path.unsafe.fromString(path.url),
           method = Method.decode(method.methodType.toUpperCase).toOption,
           input,
-          output
+          output,
         )
         step
       })

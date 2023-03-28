@@ -6,7 +6,7 @@ import tailcall.runtime.openApi.OpenapiModels.{
   OpenapiParameter,
   OpenapiPath,
   OpenapiRequestBody,
-  OpenapiResponse
+  OpenapiResponse,
 }
 import tailcall.runtime.openApi.OpenapiSchemaType
 import tailcall.runtime.openApi.OpenapiSchemaType.{OpenapiSchemaArray, OpenapiSchemaSimpleType}

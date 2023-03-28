@@ -9,7 +9,7 @@ import tailcall.runtime.openApi.OpenapiSchemaType.{
   OpenapiSchemaLong,
   OpenapiSchemaRef,
   OpenapiSchemaSimpleType,
-  OpenapiSchemaString
+  OpenapiSchemaString,
 }
 
 object BasicGenerator {

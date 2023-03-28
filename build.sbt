@@ -17,7 +17,7 @@ lazy val runtime = (project in file("runtime")).settings(
     "dev.zio"                %% "zio-parser"            % "0.1.8",
     "dev.zio"                %% "zio-http"              % "0.0.4",
     "io.circe"               %% "circe-yaml"            % "0.14.2",
-    "io.circe"               %% "circe-generic"         % "0.14.1"
+    "io.circe"               %% "circe-generic"         % "0.14.1",
   ),
   libraryDependencies ++= zioTestDependencies,
 )

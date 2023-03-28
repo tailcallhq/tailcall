@@ -119,7 +119,7 @@ object OpenapiSchemaType {
       Decoder[OpenapiSchemaRef].widen,
       Decoder[OpenapiSchemaBoolean].widen,
       Decoder[OpenapiSchemaStringType].widen,
-      Decoder[OpenapiSchemaNumericType].widen
+      Decoder[OpenapiSchemaNumericType].widen,
     ).reduceLeft(_ or _)
 
   implicit val OpenapiSchemaOneOfDecoder: Decoder[OpenapiSchemaOneOf] = { (c: HCursor) =>
@@ -138,7 +138,7 @@ object OpenapiSchemaType {
     List[Decoder[OpenapiSchemaMixedType]](
       Decoder[OpenapiSchemaOneOf].widen,
       Decoder[OpenapiSchemaAnyOf].widen,
-      Decoder[OpenapiSchemaAllOf].widen
+      Decoder[OpenapiSchemaAllOf].widen,
     ).reduceLeft(_ or _)
   }
 
@@ -170,6 +170,6 @@ object OpenapiSchemaType {
     Decoder[OpenapiSchemaMixedType].widen,
     Decoder[OpenapiSchemaNot].widen,
     Decoder[OpenapiSchemaObject].widen,
-    Decoder[OpenapiSchemaArray].widen
+    Decoder[OpenapiSchemaArray].widen,
   ).reduceLeft(_ or _)
 }
