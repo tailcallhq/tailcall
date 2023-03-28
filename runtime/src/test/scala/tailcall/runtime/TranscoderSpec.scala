@@ -2,11 +2,21 @@ package tailcall.runtime
 
 import tailcall.runtime.ast.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Transcoder
-import zio.Scope
 import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
+import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertZIO}
+import zio.{Scope, ZIO}
 
 object TranscoderSpec extends ZIOSpecDefault {
+  private val User = TSchema
+    .obj("username" -> TSchema.String, "id" -> TSchema.Int, "name" -> TSchema.String, "email" -> TSchema.String)
+
+  private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
+
+  def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
+    val schema = Transcoder.toConfig(endpoint).flatMap(Transcoder.toGraphQLSchema).map(_.stripMargin.trim)
+    assertZIO(schema.toZIO)(equalTo(expected.trim))
+  }
+
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("TranscoderSpec")(
       suite("json to TSchema")(
@@ -33,16 +43,8 @@ object TranscoderSpec extends ZIOSpecDefault {
         },
       ),
       suite("endpoint to config")(
-        //
-        test("endpoint to config") {
-          val User = TSchema
-            .obj("username" -> TSchema.String, "id" -> TSchema.Int, "name" -> TSchema.String, "email" -> TSchema.String)
-
-          val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps.withOutput(Option(User.arr))
-            .withPath("/users")
-
-          val schema = Transcoder.toConfig(endpoint).flatMap(Transcoder.toGraphQLSchema).map(_.stripMargin.trim)
-
+        test("output schema") {
+          val endpoint = jsonEndpoint.withHttps.withOutput(Option(User.arr)).withPath("/users")
           val expected = """
                            |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
                            |  query: Query
@@ -59,8 +61,30 @@ object TranscoderSpec extends ZIOSpecDefault {
                            |  email: String!
                            |}
                            |""".stripMargin
-          assertZIO(schema.toZIO)(equalTo(expected.trim))
-        }
+          assertSchema(endpoint)(expected.trim)
+        },
+        test("argument schema") {
+          val endpoint = jsonEndpoint.withOutput(Option(User.opt))
+            .withInput(Option(TSchema.obj("userId" -> TSchema.Int))).withPath("/user")
+
+          val expected = """
+                           |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query {
+                           |  field(userId: Int!): Type @steps(value: [{http: {path: "/user"}}])
+                           |}
+                           |
+                           |type Type {
+                           |  username: String!
+                           |  id: Int!
+                           |  name: String!
+                           |  email: String!
+                           |}
+                           |""".stripMargin
+          assertSchema(endpoint)(expected.trim)
+        },
       ),
     )
 }

@@ -83,7 +83,7 @@ object Config {
         case Some(steps) if steps.nonEmpty =>
           Option(steps.map {
             case step @ Step.Http(_, _, _, _) =>
-              val noOutputHttp = step.withOutput(None)
+              val noOutputHttp = step.withOutput(None).withInput(None)
               if (step.method contains Method.GET) noOutputHttp.withMethod(None) else noOutputHttp
             case step                         => step
           })

@@ -19,13 +19,46 @@ trait Endpoint2Config {
 object Endpoint2Config {
 
   final case class Live(nameGen: NameGenerator) {
-    def getTypeName(schema: TSchema): String = nameGen.gen("Type", schema)
+    def getTypeName(schema: TSchema): String      = nameGen.gen("Type", schema)
+    def getInputTypeName(schema: TSchema): String = nameGen.gen("InputType", schema)
 
     def toConfig(endpoint: Endpoint): TValid[String, Config] =
       for {
         baseURL <- toBaseURL(endpoint)
         graphQL <- toGraphQL(endpoint)
       } yield Config(server = Server(baseURL = Option(baseURL)), graphQL = graphQL)
+
+    private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Argument =
+      schema match {
+        case schema @ TSchema.Obj(_)  => Config
+            .Argument(typeOf = getInputTypeName(schema), isRequired = Option(isRequired), isList = Option(isList))
+        case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
+        case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
+        case TSchema.String           => Config
+            .Argument(typeOf = "String", isRequired = Option(isRequired), isList = Option(isList))
+        case TSchema.Int => Config.Argument(typeOf = "Int", isRequired = Option(isRequired), isList = Option(isList))
+        case TSchema.Boolean => Config
+            .Argument(typeOf = "Boolean", isRequired = Option(isRequired), isList = Option(isList))
+      }
+
+    private def toArgumentMap(schema: TSchema, isRequired: Boolean, isList: Boolean): Map[String, Config.Argument] = {
+      schema match {
+        case TSchema.Obj(fields) => fields.map { field =>
+            val name = field.name
+            val arg  = toArgument(field.schema, isRequired = true, isList = false)
+            name -> arg
+          }.toMap
+
+        case TSchema.Arr(item)        => toArgumentMap(item, isRequired = false, isList = true)
+        case TSchema.Optional(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
+        case TSchema.String           =>
+          Map("value" -> Config.Argument(typeOf = "String", isRequired = Option(isRequired), isList = Option(isList)))
+        case TSchema.Int              =>
+          Map("value" -> Config.Argument(typeOf = "Int", isRequired = Option(isRequired), isList = Option(isList)))
+        case TSchema.Boolean          =>
+          Map("value" -> Config.Argument(typeOf = "Boolean", isRequired = Option(isRequired), isList = Option(isList)))
+      }
+    }
 
     private def toBaseURL(endpoint: Endpoint): TValid[String, URL] = {
       val urlString = endpoint.address.port match {
@@ -63,18 +96,24 @@ object Endpoint2Config {
 
     private def toGraphQLQuery(endpoint: Endpoint): TValid[String, Config.GraphQL] =
       TValid.succeed {
-        val types = toTypes(endpoint) :+ ("Query" -> toQueryField(endpoint))
+        val types = toTypes(endpoint) :+ ("Query" -> toQueryField(endpoint).toList)
         GraphQL(
           schema = RootSchema(query = Option("Query")),
           types = types.map { case (key, value) => key -> value.toMap }.toMap,
         )
       }
 
-    private def toQueryField(endpoint: Endpoint): List[(String, Config.Field)] = {
-      endpoint.output.toList.map(schema =>
-        nameGen.gen("field", schema) -> toConfigField(schema, isRequired = true, isList = false)
+    private def toQueryField(endpoint: Endpoint): Option[(String, Config.Field)] = {
+      endpoint.output.map(schema => {
+        val config = toConfigField(schema, isRequired = true, isList = false)
           .withSteps(List(Http.fromEndpoint(endpoint).withOutput(None))).compress
-      )
+
+        val config0 = endpoint.input match {
+          case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))
+          case None         => config
+        }
+        nameGen.gen("field", schema) -> config0
+      })
     }
 
     private def toTypes(endpoint: Endpoint): List[(String, List[(String, Config.Field)])] = {
@@ -100,17 +139,26 @@ object Endpoint2Config {
     }
   }
 
-  trait NameGenerator {
-    final private var cache                                = Map.empty[TSchema, String]
+  trait NameGenerator  {
+    final private var cache = Map.empty[TSchema, String]
+
     final def gen(prefix: String, schema: TSchema): String = {
       val name = make(prefix, schema)
       cache = cache.updated(schema, name)
       name
     }
+
     def make(prefix: String, schema: TSchema): String
   }
-
   object NameGenerator {
+    def incremental: NameGenerator = Incremental(new AtomicInteger(0))
+    def prefixOnly: NameGenerator  = Prefix
+    def schemaHash: NameGenerator  = HashCode
+
+    final private case class Incremental(int: AtomicInteger) extends NameGenerator {
+      override def make(prefix: String, schema: TSchema): String = s"${prefix}_${int.incrementAndGet().toString}"
+    }
+
     private case object HashCode extends NameGenerator {
       def make(prefix: String, schema: TSchema): String = s"${prefix}_${hashCode()}"
     }
@@ -118,13 +166,5 @@ object Endpoint2Config {
     private case object Prefix extends NameGenerator {
       def make(prefix: String, schema: TSchema): String = prefix
     }
-
-    final private case class Incremental(int: AtomicInteger) extends NameGenerator {
-      override def make(prefix: String, schema: TSchema): String = s"${prefix}_${int.incrementAndGet().toString}"
-    }
-
-    def incremental: NameGenerator = Incremental(new AtomicInteger(0))
-    def schemaHash: NameGenerator  = HashCode
-    def prefixOnly: NameGenerator  = Prefix
   }
 }

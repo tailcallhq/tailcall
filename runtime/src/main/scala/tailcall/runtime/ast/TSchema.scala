@@ -98,7 +98,7 @@ object TSchema {
   final case class Obj(fields: List[Field]) extends TSchema
 
   @jsonHint("array")
-  final case class Arr(item: TSchema) extends TSchema
+  final case class Arr(@jsonField("item") schema: TSchema) extends TSchema
 
   final case class Field(name: String, schema: TSchema)
 
