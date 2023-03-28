@@ -1,16 +1,7 @@
 package tailcall.runtime.openApi
 
 import tailcall.runtime.openApi.OpenapiModels.OpenapiDocument
-import tailcall.runtime.openApi.OpenapiSchemaType.{
-  OpenapiSchemaBoolean,
-  OpenapiSchemaDouble,
-  OpenapiSchemaFloat,
-  OpenapiSchemaInt,
-  OpenapiSchemaLong,
-  OpenapiSchemaRef,
-  OpenapiSchemaSimpleType,
-  OpenapiSchemaString,
-}
+import tailcall.runtime.openApi.OpenapiSchemaType._
 
 object BasicGenerator {
 
