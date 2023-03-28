@@ -34,6 +34,19 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
           val schema = unify(TSchema.obj("a" -> TSchema.int.opt), TSchema.obj("a" -> TSchema.int.opt))
           assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt)))
         },
+        test("int and string") {
+          val schema = unify(TSchema.int, TSchema.string)
+          assertZIO(schema.toZIO)(equalTo(TSchema.string))
+        },
+        test("deeply nested") {
+          val schema = unify(
+            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.int))),
+            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("y" -> TSchema.int))),
+          )
+          assertZIO(schema.toZIO)(equalTo(
+            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.int.opt, "y" -> TSchema.int.opt)))
+          ))
+        },
       ),
       suite("json to TSchema")(
         test("object to tSchema") {
