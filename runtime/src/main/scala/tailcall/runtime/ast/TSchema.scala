@@ -57,7 +57,11 @@ object TSchema {
   def obj(fields: (String, TSchema)*): TSchema =
     TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
 
-  def opt(schema: TSchema): TSchema = TSchema.Optional(schema)
+  def opt(schema: TSchema): TSchema =
+    schema match {
+      case Optional(_) => schema
+      case _           => Optional(schema)
+    }
 
   def string: TSchema = TSchema.String
 

@@ -79,6 +79,8 @@ trait JsonValue2TSchema {
       case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify2(item1, item2).map(TSchema.arr(_))
       case (a, TSchema.Obj(Nil))                    => TValid.succeed(a.opt)
       case (TSchema.Obj(Nil), b)                    => TValid.succeed(b.opt)
+      case (TSchema.Optional(a), b)                 => unify2(a, b).map(_.opt)
+      case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.opt)
       case _                                        => TValid.fail(s"Cannot generate schema from values ${a} and ${b}")
     }
 }

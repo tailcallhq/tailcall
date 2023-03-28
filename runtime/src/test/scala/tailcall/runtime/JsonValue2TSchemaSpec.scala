@@ -9,10 +9,32 @@ import zio.test._
 object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("TSchemaSpec")(
-      suite("unify")(test("removes duplicates") {
-        val schema = unify(TSchema.int, TSchema.int)
-        assertZIO(schema.toZIO)(equalTo(TSchema.int))
-      }),
+      suite("unify")(
+        test("removes duplicates") {
+          val schema = unify(TSchema.int, TSchema.int)
+          assertZIO(schema.toZIO)(equalTo(TSchema.int))
+        },
+        test("objects") {
+          val schema = unify(TSchema.obj("a" -> TSchema.int), TSchema.obj("b" -> TSchema.int))
+          assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt)))
+        },
+        test("array") {
+          val schema = unify(TSchema.obj("a" -> TSchema.int).arr, TSchema.obj("b" -> TSchema.int).arr)
+          assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt).arr))
+        },
+        test("optional(a) b") {
+          val schema = unify(TSchema.obj("a" -> TSchema.int.opt), TSchema.obj("a" -> TSchema.int))
+          assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt)))
+        },
+        test("a optional(b)") {
+          val schema = unify(TSchema.obj("a" -> TSchema.int), TSchema.obj("a" -> TSchema.int.opt))
+          assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt)))
+        },
+        test("optional(a) optional(b)") {
+          val schema = unify(TSchema.obj("a" -> TSchema.int.opt), TSchema.obj("a" -> TSchema.int.opt))
+          assertZIO(schema.toZIO)(equalTo(TSchema.obj("a" -> TSchema.int.opt)))
+        },
+      ),
       suite("json to TSchema")(
         test("object to tSchema") {
           val json    = """{"a": 1, "b": "2", "c": true, "d": null, "e": [1, 2, 3]}"""
