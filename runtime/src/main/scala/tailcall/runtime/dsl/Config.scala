@@ -66,6 +66,7 @@ object Config {
     def asList: Field                                     = copy(isList = Option(true))
     def asRequired: Field                                 = copy(isRequired = Option(true))
     def withArguments(args: Map[String, Argument]): Field = copy(args = Option(args))
+    def withSteps(steps: List[Step]): Field               = copy(steps = Option(steps))
     def apply(args: (String, Argument)*): Field           = copy(args = Option(args.toMap))
     def compress: Field                                   = {
       val isList = self.isList match {
@@ -79,7 +80,13 @@ object Config {
       }
 
       val steps = self.steps match {
-        case Some(steps) if steps.nonEmpty => Some(steps)
+        case Some(steps) if steps.nonEmpty =>
+          Option(steps.map {
+            case step @ Step.Http(_, _, _, _) =>
+              val noOutputHttp = step.withOutput(None)
+              if (step.method contains Method.GET) noOutputHttp.withMethod(None) else noOutputHttp
+            case step                         => step
+          })
         case _                             => None
       }
 
@@ -112,6 +119,7 @@ object Config {
     ) extends Step {
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
       def withInput(input: Option[TSchema]): Http   = copy(input = input)
+      def withMethod(method: Option[Method]): Http  = copy(method = method)
     }
 
     object Http {
