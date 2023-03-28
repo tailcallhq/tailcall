@@ -36,7 +36,7 @@ lazy val registry = (project in file("registry")).settings(
   libraryDependencies := zioTestDependencies ++ Seq(
     "dev.zio" %% "zio"       % zio,
     "dev.zio" %% "zio-http"  % zioHttp,
-    "dev.zio" %% "zio-redis" % "0.1.0",
+    "dev.zio" %% "zio-redis" % "0.2.0",
   )
 ).dependsOn(runtime)
 
