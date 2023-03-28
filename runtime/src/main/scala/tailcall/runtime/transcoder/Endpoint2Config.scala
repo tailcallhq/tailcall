@@ -2,6 +2,7 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.ast.{Endpoint, TSchema}
 import tailcall.runtime.dsl.Config
+import tailcall.runtime.dsl.Config.Step.Http
 import tailcall.runtime.dsl.Config.{GraphQL, RootSchema, Server}
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
@@ -62,18 +63,19 @@ object Endpoint2Config {
 
     private def toGraphQLQuery(endpoint: Endpoint): TValid[String, Config.GraphQL] =
       TValid.succeed {
-
         val types = toTypes(endpoint) :+ ("Query" -> toQueryField(endpoint))
-
         GraphQL(
           schema = RootSchema(query = Option("Query")),
           types = types.map { case (key, value) => key -> value.toMap }.toMap,
         )
       }
 
-    private def toQueryField(endpoint: Endpoint): List[(String, Config.Field)] =
-      endpoint.output.toList
-        .map(schema => nameGen.gen("field", schema) -> toConfigField(schema, isRequired = true, isList = false))
+    private def toQueryField(endpoint: Endpoint): List[(String, Config.Field)] = {
+      endpoint.output.toList.map(schema =>
+        nameGen.gen("field", schema) -> toConfigField(schema, isRequired = true, isList = false)
+          .withSteps(List(Http.fromEndpoint(endpoint).withOutput(None))).compress
+      )
+    }
 
     private def toTypes(endpoint: Endpoint): List[(String, List[(String, Config.Field)])] = {
       endpoint.output match {

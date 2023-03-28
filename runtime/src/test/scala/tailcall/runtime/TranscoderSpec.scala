@@ -49,7 +49,7 @@ object TranscoderSpec extends ZIOSpecDefault {
                            |}
                            |
                            |type Query {
-                           |  field: [Type!]
+                           |  field: [Type!] @steps(value: [{http: {path: "/users"}}])
                            |}
                            |
                            |type Type {
