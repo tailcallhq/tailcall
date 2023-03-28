@@ -15,6 +15,16 @@ trait JsonValue2TSchema {
       tSchema <- toTSchema(jsonAST, Nil)
     } yield tSchema
 
+  def unify(seq: TSchema*): TValid[String, TSchema] = unify(seq.toList)
+
+  def unify(list: List[TSchema]): TValid[String, TSchema] = {
+    list match {
+      case Nil          => TValid.fail("Cannot infer elements from an empty list")
+      case head :: Nil  => TValid.succeed(head)
+      case head :: tail => unify(tail: _*).flatMap(unify2(head, _))
+    }
+  }
+
   final private def toTSchema(jsonAST: Json, stack: List[Json]): TValid[String, TSchema] = {
     jsonAST match {
       case Json.Obj(fields) => for {
@@ -25,21 +35,13 @@ trait JsonValue2TSchema {
 
       case Json.Arr(element) => for {
           chunk  <- TValid.foreachChunk(element)(json => toTSchema(json, jsonAST :: stack))
-          schema <- unify(chunk.toList)
+          schema <- unify(chunk.toList: _*)
         } yield schema.arr
 
       case Json.Bool(_) => TValid.succeed(TSchema.Boolean)
       case Json.Str(_)  => TValid.succeed(TSchema.String)
       case Json.Num(_)  => TValid.succeed(TSchema.Int)
       case Json.Null    => TValid.succeed(TSchema.obj())
-    }
-  }
-
-  private def unify(list: List[TSchema]): TValid[String, TSchema] = {
-    list match {
-      case Nil          => TValid.fail("Cannot infer elements from an empty list")
-      case head :: Nil  => TValid.succeed(head)
-      case head :: tail => unify(tail).flatMap(unify(head, _))
     }
   }
 
@@ -52,7 +54,7 @@ trait JsonValue2TSchema {
    * input schemas. This is done to reduce unnecessary
    * unions.
    */
-  private def unify(a: TSchema, b: TSchema): TValid[String, TSchema] =
+  private def unify2(a: TSchema, b: TSchema): TValid[String, TSchema] =
     (a, b) match {
       case (TSchema.Int, TSchema.Int)                   => TValid.succeed(TSchema.Int)
       case (TSchema.String, TSchema.String)             => TValid.succeed(TSchema.String)
@@ -64,7 +66,7 @@ trait JsonValue2TSchema {
         for {
           fields <- TValid.foreachIterable(field1Map.keys ++ field2Map.keys) { key =>
             val fieldDesc = (field1Map.get(key), field2Map.get(key)) match {
-              case (Some(s1), Some(s2)) => unify(s1, s2)
+              case (Some(s1), Some(s2)) => unify2(s1, s2)
               case (Some(s1), None)     => TValid.succeed(s1.opt)
               case (None, Some(s2))     => TValid.succeed(s2.opt)
               case (None, None)         => TValid.fail(s"Key ${key} should be present in one of the maps")
@@ -74,7 +76,7 @@ trait JsonValue2TSchema {
           }
         } yield TSchema.obj(fields.toList)
 
-      case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify(item1, item2).map(TSchema.arr(_))
+      case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify2(item1, item2).map(TSchema.arr(_))
       case (a, TSchema.Obj(Nil))                    => TValid.succeed(a.opt)
       case (TSchema.Obj(Nil), b)                    => TValid.succeed(b.opt)
       case _                                        => TValid.fail(s"Cannot generate schema from values ${a} and ${b}")
