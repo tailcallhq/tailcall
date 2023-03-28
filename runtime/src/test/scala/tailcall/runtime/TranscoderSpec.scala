@@ -1,6 +1,7 @@
 package tailcall.runtime
 
 import tailcall.runtime.ast.{Endpoint, TSchema}
+import tailcall.runtime.http.Method
 import tailcall.runtime.transcoder.Transcoder
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertZIO}
@@ -9,6 +10,8 @@ import zio.{Scope, ZIO}
 object TranscoderSpec extends ZIOSpecDefault {
   private val User = TSchema
     .obj("username" -> TSchema.String, "id" -> TSchema.Int, "name" -> TSchema.String, "email" -> TSchema.String)
+
+  private val InputUser = TSchema.obj("username" -> TSchema.String, "name" -> TSchema.String, "email" -> TSchema.String)
 
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
@@ -83,6 +86,32 @@ object TranscoderSpec extends ZIOSpecDefault {
                            |  email: String!
                            |}
                            |""".stripMargin
+          assertSchema(endpoint)(expected.trim)
+        },
+        test("mutation schema") {
+          val endpoint = jsonEndpoint.withOutput(Option(User)).withInput(Option(InputUser)).withPath("/user")
+            .withMethod(Method.POST)
+
+          val expected =
+            """
+              |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
+              |  query: Query
+              |  mutation: Mutation
+              |}
+              |
+              |type Mutation {
+              |  field(username: String!, name: String!, email: String!): Type! @steps(value: [{http: {path: "/user",method: "POST"}}])
+              |}
+              |
+              |type Query
+              |
+              |type Type {
+              |  username: String!
+              |  id: Int!
+              |  name: String!
+              |  email: String!
+              |}
+              |""".stripMargin
           assertSchema(endpoint)(expected.trim)
         },
       ),
