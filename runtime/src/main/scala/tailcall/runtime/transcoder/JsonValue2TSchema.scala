@@ -52,7 +52,8 @@ trait JsonValue2TSchema {
    * types into a single Union type. Instead, it is creating
    * a new schema that includes all the properties of both
    * input schemas. This is done to reduce unnecessary
-   * unions.
+   * unions. Incase of a conflict, the second schema is
+   * selected.
    */
   private def unify2(a: TSchema, b: TSchema): TValid[String, TSchema] =
     (a, b) match {
@@ -81,6 +82,6 @@ trait JsonValue2TSchema {
       case (TSchema.Obj(Nil), b)                    => TValid.succeed(b.opt)
       case (TSchema.Optional(a), b)                 => unify2(a, b).map(_.opt)
       case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.opt)
-      case _                                        => TValid.fail(s"Cannot generate schema from values ${a} and ${b}")
+      case (_, b)                                   => TValid.succeed(b)
     }
 }
