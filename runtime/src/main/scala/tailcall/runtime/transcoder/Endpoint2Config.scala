@@ -86,24 +86,17 @@ object Endpoint2Config {
       fields.map(field => field.name -> toConfigField(field.schema, isRequired = true, isList = false))
     }
 
-    private def toGraphQL(endpoint: Endpoint): TValid[String, Config.GraphQL] = {
-      for {
-        graphQL <- if (endpoint.method == Method.GET) toGraphQLQuery(endpoint) else toGraphQLMutation(endpoint)
-      } yield graphQL
-    }
-
-    private def toGraphQLMutation(endpoint: Endpoint): TValid[String, Config.GraphQL] = ???
-
-    private def toGraphQLQuery(endpoint: Endpoint): TValid[String, Config.GraphQL] =
+    private def toGraphQL(endpoint: Endpoint): TValid[String, Config.GraphQL] =
       TValid.succeed {
-        val types = toTypes(endpoint) :+ ("Query" -> toQueryField(endpoint).toList)
-        GraphQL(
-          schema = RootSchema(query = Option("Query")),
-          types = types.map { case (key, value) => key -> value.toMap }.toMap,
-        )
+        val rootSchema = RootSchema(query = Option("Query"), mutation = Option("Mutation"))
+        val rootTypes  =
+          if (endpoint.method == Method.GET) Map("Query" -> toRootTypeField(endpoint).toList)
+          else Map("Mutation"                            -> toRootTypeField(endpoint).toList, "Query" -> List.empty)
+        val types      = toTypes(endpoint) ++ rootTypes
+        GraphQL(schema = rootSchema, types = types.map { case (key, value) => key -> value.toMap }.toMap)
       }
 
-    private def toQueryField(endpoint: Endpoint): Option[(String, Config.Field)] = {
+    private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {
       endpoint.output.map(schema => {
         val config = toConfigField(schema, isRequired = true, isList = false)
           .withSteps(List(Http.fromEndpoint(endpoint).withOutput(None))).compress
