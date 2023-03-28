@@ -18,6 +18,6 @@ object OpenApiSpec extends ZIOSpecDefault {
         _ = OpenAPI2Config.convert(encoded)
       } yield ()
       assertZIO(program)(anything)
-    }).provide(FileIO.live)
+    }).provide(FileIO.default)
 
 }
