@@ -44,6 +44,33 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
+      test("nested output schema") {
+        val output   = TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.int)))
+        val endpoint = Endpoint.make("abc.com").withOutput(Option(output)).withPath("/abc")
+        val expected = """
+                         |schema @server(baseURL: "http://abc.com") {
+                         |  query: Query
+                         |}
+                         |
+                         |type Query {
+                         |  fieldType_1: Type_1! @steps(value: [{http: {path: "/abc"}}])
+                         |}
+                         |
+                         |type Type_1 {
+                         |  a: Type_2!
+                         |}
+                         |
+                         |type Type_2 {
+                         |  b: Type_3!
+                         |}
+                         |
+                         |type Type_3 {
+                         |  c: Int!
+                         |}
+                         |
+                         |""".stripMargin
+        assertSchema(endpoint)(expected.trim)
+      },
       test("argument schema") {
         val endpoint = jsonEndpoint.withOutput(Option(User.opt)).withInput(Option(TSchema.obj("userId" -> TSchema.Int)))
           .withPath("/user")
