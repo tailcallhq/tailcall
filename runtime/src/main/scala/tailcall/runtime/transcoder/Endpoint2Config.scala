@@ -116,7 +116,10 @@ object Endpoint2Config {
       isList: Boolean,
     ): List[(String, List[(String, Config.Field)])] = {
       schema match {
-        case TSchema.Obj(fields)      => List(getTypeName(schema) -> toFields(fields))
+        case TSchema.Obj(fields)      =>
+          val head = getTypeName(schema) -> toFields(fields)
+          val tail = fields.flatMap(field => toTypes(field.schema, isRequired, isList))
+          head :: tail
         case TSchema.Arr(item)        => toTypes(item, isRequired, isList = true)
         case TSchema.Optional(schema) => toTypes(schema, isRequired = false, isList = isList)
         case TSchema.String           => Nil
