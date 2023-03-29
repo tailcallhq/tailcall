@@ -20,10 +20,10 @@ trait Orc2Blueprint {
 
   final private def toInputValueDefinition(
     lField: LabelledField[Input]
-  ): TValid[String, Blueprint.InputValueDefinition] =
+  ): TValid[String, Blueprint.InputFieldDefinition] =
     for {
       ofType <- TValid.fromOption(lField.field.ofType) <> TValid.fail("Input type must be named")
-    } yield Blueprint.InputValueDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
+    } yield Blueprint.InputFieldDefinition(lField.name, toType(ofType), lField.field.definition.defaultValue)
 
   final private def toResolver(lfield: LabelledField[Output]): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
     lfield.field.definition.resolve match {

@@ -4,8 +4,7 @@ import tailcall.runtime.ast.{Endpoint, TSchema}
 import tailcall.runtime.http.Method
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
-import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertZIO}
+import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
 import zio.{Scope, ZIO}
 
 object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
@@ -19,7 +18,8 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
   def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
     val schema = toConfig(endpoint, NameGenerator.incremental).flatMap(Transcoder.toGraphQLSchema)
       .map(_.stripMargin.trim)
-    assertZIO(schema.toZIO)(equalTo(expected.trim))
+
+    for { result <- schema.toZIO } yield assertTrue(result == expected)
   }
 
   override def spec: Spec[TestEnvironment with Scope, Any] =

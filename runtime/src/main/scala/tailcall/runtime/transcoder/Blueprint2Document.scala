@@ -41,7 +41,7 @@ trait Blueprint2Document {
     FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), directives)
   }
 
-  final private def toCalibanInputValue(inputValue: Blueprint.InputValueDefinition): InputValueDefinition =
+  final private def toCalibanInputValue(inputValue: Blueprint.InputFieldDefinition): InputValueDefinition =
     CalibanDefinition.TypeSystemDefinition.TypeDefinition.InputValueDefinition(
       None,
       inputValue.name,

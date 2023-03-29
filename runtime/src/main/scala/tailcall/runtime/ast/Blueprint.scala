@@ -91,17 +91,28 @@ object Blueprint {
 
   sealed trait Definition
 
-  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                                                       extends Definition
-  final case class InputObjectTypeDefinition(name: String, fields: List[InputValueDefinition])                                                                             extends Definition
+  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                                                       extends Definition {
+    def toInput: InputObjectTypeDefinition = InputObjectTypeDefinition(name, fields.map(_.toInput(None)))
+  }
+  final case class InputObjectTypeDefinition(name: String, fields: List[InputFieldDefinition])                                                                             extends Definition
   final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None, directives: List[Directive] = Nil) extends Definition
 
-  final case class InputValueDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
-  final case class FieldDefinition(name: String, args: List[InputValueDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil)
+  final case class InputFieldDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
+  final case class FieldDefinition(name: String, args: List[InputFieldDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil) {
+    def toInput(defaultValue: Option[DynamicValue]): InputFieldDefinition = InputFieldDefinition(name, ofType, defaultValue)
+  }
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
-  sealed trait Type
+  sealed trait Type {
+    self =>
+    def defaultName: String =
+      self match {
+        case NamedType(name, _)  => name
+        case ListType(ofType, _) => ofType.defaultName
+      }
+  }
   final case class NamedType(name: String, nonNull: Boolean) extends Type
-  final case class ListType(ofType: Type, nonNull: Boolean)  extends Type
+  final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
   implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]
 
