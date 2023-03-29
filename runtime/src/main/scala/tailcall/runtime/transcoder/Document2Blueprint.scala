@@ -18,10 +18,10 @@ trait Document2Blueprint {
 
   final private def toBlueprintInputValueDefinition(
     inputValueDefinition: InputValueDefinition
-  ): TValid[String, Blueprint.InputValueDefinition] =
+  ): TValid[String, Blueprint.InputFieldDefinition] =
     inputValueDefinition.defaultValue
       .fold[TValid[String, Option[DynamicValue]]](TValid.none)(Transcoder.toDynamicValue(_).some)
-      .map(Blueprint.InputValueDefinition(inputValueDefinition.name, toBlueprintType(inputValueDefinition.ofType), _))
+      .map(Blueprint.InputFieldDefinition(inputValueDefinition.name, toBlueprintType(inputValueDefinition.ofType), _))
 
   final private def toBlueprintFieldDefinition(
     fieldDefinition: Definition.TypeSystemDefinition.TypeDefinition.FieldDefinition
