@@ -19,14 +19,15 @@ trait Endpoint2Config {
 object Endpoint2Config {
 
   final case class Live(nameGen: NameGenerator) {
-    def getTypeName(schema: TSchema): String      = nameGen.gen("Type", schema)
-    def getInputTypeName(schema: TSchema): String = nameGen.gen("InputType", schema)
-
     def toConfig(endpoint: Endpoint): TValid[String, Config] =
       for {
         baseURL <- toBaseURL(endpoint)
         graphQL <- toGraphQL(endpoint)
       } yield Config(server = Server(baseURL = Option(baseURL)), graphQL = graphQL)
+
+    private def getInputTypeName(schema: TSchema): String = nameGen.gen("InputType", schema)
+
+    private def getTypeName(schema: TSchema): String = nameGen.gen("Type", schema)
 
     private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Argument =
       schema match {
@@ -92,7 +93,7 @@ object Endpoint2Config {
         val rootTypes  =
           if (endpoint.method == Method.GET) Map("Query" -> toRootTypeField(endpoint).toList)
           else Map("Mutation"                            -> toRootTypeField(endpoint).toList, "Query" -> List.empty)
-        val types      = toTypes(endpoint) ++ rootTypes
+        val types      = endpoint.output.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil) ++ rootTypes
         GraphQL(schema = rootSchema, types = types.map { case (key, value) => key -> value.toMap }.toMap)
       }
 
@@ -105,15 +106,8 @@ object Endpoint2Config {
           case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))
           case None         => config
         }
-        nameGen.gen("field", schema) -> config0
+        s"field${config0.typeOf}" -> config0
       })
-    }
-
-    private def toTypes(endpoint: Endpoint): List[(String, List[(String, Config.Field)])] = {
-      endpoint.output match {
-        case Some(schema) => toTypes(schema, isRequired = true, isList = false)
-        case None         => Nil
-      }
     }
 
     private def toTypes(
@@ -136,12 +130,16 @@ object Endpoint2Config {
     final private var cache = Map.empty[TSchema, String]
 
     final def gen(prefix: String, schema: TSchema): String = {
-      val name = make(prefix, schema)
-      cache = cache.updated(schema, name)
-      name
+      cache.get(schema) match {
+        case Some(name) => name
+        case None       =>
+          val name = unsafeGen(prefix, schema)
+          cache = cache.updated(schema, name)
+          name
+      }
     }
 
-    def make(prefix: String, schema: TSchema): String
+    def unsafeGen(prefix: String, schema: TSchema): String
   }
   object NameGenerator {
     def incremental: NameGenerator = Incremental(new AtomicInteger(0))
@@ -149,15 +147,15 @@ object Endpoint2Config {
     def schemaHash: NameGenerator  = HashCode
 
     final private case class Incremental(int: AtomicInteger) extends NameGenerator {
-      override def make(prefix: String, schema: TSchema): String = s"${prefix}_${int.incrementAndGet().toString}"
+      override def unsafeGen(prefix: String, schema: TSchema): String = s"${prefix}_${int.incrementAndGet().toString}"
     }
 
     private case object HashCode extends NameGenerator {
-      def make(prefix: String, schema: TSchema): String = s"${prefix}_${hashCode()}"
+      def unsafeGen(prefix: String, schema: TSchema): String = s"${prefix}_${hashCode()}"
     }
 
     private case object Prefix extends NameGenerator {
-      def make(prefix: String, schema: TSchema): String = prefix
+      def unsafeGen(prefix: String, schema: TSchema): String = prefix
     }
   }
 }

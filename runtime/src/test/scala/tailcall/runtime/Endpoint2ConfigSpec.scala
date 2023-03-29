@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import tailcall.runtime.ast.{Endpoint, TSchema}
 import tailcall.runtime.http.Method
+import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertZIO}
@@ -16,7 +17,8 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
   def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
-    val schema = toConfig(endpoint).flatMap(Transcoder.toGraphQLSchema).map(_.stripMargin.trim)
+    val schema = toConfig(endpoint, NameGenerator.incremental).flatMap(Transcoder.toGraphQLSchema)
+      .map(_.stripMargin.trim)
     assertZIO(schema.toZIO)(equalTo(expected.trim))
   }
 
@@ -30,10 +32,10 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  field: [Type!] @steps(value: [{http: {path: "/users"}}])
+                         |  fieldType_1: [Type_1!] @steps(value: [{http: {path: "/users"}}])
                          |}
                          |
-                         |type Type {
+                         |type Type_1 {
                          |  username: String!
                          |  id: Int!
                          |  name: String!
@@ -52,10 +54,10 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  field(userId: Int!): Type @steps(value: [{http: {path: "/user"}}])
+                         |  fieldType_1(userId: Int!): Type_1 @steps(value: [{http: {path: "/user"}}])
                          |}
                          |
-                         |type Type {
+                         |type Type_1 {
                          |  username: String!
                          |  id: Int!
                          |  name: String!
@@ -76,12 +78,12 @@ object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
             |}
             |
             |type Mutation {
-            |  field(username: String!, name: String!, email: String!): Type! @steps(value: [{http: {path: "/user",method: "POST"}}])
+            |  fieldType_1(username: String!, name: String!, email: String!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
             |}
             |
             |type Query
             |
-            |type Type {
+            |type Type_1 {
             |  username: String!
             |  id: Int!
             |  name: String!
