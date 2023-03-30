@@ -14,17 +14,7 @@ import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def withType(input: (String, Map[String, Field])*): Config =
-    self.copy(graphQL = self.graphQL.copy(types = self.graphQL.types ++ input.toMap))
-
-  def withRootSchema(
-    query: Option[String] = graphQL.schema.query,
-    mutation: Option[String] = graphQL.schema.mutation,
-  ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
-
-  def toBlueprint: Blueprint = toBlueprint()
-
-  def toBlueprint(encodeSteps: Boolean = false): Blueprint = Transcoder.toBlueprint(self, encodeSteps = encodeSteps).get
+  def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
   def mergeRight(other: Config): Config = {
     Config(
@@ -34,20 +24,42 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     )
   }
 
-  def compress: Config = self.copy(graphQL = self.graphQL.compress)
+  def toBlueprint: Blueprint = toBlueprint()
+
+  def toBlueprint(encodeSteps: Boolean = false): Blueprint = Transcoder.toBlueprint(self, encodeSteps = encodeSteps).get
+
+  def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
+
+  def withQuery(query: String): Config = self.copy(graphQL = self.graphQL.withQuery(query))
+
+  def withRootSchema(
+    query: Option[String] = graphQL.schema.query,
+    mutation: Option[String] = graphQL.schema.mutation,
+  ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
+
+  def withType(input: (String, Map[String, Field])*): Config =
+    self.copy(graphQL = self.graphQL.copy(types = self.graphQL.types ++ input.toMap))
 }
 
 object Config {
   def empty: Config = Config()
+
+  def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
+
   final case class Server(baseURL: Option[URL] = None) {
     self =>
+    def isEmpty: Boolean = baseURL.isEmpty
+
     def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
-    def isEmpty: Boolean                  = baseURL.isEmpty
   }
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
+
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Map[String, Field]] = Map.empty) {
     self =>
+    def compress: GraphQL =
+      self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
+
     def mergeRight(other: GraphQL): GraphQL =
       GraphQL(
         schema = RootSchema(
@@ -57,10 +69,13 @@ object Config {
         types = self.types ++ other.types,
       )
 
-    def compress: GraphQL                                                                  =
-      self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
-    def withSchema(query: Option[String] = None, mutation: Option[String] = None): GraphQL =
+    def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
+
+    def withQuery(name: String): GraphQL = copy(schema = schema.copy(query = Option(name)))
+
+    def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
+
     def withType(name: String, fields: Map[String, Field]): GraphQL = copy(types = types + (name -> fields))
   }
 
@@ -77,14 +92,13 @@ object Config {
     args: Option[Map[String, Arg]] = None,
   ) {
     self =>
-    def isList: Boolean                              = list.getOrElse(false)
-    def isRequired: Boolean                          = required.getOrElse(false)
-    def asList: Field                                = copy(list = Option(true))
-    def asRequired: Field                            = copy(required = Option(true))
-    def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
-    def withSteps(steps: Step*): Field               = copy(steps = Option(steps.toList))
-    def apply(args: (String, Arg)*): Field           = copy(args = Option(args.toMap))
-    def compress: Field                              = {
+    def apply(args: (String, Arg)*): Field = copy(args = Option(args.toMap))
+
+    def asList: Field = copy(list = Option(true))
+
+    def asRequired: Field = copy(required = Option(true))
+
+    def compress: Field = {
       val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
@@ -113,16 +127,27 @@ object Config {
 
       self.copy(list = isList, required = isRequired, steps = steps, args = args)
     }
+
+    def isList: Boolean = list.getOrElse(false)
+
+    def isRequired: Boolean = required.getOrElse(false)
+
+    def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
+
+    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
   }
 
   object Field {
     def apply(str: String, operations: Step*): Field =
       Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
 
-    def string: Field               = Field(typeOf = "String")
-    def int: Field                  = Field(typeOf = "Int")
-    def bool: Field                 = Field(typeOf = "Boolean")
+    def bool: Field = Field(typeOf = "Boolean")
+
+    def int: Field = Field(typeOf = "Int")
+
     def ofType(name: String): Field = Field(typeOf = name)
+
+    def string: Field = Field(typeOf = "String")
   }
 
   sealed trait Step
@@ -134,24 +159,28 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
     ) extends Step {
+      def withInput(input: Option[TSchema]): Http = copy(input = input)
+
+      def withMethod(method: Method): Http = copy(method = Option(method))
+
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
-      def withInput(input: Option[TSchema]): Http   = copy(input = input)
-      def withMethod(method: Method): Http          = copy(method = Option(method))
     }
+
+    @jsonHint("const")
+    final case class Constant(json: Json) extends Step
+
+    @jsonHint("objectPath")
+    final case class ObjPath(map: Map[String, List[String]]) extends Step
 
     object Http {
       def fromEndpoint(endpoint: Endpoint): Http =
         Http(path = endpoint.path, method = Option(endpoint.method), input = endpoint.input, output = endpoint.output)
     }
 
-    @jsonHint("const")
-    final case class Constant(json: Json) extends Step
     object Constant {
       implicit val codec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
     }
 
-    @jsonHint("objectPath")
-    final case class ObjPath(map: Map[String, List[String]]) extends Step
     object ObjPath {
       def apply(map: (String, List[String])*): ObjPath = ObjPath(map.toMap)
       implicit val codec: JsonCodec[ObjPath] = JsonCodec[Map[String, List[String]]].transform(ObjPath(_), _.map)
@@ -168,11 +197,11 @@ object Config {
     @jsonField("isRequired") required: Option[Boolean] = None,
   ) {
     self =>
-    def asList: Arg         = self.copy(list = Option(true))
-    def isList: Boolean     = list.getOrElse(false)
-    def isRequired: Boolean = required.getOrElse(false)
-    def asRequired: Arg     = self.copy(required = Option(true))
-    def compress: Arg       = {
+    def asList: Arg = self.copy(list = Option(true))
+
+    def asRequired: Arg = self.copy(required = Option(true))
+
+    def compress: Arg = {
       val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
@@ -185,16 +214,17 @@ object Config {
 
       self.copy(list = isList, required = isRequired)
     }
-  }
 
-  object Arg {
+    def isList: Boolean = list.getOrElse(false)
+
+    def isRequired: Boolean = required.getOrElse(false)
+  }
+  object Arg  {
     val string: Arg               = Arg("String")
     val int: Arg                  = Arg("Int")
     val bool: Arg                 = Arg("Boolean")
     def ofType(name: String): Arg = Arg(name)
   }
-
-  def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
   /**
    * Json Codecs

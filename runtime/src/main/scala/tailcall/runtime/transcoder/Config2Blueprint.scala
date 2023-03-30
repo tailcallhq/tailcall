@@ -71,8 +71,8 @@ trait Config2Blueprint {
       }
     }
 
-    val fromQueries = config.graphQL.schema.query.toList.flatMap(query => query :: loop(query, Nil))
-    config.graphQL.schema.mutation.toList.flatMap(mutation => loop(mutation, fromQueries))
+    val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
+    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
   final private def toDirective(config: Config): Option[Blueprint.Directive] = {
