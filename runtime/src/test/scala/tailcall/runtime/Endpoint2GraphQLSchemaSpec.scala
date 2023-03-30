@@ -78,8 +78,12 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |  query: Query
                          |}
                          |
+                         |input Type_2 {
+                         |  userId: Int!
+                         |}
+                         |
                          |type Query {
-                         |  fieldType_1(userId: Int!): Type_1 @steps(value: [{http: {path: "/user"}}])
+                         |  fieldType_1(value: Type_2!): Type_1 @steps(value: [{http: {path: "/user"}}])
                          |}
                          |
                          |type Type_1 {
@@ -91,30 +95,63 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
+      test("nested argument schema") {
+        val endpoint = Endpoint.make("abc.com")
+          .withInput(Option(TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.int)))))
+          .withOutput(Option(TSchema.int))
+
+        val expected = """
+                         |schema @server(baseURL: "http://abc.com") {
+                         |  query: Query
+                         |}
+                         |
+                         |input Type_1 {
+                         |  a: Type_2!
+                         |}
+                         |
+                         |input Type_2 {
+                         |  b: Type_3!
+                         |}
+                         |
+                         |input Type_3 {
+                         |  c: Int!
+                         |}
+                         |
+                         |type Query {
+                         |  fieldInt(value: Type_1!): Int! @steps(value: [{http: {path: ""}}])
+                         |}
+                         |""".stripMargin
+        assertSchema(endpoint)(expected.trim)
+      },
       test("mutation schema") {
         val endpoint = jsonEndpoint.withOutput(Option(User)).withInput(Option(InputUser)).withPath("/user")
           .withMethod(Method.POST)
 
-        val expected =
-          """
-            |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
-            |  query: Query
-            |  mutation: Mutation
-            |}
-            |
-            |type Mutation {
-            |  fieldType_1(username: String!, name: String!, email: String!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
-            |}
-            |
-            |type Query
-            |
-            |type Type_1 {
-            |  username: String!
-            |  id: Int!
-            |  name: String!
-            |  email: String!
-            |}
-            |""".stripMargin
+        val expected = """
+                         |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
+                         |  query: Query
+                         |  mutation: Mutation
+                         |}
+                         |
+                         |input Type_2 {
+                         |  username: String!
+                         |  name: String!
+                         |  email: String!
+                         |}
+                         |
+                         |type Mutation {
+                         |  fieldType_1(value: Type_2!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
+                         |}
+                         |
+                         |type Query
+                         |
+                         |type Type_1 {
+                         |  username: String!
+                         |  id: Int!
+                         |  name: String!
+                         |  email: String!
+                         |}
+                         |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
     )
