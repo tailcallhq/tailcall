@@ -113,9 +113,9 @@ object Config {
     def apply(str: String, operations: Step*): Field =
       Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
 
-    def string: Field = Field(typeOf = "String")
-    def int: Field    = Field(typeOf = "Int")
-    def bool: Field   = Field(typeOf = "Boolean")
+    def string: Field               = Field(typeOf = "String")
+    def int: Field                  = Field(typeOf = "Int")
+    def bool: Field                 = Field(typeOf = "Boolean")
     def ofType(name: String): Field = Field(typeOf = name)
   }
 
