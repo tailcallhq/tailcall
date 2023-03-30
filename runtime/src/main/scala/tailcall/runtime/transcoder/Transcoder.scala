@@ -1,9 +1,10 @@
 package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
-import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.ast.{Blueprint, Endpoint}
 import tailcall.runtime.dsl.{Config, Postman}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.value._
 
 /**
@@ -31,6 +32,9 @@ sealed trait Transcoder
     with ToValue
 
 object Transcoder extends Transcoder {
+  def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
+    toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
+
   def toConfig(postman: Postman): TValid[String, Config] =
     for {
       endpoints <- toEndpoints(postman)
