@@ -12,29 +12,27 @@ trait JsonValue2TSchema {
   final def toTSchema(json: String): TValid[String, TSchema] =
     for {
       jsonAST <- TValid.fromEither(Json.decoder.decodeJson(json))
-      tSchema <- toTSchema(jsonAST, Nil)
+      tSchema <- toTSchema(jsonAST)
     } yield tSchema
 
   def unify(seq: TSchema*): TValid[String, TSchema] = unify(seq.toList)
 
   def unify(list: List[TSchema]): TValid[String, TSchema] = {
     list match {
-      case Nil          => TValid.fail("Cannot infer elements from an empty list")
+      case Nil          => TValid.succeed(TSchema.empty) // Todo: Handle Errors in a better way
       case head :: Nil  => TValid.succeed(head)
       case head :: tail => unify(tail: _*).flatMap(unify2(head, _))
     }
   }
 
-  final private def toTSchema(jsonAST: Json, stack: List[Json]): TValid[String, TSchema] = {
-    jsonAST match {
+  final def toTSchema(jsonAST: Json): TValid[String, TSchema] = {
+    val schema = jsonAST match {
       case Json.Obj(fields) => for {
-          fields <- TValid.foreach(fields.toList) { case (name, value) =>
-            toTSchema(value, jsonAST :: stack).map(TSchema.Field(name, _))
-          }
+          fields <- TValid.foreach(fields.toList) { case (name, value) => toTSchema(value).map(TSchema.Field(name, _)) }
         } yield TSchema.obj(fields)
 
       case Json.Arr(element) => for {
-          chunk  <- TValid.foreachChunk(element)(json => toTSchema(json, jsonAST :: stack))
+          chunk  <- TValid.foreachChunk(element)(json => toTSchema(json))
           schema <- unify(chunk.toList: _*)
         } yield schema.arr
 
@@ -43,6 +41,8 @@ trait JsonValue2TSchema {
       case Json.Num(_)  => TValid.succeed(TSchema.Int)
       case Json.Null    => TValid.succeed(TSchema.obj())
     }
+    // pprint.pprintln(schema)
+    schema
   }
 
   /**
@@ -84,4 +84,8 @@ trait JsonValue2TSchema {
       case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.opt)
       case (_, b)                                   => TValid.succeed(b)
     }
+}
+object JsonValue2TSchema {
+  sealed trait Error
+  object Error {}
 }
