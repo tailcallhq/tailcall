@@ -72,8 +72,8 @@ object TSchema {
       case TSchema.Boolean     => Schema[Boolean]
       case TSchema.Optional(s) => toZIOSchema(s).optional
       case Obj(fields)         =>
-        val nfields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
-        ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nfields).toSchema
+        val nFields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
+        ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
       case Arr(item)           => Schema.chunk(toZIOSchema(item))
     }
 

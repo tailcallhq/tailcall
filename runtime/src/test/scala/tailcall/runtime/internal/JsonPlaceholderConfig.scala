@@ -2,11 +2,11 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.ast.Path
 import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.{Argument, Step}
+import tailcall.runtime.dsl.Config.{Argument, Field, Step}
 import tailcall.runtime.http.Method
 
 object JsonPlaceholderConfig {
-  def createUser: Step.Http = users.withMethod(Option(Method.POST))
+  def createUser: Step.Http = users.withMethod(Method.POST)
   def posts                 = Config.Step.Http(Path.unsafe.fromString("/posts"))
   def postsById             = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
   def userById              = Config.Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
@@ -17,68 +17,62 @@ object JsonPlaceholderConfig {
     schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
     types = Map(
       "Mutation"   -> Map(
-        "createUser" -> Config.Field("User", createUser).withArguments(Map("user" -> Argument("NewUser").asRequired))
+        "createUser" -> Field.ofType("Id").withSteps(createUser)
+          .withArguments(Map("user" -> Argument("NewUser").asRequired))
       ),
+      "Id"         -> Map("id" -> Field.int.asRequired),
       "Query"      -> Map(
-        "posts" -> Config.Field("Post", posts).asList,
-        "users" -> Config.Field("User", users).asList,
-        "post"  -> Config.Field("Post", postsById)("id" -> Argument.int.asRequired),
+        "posts" -> Field.ofType("Post").withSteps(posts).asList,
+        "users" -> Field.ofType("User").withSteps(users).asList,
+        "post"  -> Field.ofType("Post").withSteps(postsById)("id" -> Argument.int.asRequired),
         "user"  -> Config
           .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Argument.int.asRequired),
       ),
       "NewUser"    -> Map(
-        "name"     -> Config.Field.string.asRequired,
-        "username" -> Config.Field.string.asRequired,
-        "email"    -> Config.Field.string.asRequired,
-        "address"  -> Config.Field("NewAddress"),
-        "phone"    -> Config.Field.string,
-        "website"  -> Config.Field.string,
-        "company"  -> Config.Field("NewCompany"),
+        "name"     -> Field.string.asRequired,
+        "username" -> Field.string.asRequired,
+        "email"    -> Field.string.asRequired,
+        "address"  -> Field.ofType("NewAddress"),
+        "phone"    -> Field.string,
+        "website"  -> Field.string,
+        "company"  -> Field.ofType("NewCompany"),
       ),
       "User"       -> Map(
-        "id"       -> Config.Field.int.asRequired,
-        "name"     -> Config.Field.string.asRequired,
-        "username" -> Config.Field.string.asRequired,
-        "email"    -> Config.Field.string.asRequired,
-        "address"  -> Config.Field("Address"),
-        "phone"    -> Config.Field.string,
-        "website"  -> Config.Field.string,
-        "company"  -> Config.Field("Company"),
-        "posts"    -> Config.Field("Post", userPosts).asList,
+        "id"       -> Field.int.asRequired,
+        "name"     -> Field.string.asRequired,
+        "username" -> Field.string.asRequired,
+        "email"    -> Field.string.asRequired,
+        "address"  -> Field.ofType("Address"),
+        "phone"    -> Field.string,
+        "website"  -> Field.string,
+        "company"  -> Field.ofType("Company"),
+        "posts"    -> Field.ofType("Post").withSteps(userPosts).asList,
       ),
       "Post"       -> Map(
-        "id"     -> Config.Field.int.asRequired,
-        "userId" -> Config.Field.int.asRequired,
-        "title"  -> Config.Field.string,
-        "body"   -> Config.Field.string,
-        "user"   -> Config.Field("User", Config.Step.ObjPath("userId" -> List("value", "userId")), userById),
+        "id"     -> Field.int.asRequired,
+        "userId" -> Field.int.asRequired,
+        "title"  -> Field.string,
+        "body"   -> Field.string,
+        "user"   -> Field.ofType("User").withSteps(Config.Step.ObjPath("userId" -> List("value", "userId")), userById),
       ),
       "Address"    -> Map(
-        "street"  -> Config.Field.string,
-        "suite"   -> Config.Field.string,
-        "city"    -> Config.Field.string,
-        "zipcode" -> Config.Field.string,
-        "geo"     -> Config.Field("Geo"),
+        "street"  -> Field.string,
+        "suite"   -> Field.string,
+        "city"    -> Field.string,
+        "zipcode" -> Field.string,
+        "geo"     -> Field.ofType("Geo"),
       ),
       "NewAddress" -> Map(
-        "street"  -> Config.Field.string,
-        "suite"   -> Config.Field.string,
-        "city"    -> Config.Field.string,
-        "zipcode" -> Config.Field.string,
-        "geo"     -> Config.Field("NewGeo"),
+        "street"  -> Field.string,
+        "suite"   -> Field.string,
+        "city"    -> Field.string,
+        "zipcode" -> Field.string,
+        "geo"     -> Field.ofType("NewGeo"),
       ),
-      "Company"    -> Map(
-        "name"        -> Config.Field.string,
-        "catchPhrase" -> Config.Field.string,
-        "bs"          -> Config.Field.string,
-      ),
-      "NewCompany" -> Map(
-        "name"        -> Config.Field.string,
-        "catchPhrase" -> Config.Field.string,
-        "bs"          -> Config.Field.string,
-      ),
-      "Geo"        -> Map("lat" -> Config.Field.string, "lng" -> Config.Field.string),
-      "NewGeo"     -> Map("lat" -> Config.Field.string, "lng" -> Config.Field.string),
+      "Company"    -> Map("name" -> Field.string, "catchPhrase" -> Field.string, "bs" -> Field.string),
+      "NewCompany" -> Map("name" -> Field.string, "catchPhrase" -> Field.string, "bs" -> Field.string),
+      "Geo"        -> Map("lat" -> Field.string, "lng" -> Field.string),
+      "NewGeo"     -> Map("lat" -> Field.string, "lng" -> Field.string),
     ),
   )
 
