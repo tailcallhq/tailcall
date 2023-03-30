@@ -5,8 +5,10 @@ import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
+import tailcall.runtime.dsl.Postman
+import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
-import tailcall.runtime.transcoder.Transcoder
+import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
 import zio.http.URL
 import zio.json.EncoderOps
 import zio.{Console, Duration, ExitCode, ZIO, ZLayer}
@@ -38,8 +40,21 @@ object CommandExecutor {
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
-          case CommandADT.Generate(_, _, _)             => ???
-          case CommandADT.Check(files, remote, options) => for {
+          case CommandADT.Generate(files, sourceFormat, configFormat) => for {
+              config <- sourceFormat match {
+                case CommandADT.SourceFormat.POSTMAN => for {
+                    postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
+                    config  <- ZIO.foreachPar(postman)(
+                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, "https://stg.api.mosaicwellness.in"))
+                        .provide(HttpClient.default)
+                    )
+                  } yield config.reduce(_ mergeRight _)
+              }
+              out    <- configFormat.encode(config)
+              _      <- Console.printLine(Fmt.heading("Generated config:"))
+              _      <- Console.printLine(out)
+            } yield ()
+          case CommandADT.Check(files, remote, options)               => for {
               config <- configReader.readAll(files.map(_.toFile))
               blueprint = config.toBlueprint
               digest    = blueprint.digest
@@ -55,7 +70,7 @@ object CommandExecutor {
               _    <- Console.printLine(Fmt.table(seq1))
               _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command)         => command match {
+          case CommandADT.Remote(base, command)                       => command match {
               case Remote.Publish(path) => for {
                   config    <- configReader.readAll(path.map(_.toFile))
                   blueprint <- Transcoder.toBlueprint(config).toZIO
