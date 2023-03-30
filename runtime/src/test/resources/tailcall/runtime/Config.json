@@ -9,6 +9,12 @@
       "mutation": "Mutation"
     },
     "types": {
+      "Id": {
+        "id": {
+          "type": "Int",
+          "isRequired": true
+        }
+      },
       "Geo": {
         "lat": {
           "type": "String"
@@ -212,7 +218,7 @@
       },
       "Mutation": {
         "createUser": {
-          "type": "User",
+          "type": "Id",
           "steps": [
             {
               "http": {

@@ -102,19 +102,18 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
             |  mutation: Mutation
             |}
             |
-            |input Type_1 {
-            |  username: String!
-            |  id: Int!
-            |  name: String!
-            |  email: String!
-            |}
-            |
             |type Mutation {
             |  fieldType_1(username: String!, name: String!, email: String!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
             |}
             |
             |type Query
             |
+            |type Type_1 {
+            |  username: String!
+            |  id: Int!
+            |  name: String!
+            |  email: String!
+            |}
             |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },

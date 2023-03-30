@@ -6,6 +6,10 @@ graphQL:
     query: Query
     mutation: Mutation
   types:
+    Id:
+      id:
+        type: Int
+        isRequired: true
     Geo:
       lat:
         type: String
@@ -131,7 +135,7 @@ graphQL:
         type: String
     Mutation:
       createUser:
-        type: User
+        type: Id
         steps:
           - http:
               path: /users

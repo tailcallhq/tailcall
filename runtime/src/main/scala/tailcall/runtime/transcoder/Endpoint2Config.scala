@@ -29,19 +29,18 @@ object Endpoint2Config {
 
     private def getTypeName(schema: TSchema): String = nameGen.gen("Type", schema)
 
-    private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Argument =
+    private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Arg =
       schema match {
         case schema @ TSchema.Obj(_)  => Config
-            .Argument(typeOf = getInputTypeName(schema), required = Option(isRequired), list = Option(isList))
+            .Arg(typeOf = getInputTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
         case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
-        case TSchema.String  => Config.Argument(typeOf = "String", required = Option(isRequired), list = Option(isList))
-        case TSchema.Int     => Config.Argument(typeOf = "Int", required = Option(isRequired), list = Option(isList))
-        case TSchema.Boolean => Config
-            .Argument(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.String  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Int     => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Boolean => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
 
-    private def toArgumentMap(schema: TSchema, isRequired: Boolean, isList: Boolean): Map[String, Config.Argument] = {
+    private def toArgumentMap(schema: TSchema, isRequired: Boolean, isList: Boolean): Map[String, Config.Arg] = {
       schema match {
         case TSchema.Obj(fields) => fields.map { field =>
             val name = field.name
@@ -52,11 +51,11 @@ object Endpoint2Config {
         case TSchema.Arr(item)        => toArgumentMap(item, isRequired = false, isList = true)
         case TSchema.Optional(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
         case TSchema.String           =>
-          Map("value" -> Config.Argument(typeOf = "String", required = Option(isRequired), list = Option(isList)))
+          Map("value" -> Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList)))
         case TSchema.Int              =>
-          Map("value" -> Config.Argument(typeOf = "Int", required = Option(isRequired), list = Option(isList)))
+          Map("value" -> Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList)))
         case TSchema.Boolean          =>
-          Map("value" -> Config.Argument(typeOf = "Boolean", required = Option(isRequired), list = Option(isList)))
+          Map("value" -> Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList)))
       }
     }
 

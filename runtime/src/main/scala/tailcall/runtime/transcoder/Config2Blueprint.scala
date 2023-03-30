@@ -156,7 +156,7 @@ trait Config2Blueprint {
     schema
   }
 
-  final private def toType(inputType: Argument): Blueprint.Type = {
+  final private def toType(inputType: Arg): Blueprint.Type = {
     val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired)
     val isList = inputType.isList
     if (isList) Blueprint.ListType(ofType, false) else ofType

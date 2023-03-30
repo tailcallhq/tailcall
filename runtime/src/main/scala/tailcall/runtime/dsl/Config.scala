@@ -74,17 +74,17 @@ object Config {
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     steps: Option[List[Step]] = None,
-    args: Option[Map[String, Argument]] = None,
+    args: Option[Map[String, Arg]] = None,
   ) {
     self =>
-    def isList: Boolean                                   = list.getOrElse(false)
-    def isRequired: Boolean                               = required.getOrElse(false)
-    def asList: Field                                     = copy(list = Option(true))
-    def asRequired: Field                                 = copy(required = Option(true))
-    def withArguments(args: Map[String, Argument]): Field = copy(args = Option(args))
-    def withSteps(steps: Step*): Field                    = copy(steps = Option(steps.toList))
-    def apply(args: (String, Argument)*): Field           = copy(args = Option(args.toMap))
-    def compress: Field                                   = {
+    def isList: Boolean                              = list.getOrElse(false)
+    def isRequired: Boolean                          = required.getOrElse(false)
+    def asList: Field                                = copy(list = Option(true))
+    def asRequired: Field                            = copy(required = Option(true))
+    def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
+    def withSteps(steps: Step*): Field               = copy(steps = Option(steps.toList))
+    def apply(args: (String, Arg)*): Field           = copy(args = Option(args.toMap))
+    def compress: Field                              = {
       val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
@@ -158,7 +158,7 @@ object Config {
     }
   }
 
-  final case class Argument(
+  final case class Arg(
     @jsonField("type") typeOf: String,
 
     // TODO: rename to `list`
@@ -168,11 +168,11 @@ object Config {
     @jsonField("isRequired") required: Option[Boolean] = None,
   ) {
     self =>
-    def asList: Argument     = self.copy(list = Option(true))
-    def isList: Boolean      = list.getOrElse(false)
-    def isRequired: Boolean  = required.getOrElse(false)
-    def asRequired: Argument = self.copy(required = Option(true))
-    def compress: Argument   = {
+    def asList: Arg         = self.copy(list = Option(true))
+    def isList: Boolean     = list.getOrElse(false)
+    def isRequired: Boolean = required.getOrElse(false)
+    def asRequired: Arg     = self.copy(required = Option(true))
+    def compress: Arg       = {
       val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
@@ -187,10 +187,11 @@ object Config {
     }
   }
 
-  object Argument {
-    val string: Argument = Argument("String")
-    val int: Argument    = Argument("Int")
-    val bool: Argument   = Argument("Boolean")
+  object Arg {
+    val string: Arg               = Arg("String")
+    val int: Arg                  = Arg("Int")
+    val bool: Arg                 = Arg("Boolean")
+    def ofType(name: String): Arg = Arg(name)
   }
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
@@ -212,7 +213,7 @@ object Config {
     _.toString,
   )
   implicit val operationCodec: JsonCodec[Step]              = DeriveJsonCodec.gen[Step]
-  implicit val inputTypeCodec: JsonCodec[Argument]          = DeriveJsonCodec.gen[Argument]
+  implicit val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
   implicit val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
   implicit val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
   implicit val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]

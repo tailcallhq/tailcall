@@ -51,8 +51,12 @@ type Geo {
   lng: String
 }
 
+type Id {
+  id: Int!
+}
+
 type Mutation {
-  createUser(user: NewUser!): User @steps(value: [{http: {path: "/users",method: "POST"}}])
+  createUser(user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
 }
 
 type Post {

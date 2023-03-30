@@ -91,15 +91,15 @@ trait Document2Config {
       isRequired = field.ofType.nonNull
     } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps))
 
-  final private def toArgumentMap(value: List[InputValueDefinition]): TValid[String, Map[String, Config.Argument]] = {
+  final private def toArgumentMap(value: List[InputValueDefinition]): TValid[String, Map[String, Config.Arg]] = {
     TValid.foreach(value)(toLabelledArgument(_)).map(_.toMap)
   }
 
-  final private def toLabelledArgument(argument: InputValueDefinition): TValid[String, (String, Config.Argument)] = {
+  final private def toLabelledArgument(argument: InputValueDefinition): TValid[String, (String, Config.Arg)] = {
     val typeof     = innerType(argument.ofType)
     val isList     = argument.ofType.isInstanceOf[Type.ListType]
     val isRequired = argument.ofType.nonNull
-    TValid.succeed(argument.name, Config.Argument(typeof, Option(isList), Option(isRequired)))
+    TValid.succeed(argument.name, Config.Arg(typeof, Option(isList), Option(isRequired)))
   }
 
 }
