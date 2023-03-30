@@ -23,6 +23,6 @@ object CommandADT {
 
   sealed trait SourceFormat
   object SourceFormat {
-    case object POSTMAN
+    case object POSTMAN extends SourceFormat
   }
 }
