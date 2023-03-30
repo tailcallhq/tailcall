@@ -42,7 +42,7 @@ object Transcoder extends Transcoder {
     } yield config
 
   def toGraphQLSchema(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
-    toConfig(endpoint, nameGenerator).flatMap(toGraphQLSchema(_))
+    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress))
 
   def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 

@@ -25,29 +25,24 @@ object Endpoint2Config {
         graphQL <- toGraphQL(endpoint)
       } yield Config(server = Server(baseURL = Option(baseURL)), graphQL = graphQL)
 
-    private def getInputTypeName(schema: TSchema): String = nameGen.gen("InputType", schema)
-
     private def getTypeName(schema: TSchema): String = nameGen.gen("Type", schema)
 
-    private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Arg =
+    private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Arg = {
       schema match {
         case schema @ TSchema.Obj(_)  => Config
-            .Arg(typeOf = getInputTypeName(schema), required = Option(isRequired), list = Option(isList))
+            .Arg(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
         case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
         case TSchema.String  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
         case TSchema.Int     => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Boolean => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
+    }
 
     private def toArgumentMap(schema: TSchema, isRequired: Boolean, isList: Boolean): Map[String, Config.Arg] = {
-      schema match {
-        case TSchema.Obj(fields) => fields.map { field =>
-            val name = field.name
-            val arg  = toArgument(field.schema, isRequired = true, isList = false)
-            name -> arg
-          }.toMap
 
+      schema match {
+        case TSchema.Obj(_)           => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Arr(item)        => toArgumentMap(item, isRequired = false, isList = true)
         case TSchema.Optional(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
         case TSchema.String           =>
@@ -87,23 +82,26 @@ object Endpoint2Config {
     private def toGraphQL(endpoint: Endpoint): TValid[String, Config.GraphQL] =
       TValid.succeed {
         val rootSchema = RootSchema(query = Option("Query"), mutation = Option("Mutation"))
-        val rootTypes  =
+
+        val rootTypes =
           if (endpoint.method == Method.GET) Map("Query" -> toRootTypeField(endpoint).toList)
           else Map("Mutation"                            -> toRootTypeField(endpoint).toList, "Query" -> List.empty)
-        val types      = endpoint.output.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil) ++ rootTypes
+
+        val outputTypes = endpoint.output.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil)
+        val inputTypes  = endpoint.input.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil)
+        val types       = inputTypes ++ outputTypes ++ rootTypes
         GraphQL(schema = rootSchema, types = types.map { case (key, value) => key -> value.toMap }.toMap)
       }
 
     private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {
       endpoint.output.map(schema => {
-        val config = toConfigField(schema, isRequired = true, isList = false).withSteps(Http.fromEndpoint(endpoint))
-          .compress
+        var config = toConfigField(schema, isRequired = true, isList = false).withSteps(Http.fromEndpoint(endpoint))
 
-        val config0 = endpoint.input match {
+        config = endpoint.input match {
           case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))
           case None         => config
         }
-        s"field${config0.typeOf}" -> config0
+        s"field${config.typeOf}" -> config
       })
     }
 
