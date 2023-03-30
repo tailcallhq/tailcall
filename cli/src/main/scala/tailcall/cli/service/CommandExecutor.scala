@@ -8,6 +8,7 @@ import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
 import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
+import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
 import zio.http.URL
 import zio.json.EncoderOps
@@ -39,16 +40,18 @@ object CommandExecutor {
 
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
+        val nameGen = NameGenerator.incremental
         command match {
           case CommandADT.Generate(files, sourceFormat, configFormat) => for {
               config <- sourceFormat match {
                 case CommandADT.SourceFormat.POSTMAN => for {
                     postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
                     config  <- ZIO.foreachPar(postman)(
-                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, "https://stg.api.mosaicwellness.in"))
+                      Transcoder
+                        .toConfig(_, Postman2Endpoints.Config(true, "https://stg.api.mosaicwellness.in", nameGen))
                         .provide(HttpClient.default)
                     )
-                  } yield config.reduce(_ mergeRight _)
+                  } yield config.reduce(_ mergeRight _).compress
               }
               out    <- configFormat.encode(config)
               _      <- Console.printLine(Fmt.heading("Generated config:"))
