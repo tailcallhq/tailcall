@@ -72,7 +72,7 @@ trait Config2Blueprint {
     }
 
     val fromQueries = config.graphQL.schema.query.toList.flatMap(query => query :: loop(query, Nil))
-    config.graphQL.schema.mutation.toList.flatMap(mutation => loop(mutation, mutation :: fromQueries))
+    config.graphQL.schema.mutation.toList.flatMap(mutation => loop(mutation, fromQueries))
   }
 
   final private def toDirective(config: Config): Option[Blueprint.Directive] = {
@@ -137,13 +137,10 @@ trait Config2Blueprint {
     }
 
   final private def toTSchema(config: Config, field: Field): TSchema = {
-    config.graphQL.types.get(field.typeOf) match {
-      case Some(value) =>
-        val schema = TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
+    var schema = config.graphQL.types.get(field.typeOf) match {
+      case Some(value) => TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
           TSchema.Field(fieldName, toTSchema(config, field))
         })
-
-        if (field.isList.getOrElse(false)) schema.arr else schema
 
       case None => field.typeOf match {
           case "String"  => TSchema.string
@@ -152,17 +149,22 @@ trait Config2Blueprint {
           case _         => TSchema.string // TODO: default to string?
         }
     }
+
+    schema = if (field.isRequired) schema else schema.opt
+    schema = if (field.isList) schema.arr else schema
+
+    schema
   }
 
   final private def toType(inputType: Argument): Blueprint.Type = {
-    val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired.getOrElse(false))
-    val isList = inputType.isList.getOrElse(false)
+    val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired)
+    val isList = inputType.isList
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 
   final private def toType(field: Field): Blueprint.Type = {
-    val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
-    val isList = field.isList.getOrElse(false)
+    val ofType = Blueprint.NamedType(field.typeOf, field.isRequired)
+    val isList = field.isList
     if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 }

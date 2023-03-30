@@ -32,14 +32,13 @@ object Endpoint2Config {
     private def toArgument(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Argument =
       schema match {
         case schema @ TSchema.Obj(_)  => Config
-            .Argument(typeOf = getInputTypeName(schema), isRequired = Option(isRequired), isList = Option(isList))
+            .Argument(typeOf = getInputTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
         case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
-        case TSchema.String           => Config
-            .Argument(typeOf = "String", isRequired = Option(isRequired), isList = Option(isList))
-        case TSchema.Int => Config.Argument(typeOf = "Int", isRequired = Option(isRequired), isList = Option(isList))
+        case TSchema.String  => Config.Argument(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Int     => Config.Argument(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Boolean => Config
-            .Argument(typeOf = "Boolean", isRequired = Option(isRequired), isList = Option(isList))
+            .Argument(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
 
     private def toArgumentMap(schema: TSchema, isRequired: Boolean, isList: Boolean): Map[String, Config.Argument] = {
@@ -53,11 +52,11 @@ object Endpoint2Config {
         case TSchema.Arr(item)        => toArgumentMap(item, isRequired = false, isList = true)
         case TSchema.Optional(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
         case TSchema.String           =>
-          Map("value" -> Config.Argument(typeOf = "String", isRequired = Option(isRequired), isList = Option(isList)))
+          Map("value" -> Config.Argument(typeOf = "String", required = Option(isRequired), list = Option(isList)))
         case TSchema.Int              =>
-          Map("value" -> Config.Argument(typeOf = "Int", isRequired = Option(isRequired), isList = Option(isList)))
+          Map("value" -> Config.Argument(typeOf = "Int", required = Option(isRequired), list = Option(isList)))
         case TSchema.Boolean          =>
-          Map("value" -> Config.Argument(typeOf = "Boolean", isRequired = Option(isRequired), isList = Option(isList)))
+          Map("value" -> Config.Argument(typeOf = "Boolean", required = Option(isRequired), list = Option(isList)))
       }
     }
 
@@ -73,13 +72,12 @@ object Endpoint2Config {
     private def toConfigField(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Field = {
       schema match {
         case TSchema.Obj(_)           => Config
-            .Field(typeOf = getTypeName(schema), isRequired = Option(isRequired), isList = Option(isList))
+            .Field(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toConfigField(schema, isRequired, isList = true)
         case TSchema.Optional(schema) => toConfigField(schema, isRequired = false, isList = isList)
-        case TSchema.String => Config.Field(typeOf = "String", isRequired = Option(isRequired), isList = Option(isList))
-        case TSchema.Int    => Config.Field(typeOf = "Int", isRequired = Option(isRequired), isList = Option(isList))
-        case TSchema.Boolean => Config
-            .Field(typeOf = "Boolean", isRequired = Option(isRequired), isList = Option(isList))
+        case TSchema.String  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Int     => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Boolean => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
     }
 
@@ -99,8 +97,8 @@ object Endpoint2Config {
 
     private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {
       endpoint.output.map(schema => {
-        val config = toConfigField(schema, isRequired = true, isList = false)
-          .withSteps(List(Http.fromEndpoint(endpoint).withOutput(None))).compress
+        val config = toConfigField(schema, isRequired = true, isList = false).withSteps(Http.fromEndpoint(endpoint))
+          .compress
 
         val config0 = endpoint.input match {
           case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))

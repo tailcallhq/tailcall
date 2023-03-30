@@ -67,24 +67,30 @@ object Config {
   // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
-    isList: Option[Boolean] = None,
-    isRequired: Option[Boolean] = None,
+
+    // TODO: rename to `list`
+    @jsonField("isList") list: Option[Boolean] = None,
+
+    // TODO: rename to `required`
+    @jsonField("isRequired") required: Option[Boolean] = None,
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Argument]] = None,
   ) {
     self =>
-    def asList: Field                                     = copy(isList = Option(true))
-    def asRequired: Field                                 = copy(isRequired = Option(true))
+    def isList: Boolean                                   = list.getOrElse(false)
+    def isRequired: Boolean                               = required.getOrElse(false)
+    def asList: Field                                     = copy(list = Option(true))
+    def asRequired: Field                                 = copy(required = Option(true))
     def withArguments(args: Map[String, Argument]): Field = copy(args = Option(args))
-    def withSteps(steps: List[Step]): Field               = copy(steps = Option(steps))
+    def withSteps(steps: Step*): Field                    = copy(steps = Option(steps.toList))
     def apply(args: (String, Argument)*): Field           = copy(args = Option(args.toMap))
     def compress: Field                                   = {
-      val isList = self.isList match {
+      val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
       }
 
-      val isRequired = self.isRequired match {
+      val isRequired = self.required match {
         case Some(true) => Some(true)
         case _          => None
       }
@@ -94,7 +100,7 @@ object Config {
           Option(steps.map {
             case step @ Step.Http(_, _, _, _) =>
               val noOutputHttp = step.withOutput(None).withInput(None)
-              if (step.method contains Method.GET) noOutputHttp.withMethod(None) else noOutputHttp
+              if (step.method contains Method.GET) noOutputHttp.copy(method = None) else noOutputHttp
             case step                         => step
           })
         case _                             => None
@@ -105,7 +111,7 @@ object Config {
         case _                           => None
       }
 
-      self.copy(isList = isList, isRequired = isRequired, steps = steps, args = args)
+      self.copy(list = isList, required = isRequired, steps = steps, args = args)
     }
   }
 
@@ -130,7 +136,7 @@ object Config {
     ) extends Step {
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
       def withInput(input: Option[TSchema]): Http   = copy(input = input)
-      def withMethod(method: Option[Method]): Http  = copy(method = method)
+      def withMethod(method: Method): Http          = copy(method = Option(method))
     }
 
     object Http {
@@ -154,24 +160,30 @@ object Config {
 
   final case class Argument(
     @jsonField("type") typeOf: String,
-    isList: Option[Boolean] = None,
-    isRequired: Option[Boolean] = None,
+
+    // TODO: rename to `list`
+    @jsonField("isList") list: Option[Boolean] = None,
+
+    // TODO: rename to `required`
+    @jsonField("isRequired") required: Option[Boolean] = None,
   ) {
     self =>
-    def asList: Argument     = self.copy(isList = Option(true))
-    def asRequired: Argument = self.copy(isRequired = Option(true))
+    def asList: Argument     = self.copy(list = Option(true))
+    def isList: Boolean      = list.getOrElse(false)
+    def isRequired: Boolean  = required.getOrElse(false)
+    def asRequired: Argument = self.copy(required = Option(true))
     def compress: Argument   = {
-      val isList = self.isList match {
+      val isList = self.list match {
         case Some(true) => Some(true)
         case _          => None
       }
 
-      val isRequired = self.isRequired match {
+      val isRequired = self.required match {
         case Some(true) => Some(true)
         case _          => None
       }
 
-      self.copy(isList = isList, isRequired = isRequired)
+      self.copy(list = isList, required = isRequired)
     }
   }
 

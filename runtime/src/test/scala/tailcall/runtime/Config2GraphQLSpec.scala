@@ -9,18 +9,20 @@ import tailcall.runtime.service._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertZIO}
-import zio.{ZIO, durationInt}
+import zio.{Cause, ZIO, durationInt}
 
 object Config2GraphQLSpec extends ZIOSpecDefault {
 
   def execute(
     config: Config
-  )(query: String): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError.ValidationError, String] =
+  )(query: String): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError.ValidationError, String] = {
     for {
       graphQL     <- config.toBlueprint.toGraphQL
       interpreter <- graphQL.interpreter
       response    <- interpreter.execute(query)
+      _ <- ZIO.foreachDiscard(response.errors)(error => ZIO.logErrorCause("GraphQL Execution Error", Cause.fail(error)))
     } yield response.data.toString
+  }
 
   override def spec =
     suite("config to graphql")(
@@ -76,6 +78,12 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         val expected =
           """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
         assertZIO(program)(equalTo(expected))
+      },
+      test("create user") {
+        val program = execute(JsonPlaceholderConfig.config)(
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
+        )
+        assertZIO(program)(equalTo("""{"createUser":{"id": 11}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }
