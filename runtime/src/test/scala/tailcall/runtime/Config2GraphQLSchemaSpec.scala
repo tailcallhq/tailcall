@@ -63,8 +63,12 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                         |  lng: String
                         |}
                         |
+                        |type Id {
+                        |  id: Int!
+                        |}
+                        |
                         |type Mutation {
-                        |  createUser(user: NewUser!): User
+                        |  createUser(user: NewUser!): Id
                         |}
                         |
                         |type Post {

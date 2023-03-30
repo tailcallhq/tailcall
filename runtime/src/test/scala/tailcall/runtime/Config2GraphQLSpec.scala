@@ -83,7 +83,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         val program = execute(JsonPlaceholderConfig.config)(
           """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
         )
-        assertZIO(program)(equalTo("""{"createUser":{"id": 11}}"""))
+        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }

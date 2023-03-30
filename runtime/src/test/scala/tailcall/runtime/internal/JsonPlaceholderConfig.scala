@@ -2,7 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.ast.Path
 import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.{Argument, Field, Step}
+import tailcall.runtime.dsl.Config.{Arg, Field, Step}
 import tailcall.runtime.http.Method
 
 object JsonPlaceholderConfig {
@@ -18,15 +18,15 @@ object JsonPlaceholderConfig {
     types = Map(
       "Mutation"   -> Map(
         "createUser" -> Field.ofType("Id").withSteps(createUser)
-          .withArguments(Map("user" -> Argument("NewUser").asRequired))
+          .withArguments(Map("user" -> Arg.ofType("NewUser").asRequired))
       ),
       "Id"         -> Map("id" -> Field.int.asRequired),
       "Query"      -> Map(
         "posts" -> Field.ofType("Post").withSteps(posts).asList,
         "users" -> Field.ofType("User").withSteps(users).asList,
-        "post"  -> Field.ofType("Post").withSteps(postsById)("id" -> Argument.int.asRequired),
+        "post"  -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired),
         "user"  -> Config
-          .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Argument.int.asRequired),
+          .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired),
       ),
       "NewUser"    -> Map(
         "name"     -> Field.string.asRequired,
