@@ -26,7 +26,7 @@ trait JsonValue2TSchema {
   }
 
   final def toTSchema(jsonAST: Json): TValid[String, TSchema] = {
-    val schema = jsonAST match {
+    jsonAST match {
       case Json.Obj(fields) => for {
           fields <- TValid.foreach(fields.toList) { case (name, value) => toTSchema(value).map(TSchema.Field(name, _)) }
         } yield TSchema.obj(fields)
@@ -41,8 +41,6 @@ trait JsonValue2TSchema {
       case Json.Num(_)  => TValid.succeed(TSchema.Int)
       case Json.Null    => TValid.succeed(TSchema.obj())
     }
-    // pprint.pprintln(schema)
-    schema
   }
 
   /**
