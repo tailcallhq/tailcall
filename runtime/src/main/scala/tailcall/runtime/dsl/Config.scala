@@ -14,6 +14,14 @@ import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
+  def withType(input: (String, Map[String, Field])*): Config =
+    self.copy(graphQL = self.graphQL.copy(types = self.graphQL.types ++ input.toMap))
+
+  def withRootSchema(
+    query: Option[String] = graphQL.schema.query,
+    mutation: Option[String] = graphQL.schema.mutation,
+  ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
+
   def toBlueprint: Blueprint = toBlueprint()
 
   def toBlueprint(encodeSteps: Boolean = false): Blueprint = Transcoder.toBlueprint(self, encodeSteps = encodeSteps).get
@@ -30,9 +38,11 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 }
 
 object Config {
+  def empty: Config = Config()
   final case class Server(baseURL: Option[URL] = None) {
     self =>
     def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
+    def isEmpty: Boolean                  = baseURL.isEmpty
   }
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
@@ -106,6 +116,7 @@ object Config {
     def string: Field = Field(typeOf = "String")
     def int: Field    = Field(typeOf = "Int")
     def bool: Field   = Field(typeOf = "Boolean")
+    def ofType(name: String): Field = Field(typeOf = name)
   }
 
   sealed trait Step
