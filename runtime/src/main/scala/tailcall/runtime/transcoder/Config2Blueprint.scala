@@ -71,7 +71,7 @@ trait Config2Blueprint {
       }
     }
 
-    val fromQueries = config.graphQL.schema.query.toList.flatMap(query => loop(query, List(query)))
+    val fromQueries = config.graphQL.schema.query.toList.flatMap(query => query :: loop(query, Nil))
     config.graphQL.schema.mutation.toList.flatMap(mutation => loop(mutation, mutation :: fromQueries))
   }
 

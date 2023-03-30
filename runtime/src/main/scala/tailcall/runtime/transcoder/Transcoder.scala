@@ -41,6 +41,9 @@ object Transcoder extends Transcoder {
       config    <- TValid.foreach(endpoints)(endpoint => toConfig(endpoint)).map(_.reduce(_ mergeRight _))
     } yield config
 
+  def toGraphQLSchema(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
+    toConfig(endpoint, nameGenerator).flatMap(toGraphQLSchema(_))
+
   def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 
   def toDocument(config: Config): TValid[Nothing, Document] =
