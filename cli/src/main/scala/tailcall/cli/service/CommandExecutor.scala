@@ -38,8 +38,8 @@ object CommandExecutor {
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
-          case CommandADT.Generate(files, sourceFormat, configFormat) => ???
-          case CommandADT.Check(files, remote, options)               => for {
+          case CommandADT.Generate(_, _, _)             => ???
+          case CommandADT.Check(files, remote, options) => for {
               config <- configReader.readAll(files.map(_.toFile))
               blueprint = config.toBlueprint
               digest    = blueprint.digest
@@ -55,7 +55,7 @@ object CommandExecutor {
               _    <- Console.printLine(Fmt.table(seq1))
               _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command)                       => command match {
+          case CommandADT.Remote(base, command)         => command match {
               case Remote.Publish(path) => for {
                   config    <- configReader.readAll(path.map(_.toFile))
                   blueprint <- Transcoder.toBlueprint(config).toZIO

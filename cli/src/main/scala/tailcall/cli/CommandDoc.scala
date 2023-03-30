@@ -40,6 +40,12 @@ object CommandDoc {
       .map { case (remote, blueprintOptions) -> digest =>
         Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))
       },
+
+    // generate
+    Command("generate", CustomOptions.sourceFormat ++ CustomOptions.configFormat, Args.file.repeat1)
+      .withHelp("Generate a composition spec from a source file.").map { case (sourceFormat, configFormat) -> files =>
+        CommandADT.Generate(files, sourceFormat, configFormat)
+      },
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
