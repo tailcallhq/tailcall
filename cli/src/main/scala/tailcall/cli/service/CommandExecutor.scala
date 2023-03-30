@@ -92,9 +92,8 @@ object CommandExecutor {
         }
       }.exitCode
 
-    private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions) = {
+    private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions): ZIO[Any, IOException, Unit] = {
       for {
-
         _ <- Console.printLine(Fmt.heading("Blueprint:\n") ++ Fmt.blueprint(blueprint)).when(options.blueprint)
         _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint)))
           .when(options.schema)
