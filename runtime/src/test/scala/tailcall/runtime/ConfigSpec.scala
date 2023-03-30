@@ -37,6 +37,36 @@ object ConfigSpec extends ZIOSpecDefault {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {
                           |  query: Query
+                          |  mutation: Mutation
+                          |}
+                          |
+                          |input NewAddress {
+                          |  geo: NewGeo
+                          |  street: String
+                          |  suite: String
+                          |  city: String
+                          |  zipcode: String
+                          |}
+                          |
+                          |input NewCompany {
+                          |  name: String
+                          |  catchPhrase: String
+                          |  bs: String
+                          |}
+                          |
+                          |input NewGeo {
+                          |  lat: String
+                          |  lng: String
+                          |}
+                          |
+                          |input NewUser {
+                          |  website: String
+                          |  name: String!
+                          |  email: String!
+                          |  username: String!
+                          |  company: NewCompany
+                          |  address: NewAddress
+                          |  phone: String
                           |}
                           |
                           |type Address {
@@ -56,6 +86,10 @@ object ConfigSpec extends ZIOSpecDefault {
                           |type Geo {
                           |  lat: String
                           |  lng: String
+                          |}
+                          |
+                          |type Mutation {
+                          |  createUser(user: NewUser!): User
                           |}
                           |
                           |type Post {

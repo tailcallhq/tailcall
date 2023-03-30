@@ -1,6 +1,35 @@
-# noinspection GraphQLUnresolvedReference,GraphQLMissingType,GraphQLDuplicateDirective,GraphQLTypeRedefinition,GraphQLMemberRedefinition
 schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
+  mutation: Mutation
+}
+
+input NewAddress {
+  geo: NewGeo
+  street: String
+  suite: String
+  city: String
+  zipcode: String
+}
+
+input NewCompany {
+  name: String
+  catchPhrase: String
+  bs: String
+}
+
+input NewGeo {
+  lat: String
+  lng: String
+}
+
+input NewUser {
+  website: String
+  name: String!
+  email: String!
+  username: String!
+  company: NewCompany
+  address: NewAddress
+  phone: String
 }
 
 type Address {
@@ -22,6 +51,10 @@ type Geo {
   lng: String
 }
 
+type Mutation {
+  createUser(user: NewUser!): User @steps(value: [{http: {path: "/users",method: "POST"}}])
+}
+
 type Post {
   body: String
   id: Int!
@@ -40,7 +73,7 @@ type Query {
 type User {
   website: String
   name: String!
-  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+  posts: [Post] @steps(value: [{http: {path: "/users/{{value.id}}/posts"}}])
   email: String!
   username: String!
   company: Company

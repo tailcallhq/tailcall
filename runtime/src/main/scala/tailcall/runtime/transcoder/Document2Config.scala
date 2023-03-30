@@ -2,6 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
   FieldDefinition,
+  InputObjectTypeDefinition,
   InputValueDefinition,
   ObjectTypeDefinition,
 }
@@ -35,16 +36,25 @@ trait Document2Config {
     }
   }
 
-  final private def toTypes(document: Document): TValid[String, Map[String, Map[String, Config.Field]]] =
-    TValid.foreach(document.objectTypeDefinitions)(definition => toFieldMap(definition).map(definition.name -> _))
+  final private def toTypes(document: Document): TValid[String, Map[String, Map[String, Config.Field]]] = {
+    val outputTypes = TValid
+      .foreach(document.objectTypeDefinitions)(definition => toFieldMap(definition).map(definition.name -> _))
       .map(_.toMap)
 
-  final private def toFieldMap(definition: ObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
-    TValid.foreach(definition.fields)(toLabelledField(_)).map(_.toMap)
+    val inputTypes = TValid
+      .foreach(document.inputObjectTypeDefinitions)(definition => toFieldMap(definition).map(definition.name -> _))
+      .map(_.toMap)
+
+    (outputTypes zip inputTypes)(_ ++ _)
   }
 
-  final private def toLabelledField(field: FieldDefinition): TValid[String, (String, Config.Field)] =
-    toField(field).map(field.name -> _)
+  final private def toFieldMap(definition: ObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
+  }
+
+  final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
+  }
 
   final private def toStep(directive: Directive): TValid[String, List[Config.Step]] = {
     directive.name match {
@@ -72,6 +82,14 @@ trait Document2Config {
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
     } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps), Option(args))
+
+  final private def toField(field: InputValueDefinition): TValid[String, Config.Field] =
+    for {
+      steps <- TValid.foreach(field.directives)(toStep(_)).map(_.flatten)
+      typeof     = innerType(field.ofType)
+      isList     = field.ofType.isInstanceOf[Type.ListType]
+      isRequired = field.ofType.nonNull
+    } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps))
 
   final private def toArgumentMap(value: List[InputValueDefinition]): TValid[String, Map[String, Config.Argument]] = {
     TValid.foreach(value)(toLabelledArgument(_)).map(_.toMap)
