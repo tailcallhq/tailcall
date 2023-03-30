@@ -7,7 +7,7 @@ import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
 import zio.{Scope, ZIO}
 
-object Endpoint2ConfigSpec extends ZIOSpecDefault with Endpoint2Config {
+object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
   private val User = TSchema
     .obj("username" -> TSchema.String, "id" -> TSchema.Int, "name" -> TSchema.String, "email" -> TSchema.String)
 

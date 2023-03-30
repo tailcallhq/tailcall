@@ -11,9 +11,9 @@ import zio.test._
 import Orc.Type.{ListType, NamedType, NonNull}
 import Orc.{Field, FieldSet}
 
-object SchemaGeneratorSpec extends ZIOSpecDefault {
+object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
-    suite("SchemaGenerator")(
+    suite("orc to graphql schema")(
       test("document type generation") {
         val orc = Orc("Query" -> FieldSet("test" -> Field.output.to("String").resolveWith("test")))
 
