@@ -13,10 +13,14 @@ import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
 
 trait Blueprint2Document {
-  final def toDocument(document: Blueprint): TValid[Nothing, CalibanDocument] =
+  final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
       CalibanDocument(
-        document.definitions.map {
+        blueprint.definitions.sortBy {
+          case Blueprint.ObjectTypeDefinition(name, _)      => name
+          case Blueprint.InputObjectTypeDefinition(name, _) => name
+          case Blueprint.SchemaDefinition(_, _, _, _)       => ""
+        }.map {
           case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
               .TypeSystemDefinition
               .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
