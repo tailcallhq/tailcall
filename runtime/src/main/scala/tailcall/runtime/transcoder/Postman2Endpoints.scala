@@ -3,6 +3,7 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import zio.{Chunk, ZIO}
 
 import java.nio.charset.Charset
@@ -37,5 +38,5 @@ trait Postman2Endpoints {
 }
 
 object Postman2Endpoints {
-  final case class Config(allowHttpCalls: Boolean = false, host: String)
+  final case class Config(allowHttpCalls: Boolean = false, host: String, nameGen: NameGenerator)
 }
