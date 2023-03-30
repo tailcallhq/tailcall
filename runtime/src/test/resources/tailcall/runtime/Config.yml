@@ -4,6 +4,7 @@ server:
 graphQL:
   schema:
     query: Query
+    mutation: Mutation
   types:
     Geo:
       lat:
@@ -33,19 +34,19 @@ graphQL:
         type: Post
         isList: true
         steps:
-        - http:
-            path: /posts
+          - http:
+              path: /posts
       users:
         type: User
         isList: true
         steps:
-        - http:
-            path: /users
+          - http:
+              path: /users
       post:
         type: Post
         steps:
-        - http:
-            path: /posts/{{args.id}}
+          - http:
+              path: /posts/{{args.id}}
         args:
           id:
             type: Int
@@ -53,16 +54,34 @@ graphQL:
       user:
         type: User
         steps:
-        - objectPath:
-            userId:
-            - args
-            - id
-        - http:
-            path: /users/{{userId}}
+          - objectPath:
+              userId:
+                - args
+                - id
+          - http:
+              path: /users/{{userId}}
         args:
           id:
             type: Int
             isRequired: true
+    NewUser:
+      website:
+        type: String
+      name:
+        type: String
+        isRequired: true
+      email:
+        type: String
+        isRequired: true
+      username:
+        type: String
+        isRequired: true
+      company:
+        type: NewCompany
+      address:
+        type: NewAddress
+      phone:
+        type: String
     Post:
       body:
         type: String
@@ -72,12 +91,12 @@ graphQL:
       user:
         type: User
         steps:
-        - objectPath:
-            userId:
-            - value
-            - userId
-        - http:
-            path: /users/{{userId}}
+          - objectPath:
+              userId:
+                - value
+                - userId
+          - http:
+              path: /users/{{userId}}
       userId:
         type: Int
         isRequired: true
@@ -93,8 +112,8 @@ graphQL:
         type: Post
         isList: true
         steps:
-        - http:
-            path: /users/{{value.id}}/posts
+          - http:
+              path: /users/{{value.id}}/posts
       email:
         type: String
         isRequired: true
@@ -109,4 +128,38 @@ graphQL:
       address:
         type: Address
       phone:
+        type: String
+    Mutation:
+      createUser:
+        type: User
+        steps:
+          - http:
+              path: /users
+              method: POST
+        args:
+          user:
+            type: NewUser
+            isRequired: true
+    NewGeo:
+      lat:
+        type: String
+      lng:
+        type: String
+    NewCompany:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+    NewAddress:
+      geo:
+        type: NewGeo
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
         type: String

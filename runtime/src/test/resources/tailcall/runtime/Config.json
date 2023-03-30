@@ -5,7 +5,8 @@
   },
   "graphQL": {
     "schema": {
-      "query": "Query"
+      "query": "Query",
+      "mutation": "Mutation"
     },
     "types": {
       "Geo": {
@@ -108,6 +109,32 @@
           }
         }
       },
+      "NewUser": {
+        "website": {
+          "type": "String"
+        },
+        "name": {
+          "type": "String",
+          "isRequired": true
+        },
+        "email": {
+          "type": "String",
+          "isRequired": true
+        },
+        "username": {
+          "type": "String",
+          "isRequired": true
+        },
+        "company": {
+          "type": "NewCompany"
+        },
+        "address": {
+          "type": "NewAddress"
+        },
+        "phone": {
+          "type": "String"
+        }
+      },
       "Post": {
         "body": {
           "type": "String"
@@ -180,6 +207,61 @@
           "type": "Address"
         },
         "phone": {
+          "type": "String"
+        }
+      },
+      "Mutation": {
+        "createUser": {
+          "type": "User",
+          "steps": [
+            {
+              "http": {
+                "path": "/users",
+                "method": "POST"
+              }
+            }
+          ],
+          "args": {
+            "user": {
+              "type": "NewUser",
+              "isRequired": true
+            }
+          }
+        }
+      },
+      "NewGeo": {
+        "lat": {
+          "type": "String"
+        },
+        "lng": {
+          "type": "String"
+        }
+      },
+      "NewCompany": {
+        "name": {
+          "type": "String"
+        },
+        "catchPhrase": {
+          "type": "String"
+        },
+        "bs": {
+          "type": "String"
+        }
+      },
+      "NewAddress": {
+        "geo": {
+          "type": "NewGeo"
+        },
+        "street": {
+          "type": "String"
+        },
+        "suite": {
+          "type": "String"
+        },
+        "city": {
+          "type": "String"
+        },
+        "zipcode": {
           "type": "String"
         }
       }

@@ -16,33 +16,85 @@ trait Config2Blueprint {
   implicit final private def jsonSchema: Schema[Json] =
     Schema[DynamicValue].transformOrFail[Json](Transcoder.toJson(_).toEither, Transcoder.toDynamicValue(_).toEither)
 
-  final private def toType(field: Field): Blueprint.Type = {
-    val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
-    val isList = field.isList.getOrElse(false)
-    if (isList) Blueprint.ListType(ofType, false) else ofType
-  }
+  final def toBlueprint(config: Config, encodeSteps: Boolean = false): TValid[Nothing, Blueprint] = {
+    val rootSchema = Blueprint.SchemaDefinition(
+      query = config.graphQL.schema.query,
+      mutation = config.graphQL.schema.mutation,
+      directives = toDirective(config).toList,
+    )
 
-  final private def toType(inputType: Argument): Blueprint.Type = {
-    val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired.getOrElse(false))
-    val isList = inputType.isList.getOrElse(false)
-    if (isList) Blueprint.ListType(ofType, false) else ofType
-  }
+    val outputTypes = getOutputTypes(config).toSet
 
-  final private def toTSchema(config: Config, field: Field): TSchema = {
-    config.graphQL.types.get(field.typeOf) match {
-      case Some(value) =>
-        val schema = TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          TSchema.Field(fieldName, toTSchema(config, field))
-        })
+    val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
+      val bFields: List[Blueprint.FieldDefinition] = {
+        fields.toList.map { case (name, field) =>
+          val args: List[Blueprint.InputFieldDefinition] = {
+            field.args.getOrElse(Map.empty).toList.map { case (name, inputType) =>
+              Blueprint.InputFieldDefinition(name, toType(inputType), None)
+            }
+          }
 
-        if (field.isList.getOrElse(false)) schema.arr else schema
+          val ofType = toType(field)
 
-      case None => field.typeOf match {
-          case "String"  => TSchema.string
-          case "Int"     => TSchema.int
-          case "Boolean" => TSchema.bool
-          case _         => TSchema.string // TODO: default to string?
+          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
+
+          Blueprint.FieldDefinition(
+            name = name,
+            args = args,
+            ofType = ofType,
+            resolver = resolver.map(Remote.toLambda(_)),
+            directives = if (encodeSteps) toDirective(field.steps.getOrElse(Nil)).toList else Nil,
+          )
         }
+      }
+
+      // NOTE: Should create a list of definitions
+      // There should be an object type or a list of input object type
+      val definition = Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
+      if (outputTypes.contains(name)) { definition }
+      else definition.toInput
+    }
+
+    TValid.succeed(Blueprint(rootSchema :: definitions))
+  }
+
+  /**
+   * Goes over every possible object type and creates a map
+   * of type name to whether it's an input type or not.
+   */
+  final private def getOutputTypes(config: Config): List[String] = {
+    def loop(name: String, result: List[String]): List[String] = {
+      if (result.contains(name)) result
+      else config.graphQL.types.get(name) match {
+        case Some(fields) => fields.values.toList.flatMap[String](field => loop(field.typeOf, name :: result))
+        case None         => result
+      }
+    }
+
+    val fromQueries = config.graphQL.schema.query.toList.flatMap(query => loop(query, List(query)))
+    config.graphQL.schema.mutation.toList.flatMap(mutation => loop(mutation, mutation :: fromQueries))
+  }
+
+  final private def toDirective(config: Config): Option[Blueprint.Directive] = {
+    if (config.server.isEmpty) None
+    else {
+      val map        = config.server.toJson.fromJson[Map[String, InputValue]]
+      val serverArgs = (map match {
+        case Left(_)     => TValid.succeed(Nil)
+        case Right(args) => TValid.foreach(args.toList) { case (k, v) => Transcoder.toDynamicValue(v).map(k -> _) }
+      }).map(_.toMap).toOption
+
+      serverArgs.map(args => Blueprint.Directive(name = "server", arguments = args))
+    }
+  }
+
+  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
+    // TODO: should fail on error
+    val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
+    if (errors.nonEmpty || jsons.isEmpty) None
+    else Transcoder.toDynamicValue(Json.Arr(jsons: _*)).toEither match {
+      case Left(_)             => None
+      case Right(dynamicValue) => Option(Blueprint.Directive(name = "steps", arguments = Map("value" -> dynamicValue)))
     }
   }
 
@@ -84,61 +136,33 @@ trait Config2Blueprint {
         }
     }
 
-  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
-    // TODO: should fail on error
-    val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
-    if (errors.nonEmpty || jsons.isEmpty) None
-    else Transcoder.toDynamicValue(Json.Arr(jsons: _*)).toEither match {
-      case Left(_)             => None
-      case Right(dynamicValue) => Option(Blueprint.Directive(name = "steps", arguments = Map("value" -> dynamicValue)))
-    }
-  }
+  final private def toTSchema(config: Config, field: Field): TSchema = {
+    config.graphQL.types.get(field.typeOf) match {
+      case Some(value) =>
+        val schema = TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
+          TSchema.Field(fieldName, toTSchema(config, field))
+        })
 
-  final private def toDirective(config: Config): Option[Blueprint.Directive] = {
-    val map = config.server.toJson.fromJson[Map[String, InputValue]]
+        if (field.isList.getOrElse(false)) schema.arr else schema
 
-    val serverArgs = (map match {
-      case Left(_)     => TValid.succeed(Nil)
-      case Right(args) => TValid.foreach(args.toList) { case (k, v) => Transcoder.toDynamicValue(v).map(k -> _) }
-    }).map(_.toMap).toOption
-
-    serverArgs.map(args => Blueprint.Directive(name = "server", arguments = args))
-
-  }
-
-  final def toBlueprint(config: Config, encodeSteps: Boolean = false): TValid[Nothing, Blueprint] = {
-    val rootSchema = Blueprint.SchemaDefinition(
-      query = config.graphQL.schema.query,
-      mutation = config.graphQL.schema.mutation,
-      directives = toDirective(config).toList,
-    )
-
-    val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
-      val bFields: List[Blueprint.FieldDefinition] = {
-        fields.toList.map { case (name, field) =>
-          val args: List[Blueprint.InputValueDefinition] = {
-            field.args.getOrElse(Map.empty).toList.map { case (name, inputType) =>
-              Blueprint.InputValueDefinition(name, toType(inputType), None)
-            }
-          }
-
-          val ofType = toType(field)
-
-          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
-
-          Blueprint.FieldDefinition(
-            name = name,
-            args = args,
-            ofType = ofType,
-            resolver = resolver.map(Remote.toLambda(_)),
-            directives = if (encodeSteps) toDirective(field.steps.getOrElse(Nil)).toList else Nil,
-          )
+      case None => field.typeOf match {
+          case "String"  => TSchema.string
+          case "Int"     => TSchema.int
+          case "Boolean" => TSchema.bool
+          case _         => TSchema.string // TODO: default to string?
         }
-      }
-
-      Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
     }
+  }
 
-    TValid.succeed(Blueprint(rootSchema :: definitions))
+  final private def toType(inputType: Argument): Blueprint.Type = {
+    val ofType = Blueprint.NamedType(inputType.typeOf, inputType.isRequired.getOrElse(false))
+    val isList = inputType.isList.getOrElse(false)
+    if (isList) Blueprint.ListType(ofType, false) else ofType
+  }
+
+  final private def toType(field: Field): Blueprint.Type = {
+    val ofType = Blueprint.NamedType(field.typeOf, field.isRequired.getOrElse(false))
+    val isList = field.isList.getOrElse(false)
+    if (isList) Blueprint.ListType(ofType, false) else ofType
   }
 }
