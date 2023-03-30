@@ -2,10 +2,12 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
 import tailcall.runtime.ast.{Blueprint, Endpoint}
-import tailcall.runtime.dsl.Config
+import tailcall.runtime.dsl.{Config, Postman}
+import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.value._
+import zio.ZIO
 
 /**
  * A transcoder is a function that takes an A and returns a
@@ -35,6 +37,15 @@ object Transcoder extends Transcoder {
   def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
     toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
 
+  def toConfig(postman: Postman, config: Postman2Endpoints.Config): ZIO[HttpClient, Throwable, Config] =
+    for {
+      endpoints <- toEndpoints(postman, config)
+      configs   <- TValid.foreach(endpoints)(endpoint => toConfig(endpoint, NameGenerator.incremental)).toZIO
+        .catchAll(err => ZIO.fail(new Exception(s"Error while converting Postman to Blueprint: $err")))
+    } yield configs.reduce(_ mergeRight _)
+
+  def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
+
   def toGraphQLSchema(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
     toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress))
 
@@ -45,6 +56,4 @@ object Transcoder extends Transcoder {
       blueprint <- toBlueprint(config, encodeSteps = true)
       document  <- toDocument(blueprint)
     } yield document
-
-  def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 }
