@@ -34,7 +34,7 @@ final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
   def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
   def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
-  def endpoints: List[Endpoint]                  = {
+  def endpoints: List[Endpoint] = {
     def find(expr: Expression): List[Endpoint] = {
       expr match {
         case Expression.Identity                    => Nil
@@ -121,4 +121,6 @@ object Blueprint {
   implicit val decoder: JsonDecoder[Blueprint]               = codec.decoder
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
   def encode(value: Blueprint): CharSequence                 = codec.encodeJson(value, None)
+
+  def empty: Blueprint = Blueprint()
 }
