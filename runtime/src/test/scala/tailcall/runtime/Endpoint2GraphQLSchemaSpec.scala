@@ -16,14 +16,12 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
   def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
-    val schema = toConfig(endpoint, NameGenerator.incremental).flatMap(Transcoder.toGraphQLSchema)
-      .map(_.stripMargin.trim)
-
+    val schema = Transcoder.toGraphQLSchema(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
     for { result <- schema.toZIO } yield assertTrue(result == expected)
   }
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("TranscoderSpec")(suite("endpoint to config")(
+    suite("endpoint to graphql schema")(
       test("output schema") {
         val endpoint = jsonEndpoint.withHttps.withOutput(Option(User.arr)).withPath("/users")
         val expected = """
@@ -120,5 +118,5 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
             |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
-    ))
+    )
 }
