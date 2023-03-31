@@ -6,164 +6,183 @@ graphQL:
     query: Query
     mutation: Mutation
   types:
-    Id:
-      id:
-        type: Int
-        isRequired: true
     Geo:
-      lat:
-        type: String
-      lng:
-        type: String
+      fields:
+        lat:
+          type: String
+        lng:
+          type: String
+    Id:
+      doc: A general purpose Id container, used when an object is created an only
+        the Id is returned
+      fields:
+        id:
+          type: Int
+          isRequired: true
     Company:
-      name:
-        type: String
-      catchPhrase:
-        type: String
-      bs:
-        type: String
+      fields:
+        name:
+          type: String
+        catchPhrase:
+          type: String
+        bs:
+          type: String
     Address:
-      geo:
-        type: Geo
-      street:
-        type: String
-      suite:
-        type: String
-      city:
-        type: String
-      zipcode:
-        type: String
+      fields:
+        geo:
+          type: Geo
+        street:
+          type: String
+        suite:
+          type: String
+        city:
+          type: String
+        zipcode:
+          type: String
     Query:
-      posts:
-        type: Post
-        isList: true
-        steps:
+      fields:
+        posts:
+          type: Post
+          isList: true
+          steps:
           - http:
               path: /posts
-      users:
-        type: User
-        isList: true
-        steps:
+          doc: A list of all posts
+        users:
+          type: User
+          isList: true
+          steps:
           - http:
               path: /users
-      post:
-        type: Post
-        steps:
+          doc: A list of all users
+        post:
+          type: Post
+          steps:
           - http:
               path: /posts/{{args.id}}
-        args:
-          id:
-            type: Int
-            isRequired: true
-      user:
-        type: User
-        steps:
+          args:
+            id:
+              type: Int
+              isRequired: true
+          doc: A single post
+        user:
+          type: User
+          steps:
           - objectPath:
               userId:
-                - args
-                - id
+              - args
+              - id
           - http:
               path: /users/{{userId}}
-        args:
-          id:
-            type: Int
-            isRequired: true
+          args:
+            id:
+              type: Int
+              isRequired: true
+          doc: A single user
     NewUser:
-      website:
-        type: String
-      name:
-        type: String
-        isRequired: true
-      email:
-        type: String
-        isRequired: true
-      username:
-        type: String
-        isRequired: true
-      company:
-        type: NewCompany
-      address:
-        type: NewAddress
-      phone:
-        type: String
+      fields:
+        website:
+          type: String
+        name:
+          type: String
+          isRequired: true
+        email:
+          type: String
+          isRequired: true
+        username:
+          type: String
+          isRequired: true
+        company:
+          type: NewCompany
+        address:
+          type: NewAddress
+        phone:
+          type: String
     Post:
-      body:
-        type: String
-      id:
-        type: Int
-        isRequired: true
-      user:
-        type: User
-        steps:
+      fields:
+        body:
+          type: String
+        id:
+          type: Int
+          isRequired: true
+        user:
+          type: User
+          steps:
           - objectPath:
               userId:
-                - value
-                - userId
+              - value
+              - userId
           - http:
               path: /users/{{userId}}
-      userId:
-        type: Int
-        isRequired: true
-      title:
-        type: String
+        userId:
+          type: Int
+          isRequired: true
+        title:
+          type: String
     User:
-      website:
-        type: String
-      name:
-        type: String
-        isRequired: true
-      posts:
-        type: Post
-        isList: true
-        steps:
+      fields:
+        website:
+          type: String
+        name:
+          type: String
+          isRequired: true
+        posts:
+          type: Post
+          isList: true
+          steps:
           - http:
               path: /users/{{value.id}}/posts
-      email:
-        type: String
-        isRequired: true
-      username:
-        type: String
-        isRequired: true
-      company:
-        type: Company
-      id:
-        type: Int
-        isRequired: true
-      address:
-        type: Address
-      phone:
-        type: String
+        email:
+          type: String
+          isRequired: true
+        username:
+          type: String
+          isRequired: true
+        company:
+          type: Company
+        id:
+          type: Int
+          isRequired: true
+        address:
+          type: Address
+        phone:
+          type: String
     Mutation:
-      createUser:
-        type: Id
-        steps:
+      fields:
+        createUser:
+          type: Id
+          steps:
           - http:
               path: /users
               method: POST
-        args:
-          user:
-            type: NewUser
-            isRequired: true
+          args:
+            user:
+              type: NewUser
+              isRequired: true
+              doc: The user to create
     NewGeo:
-      lat:
-        type: String
-      lng:
-        type: String
+      fields:
+        lat:
+          type: String
+        lng:
+          type: String
     NewCompany:
-      name:
-        type: String
-      catchPhrase:
-        type: String
-      bs:
-        type: String
+      fields:
+        name:
+          type: String
+        catchPhrase:
+          type: String
+        bs:
+          type: String
     NewAddress:
-      geo:
-        type: NewGeo
-      street:
-        type: String
-      suite:
-        type: String
-      city:
-        type: String
-      zipcode:
-        type: String
+      fields:
+        geo:
+          type: NewGeo
+        street:
+          type: String
+        suite:
+          type: String
+        city:
+          type: String
+        zipcode:
+          type: String

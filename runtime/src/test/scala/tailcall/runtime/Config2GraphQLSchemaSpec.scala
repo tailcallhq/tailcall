@@ -1,7 +1,7 @@
 package tailcall.runtime
 
 import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.Field
+import tailcall.runtime.dsl.Config.{Field, Type}
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.service._
 import zio.durationInt
@@ -12,7 +12,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
     suite("config to graphql schema")(
       test("only query") {
-        val config   = Config.empty.withQuery("Query").withType("Query" -> Map("hello" -> Field.ofType("String")))
+        val config   = Config.empty.withQuery("Query").withType("Query" -> Type("hello" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -24,8 +24,8 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
       test("multiple query") {
-        val config   = Config.empty.withQuery("Query").withType("Query" -> Map("foo" -> Field.ofType("String")))
-          .withType("Query" -> Map("bar" -> Field.ofType("String")))
+        val config   = Config.empty.withQuery("Query").withType("Query" -> Type("foo" -> Field.ofType("String")))
+          .withType("Query" -> Type("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -38,8 +38,8 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
       test("mergeRight") {
-        val config1 = Config.empty.withQuery("Query").withType("Query" -> Map("foo" -> Field.ofType("String")))
-        val config2 = Config.empty.withQuery("Query").withType("Query" -> Map("bar" -> Field.ofType("String")))
+        val config1 = Config.empty.withQuery("Query").withType("Query" -> Type("foo" -> Field.ofType("String")))
+        val config2 = Config.empty.withQuery("Query").withType("Query" -> Type("bar" -> Field.ofType("String")))
 
         val config   = config1 mergeRight config2
         val expected = """|schema {

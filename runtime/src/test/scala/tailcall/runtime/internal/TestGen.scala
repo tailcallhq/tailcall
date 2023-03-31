@@ -71,7 +71,8 @@ object TestGen {
 
   def genGraphQL: Gen[Any, Config.GraphQL] =
     for {
-      map    <- Gen.mapOfN(2)(genTypeName, Gen.mapOfN(2)(genName, genFieldDefinition))
+      map    <- Gen
+        .mapOfN(2)(genTypeName, Gen.mapOfN(2)(genName, genFieldDefinition).map(fields => Config.Type(fields = fields)))
       schema <- schemaDefinition
     } yield Config.GraphQL(schema, map)
 

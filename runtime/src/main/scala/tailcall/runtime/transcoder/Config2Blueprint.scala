@@ -25,12 +25,13 @@ trait Config2Blueprint {
 
     val outputTypes = getOutputTypes(config).toSet
 
-    val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, fields) =>
+    val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.map { case (name, typeInfo) =>
       val bFields: List[Blueprint.FieldDefinition] = {
-        fields.toList.map { case (name, field) =>
+        typeInfo.fields.toList.map { case (name, field) =>
           val args: List[Blueprint.InputFieldDefinition] = {
-            field.args.getOrElse(Map.empty).toList.map { case (name, inputType) =>
-              Blueprint.InputFieldDefinition(name, toType(inputType), None)
+            field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
+              Blueprint
+                .InputFieldDefinition(name = name, ofType = toType(arg), defaultValue = None, description = arg.doc)
             }
           }
 
@@ -44,13 +45,14 @@ trait Config2Blueprint {
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
             directives = if (encodeSteps) toDirective(field.steps.getOrElse(Nil)).toList else Nil,
+            description = field.doc,
           )
         }
       }
 
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
-      val definition = Blueprint.ObjectTypeDefinition(name = name, fields = bFields)
+      val definition = Blueprint.ObjectTypeDefinition(name = name, fields = bFields, description = typeInfo.doc)
       if (outputTypes.contains(name)) { definition }
       else definition.toInput
     }
@@ -66,8 +68,9 @@ trait Config2Blueprint {
     def loop(name: String, result: List[String]): List[String] = {
       if (result.contains(name)) result
       else config.graphQL.types.get(name) match {
-        case Some(fields) => fields.values.toList.flatMap[String](field => loop(field.typeOf, name :: result))
-        case None         => result
+        case Some(typeInfo) => typeInfo.fields.values.toList
+            .flatMap[String](field => loop(field.typeOf, name :: result))
+        case None           => result
       }
     }
 
@@ -138,8 +141,8 @@ trait Config2Blueprint {
 
   final private def toTSchema(config: Config, field: Field): TSchema = {
     var schema = config.graphQL.types.get(field.typeOf) match {
-      case Some(value) => TSchema.obj(value.toList.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          TSchema.Field(fieldName, toTSchema(config, field))
+      case Some(typeInfo) => TSchema.obj(typeInfo.fields.toList.filter(_._2.steps.isEmpty).map {
+          case (fieldName, field) => TSchema.Field(fieldName, toTSchema(config, field))
         })
 
       case None => field.typeOf match {

@@ -51,12 +51,13 @@ type Geo {
   lng: String
 }
 
+"A general purpose Id container, used when an object is created an only the Id is returned"
 type Id {
   id: Int!
 }
 
 type Mutation {
-  createUser(user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
+  createUser("The user to create" user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
 }
 
 type Post {
@@ -68,9 +69,13 @@ type Post {
 }
 
 type Query {
+  "A list of all posts"
   posts: [Post] @steps(value: [{http: {path: "/posts"}}])
+  "A list of all users"
   users: [User] @steps(value: [{http: {path: "/users"}}])
+  "A single post"
   post(id: Int!): Post @steps(value: [{http: {path: "/posts/{{args.id}}"}}])
+  "A single user"
   user(id: Int!): User @steps(value: [{objectPath: {userId: ["args","id"]}},{http: {path: "/users/{{userId}}"}}])
 }
 
