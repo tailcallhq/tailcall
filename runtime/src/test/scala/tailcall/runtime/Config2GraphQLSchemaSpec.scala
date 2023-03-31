@@ -23,6 +23,37 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |""".stripMargin.trim
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
+      test("multiple query") {
+        val config   = Config.empty.withQuery("Query").withType("Query" -> Map("foo" -> Field.ofType("String")))
+          .withType("Query" -> Map("bar" -> Field.ofType("String")))
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |type Query {
+                          |  foo: String
+                          |  bar: String
+                          |}
+                          |""".stripMargin.trim
+        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+      },
+      test("mergeRight") {
+        val config1 = Config.empty.withQuery("Query").withType("Query" -> Map("foo" -> Field.ofType("String")))
+        val config2 = Config.empty.withQuery("Query").withType("Query" -> Map("bar" -> Field.ofType("String")))
+
+        val config   = config1 mergeRight config2
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |type Query {
+                          |  foo: String
+                          |  bar: String
+                          |}
+                          |""".stripMargin.trim
+        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+
+      },
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {
