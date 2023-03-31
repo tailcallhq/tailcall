@@ -33,9 +33,11 @@ object Endpoint2Config {
             .Arg(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
         case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
-        case TSchema.String  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
-        case TSchema.Int     => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
-        case TSchema.Boolean => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.String   => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Int      => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Boolean  => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.Union(_) => ???
+        case TSchema.Intersection(_) => ???
       }
     }
 
@@ -51,6 +53,8 @@ object Endpoint2Config {
           Map("value" -> Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList)))
         case TSchema.Boolean          =>
           Map("value" -> Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList)))
+        case TSchema.Union(_)         => ???
+        case TSchema.Intersection(_)  => ???
       }
     }
 
@@ -69,9 +73,11 @@ object Endpoint2Config {
             .Field(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toConfigField(schema, isRequired, isList = true)
         case TSchema.Optional(schema) => toConfigField(schema, isRequired = false, isList = isList)
-        case TSchema.String  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
-        case TSchema.Int     => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
-        case TSchema.Boolean => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.String   => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Int      => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Boolean  => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.Union(_) => ???
+        case TSchema.Intersection(_) => ???
       }
     }
 
@@ -120,6 +126,8 @@ object Endpoint2Config {
         case TSchema.String           => Nil
         case TSchema.Int              => Nil
         case TSchema.Boolean          => Nil
+        case TSchema.Union(_)         => ???
+        case TSchema.Intersection(_)  => ???
       }
     }
   }
