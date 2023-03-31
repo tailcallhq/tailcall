@@ -15,9 +15,12 @@ final case class Endpoint(
   headers: Chunk[(String, String)] = Chunk.empty,
   scheme: Scheme = Scheme.Http,
   body: Option[String] = None,
+  description: Option[String] = None,
 ) {
   self =>
   def withMethod(method: Method): Endpoint = copy(method = method)
+
+  def withDescription(description: String): Endpoint = copy(description = Option(description))
 
   def withPath(path: Path): Endpoint = copy(path = path)
 

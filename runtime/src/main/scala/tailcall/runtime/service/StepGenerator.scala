@@ -37,7 +37,8 @@ object StepGenerator {
     val rootContext: Context = Context(DynamicValue(()))
 
     val stepRef: Map[String, Context => Step[HttpDataLoader]] = document.definitions
-      .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }.toMap
+      .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
+      .toMap
 
     def resolve: StepResult[HttpDataLoader] = {
 
