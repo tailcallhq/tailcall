@@ -6,6 +6,8 @@ import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, durationInt}
 
+import java.io.File
+
 object ConfigFileIOSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("ConfigFileIO")(
@@ -31,6 +33,13 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
             actual <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
             expected = JsonPlaceholderConfig.config.compress
           } yield assertTrue(actual == expected)
+        }
+      },
+      test("write generated config") {
+        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
+          // TODO: find a better way to get the path instead of hardcoding
+          val url = new File(s"src/test/resources/tailcall/runtime/Config.${format.ext}")
+          ConfigFileIO.write(url, JsonPlaceholderConfig.config.compress).as(assertCompletes)
         }
       },
     ).provide(

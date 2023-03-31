@@ -89,7 +89,12 @@ object Endpoint2Config {
         val outputTypes = endpoint.output.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil)
         val inputTypes  = endpoint.input.map(toTypes(_, isRequired = true, isList = false)).getOrElse(Nil)
         val types       = inputTypes ++ outputTypes ++ rootTypes
-        GraphQL(schema = rootSchema, types = types.map { case (key, value) => key -> value.toMap }.toMap)
+        GraphQL(
+          schema = rootSchema,
+          types = types.map { case (key, value) =>
+            key -> Config.Type(doc = endpoint.description, fields = value.toMap)
+          }.toMap,
+        )
       }
 
     private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {

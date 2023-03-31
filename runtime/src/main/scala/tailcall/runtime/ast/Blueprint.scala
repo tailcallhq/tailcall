@@ -92,7 +92,8 @@ object Blueprint {
 
   final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
       extends Definition {
-    def toInput: InputObjectTypeDefinition = InputObjectTypeDefinition(name, fields.map(_.toInput(None)))
+    def toInput: InputObjectTypeDefinition =
+      InputObjectTypeDefinition(name = name, fields = fields.map(_.toInput(None)), description = description)
   }
 
   final case class InputObjectTypeDefinition(

@@ -39,9 +39,9 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withType(input: (String, Map[String, Field])*): Config = {
-    input.foldLeft(self) { case (config, (name, fields)) =>
-      config.copy(graphQL = config.graphQL.withType(name, fields))
+  def withType(input: (String, Type)*): Config = {
+    input.foldLeft(self) { case (config, (name, typeInfo)) =>
+      config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
 }
@@ -60,13 +60,34 @@ object Config {
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
-  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Map[String, Field]] = Map.empty) {
+  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
     self =>
-    def compress: GraphQL =
-      self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
+    def ++(other: Type): Type = self.mergeRight(other)
+
+    def mergeRight(other: Type): Type =
+      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
+
+    def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+
+    def withDoc(doc: String): Type = self.copy(doc = Option(doc))
+
+    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
+
+    def withFields(input: (String, Field)*): Type =
+      input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
+  }
+
+  object Type {
+    def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
+    def empty: Type                           = Type()
+  }
+
+  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
+    self =>
+    def compress: GraphQL = self.copy(types = self.types.map { case (k, t) => (k, t.compress) })
 
     def mergeRight(other: GraphQL): GraphQL = {
-      other.types.foldLeft(self) { case (config, (name, fields)) => config.withType(name, fields) }.copy(schema =
+      other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
         RootSchema(
           query = other.schema.query.orElse(self.schema.query),
           mutation = other.schema.mutation.orElse(self.schema.mutation),
@@ -74,10 +95,10 @@ object Config {
       )
     }
 
-    def withType(name: String, fields: Map[String, Field]): GraphQL = {
+    def withType(name: String, typeInfo: Type): GraphQL = {
       self.copy(types = self.types.get(name) match {
-        case Some(iFields) => self.types + (name -> (iFields ++ fields))
-        case None          => self.types + (name -> fields)
+        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
+        case None            => self.types + (name -> typeInfo)
       })
     }
 
@@ -100,6 +121,7 @@ object Config {
     @jsonField("isRequired") required: Option[Boolean] = None,
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Arg]] = None,
+    doc: Option[String] = None,
   ) {
     self =>
     def apply(args: (String, Arg)*): Field = copy(args = Option(args.toMap))
@@ -143,6 +165,8 @@ object Config {
     def isRequired: Boolean = required.getOrElse(false)
 
     def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
+
+    def withDoc(doc: String): Field = copy(doc = Option(doc))
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
   }
@@ -205,6 +229,7 @@ object Config {
 
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
+    doc: Option[String] = None,
   ) {
     self =>
     def asList: Arg = self.copy(list = Option(true))
@@ -228,6 +253,8 @@ object Config {
     def isList: Boolean = list.getOrElse(false)
 
     def isRequired: Boolean = required.getOrElse(false)
+
+    def withDoc(doc: String): Arg = copy(doc = Option(doc))
   }
   object Arg  {
     val string: Arg               = Arg("String")
@@ -246,17 +273,18 @@ object Config {
    * list of tuples.
    */
 
-  implicit val urlCodec: JsonCodec[URL]                     = JsonCodec[String].transformOrFail[URL](
+  implicit val urlCodec: JsonCodec[URL]                          = JsonCodec[String].transformOrFail[URL](
     string =>
       try Right(new URL(string))
       catch { case _: Throwable => Left(s"Malformed url: ${string}") },
     _.toString,
   )
-  implicit val operationCodec: JsonCodec[Step]              = DeriveJsonCodec.gen[Step]
-  implicit val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
-  implicit val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
-  implicit val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
-  implicit val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
-  implicit val serverCodec: JsonCodec[Server]               = DeriveJsonCodec.gen[Server]
-  implicit val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
+  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
+  implicit lazy val operationCodec: JsonCodec[Step]              = DeriveJsonCodec.gen[Step]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val serverCodec: JsonCodec[Server]               = DeriveJsonCodec.gen[Server]
+  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 }

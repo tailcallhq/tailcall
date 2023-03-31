@@ -3,12 +3,7 @@ package tailcall.runtime.transcoder
 import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
-  Directive,
-  Document => CalibanDocument,
-  Type => CalibanType,
-}
+import caliban.parsing.adt.{Definition => CalibanDefinition, Directive, Document => CalibanDocument, Type => CalibanType}
 import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
 
@@ -42,12 +37,18 @@ trait Blueprint2Document {
 
   final private def toCalibanField(field: Blueprint.FieldDefinition): FieldDefinition = {
     val directives = field.directives.map(toCalibanDirective(_))
-    FieldDefinition(None, field.name, field.args.map(toCalibanInputValue), toCalibanType(field.ofType), directives)
+    FieldDefinition(
+      field.description,
+      field.name,
+      field.args.map(toCalibanInputValue),
+      toCalibanType(field.ofType),
+      directives,
+    )
   }
 
   final private def toCalibanInputValue(inputValue: Blueprint.InputFieldDefinition): InputValueDefinition =
     CalibanDefinition.TypeSystemDefinition.TypeDefinition.InputValueDefinition(
-      None,
+      inputValue.description,
       inputValue.name,
       toCalibanType(inputValue.ofType),
       inputValue.defaultValue.map(Transcoder.toInputValue(_).getOrElse(Value.NullValue)),

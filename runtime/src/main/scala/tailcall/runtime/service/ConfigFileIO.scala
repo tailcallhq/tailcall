@@ -14,10 +14,17 @@ trait ConfigFileIO {
 }
 
 object ConfigFileIO {
-  def readURL(url: URL): ZIO[ConfigFileIO, Throwable, Config]           = readFile(new File(url.getPath))
-  def readFile(file: File): ZIO[ConfigFileIO, Throwable, Config]        = ZIO.serviceWithZIO(_.read(file))
-  def live: ZLayer[FileIO with GraphQLGenerator, Nothing, ConfigFileIO] = ZLayer.fromFunction(Live.apply _)
   def default: ZLayer[Any, Nothing, ConfigFileIO] = (FileIO.default ++ GraphQLGenerator.default) >>> live
+
+  def live: ZLayer[FileIO with GraphQLGenerator, Nothing, ConfigFileIO] = ZLayer.fromFunction(Live.apply _)
+
+  def readURL(url: URL): ZIO[ConfigFileIO, Throwable, Config] = readFile(new File(url.getPath))
+
+  def readFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ZIO.serviceWithZIO(_.read(file))
+
+  def write(file: File, config: Config): ZIO[ConfigFileIO, Throwable, Unit] = ZIO.serviceWithZIO(_.write(file, config))
+
+  def write(url: URL, config: Config): ZIO[ConfigFileIO, Throwable, Unit] = write(new File(url.getPath), config)
 
   final case class Live(fileIO: FileIO, graphQLGenerator: GraphQLGenerator) extends ConfigFileIO {
     override def read(file: File): Task[Config] =
@@ -31,7 +38,7 @@ object ConfigFileIO {
       for {
         ext    <- DSLFormat.detect(file.getName).mapError(new RuntimeException(_))
         string <- ext.encode(config).mapError(new RuntimeException(_))
-        _      <- fileIO.write(file, string)
+        _      <- fileIO.write(file, string, FileIO.defaultFlag.withTruncateExisting.withCreate)
       } yield ()
   }
 }
