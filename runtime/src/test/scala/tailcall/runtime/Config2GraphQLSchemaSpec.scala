@@ -80,6 +80,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |  lng: String
                           |}
                           |
+                          |"A new user."
                           |input NewUser {
                           |  website: String
                           |  name: String!
@@ -109,12 +110,13 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |  lng: String
                           |}
                           |
+                          |"An Id container."
                           |type Id {
                           |  id: Int!
                           |}
                           |
                           |type Mutation {
-                          |  createUser(user: NewUser!): Id
+                          |  createUser("User as an argument." user: NewUser!): Id
                           |}
                           |
                           |type Post {
@@ -126,9 +128,13 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |
                           |type Query {
+                          |  "A list of all posts."
                           |  posts: [Post]
+                          |  "A list of all users."
                           |  users: [User]
+                          |  "A single post by id."
                           |  post(id: Int!): Post
+                          |  "A single user by id."
                           |  user(id: Int!): User
                           |}
                           |

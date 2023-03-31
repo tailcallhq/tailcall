@@ -18,20 +18,18 @@ object JsonPlaceholderConfig {
     types = Map(
       "Mutation"   -> Type(
         "createUser" -> Field.ofType("Id").withSteps(createUser)
-          .withArguments(Map("user" -> Arg.ofType("NewUser").asRequired.withDoc("The user to create")))
+          .withArguments(Map("user" -> Arg.ofType("NewUser").asRequired.withDoc("User as an argument.")))
       ),
-      "Id"         -> Type.empty
-        .withDoc("A general purpose Id container, used when an object is created an only the Id is returned")
-        .withFields("id" -> Field.int.asRequired),
+      "Id"         -> Type.empty.withDoc("An Id container.").withFields("id" -> Field.int.asRequired),
       "Query"      -> Type(
-        "posts" -> Field.ofType("Post").withSteps(posts).asList.withDoc("A list of all posts"),
-        "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users"),
-        "post"  -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post"),
-        "user"  -> Config
+        "posts" -> Field.ofType("Post").withSteps(posts).asList.withDoc("A list of all posts."),
+        "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users."),
+        "post" -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post by id."),
+        "user" -> Config
           .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired)
-          .withDoc("A single user"),
+          .withDoc("A single user by id."),
       ),
-      "NewUser"    -> Type.empty.withDoc("A new user").withFields(
+      "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
         "name"     -> Field.string.asRequired,
         "username" -> Field.string.asRequired,
         "email"    -> Field.string.asRequired,
