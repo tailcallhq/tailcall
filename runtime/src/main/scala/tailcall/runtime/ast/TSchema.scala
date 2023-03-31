@@ -13,6 +13,9 @@ import zio.schema.{Schema, TypeId}
 @jsonDiscriminator("type")
 sealed trait TSchema {
   self =>
+  final def |(other: TSchema): TSchema = TSchema.Union(List(self, other))
+  final def &(other: TSchema): TSchema = TSchema.Intersection(List(self, other))
+
   final def =:=(other: TSchema): Boolean = self <:< other && other <:< self
   final def <:<(other: TSchema): Boolean = TSchema.isSubType(self, other)
   final def arr: TSchema                 = TSchema.arr(self)
@@ -33,12 +36,14 @@ sealed trait TSchema {
 
   final def tag: String =
     self match {
-      case TSchema.Obj(_)      => "Object"
-      case TSchema.Arr(_)      => "Array"
-      case TSchema.Optional(_) => "Optional"
-      case TSchema.String      => "String"
-      case TSchema.Int         => "Integer"
-      case TSchema.Boolean     => "Boolean"
+      case TSchema.Obj(_)          => "Object"
+      case TSchema.Arr(_)          => "Array"
+      case TSchema.Optional(_)     => "Optional"
+      case TSchema.Union(_)        => "Union"
+      case TSchema.Intersection(_) => "Intersection"
+      case TSchema.String          => "String"
+      case TSchema.Int             => "Integer"
+      case TSchema.Boolean         => "Boolean"
     }
 }
 
@@ -51,6 +56,10 @@ object TSchema {
   def empty: TSchema = TSchema.Obj(Nil)
 
   def int: TSchema = TSchema.Int
+
+  def union(items: List[TSchema]): TSchema = Union(items)
+
+  def intersection(items: List[TSchema]): TSchema = Intersection(items)
 
   def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
 
@@ -75,6 +84,8 @@ object TSchema {
         val nFields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
       case Arr(item)           => Schema.chunk(toZIOSchema(item))
+      case Union(_)            => ???
+      case Intersection(_)     => ???
     }
 
   // TODO: add unit tests
@@ -92,8 +103,13 @@ object TSchema {
       case (TSchema.String, TSchema.String)   => true
       case (TSchema.Int, TSchema.Int)         => true
       case (TSchema.Boolean, TSchema.Boolean) => true
+      case (Optional(t1), Optional(t2))       => isSubType(t1, t2)
       case (Obj(fields1), Obj(fields2))       => checkFields(fields1, fields2)
       case (Arr(item1), Arr(item2))           => isSubType(item1, item2)
+      case (Union(schemas), _)                => schemas.forall(isSubType(_, s2))
+      case (Intersection(schemas), _)         => schemas.exists(isSubType(_, s2))
+      case (_, Union(schemas))                => schemas.exists(isSubType(s1, _))
+      case (_, Intersection(schemas))         => schemas.forall(isSubType(s1, _))
       case _                                  => false
     }
   }
@@ -108,6 +124,12 @@ object TSchema {
 
   @jsonHint("optional")
   final case class Optional(schema: TSchema) extends TSchema
+
+  @jsonHint("union")
+  final case class Union(items: List[TSchema]) extends TSchema
+
+  @jsonHint("intersection")
+  final case class Intersection(items: List[TSchema]) extends TSchema
 
   @jsonHint("String")
   case object String extends TSchema
