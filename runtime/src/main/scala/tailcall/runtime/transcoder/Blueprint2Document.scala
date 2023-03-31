@@ -17,17 +17,17 @@ trait Blueprint2Document {
     TValid.succeed {
       CalibanDocument(
         blueprint.definitions.sortBy {
-          case Blueprint.ObjectTypeDefinition(name, _)      => name
-          case Blueprint.InputObjectTypeDefinition(name, _) => name
-          case Blueprint.SchemaDefinition(_, _, _, _)       => ""
+          case Blueprint.ObjectTypeDefinition(name, _, _)      => name
+          case Blueprint.InputObjectTypeDefinition(name, _, _) => name
+          case Blueprint.SchemaDefinition(_, _, _, _)          => ""
         }.map {
           case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
               .TypeSystemDefinition
               .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
-          case Blueprint.ObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition.TypeDefinition
-              .ObjectTypeDefinition(None, name, Nil, Nil, fields.map(toCalibanField))
-          case Blueprint.InputObjectTypeDefinition(name, fields) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InputObjectTypeDefinition(None, name, Nil, fields.map(toCalibanInputValue))
+          case Blueprint.ObjectTypeDefinition(name, fields, description)      => CalibanDefinition.TypeSystemDefinition
+              .TypeDefinition.ObjectTypeDefinition(description, name, Nil, Nil, fields.map(toCalibanField))
+          case Blueprint.InputObjectTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
+              .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
         },
         SourceMapper.empty,
       )

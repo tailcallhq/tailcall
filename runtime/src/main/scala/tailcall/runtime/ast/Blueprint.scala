@@ -78,12 +78,11 @@ final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
       }
     }
 
-    definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields) => fields }.flatten
+    definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields, _) => fields }.flatten
       .flatMap(_.resolver.toList.map(_.compile)).flatMap(find)
   }
 }
 
-// scalafmt: {maxColumn = 240}
 object Blueprint {
   // TODO: create a common type for Object
   // TODO: drop non-null fields
@@ -91,16 +90,43 @@ object Blueprint {
 
   sealed trait Definition
 
-  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition])                                                                                       extends Definition {
+  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
+      extends Definition {
     def toInput: InputObjectTypeDefinition = InputObjectTypeDefinition(name, fields.map(_.toInput(None)))
   }
-  final case class InputObjectTypeDefinition(name: String, fields: List[InputFieldDefinition])                                                                             extends Definition
-  final case class SchemaDefinition(query: Option[String] = None, mutation: Option[String] = None, subscription: Option[String] = None, directives: List[Directive] = Nil) extends Definition
 
-  final case class InputFieldDefinition(name: String, ofType: Type, defaultValue: Option[DynamicValue])
-  final case class FieldDefinition(name: String, args: List[InputFieldDefinition] = Nil, ofType: Type, resolver: Option[DynamicValue ~> DynamicValue] = None, directives: List[Directive] = Nil) {
-    def toInput(defaultValue: Option[DynamicValue]): InputFieldDefinition = InputFieldDefinition(name, ofType, defaultValue)
+  final case class InputObjectTypeDefinition(
+    name: String,
+    fields: List[InputFieldDefinition],
+    description: Option[String] = None,
+  ) extends Definition
+
+  final case class SchemaDefinition(
+    query: Option[String] = None,
+    mutation: Option[String] = None,
+    subscription: Option[String] = None,
+    directives: List[Directive] = Nil,
+  ) extends Definition
+
+  final case class InputFieldDefinition(
+    name: String,
+    ofType: Type,
+    defaultValue: Option[DynamicValue],
+    description: Option[String] = None,
+  )
+
+  final case class FieldDefinition(
+    name: String,
+    args: List[InputFieldDefinition] = Nil,
+    ofType: Type,
+    resolver: Option[DynamicValue ~> DynamicValue] = None,
+    directives: List[Directive] = Nil,
+    description: Option[String] = None,
+  ) {
+    def toInput(defaultValue: Option[DynamicValue]): InputFieldDefinition =
+      InputFieldDefinition(name, ofType, defaultValue)
   }
+
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
   sealed trait Type {
@@ -111,7 +137,9 @@ object Blueprint {
         case ListType(ofType, _) => ofType.defaultName
       }
   }
+
   final case class NamedType(name: String, nonNull: Boolean) extends Type
+
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
   implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]

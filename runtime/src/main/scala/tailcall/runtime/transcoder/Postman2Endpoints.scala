@@ -22,10 +22,9 @@ trait Postman2Endpoints {
           }
           path             = request.url.map(_.path.mkString("/"))
           _                = Console.println(s"making call to host: $host, path: $path")
-          endpoint         = Endpoint.make(host)
+          endpoint         = Endpoint.make(host).withDescription(item.name)
           headers          = request.header.map(h => (h.key, h.value)).toMap
           endpointWithPath = if (path.nonEmpty) endpoint.withPath("/" + path.get) else endpoint
-
           endpointWithHost = endpointWithPath.withAddress(host)
           resp    <- client.request(Request(
             host + "/" + path.getOrElse(""),
