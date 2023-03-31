@@ -35,6 +35,8 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
           } yield assertTrue(actual == expected)
         }
       },
+
+      // NOTE: This test just re-writes the configuration files
       test("write generated config") {
         checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
           // TODO: find a better way to get the path instead of hardcoding

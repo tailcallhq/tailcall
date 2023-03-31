@@ -20,7 +20,7 @@
         }
       },
       "Id" : {
-        "doc" : "A general purpose Id container, used when an object is created an only the Id is returned",
+        "doc" : "An Id container.",
         "fields" : {
           "id" : {
             "type" : "Int",
@@ -72,7 +72,7 @@
                 }
               }
             ],
-            "doc" : "A list of all posts"
+            "doc" : "A list of all posts."
           },
           "users" : {
             "type" : "User",
@@ -84,7 +84,7 @@
                 }
               }
             ],
-            "doc" : "A list of all users"
+            "doc" : "A list of all users."
           },
           "post" : {
             "type" : "Post",
@@ -101,7 +101,7 @@
                 "isRequired" : true
               }
             },
-            "doc" : "A single post"
+            "doc" : "A single post by id."
           },
           "user" : {
             "type" : "User",
@@ -126,12 +126,12 @@
                 "isRequired" : true
               }
             },
-            "doc" : "A single user"
+            "doc" : "A single user by id."
           }
         }
       },
       "NewUser" : {
-        "doc" : "A new user",
+        "doc" : "A new user.",
         "fields" : {
           "website" : {
             "type" : "String"
@@ -254,7 +254,7 @@
               "user" : {
                 "type" : "NewUser",
                 "isRequired" : true,
-                "doc" : "The user to create"
+                "doc" : "User as an argument."
               }
             }
           }

@@ -15,12 +15,13 @@ import tailcall.runtime.internal.TValid
 import zio.json.{DecoderOps, EncoderOps}
 
 trait Document2Config {
-  final def toConfig(document: Document): TValid[String, Config] =
+  final def toConfig(document: Document): TValid[String, Config] = {
     for {
       schema <- toSchemaDefinition(document)
       types  <- toTypes(document)
       server <- toServer(document)
     } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
+  }
 
   final private def toServer(document: Document): TValid[String, Config.Server] = {
     document.schemaDefinition.flatMap(_.directives.find(_.name == "server")) match {
@@ -38,11 +39,11 @@ trait Document2Config {
 
   final private def toTypes(document: Document): TValid[String, Map[String, Config.Type]] = {
     val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(definition.name -> Config.Type(definition.description, _))
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _))
     }.map(_.toMap)
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(definition.name -> Config.Type(definition.description, _))
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _))
     }.map(_.toMap)
 
     (outputTypes zip inputTypes)(_ ++ _)
@@ -76,12 +77,19 @@ trait Document2Config {
 
   final private def toField(field: FieldDefinition): TValid[String, Config.Field] =
     for {
-      args  <- toArgumentMap(field.args)
+      args  <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
       steps <- TValid.foreach(field.directives)(toStep(_)).map(_.flatten)
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
-    } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps), Option(args))
+    } yield Config.Field(
+      typeOf = typeof,
+      list = Option(isList),
+      required = Option(isRequired),
+      steps = Option(steps),
+      args = Option(args),
+      doc = field.description,
+    )
 
   final private def toField(field: InputValueDefinition): TValid[String, Config.Field] =
     for {
@@ -89,17 +97,22 @@ trait Document2Config {
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
-    } yield Config.Field(typeof, Option(isList), Option(isRequired), Option(steps))
+    } yield Config.Field(
+      typeOf = typeof,
+      list = Option(isList),
+      required = Option(isRequired),
+      steps = Option(steps),
+      doc = field.description,
+    )
 
-  final private def toArgumentMap(value: List[InputValueDefinition]): TValid[String, Map[String, Config.Arg]] = {
-    TValid.foreach(value)(toLabelledArgument(_)).map(_.toMap)
-  }
-
-  final private def toLabelledArgument(argument: InputValueDefinition): TValid[String, (String, Config.Arg)] = {
-    val typeof     = innerType(argument.ofType)
-    val isList     = argument.ofType.isInstanceOf[Type.ListType]
-    val isRequired = argument.ofType.nonNull
-    TValid.succeed(argument.name, Config.Arg(typeof, Option(isList), Option(isRequired)))
+  final private def toLabelledArgument(arg: InputValueDefinition): TValid[String, (String, Config.Arg)] = {
+    val typeof     = innerType(arg.ofType)
+    val isList     = arg.ofType.isInstanceOf[Type.ListType]
+    val isRequired = arg.ofType.nonNull
+    TValid.succeed(
+      arg.name,
+      Config.Arg(typeOf = typeof, list = Option(isList), required = Option(isRequired), doc = arg.description),
+    )
   }
 
 }
