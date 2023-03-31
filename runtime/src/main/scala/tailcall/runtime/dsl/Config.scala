@@ -14,7 +14,7 @@ import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def compress: Config = self.copy(graphQL = self.graphQL.compress)
+  def ++(other: Config): Config = self.mergeRight(other)
 
   def mergeRight(other: Config): Config = {
     Config(
@@ -23,6 +23,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       graphQL = self.graphQL.mergeRight(other.graphQL),
     )
   }
+
+  def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
   def toBlueprint: Blueprint = toBlueprint()
 
@@ -37,8 +39,11 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withType(input: (String, Map[String, Field])*): Config =
-    self.copy(graphQL = self.graphQL.copy(types = self.graphQL.types ++ input.toMap))
+  def withType(input: (String, Map[String, Field])*): Config = {
+    input.foldLeft(self) { case (config, (name, fields)) =>
+      config.copy(graphQL = config.graphQL.withType(name, fields))
+    }
+  }
 }
 
 object Config {
@@ -60,14 +65,21 @@ object Config {
     def compress: GraphQL =
       self.copy(types = self.types.map { case (k, v) => k -> v.map { case (k, v) => (k, v.compress) } })
 
-    def mergeRight(other: GraphQL): GraphQL =
-      GraphQL(
-        schema = RootSchema(
+    def mergeRight(other: GraphQL): GraphQL = {
+      other.types.foldLeft(self) { case (config, (name, fields)) => config.withType(name, fields) }.copy(schema =
+        RootSchema(
           query = other.schema.query.orElse(self.schema.query),
           mutation = other.schema.mutation.orElse(self.schema.mutation),
-        ),
-        types = self.types ++ other.types,
+        )
       )
+    }
+
+    def withType(name: String, fields: Map[String, Field]): GraphQL = {
+      self.copy(types = self.types.get(name) match {
+        case Some(iFields) => self.types + (name -> (iFields ++ fields))
+        case None          => self.types + (name -> fields)
+      })
+    }
 
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
@@ -75,8 +87,6 @@ object Config {
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
-
-    def withType(name: String, fields: Map[String, Field]): GraphQL = copy(types = types + (name -> fields))
   }
 
   // TODO: Field and Argument can be merged
