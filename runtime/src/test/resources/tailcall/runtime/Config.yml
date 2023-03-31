@@ -80,6 +80,7 @@ graphQL:
               isRequired: true
           doc: A single user
     NewUser:
+      doc: A new user
       fields:
         website:
           type: String

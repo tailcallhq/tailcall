@@ -31,7 +31,7 @@ object JsonPlaceholderConfig {
           .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired)
           .withDoc("A single user"),
       ),
-      "NewUser"    -> Type(
+      "NewUser"    -> Type.empty.withDoc("A new user").withFields(
         "name"     -> Field.string.asRequired,
         "username" -> Field.string.asRequired,
         "email"    -> Field.string.asRequired,

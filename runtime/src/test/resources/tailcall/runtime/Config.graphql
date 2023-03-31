@@ -22,6 +22,7 @@ input NewGeo {
   lng: String
 }
 
+"A new user"
 input NewUser {
   website: String
   name: String!

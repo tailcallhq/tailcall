@@ -131,6 +131,7 @@
         }
       },
       "NewUser" : {
+        "doc" : "A new user",
         "fields" : {
           "website" : {
             "type" : "String"
