@@ -15,21 +15,18 @@ trait JsonValue2TSchema {
       tSchema <- toTSchema(jsonAST)
     } yield tSchema
 
-  def unify(seq: TSchema*): TValid[String, TSchema] = unify(seq.toList)
-
-  def unify(list: List[TSchema]): TValid[String, TSchema] = {
-    list match {
-      case Nil          => TValid.succeed(TSchema.empty) // Todo: Handle Errors in a better way
-      case head :: Nil  => TValid.succeed(head)
-      case head :: tail => unify(tail: _*).flatMap(unify2(head, _))
-    }
-  }
-
   final def toTSchema(jsonAST: Json): TValid[String, TSchema] = {
     jsonAST match {
       case Json.Obj(fields) => for {
-          fields <- TValid.foreach(fields.toList) { case (name, value) => toTSchema(value).map(TSchema.Field(name, _)) }
-        } yield TSchema.obj(fields)
+          valueSchema <- TValid.foreachChunk(fields)(field => toTSchema(field._2)).map(_.distinct)
+          keys        <- TValid.succeed(fields.map(_._1).distinct)
+          schema      <- valueSchema.headOption match {
+            case Some(schema) if fields.length != 1 && valueSchema.length == 1 && keys.length == fields.length =>
+              TValid.succeed(TSchema.dict(schema))
+            case _ => TValid.foreachChunk(fields) { case (name, value) => toTSchema(value).map(TSchema.Field(name, _)) }
+                .map(fields => TSchema.obj(fields.toList))
+          }
+        } yield schema
 
       case Json.Arr(element) => for {
           chunk  <- TValid.foreachChunk(element)(json => toTSchema(json))
@@ -42,6 +39,16 @@ trait JsonValue2TSchema {
       case Json.Null    => TValid.succeed(TSchema.obj())
     }
   }
+
+  final def unify(list: List[TSchema]): TValid[String, TSchema] = {
+    list match {
+      case Nil          => TValid.succeed(TSchema.string) // TODO: defaulting to string is not correct
+      case head :: Nil  => TValid.succeed(head)
+      case head :: tail => unify(tail: _*).flatMap(unify2(head, _))
+    }
+  }
+
+  final def unify(seq: TSchema*): TValid[String, TSchema] = unify(seq.toList)
 
   /**
    * Unifies two schemas into a single schema that is a
@@ -82,8 +89,4 @@ trait JsonValue2TSchema {
       case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.opt)
       case (_, b)                                   => TValid.succeed(b)
     }
-}
-object JsonValue2TSchema {
-  sealed trait Error
-  object Error {}
 }
