@@ -3,7 +3,7 @@ package tailcall.runtime.service
 import io.circe.generic.auto._
 import io.circe.syntax._
 import tailcall.runtime.ast.{Path, TSchema}
-import tailcall.runtime.dsl.json.Config.Step
+import tailcall.runtime.dsl.Config.Step
 import tailcall.runtime.http.Method
 import tailcall.runtime.openApi.OpenapiModels.OpenapiDocument
 import tailcall.runtime.openApi.OpenapiSchemaType
