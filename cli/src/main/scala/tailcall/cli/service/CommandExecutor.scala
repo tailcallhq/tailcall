@@ -47,9 +47,7 @@ object CommandExecutor {
                 case CommandADT.SourceFormat.POSTMAN => for {
                     postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
                     config  <- ZIO.foreachPar(postman)(
-                      Transcoder
-                        .toConfig(_, Postman2Endpoints.Config(true, "https://stg.api.mosaicwellness.in", nameGen))
-                        .provide(HttpClient.default)
+                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen)).provide(HttpClient.default)
                     )
                   } yield config.reduce(_ mergeRight _).compress
               }
