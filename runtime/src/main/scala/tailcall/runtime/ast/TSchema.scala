@@ -33,13 +33,12 @@ sealed trait TSchema {
 
   final def tag: String =
     self match {
-      case TSchema.Obj(_)        => "Object"
-      case TSchema.Arr(_)        => "Array"
-      case TSchema.Optional(_)   => "Optional"
-      case TSchema.String        => "String"
-      case TSchema.Int           => "Integer"
-      case TSchema.Boolean       => "Boolean"
-      case TSchema.Dictionary(_) => "Dictionary"
+      case TSchema.Obj(_)      => "Object"
+      case TSchema.Arr(_)      => "Array"
+      case TSchema.Optional(_) => "Optional"
+      case TSchema.String      => "String"
+      case TSchema.Int         => "Integer"
+      case TSchema.Boolean     => "Boolean"
     }
 }
 
@@ -48,8 +47,6 @@ object TSchema {
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
   def bool: TSchema = TSchema.Boolean
-
-  def dict(item: TSchema): TSchema = TSchema.Dictionary(item)
 
   def empty: TSchema = TSchema.Obj(Map.empty)
 
@@ -77,7 +74,6 @@ object TSchema {
         val nFields = Chunk.from(fields).map(f => Labelled(f._1, toZIOSchema(f._2).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
       case Arr(item)           => Schema.chunk(toZIOSchema(item))
-      case Dictionary(schema)  => Schema.map(Schema[String], toZIOSchema(schema))
     }
 
   // TODO: add unit tests
@@ -106,11 +102,6 @@ object TSchema {
 
   @jsonHint("array")
   final case class Arr(@jsonField("item") schema: TSchema) extends TSchema
-
-  @jsonHint("dict")
-  final case class Dictionary(value: TSchema) extends TSchema {
-    def toObj: TSchema.Obj = TSchema.Obj(Map("key" -> TSchema.String, "value" -> value))
-  }
 
   @jsonHint("optional")
   final case class Optional(schema: TSchema) extends TSchema
