@@ -56,19 +56,15 @@ object JsonValue2TSchema {
    * input schemas.
    */
   final case class SchemaUnifier(schemas: List[TSchema]) {
-    def unify(list: List[TSchema]): TValid[String, Option[TSchema]] = {
-      list match {
-        case Nil                  => TValid.none
-        case head :: Nil          => TValid.succeed(Option(head))
-        case head :: body :: tail => for {
-            opt <- unify2(head, body)
-            map <- opt match {
-              case Some(schema) => unify(schema :: tail)
-              case None         => unify(tail)
-            }
-          } yield map
+    def unify(list: List[TSchema]): TValid[String, Option[TSchema]] =
+      TValid.fold(list, Option.empty[TSchema]) { (optSchema, schema) =>
+        for {
+          newSchema <- optSchema match {
+            case Some(accSchema) => unify2(accSchema, schema)
+            case None            => TValid.succeed(Option(schema))
+          }
+        } yield newSchema
       }
-    }
 
     def unified: TValid[String, Option[TSchema]] = { unify(schemas) }
 
@@ -78,8 +74,8 @@ object JsonValue2TSchema {
         case (TSchema.String, TSchema.String)             => TValid.some(TSchema.String)
         case (TSchema.Boolean, TSchema.Boolean)           => TValid.some(TSchema.Boolean)
         case (TSchema.Obj(fields1), TSchema.Obj(fields2)) =>
-          val field1Map: Map[String, TSchema] = fields1.map(f => f._1 -> f._2).toMap
-          val field2Map: Map[String, TSchema] = fields2.map(f => f._1 -> f._2).toMap
+          val field1Map = fields1.map(f => f._1 -> f._2)
+          val field2Map = fields2.map(f => f._1 -> f._2)
 
           for {
             fields <- TValid.foreachIterable(field1Map.keys ++ field2Map.keys) { key =>
