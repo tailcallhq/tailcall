@@ -3,8 +3,8 @@ package tailcall.runtime.transcoder
 import caliban.parsing.adt.Document
 import tailcall.runtime.ast.{Blueprint, Endpoint}
 import tailcall.runtime.dsl.{Config, Postman}
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.value._
 import zio.ZIO
@@ -37,7 +37,7 @@ object Transcoder extends Transcoder {
   def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
     toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
 
-  def toConfig(postman: Postman, config: Postman2Endpoints.Config): ZIO[HttpClient, Throwable, Config] =
+  def toConfig(postman: Postman, config: Postman2Endpoints.Config): ZIO[HttpDataLoader, Throwable, Config] =
     for {
       endpoints <- toEndpoints(postman)
       configs   <- TValid.foreach(endpoints)(endpoint => toConfig(endpoint, config.nameGen)).toZIO
