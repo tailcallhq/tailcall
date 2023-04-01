@@ -10,9 +10,10 @@ sealed trait CommandADT extends Serializable with Product
 
 object CommandADT {
   final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)
-  final case class Check(config: ::[Path], url: Option[URL], options: BlueprintOptions)           extends CommandADT
-  final case class Generate(files: ::[Path], sourceFormat: SourceFormat, configFormat: DSLFormat) extends CommandADT
-  final case class Remote(server: URL, command: Remote.Command)                                   extends CommandADT
+  final case class Check(config: ::[Path], url: Option[URL], options: BlueprintOptions) extends CommandADT
+  final case class Generate(files: ::[Path], sourceFormat: SourceFormat, configFormat: DSLFormat, write: Option[Path])
+      extends CommandADT
+  final case class Remote(server: URL, command: Remote.Command)                         extends CommandADT
   object Remote {
     sealed trait Command
     final case class Publish(config: ::[Path])                       extends Command

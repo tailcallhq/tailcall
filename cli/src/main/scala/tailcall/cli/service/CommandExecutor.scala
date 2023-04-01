@@ -23,7 +23,7 @@ trait CommandExecutor {
 object CommandExecutor {
   final case class Live(
     graphQLGen: GraphQLGenerator,
-    configReader: ConfigFileIO,
+    configFile: ConfigFileIO,
     fileIO: FileIO,
     registry: SchemaRegistryClient,
   ) extends CommandExecutor {
@@ -42,7 +42,7 @@ object CommandExecutor {
       timed {
         val nameGen = NameGenerator.incremental
         command match {
-          case CommandADT.Generate(files, sourceFormat, configFormat) => for {
+          case CommandADT.Generate(files, sourceFormat, configFormat, write) => for {
               config <- sourceFormat match {
                 case CommandADT.SourceFormat.POSTMAN => for {
                     postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
@@ -53,11 +53,19 @@ object CommandExecutor {
                   } yield config.reduce(_ mergeRight _).compress
               }
               out    <- configFormat.encode(config)
-              _      <- Console.printLine(Fmt.heading("Generated config:"))
-              _      <- Console.printLine(out)
+              _      <- write match {
+                case Some(path) => for {
+                    _ <- Console.printLine(Fmt.heading(s"Generated config: ${path.toString}"))
+                    _ <- configFile.write(path.toFile, config)
+                  } yield ()
+                case None       => for {
+                    _ <- Console.printLine(Fmt.heading("Generated config:"))
+                    _ <- Console.printLine(out)
+                  } yield ()
+              }
             } yield ()
-          case CommandADT.Check(files, remote, options)               => for {
-              config <- configReader.readAll(files.map(_.toFile))
+          case CommandADT.Check(files, remote, options)                      => for {
+              config <- configFile.readAll(files.map(_.toFile))
               blueprint = config.toBlueprint
               digest    = blueprint.digest
               seq0      = Seq("Digest" -> s"${digest.hex}")
@@ -72,9 +80,9 @@ object CommandExecutor {
               _    <- Console.printLine(Fmt.table(seq1))
               _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command)                       => command match {
+          case CommandADT.Remote(base, command)                              => command match {
               case Remote.Publish(path) => for {
-                  config    <- configReader.readAll(path.map(_.toFile))
+                  config    <- configFile.readAll(path.map(_.toFile))
                   blueprint <- Transcoder.toBlueprint(config).toZIO
                   digest    <- registry.add(base, blueprint)
                   _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
