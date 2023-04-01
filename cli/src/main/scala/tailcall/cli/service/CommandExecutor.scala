@@ -7,7 +7,7 @@ import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
 import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.service.{ConfigFileIO, FileIO, GraphQLGenerator}
+import tailcall.runtime.service.{ConfigFileIO, DataLoader, FileIO, GraphQLGenerator}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
 import zio.http.URL
@@ -47,7 +47,8 @@ object CommandExecutor {
                 case CommandADT.SourceFormat.POSTMAN => for {
                     postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
                     config  <- ZIO.foreachPar(postman)(
-                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen)).provide(HttpClient.default)
+                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen))
+                        .provide(DataLoader.http, HttpClient.default)
                     )
                   } yield config.reduce(_ mergeRight _).compress
               }
