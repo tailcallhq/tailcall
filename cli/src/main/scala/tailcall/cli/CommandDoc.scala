@@ -42,10 +42,13 @@ object CommandDoc {
       },
 
     // generate
-    Command("generate", CustomOptions.sourceFormat ++ CustomOptions.configFormat, Args.file.repeat1)
-      .withHelp("Generate a composition spec from a source file.").map { case (sourceFormat, configFormat) -> files =>
-        CommandADT.Generate(files, sourceFormat, configFormat)
-      },
+    Command(
+      "generate",
+      CustomOptions.sourceFormat ++ CustomOptions.configFormat ++ Options.file("write").optional,
+      Args.file.repeat1,
+    ).withHelp("Generate a composition spec from a source file.").map {
+      case (sourceFormat, configFormat, write) -> files => CommandADT.Generate(files, sourceFormat, configFormat, write)
+    },
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
