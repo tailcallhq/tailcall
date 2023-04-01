@@ -5,7 +5,6 @@ import tailcall.runtime.transcoder.JsonValue2TSchema
 import zio.Scope
 import zio.json.ast.Json
 import zio.test.Assertion.{equalTo, isNone, isSome}
-import zio.test.TestAspect.failing
 import zio.test._
 
 object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
@@ -83,23 +82,6 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
           val expected = TSchema.arr(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt))
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
-        suite("dictionary")(
-          test("dictionary to TSchema") {
-            val json     = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(1), "c" -> Json.Num(1))
-            val expected = TSchema.dict(TSchema.Int)
-            assertZIO(toTSchema(json).toZIO)(equalTo(expected))
-          },
-          test("dictionary with unification") {
-            val json     = Json.Obj(
-              "1" -> Json.Obj("a" -> Json.Num(1)),
-              "2" -> Json.Obj("b" -> Json.Num(1)),
-              "3" -> Json.Obj("c" -> Json.Num(1)),
-            )
-            val expected = TSchema
-              .dict(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt, "c" -> TSchema.int.opt))
-            assertZIO(toTSchema(json).toZIO)(equalTo(expected))
-          } @@ failing,
-        ),
         test("numeric keys") {
           val json     = Json.Obj("1" -> Json.Num(1), "2" -> Json.Str("1"), "3" -> Json.Bool(true))
           val expected = TSchema.obj("_1" -> TSchema.Int, "_2" -> TSchema.String, "_3" -> TSchema.Boolean)

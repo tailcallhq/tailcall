@@ -19,16 +19,10 @@ trait JsonValue2TSchema {
   final def toTSchema(jsonAST: Json): TValid[String, TSchema] = {
     jsonAST match {
       case Json.Obj(fields) => for {
-          valueSchema <- TValid.foreachChunk(fields)(field => toTSchema(field._2)).map(_.distinct)
-          keys        <- TValid.succeed(fields.map(_._1).distinct)
-          schema      <- valueSchema.headOption match {
-            case Some(schema) if fields.length != 1 && valueSchema.length == 1 && keys.length == fields.length =>
-              TValid.succeed(TSchema.dict(schema))
-            case _ => TValid.foreachChunk(fields) { case (name, value) =>
-                val sName = if (name.forall(_.isDigit)) s"_$name" else name
-                toTSchema(value).map((sName, _))
-              }.map(fields => TSchema.obj(fields.toMap))
-          }
+          schema <- TValid.foreachChunk(fields) { case (name, value) =>
+            val sName = if (name.forall(_.isDigit)) s"_$name" else name
+            toTSchema(value).map((sName, _))
+          }.map(fields => TSchema.obj(fields.toMap))
         } yield schema
 
       case Json.Arr(element) => for {
