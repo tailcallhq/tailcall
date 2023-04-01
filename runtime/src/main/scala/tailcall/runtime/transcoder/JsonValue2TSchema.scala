@@ -42,7 +42,7 @@ trait JsonValue2TSchema {
 
   final def unify(list: List[TSchema]): TValid[String, Option[TSchema]] = {
     list match {
-      case Nil          => TValid.none // TODO: defaulting to string is not correct
+      case Nil          => TValid.none
       case head :: Nil  => TValid.some(head)
       case head :: tail => unify(tail: _*).flatMap {
           case Some(schema) => unify2(head, schema)
