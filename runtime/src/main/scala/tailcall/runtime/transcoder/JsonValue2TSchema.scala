@@ -24,8 +24,10 @@ trait JsonValue2TSchema {
           schema      <- valueSchema.headOption match {
             case Some(schema) if fields.length != 1 && valueSchema.length == 1 && keys.length == fields.length =>
               TValid.succeed(TSchema.dict(schema))
-            case _ => TValid.foreachChunk(fields) { case (name, value) => toTSchema(value).map((name, _)) }
-                .map(fields => TSchema.obj(fields.toMap))
+            case _ => TValid.foreachChunk(fields) { case (name, value) =>
+                val sName = if (name.forall(_.isDigit)) s"_$name" else name
+                toTSchema(value).map((sName, _))
+              }.map(fields => TSchema.obj(fields.toMap))
           }
         } yield schema
 
