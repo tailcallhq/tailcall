@@ -25,7 +25,8 @@ lazy val cli = (project in file("cli")).settings(
     "dev.zio"     %% "zio"     % zio,
     "dev.zio"     %% "zio-cli" % "0.4.0",
     "com.lihaoyi" %% "fansi"   % "0.4.0",
-  )
+  ),
+  run / fork          := true,
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
