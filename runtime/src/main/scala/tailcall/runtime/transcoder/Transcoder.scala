@@ -39,8 +39,10 @@ object Transcoder extends Transcoder {
 
   def toConfig(postman: Postman, config: Postman2Endpoints.Config): ZIO[HttpDataLoader, Throwable, Config] =
     for {
-      endpoints <- toEndpoints(postman)
-      configs   <- TValid.foreach(endpoints)(endpoint => toConfig(endpoint, config.nameGen)).toZIO
+      endpoints       <- toEndpoints(postman)
+      mergedEndpoints <- unifyEndpoints(endpoints).toZIO
+        .catchAll(err => ZIO.fail(new Exception(s"Error while Unifying Endpoints: $err")))
+      configs         <- TValid.foreach(mergedEndpoints)(endpoint => toConfig(endpoint, config.nameGen)).toZIO
         .catchAll(err => ZIO.fail(new Exception(s"Error while converting Postman to Blueprint: $err")))
     } yield configs.reduce(_ mergeRight _)
 
