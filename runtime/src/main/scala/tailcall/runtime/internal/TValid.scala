@@ -42,6 +42,9 @@ sealed trait TValid[+E, +A] {
 object TValid {
   def foreach[A, E, B](list: List[A])(f: A => TValid[E, B]): TValid[E, List[B]] = foreachIterable(list)(f).map(_.toList)
 
+  def foreachChunk[A, E, B](chunk: Chunk[A])(f: A => TValid[E, B]): TValid[E, Chunk[B]] =
+    foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
+
   def foreachIterable[A, E, B](iter: Iterable[A])(f: A => TValid[E, B]): TValid[E, Iterable[B]] = {
     val builder = Iterable.newBuilder[B]
     iter.foldLeft[TValid[E, Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
@@ -50,19 +53,18 @@ object TValid {
 
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
-  def foreachChunk[A, E, B](chunk: Chunk[A])(f: A => TValid[E, B]): TValid[E, Chunk[B]] =
-    foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
-
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
 
   def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
 
+  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
+
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
+
+  def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
 
   def unsupported(from: String, to: String): TValid[String, Nothing] =
     fail(s"Conversion from ${from} to ${to} is not yet supported")
-
-  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
 
   // TODO: can fail with a chunk of errors
   final case class Failure[E](message: E) extends TValid[E, Nothing]
