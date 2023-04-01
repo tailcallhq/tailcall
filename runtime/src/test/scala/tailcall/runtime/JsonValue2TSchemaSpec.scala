@@ -100,6 +100,11 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
             assertZIO(toTSchema(json).toZIO)(equalTo(expected))
           } @@ failing,
         ),
+        test("numeric keys") {
+          val json     = Json.Obj("1" -> Json.Num(1), "2" -> Json.Str("1"), "3" -> Json.Bool(true))
+          val expected = TSchema.obj("_1" -> TSchema.Int, "_2" -> TSchema.String, "_3" -> TSchema.Boolean)
+          assertZIO(toTSchema(json).toZIO)(equalTo(expected))
+        },
       ),
     )
   }
