@@ -30,7 +30,7 @@ trait JsonValue2TSchema {
 
       case Json.Arr(element) => for {
           chunk  <- TValid.foreachChunk(element)(json => toTSchema(json))
-          schema <- unify(chunk.toList: _*)
+          schema <- unify(chunk.toList: _*).map(_.getOrElse(TSchema.String))
         } yield schema.arr
 
       case Json.Bool(_) => TValid.succeed(TSchema.Boolean)
@@ -40,15 +40,18 @@ trait JsonValue2TSchema {
     }
   }
 
-  final def unify(list: List[TSchema]): TValid[String, TSchema] = {
+  final def unify(list: List[TSchema]): TValid[String, Option[TSchema]] = {
     list match {
-      case Nil          => TValid.succeed(TSchema.string) // TODO: defaulting to string is not correct
-      case head :: Nil  => TValid.succeed(head)
-      case head :: tail => unify(tail: _*).flatMap(unify2(head, _))
+      case Nil          => TValid.none // TODO: defaulting to string is not correct
+      case head :: Nil  => TValid.some(head)
+      case head :: tail => unify(tail: _*).flatMap {
+          case Some(schema) => unify2(head, schema)
+          case None         => unify(tail)
+        }
     }
   }
 
-  final def unify(seq: TSchema*): TValid[String, TSchema] = unify(seq.toList)
+  final def unify(seq: TSchema*): TValid[String, Option[TSchema]] = unify(seq.toList)
 
   /**
    * Unifies two schemas into a single schema that is a
@@ -60,33 +63,33 @@ trait JsonValue2TSchema {
    * unions. Incase of a conflict, the second schema is
    * selected.
    */
-  private def unify2(a: TSchema, b: TSchema): TValid[String, TSchema] =
+  private def unify2(a: TSchema, b: TSchema): TValid[String, Option[TSchema]] =
     (a, b) match {
-      case (TSchema.Int, TSchema.Int)                   => TValid.succeed(TSchema.Int)
-      case (TSchema.String, TSchema.String)             => TValid.succeed(TSchema.String)
-      case (TSchema.Boolean, TSchema.Boolean)           => TValid.succeed(TSchema.Boolean)
+      case (TSchema.Int, TSchema.Int)                   => TValid.some(TSchema.Int)
+      case (TSchema.String, TSchema.String)             => TValid.some(TSchema.String)
+      case (TSchema.Boolean, TSchema.Boolean)           => TValid.some(TSchema.Boolean)
       case (TSchema.Obj(fields1), TSchema.Obj(fields2)) =>
         val field1Map: Map[String, TSchema] = fields1.map(f => f.name -> f.schema).toMap
         val field2Map: Map[String, TSchema] = fields2.map(f => f.name -> f.schema).toMap
 
         for {
           fields <- TValid.foreachIterable(field1Map.keys ++ field2Map.keys) { key =>
-            val fieldDesc = (field1Map.get(key), field2Map.get(key)) match {
-              case (Some(s1), Some(s2)) => unify2(s1, s2)
+            val schema = (field1Map.get(key), field2Map.get(key)) match {
+              case (Some(s1), Some(s2)) => unify2(s1, s2).map(_.getOrElse(s2))
               case (Some(s1), None)     => TValid.succeed(s1.opt)
               case (None, Some(s2))     => TValid.succeed(s2.opt)
               case (None, None)         => TValid.fail(s"Key ${key} should be present in one of the maps")
             }
 
-            fieldDesc.map(TSchema.Field(key, _))
+            schema.map(TSchema.Field(key, _))
           }
-        } yield TSchema.obj(fields.toList)
+        } yield Option(TSchema.obj(fields.toList))
 
-      case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify2(item1, item2).map(TSchema.arr(_))
-      case (a, TSchema.Obj(Nil))                    => TValid.succeed(a.opt)
-      case (TSchema.Obj(Nil), b)                    => TValid.succeed(b.opt)
-      case (TSchema.Optional(a), b)                 => unify2(a, b).map(_.opt)
-      case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.opt)
-      case (_, b)                                   => TValid.succeed(b)
+      case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify2(item1, item2).map(_.map(TSchema.arr))
+      case (a, TSchema.Obj(Nil))                    => TValid.some(a.opt)
+      case (TSchema.Obj(Nil), b)                    => TValid.some(b.opt)
+      case (TSchema.Optional(a), b)                 => unify2(a, b).map(_.map(_.opt))
+      case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.map(_.opt))
+      case (_, _)                                   => TValid.none
     }
 }
