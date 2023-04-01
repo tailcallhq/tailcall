@@ -17,6 +17,12 @@ sealed trait TValid[+E, +A] {
 
   final def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
 
+  final def fold[B](isError: E => B, isSucceed: A => B): B =
+    self match {
+      case TValid.Failure(message) => isError(message)
+      case TValid.Succeed(value)   => isSucceed(value)
+    }
+
   final def some: TValid[E, Option[A]] = self.map(Some(_))
 
   final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
@@ -27,12 +33,6 @@ sealed trait TValid[+E, +A] {
 
   final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
-  final def fold[B](isError: E => B, isSucceed: A => B): B =
-    self match {
-      case TValid.Failure(message) => isError(message)
-      case TValid.Succeed(value)   => isSucceed(value)
-    }
-
   final def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
   final def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =
@@ -40,6 +40,9 @@ sealed trait TValid[+E, +A] {
 }
 
 object TValid {
+  def fold[E, A, B](list: List[A], b: B)(f: (B, A) => TValid[E, B]): TValid[E, B] =
+    list.foldLeft[TValid[E, B]](succeed(b))((tValid, a) => tValid.flatMap(b => f(b, a)))
+
   def foreach[A, E, B](list: List[A])(f: A => TValid[E, B]): TValid[E, List[B]] = foreachIterable(list)(f).map(_.toList)
 
   def foreachChunk[A, E, B](chunk: Chunk[A])(f: A => TValid[E, B]): TValid[E, Chunk[B]] =
@@ -55,9 +58,9 @@ object TValid {
 
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
 
-  def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
-
   def fail[E](message: E): TValid[E, Nothing] = Failure(message)
+
+  def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
