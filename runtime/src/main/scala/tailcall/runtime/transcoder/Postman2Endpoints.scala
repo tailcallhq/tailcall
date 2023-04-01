@@ -1,12 +1,12 @@
 package tailcall.runtime.transcoder
 
+import tailcall.runtime.SchemaUnifier
 import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.Request
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
-import tailcall.runtime.transcoder.JsonValue2TSchema.SchemaUnifier.unify
 import zio.{Chunk, ZIO}
 
 import java.nio.charset.{Charset, StandardCharsets}
@@ -50,8 +50,8 @@ trait Postman2Endpoints {
       case ((addr, method, path), l) =>
         val headers = Chunk.fromIterable(l.flatMap(_.headers.toList))
         for {
-          input  <- unify(l.flatMap(_.input.toList))
-          output <- unify(l.flatMap(_.output.toList))
+          input  <- SchemaUnifier.unify(l.flatMap(_.input.toList))
+          output <- SchemaUnifier.unify(l.flatMap(_.output.toList))
         } yield Endpoint(address = addr).withMethod(method).withPath(path).withInput(input).withOutput(output)
           .withHeader(headers: _*)
     }

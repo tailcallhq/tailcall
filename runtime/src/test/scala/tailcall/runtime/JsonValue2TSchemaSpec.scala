@@ -9,7 +9,7 @@ import zio.test._
 
 object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
   override def spec: Spec[TestEnvironment with Scope, Any] = {
-    import tailcall.runtime.transcoder.JsonValue2TSchema.SchemaUnifier.unify
+    import tailcall.runtime.SchemaUnifier.unify
     suite("json to TSchema")(
       suite("unify")(
         test("removes duplicates") {
