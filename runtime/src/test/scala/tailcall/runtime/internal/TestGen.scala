@@ -17,13 +17,13 @@ object TestGen {
 
   def genScalar: Gen[Any, TSchema] = Gen.fromIterable(List(TSchema.string, TSchema.int, TSchema.bool))
 
-  def genField: Gen[Any, TSchema.Field] =
+  def genField: Gen[Any, (String, TSchema)] =
     for {
       name <- genName
       kind <- genScalar
-    } yield TSchema.Field(name, kind)
+    } yield (name, kind)
 
-  def genObj: Gen[Any, TSchema] = Gen.listOfN(2)(genField).map(fields => TSchema.obj(fields))
+  def genObj: Gen[Any, TSchema] = Gen.listOfN(2)(genField).map(fields => TSchema.obj(fields.toMap))
 
   def genSchema: Gen[Any, TSchema] = genObj
 

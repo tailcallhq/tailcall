@@ -74,8 +74,8 @@ object Endpoint2Config {
       }
     }
 
-    private def toFields(fields: List[TSchema.Field]): List[(String, Config.Field)] = {
-      fields.map(field => field.name -> toConfigField(field.schema, isRequired = true, isList = false))
+    private def toFields(fields: Map[String, TSchema]): Map[String, Config.Field] = {
+      fields.map(field => field._1 -> toConfigField(field._2, isRequired = true, isList = false))
     }
 
     private def toGraphQL(endpoint: Endpoint): TValid[String, Config.GraphQL] =
@@ -113,17 +113,17 @@ object Endpoint2Config {
       schema: TSchema,
       isRequired: Boolean,
       isList: Boolean,
-    ): List[(String, List[(String, Config.Field)])] = {
+    ): Map[String, Map[String, Config.Field]] = {
       schema match {
         case TSchema.Obj(fields)            =>
           val head = getTypeName(schema) -> toFields(fields)
-          val tail = fields.flatMap(field => toTypes(field.schema, isRequired, isList))
-          head :: tail
+          val tail = fields.flatMap(field => toTypes(field._2, isRequired, isList))
+          tail + head
         case TSchema.Arr(item)              => toTypes(item, isRequired, isList = true)
         case TSchema.Optional(schema)       => toTypes(schema, isRequired = false, isList = isList)
-        case TSchema.String                 => Nil
-        case TSchema.Int                    => Nil
-        case TSchema.Boolean                => Nil
+        case TSchema.String                 => Map.empty
+        case TSchema.Int                    => Map.empty
+        case TSchema.Boolean                => Map.empty
         case schema @ TSchema.Dictionary(_) => toTypes(schema.toObj, isRequired = isRequired, isList = isList)
       }
     }

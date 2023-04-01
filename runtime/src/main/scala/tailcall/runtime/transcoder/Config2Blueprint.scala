@@ -141,8 +141,8 @@ trait Config2Blueprint {
 
   final private def toTSchema(config: Config, field: Field): TSchema = {
     var schema = config.graphQL.types.get(field.typeOf) match {
-      case Some(typeInfo) => TSchema.obj(typeInfo.fields.toList.filter(_._2.steps.isEmpty).map {
-          case (fieldName, field) => TSchema.Field(fieldName, toTSchema(config, field))
+      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
+          (fieldName, toTSchema(config, field))
         })
 
       case None => field.typeOf match {

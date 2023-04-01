@@ -4,7 +4,7 @@ import zio.Chunk
 import zio.json._
 import zio.schema.meta.ExtensibleMetaSchema.Labelled
 import zio.schema.meta.{ExtensibleMetaSchema, NodePath}
-import zio.schema.{Schema, TypeId}
+import zio.schema.{DeriveSchema, Schema, TypeId}
 
 /**
  * Represents the structure of a value. It allows us to
@@ -51,14 +51,13 @@ object TSchema {
 
   def dict(item: TSchema): TSchema = TSchema.Dictionary(item)
 
-  def empty: TSchema = TSchema.Obj(Nil)
+  def empty: TSchema = TSchema.Obj(Map.empty)
 
   def int: TSchema = TSchema.Int
 
-  def obj(fields: List[TSchema.Field]): TSchema = TSchema.Obj(fields.toList)
+  def obj(map: Map[String, TSchema]): TSchema = TSchema.Obj(map)
 
-  def obj(fields: (String, TSchema)*): TSchema =
-    TSchema.Obj(fields.map { case (name, schema) => TSchema.Field(name, schema) }.toList)
+  def obj(fields: (String, TSchema)*): TSchema = TSchema.Obj(fields.toMap)
 
   def opt(schema: TSchema): TSchema =
     schema match {
@@ -75,7 +74,7 @@ object TSchema {
       case TSchema.Boolean     => Schema[Boolean]
       case TSchema.Optional(s) => toZIOSchema(s).optional
       case Obj(fields)         =>
-        val nFields = Chunk.from(fields).map(f => Labelled(f.name, toZIOSchema(f.schema).ast))
+        val nFields = Chunk.from(fields).map(f => Labelled(f._1, toZIOSchema(f._2).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
       case Arr(item)           => Schema.chunk(toZIOSchema(item))
       case Dictionary(schema)  => Schema.map(Schema[String], toZIOSchema(schema))
@@ -83,11 +82,11 @@ object TSchema {
 
   // TODO: add unit tests
   private def isSubType(s1: TSchema, s2: TSchema): Boolean = {
-    def checkFields(fields1: List[Field], fields2: List[Field]): Boolean = {
+    def checkFields(fields1: Map[String, TSchema], fields2: Map[String, TSchema]): Boolean = {
       fields2.forall { f2 =>
         fields1.exists { f1 =>
-          f1.name == f2.name &&
-          isSubType(f1.schema, f2.schema)
+          f1._1 == f2._1 &&
+          isSubType(f1._2, f2._2)
         }
       }
     }
@@ -103,17 +102,15 @@ object TSchema {
   }
 
   @jsonHint("object")
-  final case class Obj(fields: List[Field]) extends TSchema
+  final case class Obj(fields: Map[String, TSchema]) extends TSchema
 
   @jsonHint("array")
   final case class Arr(@jsonField("item") schema: TSchema) extends TSchema
 
   @jsonHint("dict")
   final case class Dictionary(value: TSchema) extends TSchema {
-    def toObj: TSchema.Obj = TSchema.Obj(List(TSchema.Field("key", TSchema.String), TSchema.Field("value", value)))
+    def toObj: TSchema.Obj = TSchema.Obj(Map("key" -> TSchema.String, "value" -> value))
   }
-
-  final case class Field(name: String, schema: TSchema)
 
   @jsonHint("optional")
   final case class Optional(schema: TSchema) extends TSchema
@@ -127,6 +124,6 @@ object TSchema {
   @jsonHint("Boolean")
   case object Boolean extends TSchema
 
-  implicit lazy val fieldSchema: JsonCodec[TSchema.Field]    = DeriveJsonCodec.gen[TSchema.Field]
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
+  implicit lazy val schema: Schema[TSchema]                  = DeriveSchema.gen[TSchema]
 }
