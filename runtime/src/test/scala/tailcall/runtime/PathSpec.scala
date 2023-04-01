@@ -18,6 +18,7 @@ object PathSpec extends ZIOSpecDefault {
           "/a"                 -> (Literal("a") :: Nil),
           "/a/b"               -> (Literal("a") :: Literal("b") :: Nil),
           "/a/b/c"             -> (Literal("a") :: Literal("b") :: Literal("c") :: Nil),
+          "/a-b"               -> (Literal("a-b") :: Nil),
           "/a/b/{{c}}"         -> (Literal("a") :: Literal("b") :: Param("c") :: Nil),
           "/a/{{b}}/{{c}}"     -> (Literal("a") :: Param("b") :: Param("c") :: Nil),
           "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
