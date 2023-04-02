@@ -1,7 +1,7 @@
 package tailcall.runtime.transcoder.value
 
 import caliban.ResponseValue
-import caliban.ResponseValue.{StreamValue, ListValue => ResponseList, ObjectValue => ResponseObject}
+import caliban.ResponseValue.{ListValue => ResponseList, ObjectValue => ResponseObject, StreamValue}
 import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
 import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
 import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
