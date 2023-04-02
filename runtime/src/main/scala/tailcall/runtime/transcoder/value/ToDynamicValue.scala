@@ -1,7 +1,7 @@
 package tailcall.runtime.transcoder.value
 
 import caliban.ResponseValue
-import caliban.ResponseValue.{ListValue => ResponseList, ObjectValue => ResponseObject, StreamValue}
+import caliban.ResponseValue.{StreamValue, ListValue => ResponseList, ObjectValue => ResponseObject}
 import caliban.Value.FloatValue.{BigDecimalNumber, DoubleNumber, FloatNumber}
 import caliban.Value.IntValue.{BigIntNumber, IntNumber, LongNumber}
 import caliban.Value.{BooleanValue, EnumValue, NullValue, StringValue}
@@ -27,7 +27,7 @@ trait ToDynamicValue {
       case BigIntNumber(value)     => TValid.succeed(DynamicValue(value))
       case IntNumber(value)        => TValid.succeed(DynamicValue(value))
       case LongNumber(value)       => TValid.succeed(DynamicValue(value))
-      case EnumValue(_)            => TValid.fail("Can not transcode EnumValue to DynamicValue")
+      case EnumValue(value)        => TValid.succeed(DynamicValue(value))
       case StreamValue(_)          => TValid.fail("Can not transcode StreamValue to DynamicValue")
     }
   }
@@ -64,7 +64,7 @@ trait ToDynamicValue {
       case BigIntNumber(value)     => TValid.succeed(DynamicValue(value))
       case IntNumber(value)        => TValid.succeed(DynamicValue(value))
       case LongNumber(value)       => TValid.succeed(DynamicValue(value))
-      case EnumValue(_)            => TValid.fail("Can not transcode EnumValue to DynamicValue")
+      case EnumValue(value)        => TValid.succeed(DynamicValue(value))
       case VariableValue(_)        => TValid.fail("Can not transcode VariableValue to DynamicValue")
     }
   }

@@ -44,9 +44,10 @@ trait Document2Blueprint {
               case TypeDefinition.InputObjectTypeDefinition(_, name, _, fields) => TValid
                   .foreach(fields)(toBlueprintInputValueDefinition(_))
                   .map(fields => Option(Blueprint.InputObjectTypeDefinition(name, fields)))
-              case _: TypeDefinition.EnumTypeDefinition   => TValid.fail("Enum types are not supported yet")
-              case _: TypeDefinition.UnionTypeDefinition  => TValid.fail("Union types are not supported yet")
-              case _: TypeDefinition.ScalarTypeDefinition => TValid.fail("Scalar types are not supported yet")
+              case _: TypeDefinition.EnumTypeDefinition            => TValid.fail("Enum types are not supported yet")
+              case _: TypeDefinition.UnionTypeDefinition           => TValid.fail("Union types are not supported yet")
+              case definition: TypeDefinition.ScalarTypeDefinition => TValid
+                  .some(Blueprint.ScalarTypeDefinition(definition.name, Nil, definition.description))
             }
         }
       case _: Definition.TypeSystemExtension           => TValid.fail("Type system extensions are not supported yet")

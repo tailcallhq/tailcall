@@ -11,8 +11,12 @@ sealed trait CommandADT extends Serializable with Product
 object CommandADT {
   final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)
   final case class Check(config: ::[Path], url: Option[URL], options: BlueprintOptions) extends CommandADT
-  final case class Generate(files: ::[Path], sourceFormat: SourceFormat, configFormat: DSLFormat, write: Option[Path])
-      extends CommandADT
+  final case class Generate(
+    files: ::[Path],
+    sourceFormat: SourceFormat,
+    targetFormat: TargetFormat,
+    write: Option[Path],
+  ) extends CommandADT
   final case class Remote(server: URL, command: Remote.Command)                         extends CommandADT
   object Remote {
     sealed trait Command
@@ -22,8 +26,38 @@ object CommandADT {
     final case class Show(digest: Digest, options: BlueprintOptions) extends Command
   }
 
-  sealed trait SourceFormat
-  object SourceFormat {
-    case object POSTMAN extends SourceFormat
+  sealed trait SourceFormat {
+    self =>
+    def name: String =
+      self match {
+        case SourceFormat.Postman                  => "postman"
+        case SourceFormat.SchemaDefinitionLanguage => "sdl"
+      }
+
+    def named: (String, SourceFormat) = name -> self
+  }
+  object SourceFormat       {
+    case object Postman                  extends SourceFormat
+    case object SchemaDefinitionLanguage extends SourceFormat
+  }
+
+  sealed trait TargetFormat {
+    self =>
+    def name: String =
+      self match {
+        case TargetFormat.Config(fmt) => fmt match {
+            case DSLFormat.JSON    => "config-json"
+            case DSLFormat.YML     => "config-yaml"
+            case DSLFormat.GRAPHQL => "config-graphql"
+          }
+        case TargetFormat.JsonLines   => "json-lines"
+      }
+
+    def named: (String, TargetFormat) = name -> self
+  }
+
+  object TargetFormat {
+    final case class Config(fmt: DSLFormat) extends TargetFormat
+    case object JsonLines                   extends TargetFormat
   }
 }

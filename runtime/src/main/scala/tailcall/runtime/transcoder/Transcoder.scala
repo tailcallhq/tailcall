@@ -24,6 +24,7 @@ sealed trait Transcoder
     with Document2Config
     with Document2GraphQLSchema
     with Endpoint2Config
+    with GraphQLSchema2JsonLines
     with JsonValue2TSchema
     with Orc2Blueprint
     with Postman2Endpoints
