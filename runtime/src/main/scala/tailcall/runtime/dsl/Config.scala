@@ -67,14 +67,18 @@ object Config {
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
 
+    def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
+
+    def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
+
     def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
-    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
-
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
+
+    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
   }
 
   object Type {
