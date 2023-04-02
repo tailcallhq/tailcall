@@ -38,10 +38,34 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |""".stripMargin.trim
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
-      test("input and output types") {
+      test("shared input and output types") {
         val config   = Config.empty.withQuery("Query")
           .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))))
           .withType("Foo" -> Type("bar" -> Field.ofType("String")))
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |input FooInput {
+                          |  bar: String
+                          |}
+                          |
+                          |type Foo {
+                          |  bar: String
+                          |}
+                          |
+                          |type Query {
+                          |  foo(input: FooInput): Foo
+                          |}
+                          |""".stripMargin.trim
+
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+      },
+      test("input and output types") {
+        val config   = Config.empty.withQuery("Query")
+          .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))))
+          .withType("Foo" -> Type("bar" -> Field.ofType("String")))
+          .withType("FooInput" -> Type("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}

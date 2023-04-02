@@ -57,10 +57,10 @@ trait Config2Blueprint {
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
       val definition = Blueprint.ObjectTypeDefinition(name = name, fields = bFields, description = typeInfo.doc)
-      var result     = List.empty[Blueprint.Definition]
-      if (outputTypes.contains(name)) result = definition :: result
-      if (inputTypes.contains(name)) result = definition.toInput.copy(name = definition.name + "Input") :: result
-      result
+      if (outputTypes.contains(name) && inputTypes.contains(name))
+        List(definition, definition.toInput.copy(name = definition.name + "Input"))
+      else if (inputTypes.contains(name)) definition.toInput :: Nil
+      else definition :: Nil
     }
 
     TValid.succeed(Blueprint(rootSchema :: definitions))
@@ -84,19 +84,23 @@ trait Config2Blueprint {
     types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
+  /**
+   * Types are input types if they are used as arguments to
+   * a field OR if the are the return types of a field
+   * defined in an input type.
+   */
   final private def getInputTypes(config: Config): List[String] = {
-    def loop(name: String, completed: Set[String]): List[String] = {
-      if (completed.contains(name)) Nil
+
+    def collectReturnTypes(name: String, returnTypes: List[String]): List[String] = {
+      if (returnTypes.contains(name)) returnTypes
       else config.graphQL.types.get(name) match {
-        case Some(typeInfo) => typeInfo.fields.values.flatMap(_.args.toList).flatMap(_.toList).map(_._2).toList
-            .flatMap[String](arg => arg.typeOf :: loop(arg.typeOf, completed + name))
-        case None           => Nil
+        case Some(typeInfo) => typeInfo.returnTypes.flatMap(collectReturnTypes(_, name :: returnTypes))
+        case None           => returnTypes
       }
     }
 
-    val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
-
-    types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list.toSet) }
+    config.graphQL.types.values.toList.flatMap(_.fields.values.toList)
+      .flatMap(_.args.getOrElse(Map.empty).values.toList).map(_.typeOf).flatMap(collectReturnTypes(_, Nil))
   }
 
   final private def toDirective(config: Config): Option[Blueprint.Directive] = {
