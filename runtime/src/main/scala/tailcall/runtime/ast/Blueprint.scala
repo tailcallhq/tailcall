@@ -93,10 +93,7 @@ object Blueprint {
   sealed trait Definition
 
   final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
-      extends Definition {
-    def toInput: InputObjectTypeDefinition =
-      InputObjectTypeDefinition(name = name, fields = fields.map(_.toInput(None)), description = description)
-  }
+      extends Definition
 
   final case class InputObjectTypeDefinition(
     name: String,
@@ -125,10 +122,7 @@ object Blueprint {
     resolver: Option[DynamicValue ~> DynamicValue] = None,
     directives: List[Directive] = Nil,
     description: Option[String] = None,
-  ) {
-    def toInput(defaultValue: Option[DynamicValue]): InputFieldDefinition =
-      InputFieldDefinition(name, ofType, defaultValue)
-  }
+  )
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 

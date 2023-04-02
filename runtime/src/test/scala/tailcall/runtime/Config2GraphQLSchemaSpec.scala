@@ -61,6 +61,39 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
 
         Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
+      test("shared nested input and output types") {
+        val config   = Config.empty.withQuery("Query").withType(
+          "Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))),
+          "Foo"   -> Type("bar" -> Field.ofType("Bar")),
+          "Bar"   -> Type("baz" -> Field.ofType("String")),
+        )
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |input BarInput {
+                          |  baz: String
+                          |}
+                          |
+                          |input FooInput {
+                          |  bar: BarInput
+                          |}
+                          |
+                          |type Bar {
+                          |  baz: String
+                          |}
+                          |
+                          |type Foo {
+                          |  bar: Bar
+                          |}
+                          |
+                          |type Query {
+                          |  foo(input: FooInput): Foo
+                          |}
+                          |""".stripMargin.trim
+
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+      },
       test("input and output types") {
         val config   = Config.empty.withQuery("Query")
           .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))))

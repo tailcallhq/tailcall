@@ -23,17 +23,23 @@ trait Config2Blueprint {
       directives = toDirective(config).toList,
     )
 
-    val outputTypes = getOutputTypes(config).toSet
-    val inputTypes  = getInputTypes(config).toSet
+    val outputTypes    = getOutputTypes(config).toSet
+    val inputTypes     = getInputTypes(config).toSet
+    val inputTypeNames = inputTypes.map { name =>
+      if (outputTypes.contains(name)) name -> (name + "Input") else name -> name
+    }.toMap
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
       val bFields: List[Blueprint.FieldDefinition] = {
         typeInfo.fields.toList.map { case (name, field) =>
           val args: List[Blueprint.InputFieldDefinition] = {
             field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
-              val ofType                         = toType(arg)
-              val prefixedOfType: Blueprint.Type =
-                if (outputTypes.contains(arg.typeOf)) ofType.withName(ofType.defaultName + "Input") else ofType
+              val ofType = toType(arg)
+
+              val prefixedOfType: Blueprint.Type = inputTypeNames.get(ofType.defaultName) match {
+                case Some(name) => ofType.withName(name)
+                case None       => ofType
+              }
               Blueprint
                 .InputFieldDefinition(name = name, ofType = prefixedOfType, defaultValue = None, description = arg.doc)
             }
@@ -56,14 +62,33 @@ trait Config2Blueprint {
 
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
-      val definition = Blueprint.ObjectTypeDefinition(name = name, fields = bFields, description = typeInfo.doc)
-      if (outputTypes.contains(name) && inputTypes.contains(name))
-        List(definition, definition.toInput.copy(name = definition.name + "Input"))
-      else if (inputTypes.contains(name)) definition.toInput :: Nil
+      val definition      = Blueprint.ObjectTypeDefinition(name = name, fields = bFields, description = typeInfo.doc)
+      val inputDefinition = toInputObjectTypeDefinition(definition, inputTypeNames)
+      if (outputTypes.contains(name) && inputTypes.contains(name)) List(definition, inputDefinition)
+      else if (inputTypes.contains(name)) inputDefinition :: Nil
       else definition :: Nil
     }
 
     TValid.succeed(Blueprint(rootSchema :: definitions))
+  }
+
+  private def toInputObjectTypeDefinition(
+    definition: Blueprint.ObjectTypeDefinition,
+    inputNames: Map[String, String],
+  ): Blueprint.InputObjectTypeDefinition = {
+    val fields = definition.fields.map { field =>
+      Blueprint.InputFieldDefinition(
+        name = field.name,
+        ofType = field.ofType.withName(inputNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
+        defaultValue = None,
+        description = field.description,
+      )
+    }
+    Blueprint.InputObjectTypeDefinition(
+      name = inputNames.getOrElse(definition.name, definition.name),
+      fields = fields,
+      description = definition.description,
+    )
   }
 
   /**
