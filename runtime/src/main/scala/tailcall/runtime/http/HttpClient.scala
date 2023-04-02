@@ -1,6 +1,7 @@
 package tailcall.runtime.http
 
-import zio.http.{Client, Response, URL}
+import zio.http.model.Status
+import zio.http.{Client, Response}
 import zio.{ZIO, ZLayer}
 
 trait HttpClient {
@@ -9,20 +10,23 @@ trait HttpClient {
 
 // TODO: handle cancellation
 object HttpClient {
+  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live
+
+  def live: ZLayer[Client, Nothing, HttpClient] = ZLayer.fromFunction(client => Live(client))
+
   final case class Live(client: Client) extends HttpClient {
     def request(req: Request): ZIO[Any, Throwable, Response] =
       for {
-        resp <- client.request(req.toZHttpRequest)
-        status     = resp.status.code
-        isRedirect = status == 301 || status == 302 || status == 307
-        headers    = resp.headers.iterator.map(h => (h.key, h.value)).toMap
-        redirectResp <- client.request(req.toZHttpRequest.copy(url =
-          URL.fromString(String.valueOf(headers.getOrElse("Location", "")))
-            .getOrElse(throw new IllegalArgumentException(s"Invalid URL"))
-        )).when(isRedirect)
-      } yield redirectResp.getOrElse(resp)
-  }
-  def live: ZLayer[Client, Nothing, HttpClient] = ZLayer.fromFunction(client => Live(client))
+        resp             <- client.request(req.toZHttpRequest)
+        redirectResponse <- if (isRedirect(resp.status)) redirect(req) else ZIO.succeed(resp)
+      } yield redirectResponse
 
-  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live
+    private def isRedirect(status: Status) = { status.code == 301 || status.code == 302 || status.code == 307 }
+
+    private def redirect(req: Request): ZIO[Any, Throwable, Response] =
+      for {
+        location <- ZIO.fromOption(req.headers.get("Location")) <> ZIO.fail(new RuntimeException("No Location header"))
+        res      <- request(req.copy(url = String.valueOf(location)))
+      } yield res
+  }
 }
