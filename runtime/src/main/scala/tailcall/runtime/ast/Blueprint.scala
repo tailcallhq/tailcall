@@ -10,6 +10,8 @@ import zio.ZIO
 import zio.json.{JsonCodec, JsonDecoder, JsonEncoder}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
+import scala.annotation.tailrec
+
 /**
  * Document is an intermediate representation of a GraphQL
  * document. It has two features — 1. It is serializable and
@@ -130,14 +132,25 @@ object Blueprint {
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
-  final case class ScalarTypeDefinition(name: String, directive: List[Directive] = Nil, description: Option[String] = None) extends Definition
+  final case class ScalarTypeDefinition(
+    name: String,
+    directive: List[Directive] = Nil,
+    description: Option[String] = None,
+  ) extends Definition
 
   sealed trait Type {
     self =>
-    def defaultName: String =
+    @tailrec
+    final def defaultName: String =
       self match {
         case NamedType(name, _)  => name
         case ListType(ofType, _) => ofType.defaultName
+      }
+
+    final def withName(name: String): Type =
+      self match {
+        case NamedType(_, nonNull)     => NamedType(name, nonNull)
+        case ListType(ofType, nonNull) => ListType(ofType.withName(name), nonNull)
       }
   }
 
