@@ -4,8 +4,8 @@ import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
   Directive,
+  Definition => CalibanDefinition,
   Document => CalibanDocument,
   Type => CalibanType,
 }
@@ -17,9 +17,12 @@ trait Blueprint2Document {
     TValid.succeed {
       CalibanDocument(
         blueprint.definitions.sortBy {
-          case Blueprint.ObjectTypeDefinition(name, _, _)      => name
-          case Blueprint.InputObjectTypeDefinition(name, _, _) => name
-          case Blueprint.SchemaDefinition(_, _, _, _)          => ""
+          case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
+          case Blueprint.ObjectTypeDefinition(name, _, _)
+              if Option(name) == (blueprint.schema.map(_.query) orElse blueprint.schema.map(_.mutation)) => "b" + name
+          case Blueprint.ScalarTypeDefinition(name, _, _)      => "c" + name
+          case Blueprint.InputObjectTypeDefinition(name, _, _) => "d" + name
+          case Blueprint.ObjectTypeDefinition(name, _, _)      => "e" + name
         }.map {
           case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
               .TypeSystemDefinition
@@ -28,6 +31,8 @@ trait Blueprint2Document {
               .TypeDefinition.ObjectTypeDefinition(description, name, Nil, Nil, fields.map(toCalibanField))
           case Blueprint.InputObjectTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
+          case Blueprint.ScalarTypeDefinition(name, directives, description)  => CalibanDefinition.TypeSystemDefinition
+              .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
         },
         SourceMapper.empty,
       )

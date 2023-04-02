@@ -44,10 +44,10 @@ object CommandDoc {
     // generate
     Command(
       "generate",
-      CustomOptions.sourceFormat ++ CustomOptions.configFormat ++ Options.file("write").optional,
+      CustomOptions.sourceFormat ++ CustomOptions.targetFormat ++ Options.file("write").optional,
       Args.file.repeat1,
     ).withHelp("Generate a composition spec from a source file.").map {
-      case (sourceFormat, configFormat, write) -> files => CommandADT.Generate(files, sourceFormat, configFormat, write)
+      case (sourceFormat, targetFormat, write) -> files => CommandADT.Generate(files, sourceFormat, targetFormat, write)
     },
   )
 

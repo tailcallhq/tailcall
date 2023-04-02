@@ -130,6 +130,8 @@ object Blueprint {
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
+  final case class ScalarTypeDefinition(name: String, directive: List[Directive] = Nil, description: Option[String] = None) extends Definition
+
   sealed trait Type {
     self =>
     def defaultName: String =
@@ -145,11 +147,14 @@ object Blueprint {
 
   implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]
 
-  val codec: JsonCodec[Blueprint]                            = zio.schema.codec.JsonCodec.jsonCodec(schema)
-  implicit val encoder: JsonEncoder[Blueprint]               = codec.encoder
-  implicit val decoder: JsonDecoder[Blueprint]               = codec.decoder
-  def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
-  def encode(value: Blueprint): CharSequence                 = codec.encodeJson(value, None)
+  val codec: JsonCodec[Blueprint]              = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  implicit val jsonCodec: JsonCodec[Blueprint] = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  implicit val objectTypeDefinitionJsonCodec: JsonCodec[ObjectTypeDefinition] = zio.schema.codec.JsonCodec
+    .jsonCodec(DeriveSchema.gen[ObjectTypeDefinition])
+  implicit val encoder: JsonEncoder[Blueprint]                                = codec.encoder
+  implicit val decoder: JsonDecoder[Blueprint]                                = codec.decoder
+  def decode(bytes: CharSequence): Either[String, Blueprint]                  = codec.decodeJson(bytes)
+  def encode(value: Blueprint): CharSequence                                  = codec.encodeJson(value, None)
 
   def empty: Blueprint = Blueprint()
 }

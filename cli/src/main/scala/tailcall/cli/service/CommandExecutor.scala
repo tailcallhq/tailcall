@@ -2,12 +2,12 @@ package tailcall.cli.service
 
 import caliban.GraphQL
 import tailcall.cli.CommandADT
-import tailcall.cli.CommandADT.{BlueprintOptions, Remote}
+import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
 import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.service.{ConfigFileIO, DataLoader, FileIO, GraphQLGenerator}
+import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
 import zio.http.URL
@@ -15,6 +15,7 @@ import zio.json.EncoderOps
 import zio.{Console, Duration, ExitCode, ZIO, ZLayer}
 
 import java.io.IOException
+import java.nio.file.Path
 
 trait CommandExecutor {
   def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode]
@@ -38,33 +39,52 @@ object CommandExecutor {
         }
       } yield a
 
+    private def postman2GraphQL(files: ::[Path], dSLFormat: DSLFormat): ZIO[Any, Throwable, String] = {
+      val nameGen = NameGenerator.incremental
+      for {
+        postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
+        config  <- ZIO.foreachPar(postman)(
+          Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen)).provide(DataLoader.http, HttpClient.default)
+        )
+        out     <- dSLFormat.encode(config.reduce(_ mergeRight _).compress)
+          .catchAll(err => ZIO.fail(new RuntimeException(err)))
+      } yield out
+    }
+
+    def writeGeneratedFile[R, E >: Throwable](content: ZIO[R, E, String], write: Option[Path]): ZIO[R, E, Unit] =
+      for {
+        out <- content
+        _   <- write match {
+          case Some(path) => for {
+              _ <- Console.printLine(Fmt.heading(s"Generated File: ${path.toString}"))
+              _ <- fileIO.write(path.toFile, out)
+            } yield ()
+          case None       => for {
+              _ <- Console.printLine(Fmt.heading("Generated Output:"))
+              _ <- Console.printLine(out)
+            } yield ()
+        }
+      } yield ()
+
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
-        val nameGen = NameGenerator.incremental
+
         command match {
-          case CommandADT.Generate(files, sourceFormat, configFormat, write) => for {
-              config <- sourceFormat match {
-                case CommandADT.SourceFormat.POSTMAN => for {
-                    postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
-                    config  <- ZIO.foreachPar(postman)(
-                      Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen))
-                        .provide(DataLoader.http, HttpClient.default)
-                    )
-                  } yield config.reduce(_ mergeRight _).compress
-              }
-              out    <- configFormat.encode(config)
-              _      <- write match {
-                case Some(path) => for {
-                    _ <- Console.printLine(Fmt.heading(s"Generated config: ${path.toString}"))
-                    _ <- configFile.write(path.toFile, config)
-                  } yield ()
-                case None       => for {
-                    _ <- Console.printLine(Fmt.heading("Generated config:"))
-                    _ <- Console.printLine(out)
-                  } yield ()
-              }
-            } yield ()
-          case CommandADT.Check(files, remote, options)                      => for {
+          case CommandADT.Generate(files, sourceFormat, targetFormat, write) =>
+            val output: ZIO[Any, Throwable, String] = (sourceFormat, targetFormat) match {
+              case (SourceFormat.Postman, TargetFormat.Config(dSLFormat))          => postman2GraphQL(files, dSLFormat)
+              case (SourceFormat.SchemaDefinitionLanguage, TargetFormat.JsonLines) => for {
+                  content   <- ZIO.foreachPar(files.toList)(path => fileIO.read(path.toFile))
+                  jsonLines <- ZIO.foreachPar(content)(Transcoder.toJsonLines(_))
+                } yield jsonLines.mkString("\n")
+
+              case _ => ZIO.fail(new RuntimeException(
+                  s"Unsupported format combination ${sourceFormat.name} to ${targetFormat.name}"
+                ))
+            }
+            writeGeneratedFile(output, write)
+
+          case CommandADT.Check(files, remote, options) => for {
               config <- configFile.readAll(files.map(_.toFile))
               blueprint = config.toBlueprint
               digest    = blueprint.digest
@@ -80,7 +100,7 @@ object CommandExecutor {
               _    <- Console.printLine(Fmt.table(seq1))
               _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command)                              => command match {
+          case CommandADT.Remote(base, command)         => command match {
               case Remote.Publish(path) => for {
                   config    <- configFile.readAll(path.map(_.toFile))
                   blueprint <- Transcoder.toBlueprint(config).toZIO
