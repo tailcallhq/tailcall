@@ -164,6 +164,8 @@ object Config {
 
     def isRequired: Boolean = required.getOrElse(false)
 
+    def withArguments(args: (String, Arg)*): Field = withArguments(args.toMap)
+
     def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))

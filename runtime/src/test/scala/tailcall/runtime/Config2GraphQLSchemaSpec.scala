@@ -1,9 +1,10 @@
 package tailcall.runtime
 
 import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.{Field, Type}
+import tailcall.runtime.dsl.Config.{Arg, Field, Type}
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.service._
+import tailcall.runtime.transcoder.Transcoder
 import zio.durationInt
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue}
@@ -36,6 +37,29 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+      },
+      test("input and output types") {
+        val config   = Config.empty.withQuery("Query")
+          .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))))
+          .withType("Foo" -> Type("bar" -> Field.ofType("String")))
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |input FooInput {
+                          |  bar: String
+                          |}
+                          |
+                          |type Foo {
+                          |  bar: String
+                          |}
+                          |
+                          |type Query {
+                          |  foo(input: FooInput): Foo
+                          |}
+                          |""".stripMargin.trim
+
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("mergeRight") {
         val config1 = Config.empty.withQuery("Query").withType("Query" -> Type("foo" -> Field.ofType("String")))
