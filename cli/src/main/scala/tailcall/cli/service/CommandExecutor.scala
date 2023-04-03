@@ -4,11 +4,11 @@ import caliban.GraphQL
 import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
-import tailcall.runtime.http.HttpClient
+import tailcall.runtime.EndpointUnifier
 import tailcall.runtime.model.{Blueprint, Digest, Endpoint, Postman}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
-import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
+import tailcall.runtime.transcoder.Transcoder
 import zio.http.URL
 import zio.json.EncoderOps
 import zio.{Console, Duration, ExitCode, ZIO, ZLayer}
@@ -26,6 +26,7 @@ object CommandExecutor {
     configFile: ConfigFileIO,
     fileIO: FileIO,
     registry: SchemaRegistryClient,
+    endpointGen: EndpointGenerator,
   ) extends CommandExecutor {
     def timed[R, E >: IOException, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
@@ -41,11 +42,11 @@ object CommandExecutor {
     private def postman2GraphQL(files: ::[Path], dSLFormat: DSLFormat): ZIO[Any, Throwable, String] = {
       val nameGen = NameGenerator.incremental
       for {
-        postman <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
-        config  <- ZIO.foreachPar(postman)(
-          Transcoder.toConfig(_, Postman2Endpoints.Config(true, nameGen)).provide(DataLoader.http, HttpClient.default)
-        )
-        out     <- dSLFormat.encode(config.reduce(_ mergeRight _).compress)
+        postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
+        endpoints         <- ZIO.foreachPar(postmanCollection)(endpointGen.generate(_)).map(_.flatten)
+        mergedEndpoints   <- EndpointUnifier.unify(endpoints).asThrowable.toZIO
+        configs <- ZIO.foreach(mergedEndpoints)(endpoint => Transcoder.toConfig(endpoint, nameGen).asThrowable.toZIO)
+        out     <- dSLFormat.encode(configs.reduce(_ mergeRight _).compress)
           .catchAll(err => ZIO.fail(new RuntimeException(err)))
       } yield out
     }
@@ -162,12 +163,15 @@ object CommandExecutor {
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
 
-  type Env = GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistryClient
-
   def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
 
-  def default: ZLayer[Any, Throwable, CommandExecutor] =
-    (GraphQLGenerator.default ++ ConfigFileIO.default ++ FileIO.default ++ SchemaRegistryClient.default) >>> live
+  def default: ZLayer[Any, Throwable, CommandExecutor] = { Env.default >>> live }
+
+  type Env = GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistryClient with EndpointGenerator
+  object Env {
+    val default: ZLayer[Any, Throwable, Env] = GraphQLGenerator.default ++ ConfigFileIO.default ++ FileIO
+      .default ++ SchemaRegistryClient.default ++ EndpointGenerator.default
+  }
 
   object Fmt {
     def success(str: String): String = fansi.Str(str).overlay(fansi.Color.Green).render

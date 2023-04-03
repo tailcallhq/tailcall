@@ -2,11 +2,9 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.{Blueprint, Config, Endpoint, Postman}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
+import tailcall.runtime.model.{Blueprint, Config, Endpoint}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.value._
-import zio.ZIO
 
 /**
  * A transcoder is a function that takes an A and returns a
@@ -26,7 +24,6 @@ sealed trait Transcoder
     with GraphQLSchema2JsonLines
     with JsonValue2TSchema
     with Orc2Blueprint
-    with Postman2Endpoints
     with ToDynamicValue
     with ToInputValue
     with ToJsonAST
@@ -36,15 +33,6 @@ sealed trait Transcoder
 object Transcoder extends Transcoder {
   def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
     toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
-
-  def toConfig(postman: Postman, config: Postman2Endpoints.Config): ZIO[HttpDataLoader, Throwable, Config] =
-    for {
-      endpoints       <- toEndpoints(postman)
-      mergedEndpoints <- unifyEndpoints(endpoints).toZIO
-        .catchAll(err => ZIO.fail(new Exception(s"Error while Unifying Endpoints: $err")))
-      configs         <- TValid.foreach(mergedEndpoints)(endpoint => toConfig(endpoint, config.nameGen)).toZIO
-        .catchAll(err => ZIO.fail(new Exception(s"Error while converting Postman to Blueprint: $err")))
-    } yield configs.reduce(_ mergeRight _)
 
   def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 
