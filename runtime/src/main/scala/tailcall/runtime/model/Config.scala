@@ -116,6 +116,7 @@ object Config {
   sealed trait FieldAnnotation
   object FieldAnnotation {
     final case class Rename(name: String) extends FieldAnnotation
+    def rename(name: String): FieldAnnotation = Rename(name)
   }
 
   // TODO: Field and Argument can be merged
@@ -133,6 +134,11 @@ object Config {
     annotations: Option[List[FieldAnnotation]] = None,
   ) {
     self =>
+    def @@(annotation: FieldAnnotation): Field = withAnnotations(annotation)
+
+    def withAnnotations(annotations: FieldAnnotation*): Field =
+      self.copy(annotations = Option(self.annotations.toList.flatten ++ annotations))
+
     def apply(args: (String, Arg)*): Field = copy(args = Option(args.toMap))
 
     def asList: Field = copy(list = Option(true))
