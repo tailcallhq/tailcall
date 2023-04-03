@@ -1,8 +1,8 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.Path
-import tailcall.runtime.ast.Path.Segment.{Literal, Param}
 import tailcall.runtime.internal.TestGen
+import tailcall.runtime.model.Path
+import tailcall.runtime.model.Path.Segment.{Literal, Param}
 import zio.ZIO
 import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo

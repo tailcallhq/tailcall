@@ -1,12 +1,12 @@
 package tailcall.runtime.internal
 
-import tailcall.runtime.ast._
-import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config._
 import tailcall.runtime.http.Method
+import tailcall.runtime.model._
 import zio.test.Gen
 
 import java.net.URL
+
+import Config._
 
 object TestGen {
   def genName: Gen[Any, String] = fromIterableRandom("body", "completed", "email", "id", "name", "title", "url")

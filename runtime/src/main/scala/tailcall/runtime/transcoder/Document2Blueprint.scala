@@ -4,8 +4,8 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputValueDefinition
 import caliban.parsing.adt.{Definition, Document, Type}
-import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Blueprint
 import zio.schema.DynamicValue
 
 trait Document2Blueprint {

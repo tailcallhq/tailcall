@@ -1,7 +1,7 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.{Endpoint, TSchema}
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}

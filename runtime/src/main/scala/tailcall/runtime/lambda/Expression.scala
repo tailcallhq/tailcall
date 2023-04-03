@@ -1,13 +1,12 @@
 package tailcall.runtime.lambda
 
-import tailcall.runtime.ast.Endpoint
+import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
 import zio.json.JsonCodec
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 // scalafmt: { maxColumn = 240 }
-// TODO: drop A type from Expression, it doesn't add much value at the moment
 sealed trait Expression
 
 object Expression {

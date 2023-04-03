@@ -1,7 +1,7 @@
-package tailcall.runtime.dsl
+package tailcall.runtime.model
 
-import tailcall.runtime.dsl.Postman.Collection
 import tailcall.runtime.http.{Method, Scheme}
+import tailcall.runtime.model.Postman.Collection
 import zio.json.ast.Json
 import zio.json.{DecoderOps, DeriveJsonCodec, JsonCodec, jsonHint}
 

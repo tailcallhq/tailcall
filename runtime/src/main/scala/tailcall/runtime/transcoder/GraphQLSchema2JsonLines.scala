@@ -3,7 +3,7 @@ package tailcall.runtime.transcoder
 import caliban.CalibanError.ParsingError
 import caliban.parsing.adt.Definition
 import caliban.parsing.{Parser, adt}
-import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.model.Blueprint
 import tailcall.runtime.transcoder.GraphQLSchema2JsonLine.TrainingRow
 import zio.ZIO
 import zio.json.{DeriveJsonCodec, EncoderOps, JsonCodec}

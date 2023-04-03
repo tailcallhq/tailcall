@@ -1,9 +1,9 @@
 package tailcall.runtime.internal
 
-import tailcall.runtime.ast.Path
-import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.{Arg, Field, Step, Type}
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.{Config, Path}
+
+import Config.{Arg, Field, Step, Type}
 
 object JsonPlaceholderConfig {
   def createUser: Step.Http = users.withMethod(Method.POST)

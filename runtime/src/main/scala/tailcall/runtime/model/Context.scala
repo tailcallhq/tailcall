@@ -1,4 +1,4 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 

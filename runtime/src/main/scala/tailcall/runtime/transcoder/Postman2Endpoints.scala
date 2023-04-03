@@ -1,10 +1,9 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.SchemaUnifier
-import tailcall.runtime.ast.Endpoint
-import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.Request
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.{Endpoint, Postman}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import zio.{Chunk, ZIO}

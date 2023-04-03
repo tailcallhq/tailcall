@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.dsl.Postman
+import tailcall.runtime.model.Postman
 import zio.json.DecoderOps
 import zio.{Task, ZIO, ZLayer}
 

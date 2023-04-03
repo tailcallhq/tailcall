@@ -1,13 +1,14 @@
 package tailcall.runtime
 
-import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config.{Arg, Field, Type}
 import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.model.Config
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.durationInt
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue}
+
+import Config.{Arg, Field, Type}
 
 object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =

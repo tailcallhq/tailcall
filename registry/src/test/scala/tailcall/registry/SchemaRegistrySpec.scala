@@ -1,6 +1,6 @@
 package tailcall.registry
 
-import tailcall.runtime.dsl.Orc
+import tailcall.runtime.model.Orc
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._

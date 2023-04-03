@@ -1,9 +1,9 @@
 package tailcall.runtime
 
 import caliban.CalibanError
-import tailcall.runtime.dsl.Config
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.model.Config
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.test.Assertion.equalTo

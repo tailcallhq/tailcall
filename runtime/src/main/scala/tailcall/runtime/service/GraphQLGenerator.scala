@@ -5,7 +5,7 @@ import caliban.introspection.adt.__Directive
 import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.tools.RemoteSchema
 import caliban.wrappers.Wrapper
-import tailcall.runtime.ast.Blueprint
+import tailcall.runtime.model.Blueprint
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Transcoder
 import zio.{ZIO, ZLayer}

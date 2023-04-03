@@ -1,7 +1,7 @@
 package tailcall.runtime.lambda
 
-import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.lambda.Expression._
+import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationContext.Binding
 import tailcall.runtime.service.EvaluationRuntime

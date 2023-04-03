@@ -1,7 +1,7 @@
 package tailcall.server
 
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.ast.{Blueprint, Digest}
+import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._

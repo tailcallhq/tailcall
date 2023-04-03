@@ -1,10 +1,10 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.{Context, Endpoint, TSchema}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.{Lambda, ~>}
+import tailcall.runtime.model.{Context, Endpoint, TSchema}
 import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
 import zio.durationInt
 import zio.http.Client

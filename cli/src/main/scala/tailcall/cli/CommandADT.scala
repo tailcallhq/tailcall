@@ -1,6 +1,6 @@
 package tailcall.cli
 
-import tailcall.runtime.ast.Digest
+import tailcall.runtime.model.Digest
 import tailcall.runtime.service.DSLFormat
 import zio.http.URL
 

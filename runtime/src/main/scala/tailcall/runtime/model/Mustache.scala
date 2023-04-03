@@ -1,4 +1,4 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
 import tailcall.runtime.internal.DynamicValueUtil.{asString, getPath}
 import zio.Chunk

@@ -9,8 +9,8 @@ import caliban.parsing.adt.{
   Document => CalibanDocument,
   Type => CalibanType,
 }
-import tailcall.runtime.ast.Blueprint
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Blueprint
 
 trait Blueprint2Document {
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =

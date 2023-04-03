@@ -1,8 +1,8 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.SchemaUnifier
-import tailcall.runtime.ast.TSchema
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.TSchema
 import zio.json.ast.Json
 
 /**

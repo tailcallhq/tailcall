@@ -2,9 +2,9 @@ package tailcall.runtime.service
 
 import caliban.Value
 import caliban.schema.Step
-import tailcall.runtime.ast
-import tailcall.runtime.ast.{Blueprint, Context}
 import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.model
+import tailcall.runtime.model.{Blueprint, Context}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
 import tailcall.runtime.transcoder.Transcoder
@@ -78,13 +78,13 @@ object StepGenerator {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
-    def fromType(tpe: ast.Blueprint.Type, ctx: Context): Step[HttpDataLoader] =
+    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader] =
       tpe match {
-        case ast.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
+        case model.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
             case Some(value) => value(ctx)
             case None        => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
           }
-        case ast.Blueprint.ListType(ofType, _) => ctx.value match {
+        case model.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
                 .ListStep(values.map(value => fromType(ofType, ctx.copy(value = value))).toList)
             case _                             => Step.ListStep(List(fromType(ofType, ctx)))

@@ -1,6 +1,6 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
-import tailcall.runtime.ast.Digest.Algorithm
+import tailcall.runtime.model.Digest.Algorithm
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}
 

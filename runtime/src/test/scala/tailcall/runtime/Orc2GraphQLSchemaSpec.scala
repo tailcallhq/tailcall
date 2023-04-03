@@ -1,7 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.Orc
+import tailcall.runtime.model.{Blueprint, Orc}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO

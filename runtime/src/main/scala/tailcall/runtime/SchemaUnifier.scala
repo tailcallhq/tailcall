@@ -1,7 +1,7 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.TSchema
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.TSchema
 
 /**
  * Unifies two schemas into a single schema that is a

@@ -1,7 +1,7 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.Endpoint
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.Endpoint
 import zio.schema.DynamicValue
 import zio.test._
 

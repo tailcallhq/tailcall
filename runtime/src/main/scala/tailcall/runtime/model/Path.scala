@@ -1,4 +1,4 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
 import zio.Chunk
 import zio.json.JsonCodec

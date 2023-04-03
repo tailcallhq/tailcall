@@ -1,7 +1,7 @@
 package tailcall.runtime.service
 
 import caliban.parsing.Parser
-import tailcall.runtime.dsl.Config
+import tailcall.runtime.model.Config
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
 import zio.json.yaml._

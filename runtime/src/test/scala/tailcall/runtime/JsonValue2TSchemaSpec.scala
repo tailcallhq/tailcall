@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.TSchema
+import tailcall.runtime.model.TSchema
 import tailcall.runtime.transcoder.JsonValue2TSchema
 import zio.Scope
 import zio.json.ast.Json

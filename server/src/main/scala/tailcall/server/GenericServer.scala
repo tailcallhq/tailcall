@@ -1,7 +1,7 @@
 package tailcall.server
 
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.ast.Digest
+import tailcall.runtime.model.Digest
 import tailcall.runtime.service.DataLoader
 import tailcall.server.internal.GraphQLUtils
 import zio._

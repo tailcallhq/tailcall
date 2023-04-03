@@ -1,6 +1,6 @@
 package tailcall.registry
 
-import tailcall.runtime.ast.{Blueprint, Digest}
+import tailcall.runtime.model.{Blueprint, Digest}
 import zio._
 import zio.redis.Redis
 

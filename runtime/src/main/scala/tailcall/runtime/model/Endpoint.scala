@@ -1,7 +1,7 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
-import tailcall.runtime.ast.Path.Segment
 import tailcall.runtime.http.{Method, Request, Scheme}
+import tailcall.runtime.model.Path.Segment
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 

@@ -1,8 +1,7 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.Orc
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.{Blueprint, Orc}
 import tailcall.runtime.remote._
 import zio.schema.DynamicValue
 

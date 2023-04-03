@@ -1,6 +1,6 @@
 package tailcall.registry
 
-import tailcall.runtime.ast.{Blueprint, Digest}
+import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.runtime.service.EvaluationError
 import zio.http._
 import zio.http.model.Status

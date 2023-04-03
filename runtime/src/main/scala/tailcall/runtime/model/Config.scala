@@ -1,8 +1,7 @@
-package tailcall.runtime.dsl
+package tailcall.runtime.model
 
-import tailcall.runtime.ast._
-import tailcall.runtime.dsl.Config._
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.Config._
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO

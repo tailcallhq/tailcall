@@ -1,9 +1,8 @@
 package tailcall.runtime.transcoder
 
 import caliban.parsing.adt.Document
-import tailcall.runtime.ast.{Blueprint, Endpoint}
-import tailcall.runtime.dsl.{Config, Postman}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.{Blueprint, Config, Endpoint, Postman}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.value._

@@ -1,15 +1,15 @@
 package tailcall.runtime.transcoder
 
 import caliban.InputValue
-import tailcall.runtime.ast.{Blueprint, Endpoint, TSchema}
-import tailcall.runtime.dsl.Config
-import tailcall.runtime.dsl.Config._
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.{Blueprint, Config, Endpoint, TSchema}
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
+
+import Config._
 
 trait Config2Blueprint {
 

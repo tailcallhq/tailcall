@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.ast.Mustache
+import tailcall.runtime.model.Mustache
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._

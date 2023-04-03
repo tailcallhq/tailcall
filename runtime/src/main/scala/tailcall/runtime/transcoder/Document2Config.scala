@@ -8,10 +8,9 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 }
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
-import tailcall.runtime.ast.Path
-import tailcall.runtime.dsl.Config
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.{Config, Path}
 import zio.json.{DecoderOps, EncoderOps}
 
 trait Document2Config {

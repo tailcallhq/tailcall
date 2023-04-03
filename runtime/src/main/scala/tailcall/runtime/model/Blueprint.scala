@@ -1,4 +1,4 @@
-package tailcall.runtime.ast
+package tailcall.runtime.model
 
 import caliban.GraphQL
 import tailcall.runtime.lambda.Expression.Logical.Unary

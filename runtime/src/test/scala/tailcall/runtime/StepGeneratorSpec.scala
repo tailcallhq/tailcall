@@ -1,9 +1,8 @@
 package tailcall.runtime
 
 import caliban.{CalibanError, InputValue}
-import tailcall.runtime.ast.Blueprint
-import tailcall.runtime.dsl.Orc
 import tailcall.runtime.http.HttpClient
+import tailcall.runtime.model.{Blueprint, Orc}
 import tailcall.runtime.remote._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._

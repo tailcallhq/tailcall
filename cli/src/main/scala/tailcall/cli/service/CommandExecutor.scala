@@ -4,9 +4,8 @@ import caliban.GraphQL
 import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
-import tailcall.runtime.ast.{Blueprint, Digest, Endpoint}
-import tailcall.runtime.dsl.Postman
 import tailcall.runtime.http.HttpClient
+import tailcall.runtime.model.{Blueprint, Digest, Endpoint, Postman}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.{Postman2Endpoints, Transcoder}
