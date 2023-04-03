@@ -25,20 +25,20 @@ sealed trait TSchema {
 
   final def isNullable: Boolean =
     self match {
-      case _: TSchema.Optional => true
-      case _                   => false
+      case _: TSchema.Opt => true
+      case _              => false
     }
 
   final def opt: TSchema = TSchema.opt(self)
 
   final def tag: String =
     self match {
-      case TSchema.Obj(_)      => "Object"
-      case TSchema.Arr(_)      => "Array"
-      case TSchema.Optional(_) => "Optional"
-      case TSchema.String      => "String"
-      case TSchema.Int         => "Integer"
-      case TSchema.Boolean     => "Boolean"
+      case TSchema.Obj(_) => "Object"
+      case TSchema.Arr(_) => "Array"
+      case TSchema.Opt(_) => "Optional"
+      case TSchema.Str    => "String"
+      case TSchema.Num    => "Integer"
+      case TSchema.Bool   => "Boolean"
     }
 }
 
@@ -46,11 +46,11 @@ object TSchema {
 
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
-  def bool: TSchema = TSchema.Boolean
+  def bool: TSchema = TSchema.Bool
 
   def empty: TSchema = TSchema.Obj(Map.empty)
 
-  def int: TSchema = TSchema.Int
+  def int: TSchema = TSchema.Num
 
   def obj(map: Map[String, TSchema]): TSchema = TSchema.Obj(map)
 
@@ -58,22 +58,22 @@ object TSchema {
 
   def opt(schema: TSchema): TSchema =
     schema match {
-      case Optional(_) => schema
-      case _           => Optional(schema)
+      case Opt(_) => schema
+      case _      => Opt(schema)
     }
 
-  def string: TSchema = TSchema.String
+  def string: TSchema = TSchema.Str
 
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {
-      case TSchema.String      => Schema[String]
-      case TSchema.Int         => Schema[Int]
-      case TSchema.Boolean     => Schema[Boolean]
-      case TSchema.Optional(s) => toZIOSchema(s).optional
-      case Obj(fields)         =>
+      case TSchema.Str    => Schema[String]
+      case TSchema.Num    => Schema[Int]
+      case TSchema.Bool   => Schema[Boolean]
+      case TSchema.Opt(s) => toZIOSchema(s).optional
+      case Obj(fields)    =>
         val nFields = Chunk.from(fields).map(f => Labelled(f._1, toZIOSchema(f._2).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
-      case Arr(item)           => Schema.chunk(toZIOSchema(item))
+      case Arr(item)      => Schema.chunk(toZIOSchema(item))
     }
 
   // TODO: add unit tests
@@ -88,12 +88,12 @@ object TSchema {
     }
 
     (s1, s2) match {
-      case (TSchema.String, TSchema.String)   => true
-      case (TSchema.Int, TSchema.Int)         => true
-      case (TSchema.Boolean, TSchema.Boolean) => true
-      case (Obj(fields1), Obj(fields2))       => checkFields(fields1, fields2)
-      case (Arr(item1), Arr(item2))           => isSubType(item1, item2)
-      case _                                  => false
+      case (TSchema.Str, TSchema.Str)   => true
+      case (TSchema.Num, TSchema.Num)   => true
+      case (TSchema.Bool, TSchema.Bool) => true
+      case (Obj(fields1), Obj(fields2)) => checkFields(fields1, fields2)
+      case (Arr(item1), Arr(item2))     => isSubType(item1, item2)
+      case _                            => false
     }
   }
 
@@ -104,16 +104,16 @@ object TSchema {
   final case class Arr(@jsonField("item") schema: TSchema) extends TSchema
 
   @jsonHint("optional")
-  final case class Optional(schema: TSchema) extends TSchema
+  final case class Opt(schema: TSchema) extends TSchema
 
   @jsonHint("String")
-  case object String extends TSchema
+  case object Str extends TSchema
 
   @jsonHint("Integer")
-  case object Int extends TSchema
+  case object Num extends TSchema
 
   @jsonHint("Boolean")
-  case object Boolean extends TSchema
+  case object Bool extends TSchema
 
   implicit lazy val schemaCodec: zio.json.JsonCodec[TSchema] = zio.json.DeriveJsonCodec.gen[TSchema]
   implicit lazy val schema: Schema[TSchema]                  = DeriveSchema.gen[TSchema]

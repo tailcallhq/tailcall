@@ -54,11 +54,11 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
         test("object to tSchema") {
           val json     = """{"a": 1, "b": "2", "c": true, "d": null, "e": [1, 2, 3]}"""
           val expected = TSchema.obj(
-            "a" -> TSchema.Int,
-            "b" -> TSchema.String,
-            "c" -> TSchema.Boolean,
+            "a" -> TSchema.Num,
+            "b" -> TSchema.Str,
+            "c" -> TSchema.Bool,
             "d" -> TSchema.empty,
-            "e" -> TSchema.arr(TSchema.Int),
+            "e" -> TSchema.arr(TSchema.Num),
           )
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
@@ -68,12 +68,12 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
             Json.Obj("a" -> Json.Num(1), "b" -> Json.Bool(true)),
             Json.Obj("a" -> Json.Num(2), "b" -> Json.Bool(false)),
           )
-          val expected = TSchema.arr(TSchema.obj("a" -> TSchema.Int, "b" -> TSchema.Boolean))
+          val expected = TSchema.arr(TSchema.obj("a" -> TSchema.Num, "b" -> TSchema.Bool))
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
         test("nullables to TSchema") {
           val json     = Json.Arr(Json.Obj("a" -> Json.Num(1)), Json.Obj("a" -> Json.Null))
-          val expected = TSchema.arr(TSchema.obj("a" -> (TSchema.Int.opt)))
+          val expected = TSchema.arr(TSchema.obj("a" -> (TSchema.Num.opt)))
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
         test("nullables with multiple keys to TSchema") {
@@ -84,7 +84,7 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
         },
         test("numeric keys") {
           val json     = Json.Obj("1" -> Json.Num(1), "2" -> Json.Str("1"), "3" -> Json.Bool(true))
-          val expected = TSchema.obj("_1" -> TSchema.Int, "_2" -> TSchema.String, "_3" -> TSchema.Boolean)
+          val expected = TSchema.obj("_1" -> TSchema.Num, "_2" -> TSchema.Str, "_3" -> TSchema.Bool)
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
       ),

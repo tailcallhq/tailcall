@@ -30,9 +30,9 @@ trait JsonValue2TSchema {
           schema <- SchemaUnifier.unify(chunk.toList).map(_.getOrElse(TSchema.string))
         } yield schema.arr
 
-      case Json.Bool(_) => TValid.succeed(TSchema.Boolean)
-      case Json.Str(_)  => TValid.succeed(TSchema.String)
-      case Json.Num(_)  => TValid.succeed(TSchema.Int)
+      case Json.Bool(_) => TValid.succeed(TSchema.Bool)
+      case Json.Str(_)  => TValid.succeed(TSchema.Str)
+      case Json.Num(_)  => TValid.succeed(TSchema.Num)
       case Json.Null    => TValid.succeed(TSchema.obj())
     }
   }

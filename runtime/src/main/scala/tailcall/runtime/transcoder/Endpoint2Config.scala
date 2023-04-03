@@ -32,10 +32,10 @@ object Endpoint2Config {
         case schema @ TSchema.Obj(_)  => Config
             .Arg(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toArgument(schema, isRequired = isRequired, isList = true)
-        case TSchema.Optional(schema) => toArgument(schema, isRequired = false, isList = isList)
-        case TSchema.String  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
-        case TSchema.Int     => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
-        case TSchema.Boolean => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.Opt(schema) => toArgument(schema, isRequired = false, isList = isList)
+        case TSchema.Str  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Num     => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Bool => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
     }
 
@@ -43,10 +43,10 @@ object Endpoint2Config {
       schema match {
         case TSchema.Obj(_)           => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Arr(item)        => toArgumentMap(item, isRequired = false, isList = true)
-        case TSchema.Optional(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
-        case TSchema.String           => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
-        case TSchema.Int              => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
-        case TSchema.Boolean          => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
+        case TSchema.Opt(schema) => toArgumentMap(schema, isRequired = false, isList = isList)
+        case TSchema.Str           => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
+        case TSchema.Num              => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
+        case TSchema.Bool          => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
       }
     }
 
@@ -64,10 +64,10 @@ object Endpoint2Config {
         case TSchema.Obj(_)           => Config
             .Field(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)      => toConfigField(schema, isRequired, isList = true)
-        case TSchema.Optional(schema) => toConfigField(schema, isRequired = false, isList = isList)
-        case TSchema.String  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
-        case TSchema.Int     => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
-        case TSchema.Boolean => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case TSchema.Opt(schema) => toConfigField(schema, isRequired = false, isList = isList)
+        case TSchema.Str  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
+        case TSchema.Num     => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
+        case TSchema.Bool => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
       }
     }
 
@@ -117,10 +117,10 @@ object Endpoint2Config {
           val tail = fields.flatMap(field => toTypes(field._2, isRequired, isList))
           tail + head
         case TSchema.Arr(item)        => toTypes(item, isRequired, isList = true)
-        case TSchema.Optional(schema) => toTypes(schema, isRequired = false, isList = isList)
-        case TSchema.String           => Map.empty
-        case TSchema.Int              => Map.empty
-        case TSchema.Boolean          => Map.empty
+        case TSchema.Opt(schema) => toTypes(schema, isRequired = false, isList = isList)
+        case TSchema.Str           => Map.empty
+        case TSchema.Num              => Map.empty
+        case TSchema.Bool          => Map.empty
       }
     }
   }

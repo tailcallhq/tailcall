@@ -9,9 +9,9 @@ import zio.{Scope, ZIO}
 
 object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
   private val User = TSchema
-    .obj("username" -> TSchema.String, "id" -> TSchema.Int, "name" -> TSchema.String, "email" -> TSchema.String)
+    .obj("username" -> TSchema.Str, "id" -> TSchema.Num, "name" -> TSchema.Str, "email" -> TSchema.Str)
 
-  private val InputUser = TSchema.obj("username" -> TSchema.String, "name" -> TSchema.String, "email" -> TSchema.String)
+  private val InputUser = TSchema.obj("username" -> TSchema.Str, "name" -> TSchema.Str, "email" -> TSchema.Str)
 
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
@@ -70,7 +70,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
         assertSchema(endpoint)(expected.trim)
       },
       test("argument schema") {
-        val endpoint = jsonEndpoint.withOutput(Option(User.opt)).withInput(Option(TSchema.obj("userId" -> TSchema.Int)))
+        val endpoint = jsonEndpoint.withOutput(Option(User.opt)).withInput(Option(TSchema.obj("userId" -> TSchema.Num)))
           .withPath("/user")
 
         val expected = """

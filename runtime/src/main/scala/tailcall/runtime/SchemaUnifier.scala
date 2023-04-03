@@ -26,9 +26,9 @@ final case class SchemaUnifier(schemas: List[TSchema]) {
 
   private def unify2(a: TSchema, b: TSchema): TValid[String, Option[TSchema]] = {
     (a, b) match {
-      case (TSchema.Int, TSchema.Int)                   => TValid.some(TSchema.Int)
-      case (TSchema.String, TSchema.String)             => TValid.some(TSchema.String)
-      case (TSchema.Boolean, TSchema.Boolean)           => TValid.some(TSchema.Boolean)
+      case (TSchema.Num, TSchema.Num)                   => TValid.some(TSchema.Num)
+      case (TSchema.Str, TSchema.Str)             => TValid.some(TSchema.Str)
+      case (TSchema.Bool, TSchema.Bool)           => TValid.some(TSchema.Bool)
       case (TSchema.Obj(fields1), TSchema.Obj(fields2)) =>
         val field1Map = fields1.map(f => f._1 -> f._2)
         val field2Map = fields2.map(f => f._1 -> f._2)
@@ -49,8 +49,8 @@ final case class SchemaUnifier(schemas: List[TSchema]) {
       case (TSchema.Arr(item1), TSchema.Arr(item2)) => unify2(item1, item2).map(_.map(TSchema.arr))
       case (a, TSchema.Obj(map)) if map.isEmpty     => TValid.some(a.opt)
       case (TSchema.Obj(map), b) if map.isEmpty     => TValid.some(b.opt)
-      case (TSchema.Optional(a), b)                 => unify2(a, b).map(_.map(_.opt))
-      case (a, TSchema.Optional(b))                 => unify2(a, b).map(_.map(_.opt))
+      case (TSchema.Opt(a), b)                 => unify2(a, b).map(_.map(_.opt))
+      case (a, TSchema.Opt(b))                 => unify2(a, b).map(_.map(_.opt))
       case (_, _)                                   => TValid.none
     }
   }
