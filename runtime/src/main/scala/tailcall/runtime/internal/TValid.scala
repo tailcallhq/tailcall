@@ -9,6 +9,9 @@ sealed trait TValid[+E, +A] {
   final def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
 
+  final def asThrowable(implicit ev: E <:< String): TValid[Throwable, A] =
+    self.fold(err => TValid.fail(new RuntimeException(err)), TValid.succeed(_))
+
   final def get(implicit ev: E <:< Nothing): A =
     self match {
       case TValid.Failure(_)     => throw new NoSuchElementException("Failure does not exist")
@@ -54,8 +57,6 @@ object TValid {
       .map(_ => builder.result())
   }
 
-  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
-
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
 
   def fail[E](message: E): TValid[E, Nothing] = Failure(message)
@@ -63,6 +64,8 @@ object TValid {
   def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
+
+  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
 
