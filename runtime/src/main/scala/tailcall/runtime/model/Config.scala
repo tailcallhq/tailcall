@@ -113,6 +113,11 @@ object Config {
       copy(schema = RootSchema(query, mutation))
   }
 
+  sealed trait FieldAnnotation
+  object FieldAnnotation {
+    final case class Rename(name: String) extends FieldAnnotation
+  }
+
   // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
@@ -125,6 +130,7 @@ object Config {
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
+    annotations: Option[List[FieldAnnotation]] = None,
   ) {
     self =>
     def apply(args: (String, Arg)*): Field = copy(args = Option(args.toMap))
@@ -261,35 +267,27 @@ object Config {
 
     def withDoc(doc: String): Arg = copy(doc = Option(doc))
   }
-  object Arg  {
+
+  object Arg {
     val string: Arg               = Arg("String")
     val int: Arg                  = Arg("Int")
     val bool: Arg                 = Arg("Boolean")
     def ofType(name: String): Arg = Arg(name)
   }
 
-  /**
-   * Json Codecs
-   *
-   * TODO: This should only be done once, not for every
-   * instance of Config. This is done currently because if
-   * we create a jsonCodec from Schema, internally Maps are
-   * stored as chunks and the outputted json looks like a
-   * list of tuples.
-   */
-
-  implicit val urlCodec: JsonCodec[URL]                          = JsonCodec[String].transformOrFail[URL](
+  implicit val urlCodec: JsonCodec[URL]                              = JsonCodec[String].transformOrFail[URL](
     string =>
       try Right(new URL(string))
       catch { case _: Throwable => Left(s"Malformed url: ${string}") },
     _.toString,
   )
-  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
-  implicit lazy val operationCodec: JsonCodec[Step]              = DeriveJsonCodec.gen[Step]
-  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
-  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
-  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val serverCodec: JsonCodec[Server]               = DeriveJsonCodec.gen[Server]
-  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
+  implicit lazy val typeInfoCodec: JsonCodec[Type]                   = DeriveJsonCodec.gen[Type]
+  implicit lazy val operationCodec: JsonCodec[Step]                  = DeriveJsonCodec.gen[Step]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]                   = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldAnnotationCodec: JsonCodec[FieldAnnotation] = DeriveJsonCodec.gen[FieldAnnotation]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]           = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema]     = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]                 = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val serverCodec: JsonCodec[Server]                   = DeriveJsonCodec.gen[Server]
+  implicit lazy val jsonCodec: JsonCodec[Config]                     = DeriveJsonCodec.gen[Config]
 }
