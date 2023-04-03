@@ -12,6 +12,8 @@ import tailcall.runtime.model.TSchema
  * schemas as optional types.
  */
 final case class SchemaUnifier(schemas: List[TSchema]) {
+  def unified: TValid[String, Option[TSchema]] = { unify(schemas) }
+
   def unify(list: List[TSchema]): TValid[String, Option[TSchema]] =
     TValid.fold(list, Option.empty[TSchema]) { (optSchema, schema) =>
       for {
@@ -21,8 +23,6 @@ final case class SchemaUnifier(schemas: List[TSchema]) {
         }
       } yield newSchema
     }
-
-  def unified: TValid[String, Option[TSchema]] = { unify(schemas) }
 
   private def unify2(a: TSchema, b: TSchema): TValid[String, Option[TSchema]] = {
     (a, b) match {
