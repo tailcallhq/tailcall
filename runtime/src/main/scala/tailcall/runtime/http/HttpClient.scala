@@ -17,15 +17,15 @@ object HttpClient {
   final case class Live(client: Client) extends HttpClient {
     def request(req: Request): ZIO[Any, Throwable, Response] =
       for {
-        resp             <- client.request(req.toZHttpRequest)
-        redirectResponse <- if (isRedirect(resp.status)) redirect(req) else ZIO.succeed(resp)
+        res              <- client.request(req.toZHttpRequest)
+        redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
       } yield redirectResponse
 
     private def isRedirect(status: Status) = { status.code == 301 || status.code == 302 || status.code == 307 }
 
-    private def redirect(req: Request): ZIO[Any, Throwable, Response] =
+    private def redirect(req: Request, res: Response): ZIO[Any, Throwable, Response] =
       for {
-        location <- ZIO.fromOption(req.headers.get("Location")) <> ZIO.fail(new RuntimeException("No Location header"))
+        location <- ZIO.fromOption(res.headers.get("Location")) <> ZIO.fail(new RuntimeException("No Location header"))
         res      <- request(req.copy(url = String.valueOf(location)))
       } yield res
   }
