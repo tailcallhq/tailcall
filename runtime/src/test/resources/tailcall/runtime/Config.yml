@@ -38,6 +38,7 @@ graphQL:
           type: String
         zipcode:
           type: String
+          rename: zip
     Query:
       fields:
         posts:

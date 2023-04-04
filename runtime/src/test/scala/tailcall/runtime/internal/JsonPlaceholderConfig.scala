@@ -1,9 +1,8 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.Config.{Arg, Field, Step, Type}
 import tailcall.runtime.model.{Config, Path}
-
-import Config.{Arg, Field, Step, Type}
 
 object JsonPlaceholderConfig {
   def createUser: Step.Http = users.withMethod(Method.POST)
@@ -60,7 +59,7 @@ object JsonPlaceholderConfig {
         "street"  -> Field.string,
         "suite"   -> Field.string,
         "city"    -> Field.string,
-        "zipcode" -> Field.string,
+        "zipcode" -> Field.string.withName("zip"),
         "geo"     -> Field.ofType("Geo"),
       ),
       "NewAddress" -> Type(

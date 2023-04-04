@@ -27,7 +27,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def toBlueprint: Blueprint = toBlueprint()
 
-  def toBlueprint(encodeSteps: Boolean = false): Blueprint = Transcoder.toBlueprint(self, encodeSteps = encodeSteps).get
+  def toBlueprint(encodeSteps: Boolean = false): Blueprint =
+    Transcoder.toBlueprint(self, encodeDirectives = encodeSteps).get
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
@@ -113,12 +114,6 @@ object Config {
       copy(schema = RootSchema(query, mutation))
   }
 
-  sealed trait FieldAnnotation
-  object FieldAnnotation {
-    final case class Rename(name: String) extends FieldAnnotation
-    def rename(name: String): FieldAnnotation = Rename(name)
-  }
-
   // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
@@ -131,13 +126,9 @@ object Config {
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
-    annotations: Option[List[FieldAnnotation]] = None,
+    rename: Option[String] = None,
   ) {
     self =>
-    def @@(annotation: FieldAnnotation): Field = withAnnotations(annotation)
-
-    def withAnnotations(annotations: FieldAnnotation*): Field =
-      self.copy(annotations = Option(self.annotations.toList.flatten ++ annotations))
 
     def apply(args: (String, Arg)*): Field = copy(args = Option(args.toMap))
 
@@ -184,6 +175,8 @@ object Config {
     def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
+
+    def withName(name: String): Field = copy(rename = Option(name))
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
   }

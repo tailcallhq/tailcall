@@ -3,24 +3,32 @@ package tailcall.runtime.transcoder
 import caliban.InputValue
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.{Blueprint, Config, Endpoint, TSchema}
+import tailcall.runtime.model.Config._
+import tailcall.runtime.model._
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
-
-import Config._
 
 trait Config2Blueprint {
 
   implicit final private def jsonSchema: Schema[Json] =
     Schema[DynamicValue].transformOrFail[Json](Transcoder.toJson(_).toEither, Transcoder.toDynamicValue(_).toEither)
 
-  final def toBlueprint(config: Config, encodeSteps: Boolean = false): TValid[Nothing, Blueprint] = {
+  /**
+   * Encodes a config into a Blueprint.
+   * @param config
+   *   the config to encode
+   * @param encodeDirectives
+   *   if true, annotations and steps will be encoded as
+   *   directives
+   * @return
+   */
+  final def toBlueprint(config: Config, encodeDirectives: Boolean = false): TValid[Nothing, Blueprint] = {
     val rootSchema = Blueprint.SchemaDefinition(
       query = config.graphQL.schema.query,
       mutation = config.graphQL.schema.mutation,
-      directives = toDirective(config).toList,
+      directives = if (encodeDirectives) toServerDirective(config).toList else Nil,
     )
 
     val outputTypes    = getOutputTypes(config).toSet
@@ -49,12 +57,21 @@ trait Config2Blueprint {
 
           val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
 
+          var directives = List.empty[Blueprint.Directive]
+          if (encodeDirectives) {
+            directives = toDirective(field.steps.getOrElse(Nil)).toList
+            directives = field.rename match {
+              case Some(value) => FieldAnnotation.rename(value).toDirective :: directives
+              case None        => directives
+            }
+          }
+
           Blueprint.FieldDefinition(
             name = name,
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
-            directives = if (encodeSteps) toDirective(field.steps.getOrElse(Nil)).toList else Nil,
+            directives = directives,
             description = field.doc,
           )
         }
@@ -70,43 +87,6 @@ trait Config2Blueprint {
     }
 
     TValid.succeed(Blueprint(rootSchema :: definitions))
-  }
-
-  private def toInputObjectTypeDefinition(
-    definition: Blueprint.ObjectTypeDefinition,
-    inputNames: Map[String, String],
-  ): Blueprint.InputObjectTypeDefinition = {
-    val fields = definition.fields.map { field =>
-      Blueprint.InputFieldDefinition(
-        name = field.name,
-        ofType = field.ofType.withName(inputNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
-        defaultValue = None,
-        description = field.description,
-      )
-    }
-    Blueprint.InputObjectTypeDefinition(
-      name = inputNames.getOrElse(definition.name, definition.name),
-      fields = fields,
-      description = definition.description,
-    )
-  }
-
-  /**
-   * Goes over every possible object type and creates a map
-   * of type name to whether it's an input type or not.
-   */
-  final private def getOutputTypes(config: Config): List[String] = {
-    def loop(name: String, result: List[String]): List[String] = {
-      if (result.contains(name)) result
-      else config.graphQL.types.get(name) match {
-        case Some(typeInfo) => typeInfo.fields.values.toList
-            .flatMap[String](field => loop(field.typeOf, name :: result))
-        case None           => result
-      }
-    }
-
-    val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
-    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
   /**
@@ -128,7 +108,25 @@ trait Config2Blueprint {
       .flatMap(_.args.getOrElse(Map.empty).values.toList).map(_.typeOf).flatMap(collectReturnTypes(_, Nil))
   }
 
-  final private def toDirective(config: Config): Option[Blueprint.Directive] = {
+  /**
+   * Goes over every possible object type and creates a map
+   * of type name to whether it's an input type or not.
+   */
+  final private def getOutputTypes(config: Config): List[String] = {
+    def loop(name: String, result: List[String]): List[String] = {
+      if (result.contains(name)) result
+      else config.graphQL.types.get(name) match {
+        case Some(typeInfo) => typeInfo.fields.values.toList
+            .flatMap[String](field => loop(field.typeOf, name :: result))
+        case None           => result
+      }
+    }
+
+    val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
+    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
+  }
+
+  final private def toServerDirective(config: Config): Option[Blueprint.Directive] = {
     if (config.server.isEmpty) None
     else {
       val map        = config.server.toJson.fromJson[Map[String, InputValue]]
@@ -154,6 +152,25 @@ trait Config2Blueprint {
   final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
     Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
       .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
+  }
+
+  private def toInputObjectTypeDefinition(
+    definition: Blueprint.ObjectTypeDefinition,
+    inputNames: Map[String, String],
+  ): Blueprint.InputObjectTypeDefinition = {
+    val fields = definition.fields.map { field =>
+      Blueprint.InputFieldDefinition(
+        name = field.name,
+        ofType = field.ofType.withName(inputNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
+        defaultValue = None,
+        description = field.description,
+      )
+    }
+    Blueprint.InputObjectTypeDefinition(
+      name = inputNames.getOrElse(definition.name, definition.name),
+      fields = fields,
+      description = definition.description,
+    )
   }
 
   final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
