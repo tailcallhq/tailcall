@@ -2,13 +2,12 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
+import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.durationInt
-import zio.test.TestAspect.timeout
+import zio.test.TestAspect.{failing, timeout}
 import zio.test.{ZIOSpecDefault, assertTrue}
-
-import Config.{Arg, Field, Type}
 
 object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
@@ -136,6 +135,19 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
 
       },
+      suite("field annotations")(test("rename") {
+        val config   = Config.empty.withQuery("Query")
+          .withType("Query" -> Type("foo" -> Field.ofType("String").withName("bar")))
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |type Query {
+                          |  bar: String
+                          |}
+                          |""".stripMargin.trim
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+      }) @@ failing,
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {
@@ -233,7 +245,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 }

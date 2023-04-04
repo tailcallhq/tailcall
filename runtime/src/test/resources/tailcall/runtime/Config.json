@@ -56,7 +56,8 @@
             "type" : "String"
           },
           "zipcode" : {
-            "type" : "String"
+            "type" : "String",
+            "rename" : "zip"
           }
         }
       },

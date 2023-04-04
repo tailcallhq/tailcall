@@ -41,9 +41,9 @@ object Transcoder extends Transcoder {
 
   def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 
-  def toDocument(config: Config): TValid[Nothing, Document] =
+  def toDocument(config: Config, encodeDirectives: Boolean = false): TValid[Nothing, Document] =
     for {
-      blueprint <- toBlueprint(config, encodeSteps = true)
+      blueprint <- toBlueprint(config, encodeDirectives = encodeDirectives)
       document  <- toDocument(blueprint)
     } yield document
 }
