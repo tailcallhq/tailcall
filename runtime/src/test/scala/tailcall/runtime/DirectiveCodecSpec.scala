@@ -5,14 +5,14 @@ import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import zio.Scope
 import zio.json.jsonHint
-import zio.schema.DeriveSchema
+import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
 
 object DirectiveCodecSpec extends ZIOSpecDefault {
   @jsonHint("foo")
   final private case class Foo(a: String, @jsonHint("bee") b: Int)
-  implicit private val schema                     = DeriveSchema.gen[Foo]
+  implicit private val schema: Schema[Foo]        = DeriveSchema.gen[Foo]
   implicit private val codec: DirectiveCodec[Foo] = DirectiveCodec.fromSchema(schema)
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
