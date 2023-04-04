@@ -7,7 +7,7 @@ import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.GraphQLGenerator
 import zio.ZIO
-import zio.json.{JsonCodec, JsonDecoder, JsonEncoder}
+import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import scala.annotation.tailrec
@@ -86,9 +86,14 @@ final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
 }
 
 object Blueprint {
-  // TODO: create a common type for Object
-  // TODO: drop non-null fields
-  // TODO: create a common type for input and field use phantom types
+  implicit val schema: Schema[Blueprint]   = DeriveSchema.gen[Blueprint]
+  implicit val codec: JsonCodec[Blueprint] = zio.schema.codec.JsonCodec.jsonCodec(schema)
+
+  def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
+
+  def empty: Blueprint = Blueprint()
+
+  def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
   sealed trait Definition
 
@@ -153,16 +158,4 @@ object Blueprint {
 
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
-  implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]
-
-  val codec: JsonCodec[Blueprint]              = zio.schema.codec.JsonCodec.jsonCodec(schema)
-  implicit val jsonCodec: JsonCodec[Blueprint] = zio.schema.codec.JsonCodec.jsonCodec(schema)
-  implicit val objectTypeDefinitionJsonCodec: JsonCodec[ObjectTypeDefinition] = zio.schema.codec.JsonCodec
-    .jsonCodec(DeriveSchema.gen[ObjectTypeDefinition])
-  implicit val encoder: JsonEncoder[Blueprint]                                = codec.encoder
-  implicit val decoder: JsonDecoder[Blueprint]                                = codec.decoder
-  def decode(bytes: CharSequence): Either[String, Blueprint]                  = codec.decodeJson(bytes)
-  def encode(value: Blueprint): CharSequence                                  = codec.encodeJson(value, None)
-
-  def empty: Blueprint = Blueprint()
 }

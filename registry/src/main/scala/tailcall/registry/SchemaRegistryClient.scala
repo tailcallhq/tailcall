@@ -4,7 +4,7 @@ import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.runtime.service.EvaluationError
 import zio.http._
 import zio.http.model.Status
-import zio.schema.Schema
+import zio.json.DecoderOps
 import zio.schema.codec.JsonCodec
 import zio.{Chunk, Task, ZIO, ZLayer}
 
@@ -50,8 +50,7 @@ object SchemaRegistryClient {
           case _               => for {
               body      <- assertStatusCodeIsAbove(400, response)
               bpString  <- body.asString
-              blueprint <- ZIO.fromEither(JsonCodec.jsonDecoder(Blueprint.schema).decodeJson(bpString))
-                .mapError(EvaluationError.DecodingError(_))
+              blueprint <- ZIO.fromEither(bpString.fromJson[Blueprint]).mapError(EvaluationError.DecodingError(_))
             } yield Option(blueprint)
         }
       } yield maybe
@@ -62,8 +61,7 @@ object SchemaRegistryClient {
         response   <- client.request(Request.get(url))
         body       <- assertStatusCodeIsAbove(400, response)
         ls         <- body.asString
-        blueprints <- ZIO.fromEither(JsonCodec.jsonDecoder(Schema[List[Blueprint]]).decodeJson(ls))
-          .mapError(EvaluationError.DecodingError(_))
+        blueprints <- ZIO.fromEither(ls.fromJson[List[Blueprint]]).mapError(EvaluationError.DecodingError(_))
       } yield blueprints
 
     override def drop(base: URL, digest: Digest): Task[Boolean] =
