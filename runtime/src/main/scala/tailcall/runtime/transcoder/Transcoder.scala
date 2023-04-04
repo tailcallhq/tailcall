@@ -31,17 +31,22 @@ sealed trait Transcoder
     with ToValue
 
 object Transcoder extends Transcoder {
-  def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
-    toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
+  def toBlueprint(endpoint: Endpoint, encodeDirectives: Boolean, nameGen: NameGenerator): TValid[String, Blueprint] =
+    toConfig(endpoint, nameGen).flatMap(toBlueprint(_, encodeDirectives))
 
   def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 
-  def toGraphQLSchema(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
-    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress))
+  def toGraphQLSchema(
+    endpoint: Endpoint,
+    encodeDirectives: Boolean,
+    nameGenerator: NameGenerator,
+  ): TValid[String, String] =
+    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress, encodeDirectives))
 
-  def toGraphQLSchema(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
+  def toGraphQLSchema(config: Config, encodeDirectives: Boolean): TValid[Nothing, String] =
+    toDocument(config, encodeDirectives).flatMap(toGraphQLSchema(_))
 
-  def toDocument(config: Config, encodeDirectives: Boolean = false): TValid[Nothing, Document] =
+  def toDocument(config: Config, encodeDirectives: Boolean): TValid[Nothing, Document] =
     for {
       blueprint <- toBlueprint(config, encodeDirectives = encodeDirectives)
       document  <- toDocument(blueprint)

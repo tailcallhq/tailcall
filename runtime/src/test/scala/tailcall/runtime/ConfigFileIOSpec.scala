@@ -30,8 +30,9 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
       test("equals placeholder config") {
         checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
           for {
-            actual <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
-            expected = JsonPlaceholderConfig.config.compress
+            config   <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
+            actual   <- format.encode(config)
+            expected <- format.encode(JsonPlaceholderConfig.config.compress)
           } yield assertTrue(actual == expected)
         }
       },
