@@ -10,7 +10,7 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.{Config, Path}
+import tailcall.runtime.model.{Config, FieldAnnotation, Path}
 import zio.json.{DecoderOps, EncoderOps}
 
 trait Document2Config {
@@ -88,6 +88,7 @@ trait Document2Config {
       steps = Option(steps),
       args = Option(args),
       doc = field.description,
+      rename = FieldAnnotation.from(field.directives).collectFirst { case FieldAnnotation.Rename(value) => value },
     )
 
   final private def toField(field: InputValueDefinition): TValid[String, Config.Field] =
