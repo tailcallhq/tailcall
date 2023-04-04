@@ -2,7 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.InputValue
 import tailcall.runtime.http.{Method, Scheme}
-import tailcall.runtime.internal.TValid
+import tailcall.runtime.internal.{JsonSchema, TValid}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
 import tailcall.runtime.remote.Remote
@@ -12,8 +12,7 @@ import zio.schema.{DynamicValue, Schema}
 
 trait Config2Blueprint {
 
-  implicit final private def jsonSchema: Schema[Json] =
-    Schema[DynamicValue].transformOrFail[Json](Transcoder.toJson(_).toEither, Transcoder.toDynamicValue(_).toEither)
+  implicit final private def jsonSchema: Schema[Json] = JsonSchema.schema
 
   /**
    * Encodes a config into a Blueprint.
