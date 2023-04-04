@@ -2,14 +2,13 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Config.{GraphQL, RootSchema, Server}
+import tailcall.runtime.model.Step.Http
 import tailcall.runtime.model.{Config, Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 
 import java.net.URL
 import java.util.concurrent.atomic.AtomicInteger
-
-import Config.Step.Http
-import Config.{GraphQL, RootSchema, Server}
 
 trait Endpoint2Config {
   final def toConfig(endpoint: Endpoint, nameGen: NameGenerator = NameGenerator.prefixOnly): TValid[String, Config] =

@@ -10,7 +10,7 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.{Config, FieldAnnotation, Path}
+import tailcall.runtime.model.{Config, FieldAnnotation, Path, Step}
 import zio.json.{DecoderOps, EncoderOps}
 
 trait Document2Config {
@@ -56,10 +56,10 @@ trait Document2Config {
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
   }
 
-  final private def toStep(directive: Directive): TValid[String, List[Config.Step]] = {
+  final private def toStep(directive: Directive): TValid[String, List[Step]] = {
     directive.name match {
       case "steps" => directive.arguments.get("value") match {
-          case Some(inputValue) => TValid.fromEither(inputValue.toJson.fromJson[List[Config.Step]])
+          case Some(inputValue) => TValid.fromEither(inputValue.toJson.fromJson[List[Step]])
           case None             => TValid.succeed(Nil)
         }
 
@@ -69,7 +69,7 @@ trait Document2Config {
             case None        => TValid.fail("Missing url in @http directive")
             case Some(value) => TValid.fromEither(value.toJson.fromJson[String].flatMap(Path.decode(_)))
           }
-        } yield List(Config.Step.Http(method = method, path = path))
+        } yield List(Step.Http(method = method, path = path))
       case _      => TValid.succeed(Nil)
     }
   }
