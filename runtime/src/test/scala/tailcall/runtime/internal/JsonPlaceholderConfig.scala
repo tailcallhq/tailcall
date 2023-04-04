@@ -1,16 +1,16 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
-import tailcall.runtime.model.Config.{Arg, Field, Step, Type}
-import tailcall.runtime.model.{Config, Path}
+import tailcall.runtime.model.Config.{Arg, Field, Type}
+import tailcall.runtime.model.{Config, Path, Step}
 
 object JsonPlaceholderConfig {
   def createUser: Step.Http = users.withMethod(Method.POST)
-  def posts                 = Config.Step.Http(Path.unsafe.fromString("/posts"))
-  def postsById             = Config.Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
-  def userById              = Config.Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
-  def userPosts: Step       = Config.Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
-  def users                 = Config.Step.Http(Path.unsafe.fromString("/users"))
+  def posts                 = Step.Http(Path.unsafe.fromString("/posts"))
+  def postsById             = Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
+  def userById              = Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
+  def userPosts: Step       = Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
+  def users                 = Step.Http(Path.unsafe.fromString("/users"))
 
   val graphQL = Config.GraphQL(
     schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
@@ -25,7 +25,7 @@ object JsonPlaceholderConfig {
         "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users."),
         "post" -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post by id."),
         "user" -> Config
-          .Field("User", Config.Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired)
+          .Field("User", Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired)
           .withDoc("A single user by id."),
       ),
       "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
@@ -53,7 +53,7 @@ object JsonPlaceholderConfig {
         "userId" -> Field.int.asRequired,
         "title"  -> Field.string,
         "body"   -> Field.string,
-        "user"   -> Field.ofType("User").withSteps(Config.Step.ObjPath("userId" -> List("value", "userId")), userById),
+        "user"   -> Field.ofType("User").withSteps(Step.ObjPath("userId" -> List("value", "userId")), userById),
       ),
       "Address"    -> Type(
         "street"  -> Field.string,

@@ -48,7 +48,7 @@ object TestGen {
       output <- Gen.option(genSchema)
     } yield Step.Http(path, method, input, output)
 
-  def genStep: Gen[Any, Config.Step] =
+  def genStep: Gen[Any, Step] =
     for { http <- genHttp } yield http
 
   def genFieldDefinition: Gen[Any, Field] =
