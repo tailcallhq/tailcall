@@ -5,7 +5,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputValueDefinition
 import caliban.parsing.adt.{Definition, Document, Type}
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.Blueprint
+import tailcall.runtime.model.{Blueprint, FieldAnnotation}
 import zio.schema.DynamicValue
 
 trait Document2Blueprint {
@@ -25,9 +25,17 @@ trait Document2Blueprint {
 
   final private def toBlueprintFieldDefinition(
     fieldDefinition: Definition.TypeSystemDefinition.TypeDefinition.FieldDefinition
-  ): TValid[String, Blueprint.FieldDefinition] =
-    TValid.foreach(fieldDefinition.args)(toBlueprintInputValueDefinition(_))
-      .map(args => Blueprint.FieldDefinition(fieldDefinition.name, args, toBlueprintType(fieldDefinition.ofType)))
+  ): TValid[String, Blueprint.FieldDefinition] = {
+    val annotations = FieldAnnotation.from(fieldDefinition.directives)
+    TValid.foreach(fieldDefinition.args)(toBlueprintInputValueDefinition(_)).map(args =>
+      Blueprint.FieldDefinition(
+        name = fieldDefinition.name,
+        args = args,
+        ofType = toBlueprintType(fieldDefinition.ofType),
+        annotations = annotations,
+      )
+    )
+  }
 
   final private def toBlueprintDefinition(definition: Definition): TValid[String, Option[Blueprint.Definition]] = {
     definition match {

@@ -2,7 +2,7 @@ package tailcall.runtime.model
 
 import caliban.Value
 import caliban.parsing.adt.Directive
-import zio.schema.DynamicValue
+import zio.schema.{DynamicValue, Schema}
 
 sealed trait FieldAnnotation {
   self =>
@@ -31,4 +31,6 @@ object FieldAnnotation {
   }
 
   final case class Rename(name: String) extends FieldAnnotation
+
+  implicit def schema: Schema[FieldAnnotation] = ???
 }
