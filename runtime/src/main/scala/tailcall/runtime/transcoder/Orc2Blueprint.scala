@@ -1,11 +1,10 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Orc._
 import tailcall.runtime.model.{Blueprint, Orc}
 import tailcall.runtime.remote._
 import zio.schema.DynamicValue
-
-import Orc._
 
 trait Orc2Blueprint {
   final def toType(t: Type, isNull: Boolean = true): Blueprint.Type = {
@@ -38,6 +37,7 @@ trait Orc2Blueprint {
       ofType = toType(ofType),
       args = args,
       resolver = toResolver(lField).map(Remote.toLambda(_)),
+      annotations = lField.field.annotations,
     )
   }
 

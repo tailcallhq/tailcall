@@ -51,9 +51,9 @@ object Orc {
   final case class Input(defaultValue: Option[DynamicValue])
   final case class Output(arguments: List[LabelledField[Input]] = Nil, resolve: Resolver)
 
-  final case class Field[A](ofType: Option[Type], definition: A) {
+  final case class Field[A](ofType: Option[Type], definition: A, annotations: List[FieldAnnotation]) {
     self =>
-    def to(name: String): Field[A] = copy(ofType = Option(Type.NamedType(name)))
+    def @@(annotation: FieldAnnotation): Field[A] = copy(annotations = annotation :: self.annotations)
 
     def asList: Field[A] = copy(ofType = ofType.map(Type.ListType(_)))
 
@@ -65,16 +65,18 @@ object Orc {
     def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue])(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(resolve = Resolver.fromFunction(f)))
 
-    def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
-      copy(definition = definition.copy(defaultValue = Option(DynamicValue(t))))
+    def to(name: String): Field[A] = copy(ofType = Option(Type.NamedType(name)))
 
     def withArgument(fields: (String, Field[Input])*)(implicit ev: A <:< Output): Field[Output] =
       copy(definition = definition.copy(arguments = fields.toList.map(f => LabelledField(f._1, f._2))))
+
+    def withDefault[T](t: T)(implicit s: Schema[T], ev: A <:< Input): Field[Input] =
+      copy(definition = definition.copy(defaultValue = Option(DynamicValue(t))))
   }
 
   object Field {
-    def input: Field[Input]   = Field(None, Input(None))
-    def output: Field[Output] = Field(None, Output(Nil, Resolver.empty))
+    def input: Field[Input]   = Field(None, Input(None), Nil)
+    def output: Field[Output] = Field(None, Output(Nil, Resolver.empty), Nil)
   }
 
   sealed trait FieldSet
