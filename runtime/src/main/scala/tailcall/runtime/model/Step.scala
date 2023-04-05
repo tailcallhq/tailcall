@@ -1,10 +1,11 @@
 package tailcall.runtime.model
 
+import tailcall.runtime.DirectiveCodec
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.JsonSchema
 import zio.json._
 import zio.json.ast.Json
-import zio.schema.Schema
+import zio.schema.{DeriveSchema, Schema}
 
 sealed trait Step
 object Step {
@@ -41,5 +42,8 @@ object Step {
       Http(path = endpoint.path, method = Option(endpoint.method), input = endpoint.input, output = endpoint.output)
   }
 
-  implicit lazy val stepCodec: JsonCodec[Step] = DeriveJsonCodec.gen[Step]
+  implicit lazy val schema: Schema[Step]                      = DeriveSchema.gen[Step]
+  implicit lazy val json: JsonCodec[Step]                     = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  implicit lazy val directive: DirectiveCodec[Step]           = DirectiveCodec.fromSchema(schema)
+  implicit lazy val directiveList: DirectiveCodec[List[Step]] = DirectiveCodec.fromSchema(Schema.list(schema))
 }

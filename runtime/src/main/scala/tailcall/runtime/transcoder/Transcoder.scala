@@ -1,6 +1,5 @@
 package tailcall.runtime.transcoder
 
-import caliban.parsing.adt.Document
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.{Blueprint, Config, Endpoint}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
@@ -17,6 +16,7 @@ import tailcall.runtime.transcoder.value._
 sealed trait Transcoder
     extends Blueprint2Document
     with Config2Blueprint
+    with Config2Document
     with Document2Blueprint
     with Document2Config
     with Document2GraphQLSchema
@@ -36,19 +36,16 @@ object Transcoder extends Transcoder {
 
   def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 
-  def toGraphQLSchema(
-    endpoint: Endpoint,
-    encodeDirectives: Boolean,
-    nameGenerator: NameGenerator,
-  ): TValid[String, String] =
-    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress, encodeDirectives))
+  def toGraphQLSchema(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
+    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress))
 
-  def toGraphQLSchema(config: Config, encodeDirectives: Boolean): TValid[Nothing, String] =
-    toDocument(config, encodeDirectives).flatMap(toGraphQLSchema(_))
+  def toGraphQLSchema(config: Config): TValid[String, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 
-  def toDocument(config: Config, encodeDirectives: Boolean): TValid[Nothing, Document] =
-    for {
-      blueprint <- toBlueprint(config, encodeDirectives = encodeDirectives)
-      document  <- toDocument(blueprint)
-    } yield document
+  // FIXME: this is an invalid conversion
+  // Blueprints can't be used to regenerate a config
+//  def toDocument(config: Config, encodeDirectives: Boolean): TValid[Nothing, Document] =
+//    for {
+//      blueprint <- toBlueprint(config, encodeDirectives = encodeDirectives)
+//      document  <- toDocument(blueprint)
+//    } yield document
 }

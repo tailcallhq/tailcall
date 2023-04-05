@@ -12,6 +12,8 @@ import caliban.parsing.adt.{
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Blueprint
 
+// FIXME: this shouldn't be allowed
+// Blueprint only contains the necessary information to run a graphql server
 trait Blueprint2Document {
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
