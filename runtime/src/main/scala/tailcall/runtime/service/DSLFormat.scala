@@ -21,7 +21,7 @@ sealed trait DSLFormat {
     self match {
       case DSLFormat.JSON    => ZIO.succeed(config.toJsonPretty)
       case DSLFormat.YML     => ZIO.fromEither(config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0)))
-      case DSLFormat.GRAPHQL => Transcoder.toGraphQLSchema(config, true).toZIO
+      case DSLFormat.GRAPHQL => Transcoder.toGraphQLSchema(config).toZIO
     }
 
   // TODO: doesn't need IO

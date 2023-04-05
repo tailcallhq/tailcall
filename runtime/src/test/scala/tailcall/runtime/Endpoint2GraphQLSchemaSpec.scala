@@ -15,9 +15,8 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
 
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
-  def assertSchema(endpoint: Endpoint, encodeDirectives: Boolean)(expected: String): ZIO[Any, String, TestResult] = {
-    val schema = Transcoder.toGraphQLSchema(endpoint, encodeDirectives, NameGenerator.incremental)
-      .map(_.stripMargin.trim)
+  def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
+    val schema = Transcoder.toGraphQLSchema(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
     for { result <- schema.toZIO } yield assertTrue(result == expected)
   }
 
@@ -41,7 +40,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |  email: String!
                          |}
                          |""".stripMargin
-        assertSchema(endpoint, true)(expected.trim)
+        assertSchema(endpoint)(expected.trim)
       },
       test("nested output schema") {
         val output   = TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.int)))
@@ -68,7 +67,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |""".stripMargin
-        assertSchema(endpoint, true)(expected.trim)
+        assertSchema(endpoint)(expected.trim)
       },
       test("argument schema") {
         val endpoint = jsonEndpoint.withOutput(Option(User.opt)).withInput(Option(TSchema.obj("userId" -> TSchema.Num)))
@@ -94,7 +93,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |  email: String!
                          |}
                          |""".stripMargin
-        assertSchema(endpoint, true)(expected.trim)
+        assertSchema(endpoint)(expected.trim)
       },
       test("nested argument schema") {
         val endpoint = Endpoint.make("abc.com")
@@ -122,7 +121,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |  fieldInt(value: Type_1!): Int! @steps(value: [{http: {path: ""}}])
                          |}
                          |""".stripMargin
-        assertSchema(endpoint, true)(expected.trim)
+        assertSchema(endpoint)(expected.trim)
       },
       test("mutation schema") {
         val endpoint = jsonEndpoint.withOutput(Option(User)).withInput(Option(InputUser)).withPath("/user")
@@ -153,7 +152,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |  email: String!
                          |}
                          |""".stripMargin
-        assertSchema(endpoint, true)(expected.trim)
+        assertSchema(endpoint)(expected.trim)
       },
     )
 }

@@ -59,7 +59,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config, false).toZIO.map(schema => assertTrue(schema == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("shared nested input and output types") {
         val config   = Config.empty.withQuery("Query").withType(
@@ -92,7 +92,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config, false).toZIO.map(schema => assertTrue(schema == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("input and output types") {
         val config   = Config.empty.withQuery("Query")
@@ -116,7 +116,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config, false).toZIO.map(schema => assertTrue(schema == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("mergeRight") {
         val config1 = Config.empty.withQuery("Query").withType("Query" -> Type("foo" -> Field.ofType("String")))
@@ -146,7 +146,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        Transcoder.toGraphQLSchema(config, false).toZIO.map(schema => assertTrue(schema == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       }) @@ failing,
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
@@ -245,7 +245,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config, false).toZIO.map(schema => assertTrue(schema == expected))
+        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 }

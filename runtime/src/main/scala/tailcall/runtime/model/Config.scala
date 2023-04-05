@@ -1,11 +1,14 @@
 package tailcall.runtime.model
 
+import tailcall.runtime.DirectiveCodec
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json._
+import zio.schema.annotation.caseName
+import zio.schema.{DeriveSchema, Schema}
 
 import java.io.File
 import java.net.URL
@@ -50,11 +53,16 @@ object Config {
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
+  @caseName("server")
   final case class Server(baseURL: Option[URL] = None) {
     self =>
     def isEmpty: Boolean = baseURL.isEmpty
 
     def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
+  }
+  object Server                                        {
+    private val schema: Schema[Server]             = DeriveSchema.gen[Server]
+    implicit val directive: DirectiveCodec[Server] = DirectiveCodec.fromSchema(schema)
   }
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
