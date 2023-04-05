@@ -4,8 +4,10 @@ import caliban.CalibanError
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
+import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
+import zio.json.EncoderOps
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertZIO}
@@ -84,6 +86,17 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
           """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
+      },
+      test("path step") {
+        val config = Config.empty.withQuery("Query").withType(
+          "Query" -> Type(
+            "foo" -> Field.ofType("Foo").withSteps(Config.Step.Constant(Map("foo" -> "abc").toJsonAST.toOption.get))
+          ),
+          "Foo"   -> Type("bar" -> Field.ofType("String").withSteps(Config.Step.PathStep(List("value", "foo")))),
+        )
+
+        val program = execute(config)("""{foo {bar}}""")
+        assertZIO(program)(equalTo("""{"foo":{"bar":"abc"}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }

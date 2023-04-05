@@ -204,6 +204,8 @@ object Config {
 
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
     }
+    @jsonHint("path")
+    final case class PathStep(path: List[String]) extends Step
 
     @jsonHint("const")
     final case class Constant(json: Json) extends Step

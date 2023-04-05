@@ -2,13 +2,13 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
+import tailcall.runtime.model.Config.{Arg, Field, Step, Type}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.durationInt
+import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertTrue}
-
-import Config.{Arg, Field, Type}
+import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
 
 object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
@@ -234,6 +234,33 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |""".stripMargin.trim
 
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+      },
+      test("path step") {
+        val program  = Config.empty.withQuery("Query").withType("Query" -> Type("foo" -> Field.ofType("Foo"))).withType(
+          "Foo" -> Type(
+            "bar"       -> Field.ofType("Bar"),
+            "barStatus" -> Field.ofType("String").withSteps(Step.PathStep(List("value", "bar", "baz"))),
+          )
+        ).withType("Bar" -> Type("baz" -> Field.ofType("String"))).toBlueprint.toGraphQL.map(_.render)
+        val expected = """|schema {
+                          |  query: Query
+                          |}
+                          |
+                          |type Bar {
+                          |  baz: String
+                          |}
+                          |
+                          |type Foo {
+                          |  bar: Bar
+                          |  barStatus: String
+                          |}
+                          |
+                          |type Query {
+                          |  foo: Foo
+                          |}
+                          |""".stripMargin.trim
+        assertZIO(program)(equalTo(expected))
+
       },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 }

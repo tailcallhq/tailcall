@@ -3,13 +3,12 @@ package tailcall.runtime.transcoder
 import caliban.InputValue
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Config._
 import tailcall.runtime.model.{Blueprint, Config, Endpoint, TSchema}
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
 import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
-
-import Config._
 
 trait Config2Blueprint {
 
@@ -169,12 +168,11 @@ trait Config2Blueprint {
     steps match {
       case Nil => None
 
-      case steps => config.server.baseURL match {
-          // TODO: should fail if Http is used without server.host
-          case None if steps.exists(_.isInstanceOf[Step.Http]) => None
-          case option                                          => option.map { baseURL =>
-              steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
-                case http @ Step.Http(_, _, _, _) => input =>
+      case steps => Option(
+          steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
+            case http @ Step.Http(_, _, _, _) => input =>
+                config.server.baseURL match {
+                  case Some(baseURL) =>
                     val host               = baseURL.getHost
                     val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
                     val endpoint           = toEndpoint(http, host, port)
@@ -182,11 +180,14 @@ trait Config2Blueprint {
                     val endpointWithOutput =
                       if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
                     Remote.fromEndpoint(endpointWithOutput, input)
-                case Step.Constant(json)          => _ => Remote(json).toDynamic
-                case Step.ObjPath(map)            => input => toRemoteMap(input, map)
-              }.reduce((a, b) => r => b(a(r)))
-            }
-        }
+                  case None          => Remote.die("Base URL not Defined")
+                }
+
+            case Step.Constant(json)  => _ => Remote(json).toDynamic
+            case Step.ObjPath(map)    => input => toRemoteMap(input, map)
+            case Step.PathStep(paths) => input => input.path(paths: _*).toDynamic
+          }.reduce((a, b) => r => b(a(r)))
+        )
     }
 
   final private def toTSchema(config: Config, field: Field): TSchema = {
