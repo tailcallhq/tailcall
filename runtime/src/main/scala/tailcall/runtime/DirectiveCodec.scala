@@ -1,13 +1,14 @@
 package tailcall.runtime
 
+import caliban.InputValue
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DirectiveDecoder, DirectiveEncoder}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.model.Blueprint
 import tailcall.runtime.transcoder.Transcoder
-import zio.json.jsonHint
-import zio.schema.{DynamicValue, Schema}
-
-import scala.collection.immutable.ListMap
+import zio.json.{DecoderOps, EncoderOps}
+import zio.schema.Schema
+import zio.schema.annotation.caseName
 
 /**
  * Allows us to encode decode any scala value as a caliban
@@ -20,71 +21,67 @@ final case class DirectiveCodec[A](encoder: DirectiveEncoder[A], decoder: Direct
 }
 
 object DirectiveCodec {
-  def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =
-    DirectiveCodec(DirectiveEncoder.gen(schema), DirectiveDecoder.gen(schema))
-
   def apply[A](from: A => TValid[String, Directive], to: Directive => TValid[String, A]): DirectiveCodec[A] =
-    DirectiveCodec(DirectiveEncoder(from), DirectiveDecoder(to))
+    DirectiveCodec(DirectiveEncoder.collect(from), DirectiveDecoder.collect(to))
 
-  trait DirectiveEncoder[-A] {
-    def encode(a: A): TValid[String, Directive]
+  def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =
+    DirectiveCodec(DirectiveEncoder.fromSchema(schema), DirectiveDecoder.fromSchema(schema))
+
+  trait DirectiveEncoder[A] {
     final def contramap[B](ab: B => A): DirectiveEncoder[B] = { (b: B) => encode(ab(b)) }
+
+    def encode(a: A): TValid[String, Directive]
   }
 
-  trait DirectiveDecoder[+A] {
+  trait DirectiveDecoder[A] {
     def decode(directive: Directive): TValid[String, A]
     final def map[B](ab: A => B): DirectiveDecoder[B] = { (directive: Directive) => decode(directive).map(ab) }
   }
 
   object DirectiveEncoder {
-    def gen[A](implicit schema: Schema[A]): DirectiveEncoder[A] = { (a: A) =>
-      schema.toDynamic(a) match {
-        case DynamicValue.Record(id, values) =>
-          val typeName     = schema.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(id.name)
-          val recordSchema = schema.asInstanceOf[Schema.Record[_]]
-          val nameMap: Map[String, String] = recordSchema.fields.flatMap { field =>
-            field.annotations.collectFirst { case jsonHint(name) => field.name -> name }
-          }.toMap
-          for {
-            map <- TValid.foreach(values.toList) { case (name, dynamicValue) =>
-              val fieldName = nameMap.getOrElse(name, name)
-              Transcoder.toInputValue(dynamicValue).map(fieldName -> _)
-            }.map(_.toMap)
-          } yield Directive(typeName, map)
+    def fromSchema[A](schema: Schema[A]): DirectiveEncoder[A] =
+      DirectiveEncoder { a: A =>
+        val encoder  = zio.schema.codec.JsonCodec.jsonEncoder(schema)
+        val nameHint = schema.annotations.collectFirst { case caseName(name) => name }
+        for {
+          name <- schema match {
+            case schema: Schema.Enum[_]   => TValid.succeed(schema.id.name)
+            case schema: Schema.Record[_] => TValid.succeed(schema.id.name)
+            case _                        => TValid.fail("Can only encode sealed traits and case classes as directives")
+          }
+          args <- TValid.fromEither(encoder.encodeJson(a).fromJson[Map[String, InputValue]])
+        } yield Directive(nameHint.getOrElse(name), args)
 
-        case _ => TValid.fail("directives can only be applied to sealed traits and case classes")
       }
-    }
 
-    def apply[A](f: A => TValid[String, Directive]): DirectiveEncoder[A] = { (a: A) => f(a) }
+    def collect[A](f: A => TValid[String, Directive]): DirectiveEncoder[A]   = { (a: A) => f(a) }
+    def apply[A](implicit encoder: DirectiveEncoder[A]): DirectiveEncoder[A] = encoder
   }
 
   object DirectiveDecoder {
-    def gen[A](implicit schema: Schema[A]): DirectiveDecoder[A]          = { (directive: Directive) =>
-      schema match {
-        case record: Schema.Record[_] =>
-          val typeName = schema.annotations.collectFirst { case jsonHint(name) => name }.getOrElse(record.id.name)
-          if (directive.name != typeName) TValid
-            .fail(s"expected directive name to be $typeName but was ${directive.name}")
-          else {
-            val nameMap: Map[String, String] = record.fields
-              .flatMap(field => field.annotations.collectFirst { case jsonHint(name) => name -> field.name }).toMap
-            for {
-              fields <- TValid.foreach(directive.arguments.toList) { case (name, inputValue) =>
-                val fieldName = nameMap.getOrElse(name, name)
-                Transcoder.toDynamicValue(inputValue).map(fieldName -> _)
-              }
-              a      <- TValid.fromEither(schema.fromDynamic(DynamicValue.Record(record.id, ListMap.from(fields))))
-            } yield a
-          }
-        case _                        => TValid.fail("directives can only be applied to records")
+    def fromSchema[A](schema: Schema[A]): DirectiveDecoder[A] =
+      DirectiveDecoder { directive =>
+        val decoder = zio.schema.codec.JsonCodec.jsonDecoder(schema)
+        for {
+          args <- TValid.fromEither(directive.arguments.toJsonAST)
+          a    <- TValid.fromEither(args.toJson.fromJson[A](decoder))
+        } yield a
       }
-    }
-    def apply[A](f: Directive => TValid[String, A]): DirectiveDecoder[A] = { (directive: Directive) => f(directive) }
+
+    def collect[A](f: Directive => TValid[String, A]): DirectiveDecoder[A] = { (directive: Directive) => f(directive) }
+    def apply[A](implicit decoder: DirectiveDecoder[A]): DirectiveDecoder[A] = decoder
   }
 
   implicit final class EncoderSyntax[A](val self: A) extends AnyVal {
     def toDirective(implicit encoder: DirectiveEncoder[A]): TValid[String, Directive] = encoder.encode(self)
+    def toBlueprintDirective(implicit encoder: DirectiveEncoder[A]): TValid[String, Blueprint.Directive] = {
+      for {
+        directive <- toDirective
+        args      <- TValid.foreach(directive.arguments.toList) { case (key, value) =>
+          Transcoder.toDynamicValue(value).map(key -> _)
+        }
+      } yield Blueprint.Directive(directive.name, args.toMap)
+    }
   }
 
   implicit final class DecoderSyntax(val directive: Directive) extends AnyVal {

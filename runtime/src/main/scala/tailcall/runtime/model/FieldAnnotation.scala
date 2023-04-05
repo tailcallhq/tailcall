@@ -22,9 +22,6 @@ object FieldAnnotation {
   def rename(name: String): FieldAnnotation = Rename(name)
 
   final case class Rename(name: String) extends FieldAnnotation
-  object Rename {
-    implicit val schema: Schema[Rename] = DeriveSchema.gen[Rename]
-  }
 
   implicit val schema: Schema[FieldAnnotation]                 = DeriveSchema.gen[FieldAnnotation]
   implicit val directiveCodec: DirectiveCodec[FieldAnnotation] = DirectiveCodec.fromSchema(schema)
