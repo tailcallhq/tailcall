@@ -52,10 +52,9 @@ trait Config2Blueprint {
             }
           }
 
-          val ofType      = toType(field)
-          val resolver    = toResolver(config, field.steps.getOrElse(Nil), field)
-          val directives  = toDirective(field.steps.getOrElse(Nil)).toList
-          val annotations = field.rename.map(FieldAnnotation.rename).toList
+          val ofType     = toType(field)
+          val resolver   = toResolver(config, field.steps.getOrElse(Nil), field)
+          val directives = toDirective(field.steps.getOrElse(Nil)).toList
 
           Blueprint.FieldDefinition(
             name = name,
@@ -64,7 +63,6 @@ trait Config2Blueprint {
             resolver = resolver.map(Remote.toLambda(_)),
             directives = directives,
             description = field.doc,
-            annotations = annotations,
           )
         }
       }

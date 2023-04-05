@@ -128,7 +128,6 @@ object Blueprint {
     resolver: Option[DynamicValue ~> DynamicValue] = None,
     directives: List[Directive] = Nil,
     description: Option[String] = None,
-    annotations: List[FieldAnnotation] = Nil,
   )
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
