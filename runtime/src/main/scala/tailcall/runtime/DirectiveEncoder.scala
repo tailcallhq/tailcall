@@ -45,6 +45,13 @@ object DirectiveEncoder {
       } yield Directive(name, args)
     }
 
+  def fromJsonListEncoder[A](name: String, encoder: JsonEncoder[A]): DirectiveEncoder[List[A]] =
+    DirectiveEncoder[List[A]] { list: List[A] =>
+      for {
+        args <- TValid.fromEither(JsonEncoder.list(encoder).encodeJson(list).fromJson[InputValue])
+      } yield Directive(name, Map("value" -> args))
+    }
+
   def apply[A](implicit encoder: DirectiveEncoder[A]): DirectiveEncoder[A] = encoder
 
 }
