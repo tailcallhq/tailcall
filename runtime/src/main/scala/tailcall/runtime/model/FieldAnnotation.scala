@@ -2,7 +2,7 @@ package tailcall.runtime.model
 
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec
-import tailcall.runtime.DirectiveCodec.DecoderSyntax
+import tailcall.runtime.DirectiveCodec._
 import zio.schema.DeriveSchema
 import zio.schema.annotation.caseName
 
