@@ -31,8 +31,11 @@ object DirectiveDecoder {
   def fromJsonListDecoder[A](decoder: JsonDecoder[A]): DirectiveDecoder[List[A]] =
     DirectiveDecoder { directive =>
       for {
-        args <- TValid.fromEither(directive.arguments.toJsonAST)
-        a    <- TValid.fromEither(args.toJson.fromJson[List[A]](JsonDecoder.list(decoder)))
+        inputValue <- directive.arguments.get("value") match {
+          case Some(inputValue) => TValid.succeed(inputValue)
+          case None             => TValid.fail(s"key `value` was not found in directive ${directive.name}")
+        }
+        a          <- TValid.fromEither(inputValue.toJson.fromJson[List[A]](JsonDecoder.list(decoder)))
       } yield a
     }
 
