@@ -28,6 +28,14 @@ object DirectiveDecoder {
       } yield a
     }
 
+  def fromJsonListDecoder[A](decoder: JsonDecoder[A]): DirectiveDecoder[List[A]] =
+    DirectiveDecoder { directive =>
+      for {
+        args <- TValid.fromEither(directive.arguments.toJsonAST)
+        a    <- TValid.fromEither(args.toJson.fromJson[List[A]](JsonDecoder.list(decoder)))
+      } yield a
+    }
+
   def apply[A](implicit decoder: DirectiveDecoder[A]): DirectiveDecoder[A] = decoder
 
 }

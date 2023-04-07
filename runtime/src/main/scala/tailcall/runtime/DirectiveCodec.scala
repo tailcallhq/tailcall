@@ -28,6 +28,12 @@ object DirectiveCodec {
       DirectiveDecoder.fromJsonDecoder(codec.decoder),
     )
 
+  def fromJsonListCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[List[A]] =
+    DirectiveCodec(
+      DirectiveEncoder.fromJsonListEncoder(name, codec.encoder),
+      DirectiveDecoder.fromJsonListDecoder(codec.decoder),
+    )
+
   def gen[A: Schema]: DirectiveCodec[A] = fromSchema(Schema[A])
 
   def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =

@@ -14,7 +14,9 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
 
   @caseName("foo")
   final case class Foo(a: String, @fieldName("bee") b: Int)
-  implicit val fooCodec: DirectiveCodec[Foo] = DirectiveCodec.fromSchema(DeriveSchema.gen[Foo])
+  object Foo {
+    implicit val fooCodec: DirectiveCodec[Foo] = DirectiveCodec.fromSchema(DeriveSchema.gen[Foo])
+  }
 
   @caseName("barBaz")
   sealed trait BarBaz
@@ -24,9 +26,8 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
 
     @caseName("baz")
     final case class Baz(c: Boolean, d: Double) extends BarBaz
+    implicit val barBazCodec: DirectiveCodec[BarBaz] = DirectiveCodec.fromSchema(DeriveSchema.gen[BarBaz])
   }
-
-  implicit val barBazCodec: DirectiveCodec[BarBaz] = DirectiveCodec.fromSchema(DeriveSchema.gen[BarBaz])
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("DirectiveCodecSpec")(
