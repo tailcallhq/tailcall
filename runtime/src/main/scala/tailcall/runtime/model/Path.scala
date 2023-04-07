@@ -15,6 +15,10 @@ final case class Path(segments: List[Path.Segment]) {
       case Path.Segment.Param(mustache) => Path.Segment
           .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
+
+  def withParam(param: String): Path = Path(segments :+ Path.Segment.Param(param))
+
+  def withLiteral(literal: String): Path = Path(segments :+ Path.Segment.Literal(literal))
 }
 
 object Path {
