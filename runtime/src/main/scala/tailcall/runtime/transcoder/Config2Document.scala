@@ -138,7 +138,9 @@ trait Config2Document {
     }
   }
 
-  final private def toDirective(step: List[Step]): Option[Directive] = { step.toDirective.toOption }
+  final private def toDirective(steps: List[Step]): Option[Directive] = {
+    if (steps.isEmpty) None else steps.toDirective.toOption
+  }
 
   final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
     Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(if (port == 443) Scheme.Https else Scheme.Http)

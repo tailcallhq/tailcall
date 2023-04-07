@@ -39,9 +39,6 @@ object DirectiveCodec {
   def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =
     DirectiveCodec(DirectiveEncoder.fromSchema(schema), DirectiveDecoder.fromSchema(schema))
 
-  implicit def encoder[A](implicit codec: DirectiveCodec[A]): DirectiveEncoder[A] = codec.encoder
-  implicit def decoder[A](implicit codec: DirectiveCodec[A]): DirectiveDecoder[A] = codec.decoder
-
   implicit final class DecoderSyntax(val directive: Directive) extends AnyVal {
     def fromDirective[A](implicit decoder: DirectiveDecoder[A]): TValid[String, A] = decoder.decode(directive)
   }
@@ -58,4 +55,5 @@ object DirectiveCodec {
 
     def toDirective(implicit encoder: DirectiveEncoder[A]): TValid[String, Directive] = encoder.encode(self)
   }
+
 }
