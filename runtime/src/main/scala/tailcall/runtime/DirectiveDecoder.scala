@@ -41,4 +41,5 @@ object DirectiveDecoder {
 
   def apply[A](implicit decoder: DirectiveDecoder[A]): DirectiveDecoder[A] = decoder
 
+  implicit def decoder[A](implicit codec: DirectiveCodec[A]): DirectiveDecoder[A] = codec.decoder
 }
