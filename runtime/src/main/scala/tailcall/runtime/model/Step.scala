@@ -1,10 +1,9 @@
 package tailcall.runtime.model
 
-import caliban.InputValue
 import caliban.parsing.adt.Directive
+import tailcall.runtime.DirectiveCodec
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.{DirectiveCodec, DirectiveDecoder, DirectiveEncoder}
 import zio.json._
 import zio.json.ast.Json
 
@@ -56,25 +55,7 @@ object Step {
   implicit lazy val jsonCodec: JsonCodec[Step] = DeriveJsonCodec.gen[Step]
 
   // TODO: this should be auto-generated
-  implicit lazy val directive: DirectiveCodec[List[Step]] = {
-    val encoder: DirectiveEncoder[List[Step]] = DirectiveEncoder { steps: List[Step] =>
-      val encoder = JsonEncoder.list(jsonCodec.encoder)
-      for {
-        input <- TValid.fromEither(steps.toJson(encoder).fromJson[InputValue])
-      } yield Directive("steps", Map("value" -> input))
-    }
-
-    val decoder: DirectiveDecoder[List[Step]] = DirectiveDecoder { directive: Directive =>
-      for {
-        inputValue <- directive.arguments.get("value") match {
-          case Some(inputValue) => TValid.succeed(inputValue)
-          case None             => TValid.fail("key `value` in steps directive could not be found")
-        }
-        steps      <- TValid.fromEither(inputValue.toJson.fromJson[List[Step]])
-      } yield steps
-    }
-    DirectiveCodec(encoder, decoder)
-  }
+  implicit lazy val directive: DirectiveCodec[List[Step]] = DirectiveCodec.fromJsonListCodec("steps", jsonCodec)
 
   import DirectiveCodec._
   def fromDirective(directive: Directive): TValid[String, List[Step]] = directive.fromDirective[List[Step]]
