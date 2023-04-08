@@ -16,6 +16,8 @@ import zio.schema.{DynamicValue, Schema}
  */
 final case class Remote[+A](toLambda: Any ~> A) {
   self =>
+  def debug(prefix: String): Remote[A] = Remote(toLambda >>> Lambda.unsafe.debug(prefix))
+
   def evaluate: ZIO[EvaluationRuntime with HttpDataLoader, Throwable, A] = toLambda.evaluate {}
 
   def toDynamic[A1 >: A](implicit ev: Schema[A1]): Remote[DynamicValue] =
