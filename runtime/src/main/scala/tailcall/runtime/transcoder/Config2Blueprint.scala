@@ -42,7 +42,7 @@ trait Config2Blueprint {
           }
 
           val ofType   = toType(field)
-          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
+          val resolver = toResolver(config, name, field)
 
           Blueprint.FieldDefinition(
             name = field.rename.getOrElse(name),
@@ -134,31 +134,42 @@ trait Config2Blueprint {
 
   final private def toResolver(
     config: Config,
-    steps: List[Step],
     field: Field,
-  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
-    steps match {
-      case Nil => None
-
-      case steps => config.server.baseURL match {
-          // TODO: should fail if Http is used without server.host
-          case None if steps.exists(_.isInstanceOf[Step.Http]) => None
-          case option                                          => option.map { baseURL =>
-              steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
-                case http @ Step.Http(_, _, _, _) => input =>
-                    val host               = baseURL.getHost
-                    val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
-                    val endpoint           = toEndpoint(http, host, port)
-                    val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-                    val endpointWithOutput =
-                      if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
-                    Remote.fromEndpoint(endpointWithOutput, input)
-                case Step.Constant(json)          => _ => Remote(json).toDynamic
-                case Step.ObjPath(map)            => input => toRemoteMap(input, map)
-              }.reduce((a, b) => r => b(a(r)))
-            }
+    http: Step.Http,
+  ): TValid[String, Remote[DynamicValue] => Remote[DynamicValue]] = {
+    config.server.baseURL match {
+      case Some(baseURL) => TValid.succeed { input =>
+          val steps              = field.steps.getOrElse(Nil)
+          val host               = baseURL.getHost
+          val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
+          val endpoint           = toEndpoint(http, host, port)
+          val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
+          val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
+          Remote.fromEndpoint(endpointWithOutput, input)
         }
+      case None          => TValid.fail("No base URL defined in the server configuration")
     }
+  }
+
+  final private def toResolver(
+    config: Config,
+    name: String,
+    field: Field,
+  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] = {
+    field.steps match {
+      case None        => field.rename match {
+          case Some(_) => Option(input => input.path("value", name).toDynamic)
+          case None    => None
+        }
+      case Some(steps) =>
+        val funcs = steps map {
+          case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
+          case Step.Constant(json)          => TValid.succeed((_: Remote[DynamicValue]) => Remote(json).toDynamic)
+          case Step.ObjPath(map)            => TValid.succeed((input: Remote[DynamicValue]) => toRemoteMap(input, map))
+        }
+        TValid.foreach(funcs)(identity(_)).map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
+    }
+  }
 
   final private def toTSchema(config: Config, field: Field): TSchema = {
     var schema = config.graphQL.types.get(field.typeOf) match {
