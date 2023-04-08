@@ -1,13 +1,11 @@
 package tailcall.runtime.transcoder
 
-import caliban.InputValue
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.{JsonSchema, TValid}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
 import tailcall.runtime.remote.Remote
 import zio.json.ast.Json
-import zio.json.{DecoderOps, EncoderOps}
 import zio.schema.{DynamicValue, Schema}
 
 trait Config2Blueprint {
@@ -16,19 +14,10 @@ trait Config2Blueprint {
 
   /**
    * Encodes a config into a Blueprint.
-   * @param config
-   *   the config to encode
-   * @param encodeDirectives
-   *   if true, annotations and steps will be encoded as
-   *   directives
-   * @return
    */
-  final def toBlueprint(config: Config, encodeDirectives: Boolean = false): TValid[Nothing, Blueprint] = {
-    val rootSchema = Blueprint.SchemaDefinition(
-      query = config.graphQL.schema.query,
-      mutation = config.graphQL.schema.mutation,
-      directives = if (encodeDirectives) toServerDirective(config).toList else Nil,
-    )
+  final def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
+    val rootSchema = Blueprint
+      .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
     val outputTypes    = getOutputTypes(config).toSet
     val inputTypes     = getInputTypes(config).toSet
@@ -52,16 +41,14 @@ trait Config2Blueprint {
             }
           }
 
-          val ofType     = toType(field)
-          val resolver   = toResolver(config, field.steps.getOrElse(Nil), field)
-          val directives = toDirective(field.steps.getOrElse(Nil)).toList
+          val ofType   = toType(field)
+          val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
 
           Blueprint.FieldDefinition(
             name = name,
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
-            directives = directives,
             description = field.doc,
           )
         }
@@ -114,29 +101,6 @@ trait Config2Blueprint {
 
     val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
     types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
-  }
-
-  final private def toServerDirective(config: Config): Option[Blueprint.Directive] = {
-    if (config.server.isEmpty) None
-    else {
-      val map        = config.server.toJson.fromJson[Map[String, InputValue]]
-      val serverArgs = (map match {
-        case Left(_)     => TValid.succeed(Nil)
-        case Right(args) => TValid.foreach(args.toList) { case (k, v) => Transcoder.toDynamicValue(v).map(k -> _) }
-      }).map(_.toMap).toOption
-
-      serverArgs.map(args => Blueprint.Directive(name = "server", arguments = args))
-    }
-  }
-
-  final private def toDirective(step: List[Step]): Option[Blueprint.Directive] = {
-    // TODO: should fail on error
-    val (errors, jsons) = step.map(_.toJsonAST).partitionMap(identity(_))
-    if (errors.nonEmpty || jsons.isEmpty) None
-    else Transcoder.toDynamicValue(Json.Arr(jsons: _*)).toEither match {
-      case Left(_)             => None
-      case Right(dynamicValue) => Option(Blueprint.Directive(name = "steps", arguments = Map("value" -> dynamicValue)))
-    }
   }
 
   final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
