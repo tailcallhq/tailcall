@@ -62,9 +62,7 @@ trait Config2Document {
           }
 
           val ofType     = toType(field)
-          // val resolver   = toResolver(config, field.steps.getOrElse(Nil), field)
           val directives = toDirective(field.steps.getOrElse(Nil)).toList
-
           FieldDefinition(name = name, args = args, ofType = ofType, directives = directives, description = field.doc)
         }
       }
