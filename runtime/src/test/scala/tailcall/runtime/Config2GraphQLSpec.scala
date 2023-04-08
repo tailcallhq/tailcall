@@ -113,7 +113,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         }
         val program = execute(config)(""" query { foo(data: 1) {bar} } """)
 
-        assertZIO(program)(equalTo("""{"bar":"Hello World!"}"""))
+        assertZIO(program)(equalTo("""{"foo":{"bar":1}}"""))
       },
       test("user zipcode") {
         val program  = execute(JsonPlaceholderConfig.config)("""query { user(id: 1) { address { zip } } }""")

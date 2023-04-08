@@ -33,7 +33,7 @@ trait Config2Blueprint {
           val resolver = toResolver(config, name, field)
 
           Blueprint.FieldDefinition(
-            name = field.rename.getOrElse(name),
+            name = field.update.flatMap(_.rename).getOrElse(name),
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),
@@ -63,7 +63,7 @@ trait Config2Blueprint {
         case None       => ofType
       }
       Blueprint.InputFieldDefinition(
-        name = arg.rename.getOrElse(name),
+        name = arg.update.flatMap(_.rename).getOrElse(name),
         ofType = prefixedOfType,
         defaultValue = None,
         description = arg.doc,
@@ -162,7 +162,7 @@ trait Config2Blueprint {
     field: Field,
   ): Option[Remote[DynamicValue] => Remote[DynamicValue]] = {
     field.steps match {
-      case None        => field.rename match {
+      case None        => field.update.flatMap(_.rename) match {
           case Some(_) => Option(input => input.path("value", name).toDynamic)
           case None    => None
         }

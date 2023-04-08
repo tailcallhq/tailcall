@@ -150,14 +150,36 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
           Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
         },
         test("argument") {
-          val config   = Config.empty.withQuery("Query")
-            .withType("Query" -> Type("foo" -> Field.ofType("String").withArguments("input" -> Arg.ofType("Int").withName("data"))))
+          val config   = Config.empty.withQuery("Query").withType(
+            "Query" -> Type(
+              "foo" -> Field.ofType("String").withArguments("input" -> Arg.ofType("Int").withName("data"))
+            )
+          )
           val expected = """|schema {
                             |  query: Query
                             |}
                             |
                             |type Query {
                             |  foo(data: Int): String
+                            |}
+                            |""".stripMargin.trim
+          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        },
+        test("field in input type") {
+          val config   = Config.empty.withQuery("Query").withType(
+            "Query" -> Type("foo" -> Field.ofType("Int").withArguments("input" -> Arg.ofType("Foo"))),
+            "Foo"   -> Type("bar" -> Field.ofType("String").withName("baz")),
+          )
+          val expected = """|schema {
+                            |  query: Query
+                            |}
+                            |
+                            |input Foo {
+                            |  baz: String
+                            |}
+                            |
+                            |type Query {
+                            |  foo(input: Foo): Int
                             |}
                             |""".stripMargin.trim
           Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
@@ -175,7 +197,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |  street: String
                           |  suite: String
                           |  city: String
-                          |  zipcode: String
+                          |  zip: String
                           |}
                           |
                           |input NewCompany {
