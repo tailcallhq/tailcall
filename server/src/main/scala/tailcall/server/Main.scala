@@ -17,11 +17,13 @@ object Main extends ZIOAppDefault {
     case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
   }
 
-  override val run = Server.serve(server).exitCode.provide(
-    ServerConfig.live.update(_.port(SchemaRegistry.PORT)),
-    SchemaRegistry.memory,
-    GraphQLGenerator.default,
-    HttpClient.default,
-    Server.live,
-  )
+  override val run = Server.install(server)
+    .flatMap(port => Console.printLine(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).exitCode
+    .provide(
+      ServerConfig.live.update(_.port(SchemaRegistry.PORT)),
+      SchemaRegistry.memory,
+      GraphQLGenerator.default,
+      HttpClient.default,
+      Server.live,
+    )
 }

@@ -1,4 +1,4 @@
-lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry)
+lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
 lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies := Seq(
     "dev.zio"                %% "zio-schema"            % zioSchema,
@@ -25,7 +25,7 @@ lazy val cli = (project in file("cli")).settings(
     "dev.zio"     %% "zio"     % zio,
     "dev.zio"     %% "zio-cli" % "0.4.0",
     "com.lihaoyi" %% "fansi"   % "0.4.0",
-  ),
+  )
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
@@ -129,7 +129,7 @@ Universal / mappings := {
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 // This is where we can add or remove files from the final package
-Docker / mappings   := {
+Docker / mappings := {
   val serverJar = (server / Compile / assembly).value
   // removing means filtering
   val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
@@ -138,7 +138,7 @@ Docker / mappings   := {
   filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
 }
 
-Docker / maintainer := "tushar@tailcall.in"
-dockerCmd           := Seq("-Xmx200M", "-main", "tailcall.server.Main")
-dockerBaseImage     := "eclipse-temurin:11"
-dockerExposedPorts  := Seq(8080)
+maintainer         := "tushar@tailcall.in"
+dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main")
+dockerBaseImage    := "eclipse-temurin:11"
+dockerExposedPorts := Seq(8080)
