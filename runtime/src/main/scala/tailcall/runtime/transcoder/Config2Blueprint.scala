@@ -26,21 +26,9 @@ trait Config2Blueprint {
     }.toMap
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
-      val bFields: List[Blueprint.FieldDefinition] = {
+      val fields: List[Blueprint.FieldDefinition] = {
         typeInfo.fields.toList.map { case (name, field) =>
-          val args: List[Blueprint.InputFieldDefinition] = {
-            field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
-              val ofType = toType(arg)
-
-              val prefixedOfType: Blueprint.Type = inputTypeNames.get(ofType.defaultName) match {
-                case Some(name) => ofType.withName(name)
-                case None       => ofType
-              }
-              Blueprint
-                .InputFieldDefinition(name = name, ofType = prefixedOfType, defaultValue = None, description = arg.doc)
-            }
-          }
-
+          val args     = toArgs(field, inputTypeNames)
           val ofType   = toType(field)
           val resolver = toResolver(config, name, field)
 
@@ -56,7 +44,7 @@ trait Config2Blueprint {
 
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
-      val definition      = Blueprint.ObjectTypeDefinition(name = name, fields = bFields, description = typeInfo.doc)
+      val definition      = Blueprint.ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc)
       val inputDefinition = toInputObjectTypeDefinition(definition, inputTypeNames)
       if (outputTypes.contains(name) && inputTypes.contains(name)) List(definition, inputDefinition)
       else if (inputTypes.contains(name)) inputDefinition :: Nil
@@ -64,6 +52,23 @@ trait Config2Blueprint {
     }
 
     TValid.succeed(Blueprint(rootSchema :: definitions))
+  }
+
+  private def toArgs(field: Field, inputTypeNames: Map[String, String]): List[Blueprint.InputFieldDefinition] = {
+    field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
+      val ofType = toType(arg)
+
+      val prefixedOfType: Blueprint.Type = inputTypeNames.get(ofType.defaultName) match {
+        case Some(name) => ofType.withName(name)
+        case None       => ofType
+      }
+      Blueprint.InputFieldDefinition(
+        name = arg.rename.getOrElse(name),
+        ofType = prefixedOfType,
+        defaultValue = None,
+        description = arg.doc,
+      )
+    }
   }
 
   /**
@@ -166,6 +171,7 @@ trait Config2Blueprint {
           case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
           case Step.Constant(json)          => TValid.succeed((_: Remote[DynamicValue]) => Remote(json).toDynamic)
           case Step.ObjPath(map)            => TValid.succeed((input: Remote[DynamicValue]) => toRemoteMap(input, map))
+          case Step.Identity                => TValid.succeed((input: Remote[DynamicValue]) => input)
         }
         TValid.foreach(funcs)(identity(_)).map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
     }

@@ -135,19 +135,34 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
 
       },
-      suite("field annotations")(test("rename") {
-        val config   = Config.empty.withQuery("Query")
-          .withType("Query" -> Type("foo" -> Field.ofType("String").withName("bar")))
-        val expected = """|schema {
-                          |  query: Query
-                          |}
-                          |
-                          |type Query {
-                          |  bar: String
-                          |}
-                          |""".stripMargin.trim
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
-      }),
+      suite("rename annotations")(
+        test("field") {
+          val config   = Config.empty.withQuery("Query")
+            .withType("Query" -> Type("foo" -> Field.ofType("String").withName("bar")))
+          val expected = """|schema {
+                            |  query: Query
+                            |}
+                            |
+                            |type Query {
+                            |  bar: String
+                            |}
+                            |""".stripMargin.trim
+          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        },
+        test("argument") {
+          val config   = Config.empty.withQuery("Query")
+            .withType("Query" -> Type("foo" -> Field.ofType("String").withArguments("input" -> Arg.ofType("Int").withName("data"))))
+          val expected = """|schema {
+                            |  query: Query
+                            |}
+                            |
+                            |type Query {
+                            |  foo(data: Int): String
+                            |}
+                            |""".stripMargin.trim
+          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        },
+      ),
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {

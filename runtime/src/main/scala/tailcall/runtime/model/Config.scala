@@ -193,6 +193,7 @@ object Config {
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
+    rename: Option[String] = None,
   ) {
     self =>
     def asList: Arg = self.copy(list = Option(true))
@@ -218,6 +219,8 @@ object Config {
     def isRequired: Boolean = required.getOrElse(false)
 
     def withDoc(doc: String): Arg = copy(doc = Option(doc))
+
+    def withName(name: String): Arg = self.copy(rename = Option(name))
   }
 
   object Arg {
