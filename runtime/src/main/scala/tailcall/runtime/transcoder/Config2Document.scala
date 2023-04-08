@@ -173,7 +173,6 @@ trait Config2Document {
       lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
     }.toDynamic
 
-  // FIXME: should use this to generate steps
   final def toResolver(
     config: Config,
     steps: List[Step],

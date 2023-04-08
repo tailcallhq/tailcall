@@ -40,12 +40,4 @@ object Transcoder extends Transcoder {
     toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLSchema(config.compress))
 
   def toGraphQLSchema(config: Config): TValid[String, String] = toDocument(config).flatMap(toGraphQLSchema(_))
-
-  // FIXME: this is an invalid conversion
-  // Blueprints can't be used to regenerate a config
-//  def toDocument(config: Config, encodeDirectives: Boolean): TValid[Nothing, Document] =
-//    for {
-//      blueprint <- toBlueprint(config, encodeDirectives = encodeDirectives)
-//      document  <- toDocument(blueprint)
-//    } yield document
 }
