@@ -167,6 +167,8 @@ object Config {
     def withName(name: String): Field = copy(rename = Option(name))
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
+
+    def resolveWith[A: JsonEncoder](a: A): Field = withSteps(Step.const(a))
   }
 
   object Field {
