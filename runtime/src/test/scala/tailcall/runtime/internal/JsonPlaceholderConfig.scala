@@ -66,7 +66,7 @@ object JsonPlaceholderConfig {
         "street"  -> Field.string,
         "suite"   -> Field.string,
         "city"    -> Field.string,
-        "zipcode" -> Field.string,
+        "zipcode" -> Field.string.withName("zip"),
         "geo"     -> Field.ofType("NewGeo"),
       ),
       "Company"    -> Type("name" -> Field.string, "catchPhrase" -> Field.string, "bs" -> Field.string),

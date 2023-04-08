@@ -14,6 +14,7 @@ sealed trait Step {
       case self @ Step.Http(_, _, _, _) => Step.Http.directive.encode(self)
       case self @ Step.Constant(_)      => Step.Constant.directive.encode(self)
       case self @ Step.ObjPath(_)       => Step.ObjPath.directive.encode(self)
+      case Step.Identity                => Step.Identity.directive.encode(Step.Identity)
     }
 }
 
@@ -37,6 +38,12 @@ object Step {
 
   @jsonHint("objectPath")
   final case class ObjPath(map: Map[String, List[String]]) extends Step
+
+  @jsonHint("identity")
+  case object Identity extends Step {
+    implicit lazy val jsonCodec: JsonCodec[Identity.type] = DeriveJsonCodec.gen[Identity.type]
+    implicit val directive: DirectiveCodec[Identity.type] = DirectiveCodec.fromJsonCodec("identity", jsonCodec)
+  }
 
   object Http {
     private val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]

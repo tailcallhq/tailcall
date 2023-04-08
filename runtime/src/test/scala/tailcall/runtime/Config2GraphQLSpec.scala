@@ -3,8 +3,8 @@ package tailcall.runtime
 import caliban.CalibanError
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
-import tailcall.runtime.model.Config
-import tailcall.runtime.model.Config.{Field, Type}
+import tailcall.runtime.model.Config.{Arg, Field, Type}
+import tailcall.runtime.model.{Config, Step}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.test.Assertion.equalTo
@@ -86,12 +86,32 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },
+      test("create user with zip code") {
+        val program = execute(JsonPlaceholderConfig.config)(
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
+        )
+        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
+      },
       test("rename a field") {
         val config  = {
           Config.empty.withQuery("Query")
             .withType("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
         }
         val program = execute(config)(""" query { bar } """)
+
+        assertZIO(program)(equalTo("""{"bar":"Hello World!"}"""))
+      },
+      test("rename an argument") {
+        val config  = {
+          Config.empty.withQuery("Query").withType(
+            "Query" -> Type(
+              "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
+                .withSteps(Step.ObjPath("bar" -> List("args", "data")))
+            ),
+            "Bar"   -> Type("bar" -> Field.ofType("Int")),
+          )
+        }
+        val program = execute(config)(""" query { foo(data: 1) {bar} } """)
 
         assertZIO(program)(equalTo("""{"bar":"Hello World!"}"""))
       },
