@@ -8,6 +8,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 }
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
+import tailcall.runtime.DirectiveCodec.DecoderSyntax
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model._
@@ -88,7 +89,7 @@ trait Document2Config {
       steps = Option(steps),
       args = Option(args),
       doc = field.description,
-      rename = FieldAnnotation.from(field.directives).collectFirst { case FieldAnnotation.Rename(value) => value },
+      rename = field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).flatMap(_.rename).headOption,
     )
 
   final private def toField(field: InputValueDefinition): TValid[String, Config.Field] =

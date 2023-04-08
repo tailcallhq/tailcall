@@ -225,11 +225,11 @@ object Config {
     def ofType(name: String): Arg = Arg(name)
   }
 
-  implicit lazy val typeInfoCodec: JsonCodec[Type]                   = DeriveJsonCodec.gen[Type]
-  implicit lazy val inputTypeCodec: JsonCodec[Arg]                   = DeriveJsonCodec.gen[Arg]
-  implicit lazy val fieldAnnotationCodec: JsonCodec[FieldAnnotation] = DeriveJsonCodec.gen[FieldAnnotation]
-  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]           = DeriveJsonCodec.gen[Field]
-  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema]     = DeriveJsonCodec.gen[RootSchema]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]                 = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val jsonCodec: JsonCodec[Config]                     = DeriveJsonCodec.gen[Config]
+  implicit lazy val typeInfoCodec: JsonCodec[Type]                         = DeriveJsonCodec.gen[Type]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]                         = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldAnnotationCodec: JsonCodec[FieldUpdateAnnotation] = DeriveJsonCodec.gen[FieldUpdateAnnotation]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]                 = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema]           = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]                       = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val jsonCodec: JsonCodec[Config]                           = DeriveJsonCodec.gen[Config]
 }

@@ -36,6 +36,8 @@ sealed trait TValid[+E, +A] {
 
   final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
+  final def toList: List[A] = self.fold[List[A]](_ => Nil, List(_))
+
   final def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
   final def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =

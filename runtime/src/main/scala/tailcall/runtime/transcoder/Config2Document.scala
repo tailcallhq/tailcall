@@ -62,7 +62,7 @@ trait Config2Document {
           }
 
           val ofType     = toType(field)
-          val directives = toDirective(field.steps.getOrElse(Nil)).toList
+          val directives = toDirective(field)
           FieldDefinition(name = name, args = args, ofType = ofType, directives = directives, description = field.doc)
         }
       }
@@ -136,8 +136,12 @@ trait Config2Document {
     }
   }
 
-  final private def toDirective(steps: List[Step]): Option[Directive] = {
-    if (steps.isEmpty) None else steps.toDirective.toOption
+  final private def toDirective(field: Config.Field): List[Directive] = {
+    var directive = List.empty[Directive]
+    if (field.steps.nonEmpty) directive = directive ++ field.steps.getOrElse(Nil).toDirective.toList
+    if (field.rename.nonEmpty) directive = directive ++ field.rename
+      .flatMap(name => FieldUpdateAnnotation.empty.withName(name).toDirective.toOption).toList
+    directive
   }
 
   final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {

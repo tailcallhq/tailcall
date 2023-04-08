@@ -191,7 +191,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
              |  street: String
              |  suite: String
              |  city: String
-             |  zipcode: String
+             |  zipcode: String @update(rename: "zip")
              |}
              |
              |type Company {
