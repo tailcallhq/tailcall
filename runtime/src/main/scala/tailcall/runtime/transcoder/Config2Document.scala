@@ -11,21 +11,14 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
 import caliban.parsing.adt.Type.{ListType, NamedType}
 import caliban.parsing.adt.{Definition, Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.EncoderSyntax
-import tailcall.runtime.http.{Method, Scheme}
-import tailcall.runtime.internal.{JsonSchema, TValid}
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.{Arg, Field}
 import tailcall.runtime.model._
-import tailcall.runtime.remote.Remote
-import zio.json.ast.Json
-import zio.schema.{DynamicValue, Schema}
 
+/**
+ * This is used to generate a .graphQL file from a config
+ */
 trait Config2Document {
-
-  implicit final private def jsonSchema: Schema[Json] = JsonSchema.schema
-
-  /**
-   * Encodes a config into a Document
-   */
   final def toDocument(config: Config): TValid[Nothing, Document] = {
     val rootSchema = SchemaDefinition(
       query = config.graphQL.schema.query,
@@ -144,11 +137,6 @@ trait Config2Document {
     directive
   }
 
-  final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
-    Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
-      .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
-  }
-
   private def toInputObjectTypeDefinition(
     definition: ObjectTypeDefinition,
     inputNames: Map[String, String],
@@ -170,62 +158,9 @@ trait Config2Document {
     )
   }
 
-  final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
-    map.foldLeft(Remote(Map.empty[String, DynamicValue])) { case (to, (key, path)) =>
-      lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
-    }.toDynamic
-
-  final def toResolver(
-    config: Config,
-    steps: List[Step],
-    field: Field,
-  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] =
-    steps match {
-      case Nil => None
-
-      case steps => config.server.baseURL match {
-          // TODO: should fail if Http is used without server.host
-          case None if steps.exists(_.isInstanceOf[Step.Http]) => None
-          case option                                          => option.map { baseURL =>
-              steps.map[Remote[DynamicValue] => Remote[DynamicValue]] {
-                case http @ Step.Http(_, _, _, _) => input =>
-                    val host               = baseURL.getHost
-                    val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
-                    val endpoint           = toEndpoint(http, host, port)
-                    val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-                    val endpointWithOutput =
-                      if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
-                    Remote.fromEndpoint(endpointWithOutput, input)
-                case Step.Constant(json)          => _ => Remote(json).toDynamic
-                case Step.ObjPath(map)            => input => toRemoteMap(input, map)
-              }.reduce((a, b) => r => b(a(r)))
-            }
-        }
-    }
-
   final private def toServerDirective(config: Config): Option[Directive] = {
     if (config.server.isEmpty) { None }
     else { config.server.toDirective.toOption }
-  }
-
-  final private def toTSchema(config: Config, field: Field): TSchema = {
-    var schema = config.graphQL.types.get(field.typeOf) match {
-      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          (fieldName, toTSchema(config, field))
-        })
-
-      case None => field.typeOf match {
-          case "String"  => TSchema.string
-          case "Int"     => TSchema.int
-          case "Boolean" => TSchema.bool
-          case _         => TSchema.string // TODO: default to string?
-        }
-    }
-
-    schema = if (field.isRequired) schema else schema.opt
-    schema = if (field.isList) schema.arr else schema
-
-    schema
   }
 
   final private def toType(inputType: Arg): Type = {
