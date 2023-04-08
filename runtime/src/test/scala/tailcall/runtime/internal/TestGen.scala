@@ -1,12 +1,11 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
+import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
 import zio.test.Gen
 
 import java.net.URL
-
-import Config._
 
 object TestGen {
   def genName: Gen[Any, String] = fromIterableRandom("body", "completed", "email", "id", "name", "title", "url")
@@ -27,7 +26,7 @@ object TestGen {
 
   def genSchema: Gen[Any, TSchema] = genObj
 
-  def genServer: Gen[Any, Config.Server] = genBaseURL.map(baseURL => Config.Server(Option(baseURL)))
+  def genServer: Gen[Any, Server] = genBaseURL.map(baseURL => Server(Option(baseURL)))
 
   def genMethod: Gen[Any, Method] =
     Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
