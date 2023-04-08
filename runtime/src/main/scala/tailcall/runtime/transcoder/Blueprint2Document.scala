@@ -3,17 +3,13 @@ package tailcall.runtime.transcoder
 import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
-import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
-  Directive,
-  Document => CalibanDocument,
-  Type => CalibanType,
-}
+import caliban.parsing.adt.{Definition => CalibanDefinition, Directive, Document => CalibanDocument, Type => CalibanType}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Blueprint
 
-// FIXME: this shouldn't be allowed
-// Blueprint only contains the necessary information to run a graphql server
+/**
+ * Converts the blueprint into a the final output document.
+ */
 trait Blueprint2Document {
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
