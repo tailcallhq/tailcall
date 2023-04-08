@@ -7,14 +7,18 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
   ObjectTypeDefinition,
 }
 import caliban.parsing.adt.Type.innerType
-import caliban.parsing.adt.{Directive, Document, Type}
+import caliban.parsing.adt.{Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
-import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model._
 import zio.json.{DecoderOps, EncoderOps}
 
+/**
+ * Used to read a .graphQL file that contains the
+ * orchestration specification.
+ */
 trait Document2Config {
+
   final def toConfig(document: Document): TValid[String, Config] = {
     for {
       schema <- toSchemaDefinition(document)
@@ -50,35 +54,14 @@ trait Document2Config {
   }
 
   final private def toFieldMap(definition: ObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
   }
 
-  final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
-    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
-  }
-
-  final private def toStep(directive: Directive): TValid[String, List[Step]] = {
-    directive.name match {
-      case "steps" => directive.arguments.get("value") match {
-          case Some(inputValue) => TValid.fromEither(inputValue.toJson.fromJson[List[Step]])
-          case None             => TValid.succeed(Nil)
-        }
-
-      case "http" => for {
-          method <- TValid.fromEither(directive.arguments.get("method").toJson.fromJson[Option[Method]])
-          path   <- directive.arguments.get("path") match {
-            case None        => TValid.fail("Missing url in @http directive")
-            case Some(value) => TValid.fromEither(value.toJson.fromJson[String].flatMap(Path.decode(_)))
-          }
-        } yield List(Step.Http(method = method, path = path))
-      case _      => TValid.succeed(Nil)
-    }
-  }
-
-  final private def toField(field: FieldDefinition): TValid[String, Config.Field] =
+  final private def toField(field: FieldDefinition): TValid[String, Config.Field] = {
     for {
-      args  <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
-      steps <- TValid.foreach(field.directives)(toStep(_)).map(_.flatten)
+      args <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
+      steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(Nil)
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
@@ -89,22 +72,9 @@ trait Document2Config {
       steps = Option(steps),
       args = Option(args),
       doc = field.description,
-      rename = field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).flatMap(_.rename).headOption,
+      update = field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).headOption,
     )
-
-  final private def toField(field: InputValueDefinition): TValid[String, Config.Field] =
-    for {
-      steps <- TValid.foreach(field.directives)(toStep(_)).map(_.flatten)
-      typeof     = innerType(field.ofType)
-      isList     = field.ofType.isInstanceOf[Type.ListType]
-      isRequired = field.ofType.nonNull
-    } yield Config.Field(
-      typeOf = typeof,
-      list = Option(isList),
-      required = Option(isRequired),
-      steps = Option(steps),
-      doc = field.description,
-    )
+  }
 
   final private def toLabelledArgument(arg: InputValueDefinition): TValid[String, (String, Config.Arg)] = {
     val typeof     = innerType(arg.ofType)
@@ -112,8 +82,37 @@ trait Document2Config {
     val isRequired = arg.ofType.nonNull
     TValid.succeed(
       arg.name,
-      Config.Arg(typeOf = typeof, list = Option(isList), required = Option(isRequired), doc = arg.description),
+      Config.Arg(
+        typeOf = typeof,
+        list = Option(isList),
+        required = Option(isRequired),
+        doc = arg.description,
+        update = toFieldUpdateAnnotation(arg),
+      ),
     )
   }
 
+  private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[FieldUpdateAnnotation] = {
+    field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).headOption
+  }
+
+  final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
+  }
+
+  final private def toField(field: InputValueDefinition): TValid[Nothing, Config.Field] =
+    TValid.succeed {
+      val steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(Nil)
+      val typeof     = innerType(field.ofType)
+      val isList     = field.ofType.isInstanceOf[Type.ListType]
+      val isRequired = field.ofType.nonNull
+      Config.Field(
+        typeOf = typeof,
+        list = Option(isList),
+        required = Option(isRequired),
+        steps = Option(steps),
+        doc = field.description,
+        update = toFieldUpdateAnnotation(field),
+      )
+    }
 }

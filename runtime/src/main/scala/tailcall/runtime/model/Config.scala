@@ -114,7 +114,7 @@ object Config {
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
-    rename: Option[String] = None,
+    update: Option[FieldUpdateAnnotation] = None,
   ) {
     self =>
 
@@ -151,7 +151,12 @@ object Config {
         case _                           => None
       }
 
-      self.copy(list = isList, required = isRequired, steps = steps, args = args)
+      val update = self.update match {
+        case Some(value) if value.nonEmpty => Some(value)
+        case _                             => None
+      }
+
+      self.copy(list = isList, required = isRequired, steps = steps, args = args, update = update)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -164,7 +169,13 @@ object Config {
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
-    def withName(name: String): Field = copy(rename = Option(name))
+    def withUpdate(update: FieldUpdateAnnotation): Field =
+      copy(update = self.update match {
+        case Some(value) => Some(value mergeRight update)
+        case None        => Some(update)
+      })
+
+    def withName(name: String): Field = withUpdate(FieldUpdateAnnotation.empty.withName(name))
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
@@ -193,7 +204,7 @@ object Config {
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
-    rename: Option[String] = None,
+    update: Option[FieldUpdateAnnotation] = None,
   ) {
     self =>
     def asList: Arg = self.copy(list = Option(true))
@@ -211,7 +222,12 @@ object Config {
         case _          => None
       }
 
-      self.copy(list = isList, required = isRequired)
+      val update = self.update match {
+        case Some(value) if value.nonEmpty => Some(value)
+        case _                             => None
+      }
+
+      self.copy(list = isList, required = isRequired, update = update)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -220,7 +236,13 @@ object Config {
 
     def withDoc(doc: String): Arg = copy(doc = Option(doc))
 
-    def withName(name: String): Arg = self.copy(rename = Option(name))
+    def withUpdate(update: FieldUpdateAnnotation): Arg =
+      copy(update = self.update match {
+        case Some(value) => Some(value mergeRight update)
+        case None        => Some(update)
+      })
+
+    def withName(name: String): Arg = withUpdate(FieldUpdateAnnotation.empty.withName(name))
   }
 
   object Arg {

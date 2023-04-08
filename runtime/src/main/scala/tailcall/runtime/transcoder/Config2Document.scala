@@ -34,7 +34,7 @@ trait Config2Document {
     }.toMap
 
     val definitions: List[Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
-      val bFields: List[FieldDefinition] = {
+      val fields: List[FieldDefinition] = {
         typeInfo.fields.toList.map { case (name, field) =>
           val args: List[InputValueDefinition] = {
             field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
@@ -64,7 +64,7 @@ trait Config2Document {
       // There should be an object type or a list of input object type
       val definition      = ObjectTypeDefinition(
         name = name,
-        fields = bFields,
+        fields = fields,
         description = typeInfo.doc,
         implements = Nil,
         directives = Nil,
@@ -130,11 +130,10 @@ trait Config2Document {
   }
 
   final private def toDirective(field: Config.Field): List[Directive] = {
-    var directive = List.empty[Directive]
-    if (field.steps.nonEmpty) directive = directive ++ field.steps.getOrElse(Nil).toDirective.toList
-    if (field.rename.nonEmpty) directive = directive ++ field.rename
-      .flatMap(name => FieldUpdateAnnotation.empty.withName(name).toDirective.toOption).toList
-    directive
+    var directives = List.empty[Directive]
+    if (field.steps.nonEmpty) directives = directives ++ field.steps.getOrElse(Nil).toDirective.toList
+    if (field.update.nonEmpty) directives = directives ++ field.update.toList.flatMap(_.toDirective.toList)
+    directives
   }
 
   private def toInputObjectTypeDefinition(
@@ -147,7 +146,9 @@ trait Config2Document {
         ofType = setName(field.ofType, inputNames.getOrElse(getName(field.ofType), getName(field.ofType))),
         defaultValue = None,
         description = field.description,
-        directives = Nil,
+
+        // Dumb copy of directives, this is not always correct
+        directives = field.directives,
       )
     }
     InputObjectTypeDefinition(
