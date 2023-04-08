@@ -26,12 +26,12 @@ trait Config2Document {
   /**
    * Encodes a config into a Document
    */
-  final def toDocument(config: Config, encodeDirectives: Boolean = false): TValid[Nothing, Document] = {
+  final def toDocument(config: Config): TValid[Nothing, Document] = {
     val rootSchema = SchemaDefinition(
       query = config.graphQL.schema.query,
       mutation = config.graphQL.schema.mutation,
       subscription = None,
-      directives = if (encodeDirectives) toServerDirective(config).toList else Nil,
+      directives = toServerDirective(config).toList,
     )
 
     val outputTypes    = getOutputTypes(config).toSet

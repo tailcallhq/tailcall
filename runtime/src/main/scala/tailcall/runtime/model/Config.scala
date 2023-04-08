@@ -1,17 +1,13 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.DirectiveCodec
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json._
-import zio.schema.annotation.caseName
-import zio.schema.{DeriveSchema, Schema}
 
 import java.io.File
-import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
@@ -52,18 +48,6 @@ object Config {
   def empty: Config = Config()
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
-
-  @caseName("server")
-  final case class Server(baseURL: Option[URL] = None) {
-    self =>
-    def isEmpty: Boolean = baseURL.isEmpty
-
-    def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
-  }
-  object Server                                        {
-    private val schema: Schema[Server]             = DeriveSchema.gen[Server]
-    implicit val directive: DirectiveCodec[Server] = DirectiveCodec.fromSchema(schema)
-  }
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
@@ -244,18 +228,11 @@ object Config {
     def ofType(name: String): Arg = Arg(name)
   }
 
-  implicit val urlCodec: JsonCodec[URL]                              = JsonCodec[String].transformOrFail[URL](
-    string =>
-      try Right(new URL(string))
-      catch { case _: Throwable => Left(s"Malformed url: ${string}") },
-    _.toString,
-  )
   implicit lazy val typeInfoCodec: JsonCodec[Type]                   = DeriveJsonCodec.gen[Type]
   implicit lazy val inputTypeCodec: JsonCodec[Arg]                   = DeriveJsonCodec.gen[Arg]
   implicit lazy val fieldAnnotationCodec: JsonCodec[FieldAnnotation] = DeriveJsonCodec.gen[FieldAnnotation]
   implicit lazy val fieldDefinitionCodec: JsonCodec[Field]           = DeriveJsonCodec.gen[Field]
   implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema]     = DeriveJsonCodec.gen[RootSchema]
   implicit lazy val graphQLCodec: JsonCodec[GraphQL]                 = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val serverCodec: JsonCodec[Server]                   = DeriveJsonCodec.gen[Server]
   implicit lazy val jsonCodec: JsonCodec[Config]                     = DeriveJsonCodec.gen[Config]
 }

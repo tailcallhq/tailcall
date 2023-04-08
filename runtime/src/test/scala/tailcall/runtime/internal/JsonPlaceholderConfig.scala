@@ -2,7 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Path, Step}
+import tailcall.runtime.model.{Config, Path, Server, Step}
 
 object JsonPlaceholderConfig {
   def createUser: Step.Http = users.withMethod(Method.POST)
@@ -76,6 +76,6 @@ object JsonPlaceholderConfig {
     ),
   )
 
-  val server = Config.Server(baseURL = Option(new java.net.URL("https://jsonplaceholder.typicode.com")))
+  val server = Server(baseURL = Option(new java.net.URL("https://jsonplaceholder.typicode.com")))
   val config = Config(server = server, graphQL = graphQL)
 }

@@ -10,7 +10,7 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.{Config, FieldAnnotation, Path, Step}
+import tailcall.runtime.model._
 import zio.json.{DecoderOps, EncoderOps}
 
 trait Document2Config {
@@ -22,10 +22,10 @@ trait Document2Config {
     } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
   }
 
-  final private def toServer(document: Document): TValid[String, Config.Server] = {
+  final private def toServer(document: Document): TValid[String, Server] = {
     document.schemaDefinition.flatMap(_.directives.find(_.name == "server")) match {
-      case Some(directive) => TValid.fromEither(directive.arguments.toJson.fromJson[Config.Server])
-      case None            => TValid.succeed(Config.Server())
+      case Some(directive) => TValid.fromEither(directive.arguments.toJson.fromJson[Server])
+      case None            => TValid.succeed(Server())
     }
   }
 
