@@ -8,7 +8,7 @@ input NewAddress {
   street: String
   suite: String
   city: String
-  zipcode: String @update(rename: "zip")
+  zipcode: String @modify(rename: "zip")
 }
 
 input NewCompany {
@@ -38,7 +38,7 @@ type Address {
   street: String
   suite: String
   city: String
-  zipcode: String @update(rename: "zip")
+  zipcode: String @modify(rename: "zip")
 }
 
 type Company {

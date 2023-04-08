@@ -51,9 +51,9 @@ object Orc {
   final case class Input(defaultValue: Option[DynamicValue])
   final case class Output(arguments: List[LabelledField[Input]] = Nil, resolve: Resolver)
 
-  final case class Field[A](ofType: Option[Type], definition: A, annotations: List[FieldUpdateAnnotation]) {
+  final case class Field[A](ofType: Option[Type], definition: A, annotations: List[ModifyField]) {
     self =>
-    def @@(annotation: FieldUpdateAnnotation): Field[A] = copy(annotations = annotation :: self.annotations)
+    def @@(annotation: ModifyField): Field[A] = copy(annotations = annotation :: self.annotations)
 
     def asList: Field[A] = copy(ofType = ofType.map(Type.ListType(_)))
 

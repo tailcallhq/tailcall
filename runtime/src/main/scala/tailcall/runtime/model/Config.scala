@@ -114,7 +114,7 @@ object Config {
     steps: Option[List[Step]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
-    update: Option[FieldUpdateAnnotation] = None,
+    modify: Option[ModifyField] = None,
   ) {
     self =>
 
@@ -151,12 +151,12 @@ object Config {
         case _                           => None
       }
 
-      val update = self.update match {
+      val update = self.modify match {
         case Some(value) if value.nonEmpty => Some(value)
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, steps = steps, args = args, update = update)
+      self.copy(list = isList, required = isRequired, steps = steps, args = args, modify = update)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -169,13 +169,13 @@ object Config {
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
-    def withUpdate(update: FieldUpdateAnnotation): Field =
-      copy(update = self.update match {
+    def withUpdate(update: ModifyField): Field =
+      copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
 
-    def withName(name: String): Field = withUpdate(FieldUpdateAnnotation.empty.withName(name))
+    def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
@@ -204,7 +204,7 @@ object Config {
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
-    update: Option[FieldUpdateAnnotation] = None,
+    modify: Option[ModifyField] = None,
   ) {
     self =>
     def asList: Arg = self.copy(list = Option(true))
@@ -222,12 +222,12 @@ object Config {
         case _          => None
       }
 
-      val update = self.update match {
+      val update = self.modify match {
         case Some(value) if value.nonEmpty => Some(value)
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, update = update)
+      self.copy(list = isList, required = isRequired, modify = update)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -236,13 +236,13 @@ object Config {
 
     def withDoc(doc: String): Arg = copy(doc = Option(doc))
 
-    def withUpdate(update: FieldUpdateAnnotation): Arg =
-      copy(update = self.update match {
+    def withUpdate(update: ModifyField): Arg =
+      copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
 
-    def withName(name: String): Arg = withUpdate(FieldUpdateAnnotation.empty.withName(name))
+    def withName(name: String): Arg = withUpdate(ModifyField.empty.withName(name))
   }
 
   object Arg {
@@ -252,11 +252,11 @@ object Config {
     def ofType(name: String): Arg = Arg(name)
   }
 
-  implicit lazy val typeInfoCodec: JsonCodec[Type]                         = DeriveJsonCodec.gen[Type]
-  implicit lazy val inputTypeCodec: JsonCodec[Arg]                         = DeriveJsonCodec.gen[Arg]
-  implicit lazy val fieldAnnotationCodec: JsonCodec[FieldUpdateAnnotation] = DeriveJsonCodec.gen[FieldUpdateAnnotation]
-  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]                 = DeriveJsonCodec.gen[Field]
-  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema]           = DeriveJsonCodec.gen[RootSchema]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]                       = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val jsonCodec: JsonCodec[Config]                           = DeriveJsonCodec.gen[Config]
+  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 }
