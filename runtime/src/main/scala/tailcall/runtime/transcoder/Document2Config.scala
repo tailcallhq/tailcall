@@ -72,7 +72,7 @@ trait Document2Config {
       steps = Option(steps),
       args = Option(args),
       doc = field.description,
-      update = field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).headOption,
+      modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
     )
   }
 
@@ -87,13 +87,13 @@ trait Document2Config {
         list = Option(isList),
         required = Option(isRequired),
         doc = arg.description,
-        update = toFieldUpdateAnnotation(arg),
+        modify = toFieldUpdateAnnotation(arg),
       ),
     )
   }
 
-  private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[FieldUpdateAnnotation] = {
-    field.directives.flatMap(_.fromDirective[FieldUpdateAnnotation].toList).headOption
+  private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
+    field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption
   }
 
   final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
@@ -112,7 +112,7 @@ trait Document2Config {
         required = Option(isRequired),
         steps = Option(steps),
         doc = field.description,
-        update = toFieldUpdateAnnotation(field),
+        modify = toFieldUpdateAnnotation(field),
       )
     }
 }

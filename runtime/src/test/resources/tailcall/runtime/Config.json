@@ -57,7 +57,7 @@
           },
           "zipcode" : {
             "type" : "String",
-            "update" : {
+            "modify" : {
               "rename" : "zip"
             }
           }
@@ -302,7 +302,7 @@
           },
           "zipcode" : {
             "type" : "String",
-            "update" : {
+            "modify" : {
               "rename" : "zip"
             }
           }
