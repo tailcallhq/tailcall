@@ -45,7 +45,7 @@ trait Config2Blueprint {
           val resolver = toResolver(config, field.steps.getOrElse(Nil), field)
 
           Blueprint.FieldDefinition(
-            name = name,
+            name = field.rename.getOrElse(name),
             args = args,
             ofType = ofType,
             resolver = resolver.map(Remote.toLambda(_)),

@@ -6,7 +6,7 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.durationInt
-import zio.test.TestAspect.{failing, timeout}
+import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue}
 
 object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
@@ -147,104 +147,103 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
         Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
-      }) @@ failing,
+      }),
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
-        val expected =
-          """|schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
-             |  query: Query
-             |  mutation: Mutation
-             |}
-             |
-             |input NewAddress {
-             |  geo: NewGeo
-             |  street: String
-             |  suite: String
-             |  city: String
-             |  zipcode: String
-             |}
-             |
-             |input NewCompany {
-             |  name: String
-             |  catchPhrase: String
-             |  bs: String
-             |}
-             |
-             |input NewGeo {
-             |  lat: String
-             |  lng: String
-             |}
-             |
-             |"A new user."
-             |input NewUser {
-             |  website: String
-             |  name: String!
-             |  email: String!
-             |  username: String!
-             |  company: NewCompany
-             |  address: NewAddress
-             |  phone: String
-             |}
-             |
-             |type Address {
-             |  geo: Geo
-             |  street: String
-             |  suite: String
-             |  city: String
-             |  zipcode: String @update(rename: "zip")
-             |}
-             |
-             |type Company {
-             |  name: String
-             |  catchPhrase: String
-             |  bs: String
-             |}
-             |
-             |type Geo {
-             |  lat: String
-             |  lng: String
-             |}
-             |
-             |"An Id container."
-             |type Id {
-             |  id: Int!
-             |}
-             |
-             |type Mutation {
-             |  createUser("User as an argument." user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
-             |}
-             |
-             |type Post {
-             |  body: String
-             |  id: Int!
-             |  user: User @steps(value: [{objectPath: {userId: ["value","userId"]}},{http: {path: "/users/{{userId}}"}}])
-             |  userId: Int!
-             |  title: String
-             |}
-             |
-             |type Query {
-             |  "A list of all posts."
-             |  posts: [Post] @steps(value: [{http: {path: "/posts"}}])
-             |  "A list of all users."
-             |  users: [User] @steps(value: [{http: {path: "/users"}}])
-             |  "A single post by id."
-             |  post(id: Int!): Post @steps(value: [{http: {path: "/posts/{{args.id}}"}}])
-             |  "A single user by id."
-             |  user(id: Int!): User @steps(value: [{objectPath: {userId: ["args","id"]}},{http: {path: "/users/{{userId}}"}}])
-             |}
-             |
-             |type User {
-             |  website: String
-             |  name: String!
-             |  posts: [Post] @steps(value: [{http: {path: "/users/{{value.id}}/posts"}}])
-             |  email: String!
-             |  username: String!
-             |  company: Company
-             |  id: Int!
-             |  address: Address
-             |  phone: String
-             |}
-             |""".stripMargin.trim
+        val expected = """|schema {
+                          |  query: Query
+                          |  mutation: Mutation
+                          |}
+                          |
+                          |input NewAddress {
+                          |  geo: NewGeo
+                          |  street: String
+                          |  suite: String
+                          |  city: String
+                          |  zipcode: String
+                          |}
+                          |
+                          |input NewCompany {
+                          |  name: String
+                          |  catchPhrase: String
+                          |  bs: String
+                          |}
+                          |
+                          |input NewGeo {
+                          |  lat: String
+                          |  lng: String
+                          |}
+                          |
+                          |"A new user."
+                          |input NewUser {
+                          |  website: String
+                          |  name: String!
+                          |  email: String!
+                          |  username: String!
+                          |  company: NewCompany
+                          |  address: NewAddress
+                          |  phone: String
+                          |}
+                          |
+                          |type Address {
+                          |  geo: Geo
+                          |  street: String
+                          |  suite: String
+                          |  city: String
+                          |  zip: String
+                          |}
+                          |
+                          |type Company {
+                          |  name: String
+                          |  catchPhrase: String
+                          |  bs: String
+                          |}
+                          |
+                          |type Geo {
+                          |  lat: String
+                          |  lng: String
+                          |}
+                          |
+                          |"An Id container."
+                          |type Id {
+                          |  id: Int!
+                          |}
+                          |
+                          |type Mutation {
+                          |  createUser("User as an argument." user: NewUser!): Id
+                          |}
+                          |
+                          |type Post {
+                          |  body: String
+                          |  id: Int!
+                          |  user: User
+                          |  userId: Int!
+                          |  title: String
+                          |}
+                          |
+                          |type Query {
+                          |  "A list of all posts."
+                          |  posts: [Post]
+                          |  "A list of all users."
+                          |  users: [User]
+                          |  "A single post by id."
+                          |  post(id: Int!): Post
+                          |  "A single user by id."
+                          |  user(id: Int!): User
+                          |}
+                          |
+                          |type User {
+                          |  website: String
+                          |  name: String!
+                          |  posts: [Post]
+                          |  email: String!
+                          |  username: String!
+                          |  company: Company
+                          |  id: Int!
+                          |  address: Address
+                          |  phone: String
+                          |}
+                          |""".stripMargin.trim
 
         Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },

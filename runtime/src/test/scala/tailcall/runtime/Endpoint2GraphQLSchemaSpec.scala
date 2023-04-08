@@ -16,7 +16,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
   def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
-    val schema = Transcoder.toGraphQLSchema(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
+    val schema = Transcoder.toGraphQLConfig(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
     for { result <- schema.toZIO } yield assertTrue(result == expected)
   }
 
