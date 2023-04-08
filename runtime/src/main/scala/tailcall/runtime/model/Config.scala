@@ -23,10 +23,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
-  def toBlueprint: Blueprint = toBlueprint()
-
-  def toBlueprint(encodeSteps: Boolean = false): Blueprint =
-    Transcoder.toBlueprint(self, encodeDirectives = encodeSteps).get
+  def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 

@@ -31,8 +31,8 @@ sealed trait Transcoder
     with ToValue
 
 object Transcoder extends Transcoder {
-  def toBlueprint(endpoint: Endpoint, encodeDirectives: Boolean, nameGen: NameGenerator): TValid[String, Blueprint] =
-    toConfig(endpoint, nameGen).flatMap(toBlueprint(_, encodeDirectives))
+  def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
+    toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
 
   def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
 
