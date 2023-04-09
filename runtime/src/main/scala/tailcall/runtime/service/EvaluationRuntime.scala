@@ -116,6 +116,8 @@ object EvaluationRuntime {
                 v <- evaluate(value, ctx)
                 m <- evaluateAs[Map[Any, Any]](map, ctx)
               } yield m.updated(k, v)
+
+            case Dict.ToPair => for { map <- LExit.input[Any].map(_.asInstanceOf[Map[_, _]]) } yield map.toList
           }
         case Opt(operation)     => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)

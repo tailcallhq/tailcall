@@ -8,5 +8,6 @@ trait MapOps {
     def get(key: Remote[A]): Remote[Option[B]]                   = Remote(Lambda.dict.get(key.toLambda, self.toLambda))
     def put(key: Remote[A], value: Remote[B]): Remote[Map[A, B]] =
       Remote(Lambda.dict.put(key.toLambda, value.toLambda, self.toLambda))
+    def toPair: Remote[List[(A, B)]]                             = Remote(self.toLambda >>> Lambda.dict.toPair)
   }
 }
