@@ -37,7 +37,7 @@ sealed trait TSchema {
       case TSchema.Arr(_) => "Array"
       case TSchema.Opt(_) => "Optional"
       case TSchema.Str    => "String"
-      case TSchema.Num    => "Integer"
+      case TSchema.Num    => "Long"
       case TSchema.Bool   => "Boolean"
     }
 }
@@ -67,7 +67,7 @@ object TSchema {
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {
       case TSchema.Str    => Schema[String]
-      case TSchema.Num    => Schema[Int]
+      case TSchema.Num    => Schema[Long]
       case TSchema.Bool   => Schema[Boolean]
       case TSchema.Opt(s) => toZIOSchema(s).optional
       case Obj(fields)    =>
