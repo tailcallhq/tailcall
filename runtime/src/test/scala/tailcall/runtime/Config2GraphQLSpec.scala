@@ -7,7 +7,7 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.{Config, Step}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
-import zio.json._
+import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertZIO}
@@ -122,16 +122,23 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(expected))
       },
       test("nested type") {
-        val value  = Map("a" -> "abc".toJsonAST.toOption.get, "b" -> List(Map("bar" -> "bar")).toJsonAST.toOption.get)
-          .toJsonAST.toOption.get
-        val config = Config.empty.withQuery("Query").withType(
-          "Query" -> Type("foo" -> Field.ofType("Foo").withSteps(Step.Constant(value))),
-          "Foo"   -> Type("a" -> Field.ofType("String"), "b" -> Field.ofType("Bar").asList),
-          "Bar"   -> Type("bar" -> Field.ofType("String")),
+        val value = Json.Obj(
+          "b" -> Json.Arr(
+            //
+            Json.Obj("c" -> Json.Num(1)),
+            Json.Obj("c" -> Json.Num(2)),
+            Json.Obj("c" -> Json.Num(3)),
+          )
         )
 
-        val program = execute(config)("""{foo {a b {bar}}}""")
-        assertZIO(program)(equalTo("""{"foo":{"a":"abc","b":[{"bar":"bar"}]}}"""))
+        val config = Config.empty.withQuery("Query").withType(
+          "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.Constant(value))),
+          "A"     -> Type("b" -> Field.ofType("B").asList),
+          "B"     -> Type("c" -> Field.int),
+        )
+
+        val program = execute(config)("""{a {b {c}}}""")
+        assertZIO(program)(equalTo("""{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }
