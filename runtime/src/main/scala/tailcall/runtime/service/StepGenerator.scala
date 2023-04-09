@@ -78,17 +78,25 @@ object StepGenerator {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
-    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader] =
+    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader] = {
       tpe match {
         case model.Blueprint.NamedType(name, _)  => stepRef.get(name) match {
-            case Some(value) => value(ctx)
-            case None        => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
+            case Some(stepFunction) => ctx.value match {
+                case DynamicValue.Sequence(chunks) => Step
+                    .ListStep(chunks.toList.map(value => stepFunction(ctx.copy(value = value))))
+                // TODO: add unit test for some value
+                // case DynamicValue.SomeValue(value) => stepFunction(ctx.copy(value = value))
+                case _                             => stepFunction(ctx)
+              }
+            case None               => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
           }
         case model.Blueprint.ListType(ofType, _) => ctx.value match {
             case DynamicValue.Sequence(values) => Step
                 .ListStep(values.map(value => fromType(ofType, ctx.copy(value = value))).toList)
+            case DynamicValue.SomeValue(value) => fromType(ofType, ctx.copy(value = value))
             case _                             => Step.ListStep(List(fromType(ofType, ctx)))
           }
       }
+    }
   }
 }
