@@ -152,6 +152,17 @@ object Blueprint {
         case NamedType(_, nonNull)     => NamedType(name, nonNull)
         case ListType(ofType, nonNull) => ListType(ofType.withName(name), nonNull)
       }
+
+    final def render: String = {
+      def renderNonNull(tpe: Type): String =
+        tpe match {
+          case NamedType(name, true)   => s"$name!"
+          case ListType(ofType, true)  => s"[${renderNonNull(ofType)}]!"
+          case NamedType(name, false)  => name
+          case ListType(ofType, false) => s"[${renderNonNull(ofType)}]"
+        }
+      renderNonNull(self)
+    }
   }
 
   final case class NamedType(name: String, nonNull: Boolean) extends Type
