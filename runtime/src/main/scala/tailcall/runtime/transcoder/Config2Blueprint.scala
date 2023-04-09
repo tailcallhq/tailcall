@@ -172,6 +172,9 @@ trait Config2Blueprint {
           case Step.Constant(json)          => TValid.succeed((_: Remote[DynamicValue]) => Remote(json).toDynamic)
           case Step.ObjPath(map)            => TValid.succeed((input: Remote[DynamicValue]) => toRemoteMap(input, map))
           case Step.Identity                => TValid.succeed((input: Remote[DynamicValue]) => input)
+          case Step.ToPair                  => TValid.succeed { (input: Remote[DynamicValue]) =>
+              input.toTyped[Map[String, DynamicValue]].map(_.toPair).toDynamic
+            }
         }
         TValid.foreach(funcs)(identity(_)).map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
     }
