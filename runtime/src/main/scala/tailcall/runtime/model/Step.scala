@@ -1,22 +1,11 @@
 package tailcall.runtime.model
 
-import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec
 import tailcall.runtime.http.Method
-import tailcall.runtime.internal.TValid
 import zio.json._
 import zio.json.ast.Json
 
-sealed trait Step {
-  self =>
-  final def toDirective: TValid[String, Directive] =
-    self match {
-      case self @ Step.Http(_, _, _, _) => Step.Http.directive.encode(self)
-      case self @ Step.Constant(_)      => Step.Constant.directive.encode(self)
-      case self @ Step.ObjPath(_)       => Step.ObjPath.directive.encode(self)
-      case Step.Identity                => Step.Identity.directive.encode(Step.Identity)
-    }
-}
+sealed trait Step
 
 object Step {
   def const[A: JsonEncoder](a: A): Step = Constant(a.toJsonAST.toOption.get)
@@ -38,6 +27,12 @@ object Step {
 
   @jsonHint("objectPath")
   final case class ObjPath(map: Map[String, List[String]]) extends Step
+
+  @jsonHint("toPair")
+  case object ToPair extends Step {
+    implicit lazy val jsonCodec: JsonCodec[ToPair.type] = DeriveJsonCodec.gen[ToPair.type]
+    implicit val directive: DirectiveCodec[ToPair.type] = DirectiveCodec.fromJsonCodec("toPair", jsonCodec)
+  }
 
   @jsonHint("identity")
   case object Identity extends Step {
