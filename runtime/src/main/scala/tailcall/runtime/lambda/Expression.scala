@@ -85,6 +85,7 @@ object Expression {
     sealed trait Operation
     final case class Get(key: Expression, map: Expression)                    extends Operation
     final case class Put(key: Expression, value: Expression, map: Expression) extends Operation
+    case object ToPair                                                        extends Operation
   }
 
   final case class Opt(operation: Opt.Operation) extends Expression
@@ -130,6 +131,7 @@ object Expression {
       case Expression.Dict(operation)             => operation match {
           case Dict.Get(key, map)        => collect(key, f) ++ collect(map, f)
           case Dict.Put(key, value, map) => collect(key, f) ++ collect(value, f) ++ collect(map, f)
+          case Dict.ToPair               => f(expr).toList
         }
       case Expression.Opt(operation)              => operation match {
           case Opt.IsSome                  => f(expr).toList

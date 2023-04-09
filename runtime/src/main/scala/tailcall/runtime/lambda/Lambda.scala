@@ -127,6 +127,8 @@ object Lambda {
 
     def put[A, K, V](key: A ~> K, value: A ~> V, map: A ~> Map[K, V]): A ~> Map[K, V] =
       Lambda.unsafe.attempt(ctx => Dict(Dict.Put(key.compile(ctx), value.compile(ctx), map.compile(ctx))))
+
+    def toPair[K, V]: Map[K, V] ~> List[(K, V)] = Lambda.unsafe.attempt(_ => Dict(Dict.ToPair))
   }
 
   object option {
