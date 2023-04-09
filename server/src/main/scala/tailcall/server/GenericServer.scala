@@ -20,7 +20,7 @@ object GenericServer {
         }
         query       <- GraphQLUtils.decodeQuery(req.body)
         interpreter <- result.interpreter
-        res         <- interpreter.execute(query).provideLayer(DataLoader.http)
+        res         <- interpreter.execute(query).provideLayer(DataLoader.http(Option(req)))
         _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
       } yield Response.json(res.toJson)
     }
