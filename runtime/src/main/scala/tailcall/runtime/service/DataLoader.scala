@@ -27,7 +27,7 @@ object DataLoader {
 
   def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]]             =
     ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
-  // Todo: make this configurable
+  // TODO: make this configurable
   val allowedHeaders                                                                  = Set("authorization")
   def http: ZLayer[HttpClient, Nothing, HttpDataLoader]                               = http(None)
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
