@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import caliban.{CalibanError, InputValue}
 import tailcall.runtime.http.HttpClient
+import tailcall.runtime.model.Orc.{Field, FieldSet}
 import tailcall.runtime.model.{Blueprint, Orc}
 import tailcall.runtime.remote._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
@@ -10,8 +11,6 @@ import zio.ZIO
 import zio.http.Client
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
-
-import Orc.{Field, FieldSet}
 
 object StepGeneratorSpec extends ZIOSpecDefault {
 
@@ -85,12 +84,12 @@ object StepGeneratorSpec extends ZIOSpecDefault {
       test("with nesting level 3") {
         // type Query {foo: Foo}
         // type Foo {bar: [Bar]}
-        // type Bar {baz: [Baz]}
+        // type Bar {baz: Baz}
         // type Baz{value: Int}
         val orc = Orc(
           "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
           "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> FieldSet("baz" -> Field.output.to("Baz").asList.resolveWithFunction {
+          "Bar"   -> FieldSet("baz" -> Field.output.to("Baz").resolveWithFunction {
             _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           }),
           "Baz"   -> FieldSet("value" -> Field.output.to("Int").resolveWithFunction {
@@ -100,7 +99,7 @@ object StepGeneratorSpec extends ZIOSpecDefault {
 
         val program = execute(orc)("query {foo { bar { baz {value} }}}")
         assertZIO(program)(equalTo(
-          """{"foo":{"bar":[{"baz":[{"value":102}]},{"baz":[{"value":202}]},{"baz":[{"value":302}]}]}}"""
+          """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}"""
         ))
       },
       test("parent") {

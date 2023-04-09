@@ -298,14 +298,14 @@ object LambdaSpec extends ZIOSpecDefault {
       suite("unsafe")(
         test("endpoint /users/1") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput(Option(TSchema.obj("id" -> TSchema.int, "name" -> TSchema.string)))
+            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
           val program  = Lambda.unsafe.fromEndpoint(endpoint)
-          val expected = DynamicValueUtil.record("id" -> DynamicValue(1), "name" -> DynamicValue("Leanne Graham"))
+          val expected = DynamicValueUtil.record("id" -> DynamicValue(1L), "name" -> DynamicValue("Leanne Graham"))
           assertZIO(program.evaluate(DynamicValue(Map("id" -> 1))))(equalTo(expected))
         },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput(Option(TSchema.obj("id" -> TSchema.int, "name" -> TSchema.string)))
+            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
           val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluate(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 

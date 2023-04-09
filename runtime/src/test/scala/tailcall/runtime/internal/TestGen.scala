@@ -14,7 +14,7 @@ object TestGen {
 
   def genVersion: Gen[Any, Int] = Gen.int(0, 10)
 
-  def genScalar: Gen[Any, TSchema] = Gen.fromIterable(List(TSchema.string, TSchema.int, TSchema.bool))
+  def genScalar: Gen[Any, TSchema] = Gen.fromIterable(List(TSchema.string, TSchema.num, TSchema.bool))
 
   def genField: Gen[Any, (String, TSchema)] =
     for {

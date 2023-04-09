@@ -185,7 +185,7 @@ trait Config2Blueprint {
 
       case None => field.typeOf match {
           case "String"  => TSchema.string
-          case "Int"     => TSchema.int
+          case "Int"     => TSchema.num
           case "Boolean" => TSchema.bool
           case _         => TSchema.string // TODO: default to string?
         }

@@ -43,7 +43,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
         assertSchema(endpoint)(expected.trim)
       },
       test("nested output schema") {
-        val output   = TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.int)))
+        val output   = TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.num)))
         val endpoint = Endpoint.make("abc.com").withOutput(Option(output)).withPath("/abc")
         val expected = """
                          |schema @server(baseURL: "http://abc.com") {
@@ -97,8 +97,8 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
       },
       test("nested argument schema") {
         val endpoint = Endpoint.make("abc.com")
-          .withInput(Option(TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.int)))))
-          .withOutput(Option(TSchema.int))
+          .withInput(Option(TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.num)))))
+          .withOutput(Option(TSchema.num))
 
         val expected = """
                          |schema @server(baseURL: "http://abc.com") {

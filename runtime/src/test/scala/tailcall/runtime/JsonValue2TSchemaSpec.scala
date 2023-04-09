@@ -13,40 +13,40 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
     suite("json to TSchema")(
       suite("unify")(
         test("removes duplicates") {
-          val schema = unify(TSchema.int, TSchema.int)
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.int)))
+          val schema = unify(TSchema.num, TSchema.num)
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.num)))
         },
         test("objects") {
-          val schema = unify(TSchema.obj("a" -> TSchema.int), TSchema.obj("b" -> TSchema.int))
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt))))
+          val schema = unify(TSchema.obj("a" -> TSchema.num), TSchema.obj("b" -> TSchema.num))
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt, "b" -> TSchema.num.opt))))
         },
         test("array") {
-          val schema = unify(TSchema.obj("a" -> TSchema.int).arr, TSchema.obj("b" -> TSchema.int).arr)
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt).arr)))
+          val schema = unify(TSchema.obj("a" -> TSchema.num).arr, TSchema.obj("b" -> TSchema.num).arr)
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt, "b" -> TSchema.num.opt).arr)))
         },
         test("optional(a) b") {
-          val schema = unify(TSchema.obj("a" -> TSchema.int.opt), TSchema.obj("a" -> TSchema.int))
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.int.opt))))
+          val schema = unify(TSchema.obj("a" -> TSchema.num.opt), TSchema.obj("a" -> TSchema.num))
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt))))
         },
         test("a optional(b)") {
-          val schema = unify(TSchema.obj("a" -> TSchema.int), TSchema.obj("a" -> TSchema.int.opt))
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.int.opt))))
+          val schema = unify(TSchema.obj("a" -> TSchema.num), TSchema.obj("a" -> TSchema.num.opt))
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt))))
         },
         test("optional(a) optional(b)") {
-          val schema = unify(TSchema.obj("a" -> TSchema.int.opt), TSchema.obj("a" -> TSchema.int.opt))
-          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.int.opt))))
+          val schema = unify(TSchema.obj("a" -> TSchema.num.opt), TSchema.obj("a" -> TSchema.num.opt))
+          assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt))))
         },
         test("int and string") {
-          val schema = unify(TSchema.int, TSchema.string)
+          val schema = unify(TSchema.num, TSchema.string)
           assertZIO(schema.toZIO)(isNone)
         },
         test("deeply nested") {
           val schema = unify(
-            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.int))),
-            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("y" -> TSchema.int))),
+            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.num))),
+            TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("y" -> TSchema.num))),
           )
           assertZIO(schema.toZIO)(isSome(
-            equalTo(TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.int.opt, "y" -> TSchema.int.opt))))
+            equalTo(TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("x" -> TSchema.num.opt, "y" -> TSchema.num.opt))))
           ))
         },
       ),
@@ -79,7 +79,7 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
         test("nullables with multiple keys to TSchema") {
           val json     = Json
             .Arr(Json.Obj("a" -> Json.Num(1), "b" -> Json.Null), Json.Obj("a" -> Json.Null, "b" -> Json.Num(1)))
-          val expected = TSchema.arr(TSchema.obj("a" -> TSchema.int.opt, "b" -> TSchema.int.opt))
+          val expected = TSchema.arr(TSchema.obj("a" -> TSchema.num.opt, "b" -> TSchema.num.opt))
           assertZIO(toTSchema(json).toZIO)(equalTo(expected))
         },
         test("numeric keys") {
