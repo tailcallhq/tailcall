@@ -44,11 +44,17 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 object Config {
   def empty: Config = Config()
 
+  def default: Config = Config.empty.withQuery("Query")
+
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
-  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class Type(
+    doc: Option[String] = None,
+    fields: Map[String, Field] = Map.empty,
+    dictionaryType: Option[String] = None,
+  ) {
     self =>
     def ++(other: Type): Type = self.mergeRight(other)
 
@@ -72,6 +78,7 @@ object Config {
   object Type {
     def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
     def empty: Type                           = Type()
+    def dict(typeOf: String): Type            = Type(dictionaryType = Option(typeOf))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
