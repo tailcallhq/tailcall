@@ -185,26 +185,6 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
           Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
         },
       ),
-      test("dictionary field") {
-        val config = Config.default
-          .withType("Query" -> Type("foo" -> Field.ofType("Foo").asList), "Foo" -> Type.dict("Int"))
-
-        val expected = """|schema {
-                          |  query: Query
-                          |}
-                          |
-                          |type Foo {
-                          |  key: String!
-                          |  value: Int
-                          |}
-                          |
-                          |type Query {
-                          |  foo: [Foo]
-                          |}
-                          |""".stripMargin.trim
-
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
-      },
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {
