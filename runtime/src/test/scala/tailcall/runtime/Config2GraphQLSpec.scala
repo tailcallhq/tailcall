@@ -95,7 +95,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
       },
       test("rename a field") {
         val config  = {
-          Config.empty.withQuery("Query")
+          Config.default
             .withType("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
         }
         val program = execute(config)(""" query { bar } """)
@@ -104,7 +104,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
       },
       test("rename an argument") {
         val config  = {
-          Config.empty.withQuery("Query").withType(
+          Config.default.withType(
             "Query" -> Type(
               "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
                 .withSteps(Step.ObjPath("bar" -> List("args", "data")))
@@ -131,7 +131,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
           )
         )
 
-        val config = Config.empty.withQuery("Query").withType(
+        val config = Config.default.withType(
           "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.Constant(value))),
           "A"     -> Type("b" -> Field.ofType("B").asList),
           "B"     -> Type("c" -> Field.int),
