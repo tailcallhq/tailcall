@@ -26,13 +26,7 @@ trait Config2Blueprint {
     }.toMap
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
-      val fields = typeInfo.dictionaryType match {
-        case Some(typeOfField) => List(
-            Blueprint.FieldDefinition(name = "key", ofType = Blueprint.NamedType("String", nonNull = true)),
-            Blueprint.FieldDefinition(name = "value", ofType = Blueprint.NamedType(typeOfField, nonNull = false)),
-          )
-        case None              => toFieldList(config, inputTypeNames, typeInfo)
-      }
+      val fields = toFieldList(config, inputTypeNames, typeInfo)
 
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
