@@ -50,7 +50,7 @@ object TSchema {
 
   def empty: TSchema = TSchema.Obj(Map.empty)
 
-  def int: TSchema = TSchema.Num
+  def num: TSchema = TSchema.Num
 
   def obj(map: Map[String, TSchema]): TSchema = TSchema.Obj(map)
 
