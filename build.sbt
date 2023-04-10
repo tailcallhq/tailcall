@@ -1,4 +1,4 @@
-lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
+lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry, lambda).settings(name := "tailcall")
 lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies := Seq(
     "dev.zio"                %% "zio-schema"            % zioSchema,
@@ -39,6 +39,8 @@ lazy val registry = (project in file("registry")).settings(
     "dev.zio" %% "zio-redis" % "0.2.0",
   )
 ).dependsOn(runtime)
+
+lazy val lambda = (project in file("lambda")).settings(libraryDependencies := zioTestDependencies)
 
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
