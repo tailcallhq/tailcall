@@ -91,7 +91,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 val zioSchema           = "0.4.7"
 val caliban             = "2.0.2"
-val zio                 = "2.0.10"
+val zio                 = "2.0.12"
 val zioHttp             = "0.0.4"
 val zioTestDependencies = Seq("dev.zio" %% "zio-test" % zio % Test, "dev.zio" %% "zio-test-sbt" % zio % Test)
 
