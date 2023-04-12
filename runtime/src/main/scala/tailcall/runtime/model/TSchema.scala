@@ -33,12 +33,13 @@ sealed trait TSchema {
 
   final def tag: String =
     self match {
-      case TSchema.Obj(_) => "Object"
-      case TSchema.Arr(_) => "Array"
-      case TSchema.Opt(_) => "Optional"
-      case TSchema.Str    => "String"
-      case TSchema.Num    => "Long"
-      case TSchema.Bool   => "Boolean"
+      case TSchema.Obj(_)        => "Object"
+      case TSchema.Arr(_)        => "Array"
+      case TSchema.Opt(_)        => "Optional"
+      case TSchema.Str           => "String"
+      case TSchema.Num           => "Long"
+      case TSchema.Bool          => "Boolean"
+      case TSchema.Dictionary(_) => "Dictionary"
     }
 }
 
@@ -47,6 +48,8 @@ object TSchema {
   def arr(item: TSchema): TSchema = TSchema.Arr(item)
 
   def bool: TSchema = TSchema.Bool
+
+  def dict(item: TSchema): TSchema = TSchema.Dictionary(item)
 
   def empty: TSchema = TSchema.Obj(Map.empty)
 
@@ -66,14 +69,15 @@ object TSchema {
 
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {
-      case TSchema.Str    => Schema[String]
-      case TSchema.Num    => Schema[Long]
-      case TSchema.Bool   => Schema[Boolean]
-      case TSchema.Opt(s) => toZIOSchema(s).optional
-      case Obj(fields)    =>
+      case TSchema.Str        => Schema[String]
+      case TSchema.Num        => Schema[Long]
+      case TSchema.Bool       => Schema[Boolean]
+      case TSchema.Opt(s)     => toZIOSchema(s).optional
+      case Obj(fields)        =>
         val nFields = Chunk.from(fields).map(f => Labelled(f._1, toZIOSchema(f._2).ast))
         ExtensibleMetaSchema.Product(TypeId.Structural, NodePath.empty, nFields).toSchema
-      case Arr(item)      => Schema.chunk(toZIOSchema(item))
+      case Arr(item)          => Schema.chunk(toZIOSchema(item))
+      case Dictionary(schema) => Schema.map(Schema[String], toZIOSchema(schema))
     }
 
   // TODO: add unit tests
@@ -102,6 +106,11 @@ object TSchema {
 
   @jsonHint("array")
   final case class Arr(@jsonField("item") schema: TSchema) extends TSchema
+
+  @jsonHint("dict")
+  final case class Dictionary(value: TSchema) extends TSchema {
+    def toKeyValueArr: TSchema.Arr = TSchema.Arr(TSchema.Obj(Map("key" -> TSchema.Str, "value" -> value)))
+  }
 
   @jsonHint("optional")
   final case class Opt(schema: TSchema) extends TSchema

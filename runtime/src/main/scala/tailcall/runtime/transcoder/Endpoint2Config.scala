@@ -35,6 +35,7 @@ object Endpoint2Config {
         case TSchema.Str  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
         case TSchema.Num  => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Bool => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
+        case schema @ TSchema.Dictionary(_) => toArgument(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
       }
     }
 
@@ -46,6 +47,7 @@ object Endpoint2Config {
         case TSchema.Str         => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Num         => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Bool        => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
+        case schema @ TSchema.Dictionary(_) => toArgumentMap(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
       }
     }
 
@@ -60,10 +62,11 @@ object Endpoint2Config {
 
     private def toConfigField(schema: TSchema, isRequired: Boolean, isList: Boolean): Config.Field = {
       schema match {
-        case TSchema.Obj(_)      => Config
+        case TSchema.Obj(_)                 => Config
             .Field(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
-        case TSchema.Arr(schema) => toConfigField(schema, isRequired, isList = true)
-        case TSchema.Opt(schema) => toConfigField(schema, isRequired = false, isList = isList)
+        case TSchema.Arr(schema)            => toConfigField(schema, isRequired, isList = true)
+        case TSchema.Opt(schema)            => toConfigField(schema, isRequired = false, isList = isList)
+        case schema @ TSchema.Dictionary(_) => toConfigField(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
         case TSchema.Str  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
         case TSchema.Num  => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Bool => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
@@ -111,15 +114,16 @@ object Endpoint2Config {
       isList: Boolean,
     ): Map[String, Map[String, Config.Field]] = {
       schema match {
-        case TSchema.Obj(fields) =>
+        case TSchema.Obj(fields)            =>
           val head = getTypeName(schema) -> toFields(fields)
           val tail = fields.flatMap(field => toTypes(field._2, isRequired, isList))
           tail + head
-        case TSchema.Arr(item)   => toTypes(item, isRequired, isList = true)
-        case TSchema.Opt(schema) => toTypes(schema, isRequired = false, isList = isList)
-        case TSchema.Str         => Map.empty
-        case TSchema.Num         => Map.empty
-        case TSchema.Bool        => Map.empty
+        case TSchema.Arr(item)              => toTypes(item, isRequired, isList = true)
+        case TSchema.Opt(schema)            => toTypes(schema, isRequired = false, isList = isList)
+        case TSchema.Str                    => Map.empty
+        case TSchema.Num                    => Map.empty
+        case TSchema.Bool                   => Map.empty
+        case schema @ TSchema.Dictionary(_) => toTypes(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
       }
     }
   }
