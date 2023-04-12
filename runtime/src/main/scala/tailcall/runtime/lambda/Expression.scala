@@ -77,7 +77,6 @@ object Expression {
   object Dynamic {
     sealed trait Operation
     final case class Typed(ctor: MetaSchema)     extends Operation
-    // TODO: drop Path and use JsonTransform
     final case class Path(name: List[String])    extends Operation
     final case class ToDynamic(ctor: MetaSchema) extends Operation
     final case class JsonTransform(jsonT: JsonT) extends Operation
