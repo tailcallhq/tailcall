@@ -102,7 +102,7 @@ object Endpoint {
     val pathString: String = endpoint.path.transform {
       case Segment.Literal(value)  => Path.Segment.Literal(value)
       case Segment.Param(mustache) => Path.Segment
-          .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
+          .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException(s"Mustache {{${mustache.path}}} evaluation failed")))
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
