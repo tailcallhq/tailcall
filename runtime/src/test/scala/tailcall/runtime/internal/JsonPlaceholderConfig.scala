@@ -1,5 +1,6 @@
 package tailcall.runtime.internal
 
+import tailcall.runtime.JsonTransformation
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.{Config, Path, Server, Step}
@@ -24,9 +25,11 @@ object JsonPlaceholderConfig {
         "posts" -> Field.ofType("Post").withSteps(posts).asList.withDoc("A list of all posts."),
         "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users."),
         "post" -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post by id."),
-        "user" -> Config
-          .Field("User", Step.ObjPath("userId" -> List("args", "id")), userById)("id" -> Arg.int.asRequired)
-          .withDoc("A single user by id."),
+        "user" -> Config.Field(
+          "User",
+          Step.transform(JsonTransformation.applySpec("userId" -> JsonTransformation.path("args", "id"))),
+          userById,
+        )("id" -> Arg.int.asRequired).withDoc("A single user by id."),
       ),
       "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
         "name"     -> Field.string.asRequired,
@@ -53,7 +56,7 @@ object JsonPlaceholderConfig {
         "userId" -> Field.int.asRequired,
         "title"  -> Field.string,
         "body"   -> Field.string,
-        "user"   -> Field.ofType("User").withSteps(Step.ObjPath("userId" -> List("value", "userId")), userById),
+        "user"   -> Field.ofType("User").withSteps(Step.objPath("userId" -> List("value", "userId")), userById),
       ),
       "Address"    -> Type(
         "street"  -> Field.string,
