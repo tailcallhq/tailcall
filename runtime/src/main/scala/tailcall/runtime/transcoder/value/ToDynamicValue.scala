@@ -32,7 +32,7 @@ trait ToDynamicValue {
     }
   }
 
-  final def toDynamicValue(json: Json): TValid[String, DynamicValue] = {
+  final def toDynamicValue(json: Json): TValid[Nothing, DynamicValue] = {
     json match {
       case Json.Obj(fields)   => TValid.foreach(fields.toList) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(ListMap.from(_)).map(DynamicValue.Record(TypeId.Structural, _))
