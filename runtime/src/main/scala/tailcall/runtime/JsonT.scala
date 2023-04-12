@@ -47,6 +47,13 @@ object JsonT {
     implicit val jsonCodec: JsonCodec[ApplySpec] = JsonCodec[Map[String, JsonT]].transform(ApplySpec(_), _.spec)
   }
 
+  @jsonHint("objPath")
+  final case class ObjectPath(spec: Map[String, List[String]]) extends JsonT
+  object ObjectPath {
+    implicit val jsonCodec: JsonCodec[ObjectPath] = JsonCodec[Map[String, List[String]]]
+      .transform(ObjectPath(_), _.spec)
+  }
+
   @jsonHint("path")
   final case class Path(list: List[String]) extends JsonT
   object Path {
@@ -56,14 +63,14 @@ object JsonT {
   @jsonHint("debug")
   final case class Debug(prefix: String) extends JsonT
 
-  def identity: JsonT                                = Identity
-  def const(json: Json): JsonT                       = Constant(json)
-  def toPair: JsonT                                  = ToPair
-  def toKeyValue: JsonT                              = ToKeyValue
-  def path(list: String*): JsonT                     = Path(list.toList)
-  def applySpec(spec: (String, JsonT)*): JsonT       = ApplySpec(spec.toMap)
-  def debug(prefix: String): JsonT                   = Debug(prefix)
-  def objPath(map: Map[String, List[String]]): JsonT = ApplySpec(map.map { case (key, value) => key -> Path(value) })
+  def identity: JsonT                               = Identity
+  def const(json: Json): JsonT                      = Constant(json)
+  def toPair: JsonT                                 = ToPair
+  def toKeyValue: JsonT                             = ToKeyValue
+  def path(list: String*): JsonT                    = Path(list.toList)
+  def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
+  def debug(prefix: String): JsonT                  = Debug(prefix)
+  def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -104,6 +111,15 @@ object JsonT {
                 }
               }
             }
+        }
+
+      case ObjectPath(spec) => acc {
+          spec.keys.foldLeft(Map.empty[String, A]) { case (obj, key) =>
+            spec.get(key) match {
+              case None       => obj
+              case Some(list) => obj + (key -> Path(list).run(data))
+            }
+          }
         }
 
       case Path(list) => list match {
