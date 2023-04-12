@@ -1,7 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.Method
-import tailcall.runtime.{DirectiveCodec, JsonTransformation}
+import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
 import zio.json.ast.Json
 
@@ -9,9 +9,9 @@ sealed trait Step
 
 object Step {
 
-  def objPath(spec: (String, List[String])*): Step = Transform(JsonTransformation.objPath(spec.toMap))
-  def constant(a: Json): Step                      = Transform(JsonTransformation.Constant(a))
-  def transform(jsonT: JsonTransformation): Step   = Transform(jsonT)
+  def objPath(spec: (String, List[String])*): Step = Transform(JsonT.objPath(spec.toMap))
+  def constant(a: Json): Step                      = Transform(JsonT.Constant(a))
+  def transform(jsonT: JsonT): Step                = Transform(jsonT)
 
   @jsonHint("http")
   final case class Http(
@@ -26,7 +26,7 @@ object Step {
   }
 
   @jsonHint("transform")
-  final case class Transform(transformation: JsonTransformation) extends Step
+  final case class Transform(transformation: JsonT) extends Step
 
   object Http {
     private val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]

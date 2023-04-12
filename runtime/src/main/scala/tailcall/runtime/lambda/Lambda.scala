@@ -1,6 +1,6 @@
 package tailcall.runtime.lambda
 
-import tailcall.runtime.JsonTransformation
+import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.DataLoader.HttpDataLoader
@@ -121,7 +121,7 @@ object Lambda {
     def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.ToDynamic(schema.ast)))
 
-    def jsonTransform(jsonT: JsonTransformation): DynamicValue ~> DynamicValue =
+    def jsonTransform(jsonT: JsonT): DynamicValue ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.JsonTransform(jsonT)))
   }
 

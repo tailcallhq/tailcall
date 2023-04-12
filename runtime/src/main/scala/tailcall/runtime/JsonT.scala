@@ -14,30 +14,29 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
  * DynamicValue or any other type, all we need to provide is
  * an Accessor[A].
  */
-sealed trait JsonTransformation {
+sealed trait JsonT {
   self =>
-  def run[A](input: A)(implicit ev: JsonTransformation.Accessor[A]): A   = JsonTransformation.transform(self, input)
-  def apply[A](input: A)(implicit ev: JsonTransformation.Accessor[A]): A = run(input)
+  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
 
-  def andThen(other: JsonTransformation): JsonTransformation = JsonTransformation.Compose(List(self, other))
-  def other(other: JsonTransformation): JsonTransformation   = self andThen other
+  def andThen(other: JsonT): JsonT = JsonT.Compose(List(self, other))
+  def other(other: JsonT): JsonT   = self andThen other
 }
 
-object JsonTransformation {
-  case object Identity                                              extends JsonTransformation
-  final case class Constant(json: Json)                             extends JsonTransformation
-  case object ToPair                                                extends JsonTransformation
-  final case class Compose(list: List[JsonTransformation])          extends JsonTransformation
-  final case class ApplySpec(spec: Map[String, JsonTransformation]) extends JsonTransformation
-  final case class Path(list: List[String])                         extends JsonTransformation
+object JsonT {
+  case object Identity                                 extends JsonT
+  final case class Constant(json: Json)                extends JsonT
+  case object ToPair                                   extends JsonT
+  final case class Compose(list: List[JsonT])          extends JsonT
+  final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
+  final case class Path(list: List[String])            extends JsonT
 
-  def identity: JsonTransformation                                       = Identity
-  def const(json: Json): JsonTransformation                              = Constant(json)
-  def toPair: JsonTransformation                                         = ToPair
-  def path(list: String*): JsonTransformation                            = Path(list.toList)
-  def applySpec(spec: (String, JsonTransformation)*): JsonTransformation = ApplySpec(spec.toMap)
-  def objPath(map: Map[String, List[String]]): JsonTransformation        =
-    ApplySpec(map.map { case (key, value) => key -> Path(value) })
+  def identity: JsonT                                = Identity
+  def const(json: Json): JsonT                       = Constant(json)
+  def toPair: JsonT                                  = ToPair
+  def path(list: String*): JsonT                     = Path(list.toList)
+  def applySpec(spec: (String, JsonT)*): JsonT       = ApplySpec(spec.toMap)
+  def objPath(map: Map[String, List[String]]): JsonT = ApplySpec(map.map { case (key, value) => key -> Path(value) })
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -58,7 +57,7 @@ object JsonTransformation {
     def apply[A](implicit ev: Accessor[A]): Accessor[A] = ev
   }
 
-  def transform[A](transformation: JsonTransformation, data: A)(implicit acc: Accessor[A]): A = {
+  def transform[A](transformation: JsonT, data: A)(implicit acc: Accessor[A]): A = {
     transformation match {
       case Identity => data
 
@@ -173,7 +172,7 @@ object JsonTransformation {
   implicit val constantJsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder)
     .transform(Constant(_), _.json)
 
-  implicit final private[JsonTransformation] def jsonSchema: Schema[Json] = JsonSchema.schema
-  implicit val jsonCodec: JsonCodec[JsonTransformation]                   = DeriveJsonCodec.gen[JsonTransformation]
-  implicit def schema: Schema[JsonTransformation]                         = DeriveSchema.gen[JsonTransformation]
+  implicit final private[JsonT] def jsonSchema: Schema[Json] = JsonSchema.schema
+  implicit val jsonCodec: JsonCodec[JsonT]                   = DeriveJsonCodec.gen[JsonT]
+  implicit def schema: Schema[JsonT]                         = DeriveSchema.gen[JsonT]
 }
