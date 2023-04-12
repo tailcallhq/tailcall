@@ -64,7 +64,7 @@ type Mutation {
 type Post {
   body: String
   id: Int!
-  user: User @steps(value: [{objectPath: {userId: ["value","userId"]}},{http: {path: "/users/{{userId}}"}}])
+  user: User @steps(value: [{transform: {applySpec: {userId: {path: ["value","userId"]}}}},{http: {path: "/users/{{userId}}"}}])
   userId: Int!
   title: String
 }
@@ -77,7 +77,7 @@ type Query {
   "A single post by id."
   post(id: Int!): Post @steps(value: [{http: {path: "/posts/{{args.id}}"}}])
   "A single user by id."
-  user(id: Int!): User @steps(value: [{objectPath: {userId: ["args","id"]}},{http: {path: "/users/{{userId}}"}}])
+  user(id: Int!): User @steps(value: [{transform: {applySpec: {userId: {path: ["args","id"]}}}},{http: {path: "/users/{{userId}}"}}])
 }
 
 type User {

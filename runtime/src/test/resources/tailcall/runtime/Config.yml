@@ -69,10 +69,12 @@ graphQL:
         user:
           type: User
           steps:
-          - objectPath:
-              userId:
-              - args
-              - id
+          - transform:
+              applySpec:
+                userId:
+                  path:
+                  - args
+                  - id
           - http:
               path: /users/{{userId}}
           args:
@@ -110,10 +112,12 @@ graphQL:
         user:
           type: User
           steps:
-          - objectPath:
-              userId:
-              - value
-              - userId
+          - transform:
+              applySpec:
+                userId:
+                  path:
+                  - value
+                  - userId
           - http:
               path: /users/{{userId}}
         userId:

@@ -110,11 +110,15 @@
             "type" : "User",
             "steps" : [
               {
-                "objectPath" : {
-                  "userId" : [
-                    "args",
-                    "id"
-                  ]
+                "transform" : {
+                  "applySpec" : {
+                    "userId" : {
+                      "path" : [
+                        "args",
+                        "id"
+                      ]
+                    }
+                  }
                 }
               },
               {
@@ -175,11 +179,15 @@
             "type" : "User",
             "steps" : [
               {
-                "objectPath" : {
-                  "userId" : [
-                    "value",
-                    "userId"
-                  ]
+                "transform" : {
+                  "applySpec" : {
+                    "userId" : {
+                      "path" : [
+                        "value",
+                        "userId"
+                      ]
+                    }
+                  }
                 }
               },
               {

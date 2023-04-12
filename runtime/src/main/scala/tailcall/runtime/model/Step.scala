@@ -27,6 +27,9 @@ object Step {
 
   @jsonHint("transform")
   final case class Transform(transformation: JsonT) extends Step
+  object Transform {
+    implicit val jsonCodec: JsonCodec[Transform] = JsonCodec[JsonT].transform(Transform(_), _.transformation)
+  }
 
   object Http {
     private val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]

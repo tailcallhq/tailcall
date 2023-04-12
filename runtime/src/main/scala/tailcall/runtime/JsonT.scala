@@ -4,7 +4,7 @@ import tailcall.runtime.internal.JsonSchema
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.json.ast.Json
-import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.json.{DeriveJsonCodec, JsonCodec, jsonHint}
 import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 /**
@@ -24,12 +24,29 @@ sealed trait JsonT {
 }
 
 object JsonT {
-  case object Identity                                 extends JsonT
-  final case class Constant(json: Json)                extends JsonT
-  case object ToPair                                   extends JsonT
-  final case class Compose(list: List[JsonT])          extends JsonT
+  @jsonHint("identity")
+  case object Identity extends JsonT
+
+  @jsonHint("constant")
+  final case class Constant(json: Json) extends JsonT
+
+  @jsonHint("toPair")
+  case object ToPair extends JsonT
+
+  @jsonHint("compose")
+  final case class Compose(list: List[JsonT]) extends JsonT
+
+  @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
-  final case class Path(list: List[String])            extends JsonT
+  object ApplySpec {
+    implicit val jsonCodec: JsonCodec[ApplySpec] = JsonCodec[Map[String, JsonT]].transform(ApplySpec(_), _.spec)
+  }
+
+  @jsonHint("path")
+  final case class Path(list: List[String]) extends JsonT
+  object Path {
+    implicit val jsonCodec: JsonCodec[Path] = JsonCodec[List[String]].transform(Path(_), _.list)
+  }
 
   def identity: JsonT                                = Identity
   def const(json: Json): JsonT                       = Constant(json)
