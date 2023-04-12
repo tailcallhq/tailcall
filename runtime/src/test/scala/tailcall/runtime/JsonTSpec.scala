@@ -35,11 +35,10 @@ object JsonTSpec extends ZIOSpecDefault {
         assertTrue(transformation(input) == expected)
       },
       test("applySpec") {
-        val transformation = JsonT
-          .applySpec("a" -> JsonT.const(Json.Num(1)), "b" -> JsonT.const(Json.Num(2)), "c" -> JsonT.identity)
+        val transformation = JsonT.applySpec("a" -> JsonT.identity, "b" -> JsonT.const(Json.Str("b")))
 
-        val input: Json    = Json.Obj("a" -> Json.Num(3), "b" -> Json.Num(4), "c" -> Json.Num(5))
-        val expected: Json = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2), "c" -> Json.Num(5))
+        val input: Json    = Json.Num(1)
+        val expected: Json = Json.Obj("a" -> Json.Num(1), "b" -> Json.Str("b"))
 
         assertTrue(transformation(input) == expected)
       },

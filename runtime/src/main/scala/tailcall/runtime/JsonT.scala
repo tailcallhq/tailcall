@@ -22,6 +22,7 @@ sealed trait JsonT {
   def andThen(other: JsonT): JsonT = JsonT.Pipe(self, other)
   def >>>(other: JsonT): JsonT     = self andThen other
   def other(other: JsonT): JsonT   = self andThen other
+  def debug(prefix: String): JsonT = self >>> JsonT.debug(prefix)
 }
 
 object JsonT {
@@ -96,13 +97,10 @@ object JsonT {
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
           case None       => acc {
-              data.keys.foldLeft(Map.empty[String, A]) { case (obj, key) =>
-                data.get(key) match {
+              spec.keys.foldLeft(Map.empty[String, A]) { case (obj, key) =>
+                spec.get(key) match {
                   case None        => obj
-                  case Some(value) => spec.get(key) match {
-                      case Some(transformation) => obj + (key -> transformation.run(value))
-                      case None                 => obj
-                    }
+                  case Some(jsonT) => obj + (key -> jsonT(data))
                 }
               }
             }
@@ -170,12 +168,17 @@ object JsonT {
         case _                                => Chunk.empty
       }
 
-    override def get(a: DynamicValue, key: String): Option[DynamicValue] =
+    override def get(a: DynamicValue, key: String): Option[DynamicValue] = {
       a match {
-        case DynamicValue.Record(_, values)   => values.get(key)
+        case DynamicValue.Record(_, values) =>
+          val result = values.get(key)
+          pprint.pprintln(s" ${key} -> ${result}")
+          result
+
         case DynamicValue.Dictionary(entries) => entries.find(_._1 == DynamicValue(key)).map(_._2)
         case _                                => None
       }
+    }
 
     override def apply(a: Map[String, DynamicValue]): DynamicValue = DynamicValueUtil.record(a.toSeq: _*)
 
