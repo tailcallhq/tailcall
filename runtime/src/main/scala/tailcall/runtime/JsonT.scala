@@ -33,6 +33,9 @@ object JsonT {
   @jsonHint("toPair")
   case object ToPair extends JsonT
 
+  @jsonHint("toKeyValue")
+  case object ToKeyValue extends JsonT
+
   @jsonHint("compose")
   final case class Compose(list: List[JsonT]) extends JsonT
 
@@ -51,6 +54,7 @@ object JsonT {
   def identity: JsonT                                = Identity
   def const(json: Json): JsonT                       = Constant(json)
   def toPair: JsonT                                  = ToPair
+  def toKeyValue: JsonT                              = ToKeyValue
   def path(list: String*): JsonT                     = Path(list.toList)
   def applySpec(spec: (String, JsonT)*): JsonT       = ApplySpec(spec.toMap)
   def objPath(map: Map[String, List[String]]): JsonT = ApplySpec(map.map { case (key, value) => key -> Path(value) })
@@ -106,6 +110,10 @@ object JsonT {
           case Nil          => data
           case head :: tail => Path(tail).run(data.get(head).getOrElse(acc.empty))
         }
+
+      case ToKeyValue => acc(data.keys.flatMap { key =>
+          data.get(key).map(value => acc(Map("key" -> acc(key), "value" -> value)))
+        })
     }
   }
 
