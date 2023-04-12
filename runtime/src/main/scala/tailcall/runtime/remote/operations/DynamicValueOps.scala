@@ -1,5 +1,6 @@
 package tailcall.runtime.remote.operations
 
+import tailcall.runtime.JsonTransformation
 import tailcall.runtime.lambda.Lambda
 import tailcall.runtime.remote._
 import zio.schema.{DynamicValue, Schema}
@@ -12,5 +13,8 @@ trait DynamicValueOps {
 
     def toTypedPath[A](name: String*)(implicit schema: Schema[A]): Remote[Option[A]] =
       self.path(name: _*).flatMap(_.toTyped[A])
+
+    def transform(jsonT: JsonTransformation): Remote[DynamicValue] =
+      Remote(self.toLambda >>> Lambda.dynamic.jsonTransform(jsonT))
   }
 }
