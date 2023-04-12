@@ -1,8 +1,6 @@
 package tailcall.runtime.model
 
 import caliban.GraphQL
-import tailcall.runtime.lambda.Expression.Logical.Unary
-import tailcall.runtime.lambda.Expression.{Dict, Logical, Math, Opt, Unsafe}
 import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.GraphQLGenerator
@@ -36,53 +34,13 @@ final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
   def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
   def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
-  def endpoints: List[Endpoint]                  = {
-    def find(expr: Expression): List[Endpoint] = {
-      expr match {
-        case Expression.Identity                    => Nil
-        case Expression.Defer(value)                => find(value)
-        case Expression.EqualTo(left, right, _)     => find(left) ++ find(right)
-        case Expression.FunctionDef(_, body, input) => find(body) ++ find(input)
-        case Expression.Immediate(value)            => find(value)
-        case Expression.Literal(_, _)               => Nil
-        case Expression.Logical(operation)          => operation match {
-            case Logical.Binary(_, left, right)  => find(left) ++ find(right)
-            case Logical.Unary(value, operation) => operation match {
-                case Unary.Diverge(isTrue, isFalse) => find(value) ++ find(isTrue) ++ find(isFalse)
-                case Unary.Not                      => find(value)
-              }
-          }
-        case Expression.Lookup(_)                   => Nil
-        case Expression.Math(operation, _)          => operation match {
-            case Math.Binary(_, left, right) => find(left) ++ find(right)
-            case Math.Unary(_, value)        => find(value)
-          }
-        case Expression.Pipe(left, right)           => find(left) ++ find(right)
-        case Expression.Unsafe(operation)           => operation match {
-            case Unsafe.Die(_)                 => Nil
-            case Unsafe.Debug(_)               => Nil
-            case Unsafe.EndpointCall(endpoint) => List(endpoint)
-          }
-        case Expression.Dynamic(_)                  => Nil
-        case Expression.Dict(operation)             => operation match {
-            case Dict.Get(key, map)        => find(key) ++ find(map)
-            case Dict.Put(key, value, map) => find(key) ++ find(value) ++ find(map)
-          }
-        case Expression.Opt(operation)              => operation match {
-            case Opt.IsSome                  => Nil
-            case Opt.IsNone                  => Nil
-            case Opt.Fold(value, none, some) => find(value) ++ find(none) ++ find(some)
-            case Opt.Apply(value)            => value match {
-                case Some(value) => find(value)
-                case None        => Nil
-              }
-          }
-      }
-    }
-
-    definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields, _) => fields }.flatten
-      .flatMap(_.resolver.toList.map(_.compile)).flatMap(find)
-  }
+  def endpoints: List[Endpoint]                  =
+    for {
+      fields     <- definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields, _) => fields }
+      definition <- fields
+      resolver   <- definition.resolver.toList.map(_.compile)
+      endpoint   <- resolver.collect { case Expression.Unsafe(Expression.Unsafe.EndpointCall(endpoint)) => endpoint }
+    } yield endpoint
 }
 
 object Blueprint {

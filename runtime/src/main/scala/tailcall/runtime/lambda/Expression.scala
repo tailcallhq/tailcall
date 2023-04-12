@@ -6,8 +6,10 @@ import zio.json.JsonCodec
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
-// scalafmt: { maxColumn = 240 }
-sealed trait Expression
+sealed trait Expression {
+  self =>
+  def collect[A](pf: PartialFunction[Expression, A]): List[A] = Expression.collect(self, pf.lift)
+}
 
 object Expression {
 
@@ -96,4 +98,48 @@ object Expression {
 
   implicit val schema: Schema[Expression]       = DeriveSchema.gen[Expression]
   implicit val jsonCodec: JsonCodec[Expression] = zio.schema.codec.JsonCodec.jsonCodec(schema)
+
+  def collect[A](expr: Expression, f: Expression => Option[A]): List[A] = {
+    expr match {
+      case Expression.Identity                    => f(expr).toList
+      case Expression.Defer(value)                => collect(value, f)
+      case Expression.EqualTo(left, right, _)     => collect(left, f) ++ collect(right, f)
+      case Expression.FunctionDef(_, body, input) => collect(body, f) ++ collect(input, f)
+      case Expression.Immediate(value)            => collect(value, f)
+      case Expression.Literal(_, _)               => f(expr).toList
+      case Expression.Logical(operation)          => operation match {
+          case Logical.Binary(_, left, right)  => collect(left, f) ++ collect(right, f)
+          case Logical.Unary(value, operation) => operation match {
+              case Logical.Unary.Diverge(isTrue, isFalse) =>
+                collect(value, f) ++ collect(isTrue, f) ++ collect(isFalse, f)
+              case Logical.Unary.Not                      => collect(value, f)
+            }
+        }
+      case Expression.Lookup(_)                   => f(expr).toList
+      case Expression.Math(operation, _)          => operation match {
+          case Math.Binary(_, left, right) => collect(left, f) ++ collect(right, f)
+          case Math.Unary(_, value)        => collect(value, f)
+        }
+      case Expression.Pipe(left, right)           => collect(left, f) ++ collect(right, f)
+      case Expression.Unsafe(operation)           => operation match {
+          case Unsafe.Die(_)          => f(expr).toList
+          case Unsafe.Debug(_)        => f(expr).toList
+          case Unsafe.EndpointCall(_) => f(expr).toList
+        }
+      case Expression.Dynamic(_)                  => f(expr).toList
+      case Expression.Dict(operation)             => operation match {
+          case Dict.Get(key, map)        => collect(key, f) ++ collect(map, f)
+          case Dict.Put(key, value, map) => collect(key, f) ++ collect(value, f) ++ collect(map, f)
+        }
+      case Expression.Opt(operation)              => operation match {
+          case Opt.IsSome                  => f(expr).toList
+          case Opt.IsNone                  => f(expr).toList
+          case Opt.Fold(value, none, some) => collect(value, f) ++ collect(none, f) ++ collect(some, f)
+          case Opt.Apply(value)            => value match {
+              case Some(value) => collect(value, f)
+              case None        => f(expr).toList
+            }
+        }
+    }
+  }
 }
