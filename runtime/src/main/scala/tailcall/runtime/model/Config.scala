@@ -140,10 +140,10 @@ object Config {
       val steps = self.steps match {
         case Some(steps) if steps.nonEmpty =>
           Option(steps.map {
-            case step @ Step.Http(_, _, _, _) =>
+            case step @ Step.Http(_, _, _, _, _) =>
               val noOutputHttp = step.withOutput(None).withInput(None)
               if (step.method contains Method.GET) noOutputHttp.copy(method = None) else noOutputHttp
-            case step                         => step
+            case step                            => step
           })
         case _                             => None
       }

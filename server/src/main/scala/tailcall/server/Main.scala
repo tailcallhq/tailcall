@@ -20,7 +20,7 @@ object Main extends ZIOAppDefault {
   override val run = Server.install(server)
     .flatMap(port => Console.printLine(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).exitCode
     .provide(
-      ServerConfig.live.update(_.port(SchemaRegistry.PORT)),
+      ServerConfig.live.update(_.port(SchemaRegistry.PORT)).update(_.objectAggregator(4000 * 4000)),
       SchemaRegistry.memory,
       GraphQLGenerator.default,
       HttpClient.default,

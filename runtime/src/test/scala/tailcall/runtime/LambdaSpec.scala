@@ -444,7 +444,7 @@ object LambdaSpec extends ZIOSpecDefault {
           val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
-          assertZIO(program)(equalTo("HTTP Error: 404"))
+          assertZIO(program)(equalTo("HTTP Error: 404 body: {}"))
         },
       ),
     ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http) @@ timeout(5 seconds)

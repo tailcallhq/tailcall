@@ -1,8 +1,11 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.{Method, Request, Scheme}
+import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.model.Path.Segment
+import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
+import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
 final case class Endpoint(
@@ -111,6 +114,14 @@ object Endpoint {
 
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
 
-    Request(method = method, url = url, headers = headers)
+    val dv   = endpoint.body match {
+      case Some(value) => DynamicValueUtil.getPath(input, value.split("/").toList)
+      case None        => Some(input)
+    }
+    val v    = dv.flatMap(x => Transcoder.toJson(x).toOption).map(x => String.valueOf(Json.encoder.encodeJson(x)))
+    val body = v.map(x => Chunk.fromIterable(x).map(_.toByte)).getOrElse(Chunk.empty)
+    if (body.nonEmpty) Request(method = method, url = url, headers = headers, body = body)
+    else Request(method = method, url = url, headers = headers)
+
   }
 }

@@ -28,10 +28,12 @@ object Step {
     method: Option[Method] = None,
     input: Option[TSchema] = None,
     output: Option[TSchema] = None,
+    body: Option[String] = None,
   ) extends Step {
     def withInput(input: Option[TSchema]): Http   = copy(input = input)
     def withMethod(method: Method): Http          = copy(method = Option(method))
     def withOutput(output: Option[TSchema]): Http = copy(output = output)
+    def withBody(body: Option[String]): Http      = copy(body = body)
   }
 
   @jsonHint("transform")
@@ -44,7 +46,13 @@ object Step {
     private val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]
 
     def fromEndpoint(endpoint: Endpoint): Http   =
-      Http(path = endpoint.path, method = Option(endpoint.method), input = endpoint.input, output = endpoint.output)
+      Http(
+        path = endpoint.path,
+        method = Option(endpoint.method),
+        input = endpoint.input,
+        output = endpoint.output,
+        body = endpoint.body,
+      )
     implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
   }
 

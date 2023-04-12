@@ -16,12 +16,17 @@ object StepSpec extends ZIOSpecDefault {
     suite("directive")(
       suite("http")(
         test("encoder") {
-          val http = Step.Http(path = Path.empty.withParam("users"), method = Option(Method.POST))
+          val http = Step
+            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("users/id"))
 
           val actual   = http.toDirective
           val expected = Directive(
             "http",
-            Map("path" -> Value.StringValue(value = "/{{users}}"), "method" -> Value.StringValue(value = "POST")),
+            Map(
+              "path"   -> Value.StringValue(value = "/{{users}}"),
+              "method" -> Value.StringValue(value = "POST"),
+              "body"   -> Value.StringValue(value = "users/id"),
+            ),
           )
 
           assertZIO(actual.toZIO)(equalTo(expected))
@@ -29,26 +34,34 @@ object StepSpec extends ZIOSpecDefault {
         test("decoder") {
           val directive = Directive(
             "http",
-            Map("path" -> Value.StringValue(value = "/{{users}}"), "method" -> Value.StringValue(value = "POST")),
+            Map(
+              "path"   -> Value.StringValue(value = "/{{users}}"),
+              "method" -> Value.StringValue(value = "POST"),
+              "body"   -> Value.StringValue(value = "users/id"),
+            ),
           )
 
           val actual   = directive.fromDirective[Http]
-          val expected = Step.Http(path = Path.empty.withParam("users"), method = Option(Method.POST))
+          val expected = Step
+            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("users/id"))
 
           assertZIO(actual.toZIO)(equalTo(expected))
         },
       ),
       suite("steps")(
         test("encoder") {
-          val steps: List[Step] = Step.Http(path = Path.empty.withParam("users"), method = Option(Method.POST)) :: Nil
+          val steps: List[Step] = Step
+            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("user/id")) :: Nil
           val actual            = steps.toDirective
           val expected          = Directive(
             "steps",
             Map(
               "value" -> ListValue(List(ObjectValue(Map(
-                "http" -> ObjectValue(
-                  Map("path" -> Value.StringValue(value = "/{{users}}"), "method" -> Value.StringValue(value = "POST"))
-                )
+                "http" -> ObjectValue(Map(
+                  "path"   -> Value.StringValue(value = "/{{users}}"),
+                  "method" -> Value.StringValue(value = "POST"),
+                  "body"   -> Value.StringValue(value = "user/id"),
+                ))
               ))))
             ),
           )
@@ -60,16 +73,18 @@ object StepSpec extends ZIOSpecDefault {
             "steps",
             Map(
               "value" -> ListValue(List(ObjectValue(Map(
-                "http" -> ObjectValue(
-                  Map("path" -> Value.StringValue(value = "/{{users}}"), "method" -> Value.StringValue(value = "POST"))
-                )
+                "http" -> ObjectValue(Map(
+                  "path"   -> Value.StringValue(value = "/{{users}}"),
+                  "method" -> Value.StringValue(value = "POST"),
+                  "body"   -> Value.StringValue(value = "user/id"),
+                ))
               ))))
             ),
           )
 
           val actual               = directive.fromDirective[List[Step]]
           val expected: List[Step] = Step
-            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST)) :: Nil
+            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("user/id")) :: Nil
 
           assertZIO(actual.toZIO)(equalTo(expected))
         },

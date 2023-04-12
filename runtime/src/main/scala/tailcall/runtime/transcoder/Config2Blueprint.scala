@@ -161,7 +161,7 @@ trait Config2Blueprint {
 
   final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
     step match {
-      case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
+      case http @ Step.Http(_, _, _, _, _) => toResolver(config, field, http)
       case Step.Transform(jsonT)        => TValid.succeed(dynamic => dynamic.transform(jsonT))
       case Step.LambdaFunction(func)    => TValid.succeed(func)
     }
