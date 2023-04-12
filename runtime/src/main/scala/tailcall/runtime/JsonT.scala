@@ -172,7 +172,6 @@ object JsonT {
       a match {
         case DynamicValue.Record(_, values) =>
           val result = values.get(key)
-          pprint.pprintln(s" ${key} -> ${result}")
           result
 
         case DynamicValue.Dictionary(entries) => entries.find(_._1 == DynamicValue(key)).map(_._2)
