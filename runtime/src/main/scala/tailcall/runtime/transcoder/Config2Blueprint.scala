@@ -1,16 +1,13 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
-import tailcall.runtime.internal.{JsonSchema, TValid}
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
 import tailcall.runtime.remote.Remote
-import zio.json.ast.Json
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.DynamicValue
 
 trait Config2Blueprint {
-
-  implicit final private def jsonSchema: Schema[Json] = JsonSchema.schema
 
   /**
    * Encodes a config into a Blueprint.
@@ -140,11 +137,6 @@ trait Config2Blueprint {
     )
   }
 
-  final private def toRemoteMap(lookup: Remote[DynamicValue], map: Map[String, List[String]]): Remote[DynamicValue] =
-    map.foldLeft(Remote(Map.empty[String, DynamicValue])) { case (to, (key, path)) =>
-      lookup.path(path: _*).map(value => to.put(Remote(key), value)).getOrElse(to)
-    }.toDynamic
-
   final private def toResolver(
     config: Config,
     field: Field,
@@ -164,27 +156,23 @@ trait Config2Blueprint {
     }
   }
 
-  final private def toResolver(
-    config: Config,
-    name: String,
-    field: Field,
-  ): Option[Remote[DynamicValue] => Remote[DynamicValue]] = {
+  type Resolver = Remote[DynamicValue] => Remote[DynamicValue]
+
+  final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
+    step match {
+      case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
+      case Step.Transform(jsonT)        => TValid.succeed(dynamic => dynamic.transform(jsonT))
+    }
+  }
+
+  final private def toResolver(config: Config, name: String, field: Field): Option[Resolver] = {
     field.steps match {
       case None        => field.modify.flatMap(_.rename) match {
           case Some(_) => Option(input => input.path("value", name).toDynamic)
           case None    => None
         }
-      case Some(steps) =>
-        val funcs = steps map {
-          case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
-          case Step.Constant(json)          => TValid.succeed((_: Remote[DynamicValue]) => Remote(json).toDynamic)
-          case Step.ObjPath(map)            => TValid.succeed((input: Remote[DynamicValue]) => toRemoteMap(input, map))
-          case Step.Identity                => TValid.succeed((input: Remote[DynamicValue]) => input)
-          case Step.ToPair                  => TValid.succeed { (input: Remote[DynamicValue]) =>
-              input.toTyped[Map[String, DynamicValue]].map(_.toPair).toDynamic
-            }
-        }
-        TValid.foreach(funcs)(identity(_)).map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
+      case Some(steps) => TValid.foreach(steps.map(toResolver(config, field, _)))(identity(_))
+          .map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
     }
   }
 

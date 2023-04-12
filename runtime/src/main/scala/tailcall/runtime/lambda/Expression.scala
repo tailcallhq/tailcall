@@ -1,5 +1,6 @@
 package tailcall.runtime.lambda
 
+import tailcall.runtime.JsonTransformation
 import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
 import zio.json.JsonCodec
@@ -75,9 +76,11 @@ object Expression {
   final case class Dynamic(operation: Dynamic.Operation) extends Expression
   object Dynamic {
     sealed trait Operation
-    final case class Typed(ctor: MetaSchema)     extends Operation
-    final case class Path(name: List[String])    extends Operation
-    final case class ToDynamic(ctor: MetaSchema) extends Operation
+    final case class Typed(ctor: MetaSchema)                  extends Operation
+    // TODO: drop Path and use JsonTransform
+    final case class Path(name: List[String])                 extends Operation
+    final case class ToDynamic(ctor: MetaSchema)              extends Operation
+    final case class JsonTransform(jsonT: JsonTransformation) extends Operation
   }
 
   final case class Dict(operation: Dict.Operation) extends Expression
