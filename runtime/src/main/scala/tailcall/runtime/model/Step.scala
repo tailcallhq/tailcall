@@ -8,8 +8,7 @@ import zio.json.ast.Json
 sealed trait Step
 
 object Step {
-
-  def objPath(spec: (String, List[String])*): Step = Transform(JsonT.objPath(spec.toMap))
+  def objPath(spec: (String, List[String])*): Step = Transform(JsonT.objPath(spec: _*))
   def constant(a: Json): Step                      = Transform(JsonT.Constant(a))
   def transform(jsonT: JsonT): Step                = Transform(jsonT)
 

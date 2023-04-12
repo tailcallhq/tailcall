@@ -25,7 +25,7 @@ object JsonPlaceholderConfig {
         "posts" -> Field.ofType("Post").withSteps(posts).asList.withDoc("A list of all posts."),
         "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users."),
         "post" -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post by id."),
-        "user" -> Config.Field("User", Step.transform(JsonT.applySpec("userId" -> JsonT.path("args", "id"))), userById)(
+        "user" -> Config.Field("User", Step.transform(JsonT.objPath("userId" -> List("args", "id"))), userById)(
           "id" -> Arg.int.asRequired
         ).withDoc("A single user by id."),
       ),
@@ -55,7 +55,7 @@ object JsonPlaceholderConfig {
         "title"  -> Field.string,
         "body"   -> Field.string,
         "user"   -> Field.ofType("User")
-          .withSteps(Step.transform(JsonT.applySpec("userId" -> (JsonT.path("value", "userId")))), userById),
+          .withSteps(Step.transform(JsonT.objPath("userId" -> (List("value", "userId")))), userById),
       ),
       "Address"    -> Type(
         "street"  -> Field.string,

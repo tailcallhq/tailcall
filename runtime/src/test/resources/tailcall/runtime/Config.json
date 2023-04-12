@@ -111,13 +111,11 @@
             "steps" : [
               {
                 "transform" : {
-                  "applySpec" : {
-                    "userId" : {
-                      "path" : [
-                        "args",
-                        "id"
-                      ]
-                    }
+                  "objPath" : {
+                    "userId" : [
+                      "args",
+                      "id"
+                    ]
                   }
                 }
               },
@@ -180,13 +178,11 @@
             "steps" : [
               {
                 "transform" : {
-                  "applySpec" : {
-                    "userId" : {
-                      "path" : [
-                        "value",
-                        "userId"
-                      ]
-                    }
+                  "objPath" : {
+                    "userId" : [
+                      "value",
+                      "userId"
+                    ]
                   }
                 }
               },
