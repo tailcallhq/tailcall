@@ -1,8 +1,11 @@
 package tailcall.runtime
 
+import tailcall.runtime.internal.JsonSchema
+import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.json.ast.Json
-import zio.schema.{DynamicValue, StandardType}
+import zio.json.{DeriveJsonCodec, JsonCodec}
+import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 /**
  * Can take in any input of type A and transform it into
@@ -11,19 +14,30 @@ import zio.schema.{DynamicValue, StandardType}
  * DynamicValue or any other type, all we need to provide is
  * an Accessor[A].
  */
-sealed trait JsonTransformation[A] {
+sealed trait JsonTransformation {
   self =>
-  def transform(input: A)(implicit ev: JsonTransformation.Accessor[A]): A = JsonTransformation.transform(self, input)
-  def apply(input: A)(implicit ev: JsonTransformation.Accessor[A]): A     = transform(input)
+  def run[A](input: A)(implicit ev: JsonTransformation.Accessor[A]): A   = JsonTransformation.transform(self, input)
+  def apply[A](input: A)(implicit ev: JsonTransformation.Accessor[A]): A = run(input)
+
+  def andThen(other: JsonTransformation): JsonTransformation = JsonTransformation.Compose(List(self, other))
+  def other(other: JsonTransformation): JsonTransformation   = self andThen other
 }
 
 object JsonTransformation {
-  final case class Identity[A]()                                          extends JsonTransformation[A]
-  final case class Constant[A](value: A)                                  extends JsonTransformation[A]
-  final case class ToPair[A]()                                            extends JsonTransformation[A]
-  final case class Compose[A](list: List[JsonTransformation[A]])          extends JsonTransformation[A]
-  final case class ApplySpec[A](spec: Map[String, JsonTransformation[A]]) extends JsonTransformation[A]
-  final case class Path[A](list: List[String])                            extends JsonTransformation[A]
+  case object Identity                                              extends JsonTransformation
+  final case class Constant(json: Json)                             extends JsonTransformation
+  case object ToPair                                                extends JsonTransformation
+  final case class Compose(list: List[JsonTransformation])          extends JsonTransformation
+  final case class ApplySpec(spec: Map[String, JsonTransformation]) extends JsonTransformation
+  final case class Path(list: List[String])                         extends JsonTransformation
+
+  def identity: JsonTransformation                                       = Identity
+  def const(json: Json): JsonTransformation                              = Constant(json)
+  def toPair: JsonTransformation                                         = ToPair
+  def path(list: String*): JsonTransformation                            = Path(list.toList)
+  def applySpec(spec: (String, JsonTransformation)*): JsonTransformation = ApplySpec(spec.toMap)
+  def objPath(map: Map[String, List[String]]): JsonTransformation        =
+    ApplySpec(map.map { case (key, value) => key -> Path(value) })
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -35,6 +49,7 @@ object JsonTransformation {
     def apply(a: Int): A
     def apply(a: Long): A
     def apply(a: Boolean): A
+    def apply(a: Json): A
     def toChunk(a: A): Option[Chunk[A]]
     def empty: A
   }
@@ -43,27 +58,27 @@ object JsonTransformation {
     def apply[A](implicit ev: Accessor[A]): Accessor[A] = ev
   }
 
-  def transform[A](transformation: JsonTransformation[A], data: A)(implicit acc: Accessor[A]): A = {
+  def transform[A](transformation: JsonTransformation, data: A)(implicit acc: Accessor[A]): A = {
     transformation match {
-      case Identity() => data
+      case Identity => data
 
-      case Constant(value) => value
+      case Constant(value) => acc(value)
 
-      case ToPair() => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
+      case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
       case Compose(list) => list match {
           case Nil          => data
-          case head :: tail => Compose(tail).transform(head.transform(data))
+          case head :: tail => Compose(tail).run(head.run(data))
         }
 
       case ApplySpec(spec) => data.toChunk match {
-          case Some(list) => acc(list.map(transformation.transform(_)))
+          case Some(list) => acc(list.map(transformation.run(_)))
           case None       => acc {
               data.keys.foldLeft(Map.empty[String, A]) { case (obj, key) =>
                 data.get(key) match {
                   case None        => obj
                   case Some(value) => spec.get(key) match {
-                      case Some(transformation) => obj + (key -> transformation.transform(value))
+                      case Some(transformation) => obj + (key -> transformation.run(value))
                       case None                 => obj
                     }
                 }
@@ -73,7 +88,7 @@ object JsonTransformation {
 
       case Path(list) => list match {
           case Nil          => data
-          case head :: tail => Path(tail).transform(data.get(head).getOrElse(acc.empty))
+          case head :: tail => Path(tail).run(data.get(head).getOrElse(acc.empty))
         }
     }
   }
@@ -110,6 +125,8 @@ object JsonTransformation {
     override def apply(a: Long): Json                  = Json.Num(a)
     override def apply(a: Boolean): Json               = Json.Bool(a)
     override def empty: Json                           = Json.Null
+
+    override def apply(a: Json): Json = a
   }
 
   implicit val dynamicValueAccessor: Accessor[DynamicValue] = new Accessor[DynamicValue] {
@@ -149,5 +166,14 @@ object JsonTransformation {
       }
 
     override def empty: DynamicValue = DynamicValue(Option.empty[Int])
+
+    override def apply(a: Json): DynamicValue = Transcoder.toDynamicValue(a).get
   }
+
+  implicit val constantJsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder)
+    .transform(Constant(_), _.json)
+
+  implicit final private[JsonTransformation] def jsonSchema: Schema[Json] = JsonSchema.schema
+  implicit val jsonCodec: JsonCodec[JsonTransformation]                   = DeriveJsonCodec.gen[JsonTransformation]
+  implicit def schema: Schema[JsonTransformation]                         = DeriveSchema.gen[JsonTransformation]
 }
