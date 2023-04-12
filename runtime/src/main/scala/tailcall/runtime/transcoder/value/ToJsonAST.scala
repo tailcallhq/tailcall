@@ -51,11 +51,15 @@ trait ToJsonAST {
       case DynamicValue.Enumeration(_, (name, value))  => toJson(value).map(value => Json.Obj(Chunk(name -> value)))
       case DynamicValue.Sequence(values)               => TValid.foreachChunk(values)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
-      case DynamicValue.Dictionary(_)                  => TValid.fail("Can not transcoder Dictionary to a DynamicValue")
+      // TODO: convert to record if keys are not of type string
+      case DynamicValue.Dictionary(entries)            => TValid.foreachChunk(entries.collect {
+          case (DynamicValue.Primitive(key, standardType), value) if standardType == StandardType.StringType =>
+            (key.asInstanceOf[String], value)
+        }) { case (key, dValue) => toJson(dValue).map(key -> _) }.map(entries => Json.Obj(Chunk.from(entries)))
       case DynamicValue.SetValue(values)               => TValid.foreach(values.toList)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
       case DynamicValue.Primitive(value, standardType) => TValid.succeed(toJsonPrimitive(value, standardType))
-      case DynamicValue.Singleton(_)                   => TValid.fail("Can not transcoder Singleton to a DynamicValue")
+      case DynamicValue.Singleton(_)                   => TValid.fail("Can not transcode Singleton to a Json")
       case DynamicValue.SomeValue(value)               => toJson(value)
       case DynamicValue.NoneValue                      => TValid.succeed(Json.Null)
       case DynamicValue.Tuple(left, right)             => for {
@@ -64,7 +68,7 @@ trait ToJsonAST {
         } yield Json.Arr(Chunk(left, right))
       case DynamicValue.LeftValue(value)               => toJson(value)
       case DynamicValue.RightValue(value)              => toJson(value)
-      case DynamicValue.DynamicAst(_)                  => TValid.fail("Can not transcoder DynamicAst to a DynamicValue")
-      case DynamicValue.Error(_)                       => TValid.fail("Can not transcoder Error to a DynamicValue")
+      case DynamicValue.DynamicAst(_)                  => TValid.fail("Can not transcode DynamicAst to a Json")
+      case DynamicValue.Error(_)                       => TValid.fail("Can not transcode Error to a Json")
     }
 }
