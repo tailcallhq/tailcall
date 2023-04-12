@@ -141,32 +141,36 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}"""))
       },
       test("dictionary") {
-        val value  = Json.Obj(
-          "a" -> Json.Num(1), //
-          "b" -> Json.Obj(
-            //
-            "k1" -> Json.Num(1),
-            "k2" -> Json.Num(2),
-            "k3" -> Json.Num(3),
-          ),
-        )
+        val value: Json = Json
+          .Obj("a" -> Json.Num(1), "b" -> Json.Obj("k1" -> Json.Num(1), "k2" -> Json.Num(2), "k3" -> Json.Num(3)))
+
+        val transformation = JsonT.applySpec("a" -> JsonT.identity, "b" -> JsonT.toKeyValue)
+
         val config = Config.default.withType(
-          "Query" -> Type(
-            "a" -> Field.ofType("A").withSteps(
-              //
-              Step.constant(value),
-              Step.transform(JsonT.applySpec("a" -> JsonT.identity, "b" -> JsonT.toPair)),
-            )
-          ),
-          "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B")),
+          "Query" -> Type("z" -> Field.ofType("A").withSteps(Step.constant(value), Step.transform(transformation))),
+          "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B").asList),
           "B"     -> Type("key" -> Field.string, "value" -> Field.int),
         )
 
-        pprint.pprintln(value.toJson)
-        val program = execute(config)("""{a {b {key, value}}}""")
+        val program = execute(config)("""{z {a b {key value}}}""")
         assertZIO(program)(equalTo(
-          """{"a":{"b":[{"key":"c","value":1},{"key":"d","value":2},{"key":"e","value":3}]}}"""
+          """{"z":{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}}"""
         ))
+      },
+      test("simple query") {
+        val config  = Config.default
+          .withType("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!")))
+        val program = execute(config)(" {foo} ")
+        assertZIO(program)(equalTo("""{"foo":"Hello World!"}"""))
+      },
+      test("nested objects") {
+        val config = Config.default.withType(
+          "Query" -> Type("foo" -> Field.ofType("Foo").resolveWith(Map("bar" -> "Hello World!"))),
+          "Foo"   -> Type("bar" -> Field.ofType("String")),
+        )
+
+        val program = execute(config)(" {foo {bar}} ")
+        assertZIO(program)(equalTo("""{"foo":{"bar":"Hello World!"}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }
