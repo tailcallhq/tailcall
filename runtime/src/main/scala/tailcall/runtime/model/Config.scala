@@ -1,6 +1,6 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.JsonTransformation
+import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.ConfigFileIO
@@ -182,8 +182,7 @@ object Config {
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
-    def resolveWith[A: JsonEncoder](a: A): Field =
-      withSteps(Step.transform(JsonTransformation.const(a.toJsonAST.toOption.get)))
+    def resolveWith[A: JsonEncoder](a: A): Field = withSteps(Step.transform(JsonT.const(a.toJsonAST.toOption.get)))
   }
 
   object Field {

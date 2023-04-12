@@ -107,7 +107,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
           Config.default.withType(
             "Query" -> Type(
               "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
-                .withSteps(Step.ObjPath("bar" -> List("args", "data")))
+                .withSteps(Step.objPath("bar" -> List("args", "data")))
             ),
             "Bar"   -> Type("bar" -> Field.ofType("Int")),
           )
@@ -132,13 +132,41 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
         )
 
         val config = Config.default.withType(
-          "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.Constant(value))),
+          "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.constant(value))),
           "A"     -> Type("b" -> Field.ofType("B").asList),
           "B"     -> Type("c" -> Field.int),
         )
 
         val program = execute(config)("""{a {b {c}}}""")
         assertZIO(program)(equalTo("""{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}"""))
+      },
+      test("dictionary") {
+        val value  = Json.Obj(
+          "a" -> Json.Num(1), //
+          "b" -> Json.Obj(
+            //
+            "k1" -> Json.Num(1),
+            "k2" -> Json.Num(2),
+            "k3" -> Json.Num(3),
+          ),
+        )
+        val config = Config.default.withType(
+          "Query" -> Type(
+            "a" -> Field.ofType("A").withSteps(
+              //
+              Step.constant(value),
+              Step.transform(JsonT.applySpec("a" -> JsonT.identity, "b" -> JsonT.toPair)),
+            )
+          ),
+          "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B")),
+          "B"     -> Type("key" -> Field.string, "value" -> Field.int),
+        )
+
+        pprint.pprintln(value.toJson)
+        val program = execute(config)("""{a {b {key, value}}}""")
+        assertZIO(program)(equalTo(
+          """{"a":{"b":[{"key":"c","value":1},{"key":"d","value":2},{"key":"e","value":3}]}}"""
+        ))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 }
