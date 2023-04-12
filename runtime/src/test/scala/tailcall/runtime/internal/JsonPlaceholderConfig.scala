@@ -54,7 +54,8 @@ object JsonPlaceholderConfig {
         "userId" -> Field.int.asRequired,
         "title"  -> Field.string,
         "body"   -> Field.string,
-        "user"   -> Field.ofType("User").withSteps(Step.objPath("userId" -> List("value", "userId")), userById),
+        "user"   -> Field.ofType("User")
+          .withSteps(Step.transform(JsonT.applySpec("userId" -> (JsonT.path("value", "userId")))), userById),
       ),
       "Address"    -> Type(
         "street"  -> Field.string,
