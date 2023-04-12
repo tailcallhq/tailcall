@@ -8,32 +8,32 @@ object JsonTransformationSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("JsonTransformationSpec")(
       test("constant") {
-        val transformation: JsonTransformation[Json] = JsonTransformation.Constant(Json.Num(1))
-        val input                                    = Json.Num(2)
-        val expected                                 = Json.Num(1)
+        val transformation = JsonTransformation.const(Json.Num(1))
+        val input: Json    = Json.Num(2)
+        val expected: Json = Json.Num(1)
         assertTrue(transformation(input) == expected)
       },
       test("identity") {
-        val transformation: JsonTransformation[Json] = JsonTransformation.Identity()
-        val input                                    = Json.Num(2)
-        val expected                                 = Json.Num(2)
+        val transformation = JsonTransformation.identity
+        val input: Json    = Json.Num(2)
+        val expected: Json = Json.Num(2)
         assertTrue(transformation(input) == expected)
       },
       test("toPair") {
-        val transformation = JsonTransformation.ToPair[Json]()
-        val input          = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2))
-        val expected       = Json.Arr(Json.Arr(Json.Str("a"), Json.Num(1)), Json.Arr(Json.Str("b"), Json.Num(2)))
+        val transformation = JsonTransformation.toPair
+        val input: Json    = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2))
+        val expected: Json = Json.Arr(Json.Arr(Json.Str("a"), Json.Num(1)), Json.Arr(Json.Str("b"), Json.Num(2)))
         assertTrue(transformation(input) == expected)
       },
       test("applySpec") {
-        val transformation = JsonTransformation.ApplySpec[Json](Map(
-          "a" -> JsonTransformation.Constant(Json.Num(1)),
-          "b" -> JsonTransformation.Constant(Json.Num(2)),
-          "c" -> JsonTransformation.Identity(),
-        ))
+        val transformation = JsonTransformation.applySpec(
+          "a" -> JsonTransformation.const(Json.Num(1)),
+          "b" -> JsonTransformation.const(Json.Num(2)),
+          "c" -> JsonTransformation.identity,
+        )
 
-        val input    = Json.Obj("a" -> Json.Num(3), "b" -> Json.Num(4), "c" -> Json.Num(5))
-        val expected = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2), "c" -> Json.Num(5))
+        val input: Json    = Json.Obj("a" -> Json.Num(3), "b" -> Json.Num(4), "c" -> Json.Num(5))
+        val expected: Json = Json.Obj("a" -> Json.Num(1), "b" -> Json.Num(2), "c" -> Json.Num(5))
 
         assertTrue(transformation(input) == expected)
       },
