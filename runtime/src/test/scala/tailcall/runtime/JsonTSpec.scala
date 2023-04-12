@@ -6,7 +6,7 @@ import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object JsonTSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("JsonTransformationSpec")(
+    suite("JsonTSpec")(
       test("constant") {
         val transformation = JsonT.const(Json.Num(1))
         val input: Json    = Json.Num(2)
