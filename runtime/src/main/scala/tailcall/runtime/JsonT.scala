@@ -168,16 +168,7 @@ object JsonT {
         case _                                => Chunk.empty
       }
 
-    override def get(a: DynamicValue, key: String): Option[DynamicValue] = {
-      a match {
-        case DynamicValue.Record(_, values) =>
-          val result = values.get(key)
-          result
-
-        case DynamicValue.Dictionary(entries) => entries.find(_._1 == DynamicValue(key)).map(_._2)
-        case _                                => None
-      }
-    }
+    override def get(a: DynamicValue, key: String): Option[DynamicValue] = DynamicValueUtil.getPath(a, key :: Nil)
 
     override def apply(a: Map[String, DynamicValue]): DynamicValue = DynamicValueUtil.record(a.toSeq: _*)
 
