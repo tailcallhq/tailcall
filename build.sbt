@@ -1,6 +1,6 @@
 lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
 lazy val runtime = (project in file("runtime")).settings(
-  libraryDependencies := Seq(
+  libraryDependencies ++= Seq(
     "dev.zio"                %% "zio-schema"            % zioSchema,
     "dev.zio"                %% "zio-schema-derivation" % zioSchema,
     "dev.zio"                %% "zio-schema-json"       % zioSchema,
@@ -21,7 +21,7 @@ lazy val runtime = (project in file("runtime")).settings(
 )
 
 lazy val cli = (project in file("cli")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq(
+  libraryDependencies ++= zioTestDependencies ++ Seq(
     "dev.zio"     %% "zio"     % zio,
     "dev.zio"     %% "zio-cli" % "0.4.0",
     "com.lihaoyi" %% "fansi"   % "0.4.0",
@@ -29,11 +29,11 @@ lazy val cli = (project in file("cli")).settings(
 ).dependsOn(runtime, registry)
 
 lazy val server = (project in file("server")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)
+  libraryDependencies ++= zioTestDependencies ++ Seq("dev.zio" %% "zio" % zio, "dev.zio" %% "zio-http" % zioHttp)
 ).dependsOn(runtime, registry)
 
 lazy val registry = (project in file("registry")).settings(
-  libraryDependencies := zioTestDependencies ++ Seq(
+  libraryDependencies ++= zioTestDependencies ++ Seq(
     "dev.zio" %% "zio"       % zio,
     "dev.zio" %% "zio-http"  % zioHttp,
     "dev.zio" %% "zio-redis" % "0.2.0",
@@ -47,6 +47,7 @@ val rocksDB       = "0.4.2"
 
 ThisBuild / scalaVersion                                   := scala2Version
 ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / coverageEnabled                                := true
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
