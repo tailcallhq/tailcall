@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.JsonSchema
+import tailcall.runtime.internal.{DynamicValueUtil, JsonSchema}
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.json.ast.Json
@@ -19,7 +19,8 @@ sealed trait JsonT {
   def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
   def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
 
-  def andThen(other: JsonT): JsonT = JsonT.Compose(List(self, other))
+  def andThen(other: JsonT): JsonT = JsonT.Pipe(self, other)
+  def >>>(other: JsonT): JsonT     = self andThen other
   def other(other: JsonT): JsonT   = self andThen other
 }
 
@@ -37,7 +38,7 @@ object JsonT {
   case object ToKeyValue extends JsonT
 
   @jsonHint("compose")
-  final case class Compose(list: List[JsonT]) extends JsonT
+  final case class Pipe(first: JsonT, second: JsonT) extends JsonT
 
   @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
@@ -51,12 +52,16 @@ object JsonT {
     implicit val jsonCodec: JsonCodec[Path] = JsonCodec[List[String]].transform(Path(_), _.list)
   }
 
+  @jsonHint("debug")
+  final case class Debug(prefix: String) extends JsonT
+
   def identity: JsonT                                = Identity
   def const(json: Json): JsonT                       = Constant(json)
   def toPair: JsonT                                  = ToPair
   def toKeyValue: JsonT                              = ToKeyValue
   def path(list: String*): JsonT                     = Path(list.toList)
   def applySpec(spec: (String, JsonT)*): JsonT       = ApplySpec(spec.toMap)
+  def debug(prefix: String): JsonT                   = Debug(prefix)
   def objPath(map: Map[String, List[String]]): JsonT = ApplySpec(map.map { case (key, value) => key -> Path(value) })
 
   trait Accessor[A] {
@@ -86,10 +91,7 @@ object JsonT {
 
       case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
-      case Compose(list) => list match {
-          case Nil          => data
-          case head :: tail => Compose(tail).run(head.run(data))
-        }
+      case Pipe(first, second) => second(first(data))
 
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
@@ -114,6 +116,10 @@ object JsonT {
       case ToKeyValue => acc(data.keys.flatMap { key =>
           data.get(key).map(value => acc(Map("key" -> acc(key), "value" -> value)))
         })
+
+      case Debug(prefix) =>
+        println(prefix + ": " + data)
+        data
     }
   }
 
@@ -171,7 +177,7 @@ object JsonT {
         case _                                => None
       }
 
-    override def apply(a: Map[String, DynamicValue]): DynamicValue = DynamicValue(a)
+    override def apply(a: Map[String, DynamicValue]): DynamicValue = DynamicValueUtil.record(a.toSeq: _*)
 
     override def apply(a: Chunk[DynamicValue]): DynamicValue = DynamicValue(a)
 
