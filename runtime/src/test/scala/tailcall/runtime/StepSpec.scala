@@ -50,8 +50,11 @@ object StepSpec extends ZIOSpecDefault {
       ),
       suite("steps")(
         test("encoder") {
-          val steps: List[Step] = Step
-            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("user/id")) :: Nil
+          val steps: List[Step] = Step.Http(
+            path = Path.empty.withParam("users"),
+            method = Option(Method.POST),
+            body = Option("user/id"),
+          ) :: Nil
           val actual            = steps.toDirective
           val expected          = Directive(
             "steps",
@@ -83,8 +86,11 @@ object StepSpec extends ZIOSpecDefault {
           )
 
           val actual               = directive.fromDirective[List[Step]]
-          val expected: List[Step] = Step
-            .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("user/id")) :: Nil
+          val expected: List[Step] = Step.Http(
+            path = Path.empty.withParam("users"),
+            method = Option(Method.POST),
+            body = Option("user/id"),
+          ) :: Nil
 
           assertZIO(actual.toZIO)(equalTo(expected))
         },
