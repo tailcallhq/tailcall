@@ -23,7 +23,6 @@ sealed trait Transcoder
     with Endpoint2Config
     with GraphQLSchema2JsonLines
     with JsonValue2TSchema
-    with Orc2Blueprint
     with ToDynamicValue
     with ToInputValue
     with ToJsonAST
