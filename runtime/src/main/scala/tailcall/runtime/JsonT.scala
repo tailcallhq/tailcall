@@ -14,6 +14,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
  * DynamicValue or any other type, all we need to provide is
  * an Accessor[A].
  */
+
 sealed trait JsonT {
   self =>
   def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)

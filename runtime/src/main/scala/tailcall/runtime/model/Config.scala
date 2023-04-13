@@ -8,6 +8,7 @@ import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json._
+import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
 import java.io.File
@@ -222,6 +223,7 @@ object Config {
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
+    @jsonField("default") defaultValue: Option[Json] = None,
   ) {
     self =>
     def asList: Arg = self.copy(list = Option(true))
@@ -259,7 +261,8 @@ object Config {
         case None        => Some(update)
       })
 
-    def withName(name: String): Arg = withUpdate(ModifyField.empty.withName(name))
+    def withName(name: String): Arg                = withUpdate(ModifyField.empty.withName(name))
+    def withDefault[A: JsonEncoder](value: A): Arg = copy(defaultValue = value.toJsonAST.toOption)
   }
 
   object Arg {

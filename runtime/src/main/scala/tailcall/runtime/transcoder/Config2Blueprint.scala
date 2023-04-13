@@ -70,7 +70,7 @@ trait Config2Blueprint {
       Blueprint.InputFieldDefinition(
         name = arg.modify.flatMap(_.rename).getOrElse(name),
         ofType = prefixedOfType,
-        defaultValue = None,
+        defaultValue = arg.defaultValue.flatMap(Transcoder.toDynamicValue(_).toOption),
         description = arg.doc,
       )
     }
