@@ -4,7 +4,7 @@ import caliban.{CalibanError, InputValue}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Blueprint, Config, Step}
+import tailcall.runtime.model.{Config, Step}
 import tailcall.runtime.remote._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
@@ -12,7 +12,7 @@ import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertZIO}
-import zio.{Cause, ZIO, durationInt}
+import zio.{ZIO, durationInt}
 
 /**
  * Tests for the generation of GraphQL steps from a config.
@@ -23,7 +23,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
   override def spec =
     suite("GraphQL Step Generation")(
       test("users name") {
-        val program = execute(JsonPlaceholderConfig.config)(""" query { users {name} } """)
+        val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
 
         val expected = """{"users":[
                          |{"name":"Leanne Graham"},
@@ -40,22 +40,22 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(expected))
       },
       test("user name") {
-        val program = execute(JsonPlaceholderConfig.config)(""" query { user(id: 1) {name} } """)
+        val program = resolve(JsonPlaceholderConfig.config)(""" query { user(id: 1) {name} } """)
         assertZIO(program)(equalTo("""{"user":{"name":"Leanne Graham"}}"""))
       },
       test("post body") {
-        val program  = execute(JsonPlaceholderConfig.config)(""" query { post(id: 1) { title } } """)
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query { post(id: 1) { title } } """)
         val expected =
           """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}"""
         assertZIO(program)(equalTo(expected))
       },
       test("user company") {
-        val program  = execute(JsonPlaceholderConfig.config)(""" query {user(id: 1) { company { name } } }""")
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { company { name } } }""")
         val expected = """{"user":{"company":{"name":"Romaguera-Crona"}}}"""
         assertZIO(program)(equalTo(expected))
       },
       test("user posts") {
-        val program  = execute(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
         val expected =
           """{"user":{"posts":[{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},
             |{"title":"qui est esse"},
@@ -70,19 +70,19 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(expected))
       },
       test("post user") {
-        val program  = execute(JsonPlaceholderConfig.config)(""" query {post(id: 1) { title user { name } } }""")
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {post(id: 1) { title user { name } } }""")
         val expected =
           """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
         assertZIO(program)(equalTo(expected))
       },
       test("create user") {
-        val program = execute(JsonPlaceholderConfig.config)(
+        val program = resolve(JsonPlaceholderConfig.config)(
           """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },
       test("create user with zip code") {
-        val program = execute(JsonPlaceholderConfig.config)(
+        val program = resolve(JsonPlaceholderConfig.config)(
           """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
@@ -92,7 +92,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           Config.default
             .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
         }
-        val program = execute(config)(""" query { bar } """)
+        val program = resolve(config)(""" query { bar } """)
 
         assertZIO(program)(equalTo("""{"bar":"Hello World!"}"""))
       },
@@ -106,12 +106,12 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
             "Bar"   -> Type("bar" -> Field.ofType("Int")),
           )
         }
-        val program = execute(config)(""" query { foo(data: 1) {bar} } """)
+        val program = resolve(config)(""" query { foo(data: 1) {bar} } """)
 
         assertZIO(program)(equalTo("""{"foo":{"bar":1}}"""))
       },
       test("user zipcode") {
-        val program  = execute(JsonPlaceholderConfig.config)("""query { user(id: 1) { address { zip } } }""")
+        val program  = resolve(JsonPlaceholderConfig.config)("""query { user(id: 1) { address { zip } } }""")
         val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
         assertZIO(program)(equalTo(expected))
       },
@@ -131,7 +131,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "B"     -> Type("c" -> Field.int),
         )
 
-        val program = execute(config)("""{a {b {c}}}""")
+        val program = resolve(config)("""{a {b {c}}}""")
         assertZIO(program)(equalTo("""{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}"""))
       },
       test("dictionary") {
@@ -146,7 +146,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "B"     -> Type("key" -> Field.string, "value" -> Field.int),
         )
 
-        val program = execute(config)("""{z {a b {key value}}}""")
+        val program = resolve(config)("""{z {a b {key value}}}""")
         assertZIO(program)(equalTo(
           """{"z":{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}}"""
         ))
@@ -154,7 +154,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
       test("simple query") {
         val config  = Config.default
           .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!")))
-        val program = execute(config)(" {foo} ")
+        val program = resolve(config)(" {foo} ")
         assertZIO(program)(equalTo("""{"foo":"Hello World!"}"""))
       },
       test("nested objects") {
@@ -163,13 +163,13 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "Foo"   -> Type("bar" -> Field.ofType("String")),
         )
 
-        val program = execute(config)(" {foo {bar}} ")
+        val program = resolve(config)(" {foo {bar}} ")
         assertZIO(program)(equalTo("""{"foo":{"bar":"Hello World!"}}"""))
       },
       test("static value") {
         val config  = Config.default
           .withTypes("Query" -> Config.Type("id" -> Config.Field.ofType("String").resolveWithDynamicValue(100)))
-        val program = execute(config)("query {id}")
+        val program = resolve(config)("query {id}")
         assertZIO(program)(equalTo("""{"id":100}"""))
       },
       test("with args") {
@@ -187,7 +187,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
               }
           )
         )
-        val program = execute(config)("query {sum(a: 1, b: 2)}")
+        val program = resolve(config)("query {sum(a: 1, b: 2)}")
         assertZIO(program)(equalTo("""{"sum":3}"""))
       },
       test("with nesting") {
@@ -201,7 +201,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
         )
 
-        val program = execute(config)("query {foo { bar { value }}}")
+        val program = resolve(config)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
       },
       test("with nesting array") {
@@ -215,7 +215,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "Bar" -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
         )
 
-        val program = execute(config)("query {foo { bar { value }}}")
+        val program = resolve(config)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
       },
       test("with nesting array ctx") {
@@ -230,7 +230,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           }),
         )
 
-        val program = execute(config)("query {foo { bar { value }}}")
+        val program = resolve(config)("query {foo { bar { value }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       },
       test("with nesting level 3") {
@@ -249,7 +249,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           }),
         )
 
-        val program = execute(config)("query {foo { bar { baz {value} }}}")
+        val program = resolve(config)("query {foo { bar { baz {value} }}}")
         assertZIO(program)(equalTo(
           """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}"""
         ))
@@ -267,7 +267,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
             _.toTypedPath[Int]("parent", "value").toDynamic
           }),
         )
-        val program = execute(config)("query {foo { bar { baz {value} }}}")
+        val program = resolve(config)("query {foo { bar { baz {value} }}}")
         assertZIO(program)(equalTo("""{"foo":{"bar":{"baz":{"value":100}}}}"""))
 
       },
@@ -282,7 +282,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
             "c" -> Config.Field.ofType("Int").resolveWithDynamicValue(3),
           ),
         )
-        val program = execute(config)("query {foo { a b c }}")
+        val program = resolve(config)("query {foo { a b c }}")
         assertZIO(program)(equalTo("""{"foo":{"a":1,"b":2,"c":3}}"""))
 
       },
@@ -293,7 +293,7 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithDynamicValue(Map("a" -> 1))),
           "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int")),
         )
-        val program = execute(config)("query {foo { a }}")
+        val program = resolve(config)("query {foo { a }}")
         assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
 
       },
@@ -316,31 +316,17 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
           ),
         )
 
-        val program = execute(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
+        val program = resolve(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 
-  private def execute(
-    config: Config
-  )(query: String): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError.ValidationError, String] = {
-    for {
-      graphQL     <- config.toBlueprint.toGraphQL
-      interpreter <- graphQL.interpreter
-      response    <- interpreter.execute(query)
-      _ <- ZIO.foreachDiscard(response.errors)(error => ZIO.logErrorCause("GraphQL Execution Error", Cause.fail(error)))
-    } yield response.data.toString
-  }
-
-  private def execute(config: Config, variables: Map[String, InputValue])(
+  private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator, Throwable, String] = execute(config.toBlueprint, variables)(query)
-
-  private def execute(doc: Blueprint, variables: Map[String, InputValue])(
-    query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError, String] =
+  ): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError, String] = {
+    val blueprint = config.toBlueprint
     for {
-      graphQL     <- doc.toGraphQL
+      graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       result      <- interpreter.execute(query, variables = variables)
       _           <- result.errors.headOption match {
@@ -348,4 +334,5 @@ object GraphQLStepGenerationSpec extends ZIOSpecDefault {
         case None        => ZIO.unit
       }
     } yield result.data.toString
+  }
 }
