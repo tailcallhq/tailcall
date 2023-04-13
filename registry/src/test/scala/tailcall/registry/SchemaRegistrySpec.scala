@@ -1,26 +1,24 @@
 package tailcall.registry
 
-import tailcall.runtime.model.Orc
+import tailcall.runtime.model.Config
 import zio.Scope
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
 
-import Orc.FieldSet
-
 object SchemaRegistrySpec extends ZIOSpecDefault {
 
-  val orc = Orc(
-    "Query" -> FieldSet(
-      "name" -> Orc.Field.output.to("String").resolveWith("John Doe"),
-      "age"  -> Orc.Field.output.to("Int").resolveWith(100),
+  val config = Config.default.withTypes(
+    "Query" -> Config.Type(
+      "name" -> Config.Field.ofType("String").resolveWith("John Doe"),
+      "age"  -> Config.Field.ofType("Int").resolveWith(100),
     )
   )
 
   val registrySpec = test("set & get") {
+    val blueprint = config.toBlueprint
     for {
-      blueprint <- orc.toBlueprint
-      digest    <- SchemaRegistry.add(blueprint)
-      actual    <- SchemaRegistry.get(digest)
+      digest <- SchemaRegistry.add(blueprint)
+      actual <- SchemaRegistry.get(digest)
     } yield assert(actual)(isSome(equalTo(blueprint)))
   }
 
