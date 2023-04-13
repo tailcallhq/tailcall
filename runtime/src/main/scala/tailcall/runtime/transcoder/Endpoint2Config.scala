@@ -35,7 +35,8 @@ object Endpoint2Config {
         case TSchema.Str  => Config.Arg(typeOf = "String", required = Option(isRequired), list = Option(isList))
         case TSchema.Num  => Config.Arg(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Bool => Config.Arg(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
-        case schema @ TSchema.Dictionary(_) => toArgument(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
+        case schema @ TSchema.Dictionary(_) =>
+          toArgument(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
       }
     }
 
@@ -47,7 +48,8 @@ object Endpoint2Config {
         case TSchema.Str         => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Num         => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
         case TSchema.Bool        => Map("value" -> toArgument(schema, isRequired = isRequired, isList = isList))
-        case schema @ TSchema.Dictionary(_) => toArgumentMap(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
+        case schema @ TSchema.Dictionary(_) =>
+          toArgumentMap(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
       }
     }
 
@@ -66,7 +68,8 @@ object Endpoint2Config {
             .Field(typeOf = getTypeName(schema), required = Option(isRequired), list = Option(isList))
         case TSchema.Arr(schema)            => toConfigField(schema, isRequired, isList = true)
         case TSchema.Opt(schema)            => toConfigField(schema, isRequired = false, isList = isList)
-        case schema @ TSchema.Dictionary(_) => toConfigField(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
+        case schema @ TSchema.Dictionary(_) =>
+          toConfigField(schema.toKeyValueArr, isRequired = isRequired, isList = isList)
         case TSchema.Str  => Config.Field(typeOf = "String", required = Option(isRequired), list = Option(isList))
         case TSchema.Num  => Config.Field(typeOf = "Int", required = Option(isRequired), list = Option(isList))
         case TSchema.Bool => Config.Field(typeOf = "Boolean", required = Option(isRequired), list = Option(isList))
