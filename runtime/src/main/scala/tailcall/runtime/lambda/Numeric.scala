@@ -1,6 +1,5 @@
 package tailcall.runtime.lambda
 
-import tailcall.runtime.lambda.Numeric.Tag.IntTag
 import zio.schema.DeriveSchema.gen
 import zio.schema.Schema
 
@@ -40,7 +39,8 @@ object Numeric {
     override def greaterThan(left: Int, right: Int): Boolean      = left > right
     override def greaterThanEqual(left: Int, right: Int): Boolean = left >= right
     override def one: Int                                         = 1
-    override def tag: Tag                                         = IntTag
+    override def tag: Tag                                         = Tag.IntTag
     override def schema: Schema[Int]                              = Schema[Int]
   }
+
 }

@@ -162,6 +162,7 @@ trait Config2Blueprint {
     step match {
       case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
       case Step.Transform(jsonT)        => TValid.succeed(dynamic => dynamic.transform(jsonT))
+      case Step.RemoteFunction(func)    => TValid.succeed(func)
     }
   }
 
