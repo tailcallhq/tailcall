@@ -1,22 +1,20 @@
 package tailcall.runtime
 
-import tailcall.runtime.model.{Blueprint, Orc}
+import tailcall.runtime.model.Config
+import tailcall.runtime.model.Config.Arg
 import tailcall.runtime.service._
-import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.test.Assertion._
 import zio.test._
 
-import Orc.Type.{ListType, NamedType, NonNull}
-import Orc.{Field, FieldSet}
-
 object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
-    suite("orc to graphql schema")(
+    suite("config to graphql schema")(
       test("document type generation") {
-        val orc = Orc("Query" -> FieldSet("test" -> Field.output.to("String").resolveWith("test")))
+        val config = Config.default
+          .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")))
 
-        val actual   = render(orc)
+        val actual   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -27,13 +25,13 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
         assertZIO(actual)(equalTo(expected))
       },
       test("document with InputValue") {
-        val orc    = Orc(
-          "Query" -> FieldSet(
-            "test" -> Field.output.to("String").resolveWith("test")
-              .withArgument("arg" -> Field.input.to("String").withDefault("test"))
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")
+              .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
-        val actual = render(orc)
+        val actual = render(config)
 
         val expected = """|schema {
                           |  query: Query
@@ -45,13 +43,13 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
         assertZIO(actual)(equalTo(expected))
       },
       test("blueprint with InputValue and default") {
-        val orc    = Orc(
-          "Query" -> FieldSet(
-            "test" -> Field.output.to("String").resolveWith("test")
-              .withArgument("arg" -> Field.input.to("String").withDefault("test"))
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")
+              .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
-        val actual = render(orc)
+        val actual = render(config)
 
         val expected = """|schema {
                           |  query: Query
@@ -63,12 +61,12 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
         assertZIO(actual)(equalTo(expected))
       },
       test("with nesting") {
-        val orc      = Orc(
-          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
-          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar")),
-          "Bar"   -> FieldSet("value" -> Field.output.to("Int").resolveWith(100)),
+        val config   = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
         )
-        val schema   = render(orc)
+        val schema   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -87,12 +85,12 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
         assertZIO(schema)(equalTo(expected))
       },
       test("with nesting array") {
-        val orc      = Orc(
-          "Query" -> FieldSet("foo" -> Field.output.to("Foo")),
-          "Foo"   -> FieldSet("bar" -> Field.output.to("Bar").asList),
-          "Bar"   -> FieldSet("value" -> Field.output.to("Int")),
+        val config   = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int")),
         )
-        val schema   = render(orc)
+        val schema   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -110,57 +108,18 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
                           |}""".stripMargin
         assertZIO(schema)(equalTo(expected))
       },
-      suite("toType")(
-        test("NamedType") {
-          val tpe      = Transcoder.toType(NamedType("Foo"))
-          val expected = Blueprint.NamedType("Foo", false)
-          assert(tpe)(equalTo(expected))
-        },
-        test("NamedType with List") {
-          val tpe      = Transcoder.toType(ListType(NonNull(NamedType("Foo"))))
-          val expected = Blueprint.ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = true), nonNull = false)
-          assert(tpe)(equalTo(expected))
-        },
-        test("NamedType with List nullable") {
-          val tpe      = Transcoder.toType(ListType(NamedType("Foo")))
-          val expected = Blueprint
-            .ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = false), nonNull = false)
-          assert(tpe)(equalTo(expected))
-        },
-        test("nested non-null") {
-          val tpe      = Transcoder.toType(NonNull(NonNull(NonNull(NonNull(NamedType("Foo"))))))
-          val expected = Blueprint.NamedType(name = "Foo", nonNull = true)
-          assert(tpe)(equalTo(expected))
-        },
-        test("nested listType") {
-          val tpe      = Transcoder.toType(ListType(ListType(ListType(ListType(NamedType("Foo"))))))
-          val expected = Blueprint.ListType(
-            Blueprint.ListType(
-              ofType = Blueprint.ListType(
-                ofType = Blueprint
-                  .ListType(ofType = Blueprint.NamedType(name = "Foo", nonNull = false), nonNull = false),
-                nonNull = false,
-              ),
-              nonNull = false,
-            ),
-            nonNull = false,
-          )
-          assert(tpe)(equalTo(expected))
-        },
-      ),
       suite("mutation")(
         test("mutation with primitive input") {
           // mutation createFoo(input: String){foo: Foo}
           // type Foo {a: Int, b: Int, c: Int}
-          val orc = Orc(
-            "Query"    -> FieldSet("foo" -> Field.output.to("Foo").resolveWith(Map("a" -> 1))),
-            "Foo"      -> FieldSet("a" -> Field.output.to("Int")),
-            "Mutation" -> FieldSet(
-              "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("String"))
-            ),
+          val config = Config.default.withMutation("Mutation").withTypes(
+            "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithDynamicValue(Map("a" -> 1))),
+            "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
+            "Mutation" -> Config
+              .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("String"))),
           )
 
-          val schema = render(orc)
+          val schema = render(config)
           assertZIO(schema)(equalTo("""|schema {
                                        |  query: Query
                                        |  mutation: Mutation
@@ -184,16 +143,15 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
           // type Foo { foo: String }
           // input FooInput {a: Int, b: Int, c: Int}
 
-          val orc = Orc(
-            "Query"    -> FieldSet.Empty,
-            "Mutation" -> FieldSet(
-              "createFoo" -> Field.output.to("Foo").withArgument("input" -> Field.input.to("FooInput"))
-            ),
-            "Foo"      -> FieldSet("a" -> Field.output.to("Int")),
-            "FooInput" -> FieldSet("a" -> Field.input.to("Int")),
+          val config = Config.default.withMutation("Mutation").withTypes(
+            "Query"    -> Config.Type.empty,
+            "Mutation" -> Config
+              .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))),
+            "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
+            "FooInput" -> Config.Type("a" -> Config.Field.ofType("Int")),
           )
 
-          val schema = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
+          val schema = config.toBlueprint.toGraphQL.map(_.render)
           assertZIO(schema)(equalTo("""|schema {
                                        |  query: Query
                                        |  mutation: Mutation
@@ -216,5 +174,5 @@ object Orc2GraphQLSchemaSpec extends ZIOSpecDefault {
       ),
     ).provide(GraphQLGenerator.live, StepGenerator.live, EvaluationRuntime.default)
 
-  def render(orc: Orc): ZIO[GraphQLGenerator, Throwable, String] = orc.toBlueprint.flatMap(_.toGraphQL).map(_.render)
+  def render(config: Config): ZIO[GraphQLGenerator, Throwable, String] = config.toBlueprint.toGraphQL.map(_.render)
 }
