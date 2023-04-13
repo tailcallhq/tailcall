@@ -46,9 +46,10 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 }
 
 object Config {
-  def empty: Config = Config()
 
   def default: Config = Config.empty.withQuery("Query")
+
+  def empty: Config = Config()
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
@@ -63,9 +64,9 @@ object Config {
 
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
 
-    def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
-
     def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+
+    def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
@@ -73,11 +74,6 @@ object Config {
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
 
     def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
-  }
-
-  object Type {
-    def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
-    def empty: Type                           = Type()
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
@@ -169,21 +165,17 @@ object Config {
 
     def isRequired: Boolean = required.getOrElse(false)
 
+    def resolveWith[A: Schema](a: A): Field = resolveWithFunction(_ => Remote(DynamicValue(a)))
+
+    def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Field = withSteps(Step.function(f))
+
+    def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
+
     def withArguments(args: (String, Arg)*): Field = withArguments(args.toMap)
 
     def withArguments(args: Map[String, Arg]): Field = copy(args = Option(args))
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
-
-    def withUpdate(update: ModifyField): Field =
-      copy(modify = self.modify match {
-        case Some(value) => Some(value mergeRight update)
-        case None        => Some(update)
-      })
-
-    def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
-
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
@@ -191,26 +183,15 @@ object Config {
         Step.transform(all.reduce(_ >>> _))
       }
 
-    // FIXME: rename to resolve with json
-    def resolveWith[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
+    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
-    // FIXME: rename to resolve with
-    def resolveWithDynamicValue[A: Schema](a: A): Field = resolveWithFunction(_ => Remote(DynamicValue(a)))
+    def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
-    def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Field = withSteps(Step.function(f))
-  }
-
-  object Field {
-    def apply(str: String, operations: Step*): Field =
-      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
-
-    def bool: Field = Field(typeOf = "Boolean")
-
-    def int: Field = Field(typeOf = "Int")
-
-    def ofType(name: String): Field = Field(typeOf = name)
-
-    def string: Field = Field(typeOf = "String")
+    def withUpdate(update: ModifyField): Field =
+      copy(modify = self.modify match {
+        case Some(value) => Some(value mergeRight update)
+        case None        => Some(update)
+      })
   }
 
   final case class Arg(
@@ -253,16 +234,36 @@ object Config {
 
     def isRequired: Boolean = required.getOrElse(false)
 
+    def withDefault[A: JsonEncoder](value: A): Arg = copy(defaultValue = value.toJsonAST.toOption)
+
     def withDoc(doc: String): Arg = copy(doc = Option(doc))
+
+    def withName(name: String): Arg = withUpdate(ModifyField.empty.withName(name))
 
     def withUpdate(update: ModifyField): Arg =
       copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
+  }
 
-    def withName(name: String): Arg                = withUpdate(ModifyField.empty.withName(name))
-    def withDefault[A: JsonEncoder](value: A): Arg = copy(defaultValue = value.toJsonAST.toOption)
+  object Type {
+    def empty: Type = Type()
+
+    def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
+  }
+
+  object Field {
+    def apply(str: String, operations: Step*): Field =
+      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+
+    def bool: Field = Field(typeOf = "Boolean")
+
+    def int: Field = Field(typeOf = "Int")
+
+    def ofType(name: String): Field = Field(typeOf = name)
+
+    def string: Field = Field(typeOf = "String")
   }
 
   object Arg {
