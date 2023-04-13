@@ -96,7 +96,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
       test("rename a field") {
         val config  = {
           Config.default
-            .withType("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
+            .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
         }
         val program = execute(config)(""" query { bar } """)
 
@@ -104,7 +104,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
       },
       test("rename an argument") {
         val config  = {
-          Config.default.withType(
+          Config.default.withTypes(
             "Query" -> Type(
               "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
                 .withSteps(Step.objPath("bar" -> List("args", "data")))
@@ -131,7 +131,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
           )
         )
 
-        val config = Config.default.withType(
+        val config = Config.default.withTypes(
           "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.constant(value))),
           "A"     -> Type("b" -> Field.ofType("B").asList),
           "B"     -> Type("c" -> Field.int),
@@ -146,7 +146,7 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
 
         val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").andThen(JsonT.toKeyValue))
 
-        val config = Config.default.withType(
+        val config = Config.default.withTypes(
           "Query" -> Type("z" -> Field.ofType("A").withSteps(Step.constant(value), Step.transform(transformation))),
           "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B").asList),
           "B"     -> Type("key" -> Field.string, "value" -> Field.int),
@@ -159,12 +159,12 @@ object Config2GraphQLSpec extends ZIOSpecDefault {
       },
       test("simple query") {
         val config  = Config.default
-          .withType("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!")))
+          .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!")))
         val program = execute(config)(" {foo} ")
         assertZIO(program)(equalTo("""{"foo":"Hello World!"}"""))
       },
       test("nested objects") {
-        val config = Config.default.withType(
+        val config = Config.default.withTypes(
           "Query" -> Type("foo" -> Field.ofType("Foo").resolveWith(Map("bar" -> "Hello World!"))),
           "Foo"   -> Type("bar" -> Field.ofType("String")),
         )

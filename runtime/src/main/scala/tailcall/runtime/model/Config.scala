@@ -1,11 +1,14 @@
 package tailcall.runtime.model
 
+import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
+import tailcall.runtime.remote.Remote
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json._
+import zio.schema.{DynamicValue, Schema}
 
 import java.io.File
 
@@ -34,7 +37,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withType(input: (String, Type)*): Config = {
+  def withTypes(input: (String, Type)*): Config = {
     input.foldLeft(self) { case (config, (name, typeInfo)) =>
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
@@ -181,7 +184,19 @@ object Config {
 
     def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
+    def withJsonT(head: JsonT, tail: JsonT*): Field =
+      withSteps {
+        val all = head :: tail.toList
+        Step.transform(all.reduce(_ >>> _))
+      }
+
+    // FIXME: rename to resolve with json
     def resolveWith[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
+
+    // FIXME: rename to resolve with
+    def resolveWithDynamicValue[A: Schema](a: A): Field = resolveWithFunction(_ => Remote(DynamicValue(a)))
+
+    def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Field = withSteps(Step.function(f))
   }
 
   object Field {

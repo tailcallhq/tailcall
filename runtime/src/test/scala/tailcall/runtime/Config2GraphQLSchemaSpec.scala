@@ -13,7 +13,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
   override def spec =
     suite("config to graphql schema")(
       test("only query") {
-        val config   = Config.default.withType("Query" -> Type("hello" -> Field.ofType("String")))
+        val config   = Config.default.withTypes("Query" -> Type("hello" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -25,8 +25,8 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
       },
       test("multiple query") {
-        val config   = Config.default.withType("Query" -> Type("foo" -> Field.ofType("String")))
-          .withType("Query" -> Type("bar" -> Field.ofType("String")))
+        val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
+          .withTypes("Query" -> Type("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -40,8 +40,8 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
       },
       test("shared input and output types") {
         val config   = Config.default
-          .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))))
-          .withType("Foo" -> Type("bar" -> Field.ofType("String")))
+          .withTypes("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))))
+          .withTypes("Foo" -> Type("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -62,7 +62,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("shared nested input and output types") {
-        val config   = Config.default.withType(
+        val config   = Config.default.withTypes(
           "Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))),
           "Foo"   -> Type("bar" -> Field.ofType("Bar")),
           "Bar"   -> Type("baz" -> Field.ofType("String")),
@@ -96,9 +96,9 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
       },
       test("input and output types") {
         val config   = Config.default
-          .withType("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))))
-          .withType("Foo" -> Type("bar" -> Field.ofType("String")))
-          .withType("FooInput" -> Type("bar" -> Field.ofType("String")))
+          .withTypes("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))))
+          .withTypes("Foo" -> Type("bar" -> Field.ofType("String")))
+          .withTypes("FooInput" -> Type("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -119,8 +119,8 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
         Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
       },
       test("mergeRight") {
-        val config1 = Config.default.withType("Query" -> Type("foo" -> Field.ofType("String")))
-        val config2 = Config.default.withType("Query" -> Type("bar" -> Field.ofType("String")))
+        val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
+        val config2 = Config.default.withTypes("Query" -> Type("bar" -> Field.ofType("String")))
 
         val config   = config1 mergeRight config2
         val expected = """|schema {
@@ -137,7 +137,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
       },
       suite("rename annotations")(
         test("field") {
-          val config   = Config.default.withType("Query" -> Type("foo" -> Field.ofType("String").withName("bar")))
+          val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String").withName("bar")))
           val expected = """|schema {
                             |  query: Query
                             |}
@@ -149,7 +149,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
           Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
         },
         test("argument") {
-          val config   = Config.default.withType(
+          val config   = Config.default.withTypes(
             "Query" -> Type(
               "foo" -> Field.ofType("String").withArguments("input" -> Arg.ofType("Int").withName("data"))
             )
@@ -165,7 +165,7 @@ object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
           Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
         },
         test("field in input type") {
-          val config   = Config.default.withType(
+          val config   = Config.default.withTypes(
             "Query" -> Type("foo" -> Field.ofType("Int").withArguments("input" -> Arg.ofType("Foo"))),
             "Foo"   -> Type("bar" -> Field.ofType("String").withName("baz")),
           )
