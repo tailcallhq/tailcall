@@ -4,7 +4,6 @@ import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import tailcall.runtime.transcoder.Transcoder
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
@@ -29,7 +28,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  hello: String
                           |}
                           |""".stripMargin.trim
-        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("multiple query") {
         val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -43,7 +42,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("shared input and output types") {
         val config   = Config.default
@@ -66,7 +65,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("shared nested input and output types") {
         val config   = Config.default.withTypes(
@@ -99,7 +98,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("input and output types") {
         val config   = Config.default
@@ -123,7 +122,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("mergeRight") {
         val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -139,8 +138,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        config.toBlueprint.toGraphQL.map(graphQL => assertTrue(graphQL.render == expected))
-
+        render(config).map(actual => assertTrue(actual == expected))
       },
       suite("rename annotations")(
         test("field") {
@@ -153,7 +151,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |  bar: String
                             |}
                             |""".stripMargin.trim
-          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+          render(config).map(actual => assertTrue(actual == expected))
         },
         test("argument") {
           val config   = Config.default.withTypes(
@@ -169,7 +167,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |  foo(data: Int): String
                             |}
                             |""".stripMargin.trim
-          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+          render(config).map(actual => assertTrue(actual == expected))
         },
         test("field in input type") {
           val config   = Config.default.withTypes(
@@ -188,7 +186,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |  foo(input: Foo): Int
                             |}
                             |""".stripMargin.trim
-          Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+          render(config).map(actual => assertTrue(actual == expected))
         },
       ),
       test("json placeholder") {
@@ -288,13 +286,12 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        Transcoder.toGraphQLSchema(config).toZIO.map(schema => assertTrue(schema == expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("document type generation") {
         val config = Config.default
           .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")))
 
-        val actual   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -302,7 +299,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test: String
                           |}""".stripMargin
-        assertZIO(actual)(equalTo(expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("document with InputValue") {
         val config = Config.default.withTypes(
@@ -311,7 +308,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
               .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
-        val actual = render(config)
 
         val expected = """|schema {
                           |  query: Query
@@ -320,7 +316,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        assertZIO(actual)(equalTo(expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("blueprint with InputValue and default") {
         val config = Config.default.withTypes(
@@ -329,7 +325,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
               .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
-        val actual = render(config)
 
         val expected = """|schema {
                           |  query: Query
@@ -338,7 +333,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        assertZIO(actual)(equalTo(expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("with nesting") {
         val config   = Config.default.withTypes(
@@ -346,7 +341,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
           "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
         )
-        val schema   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -362,7 +356,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        assertZIO(schema)(equalTo(expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       test("with nesting array") {
         val config   = Config.default.withTypes(
@@ -370,7 +364,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList),
           "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int")),
         )
-        val schema   = render(config)
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -386,7 +379,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        assertZIO(schema)(equalTo(expected))
+        render(config).map(actual => assertTrue(actual == expected))
       },
       suite("mutation")(
         test("mutation with primitive input") {
