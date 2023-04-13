@@ -14,10 +14,14 @@ import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertZIO}
 import zio.{Cause, ZIO, durationInt}
 
-object Config2GraphQLSpec extends ZIOSpecDefault {
-
+/**
+ * Tests for the generation of GraphQL steps from a config.
+ * This is done by writing a test config, converting to
+ * graphql and testing it with sample graphql queries.
+ */
+object GraphQLStepGenerationSpec extends ZIOSpecDefault {
   override def spec =
-    suite("config to graphql")(
+    suite("GraphQL Step Generation")(
       test("users name") {
         val program = execute(JsonPlaceholderConfig.config)(""" query { users {name} } """)
 

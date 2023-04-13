@@ -10,9 +10,15 @@ import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{ZIO, durationInt}
 
-object Config2GraphQLSchemaSpec extends ZIOSpecDefault {
+/**
+ * Tests for the generation of GraphQL schema from a config.
+ * This is done by writing a test config, converting to
+ * graphql, rendering the generated and then comparing with
+ * expected output.
+ */
+object GraphQLSchemaGenerationSpec extends ZIOSpecDefault {
   override def spec =
-    suite("config to graphql schema")(
+    suite("GraphQL Schema Generation")(
       test("only query") {
         val config   = Config.default.withTypes("Query" -> Type("hello" -> Field.ofType("String")))
         val expected = """|schema {
