@@ -19,7 +19,7 @@ import zio.{ZIO, durationInt}
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object GraphQLStepGenerationSpec extends ZIOSpecDefault {
+object StepGenerationSpec extends ZIOSpecDefault {
   override def spec =
     suite("GraphQL Step Generation")(
       test("users name") {
