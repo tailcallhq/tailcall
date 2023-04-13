@@ -290,7 +290,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
       },
       test("document type generation") {
         val config = Config.default
-          .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")))
+          .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWith("test")))
 
         val expected = """|schema {
                           |  query: Query
@@ -304,7 +304,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
       test("document with InputValue") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type(
-            "test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")
+            "test" -> Config.Field.ofType("String").resolveWith("test")
               .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
@@ -321,7 +321,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
       test("blueprint with InputValue and default") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type(
-            "test" -> Config.Field.ofType("String").resolveWithDynamicValue("test")
+            "test" -> Config.Field.ofType("String").resolveWith("test")
               .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
@@ -339,7 +339,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
         val config   = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
         )
         val expected = """|schema {
                           |  query: Query
@@ -386,7 +386,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           // mutation createFoo(input: String){foo: Foo}
           // type Foo {a: Int, b: Int, c: Int}
           val config = Config.default.withMutation("Mutation").withTypes(
-            "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithDynamicValue(Map("a" -> 1))),
+            "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
             "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
             "Mutation" -> Config
               .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("String"))),

@@ -90,7 +90,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
       test("rename a field") {
         val config  = {
           Config.default
-            .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!").withName("bar")))
+            .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWithJson("Hello World!").withName("bar")))
         }
         val program = resolve(config)(""" query { bar } """)
 
@@ -153,13 +153,13 @@ object StepGenerationSpec extends ZIOSpecDefault {
       },
       test("simple query") {
         val config  = Config.default
-          .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWith("Hello World!")))
+          .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWithJson("Hello World!")))
         val program = resolve(config)(" {foo} ")
         assertZIO(program)(equalTo("""{"foo":"Hello World!"}"""))
       },
       test("nested objects") {
         val config = Config.default.withTypes(
-          "Query" -> Type("foo" -> Field.ofType("Foo").resolveWith(Map("bar" -> "Hello World!"))),
+          "Query" -> Type("foo" -> Field.ofType("Foo").resolveWithJson(Map("bar" -> "Hello World!"))),
           "Foo"   -> Type("bar" -> Field.ofType("String")),
         )
 
@@ -168,7 +168,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
       },
       test("static value") {
         val config  = Config.default
-          .withTypes("Query" -> Config.Type("id" -> Config.Field.ofType("String").resolveWithDynamicValue(100)))
+          .withTypes("Query" -> Config.Type("id" -> Config.Field.ofType("String").resolveWith(100)))
         val program = resolve(config)("query {id}")
         assertZIO(program)(equalTo("""{"id":100}"""))
       },
@@ -198,7 +198,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
         )
 
         val program = resolve(config)("query {foo { bar { value }}}")
@@ -211,8 +211,8 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo" -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWithDynamicValue(List(100, 200, 300))),
-          "Bar" -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithDynamicValue(100)),
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
         )
 
         val program = resolve(config)("query {foo { bar { value }}}")
@@ -224,8 +224,8 @@ object StepGenerationSpec extends ZIOSpecDefault {
         // type Bar {value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo" -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWithDynamicValue(List(100, 200, 300))),
-          "Bar" -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
             _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           }),
         )
@@ -240,11 +240,11 @@ object StepGenerationSpec extends ZIOSpecDefault {
         // type Baz{value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo" -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWithDynamicValue(List(100, 200, 300))),
-          "Bar" -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWithFunction {
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
+          "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWithFunction {
             _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
           }),
-          "Baz" -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
+          "Baz"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
             _.toTypedPath[Option[Int]]("value").flatten.map(_ + Remote(1)).toDynamic
           }),
         )
@@ -261,8 +261,8 @@ object StepGenerationSpec extends ZIOSpecDefault {
         // type Baz{value: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").resolveWithDynamicValue(100)),
-          "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWithDynamicValue(200)),
+          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").resolveWith(100)),
+          "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWith(200)),
           "Baz"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
             _.toTypedPath[Int]("parent", "value").toDynamic
           }),
@@ -275,11 +275,11 @@ object StepGenerationSpec extends ZIOSpecDefault {
         // type Query {foo: Foo}
         // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithDynamicValue(Map("a" -> 1, "b" -> 2))),
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
           "Foo"   -> Config.Type(
             "a" -> Config.Field.ofType("Int"),
             "b" -> Config.Field.ofType("Int"),
-            "c" -> Config.Field.ofType("Int").resolveWithDynamicValue(3),
+            "c" -> Config.Field.ofType("Int").resolveWith(3),
           ),
         )
         val program = resolve(config)("query {foo { a b c }}")
@@ -290,7 +290,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
         // type Query {foo: Foo}
         // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithDynamicValue(Map("a" -> 1))),
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
           "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int")),
         )
         val program = resolve(config)("query {foo { a }}")
@@ -306,7 +306,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
           "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Mutation" -> Config.Type(
             "createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Config.Arg.ofType("FooInput"))
-              .resolveWithDynamicValue(Map("a" -> 1))
+              .resolveWith(Map("a" -> 1))
           ),
           "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
           "FooInput" -> Config.Type(

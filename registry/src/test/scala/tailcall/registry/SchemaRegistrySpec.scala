@@ -9,8 +9,8 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
 
   val config = Config.default.withTypes(
     "Query" -> Config.Type(
-      "name" -> Config.Field.ofType("String").resolveWith("John Doe"),
-      "age"  -> Config.Field.ofType("Int").resolveWith(100),
+      "name" -> Config.Field.ofType("String").resolveWithJson("John Doe"),
+      "age"  -> Config.Field.ofType("Int").resolveWithJson(100),
     )
   )
 
