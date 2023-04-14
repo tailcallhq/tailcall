@@ -9,19 +9,17 @@ import tailcall.runtime.service.EvaluationRuntime
 import zio.ZIO
 import zio.schema.{DynamicValue, Schema}
 
-sealed trait Remote[-R, +B] {
+sealed trait Remote[-A, +B] {
   self =>
-  final def <<<[C](other: C ~> R): C ~> B = other >>> self
+  final def <<<[C](other: C ~> A): C ~> B = other >>> self
 
-  final def >>>[C](other: B ~> C): R ~> C = Remote.unsafe.attempt(ctx => Pipe(self.compile(ctx), other.compile(ctx)))
+  final def apply[A2, A1 <: A](r: Remote[A2, A1]): Remote[A2, B] = r >>> self
 
   def compile(context: CompilationContext): Expression
 
-  final def compose[C](other: C ~> R): C ~> B = other >>> self
+  final def compose[C](other: C ~> A): C ~> B = other >>> self
 
-  def apply[R2, R1 <: R](r: Remote[R2, R1]): Remote[R2, B] = r >>> self
-
-  def debug(prefix: String): Remote[R, B] = self >>> Remote.unsafe.debug(prefix)
+  final def debug(prefix: String): Remote[A, B] = self >>> Remote.unsafe.debug(prefix)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -32,25 +30,22 @@ sealed trait Remote[-R, +B] {
 
   final def compile: Expression = compile(CompilationContext.initial)
 
-  // final def evaluate: LExit[EvaluationRuntime with HttpDataLoader, Throwable, A, B]  = EvaluationRuntime.evaluate(self)
-
-  final def evaluate[R1 <: R](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
     (self: Remote[R1, B]).evaluateWith {}
 
-  final def evaluateWith(r: R): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
     EvaluationRuntime.evaluate(self)(r)
 
-  final def pipe[C](other: B ~> C): R ~> C = self >>> other
+  final def pipe[C](other: B ~> C): A ~> C = self >>> other
 
-  def toDynamic[B1 >: B](implicit ev: Schema[B1]): Remote[R, DynamicValue] = ???
+  final def >>>[C](other: B ~> C): A ~> C = Remote.unsafe.attempt(ctx => Pipe(self.compile(ctx), other.compile(ctx)))
+
+  final def toDynamic[B1 >: B](implicit ev: Schema[B1]): Remote[A, DynamicValue] = ???
 }
 
 object Remote {
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Remote.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.ast))
-
-  def fromEndpoint[R](endpoint: Endpoint, input: Remote[R, DynamicValue]): Remote[R, DynamicValue] =
-    input >>> Remote.unsafe.fromEndpoint(endpoint)
 
   def fromFunction[A, B](f: => Remote[Any, A] => Remote[Any, B]): A ~> B = {
     Remote.unsafe.attempt { ctx =>
@@ -100,15 +95,15 @@ object Remote {
 
     def inc[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, ev(ev.one))
 
+    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
+      Remote.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Add, a.compile(ctx), b.compile(ctx)), ev.tag))
+
     def mul[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Remote.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Multiply, a.compile(ctx), b.compile(ctx)), ev.tag))
 
     def dec[A, B](a: A ~> B)(implicit ev: Numeric[B]): A ~> B = sub(a, ev(ev.one))
 
     def sub[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B = add(a, neg(b))
-
-    def add[A, B](a: A ~> B, b: A ~> B)(implicit ev: Numeric[B]): A ~> B =
-      Remote.unsafe.attempt(ctx => Math(Math.Binary(Math.Binary.Add, a.compile(ctx), b.compile(ctx)), ev.tag))
 
     def neg[A, B](ab: A ~> B)(implicit ev: Numeric[B]): A ~> B =
       Remote.unsafe.attempt(ctx => Math(Math.Unary(Math.Unary.Negate, ab.compile(ctx)), ev.tag))

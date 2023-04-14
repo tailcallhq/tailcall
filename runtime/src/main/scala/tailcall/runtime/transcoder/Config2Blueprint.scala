@@ -150,7 +150,7 @@ trait Config2Blueprint {
           val endpoint           = toEndpoint(http, host, port)
           val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
           val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
-          Remote.fromEndpoint(endpointWithOutput, input)
+          input >>> Remote.unsafe.fromEndpoint(endpointWithOutput)
         }
       case None          => TValid.fail("No base URL defined in the server configuration")
     }
