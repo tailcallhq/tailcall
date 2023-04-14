@@ -9,7 +9,7 @@ import zio.test.Assertion._
 import zio.test._
 
 object RemoteSpec extends ZIOSpecDefault {
-  import tailcall.runtime.lambda.Numeric._
+  import tailcall.runtime.remote.Numeric._
 
   def spec =
     suite("Remote")(

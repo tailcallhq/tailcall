@@ -1,7 +1,7 @@
 package tailcall.runtime.remote
 
-import tailcall.runtime.lambda.{Lambda, ~>}
 import tailcall.runtime.model.Endpoint
+import tailcall.runtime.remote.{Lambda, ~>}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationRuntime
 import zio.ZIO

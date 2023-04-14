@@ -5,8 +5,8 @@ import caliban.schema.Annotations.GQLName
 import caliban.schema.{GenericSchema, Schema, Step}
 import caliban.{GraphQL, ResponseValue, RootResolver, Value}
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.lambda.~>
 import tailcall.runtime.model.{Blueprint, Digest}
+import tailcall.runtime.remote.~>
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json.EncoderOps

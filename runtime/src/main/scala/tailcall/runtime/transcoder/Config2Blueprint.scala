@@ -4,7 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.remote._
 import zio.schema.DynamicValue
 
 trait Config2Blueprint {

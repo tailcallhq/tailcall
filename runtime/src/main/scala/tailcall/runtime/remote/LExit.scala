@@ -1,4 +1,4 @@
-package tailcall.runtime.lambda
+package tailcall.runtime.remote
 
 import zio._
 

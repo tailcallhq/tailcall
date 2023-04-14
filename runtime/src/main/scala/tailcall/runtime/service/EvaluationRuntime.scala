@@ -1,8 +1,7 @@
 package tailcall.runtime.service
 
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.lambda._
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.remote.{Remote, _}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import zio._
 import zio.schema.codec.JsonCodec

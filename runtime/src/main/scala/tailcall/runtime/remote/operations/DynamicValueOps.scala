@@ -1,8 +1,7 @@
 package tailcall.runtime.remote.operations
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.lambda.Lambda
-import tailcall.runtime.remote._
+import tailcall.runtime.remote.{Lambda, _}
 import zio.schema.{DynamicValue, Schema}
 
 trait DynamicValueOps {

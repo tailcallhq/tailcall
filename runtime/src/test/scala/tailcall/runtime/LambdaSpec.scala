@@ -2,9 +2,9 @@ package tailcall.runtime
 
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.lambda.Lambda.{logic, math}
-import tailcall.runtime.lambda.{Lambda, ~>}
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
+import tailcall.runtime.remote.Lambda.{logic, math}
+import tailcall.runtime.remote.{Lambda, ~>}
 import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
 import zio.durationInt
 import zio.http.Client
@@ -14,7 +14,7 @@ import zio.test.TestAspect.timeout
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
-  import tailcall.runtime.lambda.Numeric._
+  import tailcall.runtime.remote.Numeric._
 
   def spec =
     suite("Lambda")(

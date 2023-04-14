@@ -1,7 +1,6 @@
 package tailcall.runtime.remote.operations
 
-import tailcall.runtime.lambda.{Lambda, Numeric}
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.remote.{Lambda, Numeric, Remote}
 
 trait MathOps {
   implicit final class RemoteMathOps[A](val self: Remote[A]) {

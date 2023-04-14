@@ -1,8 +1,8 @@
-package tailcall.runtime.lambda
+package tailcall.runtime.remote
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
+import tailcall.runtime.remote.Expression._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationContext.Binding
 import tailcall.runtime.service.EvaluationRuntime

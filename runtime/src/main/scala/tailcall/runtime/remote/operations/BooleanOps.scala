@@ -1,7 +1,6 @@
 package tailcall.runtime.remote.operations
 
-import tailcall.runtime.lambda.Lambda
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.remote.{Lambda, Remote}
 
 trait BooleanOps {
   implicit final class RemoteBooleanOps(val self: Remote[Boolean]) {
