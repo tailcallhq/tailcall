@@ -5,7 +5,6 @@ import tailcall.runtime.service.EvaluationError
 import zio.http._
 import zio.http.model.Status
 import zio.json.DecoderOps
-import zio.schema.codec.JsonCodec
 import zio.{Chunk, Task, ZIO, ZLayer}
 
 import java.nio.charset.Charset
@@ -37,8 +36,7 @@ object SchemaRegistryClient {
         ))
         body         <- assertStatusCodeIsAbove(400, response)
         digestString <- body.asString
-        digest       <- ZIO.fromEither(JsonCodec.jsonDecoder(Digest.schema).decodeJson(digestString))
-          .mapError(EvaluationError.DecodingError(_))
+        digest       <- ZIO.fromEither(digestString.fromJson[Digest]).mapError(EvaluationError.DecodingError(_))
       } yield digest
 
     override def get(base: URL, id: Digest): Task[Option[Blueprint]] =
