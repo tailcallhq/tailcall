@@ -52,7 +52,7 @@ object Remote {
   def fromEndpoint[R](endpoint: Endpoint, input: Remote[R, DynamicValue]): Remote[R, DynamicValue] =
     input >>> Remote.unsafe.fromEndpoint(endpoint)
 
-  def fromLambdaFunction[A, B](f: => Remote[Any, A] => Remote[Any, B]): A ~> B = {
+  def fromFunction[A, B](f: => Remote[Any, A] => Remote[Any, B]): A ~> B = {
     Remote.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
       val body  = f(Remote.unsafe.attempt[Any, A](_ => Lookup(key))).compile(ctx.next)

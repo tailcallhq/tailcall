@@ -33,7 +33,7 @@ object AdminGraphQL {
 
   implicit val lambdaSchema: Schema[Any, DynamicValue ~> DynamicValue] = new Schema[Any, DynamicValue ~> DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
-      __Type(kind = __TypeKind.SCALAR, name = Some("Lambda"))
+      __Type(kind = __TypeKind.SCALAR, name = Some("Remote"))
 
     override def resolve(value: DynamicValue ~> DynamicValue): Step[Any] = {
       Step.QueryStep {

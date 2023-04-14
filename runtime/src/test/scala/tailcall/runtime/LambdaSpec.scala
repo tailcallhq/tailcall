@@ -13,11 +13,12 @@ import zio.test.Assertion._
 import zio.test.TestAspect.timeout
 import zio.test._
 
+// FIXME: merge with remote spec
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.runtime.remote.Numeric._
 
   def spec =
-    suite("Lambda")(
+    suite("Remote")(
       suite("math")(
         test("add") {
           val program = math.add(Remote(1), Remote(2))
@@ -78,20 +79,20 @@ object LambdaSpec extends ZIOSpecDefault {
       ),
       suite("fromFunction")(
         test("one level") {
-          val program = Remote.fromLambdaFunction[Int, Int](i => math.add(i, Remote(1)))
+          val program = Remote.fromFunction[Int, Int](i => math.add(i, Remote(1)))
           assertZIO(program.evaluateWith(1))(equalTo(2))
         },
         test("two level") {
-          val program = Remote.fromLambdaFunction[Int, Int] { i =>
-            val f1 = Remote.fromLambdaFunction[Int, Int](j => math.mul(i, j))
+          val program = Remote.fromFunction[Int, Int] { i =>
+            val f1 = Remote.fromFunction[Int, Int](j => math.mul(i, j))
             math.add(i, Remote(1)) >>> f1
           }
           assertZIO(program.evaluateWith(10))(equalTo(110))
         },
         test("three level") {
-          val program = Remote.fromLambdaFunction[Int, Int] { i =>
-            val f1 = Remote.fromLambdaFunction[Int, Int] { j =>
-              val f2 = Remote.fromLambdaFunction[Int, Int](k => math.mul(math.mul(i, j), k))
+          val program = Remote.fromFunction[Int, Int] { i =>
+            val f1 = Remote.fromFunction[Int, Int] { j =>
+              val f2 = Remote.fromFunction[Int, Int](k => math.mul(math.mul(i, j), k))
               math.add(j, Remote(1)) >>> f2
             }
             math.add(i, Remote(1)) >>> f1
@@ -99,9 +100,9 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluateWith(10))(equalTo(10 * 11 * 12))
         },
         test("nested siblings") {
-          val program = Remote.fromLambdaFunction[Int, Int] { i =>
-            val f1 = Remote.fromLambdaFunction[Int, Int](j => math.mul(i, j))
-            val f2 = Remote.fromLambdaFunction[Int, Int](j => math.mul(i, j))
+          val program = Remote.fromFunction[Int, Int] { i =>
+            val f1 = Remote.fromFunction[Int, Int](j => math.mul(i, j))
+            val f2 = Remote.fromFunction[Int, Int](j => math.mul(i, j))
             math.add(math.add(i, Remote(1)) >>> f1, math.sub(i, Remote(1)) >>> f2)
           }
           assertZIO(program.evaluateWith(10))(equalTo(200))

@@ -52,7 +52,7 @@ trait Config2Blueprint {
         name = field.modify.flatMap(_.rename).getOrElse(name),
         args = args,
         ofType = ofType,
-        resolver = resolver.map(Remote.fromLambdaFunction(_)),
+        resolver = resolver.map(Remote.fromFunction(_)),
         description = field.doc,
       )
     }

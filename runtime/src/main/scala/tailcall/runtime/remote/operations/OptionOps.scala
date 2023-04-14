@@ -10,7 +10,7 @@ trait OptionOps {
     def isNone: Remote[R, Boolean] = self >>> Remote.option.isNone
 
     def fold[B](ifNone: Remote[R, B], ifSome: Remote[Any, A] => Remote[Any, B]): Remote[R, B] =
-      Remote.option.fold[R, A, B](self, ifNone, Remote.fromLambdaFunction(ifSome))
+      Remote.option.fold[R, A, B](self, ifNone, Remote.fromFunction(ifSome))
 
     def getOrElse[B >: A](default: Remote[R, B]): Remote[R, B] = Remote.option.fold(self, default, Remote.identity[B])
 
