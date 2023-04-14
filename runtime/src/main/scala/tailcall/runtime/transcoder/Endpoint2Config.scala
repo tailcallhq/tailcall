@@ -101,7 +101,8 @@ object Endpoint2Config {
 
     private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {
       endpoint.output.map(schema => {
-        var config = toConfigField(schema, isRequired = true, isList = false).withSteps(Http.fromEndpoint(endpoint))
+        var config = toConfigField(schema, isRequired = true, isList = false)
+          .withSteps(Http.fromEndpoint(endpoint).withInput(None).withOutput(None))
 
         config = endpoint.input match {
           case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))
