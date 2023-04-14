@@ -3,9 +3,9 @@ package tailcall.runtime
 import caliban.{CalibanError, InputValue}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.{Config, Step}
-import tailcall.runtime.remote._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
@@ -226,7 +226,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
           "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
-            _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
+            _.toTypedPath[Int]("value").map(_ + Lambda(1)).toDynamic
           }),
         )
 
@@ -242,10 +242,10 @@ object StepGenerationSpec extends ZIOSpecDefault {
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
           "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWithFunction {
-            _.toTypedPath[Int]("value").map(_ + Remote(1)).toDynamic
+            _.toTypedPath[Int]("value").map(_ + Lambda(1)).toDynamic
           }),
           "Baz"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
-            _.toTypedPath[Option[Int]]("value").flatten.map(_ + Remote(1)).toDynamic
+            _.toTypedPath[Option[Int]]("value").flatten.map(_ + Lambda(1)).toDynamic
           }),
         )
 

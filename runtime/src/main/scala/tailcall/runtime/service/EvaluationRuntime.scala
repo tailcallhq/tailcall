@@ -2,7 +2,6 @@ package tailcall.runtime.service
 
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda._
-import tailcall.runtime.remote.Remote
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import zio._
 import zio.schema.codec.JsonCodec
@@ -11,8 +10,6 @@ import zio.schema.{DynamicValue, Schema}
 import java.nio.charset.StandardCharsets
 
 trait EvaluationRuntime {
-  final def evaluate[A](remote: Remote[A]): ZIO[HttpDataLoader, Throwable, A] = evaluate(remote.toLambda) {}
-
   final def evaluate[A, B](lambda: A ~> B): LExit[HttpDataLoader, Throwable, A, B] =
     evaluate(lambda, EvaluationContext.make)
 
