@@ -141,7 +141,7 @@ trait Config2Blueprint {
     config: Config,
     field: Field,
     http: Step.Http,
-  ): TValid[String, Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]] = {
+  ): TValid[String, Any ~> DynamicValue => Any ~> DynamicValue] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
           val steps              = field.steps.getOrElse(Nil)
@@ -157,7 +157,7 @@ trait Config2Blueprint {
   }
 
   // TODO: change it to Lambda[DynamicValue, DyanmicValue]
-  type Resolver = Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]
+  type Resolver = Any ~> DynamicValue => Any ~> DynamicValue
 
   final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
     step match {

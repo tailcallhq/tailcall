@@ -13,13 +13,13 @@ sealed trait Lambda[-A, +B] {
   self =>
   final def <<<[C](other: C ~> A): C ~> B = other >>> self
 
-  final def apply[A2, A1 <: A](r: Lambda[A2, A1]): Lambda[A2, B] = r >>> self
+  final def apply[A2, A1 <: A](r: A2 ~> A1): A2 ~> B = r >>> self
 
   def compile(context: CompilationContext): Expression
 
   final def compose[C](other: C ~> A): C ~> B = other >>> self
 
-  final def debug(prefix: String): Lambda[A, B] = self >>> Lambda.unsafe.debug(prefix)
+  final def debug(prefix: String): A ~> B = self >>> Lambda.unsafe.debug(prefix)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -31,7 +31,7 @@ sealed trait Lambda[-A, +B] {
   final def compile: Expression = compile(CompilationContext.initial)
 
   final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
-    (self: Lambda[R1, B]).evaluateWith {}
+    (self: R1 ~> B).evaluateWith {}
 
   final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
     EvaluationRuntime.evaluate(self)(r)
@@ -40,14 +40,14 @@ sealed trait Lambda[-A, +B] {
 
   final def >>>[C](other: B ~> C): A ~> C = Lambda.unsafe.attempt(ctx => Pipe(self.compile(ctx), other.compile(ctx)))
 
-  final def toDynamic[B1 >: B](implicit ev: Schema[B1]): Lambda[A, DynamicValue] = ???
+  final def toDynamic[B1 >: B](implicit ev: Schema[B1]): A ~> DynamicValue = ???
 }
 
 object Lambda {
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.ast))
 
-  def fromFunction[A, B](f: => Lambda[Any, A] => Lambda[Any, B]): A ~> B = {
+  def fromFunction[A, B](f: => Any ~> A => Any ~> B): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
       val body  = f(Lambda.unsafe.attempt[Any, A](_ => Lookup(key))).compile(ctx.next)

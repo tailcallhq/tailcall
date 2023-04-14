@@ -2,7 +2,7 @@ package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
-import tailcall.runtime.lambda.Lambda
+import tailcall.runtime.lambda.{Lambda, ~>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
@@ -167,8 +167,7 @@ object Config {
 
     def resolveWith[A: Schema](a: A): Field = resolveWithFunction(_ => Lambda(DynamicValue(a)))
 
-    def resolveWithFunction(f: Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]): Field =
-      withSteps(Step.function(f))
+    def resolveWithFunction(f: Any ~> DynamicValue => Any ~> DynamicValue): Field = withSteps(Step.function(f))
 
     def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
 
