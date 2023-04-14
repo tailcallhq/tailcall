@@ -1,4 +1,4 @@
-package tailcall.runtime.remote
+package tailcall.runtime.lambda
 
 final case class CompilationContext(level: Int) {
   def next: CompilationContext = CompilationContext(level + 1)

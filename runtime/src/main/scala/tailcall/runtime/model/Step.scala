@@ -1,7 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.Method
-import tailcall.runtime.remote.Remote
+import tailcall.runtime.lambda.Lambda
 import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
 import zio.json.ast.Json
@@ -13,12 +13,12 @@ object Step {
   def objPath(spec: (String, List[String])*): Step                              = Transform(JsonT.objPath(spec: _*))
   def constant(a: Json): Step                                                   = Transform(JsonT.Constant(a))
   def transform(jsonT: JsonT): Step                                             = Transform(jsonT)
-  def function(f: Remote[Any, DynamicValue] => Remote[Any, DynamicValue]): Step = RemoteFunction(f)
+  def function(f: Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]): Step = LambdaFunction(f)
 
   @jsonHint("remote")
-  final case class RemoteFunction(f: Remote[Any, DynamicValue] => Remote[Any, DynamicValue]) extends Step
-  object RemoteFunction {
-    implicit lazy val jsonCodec: JsonCodec[RemoteFunction] = ???
+  final case class LambdaFunction(f: Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]) extends Step
+  object LambdaFunction {
+    implicit lazy val jsonCodec: JsonCodec[LambdaFunction] = ???
   }
 
   @jsonHint("http")

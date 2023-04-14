@@ -1,4 +1,4 @@
-package tailcall.runtime.remote
+package tailcall.runtime.lambda
 
 sealed trait Equatable[A] {
   self =>

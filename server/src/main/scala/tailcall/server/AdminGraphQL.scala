@@ -5,8 +5,8 @@ import caliban.schema.Annotations.GQLName
 import caliban.schema.{GenericSchema, Schema, Step}
 import caliban.{GraphQL, ResponseValue, RootResolver, Value}
 import tailcall.registry.SchemaRegistry
+import tailcall.runtime.lambda.~>
 import tailcall.runtime.model.{Blueprint, Digest}
-import tailcall.runtime.remote.~>
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json.EncoderOps
@@ -33,7 +33,7 @@ object AdminGraphQL {
 
   implicit val lambdaSchema: Schema[Any, DynamicValue ~> DynamicValue] = new Schema[Any, DynamicValue ~> DynamicValue] {
     override protected[this] def toType(isInput: Boolean, isSubscription: Boolean): __Type =
-      __Type(kind = __TypeKind.SCALAR, name = Some("Remote"))
+      __Type(kind = __TypeKind.SCALAR, name = Some("Lambda"))
 
     override def resolve(value: DynamicValue ~> DynamicValue): Step[Any] = {
       Step.QueryStep {

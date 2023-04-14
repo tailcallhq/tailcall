@@ -1,4 +1,4 @@
-package tailcall.runtime.remote
+package tailcall.runtime.lambda
 
 import tailcall.runtime.JsonT
 import tailcall.runtime.model.Endpoint

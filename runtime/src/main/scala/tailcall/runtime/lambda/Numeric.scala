@@ -1,4 +1,4 @@
-package tailcall.runtime.remote
+package tailcall.runtime.lambda
 
 import zio.schema.DeriveSchema.gen
 import zio.schema.Schema
@@ -15,7 +15,7 @@ sealed trait Numeric[A] {
   def one: A
   final def any: Numeric[Any] = this.asInstanceOf[Numeric[Any]]
   def schema: Schema[A]
-  def apply(a: A): Any ~> A   = Remote(a)(schema)
+  def apply(a: A): Any ~> A   = Lambda(a)(schema)
   def tag: Numeric.Tag
 }
 

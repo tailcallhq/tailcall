@@ -2,7 +2,7 @@ package tailcall.cli.service
 
 import caliban.GraphQL
 import tailcall.cli.CommandADT
-import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
+import tailcall.cli.CommandADT.{BlueprintOptions, Lambda, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
 import tailcall.runtime.model.{Blueprint, Digest, Endpoint, Postman}
@@ -100,8 +100,8 @@ object CommandExecutor {
               _    <- Console.printLine(Fmt.table(seq1))
               _    <- blueprintDetails(blueprint, options)
             } yield ()
-          case CommandADT.Remote(base, command)         => command match {
-              case Remote.Publish(path) => for {
+          case CommandADT.Lambda(base, command)         => command match {
+              case Lambda.Publish(path) => for {
                   config    <- configFile.readAll(path.map(_.toFile))
                   blueprint <- Transcoder.toBlueprint(config).toZIO
                   digest    <- registry.add(base, blueprint)
@@ -110,20 +110,20 @@ object CommandExecutor {
                     Fmt.table(Seq("Digest" -> s"${digest.hex}", "Playground" -> Fmt.playground(base, digest)))
                   )
                 } yield ()
-              case Remote.Drop(digest)  => for {
+              case Lambda.Drop(digest)  => for {
                   _ <- registry.drop(base, digest)
                   _ <- Console.printLine(Fmt.success(s"Blueprint dropped successfully."))
                   _ <- Console.printLine(Fmt.table(Seq("Digest" -> s"${digest.hex}")))
                 } yield ()
 
-              case Remote.ListAll(index, offset) => for {
+              case Lambda.ListAll(index, offset) => for {
                   blueprints <- registry.list(base, index, offset)
                   _          <- Console.printLine(Fmt.blueprints(blueprints))
                   _          <- Console
                     .printLine(Fmt.table(Seq("Server" -> base.encode, "Total Count" -> s"${blueprints.length}")))
                 } yield ()
 
-              case Remote.Show(digest, options) => for {
+              case Lambda.Show(digest, options) => for {
                   maybe <- registry.get(base, digest)
                   _     <- Console.printLine(Fmt.table(Seq(
                     "Digest"     -> s"${digest.hex}",

@@ -2,9 +2,9 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model._
-import tailcall.runtime.remote._
 import zio.schema.DynamicValue
 
 trait Config2Blueprint {
@@ -52,7 +52,7 @@ trait Config2Blueprint {
         name = field.modify.flatMap(_.rename).getOrElse(name),
         args = args,
         ofType = ofType,
-        resolver = resolver.map(Remote.fromFunction(_)),
+        resolver = resolver.map(Lambda.fromFunction(_)),
         description = field.doc,
       )
     }
@@ -141,7 +141,7 @@ trait Config2Blueprint {
     config: Config,
     field: Field,
     http: Step.Http,
-  ): TValid[String, Remote[Any, DynamicValue] => Remote[Any, DynamicValue]] = {
+  ): TValid[String, Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
           val steps              = field.steps.getOrElse(Nil)
@@ -150,20 +150,20 @@ trait Config2Blueprint {
           val endpoint           = toEndpoint(http, host, port)
           val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
           val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
-          input >>> Remote.unsafe.fromEndpoint(endpointWithOutput)
+          input >>> Lambda.unsafe.fromEndpoint(endpointWithOutput)
         }
       case None          => TValid.fail("No base URL defined in the server configuration")
     }
   }
 
-  // TODO: change it to Remote[DynamicValue, DyanmicValue]
-  type Resolver = Remote[Any, DynamicValue] => Remote[Any, DynamicValue]
+  // TODO: change it to Lambda[DynamicValue, DyanmicValue]
+  type Resolver = Lambda[Any, DynamicValue] => Lambda[Any, DynamicValue]
 
   final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
     step match {
       case http @ Step.Http(_, _, _, _) => toResolver(config, field, http)
       case Step.Transform(jsonT)        => TValid.succeed(dynamic => dynamic.transform(jsonT))
-      case Step.RemoteFunction(func)    => TValid.succeed(func)
+      case Step.LambdaFunction(func)    => TValid.succeed(func)
     }
   }
 

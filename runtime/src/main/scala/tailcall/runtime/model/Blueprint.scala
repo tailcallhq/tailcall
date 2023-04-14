@@ -1,7 +1,7 @@
 package tailcall.runtime.model
 
 import caliban.GraphQL
-import tailcall.runtime.remote.{Expression, ~>}
+import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.GraphQLGenerator
 import zio.ZIO
