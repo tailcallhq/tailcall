@@ -1,6 +1,6 @@
 package tailcall.cli
 
-import tailcall.cli.CommandADT.Lambda
+import tailcall.cli.CommandADT.Remote
 import tailcall.cli.service.CommandExecutor
 import zio.cli._
 
@@ -15,13 +15,13 @@ object CommandDoc {
     // publish
     Command("publish", CustomOptions.remoteOption, Args.file.repeat1)
       .withHelp("Publish the configuration file to the remote environment.").map { case (remote, config) =>
-        Lambda(remote, Lambda.Publish(config))
+        Remote(remote, Remote.Publish(config))
       },
 
     // drop
     Command("drop", CustomOptions.remoteOption, CustomArgs.digestArgs)
       .withHelp("Remove the composition spec from the remote environments using its SHA-256 hash.").map {
-        case (remote, digest) => Lambda(remote, Lambda.Drop(digest))
+        case (remote, digest) => Remote(remote, Remote.Drop(digest))
       },
 
     // list
@@ -31,14 +31,14 @@ object CommandDoc {
         CustomOptions.integerOption("offset").withDefault(0) ++
         CustomOptions.integerOption("limit").withDefault(Int.MaxValue),
     ).withHelp("List all published composition specs on the remote address.").map { case (remote, offset, limit) =>
-      Lambda(remote, Lambda.ListAll(offset = offset, limit = limit))
+      Remote(remote, Remote.ListAll(offset = offset, limit = limit))
     },
 
     // info
     Command("show", CustomOptions.remoteOption ++ CustomOptions.blueprintOptions, CustomArgs.digestArgs)
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.")
       .map { case (remote, blueprintOptions) -> digest =>
-        Lambda(remote, Lambda.Show(digest = digest, options = blueprintOptions))
+        Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))
       },
 
     // generate

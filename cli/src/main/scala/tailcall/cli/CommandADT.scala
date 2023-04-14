@@ -17,8 +17,8 @@ object CommandADT {
     targetFormat: TargetFormat,
     write: Option[Path],
   ) extends CommandADT
-  final case class Lambda(server: URL, command: Lambda.Command)                         extends CommandADT
-  object Lambda {
+  final case class Remote(server: URL, command: Remote.Command)                         extends CommandADT
+  object Remote {
     sealed trait Command
     final case class Publish(config: ::[Path])                       extends Command
     final case class Drop(digest: Digest)                            extends Command
