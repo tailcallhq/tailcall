@@ -47,7 +47,7 @@ object Lambda {
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.ast))
 
-  def fromFunction[A, B](f: => Any ~> A => Any ~> B): A ~> B = {
+  def fromFunction[A, B](f: => A ~>> B): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
       val body  = f(Lambda.unsafe.attempt[Any, A](_ => Lookup(key))).compile(ctx.next)
@@ -177,6 +177,6 @@ object Lambda {
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
 
-  implicit def schemaFunction[A, B]: Schema[Any ~> A => Any ~> B] =
-    Schema[A ~> B].transform[Any ~> A => Any ~> B](ab => a => a >>> ab, Lambda.fromFunction(_))
+  implicit def schemaFunction[A, B]: Schema[A ~>> B] =
+    Schema[A ~> B].transform[A ~>> B](ab => a => a >>> ab, Lambda.fromFunction(_))
 }
