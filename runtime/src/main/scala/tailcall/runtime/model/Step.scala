@@ -5,21 +5,20 @@ import tailcall.runtime.remote.Remote
 import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
 import zio.json.ast.Json
-import zio.schema.{DynamicValue, Schema}
+import zio.schema.DynamicValue
 
 sealed trait Step
 
 object Step {
-  def objPath(spec: (String, List[String])*): Step                    = Transform(JsonT.objPath(spec: _*))
-  def constant(a: Json): Step                                         = Transform(JsonT.Constant(a))
-  def transform(jsonT: JsonT): Step                                   = Transform(jsonT)
-  def function(f: Remote[DynamicValue] => Remote[DynamicValue]): Step = RemoteFunction(f)
+  def objPath(spec: (String, List[String])*): Step                              = Transform(JsonT.objPath(spec: _*))
+  def constant(a: Json): Step                                                   = Transform(JsonT.Constant(a))
+  def transform(jsonT: JsonT): Step                                             = Transform(jsonT)
+  def function(f: Remote[Any, DynamicValue] => Remote[Any, DynamicValue]): Step = RemoteFunction(f)
 
   @jsonHint("remote")
-  final case class RemoteFunction(f: Remote[DynamicValue] => Remote[DynamicValue]) extends Step
+  final case class RemoteFunction(f: Remote[Any, DynamicValue] => Remote[Any, DynamicValue]) extends Step
   object RemoteFunction {
-    implicit lazy val jsonCodec: JsonCodec[RemoteFunction] = zio.schema.codec.JsonCodec
-      .jsonCodec(Schema[Remote[DynamicValue] => Remote[DynamicValue]]).transform(RemoteFunction(_), _.f)
+    implicit lazy val jsonCodec: JsonCodec[RemoteFunction] = ???
   }
 
   @jsonHint("http")

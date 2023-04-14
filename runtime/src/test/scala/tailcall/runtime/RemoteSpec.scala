@@ -75,20 +75,20 @@ object RemoteSpec extends ZIOSpecDefault {
       ),
       suite("fromFunction")(
         test("one level") {
-          val program = Remote.bind[Int, Int](i => i + Remote(1))(Remote(1))
-          assertZIO(program.evaluate)(equalTo(2))
+          val program = Remote.fromLambdaFunction[Int, Int](i => i + Remote(1))
+          assertZIO(program.evaluateWith(1))(equalTo(2))
         },
         test("two level") {
-          val program = Remote.bind[Int, Int] { i =>
-            val f1 = Remote.bind[Int, Int](j => i * j)
+          val program = Remote.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Remote.fromLambdaFunction[Int, Int](j => i * j)
             f1(i + Remote(1))
           }(Remote(10))
           assertZIO(program.evaluate)(equalTo(110))
         },
         test("three level") {
-          val program = Remote.bind[Int, Int] { i =>
-            val f1 = Remote.bind[Int, Int] { j =>
-              val f2 = Remote.bind[Int, Int](k => i * j * k)
+          val program = Remote.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Remote.fromLambdaFunction[Int, Int] { j =>
+              val f2 = Remote.fromLambdaFunction[Int, Int](k => i * j * k)
               f2(j + Remote(1))
             }
             f1(i + Remote(1))
@@ -96,9 +96,9 @@ object RemoteSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(equalTo(10 * 11 * 12))
         },
         test("three level") {
-          val program = Remote.bind[Int, Int] { i =>
-            val f1 = Remote.bind[Int, Int](j => j * i)
-            val f2 = Remote.bind[Int, Int](j => i * j)
+          val program = Remote.fromLambdaFunction[Int, Int] { i =>
+            val f1 = Remote.fromLambdaFunction[Int, Int](j => j * i)
+            val f2 = Remote.fromLambdaFunction[Int, Int](j => i * j)
             f1(i + Remote(1)) + f2(i - Remote(1))
           }(Remote(10))
           assertZIO(program.evaluate)(equalTo(200))
@@ -243,27 +243,27 @@ object RemoteSpec extends ZIOSpecDefault {
 //      ),
       suite("option")(
         test("some") {
-          val program = Remote.fromOption(Some(Remote(1)))
+          val program = Remote.option(Some(Remote(1)))
           assertZIO(program.evaluate)(equalTo(Some(1)))
         },
         test("none") {
-          val program = Remote.fromOption(None)
+          val program = Remote.option(None)
           assertZIO(program.evaluate)(equalTo(None))
         },
         test("isSome") {
-          val program = Remote.fromOption(Some(Remote(1))).isSome
+          val program = Remote.option(Some(Remote(1))).isSome
           assertZIO(program.evaluate)(isTrue)
         },
         test("isNone") {
-          val program = Remote.fromOption(None).isNone
+          val program = Remote.option(None).isNone
           assertZIO(program.evaluate)(isTrue)
         },
         test("fold some") {
-          val program = Remote.fromOption(Some(Remote(1))).fold(Remote(0), _ * Remote(2))
+          val program = Remote.option(Some(Remote(1))).fold(Remote(0), _ * Remote(2))
           assertZIO(program.evaluate)(equalTo(2))
         },
         test("fold none") {
-          val program = Remote.fromOption(Option.empty[Remote[Int]]).fold(Remote(0), _ * Remote(2))
+          val program = Remote.option(Option.empty[Remote[Any, Int]]).fold(Remote(0), _ * Remote(2))
           assertZIO(program.evaluate)(equalTo(0))
         },
       ),

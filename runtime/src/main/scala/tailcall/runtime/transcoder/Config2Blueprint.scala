@@ -52,7 +52,7 @@ trait Config2Blueprint {
         name = field.modify.flatMap(_.rename).getOrElse(name),
         args = args,
         ofType = ofType,
-        resolver = resolver.map(Remote.toLambda(_)),
+        resolver = resolver.map(Remote.fromLambdaFunction(_)),
         description = field.doc,
       )
     }
@@ -141,7 +141,7 @@ trait Config2Blueprint {
     config: Config,
     field: Field,
     http: Step.Http,
-  ): TValid[String, Remote[DynamicValue] => Remote[DynamicValue]] = {
+  ): TValid[String, Remote[Any, DynamicValue] => Remote[Any, DynamicValue]] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
           val steps              = field.steps.getOrElse(Nil)
@@ -156,7 +156,8 @@ trait Config2Blueprint {
     }
   }
 
-  type Resolver = Remote[DynamicValue] => Remote[DynamicValue]
+  // TODO: change it to Remote[DynamicValue, DyanmicValue]
+  type Resolver = Remote[Any, DynamicValue] => Remote[Any, DynamicValue]
 
   final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
     step match {

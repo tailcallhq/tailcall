@@ -1,16 +1,15 @@
 package tailcall.runtime.remote.operations
 
-import tailcall.runtime.remote.{Lambda, Remote}
+import tailcall.runtime.remote.Remote
 
 trait BooleanOps {
-  implicit final class RemoteBooleanOps(val self: Remote[Boolean]) {
-    def &&(other: Remote[Boolean]): Remote[Boolean] = Remote(Lambda.logic.and(self.toLambda, other.toLambda))
+  implicit final class RemoteBooleanOps[R](val self: Remote[R, Boolean]) {
+    def &&(other: Remote[R, Boolean]): Remote[R, Boolean] = Remote.logic.and(self, other)
 
-    def ||(other: Remote[Boolean]): Remote[Boolean] = Remote(Lambda.logic.or(self.toLambda, other.toLambda))
+    def ||(other: Remote[R, Boolean]): Remote[R, Boolean] = Remote.logic.or(self, other)
 
-    def unary_! : Remote[Boolean] = Remote(Lambda.logic.not(self.toLambda))
+    def unary_! : Remote[R, Boolean] = Remote.logic.not(self)
 
-    def diverge[A](isTrue: Remote[A], isFalse: Remote[A]): Remote[A] =
-      Remote(Lambda.logic.cond(self.toLambda)(isTrue.toLambda, isFalse.toLambda))
+    def diverge[A](isTrue: Remote[R, A], isFalse: Remote[R, A]): Remote[R, A] = Remote.logic.cond(self)(isTrue, isFalse)
   }
 }

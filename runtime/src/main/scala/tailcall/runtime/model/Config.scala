@@ -167,7 +167,8 @@ object Config {
 
     def resolveWith[A: Schema](a: A): Field = resolveWithFunction(_ => Remote(DynamicValue(a)))
 
-    def resolveWithFunction(f: Remote[DynamicValue] => Remote[DynamicValue]): Field = withSteps(Step.function(f))
+    def resolveWithFunction(f: Remote[Any, DynamicValue] => Remote[Any, DynamicValue]): Field =
+      withSteps(Step.function(f))
 
     def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
 
