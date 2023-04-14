@@ -114,14 +114,19 @@ object Endpoint {
 
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
 
-    val dv   = endpoint.body match {
-      case Some(value) => DynamicValueUtil.getPath(input, value.split("/").toList)
-      case None        => Some(input)
+    val inputOnPath = endpoint.body match {
+      case Some(value) => DynamicValueUtil.getPath(input, value)
+      case None        => None
     }
-    val v    = dv.flatMap(x => Transcoder.toJson(x).toOption).map(x => String.valueOf(Json.encoder.encodeJson(x)))
-    val body = v.map(x => Chunk.fromIterable(x).map(_.toByte)).getOrElse(Chunk.empty)
-    if (body.nonEmpty) Request(method = method, url = url, headers = headers, body = body)
-    else Request(method = method, url = url, headers = headers)
+    val body        = inputOnPath.flatMap(x => Transcoder.toJson(x).toOption)
+      .map(x => String.valueOf(Json.encoder.encodeJson(x))).map(x => Chunk.fromIterable(x).map(_.toByte))
+      .getOrElse(Chunk.empty)
+    val request     = Request(
+      method = method,
+      url = url,
+      headers = headers ++ Map("content-length" -> body.size.toString, "content-type" -> "application/json"),
+    )
+    if (body.nonEmpty) request.withBody(body) else request
 
   }
 }
