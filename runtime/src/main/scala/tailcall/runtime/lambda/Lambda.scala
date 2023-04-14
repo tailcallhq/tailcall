@@ -40,7 +40,7 @@ sealed trait Lambda[-A, +B] {
 
   final def >>>[C](other: B ~> C): A ~> C = Lambda.unsafe.attempt(ctx => Pipe(self.compile(ctx), other.compile(ctx)))
 
-  final def toDynamic[B1 >: B](implicit ev: Schema[B1]): A ~> DynamicValue = ???
+  final def toDynamic[B1 >: B](implicit ev: Schema[B1]): A ~> DynamicValue = self >>> Lambda.dynamic.toDynamic[B1]
 }
 
 object Lambda {
@@ -176,4 +176,7 @@ object Lambda {
     .transform(eval => Lambda.unsafe.attempt(_ => eval), _.compile(CompilationContext.initial))
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
+
+  implicit def schemaFunction[A, B]: Schema[Any ~> A => Any ~> B] =
+    Schema[A ~> B].transform[Any ~> A => Any ~> B](ab => a => a >>> ab, Lambda.fromFunction(_))
 }

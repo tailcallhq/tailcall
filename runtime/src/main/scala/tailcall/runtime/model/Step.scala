@@ -5,7 +5,7 @@ import tailcall.runtime.lambda.~>
 import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
 import zio.json.ast.Json
-import zio.schema.DynamicValue
+import zio.schema.{DynamicValue, Schema}
 
 sealed trait Step
 
@@ -15,10 +15,11 @@ object Step {
   def transform(jsonT: JsonT): Step                                 = Transform(jsonT)
   def function(f: Any ~> DynamicValue => Any ~> DynamicValue): Step = LambdaFunction(f)
 
-  @jsonHint("remote")
+  @jsonHint("lambda")
   final case class LambdaFunction(f: Any ~> DynamicValue => Any ~> DynamicValue) extends Step
   object LambdaFunction {
-    implicit lazy val jsonCodec: JsonCodec[LambdaFunction] = ???
+    implicit lazy val jsonCodec: JsonCodec[LambdaFunction] = zio.schema.codec.JsonCodec
+      .jsonCodec(Schema[Any ~> DynamicValue => Any ~> DynamicValue]).transform(LambdaFunction(_), _.f)
   }
 
   @jsonHint("http")
