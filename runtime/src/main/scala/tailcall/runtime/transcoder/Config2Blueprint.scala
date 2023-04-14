@@ -149,8 +149,12 @@ trait Config2Blueprint {
           val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
           val endpoint           = toEndpoint(http, host, port)
           val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
+          val inferInput         = steps.indexOf(http) == 0 && endpoint.input.isEmpty
           val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
-          input >>> Lambda.unsafe.fromEndpoint(endpointWithOutput)
+
+          val endpointWithInput =
+            if (inferInput) endpointWithOutput.withInput(Option(toTSchema(config, field.args))) else endpointWithOutput
+        input >>> Lambda.unsafe.fromEndpoint(endpointWithInput)
         }
       case None          => TValid.fail("No base URL defined in the server configuration")
     }
@@ -178,24 +182,38 @@ trait Config2Blueprint {
     }
   }
 
-  final private def toTSchema(config: Config, field: Field): TSchema = {
-    var schema = config.graphQL.types.get(field.typeOf) match {
-      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          (fieldName, toTSchema(config, field))
-        })
+  // FIXME: Add unit test for mutations
+  final private def toTSchema(config: Config, args: Option[Map[String, Arg]]): TSchema = {
+    args match {
+      case Some(argMap) => TSchema.obj(argMap.map { case (name, arg) =>
+        (name, toTSchema(config, arg.typeOf, arg.isRequired, arg.isList))
+      })
+      case None => TSchema.empty
+    }
+  }
 
-      case None => field.typeOf match {
-          case "String"  => TSchema.string
-          case "Int"     => TSchema.num
-          case "Boolean" => TSchema.bool
-          case _         => TSchema.string // TODO: default to string?
-        }
+  final private def toTSchema(config: Config, fieldName: String, isRequired: Boolean, isList: Boolean): TSchema = {
+    var schema = config.graphQL.types.get(fieldName) match {
+      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
+        (fieldName, toTSchema(config, field))
+      })
+
+      case None => fieldName match {
+        case "String" => TSchema.string
+        case "Int" => TSchema.num
+        case "Boolean" => TSchema.bool
+        case _ => TSchema.string // TODO: default to string?
+      }
     }
 
-    schema = if (field.isRequired) schema else schema.opt
-    schema = if (field.isList) schema.arr else schema
+    schema = if (isRequired) schema else schema.opt
+    schema = if (isList) schema.arr else schema
 
     schema
+  }
+
+  final private def toTSchema(config: Config, field: Field): TSchema = {
+    toTSchema(config, field.typeOf, field.isRequired, field.isList)
   }
 
   final private def toType(inputType: Arg): Blueprint.Type = {
