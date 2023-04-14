@@ -32,7 +32,8 @@ object Path {
   }
 
   object syntax {
-    val segment = (Syntax.alphaNumeric | Syntax.charIn('-')).repeat.transform[String](_.asString, Chunk.fromIterable(_))
+    val segment = (Syntax.alphaNumeric | Syntax.charIn('-', '_')).repeat
+      .transform[String](_.asString, Chunk.fromIterable(_))
 
     val param = Mustache.syntax.transform[Segment.Param](Segment.Param(_), _.value)
 

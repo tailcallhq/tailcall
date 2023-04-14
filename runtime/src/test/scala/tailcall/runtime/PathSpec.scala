@@ -24,6 +24,7 @@ object PathSpec extends ZIOSpecDefault {
           "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
           "/{{a}}/{{b}}"       -> (Param("a") :: Param("b") :: Nil),
           "/{{a}}"             -> (Param("a") :: Nil),
+          "/a_b"               -> (Literal("a_b") :: Nil),
         )
         checkAll(Gen.fromIterable(input)) { case (input, expected) =>
           val parsed = ZIO.fromEither(syntax.parseString(input)).map(_.segments)
