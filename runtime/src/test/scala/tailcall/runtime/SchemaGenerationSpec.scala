@@ -4,9 +4,8 @@ import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.{ZIOSpecDefault, assertTrue}
 import zio.{ZIO, durationInt}
 
 /**
@@ -263,12 +262,12 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |
                           |type Query {
+                          |  "A single post by id."
+                          |  post(id: Int!): Post
                           |  "A list of all posts."
                           |  posts: [Post]
                           |  "A list of all users."
                           |  users: [User]
-                          |  "A single post by id."
-                          |  post(id: Int!): Post
                           |  "A single user by id."
                           |  user(id: Int!): User
                           |}
@@ -392,23 +391,23 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
               .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("String"))),
           )
 
-          val schema = render(config)
-          assertZIO(schema)(equalTo("""|schema {
-                                       |  query: Query
-                                       |  mutation: Mutation
-                                       |}
-                                       |
-                                       |type Foo {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Mutation {
-                                       |  createFoo(input: String): Foo
-                                       |}
-                                       |
-                                       |type Query {
-                                       |  foo: Foo
-                                       |}""".stripMargin))
+          val expected = """|schema {
+               |  query: Query
+               |  mutation: Mutation
+               |}
+               |
+               |type Foo {
+               |  a: Int
+               |}
+               |
+               |type Mutation {
+               |  createFoo(input: String): Foo
+               |}
+               |
+               |type Query {
+               |  foo: Foo
+               |}""".stripMargin.trim
+          render(config).map(actual => assertTrue(actual == expected))
         },
         test("mutation with input type") {
           // schema {mutation: Mutation}
@@ -424,27 +423,43 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
             "FooInput" -> Config.Type("a" -> Config.Field.ofType("Int")),
           )
 
-          val schema = config.toBlueprint.toGraphQL.map(_.render)
-          assertZIO(schema)(equalTo("""|schema {
-                                       |  query: Query
-                                       |  mutation: Mutation
-                                       |}
-                                       |
-                                       |input FooInput {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Foo {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Mutation {
-                                       |  createFoo(input: FooInput): Foo
-                                       |}
-                                       |
-                                       |type Query""".stripMargin))
+          val expected = """|schema {
+               |  query: Query
+               |  mutation: Mutation
+               |}
+               |
+               |input FooInput {
+               |  a: Int
+               |}
+               |
+               |type Foo {
+               |  a: Int
+               |}
+               |
+               |type Mutation {
+               |  createFoo(input: FooInput): Foo
+               |}
+               |
+               |type Query""".stripMargin.trim
+          render(config).map(actual => assertTrue(actual == expected))
         },
       ),
+      test("omit field") {
+        val config = Config.default
+          .withTypes("Query" -> Config.Type("foo" -> Config.Field.string, "bar" -> Config.Field.string.withOmit(true)))
+
+        val expected = """
+                         |schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type Query {
+                         |  foo: String
+                         |}
+                         |""".stripMargin.trim
+
+        render(config).map(actual => assertTrue(actual == expected))
+      },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
   private def render(config: Config): ZIO[GraphQLGenerator, Throwable, String] =

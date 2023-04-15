@@ -6,12 +6,12 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.{Config, Path, Server, Step}
 
 object JsonPlaceholderConfig {
-  def createUser: Step.Http = users.withMethod(Method.POST)
-  def posts                 = Step.Http(Path.unsafe.fromString("/posts"))
-  def postsById             = Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
-  def userById              = Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
-  def userPosts: Step       = Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
-  def users                 = Step.Http(Path.unsafe.fromString("/users"))
+  private def createUser = users.withMethod(Method.POST)
+  private def posts      = Step.Http(Path.unsafe.fromString("/posts"))
+  private def postsById  = Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
+  private def userById   = Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
+  private def userPosts  = Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
+  private def users      = Step.Http(Path.unsafe.fromString("/users"))
 
   val graphQL = Config.GraphQL(
     schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
@@ -28,6 +28,7 @@ object JsonPlaceholderConfig {
         "user" -> Config.Field("User", Step.transform(JsonT.objPath("userId" -> List("args", "id"))), userById)(
           "id" -> Arg.int.asRequired
         ).withDoc("A single user by id."),
+        "unusedField" -> Field.string.withOmit(true).withDoc("An unused field that will be omitted."),
       ),
       "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
         "name"     -> Field.string.asRequired,

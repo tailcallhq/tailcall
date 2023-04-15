@@ -187,6 +187,8 @@ object Config {
 
     def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
+    def withOmit(omit: Boolean): Field = withUpdate(ModifyField.empty.withOmit(omit))
+
     def withUpdate(update: ModifyField): Field =
       copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)

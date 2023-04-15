@@ -43,7 +43,7 @@ trait Config2Blueprint {
     typeInfo: Type,
   ): List[Blueprint.FieldDefinition] = {
 
-    typeInfo.fields.toList.map { case (name, field) =>
+    typeInfo.fields.toList.filter(!_._2.modify.flatMap(_.omit).getOrElse(false)).map { case (name, field) =>
       val args     = toArgs(field, inputTypeNames)
       val ofType   = toType(field)
       val resolver = toResolver(config, name, field)
