@@ -6,3 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-graphql = "5.0.7"
+async-graphql-axum = "5.0.7"
+axum = "0.6.15"
+tokio = { version = "1.27.0", features = ["full"] }
