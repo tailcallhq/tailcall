@@ -392,21 +392,21 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           )
 
           val expected = """|schema {
-               |  query: Query
-               |  mutation: Mutation
-               |}
-               |
-               |type Foo {
-               |  a: Int
-               |}
-               |
-               |type Mutation {
-               |  createFoo(input: String): Foo
-               |}
-               |
-               |type Query {
-               |  foo: Foo
-               |}""".stripMargin.trim
+                            |  query: Query
+                            |  mutation: Mutation
+                            |}
+                            |
+                            |type Foo {
+                            |  a: Int
+                            |}
+                            |
+                            |type Mutation {
+                            |  createFoo(input: String): Foo
+                            |}
+                            |
+                            |type Query {
+                            |  foo: Foo
+                            |}""".stripMargin.trim
           render(config).map(actual => assertTrue(actual == expected))
         },
         test("mutation with input type") {
@@ -424,23 +424,23 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           )
 
           val expected = """|schema {
-               |  query: Query
-               |  mutation: Mutation
-               |}
-               |
-               |input FooInput {
-               |  a: Int
-               |}
-               |
-               |type Foo {
-               |  a: Int
-               |}
-               |
-               |type Mutation {
-               |  createFoo(input: FooInput): Foo
-               |}
-               |
-               |type Query""".stripMargin.trim
+                            |  query: Query
+                            |  mutation: Mutation
+                            |}
+                            |
+                            |input FooInput {
+                            |  a: Int
+                            |}
+                            |
+                            |type Foo {
+                            |  a: Int
+                            |}
+                            |
+                            |type Mutation {
+                            |  createFoo(input: FooInput): Foo
+                            |}
+                            |
+                            |type Query""".stripMargin.trim
           render(config).map(actual => assertTrue(actual == expected))
         },
       ),

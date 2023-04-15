@@ -9,11 +9,13 @@ final case class ModifyField(rename: Option[String] = None, omit: Option[Boolean
   self =>
   def withName(name: String): ModifyField  = copy(rename = Some(name))
   def withOmit(omit: Boolean): ModifyField = copy(omit = Some(omit))
-  def nonEmpty: Boolean                    = rename.nonEmpty
+  def isEmpty: Boolean                     = rename.isEmpty && omit.isEmpty
+  def nonEmpty: Boolean                    = !isEmpty
 
   def mergeRight(other: ModifyField): ModifyField = {
     val rename = other.rename.orElse(self.rename)
     val omit   = other.omit.orElse(self.omit)
+
     ModifyField(rename, omit)
   }
 }

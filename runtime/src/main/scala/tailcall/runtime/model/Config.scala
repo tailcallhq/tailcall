@@ -153,12 +153,12 @@ object Config {
         case _                           => None
       }
 
-      val update = self.modify match {
+      val modify = self.modify match {
         case Some(value) if value.nonEmpty => Some(value)
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, steps = steps, args = args, modify = update)
+      self.copy(list = isList, required = isRequired, steps = steps, args = args, modify = modify)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -189,11 +189,12 @@ object Config {
 
     def withOmit(omit: Boolean): Field = withUpdate(ModifyField.empty.withOmit(omit))
 
-    def withUpdate(update: ModifyField): Field =
+    def withUpdate(update: ModifyField): Field = {
       copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
+    }
   }
 
   final case class Arg(
