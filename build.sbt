@@ -4,7 +4,7 @@ val zioJsonVersion = "0.4.2"
 val rocksDB        = "0.4.2"
 
 val zioSchema           = "dev.zio"               %% "zio-schema"            % "0.4.7"
-val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % "0.4.7"
+val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % "0.4.10"
 val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % "0.4.7"
 val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
