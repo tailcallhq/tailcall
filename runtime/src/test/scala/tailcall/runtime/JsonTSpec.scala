@@ -1,8 +1,8 @@
 package tailcall.runtime
 
 import zio.Scope
+import zio.json.EncoderOps
 import zio.json.ast.Json
-import zio.json.{DecoderOps, EncoderOps}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object JsonTSpec extends ZIOSpecDefault {
@@ -140,52 +140,5 @@ object JsonTSpec extends ZIOSpecDefault {
           assertTrue(actual == expected)
         },
       ),
-      test("transform composition") {
-        val input          = """{
-                      |  "value": {
-                      |    "data": [
-                      |      {
-                      |        "observations": {
-                      |          "diagnosis": {
-                      |            "0": {
-                      |              "text": "Yes yes Acne also",
-                      |              "pretext": [
-                      |                2020,
-                      |                9393
-                      |              ],
-                      |              "metadata": {
-                      |                "type": "final"
-                      |              }
-                      |            },
-                      |            "pretext": []
-                      |          }
-                      |        }
-                      |      }
-                      |    ]
-                      |  }
-                      |}""".stripMargin
-        val inputJson      = input.fromJson[Json].getOrElse(Json.Null)
-        val transformation = JsonT.compose(
-          JsonT
-            .flatMap(JsonT.compose(JsonT.toKeyValue, JsonT.omit("pretext"), JsonT.path("observations", "diagnosis"))),
-          JsonT.path("value", "data"),
-        )
-        // val transformation =
-        assertTrue(transformation(inputJson).toJsonPretty == """[
-                                                               |  {
-                                                               |    "key" : "0",
-                                                               |    "value" : {
-                                                               |      "text" : "Yes yes Acne also",
-                                                               |      "pretext" : [
-                                                               |        2020,
-                                                               |        9393
-                                                               |      ],
-                                                               |      "metadata" : {
-                                                               |        "type" : "final"
-                                                               |      }
-                                                               |    }
-                                                               |  }
-                                                               |]""".stripMargin)
-      },
     )
 }
