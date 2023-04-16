@@ -32,6 +32,9 @@ object JsonT {
 
   @jsonHint("constant")
   final case class Constant(json: Json) extends JsonT
+  object Constant {
+    implicit val jsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
+  }
 
   @jsonHint("toPair")
   case object ToPair extends JsonT
@@ -41,6 +44,9 @@ object JsonT {
 
   @jsonHint("compose")
   final case class Compose(list: List[JsonT]) extends JsonT
+  object Compose {
+    implicit val jsonCodec: JsonCodec[Compose] = JsonCodec[List[JsonT]].transform(Compose(_), _.list)
+  }
 
   @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
@@ -56,7 +62,10 @@ object JsonT {
   }
 
   @jsonHint("omit")
-  final case class Omit(key: List[String]) extends JsonT
+  final case class Omit(keys: List[String]) extends JsonT
+  object Omit {
+    implicit val jsonCodec: JsonCodec[Omit] = JsonCodec[List[String]].transform(Omit(_), _.keys)
+  }
 
   @jsonHint("path")
   final case class Path(list: List[String]) extends JsonT
@@ -69,16 +78,22 @@ object JsonT {
 
   @jsonHint("map")
   final case class SeqMap(jsonT: JsonT) extends JsonT
+  object SeqMap {
+    implicit val jsonCodec: JsonCodec[SeqMap] = JsonCodec[JsonT].transform(SeqMap(_), _.jsonT)
+  }
 
   @jsonHint("flatMap")
-  final case class SeqFlatMap(jsonT: JsonT) extends JsonT
+  final case class FlatMap(jsonT: JsonT) extends JsonT
+  object FlatMap {
+    implicit val jsonCodec: JsonCodec[FlatMap] = JsonCodec[JsonT].transform(FlatMap(_), _.jsonT)
+  }
 
   def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
   def const(json: Json): JsonT                      = Constant(json)
   def debug(prefix: String): JsonT                  = Debug(prefix)
   def identity: JsonT                               = Identity
   def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
-  def flatMap(jsonT: JsonT): JsonT                  = SeqFlatMap(jsonT)
+  def flatMap(jsonT: JsonT): JsonT                  = FlatMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
   def omit(keys: String*): JsonT                    = Omit(keys.toList)
   def path(list: String*): JsonT                    = Path(list.toList)
@@ -150,11 +165,11 @@ object JsonT {
         println(prefix + ": " + data)
         data
 
-      case SeqMap(jsonT)     => data.toChunk match {
+      case SeqMap(jsonT)  => data.toChunk match {
           case Some(list) => acc(list.map(jsonT(_)))
           case None       => acc(Chunk.empty)
         }
-      case SeqFlatMap(jsonT) => data.toChunk match {
+      case FlatMap(jsonT) => data.toChunk match {
           case Some(list) => acc(list.flatMap(jsonT(_).toChunk.getOrElse(Chunk.empty)))
           case None       => acc(Chunk.empty)
         }
@@ -238,9 +253,6 @@ object JsonT {
 
     override def apply(a: Json): DynamicValue = Transcoder.toDynamicValue(a).get
   }
-
-  implicit val constantJsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder)
-    .transform(Constant(_), _.json)
 
   implicit final private[JsonT] def jsonSchema: Schema[Json] = JsonSchema.schema
   implicit val jsonCodec: JsonCodec[JsonT]                   = DeriveJsonCodec.gen[JsonT]

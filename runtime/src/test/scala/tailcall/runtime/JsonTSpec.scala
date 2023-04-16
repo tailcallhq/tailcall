@@ -83,6 +83,63 @@ object JsonTSpec extends ZIOSpecDefault {
         val expected: Json = Json.Arr(Json.Num(1), Json.Num(2))
         assertTrue(transformation(input) == expected)
       },
+      suite("json codec")(
+        test("constant") {
+          val actual   = JsonT.const(Json.Num(1)).toJson
+          val expected = """{"constant":1}"""
+          assertTrue(actual == expected)
+        },
+        test("identity") {
+          val actual   = JsonT.identity.toJson
+          val expected = """{"identity":{}}"""
+          assertTrue(actual == expected)
+        },
+        test("toPair") {
+          val actual   = JsonT.toPair.toJson
+          val expected = """{"toPair":{}}"""
+          assertTrue(actual == expected)
+        },
+        test("toKeyValue") {
+          val actual   = JsonT.toKeyValue.toJson
+          val expected = """{"toKeyValue":{}}"""
+          assertTrue(actual == expected)
+        },
+        test("compose") {
+          val actual   = JsonT.compose(JsonT.toPair, JsonT.toKeyValue).toJson
+          val expected = """{"compose":[{"toPair":{}},{"toKeyValue":{}}]}"""
+          assertTrue(actual == expected)
+        },
+        test("applySpec") {
+          val actual   = JsonT.applySpec("a" -> JsonT.toPair, "b" -> JsonT.toKeyValue).toJson
+          val expected = """{"applySpec":{"a":{"toPair":{}},"b":{"toKeyValue":{}}}}"""
+          assertTrue(actual == expected)
+        },
+        test("objPath") {
+          val actual   = JsonT.objPath("x" -> List("a", "b", "c")).toJson
+          val expected = """{"objPath":{"x":["a","b","c"]}}"""
+          assertTrue(actual == expected)
+        },
+        test("omit") {
+          val actual   = JsonT.omit("a", "b").toJson
+          val expected = """{"omit":["a","b"]}"""
+          assertTrue(actual == expected)
+        },
+        test("path") {
+          val actual   = JsonT.path("a", "b").toJson
+          val expected = """{"path":["a","b"]}"""
+          assertTrue(actual == expected)
+        },
+        test("map") {
+          val actual   = JsonT.map(JsonT.toPair).toJson
+          val expected = """{"map":{"toPair":{}}}"""
+          assertTrue(actual == expected)
+        },
+        test("flatMap") {
+          val actual   = JsonT.flatMap(JsonT.toPair).toJson
+          val expected = """{"flatMap":{"toPair":{}}}"""
+          assertTrue(actual == expected)
+        },
+      ),
       test("transform composition") {
         val input          = """{
                       |  "value": {
