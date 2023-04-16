@@ -17,13 +17,13 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 sealed trait JsonT {
   self =>
-  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def andThen(other: JsonT): JsonT                          = other compose self
+  def compose(other: JsonT): JsonT                          = JsonT.Compose(List(self, other))
   def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
-
-  def andThen(other: JsonT): JsonT = JsonT.Pipe(self, other)
-  def >>>(other: JsonT): JsonT     = self andThen other
-  def other(other: JsonT): JsonT   = self andThen other
-  def debug(prefix: String): JsonT = self >>> JsonT.debug(prefix)
+  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def debug(prefix: String): JsonT                          = self >>> JsonT.debug(prefix)
+  def >>>(other: JsonT): JsonT                              = other <<< self
+  def <<<(other: JsonT): JsonT                              = self compose other
 }
 
 object JsonT {
@@ -40,7 +40,7 @@ object JsonT {
   case object ToKeyValue extends JsonT
 
   @jsonHint("compose")
-  final case class Pipe(first: JsonT, second: JsonT) extends JsonT
+  final case class Compose(list: List[JsonT]) extends JsonT
 
   @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
@@ -104,7 +104,7 @@ object JsonT {
 
       case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
-      case Pipe(first, second) => second(first(data))
+      case Compose(seq) => seq.foldLeft(data) { case (data, jsonT) => jsonT(data) }
 
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
