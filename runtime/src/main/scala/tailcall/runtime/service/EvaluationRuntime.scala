@@ -3,8 +3,10 @@ package tailcall.runtime.service
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda._
 import tailcall.runtime.service.DataLoader.HttpDataLoader
+import tailcall.runtime.transcoder.Transcoder
 import zio._
-import zio.schema.codec.JsonCodec
+import zio.json.DecoderOps
+import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
 import java.nio.charset.StandardCharsets
@@ -143,10 +145,10 @@ object EvaluationRuntime {
                 out   <- LExit.fromZIO {
                   for {
                     chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
-                    outputSchema = endpoint.outputSchema
-                    any <- ZIO.fromEither(
-                      JsonCodec.jsonDecoder(outputSchema).decodeJson(new String(chunk.toArray, StandardCharsets.UTF_8))
-                        .map(outputSchema.toDynamic)
+                    // outputSchema = endpoint.outputSchema
+                    any   <- ZIO.fromEither(
+                      new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json]
+                        .flatMap(Transcoder.toDynamicValue(_).toEither)
                     ).mapError(EvaluationError.DecodingError(_))
                   } yield any
                 }
