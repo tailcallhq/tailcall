@@ -42,7 +42,6 @@ object DataLoader {
           val finalHeaders = request.headers ++ headers
           for {
             response <- client.request(request.copy(headers = finalHeaders))
-            _        <- Console.printLine(s"${request.method} ${request.url} ${response.status.code}")
             chunk    <- response.body.asChunk
             _        <- ZIO.fail(new RuntimeException(
               s"HTTP Error: ${response.status.code} body: ${new String(chunk.toArray, StandardCharsets.UTF_8)}"
