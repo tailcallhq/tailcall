@@ -27,11 +27,11 @@ case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A =
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
 
-  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
+  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]]             =
     ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
   // TODO: make this configurable
-  val allowedHeaders                                    = Set("authorization", "content-type", "cookie")
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+  val allowedHeaders                                                                  = Set("authorization", "cookie")
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader]                               = http(None)
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       for {
@@ -40,10 +40,7 @@ object DataLoader {
         headers  = req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
           .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
         resolver = (request: Request) => {
-          val combinedHeaders = request.headers ++ headers
-          val finalHeaders    =
-            if (request.body.nonEmpty) combinedHeaders + ("content-length" -> request.body.size.toString)
-            else combinedHeaders
+          val finalHeaders = request.headers ++ headers
           client.request(request.copy(headers = finalHeaders)).flatMap { x =>
             if (x.status.code >= 400) x.body.asChunk.flatMap { chunk =>
               ZIO.fail(new RuntimeException(
