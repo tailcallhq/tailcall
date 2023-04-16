@@ -117,7 +117,7 @@ trait Config2Blueprint {
     val ep = Endpoint.make(host).withPort(port).withPath(http.path)
       .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withMethod(http.method.getOrElse(Method.GET))
       .withInput(http.input).withOutput(http.output)
-    http.body match {
+    http.body.flatMap(Mustache.syntax.parseString(_).toOption) match {
       case Some(value) => ep.withBody(value)
       case None        => ep
     }

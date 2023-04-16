@@ -71,10 +71,10 @@ object EndpointSpec extends ZIOSpecDefault {
         }
       },
       test("body") {
-        val root   = Endpoint.make("abc.com")
-        val inputs = List(
-          DynamicValue(Map("a" -> "1"))             -> root.withBody("{{a}}"),
-          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withBody("{{a.b}}"),
+        val endpoint = Endpoint.post("abc.com")
+        val inputs   = List(
+          DynamicValue(Map("a" -> "1"))             -> endpoint.withBody("{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> endpoint.withBody("{{a.b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
@@ -84,7 +84,7 @@ object EndpointSpec extends ZIOSpecDefault {
         }
       },
       test("noBody") {
-        val request = Endpoint.make("abc.com").evaluate(DynamicValue(Map("a" -> "1")))
+        val request = Endpoint.post("abc.com").evaluate(DynamicValue(Map("a" -> "1")))
         val body    = new String(request.body.toArray, StandardCharsets.UTF_8)
         assertTrue(body == """{"a":"1"}""")
       },
