@@ -70,5 +70,11 @@ object JsonTSpec extends ZIOSpecDefault {
         val expected: Json = Json.Num(1)
         assertTrue(transformation(input) == expected)
       },
+      test("omit") {
+        val transformation = JsonT.omit("x", "y")
+        val input: Json    = Json.Obj("x" -> Json.Num(1), "y" -> Json.Num(2), "z" -> Json.Num(3))
+        val expected: Json = Json.Obj("z" -> Json.Num(3))
+        assertTrue(transformation(input) == expected)
+      },
     )
 }
