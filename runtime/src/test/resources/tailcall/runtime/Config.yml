@@ -164,6 +164,7 @@ graphQL:
           - http:
               path: /users
               method: POST
+              body: '{{args.user}}'
           args:
             user:
               type: NewUser

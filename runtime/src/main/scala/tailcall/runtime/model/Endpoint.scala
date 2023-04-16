@@ -5,7 +5,6 @@ import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.model.Path.Segment
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
-import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 
 final case class Endpoint(
@@ -17,7 +16,7 @@ final case class Endpoint(
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
   scheme: Scheme = Scheme.Http,
-  body: Option[String] = None,
+  body: Option[Mustache] = None,
   description: Option[String] = None,
 ) {
   self =>
@@ -52,7 +51,8 @@ final case class Endpoint(
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 
-  def withBody(body: String): Endpoint = copy(body = Option(body))
+  def withBody(body: Mustache): Endpoint = copy(body = Option(body))
+  def withBody(body: String): Endpoint   = copy(body = Mustache.syntax.parseString(body).toOption)
 
   lazy val outputSchema: Schema[Any] = output.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
 
@@ -90,6 +90,8 @@ object Endpoint {
   }
 
   def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
+  def get(address: String): Endpoint  = make(address).withMethod(Method.GET)
+  def post(address: String): Endpoint = make(address).withMethod(Method.POST)
 
   def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
     val method     = endpoint.method
@@ -114,14 +116,18 @@ object Endpoint {
 
     val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
 
-    val inputOnPath = endpoint.body match {
-      case Some(value) => DynamicValueUtil.getPath(input, value)
+    val bodyDynamic = endpoint.body match {
+      case Some(value) => DynamicValueUtil.getPath(input, value.path.toList)
       case None        => Some(input)
     }
-    val body        = inputOnPath.flatMap(x => Transcoder.toJson(x).toOption)
-      .map(x => String.valueOf(Json.encoder.encodeJson(x))).map(x => Chunk.fromIterable(x).map(_.toByte))
-      .getOrElse(Chunk.empty)
-    val request     = Request(
+
+    val body = for {
+      dynamic <- Chunk.fromIterable(bodyDynamic)
+      json    <- Chunk.fromIterable(Transcoder.toJson(dynamic).toOption)
+      chunk   <- Chunk.fromArray(json.toJson.getBytes())
+    } yield chunk
+
+    val request = Request(
       method = method,
       url = url,
       headers = headers ++ Map("content-length" -> body.size.toString, "content-type" -> "application/json"),

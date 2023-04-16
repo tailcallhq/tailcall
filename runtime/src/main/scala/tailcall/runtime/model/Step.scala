@@ -51,7 +51,7 @@ object Step {
         method = Option(endpoint.method),
         input = endpoint.input,
         output = endpoint.output,
-        body = endpoint.body,
+        body = endpoint.body.flatMap(Mustache.syntax.printString(_).toOption),
       )
     implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
   }

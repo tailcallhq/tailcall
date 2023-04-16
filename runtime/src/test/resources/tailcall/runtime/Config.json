@@ -260,7 +260,8 @@
               {
                 "http" : {
                   "path" : "/users",
-                  "method" : "POST"
+                  "method" : "POST",
+                  "body" : "{{args.user}}"
                 }
               }
             ],

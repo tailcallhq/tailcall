@@ -58,7 +58,7 @@ type Id {
 }
 
 type Mutation {
-  createUser("User as an argument." user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
+  createUser("User as an argument." user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST",body: "{{args.user}}"}}])
 }
 
 type Post {
