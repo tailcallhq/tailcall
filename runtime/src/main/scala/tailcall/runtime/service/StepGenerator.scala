@@ -96,7 +96,7 @@ object StepGenerator {
         case model.Blueprint.ListType(ofType, nonNull) =>
           val isNullable = !nonNull
           ctx.value match {
-            // This should be a guarantee we should be able to typecast it safely
+            // Value is guaranteed to be a seq, we should be able to type-assert it safely
             case DynamicValue.Sequence(values)                                       => Step
                 .ListStep(values.toList.map(value => fromType(ofType, ctx.copy(value = value))))
             case DynamicValue.SomeValue(DynamicValue.Sequence(values)) if isNullable =>
