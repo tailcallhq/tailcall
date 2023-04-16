@@ -18,38 +18,42 @@ case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A =
       )
       cond = result._1
       promise = result._2
-      _     <- resolver(a).flatMap(promise.succeed(_)).when(cond)
-      chunk <- promise.await
-    } yield chunk
+      _ <- resolver(a).flatMap(promise.succeed(_)).when(cond)
+      b <- promise.await
+    } yield b
   }
 }
 
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
 
-  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]]             =
+  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
     ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
   // TODO: make this configurable
-  val allowedHeaders                                                                  = Set("authorization", "cookie")
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader]                               = http(None)
+  val allowedHeaders                                    = Set("authorization", "cookie", "content-type")
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       for {
-        client <- ZIO.service[HttpClient]
-        map    <- Ref.make(Map.empty[Request, Promise[Throwable, Chunk[Byte]]])
-        headers  = req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
-          .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
+        client       <- ZIO.service[HttpClient]
+        requestCache <- Ref.make(Map.empty[Request, Promise[Throwable, Chunk[Byte]]])
+        headers  = getForwardedHeaders(req)
         resolver = (request: Request) => {
           val finalHeaders = request.headers ++ headers
-          client.request(request.copy(headers = finalHeaders)).flatMap { x =>
-            if (x.status.code >= 400) x.body.asChunk.flatMap { chunk =>
-              ZIO.fail(new RuntimeException(
-                s"HTTP Error: ${x.status.code} body: ${new String(chunk.toArray, StandardCharsets.UTF_8)}"
-              ))
-            }
-            else { x.body.asChunk }
-          }
+          for {
+            response <- client.request(request.copy(headers = finalHeaders))
+            _        <- Console.printLine(s"${request.method} ${request.url} ${response.status.code}")
+            chunk    <- response.body.asChunk
+            _        <- ZIO.fail(new RuntimeException(
+              s"HTTP Error: ${response.status.code} body: ${new String(chunk.toArray, StandardCharsets.UTF_8)}"
+            )).when(response.status.code >= 400)
+          } yield chunk
         }
-      } yield DataLoader(map, resolver)
+      } yield DataLoader(requestCache, resolver)
     }
+
+  private def getForwardedHeaders(req: Option[ZRequest]) = {
+    req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
+      .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
+  }
 }
