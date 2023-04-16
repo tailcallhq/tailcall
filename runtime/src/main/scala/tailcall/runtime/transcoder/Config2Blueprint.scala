@@ -113,16 +113,6 @@ trait Config2Blueprint {
     types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
-  final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
-    val ep = Endpoint.make(host).withPort(port).withPath(http.path)
-      .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withMethod(http.method.getOrElse(Method.GET))
-      .withInput(http.input).withOutput(http.output)
-    http.body.flatMap(Mustache.syntax.parseString(_).toOption) match {
-      case Some(value) => ep.withBody(value)
-      case None        => ep
-    }
-  }
-
   private def toInputObjectTypeDefinition(
     definition: Blueprint.ObjectTypeDefinition,
     inputNames: Map[String, String],
@@ -149,17 +139,25 @@ trait Config2Blueprint {
   ): TValid[String, DynamicValue ~>> DynamicValue] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
-          val steps              = field.steps.getOrElse(Nil)
-          val host               = baseURL.getHost
-          val port               = if (baseURL.getPort > 0) baseURL.getPort else 80
-          val endpoint           = toEndpoint(http, host, port)
-          val inferOutput        = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-          val inferInput         = steps.indexOf(http) == 0 && endpoint.input.isEmpty
-          val endpointWithOutput = if (inferOutput) endpoint.withOutput(Option(toTSchema(config, field))) else endpoint
+          val steps = field.steps.getOrElse(Nil)
+          val host  = baseURL.getHost
+          val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
 
-          val endpointWithInput =
-            if (inferInput) endpointWithOutput.withInput(Option(toTSchema(config, field.args))) else endpointWithOutput
-          input >>> Lambda.unsafe.fromEndpoint(endpointWithInput)
+          var endpoint = Endpoint.make(host).withPort(port).withPath(http.path)
+            .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withMethod(http.method.getOrElse(Method.GET))
+            .withInput(http.input).withOutput(http.output)
+          http.body.flatMap(Mustache.syntax.parseString(_).toOption) match {
+            case Some(value) => endpoint = endpoint.withBody(value)
+            case None        => ()
+          }
+
+          // TODO: add unit tests for when we can infer input/output
+          val inferOutput = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
+          val inferInput  = steps.indexOf(http) == 0 && endpoint.input.isEmpty
+          if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(config, field)))
+          if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(config, field.args)))
+
+          input >>> Lambda.unsafe.fromEndpoint(endpoint)
         }
       case None          => TValid.fail("No base URL defined in the server configuration")
     }
