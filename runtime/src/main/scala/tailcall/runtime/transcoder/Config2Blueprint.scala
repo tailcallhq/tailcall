@@ -114,8 +114,13 @@ trait Config2Blueprint {
   }
 
   final private def toEndpoint(http: Step.Http, host: String, port: Int): Endpoint = {
-    Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
-      .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
+    val ep = Endpoint.make(host).withPort(port).withPath(http.path)
+      .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withMethod(http.method.getOrElse(Method.GET))
+      .withInput(http.input).withOutput(http.output)
+    http.body match {
+      case Some(value) => ep.withBody(value)
+      case None        => ep
+    }
   }
 
   private def toInputObjectTypeDefinition(
