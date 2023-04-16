@@ -133,6 +133,5 @@ object Endpoint {
       headers = headers ++ Map("content-length" -> body.size.toString, "content-type" -> "application/json"),
     )
     if (body.nonEmpty && method != Method.GET) request.withBody(body) else request
-
   }
 }

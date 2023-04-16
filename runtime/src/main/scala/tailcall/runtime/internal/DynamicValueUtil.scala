@@ -13,6 +13,8 @@ object DynamicValueUtil {
 
   def toTyped[A](d: DynamicValue)(implicit schema: Schema[A]): Option[A] = d.toTypedValueOption(schema)
 
+  def getPath(d: DynamicValue, paths: String*): Option[DynamicValue] = getPath(d, paths.toList)
+
   def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)

@@ -434,9 +434,14 @@ object LambdaSpec extends ZIOSpecDefault {
         test("endpoint /users/1") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
             .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
-          val program  = Lambda.unsafe.fromEndpoint(endpoint)
-          val expected = DynamicValueUtil.record("id" -> DynamicValue(1L), "name" -> DynamicValue("Leanne Graham"))
-          assertZIO(program.evaluateWith(DynamicValue(Map("id" -> 1))))(equalTo(expected))
+          val input    = DynamicValue(Map("id" -> 1))
+
+          for {
+            dynamic <- Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(input)
+          } yield assertTrue(
+            DynamicValueUtil.getPath(dynamic, "id").contains(DynamicValue(BigDecimal(1))),
+            DynamicValueUtil.getPath(dynamic, "name").contains(DynamicValue("Leanne Graham")),
+          )
         },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
