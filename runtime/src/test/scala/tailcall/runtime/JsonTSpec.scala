@@ -58,5 +58,17 @@ object JsonTSpec extends ZIOSpecDefault {
         val expected: Json = Json.Arr()
         assertTrue(transformation(input) == expected)
       },
+      test("compose") {
+        val transformation = JsonT.compose(JsonT.path("a"), JsonT.path("b"))
+        val input: Json    = Json.Obj("b" -> Json.Obj("a" -> Json.Num(1)))
+        val expected: Json = Json.Num(1)
+        assertTrue(transformation(input) == expected)
+      },
+      test("pipe") {
+        val transformation = JsonT.pipe(JsonT.path("b"), JsonT.path("a"))
+        val input: Json    = Json.Obj("b" -> Json.Obj("a" -> Json.Num(1)))
+        val expected: Json = Json.Num(1)
+        assertTrue(transformation(input) == expected)
+      },
     )
 }

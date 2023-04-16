@@ -17,7 +17,7 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 sealed trait JsonT {
   self =>
-  def andThen(other: JsonT): JsonT                          = other compose self
+  def pipe(other: JsonT): JsonT                             = other compose self
   def compose(other: JsonT): JsonT                          = JsonT.Compose(List(self, other))
   def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
   def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
@@ -76,6 +76,8 @@ object JsonT {
   def path(list: String*): JsonT                    = Path(list.toList)
   def toKeyValue: JsonT                             = ToKeyValue
   def toPair: JsonT                                 = ToPair
+  def compose(list: JsonT*): JsonT                  = Compose(list.toList)
+  def pipe(list: JsonT*): JsonT                     = Compose(list.toList.reverse)
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -104,7 +106,7 @@ object JsonT {
 
       case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
-      case Compose(seq) => seq.foldLeft(data) { case (data, jsonT) => jsonT(data) }
+      case Compose(seq) => seq.foldRight(data) { case (jsonT, data) => jsonT(data) }
 
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
