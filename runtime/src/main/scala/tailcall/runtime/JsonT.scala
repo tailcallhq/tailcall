@@ -64,14 +64,18 @@ object JsonT {
   @jsonHint("debug")
   final case class Debug(prefix: String) extends JsonT
 
-  def identity: JsonT                               = Identity
-  def const(json: Json): JsonT                      = Constant(json)
-  def toPair: JsonT                                 = ToPair
-  def toKeyValue: JsonT                             = ToKeyValue
-  def path(list: String*): JsonT                    = Path(list.toList)
+  @jsonHint("map")
+  final case class SeqMap(jsonT: JsonT) extends JsonT
+
   def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
+  def const(json: Json): JsonT                      = Constant(json)
   def debug(prefix: String): JsonT                  = Debug(prefix)
+  def identity: JsonT                               = Identity
+  def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
+  def path(list: String*): JsonT                    = Path(list.toList)
+  def toKeyValue: JsonT                             = ToKeyValue
+  def toPair: JsonT                                 = ToPair
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -135,6 +139,11 @@ object JsonT {
       case Debug(prefix) =>
         println(prefix + ": " + data)
         data
+
+      case SeqMap(jsonT) => data.toChunk match {
+          case Some(list) => acc(list.map(jsonT(_)))
+          case None       => acc(Chunk.empty)
+        }
     }
   }
 

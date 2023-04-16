@@ -48,5 +48,17 @@ object JsonTSpec extends ZIOSpecDefault {
         val expected: Json = Json.Obj("x" -> Json.Num(1))
         assertTrue(transformation(input) == expected)
       },
+      test("map") {
+        val transformation = JsonT.map(JsonT.path("a"))
+        val input: Json    = Json.Arr(Json.Obj("a" -> Json.Num(1)), Json.Obj("a" -> Json.Num(2)))
+        val expected: Json = Json.Arr(Json.Num(1), Json.Num(2))
+        assertTrue(transformation(input) == expected)
+      },
+      test("invalid map") {
+        val transformation = JsonT.map(JsonT.path("a"))
+        val input: Json    = Json.Num(1)
+        val expected: Json = Json.Arr()
+        assertTrue(transformation(input) == expected)
+      },
     )
 }
