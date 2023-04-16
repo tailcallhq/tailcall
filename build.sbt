@@ -1,12 +1,12 @@
-val calibanVersion = "2.0.2"
-val zioVersion     = "2.0.12"
-val zioJsonVersion = "0.4.2"
-val rocksDB        = "0.4.2"
-val zSchemaVersion = "0.4.10+3-6104a0e7-SNAPSHOT"
+val calibanVersion   = "2.0.2"
+val zioVersion       = "2.0.12"
+val zioJsonVersion   = "0.4.2"
+val rocksDB          = "0.4.2"
+val zioSchemaVersion = "0.4.10+3-6104a0e7-SNAPSHOT"
 
-val zioSchema           = "dev.zio"               %% "zio-schema"            % zSchemaVersion
-val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zSchemaVersion
-val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zSchemaVersion
+val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
+val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
+val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
 val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
 val caliban             = "com.github.ghostdogpr" %% "caliban"               % calibanVersion
