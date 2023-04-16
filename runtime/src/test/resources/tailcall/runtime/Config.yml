@@ -42,6 +42,16 @@ graphQL:
             rename: zip
     Query:
       fields:
+        post:
+          type: Post
+          steps:
+          - http:
+              path: /posts/{{args.id}}
+          args:
+            id:
+              type: Int
+              isRequired: true
+          doc: A single post by id.
         posts:
           type: Post
           isList: true
@@ -56,16 +66,11 @@ graphQL:
           - http:
               path: /users
           doc: A list of all users.
-        post:
-          type: Post
-          steps:
-          - http:
-              path: /posts/{{args.id}}
-          args:
-            id:
-              type: Int
-              isRequired: true
-          doc: A single post by id.
+        unusedField:
+          type: String
+          doc: An unused field that will be omitted.
+          modify:
+            omit: true
         user:
           type: User
           steps:
