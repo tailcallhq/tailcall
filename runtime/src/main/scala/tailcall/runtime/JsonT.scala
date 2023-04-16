@@ -70,11 +70,15 @@ object JsonT {
   @jsonHint("map")
   final case class SeqMap(jsonT: JsonT) extends JsonT
 
+  @jsonHint("flatMap")
+  final case class SeqFlatMap(jsonT: JsonT) extends JsonT
+
   def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
   def const(json: Json): JsonT                      = Constant(json)
   def debug(prefix: String): JsonT                  = Debug(prefix)
   def identity: JsonT                               = Identity
   def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
+  def flatMap(jsonT: JsonT): JsonT                  = SeqFlatMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
   def omit(keys: String*): JsonT                    = Omit(keys.toList)
   def path(list: String*): JsonT                    = Path(list.toList)
@@ -146,8 +150,12 @@ object JsonT {
         println(prefix + ": " + data)
         data
 
-      case SeqMap(jsonT) => data.toChunk match {
+      case SeqMap(jsonT)     => data.toChunk match {
           case Some(list) => acc(list.map(jsonT(_)))
+          case None       => acc(Chunk.empty)
+        }
+      case SeqFlatMap(jsonT) => data.toChunk match {
+          case Some(list) => acc(list.flatMap(jsonT(_).toChunk.getOrElse(Chunk.empty)))
           case None       => acc(Chunk.empty)
         }
 
