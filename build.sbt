@@ -62,11 +62,8 @@ ThisBuild / crossScalaVersions                             := Seq(scala2Version)
 ThisBuild / coverageEnabled                                := true
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-lazy val scalacOptionsCI =
-  if (sys.env.getOrElse("CI", "false").toBoolean) { Seq("-Ywarn-unused", "-Xfatal-warnings") }
-  else { Seq() }
+ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 
-ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-deprecation") ++ scalacOptionsCI
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
 ThisBuild / Test / fork       := true
