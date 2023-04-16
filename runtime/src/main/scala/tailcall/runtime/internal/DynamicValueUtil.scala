@@ -1,5 +1,6 @@
 package tailcall.runtime.internal
 
+import tailcall.runtime.model.Mustache
 import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
 
 import scala.collection.immutable.ListMap
@@ -27,6 +28,14 @@ object DynamicValueUtil {
           case _                          => None
         }
     }
+
+  def getPath(d: DynamicValue, path: String): Option[DynamicValue] = {
+    val segments = Mustache.syntax.parseString(path) match {
+      case Left(_)         => List.empty
+      case Right(mustache) => mustache.path.toList
+    }
+    getPath(d, segments)
+  }
 
   def record(fields: (String, DynamicValue)*): DynamicValue =
     DynamicValue.Record(TypeId.Structural, ListMap.from(fields))

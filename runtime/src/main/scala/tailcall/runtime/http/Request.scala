@@ -18,4 +18,6 @@ final case class Request(
       remoteAddress = None,
       body = Body.fromChunk(body),
     )
+
+  def withBody(body: Chunk[Byte]): Request = copy(body = body)
 }

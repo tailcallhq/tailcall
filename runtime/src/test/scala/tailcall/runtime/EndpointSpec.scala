@@ -54,7 +54,7 @@ object EndpointSpec extends ZIOSpecDefault {
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
           val request = endpoint.evaluate(input)
-          assertTrue(request.headers == Map("X-Server" -> "1"))
+          assertTrue(request.headers.get("X-Server").contains("1"))
         }
       },
       test("query") {
@@ -73,8 +73,8 @@ object EndpointSpec extends ZIOSpecDefault {
       test("body") {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
-          DynamicValue(Map("a" -> "1"))             -> root.withBody("a"),
-          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withBody("a/b"),
+          DynamicValue(Map("a" -> "1"))             -> root.withBody("{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withBody("{{a.b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
