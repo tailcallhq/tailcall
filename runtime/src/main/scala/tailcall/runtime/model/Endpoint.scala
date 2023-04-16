@@ -116,7 +116,7 @@ object Endpoint {
 
     val inputOnPath = endpoint.body match {
       case Some(value) => DynamicValueUtil.getPath(input, value)
-      case None        => None
+      case None        => Some(input)
     }
     val body        = inputOnPath.flatMap(x => Transcoder.toJson(x).toOption)
       .map(x => String.valueOf(Json.encoder.encodeJson(x))).map(x => Chunk.fromIterable(x).map(_.toByte))

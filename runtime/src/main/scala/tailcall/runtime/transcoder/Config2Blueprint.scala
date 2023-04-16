@@ -154,7 +154,7 @@ trait Config2Blueprint {
 
           val endpointWithInput =
             if (inferInput) endpointWithOutput.withInput(Option(toTSchema(config, field.args))) else endpointWithOutput
-        input >>> Lambda.unsafe.fromEndpoint(endpointWithInput)
+          input >>> Lambda.unsafe.fromEndpoint(endpointWithInput)
         }
       case None          => TValid.fail("No base URL defined in the server configuration")
     }
@@ -166,8 +166,8 @@ trait Config2Blueprint {
   final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
     step match {
       case http @ Step.Http(_, _, _, _, _) => toResolver(config, field, http)
-      case Step.Transform(jsonT)        => TValid.succeed(dynamic => dynamic.transform(jsonT))
-      case Step.LambdaFunction(func)    => TValid.succeed(func)
+      case Step.Transform(jsonT)           => TValid.succeed(dynamic => dynamic.transform(jsonT))
+      case Step.LambdaFunction(func)       => TValid.succeed(func)
     }
   }
 
@@ -186,24 +186,24 @@ trait Config2Blueprint {
   final private def toTSchema(config: Config, args: Option[Map[String, Arg]]): TSchema = {
     args match {
       case Some(argMap) => TSchema.obj(argMap.map { case (name, arg) =>
-        (name, toTSchema(config, arg.typeOf, arg.isRequired, arg.isList))
-      })
-      case None => TSchema.empty
+          (name, toTSchema(config, arg.typeOf, arg.isRequired, arg.isList))
+        })
+      case None         => TSchema.empty
     }
   }
 
   final private def toTSchema(config: Config, fieldName: String, isRequired: Boolean, isList: Boolean): TSchema = {
     var schema = config.graphQL.types.get(fieldName) match {
       case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-        (fieldName, toTSchema(config, field))
-      })
+          (fieldName, toTSchema(config, field))
+        })
 
       case None => fieldName match {
-        case "String" => TSchema.string
-        case "Int" => TSchema.num
-        case "Boolean" => TSchema.bool
-        case _ => TSchema.string // TODO: default to string?
-      }
+          case "String"  => TSchema.string
+          case "Int"     => TSchema.num
+          case "Boolean" => TSchema.bool
+          case _         => TSchema.string // TODO: default to string?
+        }
     }
 
     schema = if (isRequired) schema else schema.opt
