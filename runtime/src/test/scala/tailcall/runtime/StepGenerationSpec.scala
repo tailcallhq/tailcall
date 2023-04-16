@@ -138,7 +138,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val value: Json = Json
           .Obj("a" -> Json.Num(1), "b" -> Json.Obj("k1" -> Json.Num(1), "k2" -> Json.Num(2), "k3" -> Json.Num(3)))
 
-        val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").andThen(JsonT.toKeyValue))
+        val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").pipe(JsonT.toKeyValue))
 
         val config = Config.default.withTypes(
           "Query" -> Type("z" -> Field.ofType("A").withSteps(Step.constant(value), Step.transform(transformation))),

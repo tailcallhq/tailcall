@@ -36,16 +36,38 @@ object JsonTSpec extends ZIOSpecDefault {
       },
       test("applySpec") {
         val transformation = JsonT.applySpec("a" -> JsonT.identity, "b" -> JsonT.const(Json.Str("b")))
-
         val input: Json    = Json.Num(1)
         val expected: Json = Json.Obj("a" -> Json.Num(1), "b" -> Json.Str("b"))
-
         assertTrue(transformation(input) == expected)
       },
       test("objectPath") {
         val transformation = JsonT.objPath("x" -> List("a", "b", "c"))
         val input: Json    = Json.Obj("a" -> Json.Obj("b" -> Json.Obj("c" -> Json.Num(1))))
         val expected: Json = Json.Obj("x" -> Json.Num(1))
+        assertTrue(transformation(input) == expected)
+      },
+      test("map") {
+        val transformation = JsonT.map(JsonT.path("a"))
+        val input: Json    = Json.Arr(Json.Obj("a" -> Json.Num(1)), Json.Obj("a" -> Json.Num(2)))
+        val expected: Json = Json.Arr(Json.Num(1), Json.Num(2))
+        assertTrue(transformation(input) == expected)
+      },
+      test("invalid map") {
+        val transformation = JsonT.map(JsonT.path("a"))
+        val input: Json    = Json.Num(1)
+        val expected: Json = Json.Arr()
+        assertTrue(transformation(input) == expected)
+      },
+      test("compose") {
+        val transformation = JsonT.compose(JsonT.path("a"), JsonT.path("b"))
+        val input: Json    = Json.Obj("b" -> Json.Obj("a" -> Json.Num(1)))
+        val expected: Json = Json.Num(1)
+        assertTrue(transformation(input) == expected)
+      },
+      test("pipe") {
+        val transformation = JsonT.pipe(JsonT.path("b"), JsonT.path("a"))
+        val input: Json    = Json.Obj("b" -> Json.Obj("a" -> Json.Num(1)))
+        val expected: Json = Json.Num(1)
         assertTrue(transformation(input) == expected)
       },
     )

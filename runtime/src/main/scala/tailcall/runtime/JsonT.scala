@@ -17,13 +17,13 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 sealed trait JsonT {
   self =>
-  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def pipe(other: JsonT): JsonT                             = other compose self
+  def compose(other: JsonT): JsonT                          = JsonT.Compose(List(self, other))
   def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
-
-  def andThen(other: JsonT): JsonT = JsonT.Pipe(self, other)
-  def >>>(other: JsonT): JsonT     = self andThen other
-  def other(other: JsonT): JsonT   = self andThen other
-  def debug(prefix: String): JsonT = self >>> JsonT.debug(prefix)
+  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def debug(prefix: String): JsonT                          = self >>> JsonT.debug(prefix)
+  def >>>(other: JsonT): JsonT                              = other <<< self
+  def <<<(other: JsonT): JsonT                              = self compose other
 }
 
 object JsonT {
@@ -40,7 +40,7 @@ object JsonT {
   case object ToKeyValue extends JsonT
 
   @jsonHint("compose")
-  final case class Pipe(first: JsonT, second: JsonT) extends JsonT
+  final case class Compose(list: List[JsonT]) extends JsonT
 
   @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
@@ -64,14 +64,20 @@ object JsonT {
   @jsonHint("debug")
   final case class Debug(prefix: String) extends JsonT
 
-  def identity: JsonT                               = Identity
-  def const(json: Json): JsonT                      = Constant(json)
-  def toPair: JsonT                                 = ToPair
-  def toKeyValue: JsonT                             = ToKeyValue
-  def path(list: String*): JsonT                    = Path(list.toList)
+  @jsonHint("map")
+  final case class SeqMap(jsonT: JsonT) extends JsonT
+
   def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
+  def const(json: Json): JsonT                      = Constant(json)
   def debug(prefix: String): JsonT                  = Debug(prefix)
+  def identity: JsonT                               = Identity
+  def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
+  def path(list: String*): JsonT                    = Path(list.toList)
+  def toKeyValue: JsonT                             = ToKeyValue
+  def toPair: JsonT                                 = ToPair
+  def compose(list: JsonT*): JsonT                  = Compose(list.toList)
+  def pipe(list: JsonT*): JsonT                     = Compose(list.toList.reverse)
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -100,7 +106,7 @@ object JsonT {
 
       case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
-      case Pipe(first, second) => second(first(data))
+      case Compose(seq) => seq.foldRight(data) { case (jsonT, data) => jsonT(data) }
 
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
@@ -135,6 +141,11 @@ object JsonT {
       case Debug(prefix) =>
         println(prefix + ": " + data)
         data
+
+      case SeqMap(jsonT) => data.toChunk match {
+          case Some(list) => acc(list.map(jsonT(_)))
+          case None       => acc(Chunk.empty)
+        }
     }
   }
 
