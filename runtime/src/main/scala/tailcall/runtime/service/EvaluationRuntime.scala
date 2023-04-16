@@ -145,7 +145,6 @@ object EvaluationRuntime {
                 out   <- LExit.fromZIO {
                   for {
                     chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
-                    // outputSchema = endpoint.outputSchema
                     any   <- ZIO.fromEither(
                       new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json]
                         .flatMap(Transcoder.toDynamicValue(_).toEither)

@@ -16,7 +16,7 @@ object GenericServer {
         schema      <- SchemaRegistry.get(Digest.fromHex(id))
         result      <- schema match {
           case Some(value) => value.toGraphQL
-          case None        => ZIO.fail(HttpError.NotFound(s"Schema ${id} not found"))
+          case None        => ZIO.fail(HttpError.BadRequest(s"Blueprint ${id} has not been published yet."))
         }
         query       <- GraphQLUtils.decodeQuery(req.body)
         interpreter <- result.interpreter
