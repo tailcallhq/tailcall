@@ -1,8 +1,8 @@
 package tailcall.runtime
 
 import zio.Scope
-import zio.json.{DecoderOps, EncoderOps}
 import zio.json.ast.Json
+import zio.json.{DecoderOps, EncoderOps}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object JsonTSpec extends ZIOSpecDefault {

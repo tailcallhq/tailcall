@@ -34,5 +34,3 @@ metals.sbt
 *.class
 *.log
 *.orc
-
-mosaic-wellness.graphql
