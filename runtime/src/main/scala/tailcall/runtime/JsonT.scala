@@ -55,6 +55,9 @@ object JsonT {
       .transform(ObjectPath(_), _.spec)
   }
 
+  @jsonHint("omit")
+  final case class Omit(key: List[String]) extends JsonT
+
   @jsonHint("path")
   final case class Path(list: List[String]) extends JsonT
   object Path {
@@ -73,6 +76,7 @@ object JsonT {
   def identity: JsonT                               = Identity
   def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
+  def omit(keys: String*): JsonT                    = Omit(keys.toList)
   def path(list: String*): JsonT                    = Path(list.toList)
   def toKeyValue: JsonT                             = ToKeyValue
   def toPair: JsonT                                 = ToPair
@@ -146,14 +150,20 @@ object JsonT {
           case Some(list) => acc(list.map(jsonT(_)))
           case None       => acc(Chunk.empty)
         }
+
+      case Omit(keys) => acc(data.keyValue.foldLeft(Map.empty[String, A]) { case (map, (key, value)) =>
+          if (keys.contains(key)) map else map + (key -> value)
+        })
     }
   }
 
   implicit final class AccessorSyntax[A](self: A) {
-    def keys(implicit acc: Accessor[A]): Chunk[String]         = acc.keys(self)
-    def values(implicit acc: Accessor[A]): Chunk[A]            = acc.values(self)
-    def get(key: String)(implicit acc: Accessor[A]): Option[A] = acc.get(self, key)
-    def toChunk(implicit acc: Accessor[A]): Option[Chunk[A]]   = acc.toChunk(self)
+    def keys(implicit acc: Accessor[A]): Chunk[String]          = acc.keys(self)
+    def values(implicit acc: Accessor[A]): Chunk[A]             = acc.values(self)
+    def keyValue(implicit acc: Accessor[A]): Chunk[(String, A)] =
+      self.keys.flatMap(key => Chunk.fromIterable(self.get(key).map(key -> _)))
+    def get(key: String)(implicit acc: Accessor[A]): Option[A]  = acc.get(self, key)
+    def toChunk(implicit acc: Accessor[A]): Option[Chunk[A]]    = acc.toChunk(self)
   }
 
   implicit val jsonAccessor: Accessor[Json] = new Accessor[Json] {
