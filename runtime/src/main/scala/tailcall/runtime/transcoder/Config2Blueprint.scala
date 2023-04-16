@@ -185,7 +185,7 @@ trait Config2Blueprint {
     }
   }
 
-  // FIXME: Add unit test for mutations
+  // TODO: Add unit test for mutations
   final private def toTSchema(config: Config, args: Option[Map[String, Arg]]): TSchema = {
     args match {
       case Some(argMap) => TSchema.obj(argMap.map { case (name, arg) =>
