@@ -10,8 +10,8 @@ import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertZIO}
+import zio.test.TestAspect.{failing, timeout}
+import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{ZIO, durationInt}
 
 /**
@@ -329,6 +329,28 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val program = resolve(config)("query {foo {a b}}")
         assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
       },
+
+      // Enable this test once we allow modifications on input types also.
+      test("mutation with modified field") {
+        // type Mutation { createFoo(input: FooInput)  }
+        // input FooInput {a: Int @modify(rename: b)}
+        // type Foo {a : Int}
+
+        val identityType = Config.Type(
+          "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
+            .resolveWithFunction(identity)
+        )
+
+        val config = Config.default.withMutation("Mutation").withTypes(
+          "Query"    -> identityType,
+          "Mutation" -> identityType,
+          "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("mutation {identity(input: {b: 1}){b}}")
+        } yield assertTrue(json == """{"identity":{"b":1}}""")
+      } @@ failing,
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
