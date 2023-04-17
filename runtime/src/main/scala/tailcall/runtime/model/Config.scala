@@ -4,9 +4,9 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
-import tailcall.runtime.service.ConfigFileIO
+import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
 import tailcall.runtime.transcoder.Transcoder
-import zio.ZIO
+import zio.{IO, ZIO}
 import zio.json._
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
@@ -43,6 +43,10 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
+
+  def renderJson: IO[String, String]    = DSLFormat.JSON.encode(self)
+  def renderYaml: IO[String, String]    = DSLFormat.YML.encode(self)
+  def renderGraphQL: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
 }
 
 object Config {
@@ -247,6 +251,7 @@ object Config {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
+
   }
 
   object Type {
