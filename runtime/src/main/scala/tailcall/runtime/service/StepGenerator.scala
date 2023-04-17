@@ -101,6 +101,7 @@ object StepGenerator {
                 .ListStep(values.toList.map(value => fromType(ofType, ctx.copy(value = value))))
             case DynamicValue.SomeValue(DynamicValue.Sequence(values)) if isNullable =>
               Step.ListStep(values.toList.map(value => fromType(ofType, ctx.copy(value = value))))
+            case DynamicValue.NoneValue                                              => Step.ListStep(Nil)
             case _ => throw new RuntimeException(s"Unexpected value received for type ${tpe.render}")
           }
       }
