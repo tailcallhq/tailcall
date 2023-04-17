@@ -319,6 +319,16 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val program = resolve(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       },
+      test("Query with list fields") {
+        val json   = Json.Obj("a" -> Json.Num(1))
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithJson(json)),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int"), "b" -> Config.Field.ofType("Int").asList),
+        )
+
+        val program = resolve(config)("query {foo {a b}}")
+        assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
+      },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
