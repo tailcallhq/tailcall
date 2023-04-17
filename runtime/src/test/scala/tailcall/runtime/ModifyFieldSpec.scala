@@ -13,11 +13,11 @@ object ModifyFieldSpec extends ZIOSpecDefault {
       test("encoding") {
         val rename: ModifyField = ModifyField.empty.withName("foo")
         val actual              = rename.toDirective
-        val expected            = Directive("modify", arguments = Map("rename" -> StringValue("foo")))
+        val expected            = Directive("modify", arguments = Map("name" -> StringValue("foo")))
         assertZIO(actual.toZIO)(equalTo(expected))
       },
       test("decoding") {
-        val directive = Directive("modify", arguments = Map("rename" -> StringValue("foo")))
+        val directive = Directive("modify", arguments = Map("name" -> StringValue("foo")))
         val actual    = directive.fromDirective[ModifyField]
         val expected  = ModifyField.empty.withName("foo")
         assertZIO(actual.toZIO)(equalTo(expected))
