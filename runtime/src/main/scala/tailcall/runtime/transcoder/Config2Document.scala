@@ -16,7 +16,8 @@ import tailcall.runtime.model.Config.{Arg, Field}
 import tailcall.runtime.model._
 
 /**
- * This is used to generate a .graphQL file from a config
+ * This is used to generate a .graphQL file from a config.
+ * Mostly used for testing and onboarding a new APIs.
  */
 trait Config2Document {
   final def toDocument(config: Config): TValid[Nothing, Document] = {
