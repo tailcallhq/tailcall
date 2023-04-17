@@ -50,7 +50,7 @@ trait Config2Blueprint {
       val resolver = toResolver(config, name, field, inputTypeNames.contains(typeName))
 
       Blueprint.FieldDefinition(
-        name = field.modify.flatMap(_.rename).getOrElse(name),
+        name = field.modify.flatMap(_.name).getOrElse(name),
         args = args,
         ofType = ofType,
         resolver = resolver.map(Lambda.fromFunction(_)),
@@ -69,7 +69,7 @@ trait Config2Blueprint {
         case None       => ofType
       }
       Blueprint.InputFieldDefinition(
-        name = arg.modify.flatMap(_.rename).getOrElse(name),
+        name = arg.modify.flatMap(_.name).getOrElse(name),
         ofType = prefixedOfType,
         defaultValue = arg.defaultValue.flatMap(Transcoder.toDynamicValue(_).toOption),
         description = arg.doc,
@@ -182,7 +182,7 @@ trait Config2Blueprint {
 
   final private def toResolver(config: Config, name: String, field: Field, isInputType: Boolean): Option[Resolver] = {
     field.steps match {
-      case None        => field.modify.flatMap(_.rename) match {
+      case None        => field.modify.flatMap(_.name) match {
           case Some(newName) =>
             val finalName = if (isInputType) newName else name
             Option(input => input.path("value", finalName).toDynamic)

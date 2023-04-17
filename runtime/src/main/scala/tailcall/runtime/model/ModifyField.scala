@@ -5,15 +5,15 @@ import zio.schema.annotation.caseName
 import zio.schema.{DeriveSchema, Schema}
 
 @caseName("modify")
-final case class ModifyField(rename: Option[String] = None, omit: Option[Boolean] = None) {
+final case class ModifyField(name: Option[String] = None, omit: Option[Boolean] = None) {
   self =>
-  def withName(name: String): ModifyField  = copy(rename = Some(name))
+  def withName(name: String): ModifyField  = copy(name = Some(name))
   def withOmit(omit: Boolean): ModifyField = copy(omit = Some(omit))
-  def isEmpty: Boolean                     = rename.isEmpty && omit.isEmpty
+  def isEmpty: Boolean                     = name.isEmpty && omit.isEmpty
   def nonEmpty: Boolean                    = !isEmpty
 
   def mergeRight(other: ModifyField): ModifyField = {
-    val rename = other.rename.orElse(self.rename)
+    val rename = other.name.orElse(self.name)
     val omit   = other.omit.orElse(self.omit)
 
     ModifyField(rename, omit)

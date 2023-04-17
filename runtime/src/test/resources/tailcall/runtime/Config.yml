@@ -39,7 +39,7 @@ graphQL:
         zipcode:
           type: String
           modify:
-            rename: zip
+            name: zip
     Query:
       fields:
         post:
@@ -197,4 +197,4 @@ graphQL:
         zipcode:
           type: String
           modify:
-            rename: zip
+            name: zip
