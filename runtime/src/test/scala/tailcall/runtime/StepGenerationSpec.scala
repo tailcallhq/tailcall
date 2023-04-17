@@ -10,7 +10,7 @@ import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.{failing, timeout}
+import zio.test.TestAspect.timeout
 import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{ZIO, durationInt}
 
@@ -329,28 +329,43 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val program = resolve(config)("query {foo {a b}}")
         assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
       },
+      suite("modified")(
+        test("modified field") {
+          val config = Config.default.withTypes(
+            "Query"    -> Config.Type("identity" -> Config.Field.ofType("Identity").resolveWith(Map("a" -> 1))),
+            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+          )
 
-      // Enable this test once we allow modifications on input types also.
-      test("mutation with modified field") {
-        // type Mutation { createFoo(input: FooInput)  }
-        // input FooInput {a: Int @modify(rename: b)}
-        // type Foo {a : Int}
+          for {
+            json <- resolve(config, Map.empty)("query {identity {b}}")
+          } yield assertTrue(json == """{"identity":{"b":1}}""")
+        },
+        test("modified argument name") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "identity" -> Config.Field.int.withArguments("input" -> Config.Arg.int.withName("data"))
+                .resolveWithFunction(_.path("args", "data").toDynamic)
+            )
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity(data: 1000)}""")
+          } yield assertTrue(json == """{"identity":1000}""")
+        },
+        test("modified input field") {
+          val identityType = Config.Type(
+            "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
+              .resolveWithFunction(_.path("args", "input").toDynamic)
+          )
 
-        val identityType = Config.Type(
-          "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
-            .resolveWithFunction(identity)
-        )
-
-        val config = Config.default.withMutation("Mutation").withTypes(
-          "Query"    -> identityType,
-          "Mutation" -> identityType,
-          "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
-        )
-
-        for {
-          json <- resolve(config, Map.empty)("mutation {identity(input: {b: 1}){b}}")
-        } yield assertTrue(json == """{"identity":{"b":1}}""")
-      } @@ failing,
+          val config = Config.default.withTypes(
+            "Query"    -> identityType,
+            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+          )
+          for {
+            json <- resolve(config, Map.empty)("query {identity(input: {b: 1}){b}}")
+          } yield assertTrue(json == """{"identity":{"b":1}}""")
+        },
+      ),
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(

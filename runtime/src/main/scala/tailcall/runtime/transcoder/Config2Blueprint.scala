@@ -23,7 +23,7 @@ trait Config2Blueprint {
     }.toMap
 
     val definitions: List[Blueprint.Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
-      val fields = toFieldList(config, inputTypeNames, typeInfo)
+      val fields = toFieldList(config, inputTypeNames, name, typeInfo)
 
       // NOTE: Should create a list of definitions
       // There should be an object type or a list of input object type
@@ -40,13 +40,14 @@ trait Config2Blueprint {
   private def toFieldList(
     config: Config,
     inputTypeNames: Map[String, String],
+    typeName: String,
     typeInfo: Type,
   ): List[Blueprint.FieldDefinition] = {
 
     typeInfo.fields.toList.filter(!_._2.modify.flatMap(_.omit).getOrElse(false)).map { case (name, field) =>
       val args     = toArgs(field, inputTypeNames)
       val ofType   = toType(field)
-      val resolver = toResolver(config, name, field)
+      val resolver = toResolver(config, name, field, inputTypeNames.contains(typeName))
 
       Blueprint.FieldDefinition(
         name = field.modify.flatMap(_.rename).getOrElse(name),
@@ -179,11 +180,13 @@ trait Config2Blueprint {
     }
   }
 
-  final private def toResolver(config: Config, name: String, field: Field): Option[Resolver] = {
+  final private def toResolver(config: Config, name: String, field: Field, isInputType: Boolean): Option[Resolver] = {
     field.steps match {
       case None        => field.modify.flatMap(_.rename) match {
-          case Some(_) => Option(input => input.path("value", name).toDynamic)
-          case None    => None
+          case Some(newName) =>
+            val finalName = if (isInputType) newName else name
+            Option(input => input.path("value", finalName).toDynamic)
+          case None          => None
         }
       case Some(steps) => TValid.foreach(steps.map(toResolver(config, field, _)))(identity(_))
           .map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
