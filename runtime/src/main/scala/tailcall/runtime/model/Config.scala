@@ -44,9 +44,9 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     }
   }
 
-  def renderJson: IO[String, String]    = DSLFormat.JSON.encode(self)
-  def renderYaml: IO[String, String]    = DSLFormat.YML.encode(self)
-  def renderGraphQL: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
+  def asJSONConfig: IO[String, String]    = DSLFormat.JSON.encode(self)
+  def asYAMLConfig: IO[String, String]    = DSLFormat.YML.encode(self)
+  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
 }
 
 object Config {
