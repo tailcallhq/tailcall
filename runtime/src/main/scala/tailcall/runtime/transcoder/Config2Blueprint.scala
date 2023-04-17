@@ -113,13 +113,18 @@ trait Config2Blueprint {
     types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
+  /**
+   * Converts an object type definition into an input object
+   * type definition.
+   */
   private def toInputObjectTypeDefinition(
     definition: Blueprint.ObjectTypeDefinition,
     inputNames: Map[String, String],
   ): Blueprint.InputObjectTypeDefinition = {
+
     val fields = definition.fields.map { field =>
       Blueprint.InputFieldDefinition(
-        name = field.name,
+        name = field.name, // field already has the new name
         ofType = field.ofType.withName(inputNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
         defaultValue = None,
         description = field.description,
