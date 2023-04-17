@@ -6,10 +6,10 @@ import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
 import tailcall.runtime.transcoder.Transcoder
-import zio.{IO, ZIO}
 import zio.json._
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
+import zio.{IO, ZIO}
 
 import java.io.File
 
