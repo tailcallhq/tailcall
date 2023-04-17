@@ -45,12 +45,14 @@ trait Config2Document {
                 case Some(name) => setName(ofType, name)
                 case None       => ofType
               }
+
+              val directives = arg.modify.toList.flatMap(_.toDirective.toList)
               InputValueDefinition(
                 name = name,
                 ofType = prefixedOfType,
                 defaultValue = None,
                 description = arg.doc,
-                directives = Nil,
+                directives = directives,
               )
             }
           }
@@ -137,7 +139,7 @@ trait Config2Document {
     directives
   }
 
-  private def toInputObjectTypeDefinition(
+  final private def toInputObjectTypeDefinition(
     definition: ObjectTypeDefinition,
     inputNames: Map[String, String],
   ): InputObjectTypeDefinition = {
