@@ -25,7 +25,7 @@ object DirectiveCodec {
   def fromJsonCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[A] =
     DirectiveCodec(
       DirectiveEncoder.fromJsonEncoder(name, codec.encoder),
-      DirectiveDecoder.fromJsonDecoder(codec.decoder),
+      DirectiveDecoder.fromJsonDecoder(name, codec.decoder),
     )
 
   def fromJsonListCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[List[A]] =

@@ -4,6 +4,7 @@ import caliban.parsing.adt.Directive
 import tailcall.runtime.internal.TValid
 import zio.json.{DecoderOps, EncoderOps, JsonDecoder}
 import zio.schema.Schema
+import zio.schema.annotation.caseName
 
 trait DirectiveDecoder[A] {
   def decode(directive: Directive): TValid[String, A]
@@ -16,13 +17,26 @@ object DirectiveDecoder {
   def gen[A: Schema]: DirectiveDecoder[A] = fromSchema(Schema[A])
 
   def fromSchema[A](schema: Schema[A]): DirectiveDecoder[A] = {
-    val decoder = zio.schema.codec.JsonCodec.jsonDecoder(schema)
-    fromJsonDecoder(decoder)
-  }
-
-  def fromJsonDecoder[A](decoder: JsonDecoder[A]): DirectiveDecoder[A] =
+    val decoder  = zio.schema.codec.JsonCodec.jsonDecoder(schema)
+    val nameHint = schema.annotations.collectFirst { case caseName(name) => name }
     DirectiveDecoder { directive =>
       for {
+        name <- schema match {
+          case schema: Schema.Enum[_]   => TValid.succeed(schema.id.name)
+          case schema: Schema.Record[_] => TValid.succeed(schema.id.name)
+          case _                        => TValid.fail("Can only decode sealed traits and case classes as directives")
+        }
+        a    <- fromJsonDecoder(nameHint.getOrElse(name), decoder).decode(directive)
+      } yield a
+    }
+  }
+
+  def fromJsonDecoder[A](name: String, decoder: JsonDecoder[A]): DirectiveDecoder[A] =
+    DirectiveDecoder { directive =>
+      for {
+        _    <-
+          if (name != directive.name) TValid.fail(s"Expected directive name to be $name but was ${directive.name}")
+          else TValid.succeed(())
         args <- TValid.fromEither(directive.arguments.toJsonAST)
         a    <- TValid.fromEither(args.toJson.fromJson[A](decoder))
       } yield a

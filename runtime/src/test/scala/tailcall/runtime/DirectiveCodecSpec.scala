@@ -44,6 +44,12 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
           val expected = foo
           assertZIO(actual.toZIO)(equalTo(expected))
         },
+        test("decoding with different name should fail") {
+          val foo      = Foo("a", 1)
+          val actual   = foo.toDirective.map(_.copy(name = "boo")).flatMap(_.fromDirective[Foo])
+          val expected = "Expected directive name to be foo but was boo"
+          assertZIO(actual.toZIO.flip)(equalTo(expected))
+        },
       ),
       suite("sealed traits")(
         test("encoding should work") {
