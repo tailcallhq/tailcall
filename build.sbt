@@ -59,7 +59,6 @@ val scala3Version = "3.2.2"
 
 ThisBuild / scalaVersion                                   := scala2Version
 ThisBuild / crossScalaVersions                             := Seq(scala2Version)
-ThisBuild / coverageEnabled                                := true
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
