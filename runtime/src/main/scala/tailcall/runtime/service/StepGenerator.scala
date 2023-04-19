@@ -58,7 +58,7 @@ object StepGenerator {
     def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
       Step.FunctionStep { args =>
         val context = ctx
-          .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
+          .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(_ => DynamicValue(()))).toMap)
         field.resolver match {
           case Some(resolver) =>
             val step = for {
@@ -90,7 +90,7 @@ object StepGenerator {
         case model.Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
             case Some(stepFunction) => stepFunction(ctx)
             // This is a case for scalar values
-            case None               => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
+            case None => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(_ => Value.NullValue))
           }
         case model.Blueprint.ListType(ofType, nonNull) =>
           val isNullable = !nonNull
