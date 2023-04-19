@@ -5,10 +5,12 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.DirectiveLocation.Typ
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputValueDefinition
 import caliban.parsing.adt.Type
 import zio.Scope
+import zio.schema.annotation.caseName
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object DirectiveDefinitionBuilderSpec extends ZIOSpecDefault {
+  @caseName("foo")
   final case class Foo(name: String, age: Int)
   object Foo {
     implicit val schema: Schema[Foo] = DeriveSchema.gen[Foo]
@@ -48,7 +50,7 @@ object DirectiveDefinitionBuilderSpec extends ZIOSpecDefault {
             directives = Nil,
           ),
         )
-        val expected            = DirectiveDefinition(None, "Foo", args, Set.empty)
+        val expected            = DirectiveDefinition(None, "foo", args, Set.empty)
         assertTrue(directiveDefinition.unsafeBuild == expected)
       },
     )

@@ -5,6 +5,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.{DirectiveDefinition,
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
+import zio.schema.annotation.caseName
 import zio.schema.meta.ExtensibleMetaSchema
 import zio.schema.{Schema, StandardType}
 
@@ -19,6 +20,7 @@ final case class DirectiveDefinitionBuilder[A](
   def unsafeBuild: DirectiveDefinition = build.getOrElse(error => throw new RuntimeException(error))
 
   def build: TValid[String, DirectiveDefinition] = {
+    val maybeName = schema.annotations.collectFirst { case caseName(name) => name }
     schema.ast match {
       case ExtensibleMetaSchema.Product(id, _, fields, _) => for {
           args <- TValid.foreachChunk(fields) { field =>
@@ -32,7 +34,7 @@ final case class DirectiveDefinitionBuilder[A](
               directives = Nil,
             )
           }
-        } yield DirectiveDefinition(description, id.name, args.toList, locations)
+        } yield DirectiveDefinition(description, maybeName.getOrElse(id.name), args.toList, locations)
 
       case ExtensibleMetaSchema.Value(valueType, _, optional) => for {
           args <-
