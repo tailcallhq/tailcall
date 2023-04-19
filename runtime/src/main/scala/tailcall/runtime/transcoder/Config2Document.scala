@@ -20,7 +20,7 @@ import tailcall.runtime.model._
  * Mostly used for testing and onboarding a new APIs.
  */
 trait Config2Document {
-  final def toDocument(config: Config): TValid[Nothing, Document] = {
+  final def toDocument(config: Config): TValid[String, Document] = {
     val rootSchema = SchemaDefinition(
       query = config.graphQL.schema.query,
       mutation = config.graphQL.schema.mutation,
@@ -78,7 +78,9 @@ trait Config2Document {
       else definition :: Nil
     }
 
-    TValid.succeed(Document(rootSchema :: definitions, SourceMapper.empty))
+    Server.directiveDefinition.build.map { serverDirectiveDefinition =>
+      Document(serverDirectiveDefinition :: rootSchema :: definitions, SourceMapper.empty)
+    }
   }
 
   /**

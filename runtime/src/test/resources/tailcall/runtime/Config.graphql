@@ -1,3 +1,5 @@
+directive @server(baseURL: String) on SCHEMA
+
 schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
   mutation: Mutation

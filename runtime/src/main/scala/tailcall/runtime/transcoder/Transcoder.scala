@@ -37,7 +37,7 @@ object Transcoder extends Transcoder {
   def toGraphQLConfig(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
     toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLConfig(config.compress))
 
-  def toGraphQLConfig(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
+  def toGraphQLConfig(config: Config): TValid[String, String] = toDocument(config).flatMap(toGraphQLSchema(_))
 
   def toGraphQLSchema(config: Config): TValid[String, String] = toBlueprint(config).flatMap(toGraphQLSchema(_))
 
