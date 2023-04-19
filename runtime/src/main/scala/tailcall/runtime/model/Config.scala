@@ -12,6 +12,7 @@ import zio.schema.{DynamicValue, Schema}
 import zio.{IO, ZIO}
 
 import java.io.File
+import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
@@ -25,9 +26,17 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     )
   }
 
+  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
+
+  def asJSONConfig: IO[String, String] = DSLFormat.JSON.encode(self)
+
+  def asYAMLConfig: IO[String, String] = DSLFormat.YML.encode(self)
+
   def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
   def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
+
+  def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
@@ -43,10 +52,6 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
-
-  def asJSONConfig: IO[String, String]    = DSLFormat.JSON.encode(self)
-  def asYAMLConfig: IO[String, String]    = DSLFormat.YML.encode(self)
-  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
 }
 
 object Config {
@@ -172,6 +177,8 @@ object Config {
 
     def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Step.function(f))
 
+    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
+
     def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
 
     def withArguments(args: (String, Arg)*): Field = withArguments(args.toMap)
@@ -185,8 +192,6 @@ object Config {
         val all = head :: tail.toList
         Step.transform(all.reduce(_ >>> _))
       }
-
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
     def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 

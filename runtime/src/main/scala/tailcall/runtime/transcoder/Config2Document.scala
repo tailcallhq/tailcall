@@ -78,9 +78,11 @@ trait Config2Document {
       else definition :: Nil
     }
 
-    Server.directiveDefinition.build.map { serverDirectiveDefinition =>
-      Document(serverDirectiveDefinition :: rootSchema :: definitions, SourceMapper.empty)
-    }
+    for {
+      serverDD      <- Server.directiveDefinition.build
+      modifyFieldDD <- ModifyField.directiveDefinition.build
+    } yield Document(serverDD :: modifyFieldDD :: rootSchema :: definitions, SourceMapper.empty)
+
   }
 
   /**

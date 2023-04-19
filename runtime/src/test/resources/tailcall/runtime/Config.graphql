@@ -1,4 +1,5 @@
 directive @server(baseURL: String) on SCHEMA
+directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query

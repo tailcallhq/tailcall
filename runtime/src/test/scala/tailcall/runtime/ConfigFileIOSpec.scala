@@ -9,6 +9,7 @@ import zio.test._
 import zio.{Scope, durationInt}
 
 import java.io.File
+import java.net.URL
 
 object ConfigFileIOSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
@@ -56,6 +57,14 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         val expected = config
         assertTrue(actual == expected)
       }),
+      test("directive definition") {
+        val config = Config.default.withBaseURL(new URL("http://localhost:8080/graphql"))
+
+        val expected = """|directive @server(baseURL: String) on SCHEMA
+                          |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                          |""".stripMargin.trim
+        config.asGraphQLConfig.map(actual => assertTrue(actual.trim == expected))
+      },
     ).provide(
         ConfigFileIO.live,
         FileIO.default,

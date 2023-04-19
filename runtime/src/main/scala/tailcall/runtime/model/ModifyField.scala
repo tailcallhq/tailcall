@@ -1,6 +1,7 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.DirectiveCodec
+import caliban.parsing.adt.Definition.TypeSystemDefinition.DirectiveLocation
+import tailcall.runtime.{DirectiveCodec, DirectiveDefinitionBuilder}
 import zio.schema.annotation.caseName
 import zio.schema.{DeriveSchema, Schema}
 
@@ -21,7 +22,12 @@ final case class ModifyField(name: Option[String] = None, omit: Option[Boolean] 
 }
 
 object ModifyField {
-  def empty: ModifyField                              = ModifyField()
-  private val schema: Schema[ModifyField]             = DeriveSchema.gen[ModifyField]
-  implicit val directive: DirectiveCodec[ModifyField] = DirectiveCodec.fromSchema(schema)
+  def empty: ModifyField                                           = ModifyField()
+  implicit val schema: Schema[ModifyField]                         = DeriveSchema.gen[ModifyField]
+  implicit val directive: DirectiveCodec[ModifyField]              = DirectiveCodec.fromSchema(schema)
+  def directiveDefinition: DirectiveDefinitionBuilder[ModifyField] =
+    DirectiveDefinitionBuilder.make[ModifyField].withLocations(
+      DirectiveLocation.TypeSystemDirectiveLocation.FIELD_DEFINITION,
+      DirectiveLocation.TypeSystemDirectiveLocation.INPUT_FIELD_DEFINITION,
+    )
 }
