@@ -5,8 +5,9 @@ import caliban.Value
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec._
 import tailcall.runtime.http.Method
-import tailcall.runtime.model.Step.Http
-import tailcall.runtime.model.{Path, Step}
+import tailcall.runtime.model.Steps.Step
+import tailcall.runtime.model.Steps.Step.Http
+import tailcall.runtime.model.{Path, Steps}
 import zio.Scope
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
@@ -51,13 +52,16 @@ object StepSpec extends ZIOSpecDefault {
       ),
       suite("steps")(
         test("encoder") {
-          val steps: List[Step] = Step.Http(
-            path = Path.empty.withParam("users"),
-            method = Option(Method.POST),
-            body = Option("{{user.id}}"),
-          ) :: Nil
-          val actual            = steps.toDirective
-          val expected          = Directive(
+          val steps: Steps = Steps(
+            Step
+              .Http(
+                path = Path.empty.withParam("users"),
+                method = Option(Method.POST),
+                body = Option("{{user.id}}"),
+              ) :: Nil
+          )
+          val actual       = steps.toDirective
+          val expected     = Directive(
             "steps",
             Map(
               "value" -> ListValue(List(ObjectValue(Map(
@@ -86,12 +90,15 @@ object StepSpec extends ZIOSpecDefault {
             ),
           )
 
-          val actual               = directive.fromDirective[List[Step]]
-          val expected: List[Step] = Step.Http(
-            path = Path.empty.withParam("users"),
-            method = Option(Method.POST),
-            body = Option("{{user.id}}"),
-          ) :: Nil
+          val actual   = directive.fromDirective[Steps]
+          val expected = Steps(
+            Step
+              .Http(
+                path = Path.empty.withParam("users"),
+                method = Option(Method.POST),
+                body = Option("{{user.id}}"),
+              ) :: Nil
+          )
 
           assertZIO(actual.toZIO)(equalTo(expected))
         },

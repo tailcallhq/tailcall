@@ -4,6 +4,7 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Steps.Step
 import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
@@ -122,7 +123,7 @@ object Config {
 
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
-    steps: Option[List[Step]] = None,
+    steps: Option[Steps] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
@@ -147,13 +148,13 @@ object Config {
       }
 
       val steps = self.steps match {
-        case Some(steps) if steps.nonEmpty =>
-          Option(steps.map {
+        case Some(steps) if steps.value.nonEmpty =>
+          Option(Steps(steps.value.map {
             case step @ Step.Http(_, _, _, _, _) =>
               if (step.method contains Method.GET) step.copy(method = None) else step
             case step                            => step
-          })
-        case _                             => None
+          }))
+        case _                                   => None
       }
 
       val args = self.args match {
@@ -177,7 +178,7 @@ object Config {
 
     def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Step.function(f))
 
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
+    def withSteps(steps: Step*): Field = copy(steps = Option(Steps(steps.toList)))
 
     def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
 
@@ -267,7 +268,7 @@ object Config {
 
   object Field {
     def apply(str: String, operations: Step*): Field =
-      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(Steps(operations.toList)))
 
     def bool: Field = Field(typeOf = "Boolean")
 

@@ -25,6 +25,9 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
       test("output schema") {
         val endpoint = jsonEndpoint.withHttps.withOutput(Option(User.arr)).withPath("/users")
         val expected = """
+                         |directive @server(baseURL: String) on SCHEMA
+                         |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                         |
                          |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
                          |  query: Query
                          |}
@@ -46,6 +49,9 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
         val output   = TSchema.obj("a" -> TSchema.obj("b" -> TSchema.obj("c" -> TSchema.num)))
         val endpoint = Endpoint.make("abc.com").withOutput(Option(output)).withPath("/abc")
         val expected = """
+                         |directive @server(baseURL: String) on SCHEMA
+                         |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                         |
                          |schema @server(baseURL: "http://abc.com") {
                          |  query: Query
                          |}
@@ -74,6 +80,9 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
           .withPath("/user")
 
         val expected = """
+                         |directive @server(baseURL: String) on SCHEMA
+                         |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                         |
                          |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
                          |  query: Query
                          |}
@@ -101,6 +110,9 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
           .withOutput(Option(TSchema.num))
 
         val expected = """
+                         |directive @server(baseURL: String) on SCHEMA
+                         |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                         |
                          |schema @server(baseURL: "http://abc.com") {
                          |  query: Query
                          |}
@@ -128,6 +140,9 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
           .withMethod(Method.POST)
 
         val expected = """
+                         |directive @server(baseURL: String) on SCHEMA
+                         |directive @modify(name: String, omit: Boolean) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+                         |
                          |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
                          |  query: Query
                          |  mutation: Mutation

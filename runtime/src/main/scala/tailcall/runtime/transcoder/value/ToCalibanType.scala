@@ -2,25 +2,28 @@ package tailcall.runtime.transcoder.value
 
 import caliban.parsing.adt.Type
 import tailcall.runtime.internal.TValid
-import zio.schema.meta.{ExtensibleMetaSchema, MetaSchema}
 import zio.schema.{Schema, StandardType}
 
 trait ToCalibanType {
 
-  final def toCalibanType(schema: Schema[_]): TValid[String, Type] = toCalibanType(schema.ast)
-
-  final def toCalibanType(meta: MetaSchema): TValid[String, Type] =
-    meta match {
-      case ExtensibleMetaSchema.Product(id, _, _, optional)   => TValid.succeed(Type.NamedType(id.name, !optional))
-      case ExtensibleMetaSchema.ListNode(item, _, optional)   => toCalibanType(item).map(Type.ListType(_, !optional))
-      case ExtensibleMetaSchema.Value(valueType, _, optional) => toCalibanType(valueType, optional)
-      case ExtensibleMetaSchema.Tuple(_, _, _, _)             => unsupported("Tuple")
-      case ExtensibleMetaSchema.Sum(_, _, _, _)               => unsupported("Sum")
-      case ExtensibleMetaSchema.Either(_, _, _, _)            => unsupported("Either")
-      case ExtensibleMetaSchema.FailNode(_, _, _)             => unsupported("FailNode")
-      case ExtensibleMetaSchema.Dictionary(_, _, _, _)        => unsupported("Dictionary")
-      case ExtensibleMetaSchema.Ref(_, _, _)                  => unsupported("Ref")
-      case ExtensibleMetaSchema.Known(_, _, _)                => unsupported("Known")
+  final def toCalibanType(schema: Schema[_], nonNull: Boolean): TValid[String, Type] =
+    schema match {
+      case record: Schema.Record[_]             => TValid.succeed(Type.NamedType(record.id.name, nonNull))
+      case collection: Schema.Collection[_, _]  => collection match {
+          case Schema.Sequence(elementSchema, _, _, _, _) => toCalibanType(elementSchema, nonNull = true)
+              .map(Type.ListType(_, nonNull))
+          case Schema.Map(_, _, _)                        => unsupported("Collection.Map")
+          case Schema.Set(_, _)                           => unsupported("Collection.Set")
+        }
+      case Schema.Lazy(schema)                  => toCalibanType(schema(), nonNull)
+      case schema: Schema.Enum[_]               => TValid.succeed(Type.NamedType(schema.id.name, nonNull))
+      case Schema.Primitive(standardType, _)    => toCalibanType(standardType, nonNull)
+      case Schema.Optional(schema, _)           => toCalibanType(schema, nonNull = true)
+      case Schema.Transform(schema, _, _, _, _) => toCalibanType(schema, nonNull)
+      case Schema.Fail(_, _)                    => unsupported("Fail")
+      case Schema.Tuple2(_, _, _)               => unsupported("Tuple2")
+      case Schema.Either(_, _, _)               => unsupported("Either")
+      case Schema.Dynamic(_)                    => unsupported("Dynamic")
     }
 
   def toCalibanType(valueType: StandardType[_], optional: Boolean): TValid[Nothing, Type] =

@@ -2,6 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Steps.Step
 import tailcall.runtime.model._
 import zio.test.Gen
 
@@ -53,7 +54,7 @@ object TestGen {
   def genFieldDefinition: Gen[Any, Field] =
     for {
       typeName <- genTypeName
-      steps    <- Gen.option(Gen.listOf(genStep))
+      steps    <- Gen.option(Gen.listOf(genStep).map(Steps(_)))
     } yield Field(typeOf = typeName, steps = steps)
 
   def fromIterableRandom[A](seq: A*): Gen[Any, A] =

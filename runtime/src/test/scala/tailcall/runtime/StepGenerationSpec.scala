@@ -4,8 +4,9 @@ import caliban.{CalibanError, InputValue}
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Step}
+import tailcall.runtime.model.Steps.Step
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json

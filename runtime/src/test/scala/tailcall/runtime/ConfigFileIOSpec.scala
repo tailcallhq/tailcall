@@ -2,7 +2,8 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config.Field
-import tailcall.runtime.model.{Config, Path, Step, TSchema}
+import tailcall.runtime.model.Steps.Step
+import tailcall.runtime.model.{Config, Path, TSchema}
 import tailcall.runtime.service._
 import zio.test.TestAspect.timeout
 import zio.test._

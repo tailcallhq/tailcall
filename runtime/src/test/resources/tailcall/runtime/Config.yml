@@ -45,8 +45,9 @@ graphQL:
         post:
           type: Post
           steps:
-          - http:
-              path: /posts/{{args.id}}
+            value:
+            - http:
+                path: /posts/{{args.id}}
           args:
             id:
               type: Int
@@ -56,15 +57,17 @@ graphQL:
           type: Post
           isList: true
           steps:
-          - http:
-              path: /posts
+            value:
+            - http:
+                path: /posts
           doc: A list of all posts.
         users:
           type: User
           isList: true
           steps:
-          - http:
-              path: /users
+            value:
+            - http:
+                path: /users
           doc: A list of all users.
         unusedField:
           type: String
@@ -74,13 +77,14 @@ graphQL:
         user:
           type: User
           steps:
-          - transform:
-              objPath:
-                userId:
-                - args
-                - id
-          - http:
-              path: /users/{{userId}}
+            value:
+            - transform:
+                objPath:
+                  userId:
+                  - args
+                  - id
+            - http:
+                path: /users/{{userId}}
           args:
             id:
               type: Int
@@ -116,13 +120,14 @@ graphQL:
         user:
           type: User
           steps:
-          - transform:
-              objPath:
-                userId:
-                - value
-                - userId
-          - http:
-              path: /users/{{userId}}
+            value:
+            - transform:
+                objPath:
+                  userId:
+                  - value
+                  - userId
+            - http:
+                path: /users/{{userId}}
         userId:
           type: Int
           isRequired: true
@@ -139,8 +144,9 @@ graphQL:
           type: Post
           isList: true
           steps:
-          - http:
-              path: /users/{{value.id}}/posts
+            value:
+            - http:
+                path: /users/{{value.id}}/posts
         email:
           type: String
           isRequired: true
@@ -161,10 +167,11 @@ graphQL:
         createUser:
           type: Id
           steps:
-          - http:
-              path: /users
-              method: POST
-              body: '{{args.user}}'
+            value:
+            - http:
+                path: /users
+                method: POST
+                body: '{{args.user}}'
           args:
             user:
               type: NewUser

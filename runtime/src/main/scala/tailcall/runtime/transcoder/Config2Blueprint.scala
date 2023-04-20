@@ -4,6 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Steps.Step
 import tailcall.runtime.model._
 import zio.schema.DynamicValue
 
@@ -145,7 +146,7 @@ trait Config2Blueprint {
   ): TValid[String, DynamicValue ~>> DynamicValue] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
-          val steps = field.steps.getOrElse(Nil)
+          val steps = field.steps.map(_.value).getOrElse(Nil)
           val host  = baseURL.getHost
           val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
 
@@ -188,7 +189,7 @@ trait Config2Blueprint {
             Option(input => input.path("value", finalName).toDynamic)
           case None          => None
         }
-      case Some(steps) => TValid.foreach(steps.map(toResolver(config, field, _)))(identity(_))
+      case Some(steps) => TValid.foreach(steps.value.map(toResolver(config, field, _)))(identity(_))
           .map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
     }
   }

@@ -3,7 +3,8 @@ package tailcall.runtime.internal
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Path, Server, Step}
+import tailcall.runtime.model.Steps.Step
+import tailcall.runtime.model.{Config, Path, Server}
 
 object JsonPlaceholderConfig {
   private def createUser = users.withMethod(Method.POST).withBody(Option("{{args.user}}"))

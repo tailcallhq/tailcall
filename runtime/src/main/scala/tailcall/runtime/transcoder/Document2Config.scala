@@ -61,7 +61,7 @@ trait Document2Config {
   final private def toField(field: FieldDefinition): TValid[String, Config.Field] = {
     for {
       args <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
-      steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => Nil)
+      steps      = TValid.foreach(field.directives)(_.fromDirective[Steps]).map(_.headOption).toOption.flatten
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
@@ -69,7 +69,7 @@ trait Document2Config {
       typeOf = typeof,
       list = Option(isList),
       required = Option(isRequired),
-      steps = Option(steps),
+      steps = steps,
       args = Option(args),
       doc = field.description,
       modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
@@ -102,7 +102,7 @@ trait Document2Config {
 
   final private def toField(field: InputValueDefinition): TValid[Nothing, Config.Field] =
     TValid.succeed {
-      val steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => Nil)
+      val steps      = TValid.foreach(field.directives)(_.fromDirective[Steps]).map(_.headOption).toOption.flatten
       val typeof     = innerType(field.ofType)
       val isList     = field.ofType.isInstanceOf[Type.ListType]
       val isRequired = field.ofType.nonNull
@@ -110,7 +110,7 @@ trait Document2Config {
         typeOf = typeof,
         list = Option(isList),
         required = Option(isRequired),
-        steps = Option(steps),
+        steps = steps,
         doc = field.description,
         modify = toFieldUpdateAnnotation(field),
       )

@@ -67,13 +67,15 @@
         "fields" : {
           "post" : {
             "type" : "Post",
-            "steps" : [
-              {
-                "http" : {
-                  "path" : "/posts/{{args.id}}"
+            "steps" : {
+              "value" : [
+                {
+                  "http" : {
+                    "path" : "/posts/{{args.id}}"
+                  }
                 }
-              }
-            ],
+              ]
+            },
             "args" : {
               "id" : {
                 "type" : "Int",
@@ -85,25 +87,29 @@
           "posts" : {
             "type" : "Post",
             "isList" : true,
-            "steps" : [
-              {
-                "http" : {
-                  "path" : "/posts"
+            "steps" : {
+              "value" : [
+                {
+                  "http" : {
+                    "path" : "/posts"
+                  }
                 }
-              }
-            ],
+              ]
+            },
             "doc" : "A list of all posts."
           },
           "users" : {
             "type" : "User",
             "isList" : true,
-            "steps" : [
-              {
-                "http" : {
-                  "path" : "/users"
+            "steps" : {
+              "value" : [
+                {
+                  "http" : {
+                    "path" : "/users"
+                  }
                 }
-              }
-            ],
+              ]
+            },
             "doc" : "A list of all users."
           },
           "unusedField" : {
@@ -115,23 +121,25 @@
           },
           "user" : {
             "type" : "User",
-            "steps" : [
-              {
-                "transform" : {
-                  "objPath" : {
-                    "userId" : [
-                      "args",
-                      "id"
-                    ]
+            "steps" : {
+              "value" : [
+                {
+                  "transform" : {
+                    "objPath" : {
+                      "userId" : [
+                        "args",
+                        "id"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "http" : {
+                    "path" : "/users/{{userId}}"
                   }
                 }
-              },
-              {
-                "http" : {
-                  "path" : "/users/{{userId}}"
-                }
-              }
-            ],
+              ]
+            },
             "args" : {
               "id" : {
                 "type" : "Int",
@@ -182,23 +190,25 @@
           },
           "user" : {
             "type" : "User",
-            "steps" : [
-              {
-                "transform" : {
-                  "objPath" : {
-                    "userId" : [
-                      "value",
-                      "userId"
-                    ]
+            "steps" : {
+              "value" : [
+                {
+                  "transform" : {
+                    "objPath" : {
+                      "userId" : [
+                        "value",
+                        "userId"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "http" : {
+                    "path" : "/users/{{userId}}"
                   }
                 }
-              },
-              {
-                "http" : {
-                  "path" : "/users/{{userId}}"
-                }
-              }
-            ]
+              ]
+            }
           },
           "userId" : {
             "type" : "Int",
@@ -221,13 +231,15 @@
           "posts" : {
             "type" : "Post",
             "isList" : true,
-            "steps" : [
-              {
-                "http" : {
-                  "path" : "/users/{{value.id}}/posts"
+            "steps" : {
+              "value" : [
+                {
+                  "http" : {
+                    "path" : "/users/{{value.id}}/posts"
+                  }
                 }
-              }
-            ]
+              ]
+            }
           },
           "email" : {
             "type" : "String",
@@ -256,15 +268,17 @@
         "fields" : {
           "createUser" : {
             "type" : "Id",
-            "steps" : [
-              {
-                "http" : {
-                  "path" : "/users",
-                  "method" : "POST",
-                  "body" : "{{args.user}}"
+            "steps" : {
+              "value" : [
+                {
+                  "http" : {
+                    "path" : "/users",
+                    "method" : "POST",
+                    "body" : "{{args.user}}"
+                  }
                 }
-              }
-            ],
+              ]
+            },
             "args" : {
               "user" : {
                 "type" : "NewUser",

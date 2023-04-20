@@ -4,10 +4,8 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.InputV
 import caliban.parsing.adt.Definition.TypeSystemDefinition.{DirectiveDefinition, DirectiveLocation}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.transcoder.Transcoder
-import zio.Chunk
+import zio.schema.Schema
 import zio.schema.annotation.caseName
-import zio.schema.meta.ExtensibleMetaSchema
-import zio.schema.{Schema, StandardType}
 
 final case class DirectiveDefinitionBuilder[A](
   schema: Schema[A],
@@ -21,42 +19,21 @@ final case class DirectiveDefinitionBuilder[A](
 
   def build: TValid[String, DirectiveDefinition] = {
     val maybeName = schema.annotations.collectFirst { case caseName(name) => name }
-    schema.ast match {
-      case ExtensibleMetaSchema.Product(id, _, fields, _) => for {
-          args <- TValid.foreachChunk(fields) { field =>
+    schema match {
+      case schema: Schema.Record[_] => for {
+          args <- TValid.foreachChunk(schema.fields) { field =>
             for {
-              ofType <- Transcoder.toCalibanType(field.schema)
+              ofType <- Transcoder.toCalibanType(field.schema, nonNull = true)
             } yield InputValueDefinition(
-              name = field.label,
+              name = field.name,
               description = None,
               ofType = ofType,
               defaultValue = None,
               directives = Nil,
             )
           }
-        } yield DirectiveDefinition(description, maybeName.getOrElse(id.name), args.toList, locations)
-
-      case ExtensibleMetaSchema.Value(valueType, _, optional) => for {
-          args <-
-            if (valueType == StandardType.UnitType) TValid.succeed(Chunk.empty)
-            else Transcoder.toCalibanType(valueType, optional).map { ofType =>
-              Chunk.single(InputValueDefinition(
-                name = valueType.tag.capitalize,
-                description = None,
-                ofType = ofType,
-                defaultValue = None,
-                directives = Nil,
-              ))
-            }
-        } yield DirectiveDefinition(description, valueType.tag.capitalize, args.toList, locations)
-      case ExtensibleMetaSchema.Tuple(_, _, _, _)             => unsupported("Tuple")
-      case ExtensibleMetaSchema.Sum(_, _, _, _)               => unsupported("Sum")
-      case ExtensibleMetaSchema.Either(_, _, _, _)            => unsupported("Either")
-      case ExtensibleMetaSchema.FailNode(_, _, _)             => unsupported("FailNode")
-      case ExtensibleMetaSchema.ListNode(_, _, _)             => unsupported("ListNode")
-      case ExtensibleMetaSchema.Dictionary(_, _, _, _)        => unsupported("Dictionary")
-      case ExtensibleMetaSchema.Ref(_, _, _)                  => unsupported("Ref")
-      case ExtensibleMetaSchema.Known(_, _, _)                => unsupported("Known")
+        } yield DirectiveDefinition(description, maybeName.getOrElse(schema.id.name), args.toList, locations)
+      case _                        => TValid.fail("Can create directive definition only from record type")
     }
   }
 

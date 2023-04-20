@@ -81,7 +81,8 @@ trait Config2Document {
     for {
       serverDD      <- Server.directiveDefinition.build
       modifyFieldDD <- ModifyField.directiveDefinition.build
-    } yield Document(serverDD :: modifyFieldDD :: rootSchema :: definitions, SourceMapper.empty)
+      stepsDD       <- Steps.directiveDefinition.build
+    } yield Document(serverDD :: modifyFieldDD :: stepsDD :: rootSchema :: definitions, SourceMapper.empty)
 
   }
 
@@ -138,7 +139,7 @@ trait Config2Document {
 
   final private def toDirective(field: Config.Field): List[Directive] = {
     var directives = List.empty[Directive]
-    if (field.steps.nonEmpty) directives = directives ++ field.steps.getOrElse(Nil).toDirective.toList
+    if (field.steps.nonEmpty) directives = directives ++ field.steps.toList.flatMap(_.toDirective.toList)
     if (field.modify.nonEmpty) directives = directives ++ field.modify.toList.flatMap(_.toDirective.toList)
     directives
   }
