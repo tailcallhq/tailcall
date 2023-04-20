@@ -1,6 +1,6 @@
 val calibanVersion   = "2.0.2"
 val zioVersion       = "2.0.13"
-val zioJsonVersion   = "0.4.2"
+val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
 val zioSchemaVersion = "0.4.10+3-6104a0e7-SNAPSHOT"
 
