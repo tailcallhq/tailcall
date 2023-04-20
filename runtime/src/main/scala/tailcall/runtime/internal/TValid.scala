@@ -18,7 +18,7 @@ sealed trait TValid[+E, +A] {
       case TValid.Succeed(value) => value
     }
 
-  final def getOrElse[A1 >: A](default: => A1): A1 = self.fold[A1](_ => default, identity)
+  final def getOrElse[A1 >: A](orElse: E => A1): A1 = self.fold[A1](orElse, identity)
 
   final def fold[B](isError: E => B, isSucceed: A => B): B =
     self match {
