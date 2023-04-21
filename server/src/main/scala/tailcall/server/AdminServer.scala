@@ -8,10 +8,12 @@ import zio.http._
 import zio.http.model.{HttpError, Method}
 import zio.json.EncoderOps
 
+import java.nio.charset.StandardCharsets
+
 object AdminServer {
   val rest = Http.collectZIO[Request] {
     case req @ Method.PUT -> !! / "schemas" => for {
-        body      <- req.body.asCharSeq
+        body      <- req.body.asString(StandardCharsets.UTF_8)
         blueprint <- Blueprint.decode(body) match {
           case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
           case Right(value) => ZIO.succeed(value)
