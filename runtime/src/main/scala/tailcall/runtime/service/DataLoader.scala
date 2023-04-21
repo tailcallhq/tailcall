@@ -27,11 +27,11 @@ case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A =
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
 
-  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
+  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]]             =
     ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
   // TODO: make this configurable
-  val allowedHeaders                                    = Set("authorization", "cookie", "content-type")
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+  val allowedHeaders                                                                  = Set("authorization", "cookie")
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader]                               = http(None)
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       for {
