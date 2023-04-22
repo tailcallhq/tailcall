@@ -1,13 +1,12 @@
 package tailcall.registry
 
 import tailcall.runtime.model.{Blueprint, Digest}
-import tailcall.runtime.service.EvaluationError
 import zio.http._
 import zio.http.model.Status
 import zio.json.DecoderOps
 import zio.{Chunk, Task, ZIO, ZLayer}
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 
 trait SchemaRegistryClient {
   def add(base: URL, blueprint: Blueprint): Task[Digest]
@@ -20,7 +19,11 @@ object SchemaRegistryClient {
   final case class Live(client: Client) extends SchemaRegistryClient {
 
     private def assertStatusCodeIsAbove(code: Int, res: Response): ZIO[Any, Throwable, Body] =
-      if (res.status.code >= code) ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}"))
+      if (res.status.code >= code) for {
+        body <- res.body.asString(StandardCharsets.UTF_8)
+        _    <- ZIO.log(res.headers.mkString)
+        _    <- ZIO.fail(new RuntimeException(s"HTTP Error: ${res.status.code}\n Response received: ${body}"))
+      } yield res.body
       else ZIO.succeed(res.body)
 
     private def buildURL(base: URL, path: String): ZIO[Any, RuntimeException, URL] = {
@@ -36,7 +39,7 @@ object SchemaRegistryClient {
         ))
         body         <- assertStatusCodeIsAbove(400, response)
         digestString <- body.asString
-        digest       <- ZIO.fromEither(digestString.fromJson[Digest]).mapError(EvaluationError.DecodingError(_))
+        digest       <- ZIO.fromEither(digestString.fromJson[Digest]).mapError(new RuntimeException(_))
       } yield digest
 
     override def get(base: URL, id: Digest): Task[Option[Blueprint]] =
@@ -48,7 +51,7 @@ object SchemaRegistryClient {
           case _               => for {
               body      <- assertStatusCodeIsAbove(400, response)
               bpString  <- body.asString
-              blueprint <- ZIO.fromEither(bpString.fromJson[Blueprint]).mapError(EvaluationError.DecodingError(_))
+              blueprint <- ZIO.fromEither(bpString.fromJson[Blueprint]).mapError(new RuntimeException(_))
             } yield Option(blueprint)
         }
       } yield maybe
@@ -59,7 +62,7 @@ object SchemaRegistryClient {
         response   <- client.request(Request.get(url))
         body       <- assertStatusCodeIsAbove(400, response)
         ls         <- body.asString
-        blueprints <- ZIO.fromEither(ls.fromJson[List[Blueprint]]).mapError(EvaluationError.DecodingError(_))
+        blueprints <- ZIO.fromEither(ls.fromJson[List[Blueprint]]).mapError(new RuntimeException(_))
       } yield blueprints
 
     override def drop(base: URL, digest: Digest): Task[Boolean] =

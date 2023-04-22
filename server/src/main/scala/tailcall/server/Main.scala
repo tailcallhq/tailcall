@@ -5,7 +5,7 @@ import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio._
 import zio.http._
-import zio.http.model.{HttpError, Method}
+import zio.http.model.{HttpError, Method, Status}
 
 object Main extends ZIOAppDefault {
   val server = (AdminServer.rest ++ Http.collectRoute[Request] {
@@ -13,8 +13,8 @@ object Main extends ZIOAppDefault {
     case Method.POST -> !! / "graphql" / _ => GenericServer.graphQL
     case Method.GET -> _                   => Http.fromResource("graphiql.html")
   }).tapErrorZIO(error => ZIO.logWarningCause(s"HttpError", Cause.fail(error))).mapError {
-    case error: HttpError => Response.fromHttpError(error)
-    case error            => Response.fromHttpError(HttpError.InternalServerError(cause = Option(error)))
+    case error: HttpError => Response(status = error.status, body = Body.fromString(error.message))
+    case error            => Response(status = Status.InternalServerError, body = Body.fromString(error.getMessage))
   }
 
   override val run = Server.install(server)

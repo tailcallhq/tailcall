@@ -161,8 +161,6 @@ object Lambda {
   object unsafe {
     def debug[A](prefix: String): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
 
-    def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Die(reason)))
-
     def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Unsafe(Unsafe.EndpointCall(endpoint)))
 

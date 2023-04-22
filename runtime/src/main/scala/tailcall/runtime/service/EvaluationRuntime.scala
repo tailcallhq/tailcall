@@ -36,7 +36,8 @@ object EvaluationRuntime {
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any] = {
       plan match {
         case Literal(value, meta)              => value.toTypedValue(meta.toSchema.asInstanceOf[Schema[Any]]) match {
-            case Left(cause)  => LExit.fail(EvaluationError.TypeError(value, cause, meta.toSchema))
+            case Left(cause)  => LExit
+                .fail(new RuntimeException(s"DynamicValue $value could not be decoded using ${schema}: ${cause}"))
             case Right(value) => LExit.succeed(value)
           }
         case EqualTo(left, right, tag)         => for {
@@ -87,7 +88,7 @@ object EvaluationRuntime {
             for {
               res <- ref match {
                 case Some(value) => ZIO.succeed(value)
-                case None        => ZIO.fail(EvaluationError.BindingNotFound(binding))
+                case None        => ZIO.fail(new RuntimeException(s"Binding not found: ${binding}"))
               }
             } yield res
           }
@@ -135,7 +136,6 @@ object EvaluationRuntime {
               }
           }
         case Unsafe(operation)  => operation match {
-            case Unsafe.Die(message)           => LExit.fail(EvaluationError.Death(message))
             case Unsafe.Debug(prefix)          => for {
                 input <- LExit.input[Any]
                 _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
@@ -146,9 +146,15 @@ object EvaluationRuntime {
                   for {
                     chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
-                      .mapError(EvaluationError.DecodingError)
+                      .mapError { cause =>
+                        val fix =
+                          """
+                            |This is most likely caused because the response received from the server is not a valid JSON String. 
+                            |""".stripMargin
+                        ValidationError.DecodingError("String", "JsonAST", cause, Option(fix))
+                      }
                     any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
-                      .mapError(EvaluationError.DecodingError)
+                      .mapError(new RuntimeException(_))
                   } yield any
                 }
               } yield out
