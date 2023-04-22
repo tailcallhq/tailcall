@@ -1,10 +1,9 @@
 package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.internal.HttpAssertions
 import zio._
 import zio.http.{Request => ZRequest}
-
-import java.nio.charset.StandardCharsets
 
 case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
   def load(a: A): ZIO[R, E, B] = {
@@ -42,10 +41,8 @@ object DataLoader {
           val finalHeaders = request.headers ++ headers
           for {
             response <- client.request(request.copy(headers = finalHeaders))
+            _        <- HttpAssertions.assertStatusCodeIsAbove(400, response)
             chunk    <- response.body.asChunk
-            _        <- ZIO.fail(new RuntimeException(
-              s"HTTP Error: ${response.status.code} body: ${new String(chunk.toArray, StandardCharsets.UTF_8)}"
-            )).when(response.status.code >= 400)
           } yield chunk
         }
       } yield DataLoader(requestCache, resolver)
