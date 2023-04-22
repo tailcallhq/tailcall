@@ -123,7 +123,7 @@ object CommandExecutor {
         config <- configFile.readAll(files.map(_.toFile))
         blueprint = config.toBlueprint
         digest    = blueprint.digest
-        seq0      = Seq("Digest" -> s"${digest.hex}")
+        seq0      = Seq("Digest" -> s"${digest.hex}", "Endpoints" -> blueprint.endpoints.length.toString)
         seq1 <- remote match {
           case Some(remote) => registry.get(remote, digest).map {
               case Some(_) => seq0 :+ ("Playground", Fmt.playground(remote, digest))
@@ -178,8 +178,11 @@ object CommandExecutor {
         blueprint = Transcoder.toBlueprint(config).get
         digest <- registry.add(base, blueprint)
         _      <- Console.printLine(Fmt.success("Deployment was completed successfully."))
-        _      <- Console
-          .printLine(Fmt.table(Seq("Digest" -> s"${digest.hex}", "Playground" -> Fmt.playground(base, digest))))
+        _      <- Console.printLine(Fmt.table(Seq(
+          "Digest"     -> s"${digest.hex}",
+          "Endpoints"  -> blueprint.endpoints.length.toString,
+          "Playground" -> Fmt.playground(base, digest),
+        )))
       } yield ()
     }
 
