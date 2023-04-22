@@ -3,11 +3,11 @@ package tailcall.runtime
 import caliban.InputValue.ObjectValue
 import caliban.Value
 import caliban.parsing.adt.Directive
-import zio.Scope
 import zio.schema.DeriveSchema
 import zio.schema.annotation.{caseName, fieldName}
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
+import zio.{Chunk, Scope}
 
 object DirectiveCodecSpec extends ZIOSpecDefault {
   import DirectiveCodec._
@@ -47,7 +47,7 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
         test("decoding with different name should fail") {
           val foo      = Foo("a", 1)
           val actual   = foo.toDirective.map(_.copy(name = "boo")).flatMap(_.fromDirective[Foo])
-          val expected = "Expected directive name to be foo but was boo"
+          val expected = Chunk("Expected directive name to be foo but was boo")
           assertZIO(actual.toZIO.flip)(equalTo(expected))
         },
       ),

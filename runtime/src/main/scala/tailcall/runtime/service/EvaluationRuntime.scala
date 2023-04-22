@@ -145,10 +145,10 @@ object EvaluationRuntime {
                 out   <- LExit.fromZIO {
                   for {
                     chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
-                    any   <- ZIO.fromEither(
-                      new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json]
-                        .flatMap(Transcoder.toDynamicValue(_).toEither)
-                    ).mapError(EvaluationError.DecodingError(_))
+                    json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
+                      .mapError(EvaluationError.DecodingError)
+                    any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
+                      .mapError(EvaluationError.DecodingError)
                   } yield any
                 }
               } yield out

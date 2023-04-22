@@ -1,47 +1,57 @@
 package tailcall.runtime.internal
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 
 sealed trait TValid[+E, +A] {
   self =>
-  final def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
+  def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
-  final def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
+  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
 
-  final def asThrowable(implicit ev: E <:< String): TValid[Throwable, A] =
-    self.fold(err => TValid.fail(new RuntimeException(err)), TValid.succeed(_))
-
-  final def get(implicit ev: E <:< Nothing): A =
+  def fold[B](isError: NonEmptyChunk[E] => B, isSucceed: A => B): B =
     self match {
-      case TValid.Failure(_)     => throw new NoSuchElementException("Failure does not exist")
+      case TValid.Errors(errors) => isError(errors)
+      case TValid.Succeed(value) => isSucceed(value)
+    }
+
+  def get(implicit ev: E <:< Nothing): A =
+    self match {
       case TValid.Succeed(value) => value
+      case TValid.Errors(_)      => throw new NoSuchElementException("Failure does not exist")
     }
 
-  final def getOrElse[A1 >: A](orElse: E => A1): A1 = self.fold[A1](orElse, identity)
+  def getOrElse[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
 
-  final def fold[B](isError: E => B, isSucceed: A => B): B =
+  def some: TValid[E, Option[A]] = self.map(Some(_))
+
+  def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
+
+  def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+
+  def toEither: Either[NonEmptyChunk[E], A] =
     self match {
-      case TValid.Failure(message) => isError(message)
-      case TValid.Succeed(value)   => isSucceed(value)
+      case TValid.Errors(errors) => Left(errors)
+      case TValid.Succeed(value) => Right(value)
     }
 
-  final def some: TValid[E, Option[A]] = self.map(Some(_))
+  def toList: List[A] = self.fold[List[A]](_ => Nil, List(_))
 
-  final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
+  def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
-  final def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+  def toZIO: zio.ZIO[Any, Chunk[E], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
-  final def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
-
-  final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
-
-  final def toList: List[A] = self.fold[List[A]](_ => Nil, List(_))
-
-  final def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
-
-  final def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =
+  def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =
     self.flatMap(a => other.map(b => f(a, b)))
+
+  def zipPar[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] = {
+    (self, other) match {
+      case (TValid.Errors(self), TValid.Errors(other)) => TValid.Errors(self ++ other)
+      case (TValid.Succeed(a), TValid.Succeed(b))      => TValid.Succeed(f(a, b))
+      case (TValid.Errors(self), _)                    => TValid.Errors(self)
+      case (_, TValid.Errors(other))                   => TValid.Errors(other)
+    }
+  }
 }
 
 object TValid {
@@ -54,27 +64,35 @@ object TValid {
     foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
 
   def foreachIterable[A, E, B](iter: Iterable[A])(f: A => TValid[E, B]): TValid[E, Iterable[B]] = {
-    val builder = Iterable.newBuilder[B]
-    iter.foldLeft[TValid[E, Unit]](succeed(()))((acc, a) => acc.flatMap(_ => f(a).map(builder += _)))
-      .map(_ => builder.result())
+    val valuesBuilder = Iterable.newBuilder[B]
+    var errorChunk    = Chunk.empty[E]
+
+    iter foreach { a =>
+      f(a) match {
+        case Errors(errors) => errorChunk = errorChunk ++ errors
+        case Succeed(value) => valuesBuilder += value
+      }
+    }
+
+    errorChunk.nonEmptyOrElse[TValid[E, Iterable[B]]](TValid.succeed(valuesBuilder.result()))(TValid.fail)
   }
-
-  def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
-
-  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
-
-  def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
-
-  def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
+  def fromEither[E, A](either: Either[E, A]): TValid[E, A] =
+    either.fold[TValid[E, A]](error => fail(NonEmptyChunk.single(error)), succeed(_))
+
+  def fromOption[A](option: Option[A]): TValid[Unit, A] =
+    option.fold[TValid[Unit, A]](TValid.fail(Chunk(())))(succeed(_))
+
+  def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
+
+  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors)
+
+  def none: TValid[Nothing, Option[Nothing]] = succeed(None)
+
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
 
-  def unsupported(from: String, to: String): TValid[String, Nothing] =
-    fail(s"Conversion from ${from} to ${to} is not yet supported")
-
-  // TODO: can fail with a chunk of errors
-  final case class Failure[E](message: E) extends TValid[E, Nothing]
-  final case class Succeed[A](value: A)   extends TValid[Nothing, A]
+  final case class Errors[E](errors: NonEmptyChunk[E]) extends TValid[E, Nothing]
+  final case class Succeed[A](value: A)                extends TValid[Nothing, A]
 }

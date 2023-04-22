@@ -44,9 +44,12 @@ object CommandExecutor {
       for {
         postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
         endpoints         <- ZIO.foreachPar(postmanCollection)(endpointGen.generate(_)).map(_.flatten)
-        mergedEndpoints   <- EndpointUnifier.unify(endpoints).asThrowable.toZIO
-        configs <- ZIO.foreach(mergedEndpoints)(endpoint => Transcoder.toConfig(endpoint, nameGen).asThrowable.toZIO)
-        out     <- dSLFormat.encode(configs.reduce(_ mergeRight _).compress)
+        mergedEndpoints   <- EndpointUnifier.unify(endpoints).toZIO
+          .mapError(errors => new RuntimeException(errors.mkString(", ")))
+        configs           <- ZIO.foreach(mergedEndpoints)(endpoint =>
+          Transcoder.toConfig(endpoint, nameGen).toZIO.mapError(errors => new RuntimeException(errors.mkString(", ")))
+        )
+        out               <- dSLFormat.encode(configs.reduce(_ mergeRight _).compress)
           .catchAll(err => ZIO.fail(new RuntimeException(err)))
       } yield out
     }

@@ -13,7 +13,8 @@ trait GraphQLSchema2JsonLines {
     for {
       document <- Parser.parseQuery(schema)
       supportedDocument = document.copy(definitions = document.definitions.filter(isSupported))
-      blueprint <- Transcoder.toBlueprint(supportedDocument).toZIO.catchAll(err => ZIO.fail(ParsingError(err)))
+      blueprint <- Transcoder.toBlueprint(supportedDocument).toZIO
+        .catchAll(errors => ZIO.fail(ParsingError(errors.mkString(", "))))
     } yield toTrainingRows(blueprint.definitions).map(_.toJson).mkString("\n")
   }
 
