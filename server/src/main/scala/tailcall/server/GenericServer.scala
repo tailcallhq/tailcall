@@ -18,9 +18,11 @@ object GenericServer {
           case Some(value) => value.toGraphQL
           case None        => ZIO.fail(HttpError.BadRequest(s"Blueprint ${id} has not been published yet."))
         }
+        timeout = schema.flatMap(blueprint => blueprint.server.globalResponseTimeout).getOrElse(10000)
         query  <- GraphQLUtils.decodeQuery(req.body)
         interpreter <- result.interpreter
         res         <- interpreter.execute(query).provideLayer(DataLoader.http(Option(req)))
+          .timeoutFail(HttpError.RequestTimeout(s"Request timed out after ${timeout}ms"))(timeout.millis)
         _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
       } yield Response.json(res.toJson)
     }

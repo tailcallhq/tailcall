@@ -6,10 +6,10 @@ import zio.json.{DeriveJsonCodec, JsonCodec, jsonHint}
 import java.net.URL
 
 @jsonHint("server")
-final case class Server(baseURL: Option[URL] = None) {
+final case class Server(baseURL: Option[URL] = None, timeout: Option[Int] = None) {
   self =>
   def isEmpty: Boolean                  = baseURL.isEmpty
-  def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL))
+  def mergeRight(other: Server): Server = Server(baseURL = other.baseURL.orElse(self.baseURL), timeout = other.timeout)
 }
 
 object Server {

@@ -29,7 +29,7 @@ import scala.annotation.tailrec
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
+final case class Blueprint(definitions: List[Blueprint.Definition], server: Blueprint.Server) {
   self =>
   def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
@@ -54,7 +54,7 @@ object Blueprint {
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
-  def empty: Blueprint = Blueprint()
+  def empty: Blueprint = Blueprint(Nil, Blueprint.Server())
 
   def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
@@ -132,4 +132,5 @@ object Blueprint {
 
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
+  final case class Server(globalResponseTimeout: Option[Int] = None)
 }
