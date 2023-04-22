@@ -21,7 +21,7 @@ sealed trait DSLFormat {
     self match {
       case DSLFormat.JSON    => ZIO.succeed(config.toJsonPretty)
       case DSLFormat.YML     => ZIO.fromEither(config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0)))
-      case DSLFormat.GRAPHQL => Transcoder.toGraphQLConfig(config).toZIO
+      case DSLFormat.GRAPHQL => Transcoder.toGraphQLConfig(config).toZIO.mapError(_.mkString(", "))
     }
 
   // TODO: doesn't need IO
@@ -29,7 +29,8 @@ sealed trait DSLFormat {
     (self match {
       case DSLFormat.JSON    => ZIO.fromEither(string.fromJson[Config])
       case DSLFormat.YML     => ZIO.fromEither(string.fromYaml[Config])
-      case DSLFormat.GRAPHQL => Parser.parseQuery(string).mapError(_.msg).flatMap(Transcoder.toConfig(_).toZIO)
+      case DSLFormat.GRAPHQL => Parser.parseQuery(string).mapError(_.msg)
+          .flatMap(Transcoder.toConfig(_).toZIO.mapError(_.mkString(", ")))
     }).map(_.compress)
 
   def endsWith(file: String): Boolean = file.endsWith(s".${ext}")
