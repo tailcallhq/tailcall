@@ -2,45 +2,41 @@ package tailcall.runtime.internal
 
 import zio.Chunk
 
-sealed trait TValid[+E, +A] {
+final case class TValid[+E, +A](result: Either[E, A]) {
   self =>
-  final def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
+  def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
-  final def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
+  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
 
-  final def asThrowable(implicit ev: E <:< String): TValid[Throwable, A] =
+  def asThrowable(implicit ev: E <:< String): TValid[Throwable, A] =
     self.fold(err => TValid.fail(new RuntimeException(err)), TValid.succeed(_))
 
-  final def get(implicit ev: E <:< Nothing): A =
-    self match {
-      case TValid.Failure(_)     => throw new NoSuchElementException("Failure does not exist")
-      case TValid.Succeed(value) => value
+  def get(implicit ev: E <:< Nothing): A =
+    self.result match {
+      case Right(value) => value
+      case Left(_)      => throw new NoSuchElementException("Failure does not exist")
     }
 
-  final def getOrElse[A1 >: A](orElse: E => A1): A1 = self.fold[A1](orElse, identity)
+  def getOrElse[A1 >: A](orElse: E => A1): A1 = self.fold[A1](orElse, identity)
 
-  final def fold[B](isError: E => B, isSucceed: A => B): B =
-    self match {
-      case TValid.Failure(message) => isError(message)
-      case TValid.Succeed(value)   => isSucceed(value)
-    }
+  def fold[B](isError: E => B, isSucceed: A => B): B = self.result.fold(isError, isSucceed)
 
-  final def some: TValid[E, Option[A]] = self.map(Some(_))
+  def some: TValid[E, Option[A]] = self.map(Some(_))
 
-  final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
+  def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
-  final def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+  def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
 
-  final def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
+  def toEither: Either[E, A] = self.fold[Either[E, A]](Left(_), Right(_))
 
-  final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
+  def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
-  final def toList: List[A] = self.fold[List[A]](_ => Nil, List(_))
+  def toList: List[A] = self.fold[List[A]](_ => Nil, List(_))
 
-  final def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
+  def toZIO: zio.ZIO[Any, E, A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
-  final def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =
+  def zip[E1 >: E, B, C](other: TValid[E1, B])(f: (A, B) => C): TValid[E1, C] =
     self.flatMap(a => other.map(b => f(a, b)))
 }
 
@@ -61,20 +57,13 @@ object TValid {
 
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] = either.fold[TValid[E, A]](fail(_), succeed(_))
 
-  def fail[E](message: E): TValid[E, Nothing] = Failure(message)
+  def fail[E](message: E): TValid[E, Nothing] = TValid(Left(message))
 
-  def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(Succeed(_))
+  def fromOption[A](option: Option[A]): TValid[Unit, A] = option.fold[TValid[Unit, A]](TValid.fail(()))(succeed(_))
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
-  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
+  def succeed[A](value: A): TValid[Nothing, A] = TValid(Right(value))
 
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
-
-  def unsupported(from: String, to: String): TValid[String, Nothing] =
-    fail(s"Conversion from ${from} to ${to} is not yet supported")
-
-  // TODO: can fail with a chunk of errors
-  final case class Failure[E](message: E) extends TValid[E, Nothing]
-  final case class Succeed[A](value: A)   extends TValid[Nothing, A]
 }
