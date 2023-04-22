@@ -10,8 +10,8 @@ import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.TestAspect.{before, timeout}
+import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{ZIO, durationInt}
 
 /**
@@ -365,8 +365,18 @@ object StepGenerationSpec extends ZIOSpecDefault {
             json <- resolve(config, Map.empty)("query {identity(input: {b: 1}){b}}")
           } yield assertTrue(json == """{"identity":{"b":1}}""")
         },
+        test("resolve using env variables") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("identity" -> Config.Field.int.resolveWithFunction(_.path("env", "foo").toDynamic))
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity}""")
+          } yield assertTrue(json == """{"identity":"bar"}""")
+        },
       ),
-    ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
+    ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds) @@ before(
+      TestSystem.putEnv("foo", "bar")
+    )
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
