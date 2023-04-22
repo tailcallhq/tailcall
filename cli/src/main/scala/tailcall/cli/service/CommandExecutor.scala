@@ -227,7 +227,7 @@ object CommandExecutor {
       cause match {
         case cause: NoSuchFileException => error(s"File not found: ${cause.getMessage}")
         case cause: ConnectException    => error(s"Connection error: ${cause.getMessage}")
-        case cause: EvaluationError     => error(cause.getMessage())
+        case cause: ValidationError     => error(cause.getMessage())
         case cause                      => error(cause.toString)
       }
 
