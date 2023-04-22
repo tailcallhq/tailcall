@@ -34,7 +34,7 @@ trait Config2Blueprint {
       else definition :: Nil
     }
 
-    TValid.succeed(Blueprint(rootSchema :: definitions))
+    TValid.succeed(Blueprint(rootSchema :: definitions, Blueprint.Server(config.server.timeout)))
   }
 
   private def toFieldList(

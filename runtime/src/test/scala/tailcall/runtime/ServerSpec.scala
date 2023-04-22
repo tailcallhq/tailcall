@@ -1,5 +1,6 @@
 package tailcall.runtime
 
+import caliban.Value.IntValue.IntNumber
 import caliban.Value.StringValue
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
@@ -22,6 +23,24 @@ object ServerSpec extends ZIOSpecDefault {
         val directive = Directive(name = "server", arguments = Map("baseURL" -> StringValue("http://localhost:8080")))
         val actual    = directive.fromDirective[Server]
         val expected  = Server(baseURL = Some(new URL("http://localhost:8080")))
+        assertZIO(actual.toZIO)(equalTo(expected))
+      },
+      test("encoding with timeout") {
+        val server   = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000))
+        val actual   = server.toDirective
+        val expected = Directive(
+          name = "server",
+          arguments = Map("baseURL" -> StringValue("http://localhost:8080"), "timeout" -> IntNumber(1000)),
+        )
+        assertZIO(actual.toZIO)(equalTo(expected))
+      },
+      test("decode with timeout") {
+        val directive = Directive(
+          name = "server",
+          arguments = Map("baseURL" -> StringValue("http://localhost:8080"), "timeout" -> IntNumber(1000)),
+        )
+        val actual    = directive.fromDirective[Server]
+        val expected  = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000))
         assertZIO(actual.toZIO)(equalTo(expected))
       },
     ))
