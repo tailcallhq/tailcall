@@ -29,7 +29,10 @@ import scala.annotation.tailrec
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
+final case class Blueprint(
+  definitions: List[Blueprint.Definition] = Nil,
+  server: Blueprint.Server = Blueprint.Server(),
+) {
   self =>
   def digest: Digest                                                     = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
@@ -132,4 +135,5 @@ object Blueprint {
 
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
+  final case class Server(globalResponseTimeout: Option[Int] = None)
 }
