@@ -20,11 +20,13 @@ object StepGenerator {
   def default: ZLayer[Any, Nothing, StepGenerator] = EvaluationRuntime.default >>> live
 
   def live: ZLayer[EvaluationRuntime, Nothing, StepGenerator] = {
-    ZLayer(ZIO.service[EvaluationRuntime].map(rtm =>
-      new StepGenerator {
-        override def resolve(document: Blueprint): StepResult[HttpDataLoader] = Live(rtm, document).resolve
-      }
-    ))
+    ZLayer(for {
+      rtm  <- ZIO.service[EvaluationRuntime]
+      envs <- zio.System.envs.orElse(ZIO.succeed(Map.empty[String, String]))
+    } yield new StepGenerator {
+      override def resolve(document: Blueprint): StepResult[HttpDataLoader] = Live(rtm, document, envs).resolve
+    })
+
   }
 
   def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpDataLoader]] =
@@ -32,8 +34,8 @@ object StepGenerator {
 
   final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
 
-  final private case class Live(rtm: EvaluationRuntime, document: Blueprint) {
-    val rootContext: Context = Context(DynamicValue(()))
+  final private case class Live(rtm: EvaluationRuntime, document: Blueprint, env: Map[String, String]) {
+    val rootContext: Context = Context(DynamicValue(()), env = env)
 
     // A map of all the object types and a way to construct an instance of them.
     val objectStepRef: Map[String, Context => Step[HttpDataLoader]] = document.definitions
