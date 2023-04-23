@@ -3,7 +3,7 @@ package tailcall.server
 import caliban.CalibanError
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
-import tailcall.server.InterpreterDataLoader.{InterpreterLoader, load}
+import tailcall.server.BlueprintDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._

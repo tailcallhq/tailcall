@@ -8,7 +8,7 @@ import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
 import zio._
 import zio.http.model.HttpError
 
-object InterpreterDataLoader {
+object BlueprintDataLoader {
   final case class BlueprintData(
     blueprint: Blueprint,
     timeout: Int,
