@@ -6,8 +6,13 @@ sealed trait TValid[+E, +A] {
   self =>
   def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
-  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
-    self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
+  def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+
+  def fold[B](isError: NonEmptyChunk[E] => B, isSucceed: A => B): B =
+    self match {
+      case TValid.Errors(errors) => isError(errors)
+      case TValid.Succeed(value) => isSucceed(value)
+    }
 
   def get(implicit ev: E <:< Nothing): A =
     self match {
@@ -17,19 +22,19 @@ sealed trait TValid[+E, +A] {
 
   def getOrElse[A1 >: A](a: => A1): A1 = self.getOrElse(a)
 
-  def mapError[E1](f: E => E1): TValid[E1, A] = self.fold(errors => TValid.fail(errors.map(f)), TValid.succeed(_))
+  def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
 
-  def some: TValid[E, Option[A]] = self.map(Some(_))
+  def getOrThrow(implicit ev: E <:< String): A =
+    self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
 
   def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
-  def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
+  def mapError[E1](f: E => E1): TValid[E1, A] = self.fold(errors => TValid.fail(errors.map(f)), TValid.succeed(_))
 
-  def fold[B](isError: NonEmptyChunk[E] => B, isSucceed: A => B): B =
-    self match {
-      case TValid.Errors(errors) => isError(errors)
-      case TValid.Succeed(value) => isSucceed(value)
-    }
+  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
+    self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
+
+  def some: TValid[E, Option[A]] = self.map(Some(_))
 
   def toEither: Either[NonEmptyChunk[E], A] =
     self match {
@@ -42,11 +47,6 @@ sealed trait TValid[+E, +A] {
   def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
   def toTask(implicit ev: E <:< String): Task[A] = ZIO.attempt(getOrThrow)
-
-  def getOrThrow(implicit ev: E <:< String): A =
-    self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
-
-  def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
 
   def toZIO: zio.ZIO[Any, Chunk[E], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
@@ -64,6 +64,10 @@ sealed trait TValid[+E, +A] {
 }
 
 object TValid {
+  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors)
+
+  def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
+
   def fold[E, A, B](list: List[A], b: B)(f: (B, A) => TValid[E, B]): TValid[E, B] =
     list.foldLeft[TValid[E, B]](succeed(b))((tValid, a) => tValid.flatMap(b => f(b, a)))
 
@@ -89,18 +93,14 @@ object TValid {
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] =
     either.fold[TValid[E, A]](error => fail(NonEmptyChunk.single(error)), succeed(_))
 
-  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors)
-
   def fromOption[A](option: Option[A]): TValid[Unit, A] =
     option.fold[TValid[Unit, A]](TValid.fail(Chunk(())))(succeed(_))
 
-  def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
-
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
-  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
-
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
+
+  def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
   final case class Errors[E](errors: NonEmptyChunk[E]) extends TValid[E, Nothing]
   final case class Succeed[A](value: A)                extends TValid[Nothing, A]
