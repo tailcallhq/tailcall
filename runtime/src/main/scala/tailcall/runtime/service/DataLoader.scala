@@ -4,7 +4,11 @@ import tailcall.runtime.http.{HttpClient, Request}
 import zio._
 import zio.http.{Request => ZRequest}
 
-final case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
+final case class DataLoader[-R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
+  self =>
+
+  def widenError[E1](implicit ev: E <:< E1): DataLoader[R, E1, A, B] = self.asInstanceOf[DataLoader[R, E1, A, B]]
+
   def load(a: A): ZIO[R, E, B] = {
     for {
       newPromise <- Promise.make[E, B]
@@ -16,7 +20,12 @@ final case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolve
       )
       cond = result._1
       promise = result._2
-      _ <- resolver(a).flatMap(promise.succeed(_)).when(cond)
+      _ <- resolver(a).flatMap(promise.succeed(_)).when(cond).catchAll(e =>
+        for {
+          _ <- promise.fail(e)
+          _ <- map.update(_ - a)
+        } yield ()
+      )
       b <- promise.await
     } yield b
   }
