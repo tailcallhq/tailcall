@@ -146,13 +146,7 @@ object EvaluationRuntime {
                   for {
                     chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
-                      .mapError { cause =>
-                        val fix =
-                          """
-                            |This is most likely caused because the response received from the server is not a valid JSON String. 
-                            |""".stripMargin
-                        ValidationError.DecodingError("String", "JsonAST", cause, Option(fix))
-                      }
+                      .mapError(ValidationError.DecodingError("String", "JsonAST", _))
                     any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
                       .mapError(new RuntimeException(_))
                   } yield any

@@ -7,7 +7,7 @@ import zio.http.model.Status
 import zio.json.DecoderOps
 import zio.{Chunk, Task, ZIO, ZLayer}
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, StandardCharsets}
 
 trait SchemaRegistryClient {
   def add(base: URL, blueprint: Blueprint): Task[Digest]
@@ -30,8 +30,8 @@ object SchemaRegistryClient {
           Body.fromChunk(Chunk.fromIterable(Blueprint.encode(blueprint).toString.getBytes(Charset.defaultCharset()))),
           url,
         ))
-        body         <- HttpAssertions.assertStatusCodeIsAbove(400, response)
-        digestString <- body.asString
+        _            <- HttpAssertions.assertStatusCodeIsAbove(400, response)
+        digestString <- response.body.asString(StandardCharsets.UTF_8)
         digest       <- ZIO.fromEither(digestString.fromJson[Digest]).mapError(new RuntimeException(_))
       } yield digest
 
@@ -42,8 +42,8 @@ object SchemaRegistryClient {
         maybe    <- response.status match {
           case Status.NotFound => ZIO.succeed(None)
           case _               => for {
-              body      <- HttpAssertions.assertStatusCodeIsAbove(400, response)
-              bpString  <- body.asString
+              _         <- HttpAssertions.assertStatusCodeIsAbove(400, response)
+              bpString  <- response.body.asString(StandardCharsets.UTF_8)
               blueprint <- ZIO.fromEither(bpString.fromJson[Blueprint]).mapError(new RuntimeException(_))
             } yield Option(blueprint)
         }
@@ -53,8 +53,8 @@ object SchemaRegistryClient {
       for {
         url        <- buildURL(base, s"/schemas?index=${index}&max=${max}")
         response   <- client.request(Request.get(url))
-        body       <- HttpAssertions.assertStatusCodeIsAbove(400, response)
-        ls         <- body.asString
+        _          <- HttpAssertions.assertStatusCodeIsAbove(400, response)
+        ls         <- response.body.asString(StandardCharsets.UTF_8)
         blueprints <- ZIO.fromEither(ls.fromJson[List[Blueprint]]).mapError(new RuntimeException(_))
       } yield blueprints
 
