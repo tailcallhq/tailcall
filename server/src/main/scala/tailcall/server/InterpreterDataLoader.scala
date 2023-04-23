@@ -16,13 +16,13 @@ object InterpreterDataLoader {
     (GraphQLInterpreter[HttpDataLoader, CalibanError], Option[Blueprint]),
   ]
 
-  def loadInterpreter(digestId: String): ZIO[
+  def load(digestId: String): ZIO[
     InterpreterLoader with GraphQLGenerator,
     Throwable,
     (GraphQLInterpreter[HttpDataLoader, CalibanError], Option[Blueprint]),
   ] = ZIO.serviceWithZIO[InterpreterLoader](_.load(digestId))
 
-  def interpreter: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
+  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
     ZLayer {
       for {
         schemaRegistry <- ZIO.service[SchemaRegistry]
@@ -31,8 +31,7 @@ object InterpreterDataLoader {
         )
         resolver = (digestId: String) =>
           for {
-            digest      <- ZIO.succeed(Digest.fromHex(digestId))
-            blueprint   <- schemaRegistry.get(digest)
+            blueprint   <- schemaRegistry.get(Digest.fromHex(digestId))
             result      <- blueprint match {
               case Some(value) => value.toGraphQL
               case None        => ZIO.fail(HttpError.BadRequest(s"Blueprint ${digestId} has not been published yet."))
