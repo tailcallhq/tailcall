@@ -24,5 +24,6 @@ object Main extends ZIOAppDefault {
       GraphQLGenerator.default,
       HttpClient.default,
       Server.live,
+      InterpreterDataLoader.interpreter,
     )
 }
