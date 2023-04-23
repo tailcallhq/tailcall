@@ -1,7 +1,6 @@
 package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
-import tailcall.runtime.internal.HttpAssertions
 import zio._
 import zio.http.{Request => ZRequest}
 
@@ -37,13 +36,14 @@ object DataLoader {
         client       <- ZIO.service[HttpClient]
         requestCache <- Ref.make(Map.empty[Request, Promise[Throwable, Chunk[Byte]]])
         headers  = getForwardedHeaders(req)
-        resolver = (request: Request) => {
+        resolver = { (request: Request) =>
           val finalHeaders = request.headers ++ headers
           for {
             response <- client.request(request.copy(headers = finalHeaders))
-            _        <- HttpAssertions.assertStatusCodeIsAbove(400, response)
-            chunk    <- response.body.asChunk
+            _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
+            chunk <- response.body.asChunk
           } yield chunk
+
         }
       } yield DataLoader(requestCache, resolver)
     }

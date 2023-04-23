@@ -15,11 +15,15 @@ object HttpClient {
   def live: ZLayer[Client, Nothing, HttpClient] = ZLayer.fromFunction(client => Live(client))
 
   final case class Live(client: Client) extends HttpClient {
-    def request(req: Request): ZIO[Any, Throwable, Response] =
-      for {
-        res              <- client.request(req.toZHttpRequest)
-        redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
-      } yield redirectResponse
+    def request(req: Request): ZIO[Any, Throwable, Response] = {
+      ZIO.logSpan(s"${req.method} ${req.url}") {
+        for {
+          res              <- client.request(req.toZHttpRequest)
+          _                <- ZIO.log(s"status code: ${res.status.code}")
+          redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
+        } yield redirectResponse
+      }
+    }
 
     private def isRedirect(status: Status) = { status.code == 301 || status.code == 302 || status.code == 307 }
 
