@@ -7,7 +7,7 @@ import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
   ObjectTypeDefinition,
 }
 import caliban.parsing.adt.Type.innerType
-import caliban.parsing.adt.{Document, Type}
+import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model._
@@ -61,7 +61,7 @@ trait Document2Config {
   final private def toField(field: FieldDefinition): TValid[String, Config.Field] = {
     for {
       args <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
-      steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => Nil)
+      steps      = toSteps(field.directives)
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
@@ -92,17 +92,13 @@ trait Document2Config {
     )
   }
 
-  private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
-    field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption
-  }
-
   final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
   }
 
   final private def toField(field: InputValueDefinition): TValid[Nothing, Config.Field] =
     TValid.succeed {
-      val steps      = TValid.foreach(field.directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => Nil)
+      val steps      = toSteps(field.directives)
       val typeof     = innerType(field.ofType)
       val isList     = field.ofType.isInstanceOf[Type.ListType]
       val isRequired = field.ofType.nonNull
@@ -115,4 +111,13 @@ trait Document2Config {
         modify = toFieldUpdateAnnotation(field),
       )
     }
+
+  private def toSteps(directives: List[Directive]): List[Step] = {
+    val http: List[Step] = TValid.foreach(directives)(_.fromDirective[Step.Http]).toList.flatten
+    TValid.foreach(directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => http)
+  }
+
+  private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
+    field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption
+  }
 }
