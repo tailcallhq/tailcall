@@ -4,7 +4,7 @@ import tailcall.runtime.http.{HttpClient, Request}
 import zio._
 import zio.http.{Request => ZRequest}
 
-case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
+final case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
   def load(a: A): ZIO[R, E, B] = {
     for {
       newPromise <- Promise.make[E, B]
@@ -24,20 +24,16 @@ case class DataLoader[R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A =
 
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
-
-  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]]             =
-    ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
   // TODO: make this configurable
-  val allowedHeaders                                                                  = Set("authorization", "cookie")
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader]                               = http(None)
+  val allowedHeaders = Set("authorization", "cookie")
+
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
-      for {
-        client       <- ZIO.service[HttpClient]
-        requestCache <- Ref.make(Map.empty[Request, Promise[Throwable, Chunk[Byte]]])
-        headers  = getForwardedHeaders(req)
-        resolver = { (request: Request) =>
-          val finalHeaders = request.headers ++ headers
+      ZIO.service[HttpClient].flatMap { client =>
+        DataLoader.from[Request] { request =>
+          val finalHeaders = request.headers ++ getForwardedHeaders(req)
           for {
             response <- client.request(request.copy(headers = finalHeaders))
             _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
@@ -45,11 +41,21 @@ object DataLoader {
           } yield chunk
 
         }
-      } yield DataLoader(requestCache, resolver)
+      }
     }
 
-  private def getForwardedHeaders(req: Option[ZRequest]) = {
+  def from[A]: PartiallyAppliedDataLoader[A] = new PartiallyAppliedDataLoader(())
+
+  private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
     req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
+  }
+
+  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
+    ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
+
+  final class PartiallyAppliedDataLoader[A](val unit: Unit) {
+    def apply[R, E, B](f: A => ZIO[R, E, B]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =
+      for { cache <- Ref.make(Map.empty[A, Promise[E, B]]) } yield DataLoader(cache, f)
   }
 }
