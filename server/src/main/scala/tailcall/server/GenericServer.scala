@@ -13,9 +13,9 @@ import zio.json.EncoderOps
 object GenericServer {
   private def toBetterError(error: CalibanError): CalibanError = {
     error match {
+      case error: CalibanError.ExecutionError  => error.copy(msg = "Orchestration Failure")
       case error: CalibanError.ParsingError    => error
       case error: CalibanError.ValidationError => error
-      case error: CalibanError.ExecutionError  => error.copy(msg = "Execution Error")
     }
   }
 
