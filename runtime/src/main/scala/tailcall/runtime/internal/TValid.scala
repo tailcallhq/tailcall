@@ -21,7 +21,12 @@ sealed trait TValid[+E, +A] {
       case TValid.Errors(_)      => throw new NoSuchElementException("Failure does not exist")
     }
 
-  def getOrElse[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
+  def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
+
+  def getOrElse[A1 >: A](a: => A1): A1 = self.getOrElse(a)
+
+  def getOrThrow(implicit ev: E <:< String): A =
+    self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
 
   def some: TValid[E, Option[A]] = self.map(Some(_))
 

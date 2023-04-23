@@ -44,9 +44,7 @@ trait Blueprint2Document {
   final private def toCalibanDirective(directive: Blueprint.Directive): Directive = {
     Directive(
       directive.name,
-      directive.arguments.map { case (key, value) =>
-        key -> Transcoder.toInputValue(value).getOrElse(_ => Value.NullValue)
-      },
+      directive.arguments.map { case (key, value) => key -> Transcoder.toInputValue(value).getOrElse(Value.NullValue) },
     )
   }
 
@@ -66,7 +64,7 @@ trait Blueprint2Document {
       inputValue.description,
       inputValue.name,
       toCalibanType(inputValue.ofType),
-      inputValue.defaultValue.map(Transcoder.toInputValue(_).getOrElse(_ => Value.NullValue)),
+      inputValue.defaultValue.map(Transcoder.toInputValue(_).getOrElse(Value.NullValue)),
       Nil,
     )
 
