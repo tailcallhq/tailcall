@@ -15,10 +15,10 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
   )
 
   val registrySpec = test("set & get") {
-    val blueprint = config.toBlueprint
     for {
-      digest <- SchemaRegistry.add(blueprint)
-      actual <- SchemaRegistry.get(digest)
+      blueprint <- config.toBlueprint.toTask
+      digest    <- SchemaRegistry.add(blueprint)
+      actual    <- SchemaRegistry.get(digest)
     } yield assert(actual)(isSome(equalTo(blueprint)))
   }
 

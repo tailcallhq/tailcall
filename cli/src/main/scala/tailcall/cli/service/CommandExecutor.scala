@@ -120,10 +120,10 @@ object CommandExecutor {
 
     private def runCheck(files: ::[Path], remote: Option[URL], options: BlueprintOptions): ZIO[Any, Throwable, Unit] = {
       for {
-        config <- configFile.readAll(files.map(_.toFile))
-        blueprint = config.toBlueprint
-        digest    = blueprint.digest
-        seq0      = Seq("Digest" -> s"${digest.hex}", "Endpoints" -> blueprint.endpoints.length.toString)
+        config    <- configFile.readAll(files.map(_.toFile))
+        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
+        digest = blueprint.digest
+        seq0   = Seq("Digest" -> s"${digest.hex}", "Endpoints" -> blueprint.endpoints.length.toString)
         seq1 <- remote match {
           case Some(remote) => registry.get(remote, digest).map {
               case Some(_) => seq0 :+ ("Playground", Fmt.playground(remote, digest))
@@ -174,11 +174,11 @@ object CommandExecutor {
 
     private def runRemotePublish(base: URL, path: ::[Path]): ZIO[Any, Throwable, Unit] = {
       for {
-        config <- configFile.readAll(path.map(_.toFile))
-        blueprint = Transcoder.toBlueprint(config).get
-        digest <- registry.add(base, blueprint)
-        _      <- Console.printLine(Fmt.success("Deployment was completed successfully."))
-        _      <- Console.printLine(Fmt.table(Seq(
+        config    <- configFile.readAll(path.map(_.toFile))
+        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
+        digest    <- registry.add(base, blueprint)
+        _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
+        _         <- Console.printLine(Fmt.table(Seq(
           "Digest"     -> s"${digest.hex}",
           "Endpoints"  -> blueprint.endpoints.length.toString,
           "Playground" -> Fmt.playground(base, digest),

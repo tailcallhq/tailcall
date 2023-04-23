@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import caliban.{CalibanError, InputValue}
+import caliban.InputValue
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
@@ -380,9 +380,9 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError, String] = {
-    val blueprint = config.toBlueprint
+  ): ZIO[HttpDataLoader with GraphQLGenerator, Throwable, String] = {
     for {
+      blueprint   <- config.toBlueprint.toTask
       graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       result      <- interpreter.execute(query, variables = variables)
