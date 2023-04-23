@@ -114,7 +114,7 @@ trait Document2Config {
 
   private def toSteps(directives: List[Directive]): List[Step] = {
     val http: List[Step] = TValid.foreach(directives)(_.fromDirective[Step.Http]).toList.flatten
-    TValid.foreach(directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(_ => http)
+    TValid.foreach(directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(http)
   }
 
   private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
