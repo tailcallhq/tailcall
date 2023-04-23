@@ -463,5 +463,5 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
   private def render(config: Config): ZIO[GraphQLGenerator, Throwable, String] =
-    config.toBlueprint.toGraphQL.map(_.render)
+    config.toBlueprint.getOrThrow.toGraphQL.map(_.render)
 }

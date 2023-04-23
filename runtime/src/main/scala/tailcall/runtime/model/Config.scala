@@ -2,6 +2,7 @@ package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
@@ -27,7 +28,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
-  def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
+  def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 

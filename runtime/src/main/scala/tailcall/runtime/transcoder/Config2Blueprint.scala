@@ -12,7 +12,7 @@ trait Config2Blueprint {
   /**
    * Encodes a config into a Blueprint.
    */
-  final def toBlueprint(config: Config): TValid[Nothing, Blueprint] = {
+  final def toBlueprint(config: Config): TValid[String, Blueprint] = {
     val rootSchema = Blueprint
       .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
