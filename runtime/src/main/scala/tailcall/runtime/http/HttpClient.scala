@@ -4,6 +4,8 @@ import zio.http.model.Status
 import zio.http.{Client, Response}
 import zio.{ZIO, ZLayer}
 
+import java.nio.charset.StandardCharsets
+
 trait HttpClient {
   def request(req: Request): ZIO[Any, Throwable, Response]
 }
@@ -19,7 +21,8 @@ object HttpClient {
       ZIO.logSpan(s"${req.method} ${req.url}") {
         for {
           res              <- client.request(req.toZHttpRequest)
-          _                <- ZIO.log(s"status code: ${res.status.code}")
+          body             <- res.body.asString(StandardCharsets.UTF_8)
+          _                <- ZIO.log(s"code: ${res.status.code} body: ${body}")
           redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
         } yield redirectResponse
       }
