@@ -2,7 +2,7 @@ package tailcall.server
 
 import caliban.CalibanError
 import tailcall.runtime.service.DataLoader
-import tailcall.server.InterpreterDataLoader.loadInterpreter
+import tailcall.server.InterpreterDataLoader.load
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
@@ -21,7 +21,7 @@ object GenericServer {
   def graphQL =
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
       for {
-        result <- loadInterpreter(id)
+        result <- load(id)
         timeout = result._2.flatMap(blueprint => blueprint.server.globalResponseTimeout).getOrElse(10000)
         query <- GraphQLUtils.decodeQuery(req.body)
         res   <- result._1.execute(query).provideLayer(DataLoader.http(Option(req)))
