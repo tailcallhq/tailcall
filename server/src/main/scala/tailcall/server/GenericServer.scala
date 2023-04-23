@@ -1,8 +1,9 @@
 package tailcall.server
 
 import caliban.CalibanError
-import tailcall.runtime.service.DataLoader
-import tailcall.server.InterpreterDataLoader.load
+import tailcall.runtime.http.HttpClient
+import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
+import tailcall.server.InterpreterDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
@@ -18,16 +19,16 @@ object GenericServer {
     }
   }
 
-  def graphQL =
+  def graphQL: Http[HttpClient with InterpreterLoader with GraphQLGenerator, Throwable, Request, Response] =
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
       for {
-        result <- load(id)
-        timeout = result._2.flatMap(blueprint => blueprint.server.globalResponseTimeout).getOrElse(10000)
-        query <- GraphQLUtils.decodeQuery(req.body)
-        res   <- result._1.execute(query).provideLayer(DataLoader.http(Option(req)))
-          .map(res => res.copy(errors = res.errors.map(toBetterError(_))))
-          .timeoutFail(HttpError.RequestTimeout(s"Request timed out after ${timeout}ms"))(timeout.millis)
-        _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logErrorCause("GraphQLExecutionError", Cause.fail(error)))
+        blueprintData <- load(id)
+        query         <- GraphQLUtils.decodeQuery(req.body)
+        res           <- blueprintData.interpreter.execute(query).provideLayer(DataLoader.http(Option(req)))
+          .map(res => res.copy(errors = res.errors.map(toBetterError(_)))).timeoutFail(HttpError.RequestTimeout(
+            s"Request timed out after ${blueprintData.timeout}ms"
+          ))(blueprintData.timeout.millis)
+        _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
       } yield Response.json(res.toJson)
     }
 }

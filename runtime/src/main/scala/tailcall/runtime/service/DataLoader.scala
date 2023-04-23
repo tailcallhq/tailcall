@@ -32,7 +32,7 @@ object DataLoader {
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       ZIO.service[HttpClient].flatMap { client =>
-        DataLoader.from[Request] { request =>
+        DataLoader.make[Request] { request =>
           val finalHeaders = request.headers ++ getForwardedHeaders(req)
           for {
             response <- client.request(request.copy(headers = finalHeaders))
@@ -44,7 +44,7 @@ object DataLoader {
       }
     }
 
-  def from[A]: PartiallyAppliedDataLoader[A] = new PartiallyAppliedDataLoader(())
+  def make[A]: PartiallyAppliedDataLoader[A] = new PartiallyAppliedDataLoader(())
 
   private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
     req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
