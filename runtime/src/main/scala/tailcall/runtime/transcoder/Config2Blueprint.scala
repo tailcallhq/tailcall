@@ -152,6 +152,7 @@ trait Config2Blueprint {
           var endpoint = Endpoint.make(host).withPort(port).withPath(http.path)
             .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withMethod(http.method.getOrElse(Method.GET))
             .withInput(http.input).withOutput(http.output)
+
           http.body.flatMap(Mustache.syntax.parseString(_).toOption) match {
             case Some(value) => endpoint = endpoint.withBody(value)
             case None        => ()
