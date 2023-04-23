@@ -20,7 +20,7 @@ sealed trait TValid[+E, +A] {
       case TValid.Errors(_)      => throw new NoSuchElementException("Failure does not exist")
     }
 
-  def getOrElse[A1 >: A](a: => A1): A1 = self.getOrElse(a)
+  def getOrElse[A1 >: A](a: => A1): A1 = self.getOrElseWith(_ => a)
 
   def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[E] => A1): A1 = self.fold[A1](orElse, identity)
 
