@@ -118,12 +118,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
       },
       test("nested type") {
         val value = Json.Obj(
-          "b" -> Json.Arr(
-            //
-            Json.Obj("c" -> Json.Num(1)),
-            Json.Obj("c" -> Json.Num(2)),
-            Json.Obj("c" -> Json.Num(3)),
-          )
+          "b" -> Json.Arr(Json.Obj("c" -> Json.Num(1)), Json.Obj("c" -> Json.Num(2)), Json.Obj("c" -> Json.Num(3)))
         )
 
         val config = Config.default.withTypes(
@@ -194,10 +189,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"sum":3}"""))
       },
       test("with nesting") {
-        // type Query {foo: Foo}
-        // type Foo {bar: Bar}
-        // type Bar {value: Int}
-
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
@@ -208,10 +199,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
       },
       test("with nesting array") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {value: Int}
-
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -222,9 +209,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
       },
       test("with nesting array ctx") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -237,10 +221,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       },
       test("with nesting level 3") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {baz: Baz}
-        // type Baz{value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -258,10 +238,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         ))
       },
       test("parent") {
-        // type Query {foo: Foo}
-        // type Foo {bar: Bar}
-        // type Bar{baz: Baz}
-        // type Baz{value: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").resolveWith(100)),
@@ -275,8 +251,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("partial resolver") {
-        // type Query {foo: Foo}
-        // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
           "Foo"   -> Config.Type(
@@ -290,8 +264,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("default property resolver") {
-        // type Query {foo: Foo}
-        // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
           "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int")),
@@ -301,10 +273,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("mutation with input type") {
-        // type Mutation { createFoo(input: FooInput){foo: Foo} }
-        // type Foo {a : Int}
-        // input FooInput {a: Int, b: Int, c: Int}
-
         val config = Config.default.withMutation("Mutation").withTypes(
           "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Mutation" -> Config.Type(
