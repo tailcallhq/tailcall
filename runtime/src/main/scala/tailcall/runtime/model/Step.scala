@@ -18,9 +18,9 @@ sealed trait Step {
 }
 
 object Step {
-  implicit lazy val jsonCodec: JsonCodec[Step]            = DeriveJsonCodec.gen[Step]
+  implicit lazy val jsonCodec: JsonCodec[Step] = DeriveJsonCodec.gen[Step]
   // TODO: this should be auto-generated
-  implicit lazy val directive: DirectiveCodec[List[Step]] = DirectiveCodec.fromJsonListCodec("steps", jsonCodec)
+  // implicit lazy val directive: DirectiveCodec[List[Step]] = DirectiveCodec.fromJsonListCodec("steps", jsonCodec)
 
   def constant(a: Json): Step                          = Transform(JsonT.Constant(a))
   def function(f: DynamicValue ~>> DynamicValue): Step = LambdaFunction(f)

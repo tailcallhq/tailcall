@@ -115,7 +115,7 @@ trait Document2Config {
     }
 
   private def toSteps(directives: List[Directive]): List[Step] = {
-    TValid.foreach(directives)(_.fromDirective[List[Step]]).map(_.flatten).getOrElse(Nil)
+    TValid.foreach(directives)(_.fromDirective[Steps]).toOption.flatMap(_.headOption).toList.flatMap(_.value)
   }
 
   private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
