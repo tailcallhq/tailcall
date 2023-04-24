@@ -4,7 +4,8 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
-import tailcall.runtime.model.Step.Http
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
@@ -118,7 +119,7 @@ object Config {
 
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
-    steps: Option[List[Step]] = None,
+    unsafeSteps: Option[List[Operation]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
@@ -143,7 +144,7 @@ object Config {
         case _          => None
       }
 
-      val steps = self.steps match {
+      val steps = self.unsafeSteps match {
         case Some(steps) if steps.nonEmpty => Option(steps.map(_.compress))
         case _                             => None
       }
@@ -158,7 +159,7 @@ object Config {
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, steps = steps, args = args, modify = modify)
+      self.copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -167,9 +168,9 @@ object Config {
 
     def resolveWith[A: Schema](a: A): Field = resolveWithFunction(_ => Lambda(DynamicValue(a)))
 
-    def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Step.function(f))
+    def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Operation.function(f))
 
-    def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
+    def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Operation.constant(a.toJsonAST.toOption.get))
 
     def withArguments(args: (String, Arg)*): Field = withArguments(args.toMap)
 
@@ -182,14 +183,14 @@ object Config {
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
         val all = head :: tail.toList
-        Step.transform(all.reduce(_ >>> _))
+        Operation.transform(all.reduce(_ >>> _))
       }
 
     def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
     def withOmit(omit: Boolean): Field = withUpdate(ModifyField.empty.withOmit(omit))
 
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
+    def withSteps(steps: Operation*): Field = copy(unsafeSteps = Option(steps.toList))
 
     def withUpdate(update: ModifyField): Field = {
       copy(modify = self.modify match {
@@ -260,8 +261,8 @@ object Config {
   }
 
   object Field {
-    def apply(str: String, operations: Step*): Field =
-      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+    def apply(str: String, operations: Operation*): Field =
+      Field(typeOf = str, unsafeSteps = if (operations.isEmpty) None else Option(operations.toList))
 
     def bool: Field = Field(typeOf = "Boolean")
 

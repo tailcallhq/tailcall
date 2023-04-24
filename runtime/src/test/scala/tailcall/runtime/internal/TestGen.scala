@@ -2,6 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.test.Gen
 
@@ -39,22 +40,22 @@ object TestGen {
 
   def genPath: Gen[Any, Path] = Gen.listOfN(2)(genSegment).map(Path(_))
 
-  def genHttp: Gen[Any, Step.Http] =
+  def genHttp: Gen[Any, Operation.Http] =
     for {
       path   <- genPath
       method <- Gen.option(genMethod)
       input  <- Gen.option(genSchema)
       output <- Gen.option(genSchema)
-    } yield Step.Http(path, method, input, output)
+    } yield Operation.Http(path, method, input, output)
 
-  def genStep: Gen[Any, Step] =
+  def genStep: Gen[Any, Operation] =
     for { http <- genHttp } yield http
 
   def genFieldDefinition: Gen[Any, Field] =
     for {
       typeName <- genTypeName
       steps    <- Gen.option(Gen.listOf(genStep))
-    } yield Field(typeOf = typeName, steps = steps)
+    } yield Field(typeOf = typeName, unsafeSteps = steps)
 
   def fromIterableRandom[A](seq: A*): Gen[Any, A] =
     Gen.fromRandom { random =>

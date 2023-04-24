@@ -2,7 +2,8 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config.Field
-import tailcall.runtime.model.{Config, Path, Step, TSchema}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path, TSchema}
 import tailcall.runtime.service._
 import zio.test.TestAspect.timeout
 import zio.test._
@@ -50,7 +51,7 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         }
       },
       suite("compression")(test("http with schema") {
-        val step     = Step.Http(path = Path.unsafe.fromString("/foo"), output = Option(TSchema.string))
+        val step     = Operation.Http(path = Path.unsafe.fromString("/foo"), output = Option(TSchema.string))
         val config   = Config.default.withTypes("Query" -> Config.Type("foo" -> Field.ofType("String").withSteps(step)))
         val actual   = config.compress
         val expected = config

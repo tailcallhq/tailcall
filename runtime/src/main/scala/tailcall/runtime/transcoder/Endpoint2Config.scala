@@ -3,7 +3,7 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.{GraphQL, RootSchema}
-import tailcall.runtime.model.Step.Http
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Endpoint, Server, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 

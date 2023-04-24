@@ -1,7 +1,8 @@
 package tailcall.runtime
 
 import tailcall.runtime.model.Config.{Field, Type}
-import tailcall.runtime.model.{Config, Path, Step}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service.DSLFormat
 import zio.ZIO
 import zio.json.EncoderOps
@@ -33,7 +34,9 @@ object DSLFormatSpec extends ZIOSpecDefault {
                       |""".stripMargin.trim
 
       val config = Config.default.withTypes(
-        "Query" -> Type("foo" -> Field.ofType("User").asList.withHttp(Step.Http(Path.unsafe.fromString("/users")))),
+        "Query" -> Type(
+          "foo" -> Field.ofType("User").asList.withHttp(Operation.Http(Path.unsafe.fromString("/users")))
+        ),
         "User"  -> Type("id" -> Field.ofType("Int"), "name" -> Field.ofType("String")),
       )
 

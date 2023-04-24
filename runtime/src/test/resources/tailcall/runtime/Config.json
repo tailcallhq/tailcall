@@ -67,7 +67,7 @@
         "fields" : {
           "post" : {
             "type" : "Post",
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "http" : {
                   "path" : "/posts/{{args.id}}"
@@ -85,7 +85,7 @@
           "posts" : {
             "type" : "Post",
             "isList" : true,
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "http" : {
                   "path" : "/posts"
@@ -97,7 +97,7 @@
           "users" : {
             "type" : "User",
             "isList" : true,
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "http" : {
                   "path" : "/users"
@@ -115,7 +115,7 @@
           },
           "user" : {
             "type" : "User",
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "transform" : {
                   "objPath" : {
@@ -182,7 +182,7 @@
           },
           "user" : {
             "type" : "User",
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "transform" : {
                   "objPath" : {
@@ -221,7 +221,7 @@
           "posts" : {
             "type" : "Post",
             "isList" : true,
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "http" : {
                   "path" : "/users/{{value.id}}/posts"
@@ -256,7 +256,7 @@
         "fields" : {
           "createUser" : {
             "type" : "Id",
-            "steps" : [
+            "unsafeSteps" : [
               {
                 "http" : {
                   "path" : "/users",

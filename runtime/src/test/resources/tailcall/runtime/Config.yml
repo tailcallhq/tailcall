@@ -44,7 +44,7 @@ graphQL:
       fields:
         post:
           type: Post
-          steps:
+          unsafeSteps:
           - http:
               path: /posts/{{args.id}}
           args:
@@ -55,14 +55,14 @@ graphQL:
         posts:
           type: Post
           isList: true
-          steps:
+          unsafeSteps:
           - http:
               path: /posts
           doc: A list of all posts.
         users:
           type: User
           isList: true
-          steps:
+          unsafeSteps:
           - http:
               path: /users
           doc: A list of all users.
@@ -73,7 +73,7 @@ graphQL:
             omit: true
         user:
           type: User
-          steps:
+          unsafeSteps:
           - transform:
               objPath:
                 userId:
@@ -115,7 +115,7 @@ graphQL:
           isRequired: true
         user:
           type: User
-          steps:
+          unsafeSteps:
           - transform:
               objPath:
                 userId:
@@ -138,7 +138,7 @@ graphQL:
         posts:
           type: Post
           isList: true
-          steps:
+          unsafeSteps:
           - http:
               path: /users/{{value.id}}/posts
         email:
@@ -160,7 +160,7 @@ graphQL:
       fields:
         createUser:
           type: Id
-          steps:
+          unsafeSteps:
           - http:
               path: /users
               method: POST
