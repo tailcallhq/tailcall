@@ -20,7 +20,7 @@ object DirectiveDecoder {
     val schemaName  = schema match {
       case schema: Schema.Enum[_]   => schema.id.name
       case schema: Schema.Record[_] => schema.id.name
-      case _ => throw new RuntimeException("Can only decode sealed traits and case classes as directives")
+      case _                        => throw new RuntimeException("Can only decode case classes as directives")
     }
 
     val name    = nameHint.getOrElse(schemaName)
@@ -38,20 +38,6 @@ object DirectiveDecoder {
             else TValid.succeed(())
           args <- TValid.fromEither(directive.arguments.toJsonAST)
           a    <- TValid.fromEither(args.toJson.fromJson[A](decoder))
-        } yield a,
-    )
-
-  // FIXME: Drop this decoder
-  def fromJsonListDecoder[A](decoder: JsonDecoder[A]): DirectiveDecoder[List[A]] =
-    DirectiveDecoder(
-      "NO_NAME_DIRECTIVE",
-      directive =>
-        for {
-          inputValue <- directive.arguments.get("value") match {
-            case Some(inputValue) => TValid.succeed(inputValue)
-            case None             => TValid.fail(s"key `value` was not found in directive ${directive.name}")
-          }
-          a          <- TValid.fromEither(inputValue.toJson.fromJson[List[A]](JsonDecoder.list(decoder)))
         } yield a,
     )
 
