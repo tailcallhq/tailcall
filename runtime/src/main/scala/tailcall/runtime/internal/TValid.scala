@@ -6,6 +6,8 @@ sealed trait TValid[+E, +A] {
   self =>
   def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
+  def errors: Chunk[E] = fold(_.toChunk, _ => Chunk.empty)
+
   def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.fail(_), ab)
 
   def fold[B](isError: NonEmptyChunk[E] => B, isSucceed: A => B): B =
@@ -102,6 +104,6 @@ object TValid {
 
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
 
-  final case class Errors[E](errors: NonEmptyChunk[E]) extends TValid[E, Nothing]
-  final case class Succeed[A](value: A)                extends TValid[Nothing, A]
+  final case class Errors[E](chunk: NonEmptyChunk[E]) extends TValid[E, Nothing]
+  final case class Succeed[A](value: A)               extends TValid[Nothing, A]
 }
