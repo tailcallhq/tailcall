@@ -112,14 +112,14 @@ object Config2Blueprint {
 
     private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList.filter(!_._2.modify.flatMap(_.omit).getOrElse(false))) {
-        case (name, field) =>
+        case (fieldName, field) =>
           val args   = toArgs(field)
           val ofType = toType(field)
 
           for {
-            resolver <- toResolver(name, field, inputTypeNames.contains(typeName))
+            resolver <- toResolver(typeName, fieldName, field, inputTypeNames.contains(typeName))
           } yield Blueprint.FieldDefinition(
-            name = field.modify.flatMap(_.name).getOrElse(name),
+            name = field.modify.flatMap(_.name).getOrElse(fieldName),
             args = args,
             ofType = ofType,
             resolver = resolver.map(Lambda.fromFunction(_)),
@@ -186,19 +186,28 @@ object Config2Blueprint {
       }
     }
 
-    private def toResolver(name: String, field: Field, isInputType: Boolean): TValid[String, Option[Resolver]] =
-      TValid.succeed {
+    private def toResolver(
+      typeName: String,
+      fieldName: String,
+      field: Field,
+      isInputType: Boolean,
+    ): TValid[String, Option[Resolver]] = {
+      if (field.http.nonEmpty && field.unsafeSteps.forall(_.nonEmpty)) TValid
+        .fail(s"type ${typeName} with field ${fieldName} can not have both an unsafe and an http operations together")
+      else TValid.succeed {
         field.unsafeSteps match {
-          case None        => field.modify.flatMap(_.name) match {
+          case None => field.modify.flatMap(_.name) match {
               case Some(newName) =>
-                val finalName = if (isInputType) newName else name
+                val finalName = if (isInputType) newName else fieldName
                 Option(input => input.path("value", finalName).toDynamic)
               case None          => None
             }
+
           case Some(steps) => TValid.foreach(steps.map(toResolver(field, _)))(identity(_))
               .map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
         }
       }
+    }
 
     // TODO: Add unit test for mutations
     private def toTSchema(args: Option[Map[String, Arg]]): TSchema = {
