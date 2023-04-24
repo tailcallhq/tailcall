@@ -58,9 +58,9 @@ object OperationSpec extends ZIOSpecDefault {
           )
           val actual             = steps.toDirective
           val expected           = Directive(
-            "steps",
+            "unsafe",
             Map(
-              "value" -> ListValue(List(ObjectValue(Map(
+              "steps" -> ListValue(List(ObjectValue(Map(
                 "http" -> ObjectValue(Map(
                   "path"   -> Value.StringValue(value = "/{{users}}"),
                   "method" -> Value.StringValue(value = "POST"),
@@ -74,9 +74,9 @@ object OperationSpec extends ZIOSpecDefault {
         },
         test("decoder") {
           val directive = Directive(
-            "steps",
+            "unsafe",
             Map(
-              "value" -> ListValue(List(ObjectValue(Map(
+              "steps" -> ListValue(List(ObjectValue(Map(
                 "http" -> ObjectValue(Map(
                   "path"   -> Value.StringValue(value = "/{{users}}"),
                   "method" -> Value.StringValue(value = "POST"),

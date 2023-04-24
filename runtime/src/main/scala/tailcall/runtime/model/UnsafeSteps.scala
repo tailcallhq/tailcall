@@ -9,15 +9,15 @@ import zio.json.ast.Json
 import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
 
-@caseName("unsafeSteps")
-final case class UnsafeSteps(value: List[Operation]) {
-  def compress: UnsafeSteps = UnsafeSteps(value.map(_.compress))
+@caseName("unsafe")
+final case class UnsafeSteps(steps: List[Operation]) {
+  def compress: UnsafeSteps = UnsafeSteps(steps.map(_.compress))
 }
 
 object UnsafeSteps {
   implicit val jsonCodec: JsonCodec[UnsafeSteps] = DeriveJsonCodec.gen[UnsafeSteps]
 
-  implicit val directiveCodec: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("steps", jsonCodec)
+  implicit val directiveCodec: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("unsafe", jsonCodec)
 
   sealed trait Operation {
     self =>

@@ -30,7 +30,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1: [Type_1!] @steps(value: [{http: {path: "/users"}}])
+                         |  fieldType_1: [Type_1!] @unsafe(steps: [{http: {path: "/users"}}])
                          |}
                          |
                          |type Type_1 {
@@ -51,7 +51,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1: Type_1! @steps(value: [{http: {path: "/abc"}}])
+                         |  fieldType_1: Type_1! @unsafe(steps: [{http: {path: "/abc"}}])
                          |}
                          |
                          |type Type_1 {
@@ -83,7 +83,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1(value: Type_2!): Type_1 @steps(value: [{http: {path: "/user"}}])
+                         |  fieldType_1(value: Type_2!): Type_1 @unsafe(steps: [{http: {path: "/user"}}])
                          |}
                          |
                          |type Type_1 {
@@ -118,7 +118,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldInt(value: Type_1!): Int! @steps(value: [{http: {path: ""}}])
+                         |  fieldInt(value: Type_1!): Int! @unsafe(steps: [{http: {path: ""}}])
                          |}
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
@@ -127,31 +127,32 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
         val endpoint = jsonEndpoint.withOutput(Option(User)).withInput(Option(InputUser)).withPath("/user")
           .withMethod(Method.POST)
 
-        val expected = """
-                         |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
-                         |  query: Query
-                         |  mutation: Mutation
-                         |}
-                         |
-                         |input Type_2 {
-                         |  username: String!
-                         |  name: String!
-                         |  email: String!
-                         |}
-                         |
-                         |type Mutation {
-                         |  fieldType_1(value: Type_2!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
-                         |}
-                         |
-                         |type Query
-                         |
-                         |type Type_1 {
-                         |  username: String!
-                         |  id: Int!
-                         |  name: String!
-                         |  email: String!
-                         |}
-                         |""".stripMargin
+        val expected =
+          """
+            |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
+            |  query: Query
+            |  mutation: Mutation
+            |}
+            |
+            |input Type_2 {
+            |  username: String!
+            |  name: String!
+            |  email: String!
+            |}
+            |
+            |type Mutation {
+            |  fieldType_1(value: Type_2!): Type_1! @unsafe(steps: [{http: {path: "/user",method: "POST"}}])
+            |}
+            |
+            |type Query
+            |
+            |type Type_1 {
+            |  username: String!
+            |  id: Int!
+            |  name: String!
+            |  email: String!
+            |}
+            |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
     )
