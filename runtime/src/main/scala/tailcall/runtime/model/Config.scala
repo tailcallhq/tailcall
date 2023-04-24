@@ -14,10 +14,19 @@ import zio.schema.{DynamicValue, Schema}
 import zio.{IO, ZIO}
 
 import java.io.File
+import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
   def ++(other: Config): Config = self.mergeRight(other)
+
+  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
+
+  def asJSONConfig: IO[String, String]    = DSLFormat.JSON.encode(self)
+
+  def asYAMLConfig: IO[String, String]    = DSLFormat.YML.encode(self)
+
+  def compress: Config = self.copy(graphQL = self.graphQL.compress)
 
   def mergeRight(other: Config): Config = {
     Config(
@@ -27,9 +36,9 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     )
   }
 
-  def compress: Config = self.copy(graphQL = self.graphQL.compress)
-
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
+
+  def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
@@ -45,13 +54,17 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
-
-  def asJSONConfig: IO[String, String]    = DSLFormat.JSON.encode(self)
-  def asYAMLConfig: IO[String, String]    = DSLFormat.YML.encode(self)
-  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
 }
 
 object Config {
+
+  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 
   def default: Config = Config.empty.withQuery("Query")
 
@@ -65,21 +78,21 @@ object Config {
     self =>
     def ++(other: Type): Type = self.mergeRight(other)
 
-    def mergeRight(other: Type): Type =
-      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
-
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
 
     def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+
+    def mergeRight(other: Type): Type =
+      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
 
     def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
+    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
+
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
-
-    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
@@ -95,19 +108,19 @@ object Config {
       )
     }
 
-    def withType(name: String, typeInfo: Type): GraphQL = {
-      self.copy(types = self.types.get(name) match {
-        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
-        case None            => self.types + (name -> typeInfo)
-      })
-    }
-
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
     def withQuery(name: String): GraphQL = copy(schema = schema.copy(query = Option(name)))
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
+
+    def withType(name: String, typeInfo: Type): GraphQL = {
+      self.copy(types = self.types.get(name) match {
+        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
+        case None            => self.types + (name -> typeInfo)
+      })
+    }
   }
 
   // TODO: Field and Argument can be merged
@@ -255,9 +268,9 @@ object Config {
   }
 
   object Type {
-    def empty: Type = Type()
-
     def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
+
+    def empty: Type = Type()
   }
 
   object Field {
@@ -279,12 +292,4 @@ object Config {
     val bool: Arg                 = Arg("Boolean")
     def ofType(name: String): Arg = Arg(name)
   }
-
-  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
-  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
-  implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
-  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
-  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 }

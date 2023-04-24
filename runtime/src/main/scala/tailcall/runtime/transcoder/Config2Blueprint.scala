@@ -15,7 +15,7 @@ trait Config2Blueprint {
 
 object Config2Blueprint {
   // TODO: change it to Lambda[DynamicValue, DyanmicValue]
-  type Resolver = DynamicValue ~>> DynamicValue
+  type Resolver = DynamicValue ~> DynamicValue
 
   final case class Live(config: Config) {
     private val outputTypes    = getOutputTypes.toSet
@@ -122,7 +122,7 @@ object Config2Blueprint {
             name = field.modify.flatMap(_.name).getOrElse(fieldName),
             args = args,
             ofType = ofType,
-            resolver = resolver.map(Lambda.fromFunction(_)),
+            resolver = resolver,
             description = field.doc,
           )
       }
@@ -150,9 +150,9 @@ object Config2Blueprint {
       )
     }
 
-    private def toResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~>> DynamicValue] = {
+    private def toResolver(field: Field, http: Operation.Http): TValid[String, Resolver] = {
       config.server.baseURL match {
-        case Some(baseURL) => TValid.succeed { input =>
+        case Some(baseURL) => TValid.succeed {
             val steps = field.unsafeSteps.getOrElse(Nil)
             val host  = baseURL.getHost
             val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
@@ -172,17 +172,9 @@ object Config2Blueprint {
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
-            input >>> Lambda.unsafe.fromEndpoint(endpoint)
+            Lambda.unsafe.fromEndpoint(endpoint)
           }
         case None          => TValid.fail("No base URL defined in the server configuration")
-      }
-    }
-
-    private def toResolver(field: Field, step: Operation): TValid[String, Resolver] = {
-      step match {
-        case http @ Operation.Http(_, _, _, _, _) => toResolver(field, http)
-        case Operation.Transform(jsonT)           => TValid.succeed(dynamic => dynamic.transform(jsonT))
-        case Operation.LambdaFunction(func)       => TValid.succeed(func)
       }
     }
 
@@ -192,20 +184,50 @@ object Config2Blueprint {
       field: Field,
       isInputType: Boolean,
     ): TValid[String, Option[Resolver]] = {
-      if (field.http.nonEmpty && field.unsafeSteps.forall(_.nonEmpty)) TValid
-        .fail(s"type ${typeName} with field ${fieldName} can not have both an unsafe and an http operations together")
-      else TValid.succeed {
-        field.unsafeSteps match {
-          case None => field.modify.flatMap(_.name) match {
-              case Some(newName) =>
-                val finalName = if (isInputType) newName else fieldName
-                Option(input => input.path("value", finalName).toDynamic)
-              case None          => None
-            }
-
-          case Some(steps) => TValid.foreach(steps.map(toResolver(field, _)))(identity(_))
-              .map(_.reduce((f1, f2) => a => f2(f1(a)))).toOption
+      val steps        = field.unsafeSteps.toList.flatten
+      val operationMix = steps.nonEmpty && (field.modify.nonEmpty || field.http.nonEmpty)
+      for {
+        _             <- TValid
+          .fail(s"type ${typeName} with field ${fieldName} can not have unsafe and any other operations together")
+          .when(operationMix)
+        mayBeStep     <- toResolver(field, steps)
+        mayBeHttp     <- field.http match {
+          case Some(http) => toResolver(field, http).some
+          case None       => TValid.none
         }
+        mayBeModify   <- field.modify match {
+          case Some(modify) => toResolver(fieldName, modify, isInputType)
+          case None         => TValid.none
+        }
+        maybeResolver <- (mayBeStep, mayBeHttp, mayBeModify) match {
+          case (Some(step), _, _)            => TValid.succeed(step).some
+          case (_, Some(http), Some(modify)) => TValid.succeed(http >>> modify).some
+          case (_, Some(http), _)            => TValid.succeed(http).some
+          case (_, _, Some(modify))          => TValid.succeed(modify).some
+          case (None, None, None)            => TValid.none
+        }
+      } yield maybeResolver
+    }
+
+    private def toResolver(field: Field, steps: List[Operation]): TValid[String, Option[Resolver]] = {
+      if (steps.isEmpty) TValid.none
+      else TValid.foreach(steps) {
+        case http @ Operation.Http(_, _, _, _, _) => toResolver(field, http)
+        case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
+        case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
+      }.map(_.reduce((f1, f2) => f1 >>> f2)).some
+    }
+
+    private def toResolver(
+      fieldName: String,
+      modify: ModifyField,
+      isInputType: Boolean,
+    ): TValid[Nothing, Option[Resolver]] = {
+      modify.name match {
+        case Some(newName) =>
+          val finalName = if (isInputType) newName else fieldName
+          TValid.succeed(Option(Lambda.identity[DynamicValue].path("value", finalName).toDynamic))
+        case None          => TValid.none
       }
     }
 
