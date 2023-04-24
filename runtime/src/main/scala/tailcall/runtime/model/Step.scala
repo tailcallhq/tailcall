@@ -55,7 +55,7 @@ object Step {
   }
 
   object Http {
-    private val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]
+    implicit val jsonCodec: JsonCodec[Http] = DeriveJsonCodec.gen[Http]
 
     def fromEndpoint(endpoint: Endpoint): Http   =
       Http(

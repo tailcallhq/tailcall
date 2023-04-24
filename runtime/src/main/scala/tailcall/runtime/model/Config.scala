@@ -4,6 +4,7 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Step.Http
 import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
@@ -121,6 +122,7 @@ object Config {
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
+    http: Option[Http] = None,
   ) {
     self =>
 
@@ -175,17 +177,19 @@ object Config {
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
+    def withHttp(http: Http): Field = copy(http = Option(http))
+
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
         val all = head :: tail.toList
         Step.transform(all.reduce(_ >>> _))
       }
 
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
-
     def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
     def withOmit(omit: Boolean): Field = withUpdate(ModifyField.empty.withOmit(omit))
+
+    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
     def withUpdate(update: ModifyField): Field = {
       copy(modify = self.modify match {
