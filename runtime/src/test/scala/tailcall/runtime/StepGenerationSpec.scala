@@ -4,16 +4,16 @@ import caliban.InputValue
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
-import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{before, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{ZIO, durationInt}
+import zio.{Chunk, ZIO, durationInt}
 
 /**
  * Tests for the generation of GraphQL steps from a config.
@@ -345,6 +345,17 @@ object StepGenerationSpec extends ZIOSpecDefault {
           } yield assertTrue(json == """{"identity":"bar"}""")
         },
       ),
+      suite("unsafe")(test("with http") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default
+          .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
+
+        val errors = config.toBlueprint.errors
+
+        assertTrue(
+          errors == Chunk("type Query with field foo can not have both an unsafe and an http operations together")
+        )
+      }),
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds) @@ before(
       TestSystem.putEnv("foo", "bar")
     )
