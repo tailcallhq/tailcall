@@ -10,10 +10,14 @@ import zio.schema.{DynamicValue, Schema}
 sealed trait Step
 
 object Step {
-  def objPath(spec: (String, List[String])*): Step     = Transform(JsonT.objPath(spec: _*))
+  implicit lazy val jsonCodec: JsonCodec[Step]            = DeriveJsonCodec.gen[Step]
+  // TODO: this should be auto-generated
+  implicit lazy val directive: DirectiveCodec[List[Step]] = DirectiveCodec.fromJsonListCodec("steps", jsonCodec)
+
   def constant(a: Json): Step                          = Transform(JsonT.Constant(a))
-  def transform(jsonT: JsonT): Step                    = Transform(jsonT)
   def function(f: DynamicValue ~>> DynamicValue): Step = LambdaFunction(f)
+  def objPath(spec: (String, List[String])*): Step     = Transform(JsonT.objPath(spec: _*))
+  def transform(jsonT: JsonT): Step                    = Transform(jsonT)
 
   @jsonHint("lambda")
   final case class LambdaFunction(f: DynamicValue ~>> DynamicValue) extends Step
@@ -56,8 +60,4 @@ object Step {
     implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
   }
 
-  implicit lazy val jsonCodec: JsonCodec[Step] = DeriveJsonCodec.gen[Step]
-
-  // TODO: this should be auto-generated
-  implicit lazy val directive: DirectiveCodec[List[Step]] = DirectiveCodec.fromJsonListCodec("steps", jsonCodec)
 }
