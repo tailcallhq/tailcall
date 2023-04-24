@@ -1,7 +1,6 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
@@ -143,12 +142,7 @@ object Config {
       }
 
       val steps = self.steps match {
-        case Some(steps) if steps.nonEmpty =>
-          Option(steps.map {
-            case step @ Step.Http(_, _, _, _, _) =>
-              if (step.method contains Method.GET) step.copy(method = None) else step
-            case step                            => step
-          })
+        case Some(steps) if steps.nonEmpty => Option(steps.map(_.compress))
         case _                             => None
       }
 
