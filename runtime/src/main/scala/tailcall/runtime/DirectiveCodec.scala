@@ -16,11 +16,10 @@ final case class DirectiveCodec[A](encoder: DirectiveEncoder[A], decoder: Direct
   def encode(a: A): TValid[String, Directive]               = encoder.encode(a)
   def transform[B](f: A => B, g: B => A): DirectiveCodec[B] = DirectiveCodec(encoder.contramap(g), decoder.map(f))
   def withName(name: String): DirectiveCodec[A]             = DirectiveCodec(encoder.withName(name), decoder)
+  def name: String                                          = encoder.name
 }
 
 object DirectiveCodec {
-  def apply[A](encode: A => TValid[String, Directive], decode: Directive => TValid[String, A]): DirectiveCodec[A] =
-    DirectiveCodec(DirectiveEncoder.collect(encode), DirectiveDecoder.collect(decode))
 
   def fromJsonCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[A] =
     DirectiveCodec(
