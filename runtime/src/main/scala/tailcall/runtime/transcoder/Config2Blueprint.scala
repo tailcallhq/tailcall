@@ -185,10 +185,9 @@ object Config2Blueprint {
       isInputType: Boolean,
     ): TValid[String, Option[Resolver]] = {
       val steps        = field.unsafeSteps.toList.flatten
-      val operationMix = steps.nonEmpty && (field.modify.nonEmpty || field.http.nonEmpty)
+      val operationMix = steps.nonEmpty && field.http.nonEmpty
       for {
-        _             <- TValid
-          .fail(s"type ${typeName} with field ${fieldName} can not have unsafe and any other operations together")
+        _ <- TValid.fail(s"Type ${typeName} with field ${fieldName} can not have unsafe and http operations together")
           .when(operationMix)
         mayBeStep     <- toResolver(field, steps)
         mayBeHttp     <- field.http match {

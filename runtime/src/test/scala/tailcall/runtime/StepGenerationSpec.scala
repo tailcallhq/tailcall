@@ -347,26 +347,23 @@ object StepGenerationSpec extends ZIOSpecDefault {
           } yield assertTrue(json == """{"identity":"bar"}""")
         },
       ),
-      suite("unsafe")(
-        test("with http") {
-          val http   = Operation.Http(Path.unsafe.fromString("/users"))
-          val config = Config.default
-            .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
+      suite("unsafe")(test("with http") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default
+          .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
 
-          val errors = config.toBlueprint.errors
+        val errors = config.toBlueprint.errors
 
-          assertTrue(errors == Chunk("type Query with field foo can not have unsafe and any other operations together"))
-        },
-        test("with modify") {
-          val http   = Operation.Http(Path.unsafe.fromString("/users"))
-          val config = Config.default
-            .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withName("bar")))
+        assertTrue(errors == Chunk("Type Query with field foo can not have unsafe and http operations together"))
+      }),
+      test("with no base url") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
 
-          val errors = config.toBlueprint.errors
+        val errors = config.toBlueprint.errors
 
-          assertTrue(errors == Chunk("type Query with field foo can not have unsafe and any other operations together"))
-        },
-      ),
+        assertTrue(errors == Chunk("No base URL defined in the server configuration"))
+      },
       test("http directive") {
         val config = Config.default.withBaseURL(new URL("https://jsonplaceholder.typicode.com")).withTypes(
           "Query" -> Config
