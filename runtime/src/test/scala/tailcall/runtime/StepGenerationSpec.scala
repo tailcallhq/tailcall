@@ -15,6 +15,8 @@ import zio.test.TestAspect.{before, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, ZIO, durationInt}
 
+import java.net.URL
+
 /**
  * Tests for the generation of GraphQL steps from a config.
  * This is done by writing a test config, converting to
@@ -345,17 +347,36 @@ object StepGenerationSpec extends ZIOSpecDefault {
           } yield assertTrue(json == """{"identity":"bar"}""")
         },
       ),
-      suite("unsafe")(test("with http") {
-        val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default
-          .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
+      suite("unsafe")(
+        test("with http") {
+          val http   = Operation.Http(Path.unsafe.fromString("/users"))
+          val config = Config.default
+            .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
 
-        val errors = config.toBlueprint.errors
+          val errors = config.toBlueprint.errors
 
-        assertTrue(
-          errors == Chunk("type Query with field foo can not have both an unsafe and an http operations together")
+          assertTrue(errors == Chunk("type Query with field foo can not have unsafe and any other operations together"))
+        },
+        test("with modify") {
+          val http   = Operation.Http(Path.unsafe.fromString("/users"))
+          val config = Config.default
+            .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withName("bar")))
+
+          val errors = config.toBlueprint.errors
+
+          assertTrue(errors == Chunk("type Query with field foo can not have unsafe and any other operations together"))
+        },
+      ),
+      test("http directive") {
+        val config = Config.default.withBaseURL(new URL("https://jsonplaceholder.typicode.com")).withTypes(
+          "Query" -> Config
+            .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
+          "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
         )
-      }),
+        for {
+          json <- resolve(config, Map.empty)("""query {user {id name}}""")
+        } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
+      },
     ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds) @@ before(
       TestSystem.putEnv("foo", "bar")
     )
