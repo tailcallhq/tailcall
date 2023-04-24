@@ -5,9 +5,17 @@ import tailcall.runtime.lambda.~>>
 import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
 import zio.json.ast.Json
+import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
 
-sealed trait Step
+sealed trait Step {
+  self =>
+  def compress: Step =
+    self match {
+      case step @ Step.Http(_, Some(Method.GET), _, _, _) => step.copy(method = None)
+      case step                                           => step
+    }
+}
 
 object Step {
   implicit lazy val jsonCodec: JsonCodec[Step]            = DeriveJsonCodec.gen[Step]
@@ -59,5 +67,16 @@ object Step {
       )
     implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
   }
+}
 
+@caseName("steps")
+final case class Steps(value: List[Step]) {
+  def compress: Steps = Steps(value.map(_.compress))
+}
+object Steps                              {
+  implicit val jsonCodec: JsonCodec[Steps] = DeriveJsonCodec.gen[Steps]
+
+  implicit val directiveCodec: DirectiveCodec[Steps] = DirectiveCodec.fromJsonCodec("steps", jsonCodec)
+
+  def apply(steps: Step*): Steps = Steps(steps.toList)
 }
