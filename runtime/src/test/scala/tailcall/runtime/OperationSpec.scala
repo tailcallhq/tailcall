@@ -5,19 +5,20 @@ import caliban.Value
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec._
 import tailcall.runtime.http.Method
-import tailcall.runtime.model.Step.Http
-import tailcall.runtime.model.{Path, Step, Steps}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.{Path, UnsafeSteps}
 import zio.Scope
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
 
-object StepSpec extends ZIOSpecDefault {
+object OperationSpec extends ZIOSpecDefault {
   final case class User(name: String, age: Option[Int])
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("directive")(
       suite("http")(
         test("encoder") {
-          val http = Step
+          val http = Operation
             .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
 
           val actual   = http.toDirective
@@ -43,7 +44,7 @@ object StepSpec extends ZIOSpecDefault {
           )
 
           val actual   = directive.fromDirective[Http]
-          val expected = Step
+          val expected = Operation
             .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
 
           assertZIO(actual.toZIO)(equalTo(expected))
@@ -51,11 +52,12 @@ object StepSpec extends ZIOSpecDefault {
       ),
       suite("Steps")(
         test("encoder") {
-          val steps: Steps = Steps(
-            Step.Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
+          val steps: UnsafeSteps = UnsafeSteps(
+            Operation
+              .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
           )
-          val actual       = steps.toDirective
-          val expected     = Directive(
+          val actual             = steps.toDirective
+          val expected           = Directive(
             "steps",
             Map(
               "value" -> ListValue(List(ObjectValue(Map(
@@ -84,9 +86,10 @@ object StepSpec extends ZIOSpecDefault {
             ),
           )
 
-          val actual          = directive.fromDirective[Steps]
-          val expected: Steps = Steps(
-            Step.Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
+          val actual                = directive.fromDirective[UnsafeSteps]
+          val expected: UnsafeSteps = UnsafeSteps(
+            Operation
+              .Http(path = Path.empty.withParam("users"), method = Option(Method.POST), body = Option("{{user.id}}"))
           )
 
           assertZIO(actual.toZIO)(equalTo(expected))

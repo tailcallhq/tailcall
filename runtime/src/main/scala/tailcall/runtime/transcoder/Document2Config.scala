@@ -10,7 +10,8 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.Step.Http
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
 import zio.json.{DecoderOps, EncoderOps}
 
@@ -70,7 +71,7 @@ trait Document2Config {
       typeOf = typeof,
       list = Option(isList),
       required = Option(isRequired),
-      steps = Option(steps),
+      unsafeSteps = Option(steps),
       args = Option(args),
       doc = field.description,
       modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
@@ -108,14 +109,14 @@ trait Document2Config {
         typeOf = typeof,
         list = Option(isList),
         required = Option(isRequired),
-        steps = Option(steps),
+        unsafeSteps = Option(steps),
         doc = field.description,
         modify = toFieldUpdateAnnotation(field),
       )
     }
 
-  private def toSteps(directives: List[Directive]): List[Step] = {
-    TValid.foreach(directives)(_.fromDirective[Steps]).toOption.flatMap(_.headOption).toList.flatMap(_.value)
+  private def toSteps(directives: List[Directive]): List[Operation] = {
+    TValid.foreach(directives)(_.fromDirective[UnsafeSteps]).toOption.flatMap(_.headOption).toList.flatMap(_.value)
   }
 
   private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {

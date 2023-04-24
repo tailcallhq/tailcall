@@ -4,8 +4,9 @@ import caliban.InputValue
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Step}
+import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.json.ast.Json
@@ -101,7 +102,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
           Config.default.withTypes(
             "Query" -> Type(
               "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
-                .withSteps(Step.objPath("bar" -> List("args", "data")))
+                .withSteps(Operation.objPath("bar" -> List("args", "data")))
             ),
             "Bar"   -> Type("bar" -> Field.ofType("Int")),
           )
@@ -126,7 +127,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
         )
 
         val config = Config.default.withTypes(
-          "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.constant(value))),
+          "Query" -> Type("a" -> Field.ofType("A").withSteps(Operation.constant(value))),
           "A"     -> Type("b" -> Field.ofType("B").asList),
           "B"     -> Type("c" -> Field.int),
         )
@@ -141,7 +142,9 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").pipe(JsonT.toKeyValue))
 
         val config = Config.default.withTypes(
-          "Query" -> Type("z" -> Field.ofType("A").withSteps(Step.constant(value), Step.transform(transformation))),
+          "Query" -> Type(
+            "z" -> Field.ofType("A").withSteps(Operation.constant(value), Operation.transform(transformation))
+          ),
           "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B").asList),
           "B"     -> Type("key" -> Field.string, "value" -> Field.int),
         )

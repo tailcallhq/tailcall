@@ -4,6 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.schema.DynamicValue
 
@@ -141,11 +142,11 @@ trait Config2Blueprint {
   final private def toResolver(
     config: Config,
     field: Field,
-    http: Step.Http,
+    http: Operation.Http,
   ): TValid[String, DynamicValue ~>> DynamicValue] = {
     config.server.baseURL match {
       case Some(baseURL) => TValid.succeed { input =>
-          val steps = field.steps.getOrElse(Nil)
+          val steps = field.unsafeSteps.getOrElse(Nil)
           val host  = baseURL.getHost
           val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
 
@@ -173,16 +174,16 @@ trait Config2Blueprint {
   // TODO: change it to Lambda[DynamicValue, DyanmicValue]
   type Resolver = DynamicValue ~>> DynamicValue
 
-  final private def toResolver(config: Config, field: Field, step: Step): TValid[String, Resolver] = {
+  final private def toResolver(config: Config, field: Field, step: Operation): TValid[String, Resolver] = {
     step match {
-      case http @ Step.Http(_, _, _, _, _) => toResolver(config, field, http)
-      case Step.Transform(jsonT)           => TValid.succeed(dynamic => dynamic.transform(jsonT))
-      case Step.LambdaFunction(func)       => TValid.succeed(func)
+      case http @ Operation.Http(_, _, _, _, _) => toResolver(config, field, http)
+      case Operation.Transform(jsonT)           => TValid.succeed(dynamic => dynamic.transform(jsonT))
+      case Operation.LambdaFunction(func)       => TValid.succeed(func)
     }
   }
 
   final private def toResolver(config: Config, name: String, field: Field, isInputType: Boolean): Option[Resolver] = {
-    field.steps match {
+    field.unsafeSteps match {
       case None        => field.modify.flatMap(_.name) match {
           case Some(newName) =>
             val finalName = if (isInputType) newName else name
@@ -206,8 +207,8 @@ trait Config2Blueprint {
 
   final private def toTSchema(config: Config, fieldName: String, isRequired: Boolean, isList: Boolean): TSchema = {
     var schema = config.graphQL.types.get(fieldName) match {
-      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.steps.isEmpty).map { case (fieldName, field) =>
-          (fieldName, toTSchema(config, field))
+      case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.unsafeSteps.isEmpty).map {
+          case (fieldName, field) => (fieldName, toTSchema(config, field))
         })
 
       case None => fieldName match {
