@@ -6,7 +6,7 @@ import caliban.parsing.adt.Directive
 import zio.schema.DeriveSchema
 import zio.schema.annotation.{caseName, fieldName}
 import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, Scope}
 
 object DirectiveCodecSpec extends ZIOSpecDefault {
@@ -15,7 +15,7 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
   @caseName("foo")
   final case class Foo(a: String, @fieldName("bee") b: Int)
   object Foo {
-    implicit val fooCodec: DirectiveCodec[Foo] = DirectiveCodec.fromSchema(DeriveSchema.gen[Foo])
+    implicit val codec: DirectiveCodec[Foo] = DirectiveCodec.fromSchema(DeriveSchema.gen[Foo])
   }
 
   @caseName("barBaz")
@@ -26,7 +26,7 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
 
     @caseName("baz")
     final case class Baz(c: Boolean, d: Double) extends BarBaz
-    implicit val barBazCodec: DirectiveCodec[BarBaz] = DirectiveCodec.fromSchema(DeriveSchema.gen[BarBaz])
+    implicit val codec: DirectiveCodec[BarBaz] = DirectiveCodec.fromSchema(DeriveSchema.gen[BarBaz])
   }
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
@@ -50,6 +50,7 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
           val expected = Chunk("Expected directive name to be foo but was boo")
           assertZIO(actual.toZIO.flip)(equalTo(expected))
         },
+        test("name")(assertTrue(Foo.codec.name == "foo")),
       ),
       suite("sealed traits")(
         test("encoding should work") {
@@ -59,6 +60,7 @@ object DirectiveCodecSpec extends ZIOSpecDefault {
             Directive("barBaz", Map("bar" -> ObjectValue(Map("a" -> Value.StringValue("a"), "b" -> Value.IntValue(1)))))
           assertZIO(directive.toZIO)(equalTo(expected))
         },
+        test("name")(assertTrue(BarBaz.codec.name == "barBaz")),
         test("decoding should work") {
           val barBaz: BarBaz = BarBaz.Bar("a", 1)
           val actual         = barBaz.toDirective.flatMap(_.fromDirective[BarBaz])
