@@ -7,8 +7,8 @@ import zio.json.{DecoderOps, JsonEncoder}
 import zio.schema.Schema
 import zio.schema.annotation.caseName
 
-final case class DirectiveEncoder[A](encode: A => TValid[String, Directive], name: String) {
-  def contramap[B](ab: B => A): DirectiveEncoder[B] = DirectiveEncoder(ab andThen encode, name)
+final case class DirectiveEncoder[A](name: String, encode: A => TValid[String, Directive]) {
+  def contramap[B](ab: B => A): DirectiveEncoder[B] = DirectiveEncoder(name, ab andThen encode)
   def withName(name: String): DirectiveEncoder[A]   = copy(name = name)
 }
 
@@ -17,20 +17,20 @@ object DirectiveEncoder {
 
   def fromJsonEncoder[A](directiveName: String, encoder: JsonEncoder[A]): DirectiveEncoder[A] =
     DirectiveEncoder(
+      directiveName,
       a =>
         TValid.fromEither(encoder.encodeJson(a).fromJson[Map[String, InputValue]])
           .map(args => Directive(directiveName, args)),
-      directiveName,
     )
 
   // FIXME: This function can be deprecated
   def fromJsonListEncoder[A](directiveName: String, encoder: JsonEncoder[A]): DirectiveEncoder[List[A]] = {
     val jsonEncoder = JsonEncoder.list(encoder)
     DirectiveEncoder(
+      directiveName,
       a =>
         TValid.fromEither(jsonEncoder.encodeJson(a).fromJson[InputValue])
           .map(args => Directive(directiveName, Map("value" -> args))),
-      directiveName,
     )
   }
 
@@ -44,7 +44,7 @@ object DirectiveEncoder {
     }
     val name        = nameHint.getOrElse(schemaName)
     val encoder     = fromJsonEncoder(name, jsonEncoder)
-    DirectiveEncoder(a => encoder.encode(a), name)
+    DirectiveEncoder(name, a => encoder.encode(a))
   }
 
   def gen[A: Schema]: DirectiveEncoder[A] = fromSchema(Schema[A])

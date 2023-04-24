@@ -6,7 +6,7 @@ import zio.json.{DecoderOps, EncoderOps, JsonDecoder}
 import zio.schema.Schema
 import zio.schema.annotation.caseName
 
-final case class DirectiveDecoder[A](decode: Directive => TValid[String, A], name: String) {
+final case class DirectiveDecoder[A](name: String, decode: Directive => TValid[String, A]) {
   def map[B](ab: A => B): DirectiveDecoder[B] = copy(decode = decode.andThen(_.map(ab)))
 }
 
@@ -25,11 +25,12 @@ object DirectiveDecoder {
 
     val name    = nameHint.getOrElse(schemaName)
     val decoder = fromJsonDecoder(nameHint.getOrElse(name), jsonDecoder)
-    DirectiveDecoder(decoder.decode(_), name)
+    DirectiveDecoder(name, decoder.decode(_))
   }
 
   def fromJsonDecoder[A](name: String, decoder: JsonDecoder[A]): DirectiveDecoder[A] =
     DirectiveDecoder(
+      name,
       directive =>
         for {
           _    <-
@@ -38,12 +39,12 @@ object DirectiveDecoder {
           args <- TValid.fromEither(directive.arguments.toJsonAST)
           a    <- TValid.fromEither(args.toJson.fromJson[A](decoder))
         } yield a,
-      name,
     )
 
   // FIXME: Drop this decoder
   def fromJsonListDecoder[A](decoder: JsonDecoder[A]): DirectiveDecoder[List[A]] =
     DirectiveDecoder(
+      "NO_NAME_DIRECTIVE",
       directive =>
         for {
           inputValue <- directive.arguments.get("value") match {
@@ -52,7 +53,6 @@ object DirectiveDecoder {
           }
           a          <- TValid.fromEither(inputValue.toJson.fromJson[List[A]](JsonDecoder.list(decoder)))
         } yield a,
-      "NO_NAME_DIRECTIVE",
     )
 
   def apply[A](implicit decoder: DirectiveDecoder[A]): DirectiveDecoder[A] = decoder
