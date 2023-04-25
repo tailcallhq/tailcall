@@ -370,6 +370,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
             .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
           "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
         )
+
         for {
           json <- resolve(config, Map.empty)("""query {user {id name}}""")
         } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")

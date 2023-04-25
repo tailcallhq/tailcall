@@ -382,8 +382,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
       },
       suite("mutation")(
         test("mutation with primitive input") {
-          // mutation createFoo(input: String){foo: Foo}
-          // type Foo {a: Int, b: Int, c: Int}
           val config = Config.default.withMutation("Mutation").withTypes(
             "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
             "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
@@ -410,11 +408,6 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
           render(config).map(actual => assertTrue(actual == expected))
         },
         test("mutation with input type") {
-          // schema {mutation: Mutation}
-          // type Mutation { createFoo(input: FooInput) Foo }
-          // type Foo { foo: String }
-          // input FooInput {a: Int, b: Int, c: Int}
-
           val config = Config.default.withMutation("Mutation").withTypes(
             "Query"    -> Config.Type.empty,
             "Mutation" -> Config

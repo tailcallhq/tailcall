@@ -57,11 +57,5 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         val expected = config
         assertTrue(actual == expected)
       }),
-    ).provide(
-        ConfigFileIO.live,
-        FileIO.default,
-        GraphQLGenerator.live,
-        StepGenerator.live,
-        EvaluationRuntime.default,
-      ) @@ timeout(5 seconds)
+    ).provide(ConfigFileIO.default) @@ timeout(5 seconds)
 }
