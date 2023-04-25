@@ -5,7 +5,7 @@ import zio.test.TestAspect.failing
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
 import zio.{Scope, ZIO}
 
-object DocumentGeneratorSpec extends ZIOSpecDefault {
+object Config2SDL0 extends ZIOSpecDefault {
 
   private def assertSchema(config: Config)(expected: String): ZIO[Any, String, TestResult] =
     for { graphQL <- config.asGraphQLConfig } yield assertTrue(graphQL == expected.trim)

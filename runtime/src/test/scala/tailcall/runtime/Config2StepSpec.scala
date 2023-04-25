@@ -22,7 +22,7 @@ import java.net.URL
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object StepGenerationSpec extends ZIOSpecDefault {
+object Config2StepSpec extends ZIOSpecDefault {
   override def spec =
     suite("GraphQL Step Generation")(
       test("users name") {

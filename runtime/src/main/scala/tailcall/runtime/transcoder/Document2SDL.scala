@@ -8,8 +8,8 @@ import caliban.tools.RemoteSchema
 import caliban.wrappers.Wrapper
 import tailcall.runtime.internal.TValid
 
-trait Document2GraphQLSchema {
-  final def toGraphQLSchema(document: Document): TValid[Nothing, String] =
+trait Document2SDL {
+  final def toSDL(document: Document): TValid[Nothing, String] =
     TValid.succeed {
 
       new GraphQL[Any] {

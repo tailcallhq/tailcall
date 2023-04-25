@@ -7,7 +7,7 @@ import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
 import zio.{Chunk, Scope, ZIO}
 
-object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
+object Endpoint2SDLSpec extends ZIOSpecDefault with Endpoint2Config {
   private val User = TSchema
     .obj("username" -> TSchema.Str, "id" -> TSchema.Num, "name" -> TSchema.Str, "email" -> TSchema.Str)
 
@@ -16,7 +16,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
   def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[String], TestResult] = {
-    val schema = Transcoder.toGraphQLConfig(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
+    val schema = Transcoder.toSDL(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
     for { result <- schema.toZIO } yield assertTrue(result == expected)
   }
 

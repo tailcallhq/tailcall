@@ -7,7 +7,7 @@ import zio.ZIO
 import zio.json.EncoderOps
 import zio.test._
 
-object ConfigFormatSpec extends ZIOSpecDefault {
+object SDL2ConfigSpec extends ZIOSpecDefault {
   private def assertIdentity(config: Config, graphQL: String): ZIO[Any, String, TestResult] =
     for {
       encodedConfig  <- config.asGraphQLConfig

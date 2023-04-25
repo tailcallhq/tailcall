@@ -14,7 +14,7 @@ import zio.{ZIO, durationInt}
  * graphql, rendering the generated and then comparing with
  * expected output.
  */
-object SchemaGenerationSpec extends ZIOSpecDefault {
+object Config2SDL extends ZIOSpecDefault {
   override def spec =
     suite("GraphQL Schema Generation")(
       test("only query") {
