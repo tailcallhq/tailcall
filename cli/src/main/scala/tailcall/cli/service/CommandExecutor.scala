@@ -5,7 +5,7 @@ import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
-import tailcall.runtime.model.{Blueprint, Digest, Endpoint, Postman}
+import tailcall.runtime.model.{Blueprint, ConfigFormat, Digest, Endpoint, Postman}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder

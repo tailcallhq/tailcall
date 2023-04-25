@@ -1,7 +1,7 @@
 package tailcall.cli
 
 import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
-import tailcall.runtime.service.ConfigFormat
+import tailcall.runtime.model.ConfigFormat
 import zio.cli._
 import zio.http.URL
 

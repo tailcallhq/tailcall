@@ -6,7 +6,7 @@ import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
-import tailcall.runtime.service.{ConfigFileIO, ConfigFormat}
+import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
 import zio.json.ast.Json

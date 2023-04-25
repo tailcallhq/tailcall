@@ -2,8 +2,7 @@ package tailcall.runtime
 
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path}
-import tailcall.runtime.service.ConfigFormat
+import tailcall.runtime.model.{Config, ConfigFormat, Path}
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.test._

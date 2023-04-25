@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.model.Config
+import tailcall.runtime.model.{Config, ConfigFormat}
 import zio.{Task, ZIO, ZLayer}
 
 import java.io.File

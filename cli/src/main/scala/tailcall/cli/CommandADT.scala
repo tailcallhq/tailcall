@@ -1,7 +1,6 @@
 package tailcall.cli
 
-import tailcall.runtime.model.Digest
-import tailcall.runtime.service.ConfigFormat
+import tailcall.runtime.model.{ConfigFormat, Digest}
 import zio.http.URL
 
 import java.nio.file.Path
