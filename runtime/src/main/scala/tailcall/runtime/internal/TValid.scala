@@ -29,9 +29,13 @@ sealed trait TValid[+E, +A] {
   def getOrThrow(implicit ev: E <:< String): A =
     self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
 
+  def isEmpty: Boolean = self.fold(_ => true, _ => false)
+
   def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
   def mapError[E1](f: E => E1): TValid[E1, A] = self.fold(errors => TValid.fail(errors.map(f)), TValid.succeed(_))
+
+  def nonEmpty: Boolean = !isEmpty
 
   def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))

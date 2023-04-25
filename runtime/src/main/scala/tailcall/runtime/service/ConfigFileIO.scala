@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.model.Config
+import tailcall.runtime.model.{Config, ConfigFormat}
 import zio.{Task, ZIO, ZLayer}
 
 import java.io.File
@@ -29,14 +29,14 @@ object ConfigFileIO {
   final case class Live(fileIO: FileIO, graphQLGenerator: GraphQLGenerator) extends ConfigFileIO {
     override def read(file: File): Task[Config] =
       for {
-        ext    <- DSLFormat.detect(file.getName).mapError(new RuntimeException(_))
+        ext    <- ConfigFormat.detect(file.getName).mapError(new RuntimeException(_))
         string <- fileIO.read(file)
         config <- ext.decode(string).mapError(new RuntimeException(_))
       } yield config
 
     override def write(file: File, config: Config): Task[Unit] =
       for {
-        ext    <- DSLFormat.detect(file.getName).mapError(new RuntimeException(_))
+        ext    <- ConfigFormat.detect(file.getName).mapError(new RuntimeException(_))
         string <- ext.encode(config).mapError(new RuntimeException(_))
         _      <- fileIO.write(file, string, FileIO.defaultFlag.withTruncateExisting.withCreate)
       } yield ()

@@ -19,10 +19,10 @@ sealed trait Transcoder
     with Config2Document
     with Document2Blueprint
     with Document2Config
-    with Document2GraphQLSchema
+    with Document2SDL
     with Endpoint2Config
-    with GraphQLSchema2JsonLines
     with JsonValue2TSchema
+    with SDL2JsonLines
     with ToDynamicValue
     with ToInputValue
     with ToJsonAST
@@ -33,12 +33,10 @@ object Transcoder extends Transcoder {
   def toBlueprint(endpoint: Endpoint, nameGen: NameGenerator): TValid[String, Blueprint] =
     toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
 
-  def toGraphQLConfig(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
-    toConfig(endpoint, nameGenerator).flatMap(config => toGraphQLConfig(config.compress))
+  def toSDL(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
+    toConfig(endpoint, nameGenerator).flatMap(config => toSDL(config.compress, true))
 
-  def toGraphQLConfig(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toGraphQLSchema(_))
-
-  def toGraphQLSchema(config: Config): TValid[String, String] = toBlueprint(config).flatMap(toGraphQLSchema(_))
-
-  def toGraphQLSchema(blueprint: Blueprint): TValid[Nothing, String] = toDocument(blueprint).flatMap(toGraphQLSchema(_))
+  def toSDL(config: Config, asConfig: Boolean): TValid[String, String] = {
+    if (asConfig) toDocument(config).flatMap(toSDL) else toBlueprint(config).flatMap(toDocument).flatMap(toSDL)
+  }
 }

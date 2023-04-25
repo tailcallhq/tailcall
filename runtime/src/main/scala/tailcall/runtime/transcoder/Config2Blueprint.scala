@@ -240,13 +240,16 @@ object Config2Blueprint {
       }
     }
 
-    private def toTSchema(fieldName: String, isRequired: Boolean, isList: Boolean): TSchema = {
-      var schema = config.graphQL.types.get(fieldName) match {
-        case Some(typeInfo) => TSchema.obj(typeInfo.fields.filter(_._2.unsafeSteps.isEmpty).map {
-            case (fieldName, field) => (fieldName, toTSchema(field))
-          })
+    private def toTSchema(fieldType: String, isRequired: Boolean, isList: Boolean): TSchema = {
 
-        case None => fieldName match {
+      var schema = config.graphQL.types.get(fieldType) match {
+        case Some(typeInfo) => TSchema.obj(
+            typeInfo.fields.filter { case (_, field) =>
+              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.input.isEmpty)
+            }.map { case (fieldName, field) => (fieldName, toTSchema(field)) }
+          )
+
+        case None => fieldType match {
             case "String"  => TSchema.string
             case "Int"     => TSchema.num
             case "Boolean" => TSchema.bool

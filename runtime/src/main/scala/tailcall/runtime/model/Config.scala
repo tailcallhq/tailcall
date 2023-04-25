@@ -6,7 +6,7 @@ import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
-import tailcall.runtime.service.{ConfigFileIO, DSLFormat}
+import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
 import zio.json.ast.Json
@@ -20,11 +20,11 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   self =>
   def ++(other: Config): Config = self.mergeRight(other)
 
-  def asGraphQLConfig: IO[String, String] = DSLFormat.GRAPHQL.encode(self)
+  def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
 
-  def asJSONConfig: IO[String, String] = DSLFormat.JSON.encode(self)
+  def asJSONConfig: IO[String, String] = ConfigFormat.JSON.encode(self)
 
-  def asYAMLConfig: IO[String, String] = DSLFormat.YML.encode(self)
+  def asYAMLConfig: IO[String, String] = ConfigFormat.YML.encode(self)
 
   def compress: Config = self.copy(graphQL = self.graphQL.compress)
 

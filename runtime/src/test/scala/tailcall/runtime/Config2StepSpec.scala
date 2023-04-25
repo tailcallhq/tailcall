@@ -22,9 +22,9 @@ import java.net.URL
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object StepGenerationSpec extends ZIOSpecDefault {
+object Config2StepSpec extends ZIOSpecDefault {
   override def spec =
-    suite("GraphQL Step Generation")(
+    suite("Config to GraphQL Step")(
       test("users name") {
         val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
 
@@ -370,6 +370,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
             .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
           "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
         )
+
         for {
           json <- resolve(config, Map.empty)("""query {user {id name}}""")
         } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")

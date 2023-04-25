@@ -1,9 +1,7 @@
 package tailcall.runtime
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
-import tailcall.runtime.model.Config.Field
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path, TSchema}
+import tailcall.runtime.model.ConfigFormat
 import tailcall.runtime.service._
 import zio.test.TestAspect.timeout
 import zio.test._
@@ -11,9 +9,9 @@ import zio.{Scope, durationInt}
 
 import java.io.File
 
-object ConfigFileIOSpec extends ZIOSpecDefault {
+object JsonPlaceholderSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("ConfigFileIO")(
+    suite("JsonPlaceholder")(
       test("Config.yml is valid Config")(ConfigFileIO.readURL(getClass.getResource("Config.yml")).as(assertCompletes)),
       test("Config.json is valid Config")(
         ConfigFileIO.readURL(getClass.getResource("Config.json")).as(assertCompletes)
@@ -22,7 +20,7 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
         ConfigFileIO.readURL(getClass.getResource("Config.graphql")).as(assertCompletes)
       ),
       test("read write identity") {
-        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
+        checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
           for {
             config  <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}"))
             string  <- format.encode(config)
@@ -32,7 +30,7 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
       },
       test("equals placeholder config") {
         val sourceConfig = JsonPlaceholderConfig.config.compress
-        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
+        checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
           for {
             config   <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
             actual   <- format.encode(config)
@@ -44,24 +42,11 @@ object ConfigFileIOSpec extends ZIOSpecDefault {
       // NOTE: This test just re-writes the configuration files
       test("write generated config") {
         val config = JsonPlaceholderConfig.config.compress
-        checkAll(Gen.fromIterable(DSLFormat.all)) { format =>
+        checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
           // TODO: find a better way to get the path instead of hardcoding
           val url = new File(s"src/test/resources/tailcall/runtime/Config.${format.ext}")
           ConfigFileIO.write(url, config).as(assertCompletes)
         }
       },
-      suite("compression")(test("http with schema") {
-        val step     = Operation.Http(path = Path.unsafe.fromString("/foo"), output = Option(TSchema.string))
-        val config   = Config.default.withTypes("Query" -> Config.Type("foo" -> Field.ofType("String").withSteps(step)))
-        val actual   = config.compress
-        val expected = config
-        assertTrue(actual == expected)
-      }),
-    ).provide(
-        ConfigFileIO.live,
-        FileIO.default,
-        GraphQLGenerator.live,
-        StepGenerator.live,
-        EvaluationRuntime.default,
-      ) @@ timeout(5 seconds)
+    ).provide(ConfigFileIO.default) @@ timeout(5 seconds)
 }

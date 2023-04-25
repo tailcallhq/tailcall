@@ -5,7 +5,7 @@ import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
-import tailcall.runtime.model.{Blueprint, Digest, Endpoint, Postman}
+import tailcall.runtime.model.{Blueprint, ConfigFormat, Digest, Endpoint, Postman}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
@@ -103,7 +103,7 @@ object CommandExecutor {
         ).mkString("\n")
       ).mkString("\n")
 
-    private def postman2GraphQL(files: ::[Path], dSLFormat: DSLFormat): ZIO[Any, Throwable, String] = {
+    private def postman2GraphQL(files: ::[Path], dSLFormat: ConfigFormat): ZIO[Any, Throwable, String] = {
       val nameGen = NameGenerator.incremental
       for {
         postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))

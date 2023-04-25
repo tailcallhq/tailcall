@@ -2,21 +2,20 @@ package tailcall.runtime
 
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path}
-import tailcall.runtime.service.DSLFormat
+import tailcall.runtime.model.{Config, ConfigFormat, Path}
 import zio.ZIO
 import zio.json.EncoderOps
 import zio.test._
 
-object DSLFormatSpec extends ZIOSpecDefault {
+object SDL2ConfigSpec extends ZIOSpecDefault {
   private def assertIdentity(config: Config, graphQL: String): ZIO[Any, String, TestResult] =
     for {
       encodedConfig  <- config.asGraphQLConfig
-      decodedGraphQL <- DSLFormat.GRAPHQL.decode(graphQL)
+      decodedGraphQL <- ConfigFormat.GRAPHQL.decode(graphQL)
     } yield assertTrue(encodedConfig == graphQL, decodedGraphQL.toJsonPretty == config.toJsonPretty)
 
   def spec =
-    suite("DSLFormat")(suite("graphql config identity")(
+    suite("SDL to Config")(suite("graphql config identity")(
       test("http directive") {
         val graphQL = """
                         |schema {
