@@ -14,7 +14,7 @@ import zio.{ZIO, durationInt}
  * graphql, rendering the generated and then comparing with
  * expected output.
  */
-object Config2SDL extends ZIOSpecDefault {
+object Config2SDLSpec extends ZIOSpecDefault {
   override def spec =
     suite("Config to SDL")(
       test("only query") {
