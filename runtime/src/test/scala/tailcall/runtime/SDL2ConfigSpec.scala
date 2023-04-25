@@ -8,11 +8,11 @@ import zio.json.EncoderOps
 import zio.test._
 
 object SDL2ConfigSpec extends ZIOSpecDefault {
-  private def assertIdentity(config: Config, graphQL: String): ZIO[Any, String, TestResult] =
+  private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] =
     for {
-      encodedConfig  <- config.asGraphQLConfig
-      decodedGraphQL <- ConfigFormat.GRAPHQL.decode(graphQL)
-    } yield assertTrue(encodedConfig == graphQL, decodedGraphQL.toJsonPretty == config.toJsonPretty)
+      encodedConfig  <- Transcoder.toSDL(config, true).toZIO.mapError(_.mkString(", "))
+      decodedGraphQL <- ConfigFormat.GRAPHQL.decode(sdl)
+    } yield assertTrue(encodedConfig == sdl, decodedGraphQL.toJsonPretty == config.toJsonPretty)
 
   def spec =
     suite("SDL to Config")(suite("graphql config identity")(

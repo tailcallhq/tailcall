@@ -383,7 +383,7 @@ object Config2StepSpec extends ZIOSpecDefault {
     query: String
   ): ZIO[HttpDataLoader with GraphQLGenerator, Throwable, String] = {
     for {
-      blueprint   <- config.toBlueprint.toTask
+      blueprint   <- Transcoder.toBlueprint(config).toTask
       graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       result      <- interpreter.execute(query, variables = variables)

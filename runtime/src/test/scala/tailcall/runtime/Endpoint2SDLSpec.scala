@@ -15,11 +15,6 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
 
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
 
-  def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[String], TestResult] = {
-    val schema = Transcoder.toSDL(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
-    for { result <- schema.toZIO } yield assertTrue(result == expected)
-  }
-
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("endpoint to graphql schema")(
       test("output schema") {
@@ -156,4 +151,9 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
         assertSchema(endpoint)(expected.trim)
       },
     )
+
+  private def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[String], TestResult] = {
+    val schema = Transcoder.toSDL(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
+    for { result <- schema.toZIO } yield assertTrue(result == expected)
+  }
 }

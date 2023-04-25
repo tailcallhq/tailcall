@@ -11,7 +11,7 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
     suite("Config to Blueprint")(
       test("timeout") {
         val config  = Config(server = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000)))
-        val timeout = config.toBlueprint.toOption.flatMap(_.server.globalResponseTimeout)
+        val timeout = Transcoder.toBlueprint(config).toOption.flatMap(_.server.globalResponseTimeout)
 
         assertTrue(timeout == Option(1000))
       },
@@ -30,7 +30,7 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
           ),
         )
 
-        assertTrue(config.toBlueprint.nonEmpty)
+        assertTrue(Transcoder.toBlueprint(config).nonEmpty)
       },
     )
 }
