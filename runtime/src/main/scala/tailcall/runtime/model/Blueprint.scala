@@ -100,7 +100,7 @@ object Blueprint {
     description: Option[String] = None,
   ) extends Definition
 
-  sealed trait Type {
+  sealed trait Type extends Serializable with Product {
     self =>
     @tailrec
     final def defaultName: String =
