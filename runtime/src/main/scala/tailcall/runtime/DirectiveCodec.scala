@@ -14,23 +14,12 @@ import zio.schema.Schema
 final case class DirectiveCodec[A](encoder: DirectiveEncoder[A], decoder: DirectiveDecoder[A]) {
   def decode(directive: Directive): TValid[String, A]       = decoder.decode(directive)
   def encode(a: A): TValid[String, Directive]               = encoder.encode(a)
+  def name: String                                          = encoder.name
   def transform[B](f: A => B, g: B => A): DirectiveCodec[B] = DirectiveCodec(encoder.contramap(g), decoder.map(f))
   def withName(name: String): DirectiveCodec[A]             = DirectiveCodec(encoder.withName(name), decoder)
-  def name: String                                          = encoder.name
 }
 
 object DirectiveCodec {
-
-  def fromJsonCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[A] =
-    DirectiveCodec(
-      DirectiveEncoder.fromJsonEncoder(name, codec.encoder),
-      DirectiveDecoder.fromJsonDecoder(name, codec.decoder),
-    )
-
-  def gen[A: Schema]: DirectiveCodec[A] = fromSchema(Schema[A])
-
-  def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =
-    DirectiveCodec(DirectiveEncoder.fromSchema(schema), DirectiveDecoder.fromSchema(schema))
 
   implicit final class DecoderSyntax(val directive: Directive) extends AnyVal {
     def fromDirective[A](implicit decoder: DirectiveDecoder[A]): TValid[String, A] = decoder.decode(directive)
@@ -48,5 +37,18 @@ object DirectiveCodec {
 
     def toDirective(implicit encoder: DirectiveEncoder[A]): TValid[String, Directive] = encoder.encode(self)
   }
+
+  def apply[A: DirectiveCodec]: DirectiveCodec[A] = implicitly[DirectiveCodec[A]]
+
+  def fromJsonCodec[A](name: String, codec: JsonCodec[A]): DirectiveCodec[A] =
+    DirectiveCodec(
+      DirectiveEncoder.fromJsonEncoder(name, codec.encoder),
+      DirectiveDecoder.fromJsonDecoder(name, codec.decoder),
+    )
+
+  def fromSchema[A](schema: Schema[A]): DirectiveCodec[A] =
+    DirectiveCodec(DirectiveEncoder.fromSchema(schema), DirectiveDecoder.fromSchema(schema))
+
+  def gen[A: Schema]: DirectiveCodec[A] = fromSchema(Schema[A])
 
 }
