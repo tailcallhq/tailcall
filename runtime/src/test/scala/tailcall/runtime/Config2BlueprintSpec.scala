@@ -30,9 +30,8 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
           ),
         )
 
-        val blueprint = config.toBlueprint.toEither
-
-        assertTrue(blueprint.isRight)
+        val blueprint = config.toBlueprint
+        assertTrue(blueprint.nonEmpty)
       },
     )
 }
