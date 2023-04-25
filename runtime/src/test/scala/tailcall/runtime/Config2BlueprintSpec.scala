@@ -8,10 +8,10 @@ import java.net.URL
 
 object Config2BlueprintSpec extends ZIOSpecDefault {
   def spec =
-    suite("Config2BlueprintSpec")(
+    suite("Config to Blueprint")(
       test("timeout") {
-        val timeout = Config(server = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000)))
-          .toBlueprint.toOption.flatMap(_.server.globalResponseTimeout)
+        val config  = Config(server = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000)))
+        val timeout = config.toBlueprint.toOption.flatMap(_.server.globalResponseTimeout)
 
         assertTrue(timeout == Option(1000))
       },
@@ -30,8 +30,7 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
           ),
         )
 
-        val blueprint = config.toBlueprint
-        assertTrue(blueprint.nonEmpty)
+        assertTrue(config.toBlueprint.nonEmpty)
       },
     )
 }

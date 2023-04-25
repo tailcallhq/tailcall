@@ -7,9 +7,6 @@ import zio.{Scope, ZIO}
 
 object Config2SDL0 extends ZIOSpecDefault {
 
-  private def assertSchema(config: Config)(expected: String): ZIO[Any, String, TestResult] =
-    for { graphQL <- config.asGraphQLConfig } yield assertTrue(graphQL == expected.trim)
-
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("DocumentGeneration")(test("input type directives") {
       val config = Config.default.withTypes(
@@ -36,4 +33,7 @@ object Config2SDL0 extends ZIOSpecDefault {
       // TODO: Remove failing after this
       // https://github.com/ghostdogpr/caliban/pull/1690
     } @@ failing)
+
+  private def assertSchema(config: Config)(expected: String): ZIO[Any, String, TestResult] =
+    for { graphQL <- config.asGraphQLConfig } yield assertTrue(graphQL == expected.trim)
 }

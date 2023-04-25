@@ -34,7 +34,9 @@ object Transcoder extends Transcoder {
     toConfig(endpoint, nameGen).flatMap(toBlueprint(_))
 
   def toSDL(endpoint: Endpoint, nameGenerator: NameGenerator): TValid[String, String] =
-    toConfig(endpoint, nameGenerator).flatMap(config => toSDL(config.compress))
+    toConfig(endpoint, nameGenerator).flatMap(config => toSDL(config.compress, true))
 
-  def toSDL(config: Config): TValid[Nothing, String] = toDocument(config).flatMap(toSDL(_))
+  def toSDL(config: Config, asConfig: Boolean): TValid[String, String] = {
+    if (asConfig) toDocument(config).flatMap(toSDL) else toBlueprint(config).flatMap(toDocument).flatMap(toSDL)
+  }
 }

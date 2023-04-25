@@ -24,7 +24,7 @@ import java.net.URL
  */
 object Config2StepSpec extends ZIOSpecDefault {
   override def spec =
-    suite("GraphQL Step Generation")(
+    suite("Config to GraphQL Step")(
       test("users name") {
         val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
 

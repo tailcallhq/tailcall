@@ -5,7 +5,7 @@ import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
 import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertTrue}
+import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
 import zio.{ZIO, durationInt}
 
 /**
@@ -16,7 +16,7 @@ import zio.{ZIO, durationInt}
  */
 object Config2SDL extends ZIOSpecDefault {
   override def spec =
-    suite("GraphQL Schema Generation")(
+    suite("Config to SDL")(
       test("only query") {
         val config   = Config.default.withTypes("Query" -> Type("hello" -> Field.ofType("String")))
         val expected = """|schema {
@@ -27,7 +27,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |  hello: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("multiple query") {
         val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -41,7 +41,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("shared input and output types") {
         val config   = Config.default
@@ -64,7 +64,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("shared nested input and output types") {
         val config   = Config.default.withTypes(
@@ -97,7 +97,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("input and output types") {
         val config   = Config.default
@@ -121,7 +121,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("mergeRight") {
         val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -137,7 +137,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       suite("rename annotations")(
         test("field") {
@@ -150,7 +150,7 @@ object Config2SDL extends ZIOSpecDefault {
                             |  bar: String
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
         test("argument") {
           val config   = Config.default.withTypes(
@@ -166,7 +166,7 @@ object Config2SDL extends ZIOSpecDefault {
                             |  foo(data: Int): String
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
         test("field in input type") {
           val config   = Config.default.withTypes(
@@ -185,7 +185,7 @@ object Config2SDL extends ZIOSpecDefault {
                             |  foo(input: Foo): Int
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
       ),
       test("json placeholder") {
@@ -285,7 +285,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("document type generation") {
         val config = Config.default
@@ -298,7 +298,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |type Query {
                           |  test: String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("document with InputValue") {
         val config = Config.default.withTypes(
@@ -315,7 +315,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("blueprint with InputValue and default") {
         val config = Config.default.withTypes(
@@ -332,7 +332,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("with nesting") {
         val config   = Config.default.withTypes(
@@ -355,7 +355,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("with nesting array") {
         val config   = Config.default.withTypes(
@@ -378,7 +378,7 @@ object Config2SDL extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       suite("mutation")(
         test("mutation with primitive input") {
@@ -405,7 +405,7 @@ object Config2SDL extends ZIOSpecDefault {
                             |type Query {
                             |  foo: Foo
                             |}""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
         test("mutation with input type") {
           val config = Config.default.withMutation("Mutation").withTypes(
@@ -434,7 +434,7 @@ object Config2SDL extends ZIOSpecDefault {
                             |}
                             |
                             |type Query""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
       ),
       test("omit field") {
@@ -451,10 +451,10 @@ object Config2SDL extends ZIOSpecDefault {
                          |}
                          |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
-  private def render(config: Config): ZIO[GraphQLGenerator, Throwable, String] =
-    config.toBlueprint.getOrThrow.toGraphQL.map(_.render)
+  private def assertSDL(config: Config, expected: String): ZIO[GraphQLGenerator, Nothing, TestResult] =
+    for { actual <- config.toBlueprint.getOrThrow.toGraphQL.map(_.render) } yield assertTrue(actual == expected)
 }

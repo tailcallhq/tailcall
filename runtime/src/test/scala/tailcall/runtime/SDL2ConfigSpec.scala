@@ -15,7 +15,7 @@ object SDL2ConfigSpec extends ZIOSpecDefault {
     } yield assertTrue(encodedConfig == graphQL, decodedGraphQL.toJsonPretty == config.toJsonPretty)
 
   def spec =
-    suite("DSLFormat")(suite("graphql config identity")(
+    suite("SDL to Config")(suite("graphql config identity")(
       test("http directive") {
         val graphQL = """
                         |schema {
