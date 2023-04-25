@@ -8,15 +8,14 @@ import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.schema.DynamicValue
 
+import scala.annotation.tailrec
+
 trait Config2Blueprint {
 
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
 }
 
 object Config2Blueprint {
-  // TODO: change it to Lambda[DynamicValue, DyanmicValue]
-  type Resolver = DynamicValue ~> DynamicValue
-
   final case class Live(config: Config) {
     private val outputTypes    = getOutputTypes.toSet
     private val inputTypes     = getInputTypes.toSet
@@ -113,11 +112,11 @@ object Config2Blueprint {
     private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList.filter(!_._2.modify.flatMap(_.omit).getOrElse(false))) {
         case (fieldName, field) =>
-          val args   = toArgs(field)
-          val ofType = toType(field)
+          val args = toArgs(field)
 
           for {
             resolver <- toResolver(typeName, fieldName, field, inputTypeNames.contains(typeName))
+            ofType   <- toType(fieldName, field, typeInfo)
           } yield Blueprint.FieldDefinition(
             name = field.modify.flatMap(_.name).getOrElse(fieldName),
             args = args,
@@ -150,7 +149,7 @@ object Config2Blueprint {
       )
     }
 
-    private def toResolver(field: Field, http: Operation.Http): TValid[String, Resolver] = {
+    private def toResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
         case Some(baseURL) => TValid.succeed {
             val steps = field.unsafeSteps.getOrElse(Nil)
@@ -183,7 +182,7 @@ object Config2Blueprint {
       fieldName: String,
       field: Field,
       isInputType: Boolean,
-    ): TValid[String, Option[Resolver]] = {
+    ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
       val steps        = field.unsafeSteps.toList.flatten
       val operationMix = steps.nonEmpty && field.http.nonEmpty
       for {
@@ -208,7 +207,10 @@ object Config2Blueprint {
       } yield maybeResolver
     }
 
-    private def toResolver(field: Field, steps: List[Operation]): TValid[String, Option[Resolver]] = {
+    private def toResolver(
+      field: Field,
+      steps: List[Operation],
+    ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
       if (steps.isEmpty) TValid.none
       else TValid.foreach(steps) {
         case http @ Operation.Http(_, _, _, _, _) => toResolver(field, http)
@@ -221,7 +223,7 @@ object Config2Blueprint {
       fieldName: String,
       modify: ModifyField,
       isInputType: Boolean,
-    ): TValid[Nothing, Option[Resolver]] = {
+    ): TValid[Nothing, Option[DynamicValue ~> DynamicValue]] = {
       modify.name match {
         case Some(newName) =>
           val finalName = if (isInputType) newName else fieldName
@@ -271,10 +273,35 @@ object Config2Blueprint {
       if (isList) Blueprint.ListType(ofType, false) else ofType
     }
 
-    private def toType(field: Field): Blueprint.Type = {
+    private def toType(fieldName: String, field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
+      val inlinedPath = field.inline.getOrElse(Nil)
+      if (inlinedPath.isEmpty) toType(field)
+      else {
+        @tailrec
+        def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
+          path match {
+            case Nil               => toType(field)
+            case fieldName :: tail => typeInfo.fields.get(fieldName) match {
+                case Some(field) => config.graphQL.types.get(field.typeOf) match {
+                    case Some(typeInfo) => loop(tail, field, typeInfo)
+                    case None           => TValid.fail(s"Type ${field.typeOf} was not found while inlining")
+                  }
+
+                case None => TValid.fail(
+                    s"Inlining for path [${inlinedPath.mkString(", ")}] is not possible because field '${fieldName}' was not found on type '${field.typeOf}'"
+                  )
+              }
+          }
+        }
+
+        loop(fieldName :: inlinedPath, field, typeInfo)
+      }
+    }
+
+    private def toType(field: Field): TValid[Nothing, Blueprint.Type] = {
       val ofType = Blueprint.NamedType(field.typeOf, field.isRequired)
       val isList = field.isList
-      if (isList) Blueprint.ListType(ofType, false) else ofType
+      TValid.succeed(if (isList) Blueprint.ListType(ofType, false) else ofType)
     }
   }
 }

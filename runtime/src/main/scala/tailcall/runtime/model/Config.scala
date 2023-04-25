@@ -137,6 +137,7 @@ object Config {
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
     http: Option[Http] = None,
+    inline: Option[List[String]] = None,
   ) {
     self =>
 
@@ -172,7 +173,12 @@ object Config {
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify)
+      val inline = self.inline match {
+        case Some(value) if value.nonEmpty => Some(value)
+        case _                             => None
+      }
+
+      copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify, inline = inline)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -211,6 +217,8 @@ object Config {
         case None        => Some(update)
       })
     }
+
+    def withInline(path: String*): Field = copy(inline = Option(path.toList))
   }
 
   final case class Arg(
@@ -264,7 +272,6 @@ object Config {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
-
   }
 
   object Type {
