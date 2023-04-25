@@ -1,7 +1,7 @@
 package tailcall.cli
 
 import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
-import tailcall.runtime.service.DSLFormat
+import tailcall.runtime.service.ConfigFormat
 import zio.cli._
 import zio.http.URL
 
@@ -30,9 +30,9 @@ object CustomOptions {
     .enumeration("source")(SourceFormat.Postman.named, SourceFormat.SchemaDefinitionLanguage.named)
 
   val targetFormat: Options[TargetFormat] = Options.enumeration("target")(
-    TargetFormat.Config(DSLFormat.JSON).named,
-    TargetFormat.Config(DSLFormat.YML).named,
-    TargetFormat.Config(DSLFormat.GRAPHQL).named,
+    TargetFormat.Config(ConfigFormat.JSON).named,
+    TargetFormat.Config(ConfigFormat.YML).named,
+    TargetFormat.Config(ConfigFormat.GRAPHQL).named,
     TargetFormat.JsonLines.named,
   )
 }

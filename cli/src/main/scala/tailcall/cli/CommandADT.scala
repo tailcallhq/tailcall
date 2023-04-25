@@ -1,7 +1,7 @@
 package tailcall.cli
 
 import tailcall.runtime.model.Digest
-import tailcall.runtime.service.DSLFormat
+import tailcall.runtime.service.ConfigFormat
 import zio.http.URL
 
 import java.nio.file.Path
@@ -46,9 +46,9 @@ object CommandADT {
     def name: String =
       self match {
         case TargetFormat.Config(fmt) => fmt match {
-            case DSLFormat.JSON    => "config-json"
-            case DSLFormat.YML     => "config-yaml"
-            case DSLFormat.GRAPHQL => "config-graphql"
+            case ConfigFormat.JSON    => "config-json"
+            case ConfigFormat.YML     => "config-yaml"
+            case ConfigFormat.GRAPHQL => "config-graphql"
           }
         case TargetFormat.JsonLines   => "json-lines"
       }
@@ -57,7 +57,7 @@ object CommandADT {
   }
 
   object TargetFormat {
-    final case class Config(fmt: DSLFormat) extends TargetFormat
-    case object JsonLines                   extends TargetFormat
+    final case class Config(fmt: ConfigFormat) extends TargetFormat
+    case object JsonLines                      extends TargetFormat
   }
 }

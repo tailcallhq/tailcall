@@ -103,7 +103,7 @@ object CommandExecutor {
         ).mkString("\n")
       ).mkString("\n")
 
-    private def postman2GraphQL(files: ::[Path], dSLFormat: DSLFormat): ZIO[Any, Throwable, String] = {
+    private def postman2GraphQL(files: ::[Path], dSLFormat: ConfigFormat): ZIO[Any, Throwable, String] = {
       val nameGen = NameGenerator.incremental
       for {
         postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
