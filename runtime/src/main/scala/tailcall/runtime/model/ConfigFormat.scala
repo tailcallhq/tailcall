@@ -20,7 +20,7 @@ sealed trait ConfigFormat {
     self match {
       case ConfigFormat.JSON    => ZIO.succeed(config.toJsonPretty)
       case ConfigFormat.YML     => ZIO.fromEither(config.toYaml(YamlOptions.default.copy(sequenceIndentation = 0)))
-      case ConfigFormat.GRAPHQL => Transcoder.toSDL(config, false).toZIO.mapError(_.mkString(", "))
+      case ConfigFormat.GRAPHQL => Transcoder.toSDL(config, asConfig = true).toZIO.mapError(_.mkString(", "))
     }
 
   // TODO: doesn't need IO

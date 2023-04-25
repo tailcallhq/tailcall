@@ -4,7 +4,8 @@ import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import zio.test.TestAspect.timeout
+import tailcall.runtime.transcoder.Transcoder
+import zio.test.TestAspect.{failing, timeout}
 import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
 import zio.{ZIO, durationInt}
 
@@ -453,8 +454,39 @@ object Config2SDL extends ZIOSpecDefault {
 
         assertSDL(config, expected)
       },
+      suite("config generation") {
+        test("input type directives") {
+          val config = Config.default.withTypes(
+            "Query" -> Config
+              .Type("foo" -> Config.Field.string.withArguments("input" -> Config.Arg.ofType("Foo").withName("data"))),
+            "Foo"   -> Config.Type("bar" -> Config.Field.string),
+          )
+
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |input Foo {
+                           |  bar: String
+                           |}
+                           |
+                           |type Query {
+                           |  foo(input: Foo @modify(rename: "data")): String
+                           |}
+                           |""".stripMargin
+
+          assertSDL(config, expected, true)
+
+          // TODO: Remove failing after this
+          // https://github.com/ghostdogpr/caliban/pull/1690
+        }
+      } @@ failing,
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
-  private def assertSDL(config: Config, expected: String): ZIO[GraphQLGenerator, Nothing, TestResult] =
-    for { actual <- config.toBlueprint.getOrThrow.toGraphQL.map(_.render) } yield assertTrue(actual == expected)
+  private def assertSDL(
+    config: Config,
+    expected: String,
+    asConfig: Boolean = false,
+  ): ZIO[GraphQLGenerator, Throwable, TestResult] =
+    for { actual <- Transcoder.toSDL(config, asConfig).toTask } yield assertTrue(actual == expected)
 }
