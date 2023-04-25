@@ -1,9 +1,8 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
-import tailcall.runtime.transcoder.Transcoder
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
 import zio.{Chunk, Scope, ZIO}
 

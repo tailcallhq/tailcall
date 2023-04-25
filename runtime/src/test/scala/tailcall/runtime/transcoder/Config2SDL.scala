@@ -1,10 +1,9 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import tailcall.runtime.transcoder.Transcoder
 import zio.test.TestAspect.{failing, timeout}
 import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
 import zio.{ZIO, durationInt}

@@ -1,5 +1,6 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
+import tailcall.runtime.JsonT
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, ConfigFormat, Path}

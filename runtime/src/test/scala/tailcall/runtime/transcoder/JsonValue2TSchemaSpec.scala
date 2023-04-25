@@ -1,7 +1,6 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
 import tailcall.runtime.model.TSchema
-import tailcall.runtime.transcoder.JsonValue2TSchema
 import zio.Scope
 import zio.json.ast.Json
 import zio.test.Assertion.{equalTo, isNone, isSome}
