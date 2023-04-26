@@ -75,10 +75,10 @@ object Expression {
   final case class Dynamic(operation: Dynamic.Operation) extends Expression
   object Dynamic {
     sealed trait Operation
-    final case class Typed(ctor: MetaSchema)     extends Operation
-    final case class Path(name: List[String])    extends Operation
-    final case class ToDynamic(ctor: MetaSchema) extends Operation
-    final case class JsonTransform(jsonT: JsonT) extends Operation
+    final case class Typed(ctor: MetaSchema)                    extends Operation
+    final case class Path(name: List[String], nestSeq: Boolean) extends Operation
+    final case class ToDynamic(ctor: MetaSchema)                extends Operation
+    final case class JsonTransform(jsonT: JsonT)                extends Operation
   }
 
   final case class Dict(operation: Dict.Operation) extends Expression

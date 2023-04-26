@@ -10,6 +10,8 @@ trait DynamicValueOps {
 
     def path(name: String*): A ~> Option[DynamicValue] = self >>> Lambda.dynamic.path(name: _*)
 
+    def pathSeq(name: String*): A ~> Option[DynamicValue] = self >>> Lambda.dynamic.pathSeq(name: _*)
+
     def toTypedPath[B](name: String*)(implicit schema: Schema[B]): A ~> Option[B] =
       self.path(name: _*).flatMap(_.toTyped[B])
 

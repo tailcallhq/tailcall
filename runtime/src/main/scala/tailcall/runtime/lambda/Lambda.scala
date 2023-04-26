@@ -126,7 +126,10 @@ object Lambda {
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.JsonTransform(jsonT)))
 
     def path(p: String*): DynamicValue ~> Option[DynamicValue] =
-      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList)))
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList, false)))
+
+    def pathSeq(p: String*): DynamicValue ~> Option[DynamicValue] =
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList, true)))
 
     def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.ToDynamic(schema.ast)))
