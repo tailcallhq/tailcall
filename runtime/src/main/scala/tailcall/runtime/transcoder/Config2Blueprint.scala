@@ -260,17 +260,27 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
+
       val inlinedPath = field.inline.getOrElse(Nil)
+      val hasIndex = inlinedPath.exists(_.matches("^\\d+$"))
       def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
         path match {
           case Nil               => toType(field)
-          case fieldName :: tail => typeInfo.fields.get(fieldName) match {
+          case fieldName :: tail =>
+            val fieldNameIsIndex = fieldName.matches("^\\d+$")
+            if(fieldNameIsIndex)
+              loop(tail, field, typeInfo).map({
+                case Blueprint.ListType(ofType, _) => ofType
+                case ofType  => ofType
+              })
+            else
+             typeInfo.fields.get(fieldName) match {
               case Some(field) => config.graphQL.types.get(field.typeOf) match {
                   case Some(typeInfo) => loop(tail, field, typeInfo).map(typeOf =>
-                      if (field.isList && tail.nonEmpty) Blueprint.ListType(typeOf, field.isRequired) else typeOf
+                      if (field.isList && tail.nonEmpty ) Blueprint.ListType(typeOf, field.isRequired) else typeOf
                     )
                   case None           => TValid.fail(
-                      s"Type ${field.typeOf} was not found while inlining ${inlinedPath.mkString(", ")} for field ${fieldName}"
+                      s"Path ${inlinedPath.mkString(", ")} is invalid and can't be inline on type for field ${fieldName}"
                     )
                 }
 
@@ -286,8 +296,8 @@ object Config2Blueprint {
         case Some(path) => for {
             ofType <- loop(fieldName :: inlinedPath, field, typeInfo)
           } yield {
-            val resolver = Lambda.identity[DynamicValue].pathSeq(path: _*).toDynamic
-            bField.appendResolver(resolver).copy(ofType = ofType)
+            val resolver = if (hasIndex) Lambda.identity[DynamicValue].path(path: _*) else Lambda.identity[DynamicValue].pathSeq(path: _*)
+            bField.appendResolver(resolver.toDynamic).copy(ofType = ofType)
           }
         case _          => TValid.succeed(bField)
       }
