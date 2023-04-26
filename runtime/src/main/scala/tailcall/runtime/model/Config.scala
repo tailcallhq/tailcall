@@ -38,6 +38,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
+  def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
+
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
@@ -199,6 +201,8 @@ object Config {
 
     def withHttp(http: Http): Field = copy(http = Option(http))
 
+    def withInline(path: String*): Field = copy(inline = Option(path.toList))
+
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
         val all = head :: tail.toList
@@ -217,8 +221,6 @@ object Config {
         case None        => Some(update)
       })
     }
-
-    def withInline(path: String*): Field = copy(inline = Option(path.toList))
   }
 
   final case class Arg(

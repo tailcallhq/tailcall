@@ -5,7 +5,7 @@ import tailcall.cli.CommandADT
 import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
-import tailcall.runtime.model.{Blueprint, ConfigFormat, Digest, Endpoint, Postman}
+import tailcall.runtime.model._
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
@@ -123,7 +123,11 @@ object CommandExecutor {
         config    <- configFile.readAll(files.map(_.toFile))
         blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
         digest = blueprint.digest
-        seq0   = Seq("Digest" -> s"${digest.hex}", "Endpoints" -> blueprint.endpoints.length.toString)
+        seq0   = Seq(
+          "Digest"    -> s"${digest.hex}",
+          "Endpoints" -> blueprint.endpoints.length.toString,
+          "Unsafe"    -> config.unsafeCount.toString,
+        )
         seq1 <- remote match {
           case Some(remote) => registry.get(remote, digest).map {
               case Some(_) => seq0 :+ ("Playground", Fmt.playground(remote, digest))
@@ -131,9 +135,9 @@ object CommandExecutor {
             }
           case None         => ZIO.succeed(seq0)
         }
-        _    <- Console.printLine(Fmt.success("No errors found."))
-        _    <- Console.printLine(Fmt.table(seq1))
-        _    <- blueprintDetails(blueprint, options)
+        _ <- Console.printLine(Fmt.success("No errors found."))
+        _ <- Console.printLine(Fmt.table(seq1))
+        _ <- blueprintDetails(blueprint, options)
       } yield ()
     }
 
@@ -181,6 +185,7 @@ object CommandExecutor {
         _         <- Console.printLine(Fmt.table(Seq(
           "Digest"     -> s"${digest.hex}",
           "Endpoints"  -> blueprint.endpoints.length.toString,
+          "Unsafe"     -> config.unsafeCount.toString,
           "Playground" -> Fmt.playground(base, digest),
         )))
       } yield ()
