@@ -8,7 +8,7 @@ import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.durationInt
 import zio.schema.DynamicValue
 import zio.test.Assertion._
-import zio.test.TestAspect.timeout
+import zio.test.TestAspect.{parallel, timeout}
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
@@ -461,5 +461,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo(expected))
         },
       ),
-    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(5 seconds)
+    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(5 seconds) @@ parallel
 }
