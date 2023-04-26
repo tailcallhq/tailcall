@@ -108,12 +108,10 @@ object Config2Blueprint {
     }
 
     private def toFieldDefault(fieldName: String, field: Field): TValid[String, Blueprint.FieldDefinition] = {
-      for {
-        ofType <- toType(field)
-      } yield {
-        val args = toArgs(field)
+      val args = toArgs(field)
+      toType(field).map(ofType =>
         Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
-      }
+      )
     }
 
     private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
