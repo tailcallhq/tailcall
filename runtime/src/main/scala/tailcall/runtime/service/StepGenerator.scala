@@ -42,16 +42,19 @@ object StepGenerator {
       .toMap
 
     def resolve: StepResult[HttpContext] = {
-
-      val queryStep = for {
+      def withHeaders(f: Context => Step[HttpContext]): ZQuery[HttpContext, Nothing, Step[HttpContext]] =
+        ZQuery.fromZIO(ZIO.service[HttpContext].map(h =>
+          f(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap))
+        ))
+      val queryStep                                                                                     = for {
         query <- document.schema.flatMap(_.query)
         qStep <- objectStepRef.get(query)
-      } yield Step.QueryStep(ZQuery.fromZIO(ZIO.service[HttpContext].map(h => qStep(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap)))))
+      } yield Step.QueryStep(withHeaders(qStep))
 
       val mutationStep = for {
         mutation <- document.schema.flatMap(_.mutation)
         mStep    <- objectStepRef.get(mutation)
-      } yield Step.QueryStep(ZQuery.fromZIO(ZIO.service[HttpContext].map(h => mStep(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap)))))
+      } yield Step.QueryStep(withHeaders(mStep))
 
       StepResult(queryStep, mutationStep)
     }
