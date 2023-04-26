@@ -11,7 +11,7 @@ trait HttpContext {
 }
 
 object HttpContext {
-  def live: ZLayer[Any, Throwable, HttpContext]                             = HttpClient.default >>> live(None)
+  def default: ZLayer[Any, Throwable, HttpContext]                          = HttpClient.default >>> live(None)
   def live(req: Option[ZRequest]): ZLayer[HttpClient, Nothing, HttpContext] =
     DataLoader.http(req) >>> ZLayer {
       for {

@@ -14,7 +14,7 @@ trait EndpointGenerator {
 
 object EndpointGenerator {
   def default: ZLayer[Any, Throwable, EndpointGenerator] =
-    HttpClient.default >>> DataLoader.http >>> HttpContext.live >>> live
+    HttpClient.default >>> DataLoader.http >>> HttpContext.default >>> live
 
   def live: ZLayer[HttpContext, Nothing, EndpointGenerator] = ZLayer.fromFunction(dataLoader => Live(dataLoader))
 
