@@ -1,13 +1,11 @@
 package tailcall.runtime
 
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
-import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
+import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.durationInt
-import zio.http.Client
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test.TestAspect.timeout
@@ -463,5 +461,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo(expected))
         },
       ),
-    ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http) @@ timeout(5 seconds)
+    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(5 seconds)
 }

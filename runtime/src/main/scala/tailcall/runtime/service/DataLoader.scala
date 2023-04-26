@@ -60,8 +60,8 @@ object DataLoader {
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
   }
 
-  def load(request: Request): ZIO[HttpDataLoader, Throwable, Chunk[Byte]] =
-    ZIO.serviceWithZIO[HttpDataLoader](_.load(request))
+  def load(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
+    ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
 
   final class PartiallyAppliedDataLoader[A](val unit: Unit) {
     def apply[R, E, B](f: A => ZIO[R, E, B]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =

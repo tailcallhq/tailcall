@@ -8,8 +8,9 @@ import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Path}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
+import zio.http.model.Headers
+import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{before, timeout}
@@ -347,6 +348,15 @@ object Config2StepSpec extends ZIOSpecDefault {
             json <- resolve(config, Map.empty)("""query {identity}""")
           } yield assertTrue(json == """{"identity":"bar"}""")
         },
+        test("resolve with headers") {
+          val config = Config.default.withTypes(
+            "Query" -> Config
+              .Type("identity" -> Config.Field.string.resolveWithFunction(_.path("headers", "authorization").toDynamic))
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity}""")
+          } yield assertTrue(json == """{"identity":"bar"}""")
+        },
       ),
       suite("unsafe")(test("with http") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
@@ -376,13 +386,15 @@ object Config2StepSpec extends ZIOSpecDefault {
           json <- resolve(config, Map.empty)("""query {user {id name}}""")
         } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
       },
-    ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds) @@ before(
-      TestSystem.putEnv("foo", "bar")
-    )
+    ).provide(
+      GraphQLGenerator.default,
+      HttpClient.default,
+      HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
+    ) @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator, Throwable, String] = {
+  ): ZIO[HttpContext with GraphQLGenerator, Throwable, String] = {
     for {
       blueprint   <- Transcoder.toBlueprint(config).toTask
       graphQL     <- blueprint.toGraphQL

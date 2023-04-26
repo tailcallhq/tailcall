@@ -5,7 +5,6 @@ import caliban.schema.Step
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.model
 import tailcall.runtime.model.{Blueprint, Context}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
 import tailcall.runtime.transcoder.Transcoder
 import zio.query.ZQuery
@@ -13,7 +12,7 @@ import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
 
 trait StepGenerator {
-  def resolve(document: Blueprint): StepResult[HttpDataLoader]
+  def resolve(document: Blueprint): StepResult[HttpContext]
 }
 
 object StepGenerator {
@@ -24,12 +23,12 @@ object StepGenerator {
       rtm  <- ZIO.service[EvaluationRuntime]
       envs <- zio.System.envs.orElse(ZIO.succeed(Map.empty[String, String]))
     } yield new StepGenerator {
-      override def resolve(document: Blueprint): StepResult[HttpDataLoader] = Live(rtm, document, envs).resolve
+      override def resolve(document: Blueprint): StepResult[HttpContext] = Live(rtm, document, envs).resolve
     })
 
   }
 
-  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpDataLoader]] =
+  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpContext]] =
     ZIO.serviceWith(_.resolve(document))
 
   final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
@@ -38,26 +37,29 @@ object StepGenerator {
     val rootContext: Context = Context(DynamicValue(()), env = env)
 
     // A map of all the object types and a way to construct an instance of them.
-    val objectStepRef: Map[String, Context => Step[HttpDataLoader]] = document.definitions
+    val objectStepRef: Map[String, Context => Step[HttpContext]] = document.definitions
       .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
       .toMap
 
-    def resolve: StepResult[HttpDataLoader] = {
-
-      val queryStep = for {
+    def resolve: StepResult[HttpContext] = {
+      def withHeaders(f: Context => Step[HttpContext]): ZQuery[HttpContext, Nothing, Step[HttpContext]] =
+        ZQuery.fromZIO(ZIO.service[HttpContext].map(h =>
+          f(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap))
+        ))
+      val queryStep                                                                                     = for {
         query <- document.schema.flatMap(_.query)
         qStep <- objectStepRef.get(query)
-      } yield qStep(rootContext)
+      } yield Step.QueryStep(withHeaders(qStep))
 
       val mutationStep = for {
         mutation <- document.schema.flatMap(_.mutation)
         mStep    <- objectStepRef.get(mutation)
-      } yield mStep(rootContext)
+      } yield Step.QueryStep(withHeaders(mStep))
 
       StepResult(queryStep, mutationStep)
     }
 
-    def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
+    def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpContext] = {
       Step.FunctionStep { args =>
         val context = ctx
           .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
@@ -76,7 +78,7 @@ object StepGenerator {
       }
     }
 
-    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpDataLoader] = {
+    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpContext] = {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
@@ -87,7 +89,7 @@ object StepGenerator {
      * compatible. We bailout if the types are not
      * compatible with the value.
      */
-    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader] = {
+    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpContext] = {
       tpe match {
         case model.Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
             case Some(stepFunction) => stepFunction(ctx)

@@ -2,7 +2,6 @@ package tailcall.runtime.service
 
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda._
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Transcoder
 import zio._
 import zio.json.DecoderOps
@@ -12,28 +11,28 @@ import zio.schema.{DynamicValue, Schema}
 import java.nio.charset.StandardCharsets
 
 trait EvaluationRuntime {
-  final def evaluate[A, B](lambda: A ~> B): LExit[HttpDataLoader, Throwable, A, B] =
+  final def evaluate[A, B](lambda: A ~> B): LExit[HttpContext, Throwable, A, B] =
     evaluate(lambda, EvaluationContext.make)
 
-  final def evaluate[A, B](lambda: A ~> B, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, A, B] =
+  final def evaluate[A, B](lambda: A ~> B, ctx: EvaluationContext): LExit[HttpContext, Throwable, A, B] =
     evaluate(lambda.compile(CompilationContext.initial), ctx).asInstanceOf[LExit[Any, Throwable, A, B]]
 
-  def evaluate(dynamicEval: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any]
+  def evaluate(dynamicEval: Expression, ctx: EvaluationContext): LExit[HttpContext, Throwable, Any, Any]
 
-  final def evaluateAs[A](eval: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, A] =
+  final def evaluateAs[A](eval: Expression, ctx: EvaluationContext): LExit[HttpContext, Throwable, Any, A] =
     evaluate(eval, ctx).flatMap(a => LExit.attempt(a.asInstanceOf[A]))
 }
 
 object EvaluationRuntime {
   import Expression._
 
-  def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpDataLoader, Throwable, A, B] =
+  def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpContext, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
 
   def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
   final class Live extends EvaluationRuntime {
-    override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpDataLoader, Throwable, Any, Any] = {
+    override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpContext, Throwable, Any, Any] = {
       plan match {
         case Literal(value, meta)              => value.toTypedValue(meta.toSchema.asInstanceOf[Schema[Any]]) match {
             case Left(cause)  => LExit

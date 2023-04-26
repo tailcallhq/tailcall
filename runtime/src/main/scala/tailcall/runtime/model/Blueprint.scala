@@ -2,8 +2,7 @@ package tailcall.runtime.model
 
 import caliban.GraphQL
 import tailcall.runtime.lambda.{Expression, ~>}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
-import tailcall.runtime.service.GraphQLGenerator
+import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import zio.ZIO
 import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
@@ -31,8 +30,8 @@ import scala.annotation.tailrec
  */
 final case class Blueprint(definitions: List[Blueprint.Definition], server: Blueprint.Server) {
   self =>
-  def digest: Digest                                                     = Digest.fromBlueprint(self)
-  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
+  def digest: Digest                                                  = Digest.fromBlueprint(self)
+  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
   def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
   def resolversMap: Map[String, Map[String, Option[Expression]]] =
     definitions.collect { case r: Blueprint.ObjectTypeDefinition =>

@@ -3,8 +3,7 @@ package tailcall.server
 import caliban.{CalibanError, GraphQLInterpreter}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.model.{Blueprint, Digest}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
-import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
+import tailcall.runtime.service.{DataLoader, GraphQLGenerator, HttpContext}
 import zio._
 import zio.http.model.HttpError
 
@@ -12,7 +11,7 @@ object BlueprintDataLoader {
   final case class BlueprintData(
     blueprint: Blueprint,
     timeout: Int,
-    interpreter: GraphQLInterpreter[HttpDataLoader, CalibanError],
+    interpreter: GraphQLInterpreter[HttpContext, CalibanError],
   )
 
   type InterpreterLoader = DataLoader[GraphQLGenerator, Throwable, String, BlueprintData]
