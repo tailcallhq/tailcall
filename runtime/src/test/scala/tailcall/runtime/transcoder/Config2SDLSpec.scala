@@ -178,7 +178,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
                             |}
                             |
                             |input Foo {
-                            |  baz: String
+                            |  bar: String
                             |}
                             |
                             |type Query {
@@ -188,6 +188,8 @@ object Config2SDLSpec extends ZIOSpecDefault {
           assertSDL(config, expected)
         },
       ),
+
+      // TODO: move to jsonplaceholder.spec
       test("json placeholder") {
         val config   = JsonPlaceholderConfig.config
         val expected = """|schema {
@@ -200,7 +202,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
                           |  street: String
                           |  suite: String
                           |  city: String
-                          |  zip: String
+                          |  zipcode: String
                           |}
                           |
                           |input NewCompany {
@@ -453,7 +455,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
 
         assertSDL(config, expected)
       },
-      suite("inline field")(test("inline field") {
+      test("inline field") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
           "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
@@ -475,7 +477,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
                          |""".stripMargin.trim
 
         assertSDL(config, expected)
-      }),
+      },
       suite("config generation") {
         test("input type directives") {
           val config = Config.default.withTypes(
