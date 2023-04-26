@@ -105,6 +105,9 @@ object TValid {
   def fromOption[A](option: Option[A]): TValid[Unit, A] =
     option.fold[TValid[Unit, A]](TValid.fail(Chunk(())))(succeed(_))
 
+  def fromOption[E, A](option: Option[A], error: E): TValid[E, A] =
+    option.fold[TValid[E, A]](TValid.fail(error))(succeed(_))
+
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))

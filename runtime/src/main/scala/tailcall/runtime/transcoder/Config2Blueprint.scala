@@ -260,45 +260,39 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
-
       val inlinedPath = field.inline.getOrElse(Nil)
-      val hasIndex = inlinedPath.exists(_.matches("^\\d+$"))
+      val hasIndex    = inlinedPath.exists(_.matches("^\\d+$"))
       def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
         path match {
           case Nil               => toType(field)
           case fieldName :: tail =>
             val fieldNameIsIndex = fieldName.matches("^\\d+$")
-            if(fieldNameIsIndex)
-              loop(tail, field, typeInfo).map({
-                case Blueprint.ListType(ofType, _) => ofType
-                case ofType  => ofType
-              })
-            else
-             typeInfo.fields.get(fieldName) match {
-              case Some(field) => config.graphQL.types.get(field.typeOf) match {
-                  case Some(typeInfo) => loop(tail, field, typeInfo).map(typeOf =>
-                      if (field.isList && tail.nonEmpty ) Blueprint.ListType(typeOf, field.isRequired) else typeOf
-                    )
-                  case None           => TValid.fail(
-                      s"Path ${inlinedPath.mkString(", ")} is invalid and can't be inline on type for field ${fieldName}"
-                    )
-                }
+            if (fieldNameIsIndex) loop(tail, field, typeInfo).map {
+              case Blueprint.ListType(ofType, _) => ofType
+              case ofType                        => ofType
+            }
+            else {
+              def invalidKey  =
+                s"Inlining path [${inlinedPath
+                    .mkString(", ")}] failed because field '${fieldName}' was not found on type '${field.typeOf}'"
+              def invalidPath = s"Inlining path ${inlinedPath.mkString(", ")} is invalid for field ${fieldName}"
 
-              case None => TValid.fail(
-                  s"Inlining for path [${inlinedPath.mkString(", ")}] is not possible because field '${fieldName}' was not found on type '${field.typeOf}'"
-                )
+              for {
+                field    <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
+                typeInfo <- TValid.fromOption(config.graphQL.types.get(field.typeOf), invalidPath)
+                ofType   <- loop(tail, field, typeInfo)
+              } yield if (field.isList && tail.nonEmpty) Blueprint.ListType(ofType, field.isRequired) else ofType
             }
         }
-
       }
 
       field.inline match {
-        case Some(path) => for {
-            ofType <- loop(fieldName :: inlinedPath, field, typeInfo)
-          } yield {
-            val resolver = if (hasIndex) Lambda.identity[DynamicValue].path(path: _*) else Lambda.identity[DynamicValue].pathSeq(path: _*)
+        case Some(path) => loop(fieldName :: inlinedPath, field, typeInfo).map(ofType => {
+            val resolver =
+              if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
+              else Lambda.identity[DynamicValue].pathSeq(path: _*)
             bField.appendResolver(resolver.toDynamic).copy(ofType = ofType)
-          }
+          })
         case _          => TValid.succeed(bField)
       }
     }
