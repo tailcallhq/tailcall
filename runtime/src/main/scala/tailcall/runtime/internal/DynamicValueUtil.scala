@@ -15,17 +15,19 @@ object DynamicValueUtil {
 
   def getPath(d: DynamicValue, paths: String*): Option[DynamicValue] = getPath(d, paths.toList)
 
-  def getPath(d: DynamicValue, path: List[String]): Option[DynamicValue] =
+  def getPath(d: DynamicValue, path: List[String], nestSeq: Boolean = false): Option[DynamicValue] =
     path match {
       case Nil          => Some(d)
       case head :: tail => d match {
-          case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail))
-          case DynamicValue.SomeValue(a)  => getPath(a, path)
-          case DynamicValue.Sequence(a)   => head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail))
+          case DynamicValue.Record(_, b)  => b.get(head).flatMap(getPath(_, tail, nestSeq))
+          case DynamicValue.SomeValue(a)  => getPath(a, path, nestSeq)
+          case DynamicValue.Sequence(a)   =>
+            if (nestSeq) Option(DynamicValue(a.map(getPath(_, path, nestSeq)).collect { case Some(a) => a }))
+            else head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail, nestSeq))
           case DynamicValue.Dictionary(b) =>
             val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
             b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
-              .flatMap(getPath(_, tail))
+              .flatMap(getPath(_, tail, nestSeq))
           case _                          => None
         }
     }
