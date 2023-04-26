@@ -101,7 +101,8 @@ object EvaluationRuntime {
             operation match {
               case Dynamic.Typed(meta)     => DynamicValueUtil.toTyped(input.asInstanceOf[DynamicValue])(meta.toSchema)
               case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
-              case Dynamic.Path(path)      => DynamicValueUtil.getPath(input.asInstanceOf[DynamicValue], path)
+              case Dynamic.Path(path, nestSeq)      => DynamicValueUtil
+                  .getPath(input.asInstanceOf[DynamicValue], path, nestSeq)
               case Dynamic.JsonTransform(transform) => transform.run(input.asInstanceOf[DynamicValue])
             }
           )

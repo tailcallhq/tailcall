@@ -402,6 +402,12 @@ object LambdaSpec extends ZIOSpecDefault {
             val p       = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("env", "a")
             assertZIO(p.evaluate)(equalTo(None))
           },
+          test("lists") {
+            val input    = Map("a" -> List(Map("b" -> List(Map("c" -> 1)))))
+            val p        = Lambda(DynamicValue(input)).pathSeq("a", "b", "c")
+            val expected = Option(DynamicValue(List(List(1))))
+            assertZIO(p.evaluate)(equalTo(expected))
+          },
         ),
       ),
       suite("option")(
