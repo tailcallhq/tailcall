@@ -2,7 +2,7 @@ package tailcall.server
 
 import caliban.CalibanError
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
+import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import tailcall.server.BlueprintDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
@@ -19,13 +19,12 @@ object GenericServer {
     }
   }
 
-  def graphQL: Http[HttpClient with InterpreterLoader with GraphQLGenerator, Throwable, Request, Response] =
+  def graphQL: Http[HttpClient with GraphQLGenerator with InterpreterLoader, Throwable, Request, Response] =
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
       for {
         blueprintData <- load(id)
         query         <- GraphQLUtils.decodeQuery(req.body)
-        res           <- blueprintData.interpreter.execute(query)
-          .provideLayer(DataLoader.http(Option(req)) ++ ZLayer.succeed(req.headers))
+        res           <- blueprintData.interpreter.execute(query).provideLayer(HttpContext.live(Option(req)))
           .map(res => res.copy(errors = res.errors.map(toBetterError))).timeoutFail(HttpError.RequestTimeout(
             s"Request timed out after ${blueprintData.timeout}ms"
           ))(blueprintData.timeout.millis)

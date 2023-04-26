@@ -3,9 +3,8 @@ package tailcall.runtime.lambda
 import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationContext.Binding
-import tailcall.runtime.service.EvaluationRuntime
+import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.ZIO
 import zio.schema.{DynamicValue, Schema}
 
@@ -30,10 +29,10 @@ sealed trait Lambda[-A, +B] {
 
   final def compile: Expression = compile(CompilationContext.initial)
 
-  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
     (self: R1 ~> B).evaluateWith {}
 
-  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
     EvaluationRuntime.evaluate(self)(r)
 
   final def pipe[C](other: B ~> C): A ~> C = self >>> other

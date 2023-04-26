@@ -2,7 +2,6 @@ package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
 import tailcall.runtime.model.{Endpoint, Postman}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
 import zio.{Chunk, Task, ZIO, ZLayer}
@@ -14,14 +13,15 @@ trait EndpointGenerator {
 }
 
 object EndpointGenerator {
-  def default: ZLayer[Any, Throwable, EndpointGenerator] = HttpClient.default >>> DataLoader.http >>> live
+  def default: ZLayer[Any, Throwable, EndpointGenerator] =
+    HttpClient.default >>> DataLoader.http >>> HttpContext.live >>> live
 
-  def live: ZLayer[HttpDataLoader, Nothing, EndpointGenerator] = ZLayer.fromFunction(dataLoader => Live(dataLoader))
+  def live: ZLayer[HttpContext, Nothing, EndpointGenerator] = ZLayer.fromFunction(dataLoader => Live(dataLoader))
 
   def generate(postman: Postman): ZIO[EndpointGenerator, Throwable, List[Endpoint]] =
     ZIO.serviceWithZIO(_.generate(postman))
 
-  final case class Live(dataLoader: HttpDataLoader) extends EndpointGenerator {
+  final case class Live(httpContext: HttpContext) extends EndpointGenerator {
     override def generate(postman: Postman): Task[List[Endpoint]] = {
       ZIO.foreach(postman.collection.item.filter(item => item.request.url.nonEmpty)) { item =>
         {
@@ -35,7 +35,7 @@ object EndpointGenerator {
           val headers          = request.header.map(h => (h.key, h.value)).toMap
           val endpointWithPath = if (path.nonEmpty) endpoint.withPath("/" + path.get) else endpoint
           val endpointWithHost = endpointWithPath.withAddress(host)
-          dataLoader.load(Request(
+          httpContext.dataLoader.load(Request(
             host + "/" + path.getOrElse(""),
             request.method,
             headers,

@@ -6,20 +6,18 @@ import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.tools.RemoteSchema
 import caliban.wrappers.Wrapper
 import tailcall.runtime.model.Blueprint
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.transcoder.Transcoder
-import zio.http.model.Headers
 import zio.{ZIO, ZLayer}
 
 trait GraphQLGenerator {
-  def toGraphQL(document: Blueprint): GraphQL[HttpDataLoader with Headers]
+  def toGraphQL(document: Blueprint): GraphQL[HttpContext]
 }
 
 object GraphQLGenerator {
   final case class Live(sGen: StepGenerator) extends GraphQLGenerator {
-    override def toGraphQL(blueprint: Blueprint): GraphQL[HttpDataLoader with Headers] = {
-      new GraphQL[HttpDataLoader with Headers] {
-        override protected val schemaBuilder: RootSchemaBuilder[HttpDataLoader with Headers] = {
+    override def toGraphQL(blueprint: Blueprint): GraphQL[HttpContext] = {
+      new GraphQL[HttpContext] {
+        override protected val schemaBuilder: RootSchemaBuilder[HttpContext] = {
           val stepResult = sGen.resolve(blueprint)
           val schema     = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
 
@@ -34,8 +32,8 @@ object GraphQLGenerator {
           } yield Operation(__type, resolve)
           RootSchemaBuilder(query = queryOperation, mutationOperation, None)
         }
-        override protected val wrappers: List[Wrapper[Any]]                                  = Nil
-        override protected val additionalDirectives: List[__Directive]                       = Nil
+        override protected val wrappers: List[Wrapper[Any]]                  = Nil
+        override protected val additionalDirectives: List[__Directive]       = Nil
       }
     }
   }
@@ -44,6 +42,6 @@ object GraphQLGenerator {
 
   def default: ZLayer[Any, Nothing, GraphQLGenerator] = StepGenerator.default >>> live
 
-  def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader with Headers]] =
+  def toGraphQL(document: Blueprint): ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] =
     ZIO.serviceWith(_.toGraphQL(document))
 }

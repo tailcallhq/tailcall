@@ -8,14 +8,14 @@ import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Path}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service._
 import zio.http.model.Headers
+import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{before, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{Chunk, ZIO, ZLayer, durationInt}
+import zio.{Chunk, ZIO, durationInt}
 
 import java.net.URL
 
@@ -389,13 +389,12 @@ object Config2StepSpec extends ZIOSpecDefault {
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,
-      DataLoader.http,
-      ZLayer.succeed(Headers("authorization", "bar")),
+      HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator with Headers, Throwable, String] = {
+  ): ZIO[HttpContext with GraphQLGenerator, Throwable, String] = {
     for {
       blueprint   <- Transcoder.toBlueprint(config).toTask
       graphQL     <- blueprint.toGraphQL
