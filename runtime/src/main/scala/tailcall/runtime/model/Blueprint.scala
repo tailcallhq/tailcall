@@ -90,7 +90,13 @@ object Blueprint {
     resolver: Option[DynamicValue ~> DynamicValue] = None,
     directives: List[Directive] = Nil,
     description: Option[String] = None,
-  )
+  ) {
+    def appendResolver(f: DynamicValue ~> DynamicValue): FieldDefinition =
+      resolver match {
+        case Some(resolver) => copy(resolver = Option(resolver >>> f))
+        case None           => copy(resolver = Option(f))
+      }
+  }
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
