@@ -66,6 +66,15 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
 
           checkAll(gen) { case dynamic -> path => assertTrue(getPath(dynamic, path) == None) }
         },
+        test("lists") {
+          val gen = Gen.fromIterable(Seq(
+            DynamicValue(Map("a" -> List(Map("b" -> List(Map("c" -> 1)))))) -> List("a", "b", "c") -> List(List(1))
+          ))
+
+          checkAll(gen) { case dynamic -> path -> expected =>
+            assertTrue(getPath(dynamic, path, true) == Some(DynamicValue(expected)))
+          }
+        },
       ),
       test("fromResponseValue >>> toResponseValue == identity") {
         check(CalibanGen.genResponseValue) { responseValue =>
