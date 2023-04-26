@@ -11,6 +11,7 @@ final case class Context(
   args: Map[String, DynamicValue] = Map.empty,
   parent: Option[Context] = None,
   env: Map[String, String] = Map.empty,
+  headers: Map[String, String] = Map.empty,
 ) {
   self =>
   def copyFromParent(value: DynamicValue = value, args: Map[String, DynamicValue] = args): Context =

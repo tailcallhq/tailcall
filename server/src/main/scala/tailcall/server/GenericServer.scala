@@ -24,8 +24,9 @@ object GenericServer {
       for {
         blueprintData <- load(id)
         query         <- GraphQLUtils.decodeQuery(req.body)
-        res           <- blueprintData.interpreter.execute(query).provideLayer(DataLoader.http(Option(req)))
-          .map(res => res.copy(errors = res.errors.map(toBetterError(_)))).timeoutFail(HttpError.RequestTimeout(
+        res           <- blueprintData.interpreter.execute(query)
+          .provideLayer(DataLoader.http(Option(req)) ++ ZLayer.succeed(req.headers))
+          .map(res => res.copy(errors = res.errors.map(toBetterError))).timeoutFail(HttpError.RequestTimeout(
             s"Request timed out after ${blueprintData.timeout}ms"
           ))(blueprintData.timeout.millis)
         _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))

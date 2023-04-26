@@ -8,12 +8,13 @@ import tailcall.runtime.model.{Blueprint, Context}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.StepGenerator.StepResult
 import tailcall.runtime.transcoder.Transcoder
+import zio.http.model.Headers
 import zio.query.ZQuery
 import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
 
 trait StepGenerator {
-  def resolve(document: Blueprint): StepResult[HttpDataLoader]
+  def resolve(document: Blueprint): StepResult[HttpDataLoader with Headers]
 }
 
 object StepGenerator {
@@ -24,12 +25,13 @@ object StepGenerator {
       rtm  <- ZIO.service[EvaluationRuntime]
       envs <- zio.System.envs.orElse(ZIO.succeed(Map.empty[String, String]))
     } yield new StepGenerator {
-      override def resolve(document: Blueprint): StepResult[HttpDataLoader] = Live(rtm, document, envs).resolve
+      override def resolve(document: Blueprint): StepResult[HttpDataLoader with Headers] =
+        Live(rtm, document, envs).resolve
     })
 
   }
 
-  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpDataLoader]] =
+  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpDataLoader with Headers]] =
     ZIO.serviceWith(_.resolve(document))
 
   final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
@@ -38,11 +40,11 @@ object StepGenerator {
     val rootContext: Context = Context(DynamicValue(()), env = env)
 
     // A map of all the object types and a way to construct an instance of them.
-    val objectStepRef: Map[String, Context => Step[HttpDataLoader]] = document.definitions
+    val objectStepRef: Map[String, Context => Step[HttpDataLoader with Headers]] = document.definitions
       .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
       .toMap
 
-    def resolve: StepResult[HttpDataLoader] = {
+    def resolve: StepResult[HttpDataLoader with Headers] = {
 
       val queryStep = for {
         query <- document.schema.flatMap(_.query)
@@ -57,15 +59,17 @@ object StepGenerator {
       StepResult(queryStep, mutationStep)
     }
 
-    def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader] = {
+    def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpDataLoader with Headers] = {
       Step.FunctionStep { args =>
         val context = ctx
           .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
         field.resolver match {
           case Some(resolver) =>
             val step = for {
-              value <- rtm.evaluate(resolver)(DynamicValue(context))
-              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx)))
+              h <- ZIO.service[Headers]
+              headers = h.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap
+              value <- rtm.evaluate(resolver)(DynamicValue(context.copy(headers = headers)))
+              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx), headers = headers))
             } yield step
 
             Step.QueryStep(ZQuery.fromZIO(step))
@@ -76,7 +80,7 @@ object StepGenerator {
       }
     }
 
-    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpDataLoader] = {
+    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpDataLoader with Headers] = {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
@@ -87,7 +91,7 @@ object StepGenerator {
      * compatible. We bailout if the types are not
      * compatible with the value.
      */
-    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader] = {
+    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpDataLoader with Headers] = {
       tpe match {
         case model.Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
             case Some(stepFunction) => stepFunction(ctx)

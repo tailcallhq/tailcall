@@ -6,13 +6,13 @@ import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.{DataLoader, GraphQLGenerator}
 import zio._
-import zio.http.model.HttpError
+import zio.http.model.{Headers, HttpError}
 
 object BlueprintDataLoader {
   final case class BlueprintData(
     blueprint: Blueprint,
     timeout: Int,
-    interpreter: GraphQLInterpreter[HttpDataLoader, CalibanError],
+    interpreter: GraphQLInterpreter[HttpDataLoader with Headers, CalibanError],
   )
 
   type InterpreterLoader = DataLoader[GraphQLGenerator, Throwable, String, BlueprintData]
