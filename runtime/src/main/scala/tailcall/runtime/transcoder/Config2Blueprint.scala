@@ -109,22 +109,28 @@ object Config2Blueprint {
       }.map(_.flatten)
     }
 
-    private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
-      TValid.foreach(typeInfo.fields.toList.filter(!_._2.modify.flatMap(_.omit).getOrElse(false))) {
-        case (fieldName, field) =>
-          val args = toArgs(field)
-
-          for {
-            resolver <- toResolver(typeName, fieldName, field, inputTypeNames.contains(typeName))
-            ofType   <- toType(fieldName, field, typeInfo)
-          } yield Blueprint.FieldDefinition(
-            name = field.modify.flatMap(_.name).getOrElse(fieldName),
-            args = args,
-            ofType = ofType,
-            resolver = resolver,
-            description = field.doc,
-          )
+    private def toFieldDefault(fieldName: String, field: Field): TValid[String, Blueprint.FieldDefinition] = {
+      for {
+        ofType <- toType(field)
+      } yield {
+        val args = toArgs(field)
+        Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
       }
+    }
+
+    private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
+      TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
+        for {
+          bField      <- toFieldDefault(fieldName, field)
+          bField      <- updateUnsafeField(field, bField)
+          bField      <- updateFieldHttp(typeName, field, bField)
+          mayBeBField <- updateModifyField(field, bField, inputTypeNames.contains(typeName))
+          bField      <- mayBeBField match {
+            case Some(bField) => updateInlineField(typeInfo, fieldName, field, bField).some
+            case None         => TValid.none
+          }
+        } yield bField.toList
+      }.map(_.flatten)
 
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
@@ -154,13 +160,6 @@ object Config2Blueprint {
       }
     }
 
-    private def toInlineResolver(path: List[String]): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
-      path match {
-        case Nil => TValid.succeed(None)
-        case _   => TValid.succeed(Option(Lambda.identity[DynamicValue].path(path: _*).toDynamic))
-      }
-    }
-
     /**
      * Converts an object type definition into an input
      * object type definition.
@@ -182,62 +181,6 @@ object Config2Blueprint {
         fields = fields,
         description = definition.description,
       )
-    }
-
-    private def toModifyResolver(
-      fieldName: String,
-      modify: ModifyField,
-      isInputType: Boolean,
-    ): TValid[Nothing, Option[DynamicValue ~> DynamicValue]] = {
-      modify.name match {
-        case Some(newName) =>
-          val finalName = if (isInputType) newName else fieldName
-          TValid.succeed(Option(Lambda.identity[DynamicValue].path("value", finalName).toDynamic))
-        case None          => TValid.none
-      }
-    }
-
-    private def toResolver(
-      typeName: String,
-      fieldName: String,
-      field: Field,
-      isInputType: Boolean,
-    ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
-      val steps        = field.unsafeSteps.toList.flatten
-      val operationMix = steps.nonEmpty && field.http.nonEmpty
-      for {
-        _ <- TValid.fail(s"Type ${typeName} with field ${fieldName} can not have unsafe and http operations together")
-          .when(operationMix)
-        mayBeStep   <- toStepsResolver(field, steps)
-        mayBeHttp   <- field.http match {
-          case Some(http) => toHttpResolver(field, http).some
-          case None       => TValid.none
-        }
-        mayBeModify <- field.modify match {
-          case Some(modify) => toModifyResolver(fieldName, modify, isInputType)
-          case None         => TValid.none
-        }
-        mayBeInline <- field.inline match {
-          case Some(inline) => toInlineResolver(inline)
-          case None         => TValid.none
-        }
-      } yield (mayBeStep.orElse(mayBeHttp).toVector ++ mayBeModify.toVector ++ mayBeInline.toVector)
-        .foldLeft(Option.empty[DynamicValue ~> DynamicValue]) {
-          case (None, resolver)      => Option(resolver)
-          case (Some(acc), resolver) => Option(acc >>> resolver)
-        }
-    }
-
-    private def toStepsResolver(
-      field: Field,
-      steps: List[Operation],
-    ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
-      if (steps.isEmpty) TValid.none
-      else TValid.foreach(steps) {
-        case http @ Operation.Http(_, _, _, _, _) => toHttpResolver(field, http)
-        case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
-        case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
-      }.map(_.reduce((f1, f2) => f1 >>> f2)).some
     }
 
     // TODO: Add unit test for mutations
@@ -281,35 +224,104 @@ object Config2Blueprint {
       if (isList) Blueprint.ListType(ofType, false) else ofType
     }
 
-    private def toType(fieldName: String, field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
-      val inlinedPath = field.inline.getOrElse(Nil)
-      if (inlinedPath.isEmpty) toType(field)
-      else {
-        @tailrec
-        def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
-          path match {
-            case Nil               => toType(field)
-            case fieldName :: tail => typeInfo.fields.get(fieldName) match {
-                case Some(field) => config.graphQL.types.get(field.typeOf) match {
-                    case Some(typeInfo) => loop(tail, field, typeInfo)
-                    case None           => TValid.fail(s"Type ${field.typeOf} was not found while inlining")
-                  }
-
-                case None => TValid.fail(
-                    s"Inlining for path [${inlinedPath.mkString(", ")}] is not possible because field '${fieldName}' was not found on type '${field.typeOf}'"
-                  )
-              }
-          }
-        }
-
-        loop(fieldName :: inlinedPath, field, typeInfo)
-      }
-    }
-
     private def toType(field: Field): TValid[Nothing, Blueprint.Type] = {
       val ofType = Blueprint.NamedType(field.typeOf, field.isRequired)
       val isList = field.isList
       TValid.succeed(if (isList) Blueprint.ListType(ofType, false) else ofType)
+    }
+
+    private def toUnsafeStepsResolver(
+      field: Field,
+      steps: List[Operation],
+    ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
+      if (steps.isEmpty) TValid.none
+      else TValid.foreach(steps) {
+        case http @ Operation.Http(_, _, _, _, _) => toHttpResolver(field, http)
+        case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
+        case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
+      }.map(_.reduce((f1, f2) => f1 >>> f2)).some
+    }
+
+    private def updateFieldHttp(
+      typeName: String,
+      field: Field,
+      bField: Blueprint.FieldDefinition,
+    ): TValid[String, Blueprint.FieldDefinition] = {
+      field.http match {
+        case Some(http) =>
+          if (field.unsafeSteps.exists(_.nonEmpty)) TValid
+            .fail(s"Type ${typeName} with field ${bField.name} can not have unsafe and http operations together")
+          else toHttpResolver(field, http).map(resolver => bField.appendResolver(resolver))
+        case None       => TValid.succeed(bField)
+      }
+    }
+
+    private def updateInlineField(
+      typeInfo: Type,
+      fieldName: String,
+      field: Field,
+      bField: Blueprint.FieldDefinition,
+    ): TValid[String, Blueprint.FieldDefinition] = {
+      val inlinedPath = field.inline.getOrElse(Nil)
+      @tailrec
+      def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
+        path match {
+          case Nil               => toType(field)
+          case fieldName :: tail => typeInfo.fields.get(fieldName) match {
+              case Some(field) => config.graphQL.types.get(field.typeOf) match {
+                  case Some(typeInfo) => loop(tail, field, typeInfo)
+                  case None           => TValid.fail(s"Type ${field.typeOf} was not found while inlining")
+                }
+
+              case None => TValid.fail(
+                  s"Inlining for path [${inlinedPath.mkString(", ")}] is not possible because field '${fieldName}' was not found on type '${field.typeOf}'"
+                )
+            }
+        }
+      }
+
+      field.inline match {
+        case Some(path) => for {
+            ofType <- loop(fieldName :: inlinedPath, field, typeInfo)
+          } yield {
+            val resolver = Lambda.identity[DynamicValue].path(path: _*).toDynamic
+            bField.appendResolver(resolver).copy(ofType = ofType)
+          }
+        case _          => TValid.succeed(bField)
+      }
+    }
+
+    private def updateModifyField(
+      field: Field,
+      bField: Blueprint.FieldDefinition,
+      isInputType: Boolean,
+    ): TValid[String, Option[Blueprint.FieldDefinition]] = {
+      field.modify match {
+        case Some(ModifyField(None, Some(true)))    => TValid.none
+        case Some(ModifyField(Some(newName), None)) =>
+          if (isInputType) TValid.succeed(bField).some
+          else {
+            val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
+            val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
+            TValid.succeed(bField.appendResolver(resolver).copy(name = newName)).some
+          }
+        case Some(ModifyField(Some(_), Some(_)))    => TValid
+            .fail(s"Cannot have both name and omit modifier on field ${bField.name}")
+        case _                                      => TValid.succeed(bField).some
+      }
+    }
+
+    private def updateUnsafeField(
+      field: Field,
+      bField: Blueprint.FieldDefinition,
+    ): TValid[String, Blueprint.FieldDefinition] = {
+      field.unsafeSteps match {
+        case Some(steps) => toUnsafeStepsResolver(field, steps).map {
+            case None           => bField
+            case Some(resolver) => bField.appendResolver(resolver)
+          }
+        case None        => TValid.succeed(bField)
+      }
     }
   }
 }
