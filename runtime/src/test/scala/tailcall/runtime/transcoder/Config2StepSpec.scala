@@ -13,7 +13,7 @@ import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.{before, failing, timeout}
+import zio.test.TestAspect.{before, parallel, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, ZIO, durationInt}
 
@@ -88,7 +88,7 @@ object Config2StepSpec extends ZIOSpecDefault {
       },
       test("create user with zip code") {
         val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },
@@ -326,7 +326,7 @@ object Config2StepSpec extends ZIOSpecDefault {
             json <- resolve(config, Map.empty)("""query {identity(data: 1000)}""")
           } yield assertTrue(json == """{"identity":1000}""")
         },
-        test("modified input field") {
+        test("modified input field should not be allowed") {
           val identityType = Config.Type(
             "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
               .resolveWithFunction(_.path("args", "input").toDynamic)
@@ -337,8 +337,8 @@ object Config2StepSpec extends ZIOSpecDefault {
             "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
           )
           for {
-            json <- resolve(config, Map.empty)("query {identity(input: {b: 1}){b}}")
-          } yield assertTrue(json == """{"identity":{"b":1}}""")
+            json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){a}}")
+          } yield assertTrue(json == """{"identity":{"a":1}}""")
         },
         test("resolve using env variables") {
           val config = Config.default.withTypes(
@@ -360,7 +360,7 @@ object Config2StepSpec extends ZIOSpecDefault {
       ),
       suite("unsafe")(test("with http") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default
+        val config = Config.default.withBaseURL(new URL("https://jsonplaceholder.typicode.com"))
           .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
 
         val errors = config.toBlueprint.errors
@@ -415,12 +415,12 @@ object Config2StepSpec extends ZIOSpecDefault {
         for {
           json <- resolve(config, Map.empty)("""query {bar {c}}""")
         } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
-      } @@ failing,
+      },
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
-    ) @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
+    ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
