@@ -13,7 +13,7 @@ import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.{before, timeout}
+import zio.test.TestAspect.{before, failing, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, ZIO, durationInt}
 
@@ -386,6 +386,36 @@ object Config2StepSpec extends ZIOSpecDefault {
           json <- resolve(config, Map.empty)("""query {user {id name}}""")
         } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
       },
+      test("inline field") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
+              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {foo {c}}""")
+        } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
+      },
+      test("inline with modify field") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "b").withName("bar")
+              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {bar {c}}""")
+        } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
+      } @@ failing,
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,

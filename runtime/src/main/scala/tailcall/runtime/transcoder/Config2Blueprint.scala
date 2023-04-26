@@ -126,30 +126,7 @@ object Config2Blueprint {
           )
       }
 
-    /**
-     * Converts an object type definition into an input
-     * object type definition.
-     */
-    private def toInputObjectTypeDefinition(
-      definition: Blueprint.ObjectTypeDefinition
-    ): Blueprint.InputObjectTypeDefinition = {
-
-      val fields = definition.fields.map { field =>
-        Blueprint.InputFieldDefinition(
-          name = field.name, // field already has the new name
-          ofType = field.ofType.withName(inputTypeNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
-          defaultValue = None,
-          description = field.description,
-        )
-      }
-      Blueprint.InputObjectTypeDefinition(
-        name = inputTypeNames.getOrElse(definition.name, definition.name),
-        fields = fields,
-        description = definition.description,
-      )
-    }
-
-    private def toResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
+    private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
         case Some(baseURL) => TValid.succeed {
             val steps = field.unsafeSteps.getOrElse(Nil)
@@ -177,6 +154,49 @@ object Config2Blueprint {
       }
     }
 
+    private def toInlineResolver(path: List[String]): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
+      path match {
+        case Nil => TValid.succeed(None)
+        case _   => TValid.succeed(Option(Lambda.identity[DynamicValue].path(path: _*).toDynamic))
+      }
+    }
+
+    /**
+     * Converts an object type definition into an input
+     * object type definition.
+     */
+    private def toInputObjectTypeDefinition(
+      definition: Blueprint.ObjectTypeDefinition
+    ): Blueprint.InputObjectTypeDefinition = {
+
+      val fields = definition.fields.map { field =>
+        Blueprint.InputFieldDefinition(
+          name = field.name, // field already has the new name
+          ofType = field.ofType.withName(inputTypeNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
+          defaultValue = None,
+          description = field.description,
+        )
+      }
+      Blueprint.InputObjectTypeDefinition(
+        name = inputTypeNames.getOrElse(definition.name, definition.name),
+        fields = fields,
+        description = definition.description,
+      )
+    }
+
+    private def toModifyResolver(
+      fieldName: String,
+      modify: ModifyField,
+      isInputType: Boolean,
+    ): TValid[Nothing, Option[DynamicValue ~> DynamicValue]] = {
+      modify.name match {
+        case Some(newName) =>
+          val finalName = if (isInputType) newName else fieldName
+          TValid.succeed(Option(Lambda.identity[DynamicValue].path("value", finalName).toDynamic))
+        case None          => TValid.none
+      }
+    }
+
     private def toResolver(
       typeName: String,
       fieldName: String,
@@ -188,48 +208,36 @@ object Config2Blueprint {
       for {
         _ <- TValid.fail(s"Type ${typeName} with field ${fieldName} can not have unsafe and http operations together")
           .when(operationMix)
-        mayBeStep     <- toResolver(field, steps)
-        mayBeHttp     <- field.http match {
-          case Some(http) => toResolver(field, http).some
+        mayBeStep   <- toStepsResolver(field, steps)
+        mayBeHttp   <- field.http match {
+          case Some(http) => toHttpResolver(field, http).some
           case None       => TValid.none
         }
-        mayBeModify   <- field.modify match {
-          case Some(modify) => toResolver(fieldName, modify, isInputType)
+        mayBeModify <- field.modify match {
+          case Some(modify) => toModifyResolver(fieldName, modify, isInputType)
           case None         => TValid.none
         }
-        maybeResolver <- (mayBeStep, mayBeHttp, mayBeModify) match {
-          case (Some(step), _, _)            => TValid.succeed(step).some
-          case (_, Some(http), Some(modify)) => TValid.succeed(http >>> modify).some
-          case (_, Some(http), _)            => TValid.succeed(http).some
-          case (_, _, Some(modify))          => TValid.succeed(modify).some
-          case (None, None, None)            => TValid.none
+        mayBeInline <- field.inline match {
+          case Some(inline) => toInlineResolver(inline)
+          case None         => TValid.none
         }
-      } yield maybeResolver
+      } yield (mayBeStep.orElse(mayBeHttp).toVector ++ mayBeModify.toVector ++ mayBeInline.toVector)
+        .foldLeft(Option.empty[DynamicValue ~> DynamicValue]) {
+          case (None, resolver)      => Option(resolver)
+          case (Some(acc), resolver) => Option(acc >>> resolver)
+        }
     }
 
-    private def toResolver(
+    private def toStepsResolver(
       field: Field,
       steps: List[Operation],
     ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
       if (steps.isEmpty) TValid.none
       else TValid.foreach(steps) {
-        case http @ Operation.Http(_, _, _, _, _) => toResolver(field, http)
+        case http @ Operation.Http(_, _, _, _, _) => toHttpResolver(field, http)
         case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
         case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
       }.map(_.reduce((f1, f2) => f1 >>> f2)).some
-    }
-
-    private def toResolver(
-      fieldName: String,
-      modify: ModifyField,
-      isInputType: Boolean,
-    ): TValid[Nothing, Option[DynamicValue ~> DynamicValue]] = {
-      modify.name match {
-        case Some(newName) =>
-          val finalName = if (isInputType) newName else fieldName
-          TValid.succeed(Option(Lambda.identity[DynamicValue].path("value", finalName).toDynamic))
-        case None          => TValid.none
-      }
     }
 
     // TODO: Add unit test for mutations
