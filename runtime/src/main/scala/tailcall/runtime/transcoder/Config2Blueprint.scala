@@ -8,8 +8,6 @@ import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.schema.DynamicValue
 
-import scala.annotation.tailrec
-
 trait Config2Blueprint {
 
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
@@ -263,14 +261,17 @@ object Config2Blueprint {
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
       val inlinedPath = field.inline.getOrElse(Nil)
-      @tailrec
       def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
         path match {
           case Nil               => toType(field)
           case fieldName :: tail => typeInfo.fields.get(fieldName) match {
               case Some(field) => config.graphQL.types.get(field.typeOf) match {
-                  case Some(typeInfo) => loop(tail, field, typeInfo)
-                  case None           => TValid.fail(s"Type ${field.typeOf} was not found while inlining")
+                  case Some(typeInfo) => loop(tail, field, typeInfo).map(typeOf =>
+                      if (field.isList && tail.nonEmpty) Blueprint.ListType(typeOf, field.isRequired) else typeOf
+                    )
+                  case None           => TValid.fail(
+                      s"Type ${field.typeOf} was not found while inlining ${inlinedPath.mkString(", ")} for field ${fieldName}"
+                    )
                 }
 
               case None => TValid.fail(
@@ -278,13 +279,14 @@ object Config2Blueprint {
                 )
             }
         }
+
       }
 
       field.inline match {
         case Some(path) => for {
             ofType <- loop(fieldName :: inlinedPath, field, typeInfo)
           } yield {
-            val resolver = Lambda.identity[DynamicValue].path(path: _*).toDynamic
+            val resolver = Lambda.identity[DynamicValue].pathSeq(path: _*).toDynamic
             bField.appendResolver(resolver).copy(ofType = ofType)
           }
         case _          => TValid.succeed(bField)
