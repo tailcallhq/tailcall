@@ -49,12 +49,12 @@ object StepGenerator {
       val queryStep = for {
         query <- document.schema.flatMap(_.query)
         qStep <- objectStepRef.get(query)
-      } yield qStep(rootContext)
+      } yield Step.QueryStep(ZQuery.fromZIO(ZIO.service[Headers].map(h => qStep(rootContext.copy(headers = h.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap)))))
 
       val mutationStep = for {
         mutation <- document.schema.flatMap(_.mutation)
         mStep    <- objectStepRef.get(mutation)
-      } yield mStep(rootContext)
+      } yield Step.QueryStep(ZQuery.fromZIO(ZIO.service[Headers].map(h => mStep(rootContext.copy(headers = h.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap)))))
 
       StepResult(queryStep, mutationStep)
     }
@@ -66,10 +66,8 @@ object StepGenerator {
         field.resolver match {
           case Some(resolver) =>
             val step = for {
-              h <- ZIO.service[Headers]
-              headers = h.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap
-              value <- rtm.evaluate(resolver)(DynamicValue(context.copy(headers = headers)))
-              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx), headers = headers))
+              value <- rtm.evaluate(resolver)(DynamicValue(context))
+              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx)))
             } yield step
 
             Step.QueryStep(ZQuery.fromZIO(step))
