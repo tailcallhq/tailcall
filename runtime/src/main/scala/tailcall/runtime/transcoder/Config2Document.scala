@@ -138,6 +138,8 @@ trait Config2Document {
     if (field.unsafeSteps.nonEmpty)
       directives = directives ++ field.unsafeSteps.flatMap(UnsafeSteps(_).toDirective.toOption).toList
     if (field.modify.nonEmpty) directives = directives ++ field.modify.toList.flatMap(_.toDirective.toList)
+    if (field.inline.exists(_.nonEmpty))
+      directives = directives ++ field.inline.map(InlineType(_)).flatMap(_.toDirective.toOption).toList
     directives
   }
 
