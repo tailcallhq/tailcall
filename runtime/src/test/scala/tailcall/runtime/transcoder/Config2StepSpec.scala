@@ -431,6 +431,21 @@ object Config2StepSpec extends ZIOSpecDefault {
           json <- resolve(config, Map.empty)("""query {foo {c}}""")
         } yield assertTrue(json == """{"foo":[[{"c":"Hello!"}]]}""")
       },
+      test("inline on index with list") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
+              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {foo {c}}""")
+        } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
+      },
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,
