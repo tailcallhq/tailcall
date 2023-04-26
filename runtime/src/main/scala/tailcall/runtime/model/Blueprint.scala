@@ -33,7 +33,7 @@ final case class Blueprint(definitions: List[Blueprint.Definition], server: Blue
   def digest: Digest                                                  = Digest.fromBlueprint(self)
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
   def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
-  def resolversMap: Map[String, Map[String, Option[Expression]]] =
+  def resolverMap: Map[String, Map[String, Option[Expression]]] =
     definitions.collect { case r: Blueprint.ObjectTypeDefinition =>
       (r.name, r.fields.map(field => (field.name, field.resolver.map(_.compile))).toMap)
     }.toMap
