@@ -26,7 +26,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def asYAMLConfig: IO[String, String] = ConfigFormat.YML.encode(self)
 
-  def compress: Config = self.copy(graphQL = self.graphQL.compress)
+  def compress: Config = self.copy(graphQL = self.graphQL.compress, server = self.server.compress)
 
   def mergeRight(other: Config): Config = {
     Config(
@@ -56,6 +56,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
+
+  def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
 }
 
 object Config {
@@ -68,7 +70,7 @@ object Config {
   implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
   implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 
-  def default: Config = Config.empty.withQuery("Query")
+  def default: Config = Config.empty.withQuery("Query").withTypes("Query" -> Type())
 
   def empty: Config = Config()
 
