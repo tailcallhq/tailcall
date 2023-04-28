@@ -2,7 +2,6 @@ package tailcall.runtime.model
 
 import tailcall.runtime.http.{Method, Request, Scheme}
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.model.Path.Segment
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
@@ -104,13 +103,7 @@ object Endpoint {
     val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
       .mkString("?", "&", ""))
 
-    val pathString: String = endpoint.path.transform {
-      case Segment.Literal(value)  => Path.Segment.Literal(value)
-      case Segment.Param(mustache) => Path.Segment.Literal(
-          mustache.evaluate(input)
-            .getOrElse(throw new RuntimeException(s"Mustache {{${mustache.path}}} evaluation failed"))
-        )
-    }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
+    val pathString: String = endpoint.path.unsafeEvaluate(input)
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
