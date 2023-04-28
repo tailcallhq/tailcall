@@ -2,6 +2,7 @@ package tailcall.runtime.internal
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.test.Gen
@@ -32,8 +33,8 @@ object TestGen {
   def genMethod: Gen[Any, Method] =
     Gen.oneOf(Gen.const(Method.GET), Gen.const(Method.POST), Gen.const(Method.PUT), Gen.const(Method.DELETE))
 
-  def genMustache: Gen[Any, Mustache] =
-    for { name <- Gen.chunkOfN(2)(genName) } yield Mustache(name: _*)
+  def genMustache: Gen[Any, MustacheExpression] =
+    for { name <- Gen.chunkOfN(2)(genName) } yield MustacheExpression(name: _*)
 
   def genSegment: Gen[Any, Path.Segment] =
     Gen.oneOf(genName.map(Path.Segment.Literal(_)), genMustache.map(Path.Segment.Param(_)))

@@ -4,6 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
 import zio.schema.DynamicValue
@@ -139,7 +140,7 @@ object Config2Blueprint {
               .withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
               .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
-            http.body.flatMap(Mustache.syntax.parseString(_).toOption) match {
+            http.body.flatMap(MustacheExpression.syntax.parseString(_).toOption) match {
               case Some(value) => endpoint = endpoint.withBody(value)
               case None        => ()
             }

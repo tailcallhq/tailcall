@@ -2,6 +2,7 @@ package tailcall.runtime.model
 
 import tailcall.runtime.http.{Method, Request, Scheme}
 import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
@@ -15,7 +16,7 @@ final case class Endpoint(
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
   scheme: Scheme = Scheme.Http,
-  body: Option[Mustache] = None,
+  body: Option[MustacheExpression] = None,
   description: Option[String] = None,
 ) {
   self =>
@@ -50,8 +51,8 @@ final case class Endpoint(
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 
-  def withBody(body: Mustache): Endpoint = copy(body = Option(body))
-  def withBody(body: String): Endpoint   = copy(body = Mustache.syntax.parseString(body).toOption)
+  def withBody(body: MustacheExpression): Endpoint = copy(body = Option(body))
+  def withBody(body: String): Endpoint             = copy(body = MustacheExpression.syntax.parseString(body).toOption)
 
   lazy val outputSchema: Schema[Any] = output.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
 
@@ -100,14 +101,15 @@ object Endpoint {
       case port => s":$port"
     }
 
-    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
-      .mkString("?", "&", ""))
+    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) =>
+      s"$k=${MustacheExpression.evaluate(v, input).getOrElse(v)}"
+    }.mkString("?", "&", ""))
 
     val pathString: String = endpoint.path.unsafeEvaluate(input)
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
-    val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
+    val headers = endpoint.headers.map { case (k, v) => k -> MustacheExpression.evaluate(v, input).getOrElse(v) }.toMap
 
     val bodyDynamic = endpoint.body match {
       case Some(value) => DynamicValueUtil.getPath(input, value.path.toList)
