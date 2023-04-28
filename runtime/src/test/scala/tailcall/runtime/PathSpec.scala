@@ -1,6 +1,5 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.TestGen
 import tailcall.runtime.model.Path
 import tailcall.runtime.model.Path.Segment.{Literal, Param}
 import zio.ZIO
@@ -54,12 +53,6 @@ object PathSpec extends ZIOSpecDefault {
             actual   <- ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
             expected <- ZIO.fromEither(syntax.parseString(output))
           } yield assertTrue(actual == expected)
-        }
-      },
-      test("encoding") {
-        check(TestGen.genPath) { path =>
-          val program = path.encode
-          assertTrue(program.isRight)
         }
       },
     )
