@@ -2,6 +2,8 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Path, Server}
+import zio.Chunk
+import zio.test.Assertion.equalTo
 import zio.test._
 
 import java.net.URL
@@ -32,5 +34,21 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
 
         assertTrue(Transcoder.toBlueprint(config).nonEmpty)
       },
+      suite("required")(
+        test("http with required") {
+          val config = Config.default
+            .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.withHttp(Http(Path.empty))))
+          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
+            Chunk("""`Query.foo` has http operation hence can not be non-nullable""")
+          ))
+        },
+        test("unsafe with required") {
+          val config = Config.default
+            .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.resolveWith(100)))
+          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
+            Chunk("""`Query.foo` has unsafe operation hence can not be non-nullable""")
+          ))
+        },
+      ),
     )
 }

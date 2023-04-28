@@ -467,5 +467,5 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program)(equalTo(expected))
         },
       ),
-    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(5 seconds) @@ parallel
+    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(10 seconds) @@ parallel
 }

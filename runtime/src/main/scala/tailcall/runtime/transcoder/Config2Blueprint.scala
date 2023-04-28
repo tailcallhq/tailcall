@@ -118,7 +118,7 @@ object Config2Blueprint {
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         for {
           bField      <- toFieldDefault(fieldName, field)
-          bField      <- updateUnsafeField(field, bField)
+          bField      <- updateUnsafeField(typeName, field, bField)
           bField      <- updateFieldHttp(typeName, field, bField)
           mayBeBField <- updateModifyField(field, bField, inputTypeNames.contains(typeName))
           bField      <- mayBeBField match {
@@ -245,7 +245,9 @@ object Config2Blueprint {
     ): TValid[String, Blueprint.FieldDefinition] = {
       field.http match {
         case Some(http) =>
-          if (field.unsafeSteps.exists(_.nonEmpty)) TValid
+          if (field.isRequired) TValid
+            .fail(s"`${typeName}.${bField.name}` has http operation hence can not be non-nullable")
+          else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
             .fail(s"Type ${typeName} with field ${bField.name} can not have unsafe and http operations together")
           else toHttpResolver(field, http).map(resolver => bField.appendResolver(resolver))
         case None       => TValid.succeed(bField)
@@ -316,10 +318,13 @@ object Config2Blueprint {
     }
 
     private def updateUnsafeField(
+      typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
-      field.unsafeSteps match {
+      if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) TValid
+        .fail(s"`${typeName}.${bField.name}` has unsafe operation hence can not be non-nullable")
+      else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField
             case Some(resolver) => bField.appendResolver(resolver)
