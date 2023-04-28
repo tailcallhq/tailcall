@@ -2,7 +2,6 @@ package tailcall.runtime
 
 import tailcall.runtime.model.Mustache
 import tailcall.runtime.model.Mustache.{prm, txt}
-import zio.ZIO
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
@@ -33,8 +32,8 @@ object MustacheSpec extends ZIOSpecDefault {
 
         checkAll(Gen.fromIterable(input)) { case template -> input -> expected =>
           for {
-            parsed <- ZIO.fromEither(Mustache.syntax.parseString(template)).map(_.evaluate(input))
-            actual <- ZIO.fromEither(Mustache.syntax.printString(parsed))
+            mustache <- Mustache.evaluate(template, input).toZIO
+            actual   <- mustache.encode.toZIO
           } yield assertTrue(actual == expected)
         }
       },
