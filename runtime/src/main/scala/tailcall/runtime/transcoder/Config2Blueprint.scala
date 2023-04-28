@@ -246,7 +246,7 @@ object Config2Blueprint {
       field.http match {
         case Some(http) =>
           if (field.isRequired) TValid
-            .fail(s"`${typeName}.${bField.name}` has http operation hence can not be non-nullable")
+            .fail(s"`${typeName}.${bField.name}` has an http operation hence can not be non-nullable")
           else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
             .fail(s"Type ${typeName} with field ${bField.name} can not have unsafe and http operations together")
           else toHttpResolver(field, http).map(resolver => bField.appendResolver(resolver))
@@ -323,7 +323,7 @@ object Config2Blueprint {
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
       if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) TValid
-        .fail(s"`${typeName}.${bField.name}` has unsafe operation hence can not be non-nullable")
+        .fail(s"`${typeName}.${bField.name}` has an unsafe operation hence can not be non-nullable")
       else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField
