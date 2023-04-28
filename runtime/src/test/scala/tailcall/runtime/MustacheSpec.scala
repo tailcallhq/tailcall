@@ -1,7 +1,7 @@
 package tailcall.runtime
 
 import tailcall.runtime.model.Mustache
-import tailcall.runtime.model.Mustache.{prm, txt}
+import tailcall.runtime.model.Mustache.{MustacheExpression, prm, txt}
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
@@ -9,6 +9,42 @@ import zio.test._
 object MustacheSpec extends ZIOSpecDefault {
   def spec =
     suite("Mustache")(
+      test("syntax") {
+        val input = List(
+          "{{a}}"     -> MustacheExpression("a"),
+          "{{a.b}}"   -> MustacheExpression("a", "b"),
+          "{{a.b.c}}" -> MustacheExpression("a", "b", "c"),
+        )
+
+        checkAll(Gen.fromIterable(input)) { case (string, expected) =>
+          val output = MustacheExpression.syntax.parseString(string)
+          assert(output)(isRight(equalTo(expected)))
+        }
+      },
+      test("encoding") {
+        val input = List(
+          MustacheExpression("a")           -> "{{a}}",
+          MustacheExpression("a", "b")      -> "{{a.b}}",
+          MustacheExpression("a", "b", "c") -> "{{a.b.c}}",
+        )
+        checkAll(Gen.fromIterable(input)) { case (input, expected) =>
+          val output = MustacheExpression.syntax.printString(input)
+          assert(output)(isRight(equalTo(expected)))
+        }
+      },
+      test("evaluate") {
+        val input = List(
+          "{{a}}"     -> DynamicValue(Map("a" -> 1)),
+          "{{a.b}}"   -> DynamicValue(Map("a" -> Map("b" -> 1))),
+          "{{a.b.c}}" -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))),
+        )
+
+        checkAll(Gen.fromIterable(input)) { case (mustache, input) =>
+          val output = MustacheExpression.evaluate(mustache, input).toZIO
+          assertZIO(output)(equalTo("1"))
+        }
+
+      },
       test("syntax") {
         val input = List(
           "ab"          -> Mustache(txt("ab")),
