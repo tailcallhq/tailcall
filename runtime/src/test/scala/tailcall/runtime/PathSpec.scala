@@ -31,7 +31,7 @@ object PathSpec extends ZIOSpecDefault {
           assertZIO(parsed)(equalTo(expected))
         }
       },
-      test("evaluate") {
+      test("unsafeEvaluate") {
         val inputs = List(
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")),
           "/{{a.b.c}}/b/c"     -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> "a")))),
@@ -42,14 +42,14 @@ object PathSpec extends ZIOSpecDefault {
           assertZIO(string)(equalTo("/a/b/c"))
         }
       },
-      test("evaluate partial") {
+      test("evaluate") {
         val inputs = List(
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b"))             -> "/a/b/{{c}}",
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")) -> "/a/b/c",
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map.empty[String, String])               -> "/{{a}}/{{b}}/{{c}}",
         )
 
-        checkAll(Gen.fromIterable(inputs)) { case (path -> input -> output) =>
+        checkAll(Gen.fromIterable(inputs)) { case path -> input -> output =>
           for {
             actual   <- ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
             expected <- ZIO.fromEither(syntax.parseString(output))
