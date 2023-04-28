@@ -15,7 +15,7 @@ final case class Context(
 ) {
   self =>
   def copyFromParent(value: DynamicValue = value, args: Map[String, DynamicValue] = args): Context =
-    Context(value, args, parent = Option(self), env)
+    copy(value = value, args = args, parent = Option(self))
 }
 
 object Context {
