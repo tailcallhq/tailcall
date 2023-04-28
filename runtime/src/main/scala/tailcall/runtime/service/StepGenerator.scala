@@ -12,7 +12,7 @@ import zio.schema.DynamicValue
 import zio.{ZIO, ZLayer}
 
 trait StepGenerator {
-  def resolve(document: Blueprint): StepResult[HttpContext]
+  def resolve(blueprint: Blueprint): StepResult[HttpContext]
 }
 
 object StepGenerator {
@@ -23,21 +23,21 @@ object StepGenerator {
       rtm  <- ZIO.service[EvaluationRuntime]
       envs <- zio.System.envs.orElse(ZIO.succeed(Map.empty[String, String]))
     } yield new StepGenerator {
-      override def resolve(document: Blueprint): StepResult[HttpContext] = Live(rtm, document, envs).resolve
+      override def resolve(blueprint: Blueprint): StepResult[HttpContext] = Live(rtm, blueprint, envs).resolve
     })
 
   }
 
-  def resolve(document: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpContext]] =
-    ZIO.serviceWith(_.resolve(document))
+  def resolve(blueprint: Blueprint): ZIO[StepGenerator, Nothing, StepResult[HttpContext]] =
+    ZIO.serviceWith(_.resolve(blueprint))
 
   final case class StepResult[R](query: Option[Step[R]], mutation: Option[Step[R]])
 
-  final private case class Live(rtm: EvaluationRuntime, document: Blueprint, env: Map[String, String]) {
-    val rootContext: Context = Context(DynamicValue(()), env = env)
+  final private case class Live(rtm: EvaluationRuntime, blueprint: Blueprint, env: Map[String, String]) {
+    private val rootContext: Context = Context(DynamicValue(()), env = env)
 
     // A map of all the object types and a way to construct an instance of them.
-    val objectStepRef: Map[String, Context => Step[HttpContext]] = document.definitions
+    private val objectStepRef: Map[String, Context => Step[HttpContext]] = blueprint.definitions
       .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
       .toMap
 
@@ -47,19 +47,19 @@ object StepGenerator {
           f(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap))
         ))
       val queryStep                                                                                     = for {
-        query <- document.schema.flatMap(_.query)
+        query <- blueprint.schema.flatMap(_.query)
         qStep <- objectStepRef.get(query)
       } yield Step.QueryStep(withHeaders(qStep))
 
       val mutationStep = for {
-        mutation <- document.schema.flatMap(_.mutation)
+        mutation <- blueprint.schema.flatMap(_.mutation)
         mStep    <- objectStepRef.get(mutation)
       } yield Step.QueryStep(withHeaders(mStep))
 
       StepResult(queryStep, mutationStep)
     }
 
-    def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpContext] = {
+    private def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpContext] = {
       Step.FunctionStep { args =>
         val context = ctx
           .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
@@ -78,7 +78,7 @@ object StepGenerator {
       }
     }
 
-    def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpContext] = {
+    private def fromObjectDef(obj: Blueprint.ObjectTypeDefinition, ctx: Context): Step[HttpContext] = {
       Step.ObjectStep(obj.name, obj.fields.map(field => field.name -> fromFieldDefinition(field, ctx)).toMap)
     }
 
@@ -89,7 +89,7 @@ object StepGenerator {
      * compatible. We bailout if the types are not
      * compatible with the value.
      */
-    def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpContext] = {
+    private def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpContext] = {
       tpe match {
         case model.Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
             case Some(stepFunction) => stepFunction(ctx)
