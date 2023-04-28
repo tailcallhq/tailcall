@@ -558,6 +558,18 @@ object Config2SDLSpec extends ZIOSpecDefault {
 
           assertSDL(config, expected, true)
         },
+        test("variable in server directives") {
+          val config   = Config.default.withVars("foo" -> "bar")
+          val expected = """
+                           |schema @server(vars: {foo: "bar"}) {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query
+                           |""".stripMargin.trim
+
+          assertSDL(config, expected, true)
+        },
         test("input type directives") {
           val config = Config.default.withTypes(
             "Query" -> Config
