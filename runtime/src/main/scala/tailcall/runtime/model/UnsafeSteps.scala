@@ -2,6 +2,7 @@ package tailcall.runtime.model
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.lambda.~>>
+import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.{DirectiveCodec, JsonT}
 import zio.json._
@@ -83,7 +84,7 @@ object UnsafeSteps {
           method = Option(endpoint.method),
           input = endpoint.input,
           output = endpoint.output,
-          body = endpoint.body.flatMap(Mustache.syntax.printString(_).toOption),
+          body = endpoint.body.flatMap(MustacheExpression.syntax.printString(_).toOption),
         )
     }
   }

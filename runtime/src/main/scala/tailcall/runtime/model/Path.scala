@@ -1,5 +1,6 @@
 package tailcall.runtime.model
 
+import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.Path.Segment
 import zio.Chunk
 import zio.json.JsonCodec
@@ -12,10 +13,8 @@ final case class Path(segments: List[Path.Segment]) {
 
   def evaluate(input: DynamicValue): Path = {
     transform {
-      case segment @ Segment.Param(mustache) => mustache.evaluate(input) match {
-          case Some(value) => Segment.Literal(value)
-          case None        => segment
-        }
+      case segment @ Segment.Param(mustache) => MustacheExpression.evaluate(mustache, input).map(Segment.Literal(_))
+          .getOrElse(segment)
       case segment                           => segment
     }
   }
@@ -25,8 +24,10 @@ final case class Path(segments: List[Path.Segment]) {
   def unsafeEvaluate(input: DynamicValue): String =
     transform {
       case Path.Segment.Literal(value)  => Path.Segment.Literal(value)
-      case Path.Segment.Param(mustache) => Path.Segment
-          .Literal(mustache.evaluate(input).getOrElse(throw new RuntimeException("Mustache evaluation failed")))
+      case Path.Segment.Param(mustache) => Path.Segment.Literal(
+          MustacheExpression.evaluate(mustache, input)
+            .getOrElse(throw new RuntimeException("Mustache evaluation failed"))
+        )
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 
   def withLiteral(literal: String): Path = Path(segments :+ Path.Segment.Literal(literal))
@@ -55,10 +56,10 @@ object Path {
   sealed trait Segment
 
   object Segment {
-    final case class Literal(value: String)    extends Segment
-    final case class Param(mustache: Mustache) extends Segment
+    final case class Literal(value: String)              extends Segment
+    final case class Param(mustache: MustacheExpression) extends Segment
     object Param {
-      def apply(value: String): Param = Param(Mustache(value))
+      def apply(value: String): Param = Param(MustacheExpression(value))
     }
   }
 
@@ -66,7 +67,7 @@ object Path {
     val segment = (Syntax.alphaNumeric | Syntax.charIn('-', '_')).repeat
       .transform[String](_.asString, Chunk.fromIterable(_))
 
-    val param = Mustache.syntax.transform[Segment.Param](Segment.Param(_), _.mustache)
+    val param = MustacheExpression.syntax.transform[Segment.Param](Segment.Param(_), _.mustache)
 
     val literal = segment.transform[Segment.Literal](Segment.Literal(_), _.value)
 
