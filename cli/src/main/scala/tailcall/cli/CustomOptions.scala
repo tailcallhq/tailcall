@@ -2,7 +2,7 @@ package tailcall.cli
 
 import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
 import tailcall.runtime.model.ConfigFormat
-import zio.cli._
+import zio.cli.*
 import zio.http.URL
 
 object CustomOptions {
@@ -24,7 +24,7 @@ object CustomOptions {
   val remoteOption: Options[URL] = CustomOptions.urlOption("remote").alias("r")
 
   val blueprintOptions = (Options.boolean("blueprint").withDefault(false) ++ Options.boolean("endpoints")
-    .withDefault(false) ++ Options.boolean("schema").alias("s").withDefault(false)).map(BlueprintOptions.tupled)
+    .withDefault(false) ++ Options.boolean("schema").alias("s").withDefault(false)).map(BlueprintOptions(_))
 
   val sourceFormat: Options[SourceFormat] = Options
     .enumeration("source")(SourceFormat.Postman.named, SourceFormat.SchemaDefinitionLanguage.named)

@@ -2,7 +2,7 @@ val calibanVersion   = "2.0.2"
 val zioVersion       = "2.0.13"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
-val zioSchemaVersion = "0.4.10+3-6104a0e7-SNAPSHOT"
+val zioSchemaVersion = "0.4.10+4-a44854fd-SNAPSHOT"
 
 val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
 val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
@@ -62,9 +62,9 @@ ThisBuild / crossScalaVersions                             := Seq(scala2Version,
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Xfatal-warnings", "-deprecation")
-ThisBuild / scalacOptions ++= { if (scalaVersion.value.startsWith("2")) Seq("-Ywarn-unused") else Seq.empty }
+ThisBuild / scalacOptions ++= { if (scalaVersion.value.startsWith("2")) Seq("-Ywarn-unused") else Seq("-Xmax-inlines", "128") }
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-
+ThisBuild / javaOptions ++= Seq("-Xmx4G", "-Xms4G")
 ThisBuild / Test / fork       := true
 Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges

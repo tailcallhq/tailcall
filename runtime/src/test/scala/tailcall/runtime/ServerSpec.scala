@@ -8,7 +8,7 @@ import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.model.Server
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
-
+import zio.test.TestResultZIOOps
 import java.net.URL
 
 object ServerSpec extends ZIOSpecDefault {

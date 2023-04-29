@@ -5,7 +5,7 @@ import zio.http.URL
 
 import java.nio.file.Path
 
-sealed trait CommandADT extends Serializable with Product
+sealed trait CommandADT
 
 object CommandADT {
   final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)

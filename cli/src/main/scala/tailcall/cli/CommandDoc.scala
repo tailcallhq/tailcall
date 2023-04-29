@@ -6,10 +6,10 @@ import zio.cli._
 
 object CommandDoc {
 
-  val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
+  def command: Command[CommandADT] = Command("tc", Options.none).subcommands(
     Command("check", CustomOptions.remoteOption.optional ++ CustomOptions.blueprintOptions, Args.file.repeat1)
       .withHelp("Validate a composition spec, display its status when remote is passed.").map {
-        case (remote, blueprintOptions) -> config => CommandADT.Check(config, remote, blueprintOptions)
+        case remote -> blueprintOptions -> config => CommandADT.Check(config, remote, blueprintOptions)
       },
 
     // publish
@@ -37,7 +37,7 @@ object CommandDoc {
     // info
     Command("show", CustomOptions.remoteOption ++ CustomOptions.blueprintOptions, CustomArgs.digestArgs)
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.")
-      .map { case (remote, blueprintOptions) -> digest =>
+      .map { case remote -> blueprintOptions -> digest =>
         Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))
       },
 

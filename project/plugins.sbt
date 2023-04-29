@@ -6,3 +6,4 @@ addSbtPlugin("io.spray"         % "sbt-revolver"        % "0.10.0")
 addSbtPlugin("com.github.sbt"   % "sbt-native-packager" % "1.9.16")
 addSbtPlugin("com.eed3si9n"     % "sbt-assembly"        % "2.1.1")
 addDependencyTreePlugin
+addSbtPlugin("ch.epfl.scala" % "sbt-scala3-migrate" % "0.4.6")

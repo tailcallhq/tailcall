@@ -5,6 +5,7 @@ import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
+import zio.json.EncoderOps
 import zio.schema.{DynamicValue, Schema}
 
 final case class Endpoint(
