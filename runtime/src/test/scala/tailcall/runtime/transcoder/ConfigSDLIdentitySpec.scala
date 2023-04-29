@@ -239,6 +239,6 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
     for {
       config2SDL <- Transcoder.toSDL(configCompressed, true).toZIO.mapError(_.mkString(", "))
       sdl2Config <- ConfigFormat.GRAPHQL.decode(sdl)
-    } yield assertTrue(config2SDL == sdl, sdl2Config.toYaml().map(_.trim) == configCompressed.toYaml().map(_.trim))
+    } yield assertTrue(config2SDL == sdl, sdl2Config.toYaml() == configCompressed.toYaml())
   }
 }

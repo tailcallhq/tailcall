@@ -28,10 +28,10 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
                          |}
                          |
                          |type Type_1 {
-                         |  username: String!
+                         |  email: String!
                          |  id: Int!
                          |  name: String!
-                         |  email: String!
+                         |  username: String!
                          |}
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
@@ -81,10 +81,10 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
                          |}
                          |
                          |type Type_1 {
-                         |  username: String!
+                         |  email: String!
                          |  id: Int!
                          |  name: String!
-                         |  email: String!
+                         |  username: String!
                          |}
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
@@ -129,9 +129,9 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
             |}
             |
             |input Type_2 {
-            |  username: String!
-            |  name: String!
             |  email: String!
+            |  name: String!
+            |  username: String!
             |}
             |
             |type Mutation {
@@ -141,10 +141,10 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
             |type Query
             |
             |type Type_1 {
-            |  username: String!
+            |  email: String!
             |  id: Int!
             |  name: String!
-            |  email: String!
+            |  username: String!
             |}
             |""".stripMargin
         assertSchema(endpoint)(expected.trim)

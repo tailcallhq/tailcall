@@ -1,6 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
+import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
@@ -84,7 +85,7 @@ object Config {
 
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
 
-    def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
@@ -101,7 +102,8 @@ object Config {
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
     self =>
-    def compress: GraphQL = self.copy(types = self.types.map { case (k, t) => (k, t.compress) })
+    def compress: GraphQL =
+      self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
 
     def mergeRight(other: GraphQL): GraphQL = {
       other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
