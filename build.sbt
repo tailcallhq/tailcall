@@ -57,8 +57,8 @@ lazy val registry = (project in file("registry"))
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
 
-ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / scalaVersion                                   := scala3Version
+ThisBuild / crossScalaVersions                             := Seq(scala2Version, scala3Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
