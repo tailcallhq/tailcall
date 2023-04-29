@@ -233,9 +233,9 @@ object Config2Blueprint {
     ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
       if (steps.isEmpty) TValid.none
       else TValid.foreach(steps) {
-        case http @ Operation.Http(_, _, _, _, _) => toHttpResolver(field, http)
-        case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
-        case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
+        case http: Operation.Http           => toHttpResolver(field, http)
+        case Operation.Transform(jsonT)     => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
+        case Operation.LambdaFunction(func) => TValid.succeed(Lambda.fromFunction(func))
       }.map(_.reduce((f1, f2) => f1 >>> f2)).some
     }
 

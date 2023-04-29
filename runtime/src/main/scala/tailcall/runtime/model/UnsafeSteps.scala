@@ -26,8 +26,8 @@ object UnsafeSteps {
     self =>
     def compress: Operation =
       self match {
-        case step @ Operation.Http(_, Some(Method.GET), _, _, _) => step.copy(method = None)
-        case step                                                => step
+        case step: Operation.Http => step.compress
+        case step                 => step
       }
   }
 
@@ -49,10 +49,12 @@ object UnsafeSteps {
     final case class Http(
       path: Path,
       method: Option[Method] = None,
+      query: Option[Map[String, List[String]]] = None,
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-    ) extends Operation {
+    ) extends HttpOperation with Operation {
+      self =>
       def withBody(body: Option[String]): Http = copy(body = body)
 
       def withInput(input: Option[TSchema]): Http = copy(input = input)
@@ -60,6 +62,8 @@ object UnsafeSteps {
       def withMethod(method: Method): Http = copy(method = Option(method))
 
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
+
+      override def compress: Http = self.copy(method = self.compressMethod).copy(query = self.compressQuery)
     }
 
     @jsonHint("transform")
