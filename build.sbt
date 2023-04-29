@@ -61,8 +61,8 @@ ThisBuild / scalaVersion                                   := scala3Version
 ThisBuild / crossScalaVersions                             := Seq(scala2Version, scala3Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
-
+ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Xfatal-warnings", "-deprecation")
+ThisBuild / scalacOptions ++= { if (scalaVersion.value.startsWith("2")) Seq("-Ywarn-unused") else Seq.empty }
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
 ThisBuild / Test / fork       := true
