@@ -1,6 +1,5 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
@@ -188,107 +187,6 @@ object Config2SDLSpec extends ZIOSpecDefault {
           assertSDL(config, expected)
         },
       ),
-
-      // TODO: move to jsonplaceholder.spec
-      test("json placeholder") {
-        val config   = JsonPlaceholderConfig.config
-        val expected = """|schema {
-                          |  query: Query
-                          |  mutation: Mutation
-                          |}
-                          |
-                          |input NewAddress {
-                          |  geo: NewGeo
-                          |  street: String
-                          |  suite: String
-                          |  city: String
-                          |  zipcode: String
-                          |}
-                          |
-                          |input NewCompany {
-                          |  name: String
-                          |  catchPhrase: String
-                          |  bs: String
-                          |}
-                          |
-                          |input NewGeo {
-                          |  lat: String
-                          |  lng: String
-                          |}
-                          |
-                          |"A new user."
-                          |input NewUser {
-                          |  website: String
-                          |  name: String!
-                          |  email: String!
-                          |  username: String!
-                          |  company: NewCompany
-                          |  address: NewAddress
-                          |  phone: String
-                          |}
-                          |
-                          |type Address {
-                          |  geo: Geo
-                          |  street: String
-                          |  suite: String
-                          |  city: String
-                          |  zip: String
-                          |}
-                          |
-                          |type Company {
-                          |  name: String
-                          |  catchPhrase: String
-                          |  bs: String
-                          |}
-                          |
-                          |type Geo {
-                          |  lat: String
-                          |  lng: String
-                          |}
-                          |
-                          |"An Id container."
-                          |type Id {
-                          |  id: Int!
-                          |}
-                          |
-                          |type Mutation {
-                          |  createUser("User as an argument." user: NewUser!): Id
-                          |}
-                          |
-                          |type Post {
-                          |  body: String
-                          |  id: Int!
-                          |  user: User
-                          |  userId: Int!
-                          |  title: String
-                          |}
-                          |
-                          |type Query {
-                          |  "A single post by id."
-                          |  post(id: Int!): Post
-                          |  "A list of all posts."
-                          |  posts: [Post]
-                          |  "A list of all users."
-                          |  users: [User]
-                          |  "A single user by id."
-                          |  user(id: Int!): User
-                          |}
-                          |
-                          |type User {
-                          |  website: String
-                          |  name: String!
-                          |  posts: [Post]
-                          |  email: String!
-                          |  username: String!
-                          |  company: Company
-                          |  id: Int!
-                          |  address: Address
-                          |  phone: String
-                          |}
-                          |""".stripMargin.trim
-
-        assertSDL(config, expected)
-      },
       test("document type generation") {
         val config = Config.default
           .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWith("test")))
