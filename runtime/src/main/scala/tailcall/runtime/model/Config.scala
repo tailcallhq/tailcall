@@ -182,7 +182,20 @@ object Config {
         case _                                  => None
       }
 
-      copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify, inline = inline)
+      val http = self.http match {
+        case Some(http) => Some(http.compress)
+        case None       => None
+      }
+
+      copy(
+        list = isList,
+        required = isRequired,
+        unsafeSteps = steps,
+        args = args,
+        modify = modify,
+        http = http,
+        inline = inline,
+      )
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -202,6 +215,17 @@ object Config {
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
     def withHttp(http: Http): Field = copy(http = Option(http))
+
+    def withHttp(
+      path: Path,
+      method: Option[Method] = None,
+      query: Map[String, String] = Map.empty,
+      input: Option[TSchema] = None,
+      output: Option[TSchema] = None,
+      body: Option[String] = None,
+      batchKey: Option[String] = None,
+      groupBy: List[String] = Nil,
+    ): Field = copy(http = Option(Http(path, method, Option(query), input, output, body, batchKey, Option(groupBy))))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 

@@ -5,7 +5,7 @@ import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, ConfigFormat, Path}
 import zio.ZIO
-import zio.json.EncoderOps
+import zio.json.yaml.EncoderYamlOps
 import zio.test.TestAspect.failing
 import zio.test._
 
@@ -194,11 +194,51 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
 
         assertIdentity(config, graphQL)
       },
+      test("batched") {
+        val graphQL = s"""
+                         |schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type Post {
+                         |  id: Int
+                         |  user: User @http(path: "/users",query: {id: "{{value.userId}}"},batchKey: "userId")
+                         |  userId: Int
+                         |}
+                         |
+                         |type Query {
+                         |  posts: [Post]
+                         |}
+                         |
+                         |type User {
+                         |  id: Int
+                         |  name: String
+                         |}
+                         |""".stripMargin.trim
+
+        val config = Config.default.withTypes(
+          "Query" -> Type("posts" -> Field.ofType("Post").asList),
+          "User"  -> Type("id" -> Field.int, "name" -> Field.string),
+          "Post"  -> Type(
+            "id"     -> Field.int,
+            "userId" -> Field.int,
+            "user"   -> Field.ofType("User").withHttp(
+              path = Path.unsafe.fromString("/users"),
+              query = Map("id" -> "{{value.userId}}"),
+              batchKey = Option("userId"),
+            ),
+          ),
+        )
+
+        assertIdentity(config, graphQL)
+      },
     )
 
-  private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] =
+  private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] = {
+    val configCompressed = config.compress
     for {
-      encodedConfig  <- Transcoder.toSDL(config, true).toZIO.mapError(_.mkString(", "))
-      decodedGraphQL <- ConfigFormat.GRAPHQL.decode(sdl)
-    } yield assertTrue(encodedConfig == sdl, decodedGraphQL.toJsonAST == config.toJsonAST)
+      config2SDL <- Transcoder.toSDL(configCompressed, true).toZIO.mapError(_.mkString(", "))
+      sdl2Config <- ConfigFormat.GRAPHQL.decode(sdl)
+    } yield assertTrue(config2SDL == sdl, sdl2Config.toYaml().map(_.trim) == configCompressed.toYaml().map(_.trim))
+  }
 }
