@@ -261,7 +261,7 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
-      val inlinedPath = field.inline.getOrElse(Nil)
+      val inlinedPath = field.inline.map(_.path).getOrElse(Nil)
       val hasIndex    = inlinedPath.exists(_.matches("^\\d+$"))
       def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
         path match {
@@ -288,13 +288,13 @@ object Config2Blueprint {
       }
 
       field.inline match {
-        case Some(path) => loop(fieldName :: inlinedPath, field, typeInfo).map(ofType => {
+        case Some(InlineType(path)) => loop(fieldName :: inlinedPath, field, typeInfo).map(ofType => {
             val resolver =
               if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
               else Lambda.identity[DynamicValue].pathSeq(path: _*)
             bField.appendResolver(resolver.toDynamic).copy(ofType = ofType)
           })
-        case _          => TValid.succeed(bField)
+        case _                      => TValid.succeed(bField)
       }
     }
 

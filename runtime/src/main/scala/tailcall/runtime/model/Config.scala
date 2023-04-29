@@ -141,7 +141,7 @@ object Config {
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
     http: Option[Http] = None,
-    inline: Option[List[String]] = None,
+    inline: Option[InlineType] = None,
   ) {
     self =>
 
@@ -178,8 +178,8 @@ object Config {
       }
 
       val inline = self.inline match {
-        case Some(value) if value.nonEmpty => Some(value)
-        case _                             => None
+        case Some(value) if value.path.nonEmpty => Some(value)
+        case _                                  => None
       }
 
       copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify, inline = inline)
@@ -203,7 +203,7 @@ object Config {
 
     def withHttp(http: Http): Field = copy(http = Option(http))
 
-    def withInline(path: String*): Field = copy(inline = Option(path.toList))
+    def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
