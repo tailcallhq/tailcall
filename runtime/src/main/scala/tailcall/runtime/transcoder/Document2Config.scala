@@ -76,6 +76,7 @@ trait Document2Config {
       doc = field.description,
       modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
       http = field.directives.flatMap(_.fromDirective[Http].toList).headOption,
+      inline = field.directives.flatMap(_.fromDirective[InlineType].toList).headOption,
     )
   }
 
