@@ -4,31 +4,56 @@ import tailcall.runtime.http.{HttpClient, Request}
 import zio._
 import zio.http.{Request => ZRequest}
 
-final case class DataLoader[-R, E, A, B](state: Ref[DataLoader.State[E, A, B]], resolver: A => ZIO[R, E, B]) {
+final case class DataLoader[R, E, A, B](
+  ref: Ref[DataLoader.State[E, A, B]],
+  resolver: DataLoader.Resolver[R, E, A, B],
+) {
   self =>
 
-  def load(a: A): ZIO[R, E, B] = {
+  /**
+   * Collects the requests and returns an IO wrapped in a
+   * UIO. The inner IO resolves when the dispatch is
+   * completed.
+   */
+  def collect(seq: A*): UIO[List[ZIO[Any, E, B]]] = ZIO.foreach(seq)(collect).map(_.toList)
+
+  def collect(a: A): UIO[ZIO[Any, E, B]] =
     for {
-      newPromise <- Promise.make[E, B]
-      result     <- state.modify { state =>
-        state.map.get(a) match {
-          case Some(promise) => ((false, promise), state)
-          case None          => ((true, newPromise), state.addRequest(a, newPromise))
+      nPromise <- Promise.make[E, B]
+      promise  <- ref.modify { state =>
+        state.get(a) match {
+          case Some(promise) => (promise, state)
+          case None          => (nPromise, state.addRequest(a, nPromise))
         }
       }
-      cond = result._1
-      promise = result._2
-      _ <- resolver(a).flatMap(promise.succeed(_)).when(cond).catchAll(e =>
+    } yield promise.await
+
+  /**
+   * Dispatches all the collected requests and resolves
+   * their promises
+   */
+  def dispatch: ZIO[R, Nothing, Unit] = {
+    for {
+      state <- ref.get
+      _     <- resolver(Chunk.fromIterable(state.map.keys)).flatMap { bChunks =>
+        ZIO.foreachDiscard(state.map.values.zip(bChunks)) { case (promise, b) => promise.succeed(b) }
+      }.catchAll { error =>
         for {
-          _ <- promise.fail(e)
-          _ <- state.update(_ dropRequest a)
+          _ <- resetState
+          _ <- ZIO.foreachDiscard(state.map.values)(_.fail(error))
         } yield ()
-      )
-      b <- promise.await
-    } yield b
+      }
+    } yield ()
   }
 
-  def widenError[E1](implicit ev: E <:< E1): DataLoader[R, E1, A, B] = self.asInstanceOf[DataLoader[R, E1, A, B]]
+  /**
+   * Load a value from the data loader and caches the
+   * response from the resolver for the data-loader's life
+   * time.
+   */
+  def load(a: A): ZIO[R, E, B] = collect(a).flatMap(dispatch *> _)
+
+  private def resetState: UIO[Unit] = { ref.set(DataLoader.State[E, A, B]()) }
 }
 
 object DataLoader {
@@ -36,42 +61,66 @@ object DataLoader {
   // TODO: make this configurable
   val allowedHeaders = Set("authorization", "cookie")
 
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+  def dispatch: ZIO[HttpContext, Throwable, Unit] = ZIO.serviceWithZIO[HttpContext](_.dataLoader.dispatch)
 
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       ZIO.service[HttpClient].flatMap { client =>
-        DataLoader.make[Request] { request =>
+        DataLoader.one[Request] { request =>
           val finalHeaders = request.headers ++ getForwardedHeaders(req)
           for {
             response <- client.request(request.copy(headers = finalHeaders))
             _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
             chunk <- response.body.asChunk
           } yield chunk
-
         }
       }
     }
 
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+
   def load(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
     ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
 
-  def make[A]: PartiallyAppliedDataLoader[A] = new PartiallyAppliedDataLoader(())
+  def many[A]: PartiallyAppliedDataLoaderMany[A] = new PartiallyAppliedDataLoaderMany(())
+
+  def one[A]: PartiallyAppliedDataLoaderOne[A] = new PartiallyAppliedDataLoaderOne(())
 
   private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
     req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
   }
 
-  final case class State[E, A, B](
-    map: Map[A, Promise[E, B]] = Map.empty[A, Promise[E, B]],
-    queue: Chunk[A] = Chunk.empty,
-  ) {
-    def dropRequest(a: A): State[E, A, B]                        = copy(map = map - a)
-    def addRequest(a: A, promise: Promise[E, B]): State[E, A, B] = copy(map = map + (a -> promise))
+  sealed trait Resolver[R, E, A, B] {
+    self =>
+    def apply(a: Chunk[A]): ZIO[R, E, Chunk[B]] =
+      self match {
+        case Resolver.One(f)  => ZIO.foreachPar(a)(f)
+        case Resolver.Many(f) => f(a)
+      }
   }
-  final class PartiallyAppliedDataLoader[A](val unit: Unit) {
+
+  final case class State[E, A, B](map: Map[A, Promise[E, B]] = Map.empty[A, Promise[E, B]]) {
+    self =>
+    def addRequest(a: A, promise: Promise[E, B]): State[E, A, B] = copy(map = map + (a -> promise))
+
+    def dropRequest(a: A): State[E, A, B] = copy(map = map - a)
+
+    def get(a: A): Option[Promise[E, B]] = map.get(a)
+  }
+
+  final class PartiallyAppliedDataLoaderOne[A](val unit: Unit) {
     def apply[R, E, B](f: A => ZIO[R, E, B]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =
-      for { ref <- Ref.make(State[E, A, B]()) } yield DataLoader(ref, f)
+      for { ref <- Ref.make(State[E, A, B]()) } yield DataLoader(ref, Resolver.One(f))
+  }
+
+  final class PartiallyAppliedDataLoaderMany[A](val unit: Unit) {
+    def apply[R, E, B](f: Chunk[A] => ZIO[R, E, Chunk[B]]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =
+      for { ref <- Ref.make(State[E, A, B]()) } yield DataLoader(ref, Resolver.Many(f))
+  }
+
+  object Resolver {
+    final case class One[R, E, A, B](f: A => ZIO[R, E, B])                extends Resolver[R, E, A, B]
+    final case class Many[R, E, A, B](f: Chunk[A] => ZIO[R, E, Chunk[B]]) extends Resolver[R, E, A, B]
   }
 }
