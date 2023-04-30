@@ -15,7 +15,7 @@ final case class DataLoader[R, E, A, B](
    * UIO. The inner IO resolves when the dispatch is
    * completed.
    */
-  def collect(seq: A*): UIO[List[ZIO[Any, E, B]]] = ZIO.foreach(seq)(collect).map(_.toList)
+  def collect(seq: A*): UIO[Chunk[ZIO[Any, E, B]]] = ZIO.foreach(seq)(collect).map(Chunk.from)
 
   def collect(a: A): UIO[ZIO[Any, E, B]] =
     for {
@@ -63,6 +63,8 @@ object DataLoader {
 
   def dispatch: ZIO[HttpContext, Throwable, Unit] = ZIO.serviceWithZIO[HttpContext](_.dataLoader.dispatch)
 
+  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
       ZIO.service[HttpClient].flatMap { client =>
@@ -77,9 +79,10 @@ object DataLoader {
       }
     }
 
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+  def httpCollect(requests: Chunk[Request]): ZIO[HttpContext, Throwable, Chunk[ZIO[Any, Throwable, Chunk[Byte]]]] =
+    ZIO.serviceWithZIO[HttpContext](_.dataLoader.collect(requests: _*))
 
-  def load(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
+  def httpLoad(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
     ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
 
   def many[A]: PartiallyAppliedDataLoaderMany[A] = new PartiallyAppliedDataLoaderMany(())

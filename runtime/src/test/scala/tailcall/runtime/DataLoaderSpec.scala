@@ -39,7 +39,7 @@ object DataLoaderSpec extends ZIOSpecDefault {
           f  <- dl.collect(1, 2, 3, 4)
           _  <- dl.dispatch
           r  <- ZIO.foreach(f)(identity)
-        } yield assertTrue(r == List(2, 3, 4, 5))
+        } yield assertTrue(r == Chunk(2, 3, 4, 5))
       },
     ) @@ timeout(5 seconds)
 
