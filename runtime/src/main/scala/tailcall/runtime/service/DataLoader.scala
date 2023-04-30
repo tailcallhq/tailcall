@@ -7,8 +7,6 @@ import zio.http.{Request => ZRequest}
 final case class DataLoader[-R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
   self =>
 
-  def widenError[E1](implicit ev: E <:< E1): DataLoader[R, E1, A, B] = self.asInstanceOf[DataLoader[R, E1, A, B]]
-
   def load(a: A): ZIO[R, E, B] = {
     for {
       newPromise <- Promise.make[E, B]
@@ -29,6 +27,8 @@ final case class DataLoader[-R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolv
       b <- promise.await
     } yield b
   }
+
+  def widenError[E1](implicit ev: E <:< E1): DataLoader[R, E1, A, B] = self.asInstanceOf[DataLoader[R, E1, A, B]]
 }
 
 object DataLoader {
@@ -53,15 +53,15 @@ object DataLoader {
       }
     }
 
+  def load(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
+    ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
+
   def make[A]: PartiallyAppliedDataLoader[A] = new PartiallyAppliedDataLoader(())
 
   private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
     req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
   }
-
-  def load(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
-    ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
 
   final class PartiallyAppliedDataLoader[A](val unit: Unit) {
     def apply[R, E, B](f: A => ZIO[R, E, B]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =
