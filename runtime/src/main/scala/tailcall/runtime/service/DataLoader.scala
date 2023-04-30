@@ -4,24 +4,24 @@ import tailcall.runtime.http.{HttpClient, Request}
 import zio._
 import zio.http.{Request => ZRequest}
 
-final case class DataLoader[-R, E, A, B](map: Ref[Map[A, Promise[E, B]]], resolver: A => ZIO[R, E, B]) {
+final case class DataLoader[-R, E, A, B](state: Ref[DataLoader.State[E, A, B]], resolver: A => ZIO[R, E, B]) {
   self =>
 
   def load(a: A): ZIO[R, E, B] = {
     for {
       newPromise <- Promise.make[E, B]
-      result     <- map.modify(map =>
-        map.get(a) match {
-          case Some(promise) => ((false, promise), map)
-          case None          => ((true, newPromise), map + (a -> newPromise))
+      result     <- state.modify { state =>
+        state.map.get(a) match {
+          case Some(promise) => ((false, promise), state)
+          case None          => ((true, newPromise), state.addRequest(a, newPromise))
         }
-      )
+      }
       cond = result._1
       promise = result._2
       _ <- resolver(a).flatMap(promise.succeed(_)).when(cond).catchAll(e =>
         for {
           _ <- promise.fail(e)
-          _ <- map.update(_ - a)
+          _ <- state.update(_ dropRequest a)
         } yield ()
       )
       b <- promise.await
@@ -63,8 +63,15 @@ object DataLoader {
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
   }
 
+  final case class State[E, A, B](
+    map: Map[A, Promise[E, B]] = Map.empty[A, Promise[E, B]],
+    queue: Chunk[A] = Chunk.empty,
+  ) {
+    def dropRequest(a: A): State[E, A, B]                        = copy(map = map - a)
+    def addRequest(a: A, promise: Promise[E, B]): State[E, A, B] = copy(map = map + (a -> promise))
+  }
   final class PartiallyAppliedDataLoader[A](val unit: Unit) {
     def apply[R, E, B](f: A => ZIO[R, E, B]): ZIO[Any, Nothing, DataLoader[R, E, A, B]] =
-      for { cache <- Ref.make(Map.empty[A, Promise[E, B]]) } yield DataLoader(cache, f)
+      for { ref <- Ref.make(State[E, A, B]()) } yield DataLoader(ref, f)
   }
 }
