@@ -2,7 +2,6 @@ package tailcall.runtime.transcoder
 
 import caliban.InputValue
 import tailcall.runtime.JsonT
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
@@ -448,7 +447,7 @@ object Config2StepSpec extends ZIOSpecDefault {
       },
     ).provide(
       GraphQLGenerator.default,
-      HttpClient.default,
+      HttpCache.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 

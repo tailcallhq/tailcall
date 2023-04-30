@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.http.Request
 import zio._
 import zio.http.model.Headers
 import zio.http.{Request => ZRequest}
@@ -11,8 +11,8 @@ trait HttpContext {
 }
 
 object HttpContext {
-  def default: ZLayer[Any, Throwable, HttpContext]                          = HttpClient.default >>> live(None)
-  def live(req: Option[ZRequest]): ZLayer[HttpClient, Nothing, HttpContext] =
+  def default: ZLayer[Any, Throwable, HttpContext]                         = HttpCache.default >>> live(None)
+  def live(req: Option[ZRequest]): ZLayer[HttpCache, Nothing, HttpContext] =
     DataLoader.http(req) >>> ZLayer {
       for {
         dataLoader <- ZIO.service[DataLoader[Any, Throwable, Request, Chunk[Byte]]]

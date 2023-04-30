@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.http.Request
 import zio._
 import zio.http.{Request => ZRequest}
 
@@ -36,15 +36,15 @@ object DataLoader {
   // TODO: make this configurable
   val allowedHeaders = Set("authorization", "cookie")
 
-  def http: ZLayer[HttpClient, Nothing, HttpDataLoader] = http(None)
+  def http: ZLayer[HttpCache, Nothing, HttpDataLoader] = http(None)
 
-  def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
+  def http(req: Option[ZRequest] = None): ZLayer[HttpCache, Nothing, HttpDataLoader] =
     ZLayer {
-      ZIO.service[HttpClient].flatMap { client =>
+      ZIO.service[HttpCache].flatMap { cache =>
         DataLoader.make[Request] { request =>
           val finalHeaders = request.headers ++ getForwardedHeaders(req)
           for {
-            response <- client.request(request.copy(headers = finalHeaders))
+            response <- cache.get(request.copy(headers = finalHeaders))
             _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
             chunk <- response.body.asChunk
           } yield chunk

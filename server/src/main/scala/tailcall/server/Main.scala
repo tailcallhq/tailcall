@@ -1,9 +1,9 @@
 package tailcall.server
 
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio._
+import zio.http.ServerConfig.responseCompressionConfig
 import zio.http._
 import zio.http.model.{HttpError, Method, Status}
 
@@ -19,10 +19,11 @@ object Main extends ZIOAppDefault {
 
   override val run = Server.install(server)
     .flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).exitCode.provide(
-      ServerConfig.live.update(_.port(SchemaRegistry.PORT)).update(_.objectAggregator(Int.MaxValue)),
+      ServerConfig.live.update(_.port(SchemaRegistry.PORT)).update(_.objectAggregator(Int.MaxValue))
+        .update(_.responseCompression(responseCompressionConfig())),
       SchemaRegistry.memory,
       GraphQLGenerator.default,
-      HttpClient.default,
+      HttpCache.default,
       Server.live,
       BlueprintDataLoader.live,
     )

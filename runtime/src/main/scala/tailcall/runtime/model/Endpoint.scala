@@ -116,11 +116,13 @@ object Endpoint {
       case None        => Some(input)
     }
 
-    val body = for {
-      dynamic <- Chunk.fromIterable(bodyDynamic)
-      json    <- Chunk.fromIterable(Transcoder.toJson(dynamic).toOption)
-      chunk   <- Chunk.fromArray(json.toJson.getBytes())
-    } yield chunk
+    val body =
+      if (method == Method.GET || method == Method.DELETE) Chunk.empty
+      else for {
+        dynamic <- Chunk.fromIterable(bodyDynamic)
+        json    <- Chunk.fromIterable(Transcoder.toJson(dynamic).toOption)
+        chunk   <- Chunk.fromArray(json.toJson.getBytes())
+      } yield chunk
 
     val request = Request(
       method = method,

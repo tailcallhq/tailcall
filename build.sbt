@@ -20,6 +20,7 @@ val fansi               = "com.lihaoyi"           %% "fansi"                 % "
 val zioRedis            = "dev.zio"               %% "zio-redis"             % "0.2.0"
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion % Test
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion % Test
+val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
 ///
 
 lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
@@ -41,6 +42,7 @@ lazy val runtime = (project in file("runtime")).settings(
     zioJsonYaml,
     zioParser,
     zioHttp,
+    zioCache,
   ),
   libraryDependencies ++= zioTestDependencies,
 )
