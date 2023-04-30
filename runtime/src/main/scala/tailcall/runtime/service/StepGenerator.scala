@@ -60,9 +60,7 @@ object StepGenerator {
     }
 
     private def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpContext] = {
-      Step.FunctionStep { args =>
-        val context = ctx
-          .copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap)
+      def makeStep(context: Context): Step[HttpContext] =
         field.resolver match {
           case Some(resolver) =>
             val step = for {
@@ -75,6 +73,10 @@ object StepGenerator {
             val value = DynamicValue(DynamicValueUtil.getPath(context.value, field.name :: Nil))
             fromType(field.ofType, context.copy(value = value))
         }
+
+      if (field.args.isEmpty) makeStep(ctx)
+      else Step.FunctionStep { args =>
+        makeStep(ctx.copy(args = args.view.mapValues(Transcoder.toDynamicValue(_).getOrElse(DynamicValue(()))).toMap))
       }
     }
 
