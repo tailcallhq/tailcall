@@ -1,6 +1,6 @@
 package tailcall.runtime.internal
 
-import zio.schema.{DynamicValue, Schema, StandardType, TypeId}
+import zio.schema.{DynamicValue, Schema, TypeId}
 
 import scala.collection.immutable.ListMap
 
@@ -24,9 +24,8 @@ object DynamicValueUtil {
           case DynamicValue.Sequence(a)   =>
             if (nestSeq) Option(DynamicValue(a.map(getPath(_, path, nestSeq)).collect { case Some(a) => a }))
             else head.toIntOption.flatMap(a.lift).flatMap(getPath(_, tail, nestSeq))
-          case DynamicValue.Dictionary(b) =>
-            val stringTag = StandardType.StringType.asInstanceOf[StandardType[Any]]
-            b.collect { case (DynamicValue.Primitive(`head`, `stringTag`), value) => value }.headOption
+          case DynamicValue.Dictionary(b) => b
+              .collect { case (DynamicValue.Primitive(key, _), value) if key.toString == head => value }.headOption
               .flatMap(getPath(_, tail, nestSeq))
           case _                          => None
         }
