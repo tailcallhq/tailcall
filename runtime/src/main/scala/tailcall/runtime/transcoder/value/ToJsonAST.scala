@@ -51,11 +51,10 @@ trait ToJsonAST {
       case DynamicValue.Enumeration(_, (name, value))  => toJson(value).map(value => Json.Obj(Chunk(name -> value)))
       case DynamicValue.Sequence(values)               => TValid.foreachChunk(values)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
-      // TODO: convert to record if keys are not of type string
-      case DynamicValue.Dictionary(entries)            => TValid.foreachChunk(entries.collect {
-          case (DynamicValue.Primitive(key, standardType), value) if standardType == StandardType.StringType =>
-            (key.asInstanceOf[String], value)
-        }) { case (key, dValue) => toJson(dValue).map(key -> _) }.map(entries => Json.Obj(Chunk.from(entries)))
+      case DynamicValue.Dictionary(entries)            => TValid
+          .foreachChunk(entries.collect { case (DynamicValue.Primitive(key, _: StandardType[_]), value) =>
+            (key.toString, value)
+          }) { case (key, dValue) => toJson(dValue).map(key -> _) }.map(entries => Json.Obj(Chunk.from(entries)))
       case DynamicValue.SetValue(values)               => TValid.foreach(values.toList)(toJson(_))
           .map(values => Json.Arr(Chunk.from(values)))
       case DynamicValue.Primitive(value, standardType) => TValid.succeed(toJsonPrimitive(value, standardType))
