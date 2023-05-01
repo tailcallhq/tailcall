@@ -22,7 +22,7 @@ object Main extends ZIOAppDefault {
       ServerConfig.live.update(_.port(SchemaRegistry.PORT)).update(_.objectAggregator(Int.MaxValue)),
       SchemaRegistry.memory,
       GraphQLGenerator.default,
-      HttpClient.default,
+      HttpClient.cachedDefault(1000),
       Server.live,
       BlueprintDataLoader.live,
     )
