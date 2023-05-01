@@ -1,7 +1,8 @@
 package tailcall.server
 
 import caliban.CalibanError
-import tailcall.runtime.service.{GraphQLGenerator, HttpCache, HttpContext}
+import tailcall.runtime.http.HttpClient
+import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import tailcall.server.BlueprintDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
@@ -18,7 +19,7 @@ object GenericServer {
     }
   }
 
-  def graphQL: Http[HttpCache with GraphQLGenerator with InterpreterLoader, Throwable, Request, Response] =
+  def graphQL: Http[HttpClient with GraphQLGenerator with InterpreterLoader, Throwable, Request, Response] =
     Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
       for {
         blueprintData <- load(id)

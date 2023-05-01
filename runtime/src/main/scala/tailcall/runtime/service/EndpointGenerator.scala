@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.Request
+import tailcall.runtime.http.{HttpClient, Request}
 import tailcall.runtime.model.{Endpoint, Postman}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
@@ -14,7 +14,7 @@ trait EndpointGenerator {
 
 object EndpointGenerator {
   def default: ZLayer[Any, Throwable, EndpointGenerator] =
-    HttpCache.default >>> DataLoader.http >>> HttpContext.default >>> live
+    HttpClient.default >>> DataLoader.http >>> HttpContext.default >>> live
 
   def live: ZLayer[HttpContext, Nothing, EndpointGenerator] = ZLayer.fromFunction(dataLoader => Live(dataLoader))
 

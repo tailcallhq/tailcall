@@ -1,6 +1,7 @@
 package tailcall.server
 
 import tailcall.registry.SchemaRegistry
+import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio._
 import zio.http._
@@ -21,7 +22,7 @@ object Main extends ZIOAppDefault {
       ServerConfig.live.update(_.port(SchemaRegistry.PORT)).update(_.objectAggregator(Int.MaxValue)),
       SchemaRegistry.memory,
       GraphQLGenerator.default,
-      HttpCache.default,
+      HttpClient.cachedDefault(1000),
       Server.live,
       BlueprintDataLoader.live,
     )
