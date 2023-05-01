@@ -101,8 +101,19 @@ object Endpoint {
       case port => s":$port"
     }
 
-    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) =>
-      s"$k=${MustacheExpression.evaluate(v, input).getOrElse(v)}"
+    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (key, string) =>
+      MustacheExpression.syntax.parseString(string) match {
+        case Left(_)         => string
+        case Right(mustache) => DynamicValueUtil.getPath(input, mustache.path.toList, true) match {
+            case Some(input) => input match {
+                case DynamicValue.Sequence(values) => values.flatMap(DynamicValueUtil.asString)
+                    .map(input => s"$key=${input}").mkString("&")
+                case input => s"$key=${MustacheExpression.evaluate(string, input).getOrElse(string)}"
+              }
+
+            case None => string
+          }
+      }
     }.mkString("?", "&", ""))
 
     val pathString: String = endpoint.path.unsafeEvaluate(input)

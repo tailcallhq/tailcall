@@ -70,6 +70,23 @@ object EndpointSpec extends ZIOSpecDefault {
           assertTrue(request.url == "http://abc.com?a=1")
         }
       },
+      test("query with list params") {
+        val root   = Endpoint.make("abc.com")
+        val inputs = List(
+          DynamicValue(Map("a" -> List("1", "2", "3")))                         -> root.withQuery("a" -> "{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> List("1", "2", "3"))))             -> root.withQuery("a" -> "{{a.b}}"),
+          DynamicValue(Map("a" -> Map("b" -> Map("c" -> List("1", "2", "3"))))) -> root.withQuery("a" -> "{{a.b.c}}"),
+          DynamicValue(List(Map("a" -> "1"), Map("a" -> "2"), Map("a" -> "3"))) -> root.withQuery("a" -> "{{a}}"),
+          DynamicValue(
+            List(Map("a" -> Map("b" -> "1")), Map("a" -> Map("b" -> "2")), Map("a" -> Map("b" -> "3")))
+          )                                                                     -> root.withQuery("a" -> "{{a.b}}"),
+        )
+
+        checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
+          val request = endpoint.evaluate(input)
+          assertTrue(request.url == "http://abc.com?a=1&a=2&a=3")
+        }
+      },
       test("body") {
         val endpoint = Endpoint.post("abc.com")
         val inputs   = List(
