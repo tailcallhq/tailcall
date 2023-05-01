@@ -11,7 +11,8 @@ trait HttpCache  {
   def cacheStats: Task[CacheStats]
 }
 object HttpCache {
-  def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] = {
+  val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
+  final def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] = {
     val headers      = res.headers.toList.map(x => String.valueOf(x.key).toLowerCase -> String.valueOf(x.value)).toMap
     val cacheControl = headers.get("cache-control").map(_.split(",").map(_.trim).toSet).getOrElse(Set.empty)
     val maxAge       = cacheControl.find(_.startsWith("max-age=")).map(_.split("=").last).flatMap(_.toLongOption)
@@ -22,7 +23,7 @@ object HttpCache {
       case Some(value) =>
         if (value matches "-1") { None }
         else {
-          val date = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z").parse(value).toInstant
+          val date = dateFormat.parse(value).toInstant
           Option(Duration.fromInterval(currentMillis, date))
         }
       case None        => None
