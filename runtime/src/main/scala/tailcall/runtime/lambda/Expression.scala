@@ -36,7 +36,7 @@ object Expression {
     object Tap {
       implicit val schema: Schema[Tap] = Schema[Unit].transform[Tap](_ => Tap(Identity, _ => ZIO.unit), _ => ())
     }
-    final case class BatchEndpointCall(endpoint: Endpoint, join: Expression) extends Operation
+    final case class BatchEndpointCall(endpoint: Endpoint, groupBy: List[String]) extends Operation
   }
 
   object Math {
@@ -145,10 +145,10 @@ object Expression {
         }
       case Expression.Pipe(left, right)           => collect(left, f) ++ collect(right, f)
       case Expression.Unsafe(operation)           => operation match {
-          case Unsafe.Debug(_)                   => f(expr).toList
-          case Unsafe.EndpointCall(_)            => f(expr).toList
-          case Unsafe.BatchEndpointCall(_, join) => f(expr).toList ++ collect(join, f)
-          case Unsafe.Tap(self, _)               => collect(self, f)
+          case Unsafe.Debug(_)                => f(expr).toList
+          case Unsafe.EndpointCall(_)         => f(expr).toList
+          case Unsafe.Tap(self, _)            => collect(self, f)
+          case Unsafe.BatchEndpointCall(_, _) => f(expr).toList
         }
       case Expression.Dynamic(_)                  => f(expr).toList
       case Expression.Dict(operation)             => operation match {

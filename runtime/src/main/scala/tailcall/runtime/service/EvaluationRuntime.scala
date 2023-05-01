@@ -137,7 +137,7 @@ object EvaluationRuntime {
             case Opt.ToSeq(value)            => for { opt <- evaluateAs[Option[_]](value, ctx) } yield opt.toSeq
           }
         case Unsafe(operation)          => operation match {
-            case Unsafe.Debug(prefix)                     => for {
+            case Unsafe.Debug(prefix)                        => for {
                 input <- LExit.input[Any]
                 _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
               } yield input
@@ -145,7 +145,7 @@ object EvaluationRuntime {
                 b <- evaluate(self, ctx)
                 _ <- LExit.fromZIO(f(b))
               } yield b
-            case Unsafe.EndpointCall(endpoint)            => for {
+            case Unsafe.EndpointCall(endpoint)               => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
@@ -157,21 +157,25 @@ object EvaluationRuntime {
                   } yield any
                 }
               } yield out
-            case Unsafe.BatchEndpointCall(endpoint, join) => for {
+            case Unsafe.BatchEndpointCall(endpoint, groupBy) => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    dl     <- DataLoader.many[DynamicValue] { chunk =>
-                      (for {
-                        param <- evaluate(join, ctx)
-                        _ = pprint.pprintln(param)
-                        data <- LExit.fromZIO(DataLoader.httpLoad(endpoint.evaluate(param.asInstanceOf[DynamicValue])))
-                      } yield data).run(chunk.toSeq)
+                    dl     <- DataLoader.many[DynamicValue] { paramChunks =>
+                      val request = endpoint.evaluate(DynamicValue(paramChunks))
+                      for {
+                        bytes <- DataLoader.httpLoad(request)
+                        chunk <- ZIO.fromEither(new String(bytes.toArray, StandardCharsets.UTF_8).fromJson[Chunk[Json]])
+                          .mapError(ValidationError.DecodingError("String", "Chunk[JsonAST]", _))
+                        chunk <- ZIO.foreach(chunk)(json => ZIO.succeed(Transcoder.toDynamicValue(json).get))
+                      } yield chunk
                     }
                     chunks <- dl.collect(input.asInstanceOf[::[DynamicValue]]: _*)
                     _      <- dl.dispatch
-                    chunks <- ZIO.foreach(chunks)(effect => effect)
-                  } yield chunks
+                    chunks <- ZIO.foreach(chunks)(identity)
+                  } yield chunks.groupBy(DynamicValueUtil.getPath(_, groupBy)).collect { case (Some(k), Chunk(v)) =>
+                    (k, v)
+                  }
                 }
               } yield out
           }
