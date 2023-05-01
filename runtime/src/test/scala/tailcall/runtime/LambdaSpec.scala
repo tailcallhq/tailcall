@@ -13,6 +13,7 @@ import zio.{Console, durationInt}
 
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.runtime.lambda.Numeric._
+  import Syntax._
 
   def spec =
     suite("Lambda")(

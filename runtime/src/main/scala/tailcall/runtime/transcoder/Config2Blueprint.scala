@@ -2,6 +2,7 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
@@ -10,7 +11,6 @@ import tailcall.runtime.model._
 import zio.schema.DynamicValue
 
 trait Config2Blueprint {
-
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
 }
 

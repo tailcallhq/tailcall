@@ -36,6 +36,7 @@ object Expression {
     object Tap {
       implicit val schema: Schema[Tap] = Schema[Unit].transform[Tap](_ => Tap(Identity, _ => ZIO.unit), _ => ())
     }
+    final case class BatchEndpointCall(endpoint: Endpoint, join: Expression) extends Operation
   }
 
   object Math {
@@ -101,6 +102,21 @@ object Expression {
     case object IsNone                                                           extends Operation
     final case class Fold(value: Expression, none: Expression, some: Expression) extends Operation
     final case class Apply(value: Option[Expression])                            extends Operation
+    final case class ToSeq(value: Expression)                                    extends Operation
+  }
+
+  final case class Sequence(value: Expression, operation: Sequence.Operation) extends Expression
+  object Sequence {
+    sealed trait Operation
+    final case object MakeString            extends Operation
+    final case class Map(f: Expression)     extends Operation
+    final case class FlatMap(f: Expression) extends Operation
+  }
+
+  final case class Str(self: Expression, operation: Str.Operation) extends Expression
+  object Str {
+    sealed trait Operation
+    final case class Concat(other: Expression) extends Operation
   }
 
   implicit val schema: Schema[Expression]       = DeriveSchema.gen[Expression]
@@ -129,9 +145,10 @@ object Expression {
         }
       case Expression.Pipe(left, right)           => collect(left, f) ++ collect(right, f)
       case Expression.Unsafe(operation)           => operation match {
-          case Unsafe.Debug(_)        => f(expr).toList
-          case Unsafe.EndpointCall(_) => f(expr).toList
-          case Unsafe.Tap(self, _)    => collect(self, f)
+          case Unsafe.Debug(_)                   => f(expr).toList
+          case Unsafe.EndpointCall(_)            => f(expr).toList
+          case Unsafe.BatchEndpointCall(_, join) => f(expr).toList ++ collect(join, f)
+          case Unsafe.Tap(self, _)               => collect(self, f)
         }
       case Expression.Dynamic(_)                  => f(expr).toList
       case Expression.Dict(operation)             => operation match {
@@ -147,7 +164,15 @@ object Expression {
               case Some(value) => collect(value, f)
               case None        => f(expr).toList
             }
+          case Opt.ToSeq(value)            => collect(value, f)
         }
+      case Expression.Sequence(value, operation)  => operation match {
+          case Sequence.MakeString    => collect(value, f)
+          case Sequence.Map(func)     => collect(value, f) ++ collect(func, f)
+          case Sequence.FlatMap(func) => collect(value, f) ++ collect(func, f)
+        }
+      case Expression.Str(self, operation)        =>
+        operation match { case Str.Concat(other) => collect(self, f) ++ collect(other, f) }
     }
   }
 }

@@ -26,10 +26,10 @@ trait EvaluationRuntime {
 object EvaluationRuntime {
   import Expression._
 
+  def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
+
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpContext, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
-
-  def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
   final class Live extends EvaluationRuntime {
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpContext, Throwable, Any, Any] = {
@@ -92,12 +92,12 @@ object EvaluationRuntime {
             } yield res
           }
 
-        case Immediate(eval0)   => for {
+        case Immediate(eval0)           => for {
             eval1 <- evaluateAs[Expression](eval0, ctx)
             eval2 <- evaluate(eval1, ctx)
           } yield eval2
-        case Defer(value)       => LExit.succeed(value)
-        case Dynamic(operation) => LExit.input[Any].map(input =>
+        case Defer(value)               => LExit.succeed(value)
+        case Dynamic(operation)         => LExit.input[Any].map(input =>
             operation match {
               case Dynamic.Typed(meta)     => DynamicValueUtil.toTyped(input.asInstanceOf[DynamicValue])(meta.toSchema)
               case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
@@ -106,7 +106,7 @@ object EvaluationRuntime {
               case Dynamic.JsonTransform(transform) => transform.run(input.asInstanceOf[DynamicValue])
             }
           )
-        case Dict(operation)    => operation match {
+        case Dict(operation)            => operation match {
             case Dict.Get(key, map) => for {
                 k <- evaluate(key, ctx)
                 m <- evaluateAs[Map[Any, Any]](map, ctx)
@@ -120,7 +120,7 @@ object EvaluationRuntime {
 
             case Dict.ToPair => for { map <- LExit.input[Any].map(_.asInstanceOf[Map[_, _]]) } yield map.toList
           }
-        case Opt(operation)     => operation match {
+        case Opt(operation)             => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
             case Opt.IsNone                  => LExit.input.map(_.asInstanceOf[Option[_]].isEmpty)
             case Opt.Fold(value, none, some) => for {
@@ -134,21 +134,22 @@ object EvaluationRuntime {
                 case None        => LExit.succeed(None)
                 case Some(value) => for { any <- evaluate(value, ctx) } yield Option(any)
               }
+            case Opt.ToSeq(value)            => for { opt <- evaluateAs[Option[_]](value, ctx) } yield opt.toSeq
           }
-        case Unsafe(operation)  => operation match {
-            case Unsafe.Debug(prefix)          => for {
+        case Unsafe(operation)          => operation match {
+            case Unsafe.Debug(prefix)                     => for {
                 input <- LExit.input[Any]
                 _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
               } yield input
-            case Unsafe.Tap(self, f)           => for {
+            case Unsafe.Tap(self, f)                      => for {
                 b <- evaluate(self, ctx)
                 _ <- LExit.fromZIO(f(b))
               } yield b
-            case Unsafe.EndpointCall(endpoint) => for {
+            case Unsafe.EndpointCall(endpoint)            => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
                   for {
-                    chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
+                    chunk <- DataLoader.httpLoad(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
                     json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
                       .mapError(ValidationError.DecodingError("String", "JsonAST", _))
                     any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
@@ -156,6 +157,41 @@ object EvaluationRuntime {
                   } yield any
                 }
               } yield out
+            case Unsafe.BatchEndpointCall(endpoint, join) => for {
+                input <- LExit.input[Any]
+                out   <- LExit.fromZIO {
+                  for {
+                    dl     <- DataLoader.many[DynamicValue] { chunk =>
+                      (for {
+                        param <- evaluate(join, ctx)
+                        _ = pprint.pprintln(param)
+                        data <- LExit.fromZIO(DataLoader.httpLoad(endpoint.evaluate(param.asInstanceOf[DynamicValue])))
+                      } yield data).run(chunk.toSeq)
+                    }
+                    chunks <- dl.collect(input.asInstanceOf[::[DynamicValue]]: _*)
+                    _      <- dl.dispatch
+                    chunks <- ZIO.foreach(chunks)(effect => effect)
+                  } yield chunks
+                }
+              } yield out
+          }
+        case Sequence(value, operation) => operation match {
+            case Sequence.MakeString => for { input <- evaluateAs[Seq[String]](value, ctx) } yield input.mkString
+            case Sequence.Map(f)     => for {
+                input <- evaluateAs[Seq[Any]](value, ctx)
+                out   <- LExit.foreach(input)(i => evaluate(f, ctx).provideInput(i))
+              } yield out
+            case Sequence.FlatMap(f) => for {
+                input <- evaluateAs[Seq[Any]](value, ctx)
+                out   <- LExit.foreach(input)(i => evaluateAs[Seq[Any]](f, ctx).provideInput(i))
+              } yield out.flatten
+          }
+
+        case Str(self, operation) => operation match {
+            case Str.Concat(other) => for {
+                s1 <- evaluateAs[String](self, ctx)
+                s2 <- evaluateAs[String](other, ctx)
+              } yield s1 + s2
           }
       }
     }

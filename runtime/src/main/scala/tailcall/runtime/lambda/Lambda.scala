@@ -184,6 +184,12 @@ object Lambda {
 
     def debug[A](prefix: String): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
 
+    def fromBatchEndpoint(
+      endpoint: Endpoint,
+      join: List[DynamicValue] ~>> DynamicValue,
+    ): List[DynamicValue] ~> Map[DynamicValue, DynamicValue] =
+      Lambda.unsafe.attempt(ctx => Unsafe(Unsafe.BatchEndpointCall(endpoint, Lambda.fromFunction(join).compile(ctx))))
+
     def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Unsafe(Unsafe.EndpointCall(endpoint)))
   }
