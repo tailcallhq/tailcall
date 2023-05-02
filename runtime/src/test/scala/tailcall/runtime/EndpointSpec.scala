@@ -57,7 +57,7 @@ object EndpointSpec extends ZIOSpecDefault {
           assertTrue(request.headers.get("X-Server").contains("1"))
         }
       },
-      test("query") {
+      test("query params") {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
           DynamicValue(())                          -> root.withQuery("a" -> "1"),

@@ -103,15 +103,11 @@ object Endpoint {
 
     val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (key, string) =>
       MustacheExpression.syntax.parseString(string) match {
-        case Left(_)         => string
-        case Right(mustache) => DynamicValueUtil.getPath(input, mustache.path.toList, true) match {
-            case Some(input) => input match {
-                case DynamicValue.Sequence(values) => values.flatMap(DynamicValueUtil.asString)
-                    .map(input => s"$key=${input}").mkString("&")
-                case input => s"$key=${MustacheExpression.evaluate(string, input).getOrElse(string)}"
-              }
-
-            case None => string
+        case Left(_)           => s"$key=${string}"
+        case Right(expression) => DynamicValueUtil.getPath(input, expression.path.toList, true) match {
+            case Some(DynamicValue.Sequence(values)) => values.flatMap(DynamicValueUtil.asString)
+                .map(input => s"$key=${input}").mkString("&")
+            case _ => s"$key=${MustacheExpression.evaluate(string, input).getOrElse(string)}"
           }
       }
     }.mkString("?", "&", ""))
