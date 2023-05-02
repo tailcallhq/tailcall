@@ -137,5 +137,7 @@ object Blueprint {
 
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
+  // TODO: move this to server config
+  // Blueprint should only contain orchestration logic
   final case class Server(globalResponseTimeout: Option[Int] = None)
 }
