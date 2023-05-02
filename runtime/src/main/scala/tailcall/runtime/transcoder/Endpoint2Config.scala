@@ -7,7 +7,7 @@ import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Endpoint, Server, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 
-import java.net.URL
+import java.net.{URI, URL}
 import java.util.concurrent.atomic.AtomicInteger
 
 trait Endpoint2Config {
@@ -58,7 +58,7 @@ object Endpoint2Config {
         case -1 | 80 | 443 => endpoint.scheme.name + "://" + endpoint.address.host
         case _             => endpoint.scheme.name + "://" + endpoint.address.host + ":" + endpoint.address.port
       }
-      try TValid.succeed(new URL(urlString))
+      try TValid.succeed(URI.create(urlString).toURL)
       catch { case _: Throwable => TValid.fail(s"Invalid URL:  ${urlString}") }
     }
 

@@ -6,6 +6,8 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Path, Server}
 
+import java.net.URI
+
 object JsonPlaceholderConfig {
   private def createUser = users.withMethod(Method.POST).withBody(Option("{{args.user}}"))
   private def posts      = Operation.Http(Path.unsafe.fromString("/posts"))
@@ -80,6 +82,6 @@ object JsonPlaceholderConfig {
     ),
   )
 
-  val server = Server(baseURL = Option(new java.net.URL("https://jsonplaceholder.typicode.com")))
+  val server = Server(baseURL = Option(URI.create("https://jsonplaceholder.typicode.com").toURL))
   val config = Config(server = server, graphQL = graphQL)
 }
