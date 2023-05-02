@@ -58,16 +58,6 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(isFalse)
         },
       ),
-//      suite("equals")(
-//        test("equal") {
-//          val program = Lambda(1) =:= Lambda(1)
-//          assertZIO(program.evaluate)(isTrue)
-//        },
-//        test("not equal") {
-//          val program = Lambda(1) =:= Lambda(2)
-//          assertZIO(program.evaluate)(isFalse)
-//        }
-//      ),
       suite("diverge")(
         test("isTrue") {
           val program = Lambda(true).diverge(Lambda("Yes"), Lambda("No"))
@@ -461,7 +451,8 @@ object LambdaSpec extends ZIOSpecDefault {
         },
         test("batched") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users").withQuery("id" -> "{{id}}")
-          val input    = List(DynamicValue(Map("id" -> "1")), DynamicValue(Map("id" -> "2")))
+
+          val input = List(DynamicValue(Map("id" -> "1")), DynamicValue(Map("id" -> "2")))
 
           for {
             map <- Lambda.unsafe.fromBatchEndpoint(endpoint, List("id")).evaluateWith(input)
@@ -476,7 +467,8 @@ object LambdaSpec extends ZIOSpecDefault {
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
             .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
-          val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
+
+          val program = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
           val expected = "Unexpected status code: 404 url: http://jsonplaceholder.typicode.com/users/100"
