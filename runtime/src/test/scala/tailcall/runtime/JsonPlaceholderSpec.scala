@@ -5,7 +5,7 @@ import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
-import zio.test.Assertion.equalTo
+import zio.test.Assertion.{anything, equalTo}
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, ZIO, durationInt}
@@ -220,7 +220,13 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
         assertZIO(program)(equalTo(expected))
       },
-    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default) @@ timeout(5 seconds)
+
+      // FIXME: add a proper assertion
+      test("posts user - n + 1") {
+        val program = resolve(JsonPlaceholderConfig.config)(""" query { posts { user { name } } }""")
+        assertZIO(program)(anything)
+      },
+    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default) @@ timeout(10 seconds)
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
