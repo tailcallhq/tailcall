@@ -3,7 +3,6 @@ package tailcall.runtime.transcoder
 import caliban.InputValue
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
@@ -28,71 +27,6 @@ import java.net.URI
 object Config2StepSpec extends ZIOSpecDefault {
   override def spec =
     suite("Config to GraphQL Step")(
-      test("users name") {
-        val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
-
-        val expected = """{"users":[
-                         |{"name":"Leanne Graham"},
-                         |{"name":"Ervin Howell"},
-                         |{"name":"Clementine Bauch"},
-                         |{"name":"Patricia Lebsack"},
-                         |{"name":"Chelsey Dietrich"},
-                         |{"name":"Mrs. Dennis Schulist"},
-                         |{"name":"Kurtis Weissnat"},
-                         |{"name":"Nicholas Runolfsdottir V"},
-                         |{"name":"Glenna Reichert"},
-                         |{"name":"Clementina DuBuque"}
-                         |]}""".stripMargin.replace("\n", "").trim
-        assertZIO(program)(equalTo(expected))
-      },
-      test("user name") {
-        val program = resolve(JsonPlaceholderConfig.config)(""" query { user(id: 1) {name} } """)
-        assertZIO(program)(equalTo("""{"user":{"name":"Leanne Graham"}}"""))
-      },
-      test("post body") {
-        val program  = resolve(JsonPlaceholderConfig.config)(""" query { post(id: 1) { title } } """)
-        val expected =
-          """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}"""
-        assertZIO(program)(equalTo(expected))
-      },
-      test("user company") {
-        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { company { name } } }""")
-        val expected = """{"user":{"company":{"name":"Romaguera-Crona"}}}"""
-        assertZIO(program)(equalTo(expected))
-      },
-      test("user posts") {
-        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
-        val expected =
-          """{"user":{"posts":[{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},
-            |{"title":"qui est esse"},
-            |{"title":"ea molestias quasi exercitationem repellat qui ipsa sit aut"},
-            |{"title":"eum et est occaecati"},
-            |{"title":"nesciunt quas odio"},
-            |{"title":"dolorem eum magni eos aperiam quia"},
-            |{"title":"magnam facilis autem"},
-            |{"title":"dolorem dolore est ipsam"},
-            |{"title":"nesciunt iure omnis dolorem tempora et accusantium"},
-            |{"title":"optio molestias id quia eum"}]}}""".stripMargin.replace("\n", "").trim
-        assertZIO(program)(equalTo(expected))
-      },
-      test("post user") {
-        val program  = resolve(JsonPlaceholderConfig.config)(""" query {post(id: 1) { title user { name } } }""")
-        val expected =
-          """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
-        assertZIO(program)(equalTo(expected))
-      },
-      test("create user") {
-        val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
-        )
-        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
-      },
-      test("create user with zip code") {
-        val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
-        )
-        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
-      },
       test("rename a field") {
         val config  = {
           Config.default
@@ -115,11 +49,6 @@ object Config2StepSpec extends ZIOSpecDefault {
         val program = resolve(config)(""" query { foo(data: 1) {bar} } """)
 
         assertZIO(program)(equalTo("""{"foo":{"bar":1}}"""))
-      },
-      test("user zipcode") {
-        val program  = resolve(JsonPlaceholderConfig.config)("""query { user(id: 1) { address { zip } } }""")
-        val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
-        assertZIO(program)(equalTo(expected))
       },
       test("nested type") {
         val value = Json.Obj(

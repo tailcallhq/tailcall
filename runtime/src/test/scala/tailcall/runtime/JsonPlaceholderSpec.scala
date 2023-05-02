@@ -1,12 +1,14 @@
 package tailcall.runtime
 
+import caliban.InputValue
 import tailcall.runtime.internal.JsonPlaceholderConfig
-import tailcall.runtime.model.ConfigFormat
+import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
+import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
-import zio.{Scope, durationInt}
+import zio.{Scope, ZIO, durationInt}
 
 import java.io.File
 
@@ -148,5 +150,90 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
 
         for { actual <- Transcoder.toSDL(config, false).toTask } yield assertTrue(actual == expected)
       },
-    ).provide(ConfigFileIO.default) @@ timeout(5 seconds)
+      test("users name") {
+        val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
+
+        val expected = """{"users":[
+                         |{"name":"Leanne Graham"},
+                         |{"name":"Ervin Howell"},
+                         |{"name":"Clementine Bauch"},
+                         |{"name":"Patricia Lebsack"},
+                         |{"name":"Chelsey Dietrich"},
+                         |{"name":"Mrs. Dennis Schulist"},
+                         |{"name":"Kurtis Weissnat"},
+                         |{"name":"Nicholas Runolfsdottir V"},
+                         |{"name":"Glenna Reichert"},
+                         |{"name":"Clementina DuBuque"}
+                         |]}""".stripMargin.replace("\n", "").trim
+        assertZIO(program)(equalTo(expected))
+      },
+      test("user name") {
+        val program = resolve(JsonPlaceholderConfig.config)(""" query { user(id: 1) {name} } """)
+        assertZIO(program)(equalTo("""{"user":{"name":"Leanne Graham"}}"""))
+      },
+      test("post body") {
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query { post(id: 1) { title } } """)
+        val expected =
+          """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}"""
+        assertZIO(program)(equalTo(expected))
+      },
+      test("user company") {
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { company { name } } }""")
+        val expected = """{"user":{"company":{"name":"Romaguera-Crona"}}}"""
+        assertZIO(program)(equalTo(expected))
+      },
+      test("user posts") {
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
+        val expected =
+          """{"user":{"posts":[{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},
+            |{"title":"qui est esse"},
+            |{"title":"ea molestias quasi exercitationem repellat qui ipsa sit aut"},
+            |{"title":"eum et est occaecati"},
+            |{"title":"nesciunt quas odio"},
+            |{"title":"dolorem eum magni eos aperiam quia"},
+            |{"title":"magnam facilis autem"},
+            |{"title":"dolorem dolore est ipsam"},
+            |{"title":"nesciunt iure omnis dolorem tempora et accusantium"},
+            |{"title":"optio molestias id quia eum"}]}}""".stripMargin.replace("\n", "").trim
+        assertZIO(program)(equalTo(expected))
+      },
+      test("post user") {
+        val program  = resolve(JsonPlaceholderConfig.config)(""" query {post(id: 1) { title user { name } } }""")
+        val expected =
+          """{"post":{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit","user":{"name":"Leanne Graham"}}}"""
+        assertZIO(program)(equalTo(expected))
+      },
+      test("create user") {
+        val program = resolve(JsonPlaceholderConfig.config)(
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test"}) { id } } """
+        )
+        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
+      },
+      test("create user with zip code") {
+        val program = resolve(JsonPlaceholderConfig.config)(
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
+        )
+        assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
+      },
+      test("user zipcode") {
+        val program  = resolve(JsonPlaceholderConfig.config)("""query { user(id: 1) { address { zip } } }""")
+        val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
+        assertZIO(program)(equalTo(expected))
+      },
+    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default) @@ timeout(5 seconds)
+
+  private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
+    query: String
+  ): ZIO[HttpContext with GraphQLGenerator, Throwable, String] = {
+    for {
+      blueprint   <- Transcoder.toBlueprint(config).toTask
+      graphQL     <- blueprint.toGraphQL
+      interpreter <- graphQL.interpreter
+      result      <- interpreter.execute(query, variables = variables)
+      _           <- result.errors.headOption match {
+        case Some(error) => ZIO.fail(error)
+        case None        => ZIO.unit
+      }
+    } yield result.data.toString
+  }
 }
