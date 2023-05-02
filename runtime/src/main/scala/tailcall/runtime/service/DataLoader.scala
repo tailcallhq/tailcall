@@ -23,7 +23,7 @@ final case class DataLoader[R, E, A, B](
       promise  <- ref.modify { state =>
         state.get(a) match {
           case Some(promise) => (promise, state)
-          case None          => (nPromise, state.addRequest(a, nPromise))
+          case None          => (nPromise, state.add(a, nPromise))
         }
       }
     } yield promise.await
@@ -35,7 +35,8 @@ final case class DataLoader[R, E, A, B](
   def dispatch: ZIO[R, Nothing, Unit] = {
     for {
       state <- ref.get
-      _     <- resolver(Chunk.fromIterable(state.map.keys)).flatMap { bChunks =>
+      keys  <- state.pending
+      _     <- resolver(keys).flatMap { bChunks =>
         ZIO.foreachDiscard(state.map.values.zip(bChunks)) { case (promise, b) => promise.succeed(b) }
       }.catchAll { error =>
         for {
@@ -105,11 +106,16 @@ object DataLoader {
 
   final case class State[E, A, B](map: Map[A, Promise[E, B]] = Map.empty[A, Promise[E, B]]) {
     self =>
-    def addRequest(a: A, promise: Promise[E, B]): State[E, A, B] = copy(map = map + (a -> promise))
+    def add(a: A, promise: Promise[E, B]): State[E, A, B] = copy(map = map + (a -> promise))
 
-    def dropRequest(a: A): State[E, A, B] = copy(map = map - a)
+    def drop(a: A): State[E, A, B] = copy(map = map - a)
 
     def get(a: A): Option[Promise[E, B]] = map.get(a)
+
+    def pending: UIO[Chunk[A]] =
+      ZIO.foreach(Chunk.from(map)) { case (key, promise) =>
+        promise.isDone.map(done => if (done) Chunk.empty else Chunk.single(key))
+      }.map(_.flatten)
   }
 
   final class PartiallyAppliedDataLoaderOne[A](val unit: Unit) {
