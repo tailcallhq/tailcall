@@ -3,7 +3,7 @@ package tailcall.runtime.model
 import tailcall.runtime.DirectiveCodec
 import zio.json.{DeriveJsonCodec, JsonCodec, jsonHint}
 
-import java.net.URL
+import java.net.{URI, URL}
 
 @jsonHint("server")
 final case class Server(
@@ -27,7 +27,7 @@ final case class Server(
 object Server {
   implicit val urlCodec: JsonCodec[URL]          = JsonCodec[String].transformOrFail[URL](
     string =>
-      try Right(new URL(string))
+      try Right(URI.create(string).toURL)
       catch { case _: Throwable => Left(s"Malformed url: ${string}") },
     _.toString,
   )

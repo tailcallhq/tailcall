@@ -9,7 +9,7 @@ import tailcall.runtime.model.Server
 import zio.test.Assertion.equalTo
 import zio.test.{ZIOSpecDefault, assertZIO}
 
-import java.net.URL
+import java.net.URI
 
 object ServerSpec extends ZIOSpecDefault {
   def spec =
@@ -17,7 +17,7 @@ object ServerSpec extends ZIOSpecDefault {
       test("baseURL") {
         val directive = Directive(name = "server", arguments = Map("baseURL" -> StringValue("http://localhost:8080")))
         val actual    = directive.fromDirective[Server]
-        val expected  = Server(baseURL = Some(new URL("http://localhost:8080")))
+        val expected  = Server(baseURL = Some(URI.create("http://localhost:8080").toURL))
         assertZIO(actual.toZIO)(equalTo(expected)) && assertZIO(expected.toDirective.toZIO)(equalTo(directive))
       },
       test("timeout") {
@@ -26,7 +26,7 @@ object ServerSpec extends ZIOSpecDefault {
           arguments = Map("baseURL" -> StringValue("http://localhost:8080"), "timeout" -> IntNumber(1000)),
         )
         val actual    = directive.fromDirective[Server]
-        val expected  = Server(baseURL = Some(new URL("http://localhost:8080")), timeout = Some(1000))
+        val expected  = Server(baseURL = Some(URI.create("http://localhost:8080").toURL), timeout = Some(1000))
         assertZIO(actual.toZIO)(equalTo(expected)) && assertZIO(expected.toDirective.toZIO)(equalTo(directive))
       },
       test("vars") {
@@ -40,7 +40,7 @@ object ServerSpec extends ZIOSpecDefault {
         )
         val actual    = directive.fromDirective[Server]
         val expected  = Server(
-          baseURL = Some(new URL("http://localhost:8080")),
+          baseURL = Some(URI.create("http://localhost:8080").toURL),
           timeout = Some(1000),
           vars = Option(Map("foo" -> "bar")),
         )

@@ -17,7 +17,7 @@ import zio.test.TestAspect.{before, parallel, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, ZIO, durationInt}
 
-import java.net.URL
+import java.net.URI
 
 /**
  * Tests for the generation of GraphQL steps from a config.
@@ -360,7 +360,7 @@ object Config2StepSpec extends ZIOSpecDefault {
       ),
       suite("unsafe")(test("with http") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default.withBaseURL(new URL("https://jsonplaceholder.typicode.com"))
+        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
           .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
 
         val errors = config.toBlueprint.errors
@@ -376,7 +376,7 @@ object Config2StepSpec extends ZIOSpecDefault {
         assertTrue(errors == Chunk("No base URL defined in the server configuration"))
       },
       test("http directive") {
-        val config = Config.default.withBaseURL(new URL("https://jsonplaceholder.typicode.com")).withTypes(
+        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
           "Query" -> Config
             .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
           "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),

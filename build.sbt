@@ -83,7 +83,7 @@ enablePlugins(JavaAppPackaging)
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
-
+ThisBuild / githubWorkflowJavaVersions ++= Seq(JavaSpec.temurin("20"))
 ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "deploy",
   "Deploy",
