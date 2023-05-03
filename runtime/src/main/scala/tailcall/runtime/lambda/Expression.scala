@@ -109,14 +109,25 @@ object Expression {
   object Sequence {
     sealed trait Operation
     final case object MakeString            extends Operation
+    final case object ToChunk               extends Operation
+    final case object Head                  extends Operation
     final case class Map(f: Expression)     extends Operation
     final case class FlatMap(f: Expression) extends Operation
+    final case class GroupBy(f: Expression) extends Operation
   }
 
   final case class Str(self: Expression, operation: Str.Operation) extends Expression
   object Str {
     sealed trait Operation
     final case class Concat(other: Expression) extends Operation
+  }
+
+  final case class T2Exp(value: Expression, operation: T2Exp.Operation) extends Expression
+  object T2Exp {
+    sealed trait Operation
+    case object _1                      extends Operation
+    case object _2                      extends Operation
+    case class Apply(other: Expression) extends Operation
   }
 
   implicit val schema: Schema[Expression]       = DeriveSchema.gen[Expression]
@@ -168,11 +179,15 @@ object Expression {
         }
       case Expression.Sequence(value, operation)  => operation match {
           case Sequence.MakeString    => collect(value, f)
+          case Sequence.ToChunk       => collect(value, f)
+          case Sequence.Head          => collect(value, f)
           case Sequence.Map(func)     => collect(value, f) ++ collect(func, f)
           case Sequence.FlatMap(func) => collect(value, f) ++ collect(func, f)
+          case Sequence.GroupBy(func) => collect(value, f) ++ collect(func, f)
         }
       case Expression.Str(self, operation)        =>
         operation match { case Str.Concat(other) => collect(self, f) ++ collect(other, f) }
+      case T2Exp(value, _)                        => collect(value, f)
     }
   }
 }
