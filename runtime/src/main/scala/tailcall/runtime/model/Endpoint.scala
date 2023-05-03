@@ -30,6 +30,8 @@ final case class Endpoint(
 
   def withQuery(query: (String, String)*): Endpoint = copy(query = Chunk.from(query))
 
+  def withQuery(query: Map[String, String]): Endpoint = copy(query = Chunk.from(query))
+
   def withAddress(address: Endpoint.InetAddress): Endpoint = copy(address = address)
 
   def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
