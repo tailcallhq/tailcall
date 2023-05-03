@@ -376,6 +376,21 @@ object Config2StepSpec extends ZIOSpecDefault {
           json <- resolve(config, Map.empty)("""query {foo {c}}""")
         } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
       },
+      test("parent value") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "bars" -> Config.Field.ofType("Bar").asList
+              .resolveWith(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
+          ),
+          "Bar"   -> Config.Type(
+            "id"  -> Config.Field.int,
+            "foo" -> Config.Field.int.asList.resolveWithFunction(_.pathSeq("parent", "value", "id").toDynamic),
+          ),
+        )
+
+        val expected = """{"bars":[{"id":1,"foo":[1,2,3]},{"id":2,"foo":[1,2,3]},{"id":3,"foo":[1,2,3]}]}"""
+        for { json <- resolve(config, Map.empty)("""query {bars {id foo}}""") } yield assertTrue(json == expected)
+      },
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,

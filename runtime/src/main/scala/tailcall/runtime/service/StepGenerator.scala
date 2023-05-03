@@ -3,7 +3,6 @@ package tailcall.runtime.service
 import caliban.Value
 import caliban.schema.Step
 import tailcall.runtime.internal.DynamicValueUtil
-import tailcall.runtime.model
 import tailcall.runtime.model.{Blueprint, Context}
 import tailcall.runtime.service.StepGenerator.StepResult
 import tailcall.runtime.transcoder.Transcoder
@@ -60,18 +59,18 @@ object StepGenerator {
     }
 
     private def fromFieldDefinition(field: Blueprint.FieldDefinition, ctx: Context): Step[HttpContext] = {
-      def makeStep(context: Context): Step[HttpContext] =
+      def makeStep(ctx: Context): Step[HttpContext] =
         field.resolver match {
           case Some(resolver) =>
             val step = for {
-              value <- rtm.evaluate(resolver)(DynamicValue(context))
-              step = fromType(field.ofType, context.copy(value = value, parent = Option(ctx)))
+              value <- rtm.evaluate(resolver)(DynamicValue(ctx))
+              step = fromType(field, field.ofType, ctx.copyFromParent(value = value))
             } yield step
 
             Step.QueryStep(ZQuery.fromZIO(step))
           case None           =>
-            val value = DynamicValue(DynamicValueUtil.getPath(context.value, field.name :: Nil))
-            fromType(field.ofType, context.copy(value = value))
+            val value = DynamicValue(DynamicValueUtil.getPath(ctx.value, field.name :: Nil))
+            fromType(field, field.ofType, ctx.copy(value = value))
         }
 
       if (field.args.isEmpty) makeStep(ctx)
@@ -91,21 +90,21 @@ object StepGenerator {
      * compatible. We bailout if the types are not
      * compatible with the value.
      */
-    private def fromType(tpe: model.Blueprint.Type, ctx: Context): Step[HttpContext] = {
+    private def fromType(field: Blueprint.FieldDefinition, tpe: Blueprint.Type, ctx: Context): Step[HttpContext] = {
       tpe match {
-        case model.Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
+        case Blueprint.NamedType(name, _)        => objectStepRef.get(name) match {
             case Some(stepFunction) => stepFunction(ctx)
             // This is a case for scalar values
             case None               => Step.PureStep(Transcoder.toResponseValue(ctx.value).getOrElse(Value.NullValue))
           }
-        case model.Blueprint.ListType(ofType, nonNull) =>
+        case Blueprint.ListType(ofType, nonNull) =>
           val isNullable = !nonNull
           ctx.value match {
             // Value is guaranteed to be a seq, we should be able to type-assert it safely
             case DynamicValue.Sequence(values)                                       => Step
-                .ListStep(values.toList.map(value => fromType(ofType, ctx.copy(value = value))))
+                .ListStep(values.toList.map(value => fromType(field, ofType, ctx.copyFromParent(value = value))))
             case DynamicValue.SomeValue(DynamicValue.Sequence(values)) if isNullable =>
-              Step.ListStep(values.toList.map(value => fromType(ofType, ctx.copy(value = value))))
+              Step.ListStep(values.toList.map(value => fromType(field, ofType, ctx.copyFromParent(value = value))))
             case DynamicValue.NoneValue if isNullable                                => Step.PureStep(Value.NullValue)
             case _ => throw new RuntimeException(s"Unexpected value received for type ${tpe.render}")
           }
