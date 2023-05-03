@@ -26,13 +26,15 @@ final case class DataLoader[R, E, A, B](
    */
   def dispatch: ZIO[R, Nothing, Unit] = {
     for {
-      state <- ref.get
-      keys  <- state.pending
-      _     <- resolver(keys).flatMap { bChunks =>
-        ZIO.foreachDiscard(state.map.values.zip(bChunks)) { case (promise, b) => promise.succeed(b) }
+      state   <- ref.get
+      pending <- state.pending
+      keys   = pending.map(_._1)
+      values = pending.map(_._2)
+      _ <- resolver(keys).flatMap { bChunks =>
+        ZIO.foreachDiscard(values.zip(bChunks)) { case (promise, b) => promise.succeed(b) }
       }.catchAll { error =>
         for {
-          _ <- resetState
+          _ <- ref.update(state => state.drop(keys))
           _ <- ZIO.foreachDiscard(state.map.values)(_.fail(error))
         } yield ()
       }
@@ -61,14 +63,12 @@ final case class DataLoader[R, E, A, B](
         }
       }
     } yield result
-
-  private def resetState: UIO[Unit] = { ref.set(DataLoader.State[E, A, B]()) }
 }
 
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
   // TODO: make this configurable
-  val allowedHeaders = Set("authorization", "cookie")
+  private val allowedHeaders: Set[String] = Set("authorization", "cookie")
 
   def dispatch: ZIO[HttpContext, Throwable, Unit] = ZIO.serviceWithZIO[HttpContext](_.dataLoader.dispatch)
 
@@ -105,6 +105,12 @@ object DataLoader {
 
   sealed trait Resolver[R, E, A, B] {
     self =>
+    def apply(a: A): ZIO[R, E, B] =
+      self match {
+        case Resolver.One(f)  => f(a)
+        case Resolver.Many(f) => f(Chunk(a)).map(_.head)
+      }
+
     def apply(a: Chunk[A]): ZIO[R, E, Chunk[B]] =
       self match {
         case Resolver.One(f)  => ZIO.foreachPar(a)(f)
@@ -118,11 +124,13 @@ object DataLoader {
 
     def drop(a: A): State[E, A, B] = copy(map = map - a)
 
+    def drop(a: Chunk[A]): State[E, A, B] = copy(map = map.filterNot(i => a.contains(i._1)))
+
     def get(a: A): Option[Promise[E, B]] = map.get(a)
 
-    def pending: UIO[Chunk[A]] =
+    def pending: UIO[Chunk[(A, Promise[E, B])]] =
       ZIO.foreach(Chunk.from(map)) { case (key, promise) =>
-        promise.isDone.map(done => if (done) Chunk.empty else Chunk.single(key))
+        promise.isDone.map(done => if (done) Chunk.empty else Chunk.single(key -> promise))
       }.map(_.flatten)
   }
 

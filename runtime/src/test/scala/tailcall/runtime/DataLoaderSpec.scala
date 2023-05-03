@@ -47,6 +47,19 @@ object DataLoaderSpec extends ZIOSpecDefault {
           out <- TestConsole.output
         } yield assertTrue(out == Vector("Load\n"))
       } @@ nonFlaky,
+      test("multi request") {
+        for {
+          dl  <- DataLoader.one[Int](_ => zio.Console.printLine("Load").delay(5 second))
+          _   <- dl.load(1).fork
+          _   <- TestClock.adjust(5 second)
+          f1  <- dl.load(2).fork
+          _   <- TestClock.adjust(1 second)
+          f2  <- dl.load(2).fork
+          _   <- TestClock.adjust(5 second)
+          _   <- f1.join.zip(f2.join)
+          out <- TestConsole.output
+        } yield assertTrue(out == Vector("Load\n", "Load\n"))
+      },
       test("batch") {
         val value: UIO[DataLoader[Any, Nothing, Int, Int]] = DataLoader
           .many[Int](chunk => ZIO.succeed(chunk.map(_ + 1)))
