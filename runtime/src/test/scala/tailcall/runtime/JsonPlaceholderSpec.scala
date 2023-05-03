@@ -222,8 +222,8 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
       },
 
       // FIXME: add a proper assertion
-      test("posts user - n + 1") {
-        val program = resolve(JsonPlaceholderConfig.config)(""" query { posts { user { name } } }""")
+      test("users posts - n + 1") {
+        val program = resolve(JsonPlaceholderConfig.config)("""query {users { posts { title } }}""")
         assertZIO(program)(anything)
       },
     ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default) @@ timeout(10 seconds)
@@ -236,7 +236,8 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
       graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       result      <- interpreter.execute(query, variables = variables)
-      _           <- result.errors.headOption match {
+
+      _ <- result.errors.headOption match {
         case Some(error) => ZIO.fail(error)
         case None        => ZIO.unit
       }
