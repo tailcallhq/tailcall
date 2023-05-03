@@ -451,9 +451,7 @@ object LambdaSpec extends ZIOSpecDefault {
         },
         test("batched") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users").withQuery("id" -> "{{id}}")
-
-          val input = List(DynamicValue(Map("id" -> "1")), DynamicValue(Map("id" -> "2")))
-
+          val input    = List(DynamicValue(Map("id" -> "1")), DynamicValue(Map("id" -> "2")))
           for {
             map <- Lambda.unsafe.fromBatchEndpoint(endpoint, List("id")).evaluateWith(input)
           } yield {
@@ -482,5 +480,9 @@ object LambdaSpec extends ZIOSpecDefault {
           } yield assertTrue(out.contains("Hello"))
         },
       ),
+      suite("sequence")(test("groupBy") {
+        val seq = Lambda(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).groupBy(_ % Lambda(2))
+        assertZIO(seq.evaluate)(equalTo(Map(0 -> Seq(2, 4, 6, 8, 10), 1 -> Seq(1, 3, 5, 7, 9))))
+      }),
     ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(10 seconds) @@ parallel
 }

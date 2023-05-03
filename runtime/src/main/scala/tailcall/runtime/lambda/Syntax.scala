@@ -1,7 +1,8 @@
 package tailcall.runtime.lambda
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.lambda.Expression.{Opt, Sequence, Str}
+import tailcall.runtime.lambda.Expression.{Opt, Sequence, Str, T2Exp}
+import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
 object Syntax {
@@ -72,14 +73,28 @@ object Syntax {
     def toSeq: A ~> Seq[B] = Lambda.unsafe.attempt(ctx => Opt(Opt.ToSeq(self.compile(ctx))))
   }
 
+  implicit class Tuple2Syntax[A, A1, A2](self: A ~> (A1, A2)) {
+    def _1: A ~> A1 = Lambda.unsafe.attempt(ctx => Expression.T2Exp(self.compile(ctx), T2Exp._1))
+    def _2: A ~> A2 = Lambda.unsafe.attempt(ctx => Expression.T2Exp(self.compile(ctx), T2Exp._2))
+  }
+
   implicit class SeqSyntax[A, B](self: A ~> Seq[B]) {
     def flatMap[C](bc: B ~>> Seq[C]): A ~> Seq[C] =
       Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.FlatMap(Lambda.fromFunction(bc).compile(ctx))))
+
+    def flatten[C](implicit ev: Seq[B] <:< Seq[Seq[C]]): A ~> Seq[C] = self.widen[Seq[Seq[C]]].flatMap(identity(_))
+
+    def groupBy[K](f: B ~>> K): A ~> Map[K, Seq[B]] =
+      Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.GroupBy(Lambda.fromFunction(f).compile(ctx))))
 
     def map[C](bc: B ~>> C): A ~> Seq[C] =
       Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.Map(Lambda.fromFunction(bc).compile(ctx))))
 
     def mkString: A ~> String = Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.MakeString))
+
+    def toChunk: A ~> Chunk[B] = Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.ToChunk))
+
+    def head: A ~> Option[B] = Lambda.unsafe.attempt(ctx => Sequence(self.compile(ctx), Sequence.Head))
   }
 
   implicit class StringSyntax[A](self: A ~> String) {

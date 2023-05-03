@@ -148,8 +148,9 @@ object EvaluationRuntime {
             case Unsafe.EndpointCall(endpoint)               => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
+                  val request = endpoint.evaluate(input.asInstanceOf[DynamicValue])
                   for {
-                    chunk <- DataLoader.httpLoad(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
+                    chunk <- DataLoader.httpLoad(request)
                     json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
                       .mapError(ValidationError.DecodingError("String", "JsonAST", _))
                     any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
@@ -179,23 +180,33 @@ object EvaluationRuntime {
                 }
               } yield out
           }
-        case Sequence(value, operation) => operation match {
-            case Sequence.MakeString => for { input <- evaluateAs[Seq[String]](value, ctx) } yield input.mkString
-            case Sequence.Map(f)     => for {
-                input <- evaluateAs[Seq[Any]](value, ctx)
-                out   <- LExit.foreach(input)(i => evaluate(f, ctx).provideInput(i))
-              } yield out
-            case Sequence.FlatMap(f) => for {
-                input <- evaluateAs[Seq[Any]](value, ctx)
-                out   <- LExit.foreach(input)(i => evaluateAs[Seq[Any]](f, ctx).provideInput(i))
-              } yield out.flatten
-          }
+        case Sequence(value, operation) => for {
+            seq    <- evaluateAs[Seq[_]](value, ctx)
+            result <- operation match {
+              case Sequence.MakeString => LExit.succeed(seq.mkString)
+              case Sequence.ToChunk    => LExit.succeed(Chunk.from(seq))
+              case Sequence.Head       => LExit.succeed(seq.headOption)
+              case Sequence.Map(f)     => LExit.foreach(seq)(i => evaluate(f, ctx).provideInput(i))
+              case Sequence.FlatMap(f) => LExit.foreach(seq)(i => evaluateAs[Seq[Any]](f, ctx).provideInput(i))
+                  .map(_.flatten)
+              case Sequence.GroupBy(f) => LExit.foreach(seq)(item => evaluate(f, ctx).provideInput(item).map(_ -> item))
+                  .map(_.groupBy(_._1).map { case (key, value) => (key, value.map(_._2)) })
+            }
+          } yield result
 
-        case Str(self, operation) => operation match {
+        case Str(self, operation)    => operation match {
             case Str.Concat(other) => for {
                 s1 <- evaluateAs[String](self, ctx)
                 s2 <- evaluateAs[String](other, ctx)
               } yield s1 + s2
+          }
+        case T2Exp(value, operation) => operation match {
+            case T2Exp._1           => evaluateAs[(_, _)](value, ctx).map(_._1)
+            case T2Exp._2           => evaluateAs[(_, _)](value, ctx).map(_._2)
+            case T2Exp.Apply(other) => for {
+                t1 <- evaluate(value, ctx)
+                t2 <- evaluate(other, ctx)
+              } yield (t1, t2)
           }
       }
     }

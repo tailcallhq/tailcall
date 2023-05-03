@@ -48,6 +48,8 @@ sealed trait Lambda[-A, +B] {
    */
   final private[tailcall] def tap(f: B => UIO[Unit]): A ~> B =
     Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Tap(self.compile, f.asInstanceOf[Any => UIO[Unit]])))
+
+  final def widen[B1](implicit ev: B <:< B1): A ~> B1 = self.asInstanceOf[A ~> B1]
 }
 
 object Lambda {
@@ -61,6 +63,9 @@ object Lambda {
 
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.ast))
+
+  def tuple[A, A1, A2](t1: A ~> A1, t2: A ~> A2): A ~> (A1, A2) =
+    Lambda.unsafe.attempt(ctx => T2Exp(t1.compile(ctx), T2Exp.Apply(t2.compile(ctx))))
 
   def fromFunction[A, B](f: => A ~>> B): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
@@ -174,6 +179,7 @@ object Lambda {
     def isNone[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsNone))
 
     def isSome[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsSome))
+
   }
 
   object unsafe {
