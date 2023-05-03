@@ -179,7 +179,6 @@ object Lambda {
     def isNone[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsNone))
 
     def isSome[A]: Option[A] ~> Boolean = Lambda.unsafe.attempt(_ => Opt(Opt.IsSome))
-
   }
 
   object unsafe {
