@@ -17,20 +17,12 @@ final case class DataLoader[R, E, A, B](
    */
   def collect(seq: A*): UIO[Chunk[ZIO[Any, E, B]]] = ZIO.foreach(seq)(collect).map(Chunk.from)
 
-  def collect(a: A): UIO[ZIO[Any, E, B]] =
-    for {
-      nPromise <- Promise.make[E, B]
-      promise  <- ref.modify { state =>
-        state.get(a) match {
-          case Some(promise) => (promise, state)
-          case None          => (nPromise, state.add(a, nPromise))
-        }
-      }
-    } yield promise.await
+  def collect(a: A): UIO[ZIO[Any, E, B]] = insert(a).map(_._2.await)
 
   /**
-   * Dispatches all the collected requests and resolves
-   * their promises
+   * Provides manual control over when the resolver should
+   * be called. When called concurrently it is possible that
+   * the data loader issues multiple requests.
    */
   def dispatch: ZIO[R, Nothing, Unit] = {
     for {
@@ -52,7 +44,23 @@ final case class DataLoader[R, E, A, B](
    * response from the resolver for the data-loader's life
    * time.
    */
-  def load(a: A): ZIO[R, E, B] = collect(a).flatMap(dispatch *> _)
+  def load(a: A): ZIO[R, E, B] =
+    for {
+      state    <- insert(a)
+      _        <- dispatch.when(state._1)
+      response <- state._2.await
+    } yield response
+
+  private def insert(a: A): ZIO[Any, Nothing, (Boolean, Promise[E, B])] =
+    for {
+      nPromise <- Promise.make[E, B]
+      result   <- ref.modify { state =>
+        state.get(a) match {
+          case Some(promise) => ((false, promise), state)
+          case None          => ((true, nPromise), state.add(a, nPromise))
+        }
+      }
+    } yield result
 
   private def resetState: UIO[Unit] = { ref.set(DataLoader.State[E, A, B]()) }
 }
