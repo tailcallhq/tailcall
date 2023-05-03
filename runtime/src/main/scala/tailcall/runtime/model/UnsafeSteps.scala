@@ -18,7 +18,7 @@ final case class UnsafeSteps(steps: List[Operation]) {
 object UnsafeSteps {
   implicit val jsonCodec: JsonCodec[UnsafeSteps] = DeriveJsonCodec.gen[UnsafeSteps]
 
-  implicit val directiveCodec: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("unsafe", jsonCodec)
+  implicit val directive: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("unsafe", jsonCodec)
 
   def apply(steps: Operation*): UnsafeSteps = UnsafeSteps(steps.toList)
 
