@@ -225,9 +225,7 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-      batchKey: Option[String] = None,
-      groupBy: List[String] = Nil,
-    ): Field = copy(http = Option(Http(path, method, Option(query), input, output, body, batchKey, Option(groupBy))))
+    ): Field = copy(http = Option(Http(path, method, Option(query), input, output, body)))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 

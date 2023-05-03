@@ -222,11 +222,8 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
           "Post"  -> Type(
             "id"     -> Field.int,
             "userId" -> Field.int,
-            "user"   -> Field.ofType("User").withHttp(
-              path = Path.unsafe.fromString("/users"),
-              query = Map("id" -> "{{value.userId}}"),
-              batchKey = Option("userId"),
-            ),
+            "user"   -> Field.ofType("User")
+              .withHttp(path = Path.unsafe.fromString("/users"), query = Map("id" -> "{{value.userId}}")),
           ),
         )
 

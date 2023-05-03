@@ -51,15 +51,12 @@ object UnsafeSteps {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-      batchKey: Option[String] = None,
-      groupBy: Option[List[String]] = None,
     ) extends Operation {
       self =>
       override def compress: Http = {
-        val method  = self.method.filterNot(_ == Method.GET)
-        val query   = self.query.filter(_.nonEmpty)
-        val groupBy = self.groupBy.filter(_.nonEmpty)
-        self.copy(method = method, query = query, groupBy = groupBy)
+        val method = self.method.filterNot(_ == Method.GET)
+        val query  = self.query.filter(_.nonEmpty)
+        self.copy(method = method, query = query)
       }
 
       def withBody(body: Option[String]): Http = copy(body = body)
