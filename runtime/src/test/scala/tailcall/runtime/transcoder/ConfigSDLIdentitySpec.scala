@@ -6,6 +6,7 @@ import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, ConfigFormat, Path}
 import zio.ZIO
 import zio.json.yaml.EncoderYamlOps
+import zio.test.Assertion.equalTo
 import zio.test.TestAspect.failing
 import zio.test._
 
@@ -228,6 +229,16 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
         )
 
         assertIdentity(config, graphQL)
+      },
+      test("invalid directive on field") {
+        val graphQL = """
+                        |type Query {
+                        |  foo: String @fooBar
+                        |}
+                        |""".stripMargin
+
+        val errors = "Query.foo has an unrecognized directive: @fooBar"
+        assertZIO(ConfigFormat.GRAPHQL.decode(graphQL).flip)(equalTo(errors))
       },
     )
 
