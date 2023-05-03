@@ -202,7 +202,7 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
                          |
                          |type Post {
                          |  id: Int
-                         |  user: User @http(path: "/users",query: {id: "{{value.userId}}"},batchKey: "userId")
+                         |  user: User @http(path: "/users",query: {id: "{{value.userId}}"})
                          |  userId: Int
                          |}
                          |
