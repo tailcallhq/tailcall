@@ -56,6 +56,8 @@ sealed trait TValid[+E, +A] {
 
   def toZIO: zio.ZIO[Any, Chunk[E], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
+  def unit: TValid[E, Unit] = map(_ => ())
+
   def when(cond: Boolean): TValid[E, Unit] =
     self.fold(errors => if (cond) TValid.fail(errors) else TValid.succeed(()), _ => TValid.succeed(()))
 
