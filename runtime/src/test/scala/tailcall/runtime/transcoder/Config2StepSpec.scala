@@ -1,27 +1,32 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
-import caliban.{CalibanError, InputValue}
+import caliban.InputValue
+import tailcall.runtime.JsonT
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Step}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service._
+import zio.http.model.Headers
+import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertZIO}
-import zio.{ZIO, durationInt}
+import zio.test.TestAspect.{before, parallel, timeout}
+import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
+import zio.{Chunk, ZIO, durationInt}
+
+import java.net.URI
 
 /**
  * Tests for the generation of GraphQL steps from a config.
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object StepGenerationSpec extends ZIOSpecDefault {
+object Config2StepSpec extends ZIOSpecDefault {
   override def spec =
-    suite("GraphQL Step Generation")(
+    suite("Config to GraphQL Step")(
       test("users name") {
         val program = resolve(JsonPlaceholderConfig.config)(""" query { users {name} } """)
 
@@ -83,7 +88,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
       },
       test("create user with zip code") {
         val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },
@@ -101,7 +106,7 @@ object StepGenerationSpec extends ZIOSpecDefault {
           Config.default.withTypes(
             "Query" -> Type(
               "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
-                .withSteps(Step.objPath("bar" -> List("args", "data")))
+                .withSteps(Operation.objPath("bar" -> List("args", "data")))
             ),
             "Bar"   -> Type("bar" -> Field.ofType("Int")),
           )
@@ -117,16 +122,11 @@ object StepGenerationSpec extends ZIOSpecDefault {
       },
       test("nested type") {
         val value = Json.Obj(
-          "b" -> Json.Arr(
-            //
-            Json.Obj("c" -> Json.Num(1)),
-            Json.Obj("c" -> Json.Num(2)),
-            Json.Obj("c" -> Json.Num(3)),
-          )
+          "b" -> Json.Arr(Json.Obj("c" -> Json.Num(1)), Json.Obj("c" -> Json.Num(2)), Json.Obj("c" -> Json.Num(3)))
         )
 
         val config = Config.default.withTypes(
-          "Query" -> Type("a" -> Field.ofType("A").withSteps(Step.constant(value))),
+          "Query" -> Type("a" -> Field.ofType("A").withSteps(Operation.constant(value))),
           "A"     -> Type("b" -> Field.ofType("B").asList),
           "B"     -> Type("c" -> Field.int),
         )
@@ -138,10 +138,12 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val value: Json = Json
           .Obj("a" -> Json.Num(1), "b" -> Json.Obj("k1" -> Json.Num(1), "k2" -> Json.Num(2), "k3" -> Json.Num(3)))
 
-        val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").andThen(JsonT.toKeyValue))
+        val transformation = JsonT.applySpec("a" -> JsonT.path("a"), "b" -> JsonT.path("b").pipe(JsonT.toKeyValue))
 
         val config = Config.default.withTypes(
-          "Query" -> Type("z" -> Field.ofType("A").withSteps(Step.constant(value), Step.transform(transformation))),
+          "Query" -> Type(
+            "z" -> Field.ofType("A").withSteps(Operation.constant(value), Operation.transform(transformation))
+          ),
           "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B").asList),
           "B"     -> Type("key" -> Field.string, "value" -> Field.int),
         )
@@ -191,10 +193,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"sum":3}"""))
       },
       test("with nesting") {
-        // type Query {foo: Foo}
-        // type Foo {bar: Bar}
-        // type Bar {value: Int}
-
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
@@ -205,10 +203,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
       },
       test("with nesting array") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {value: Int}
-
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -219,9 +213,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
       },
       test("with nesting array ctx") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -234,10 +225,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
       },
       test("with nesting level 3") {
-        // type Query {foo: Foo}
-        // type Foo {bar: [Bar]}
-        // type Bar {baz: Baz}
-        // type Baz{value: Int}
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
@@ -255,10 +242,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
         ))
       },
       test("parent") {
-        // type Query {foo: Foo}
-        // type Foo {bar: Bar}
-        // type Bar{baz: Baz}
-        // type Baz{value: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").resolveWith(100)),
@@ -272,8 +255,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("partial resolver") {
-        // type Query {foo: Foo}
-        // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
           "Foo"   -> Config.Type(
@@ -287,8 +268,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("default property resolver") {
-        // type Query {foo: Foo}
-        // type Foo {a: Int, b: Int, c: Int}
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
           "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int")),
@@ -298,10 +277,6 @@ object StepGenerationSpec extends ZIOSpecDefault {
 
       },
       test("mutation with input type") {
-        // type Mutation { createFoo(input: FooInput){foo: Foo} }
-        // type Foo {a : Int}
-        // input FooInput {a: Int, b: Int, c: Int}
-
         val config = Config.default.withMutation("Mutation").withTypes(
           "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Mutation" -> Config.Type(
@@ -319,13 +294,169 @@ object StepGenerationSpec extends ZIOSpecDefault {
         val program = resolve(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       },
-    ).provide(GraphQLGenerator.default, HttpClient.default, DataLoader.http) @@ timeout(10 seconds)
+      test("Query with list fields") {
+        val json   = Json.Obj("a" -> Json.Num(1))
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithJson(json)),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int"), "b" -> Config.Field.ofType("Int").asList),
+        )
+
+        val program = resolve(config)("query {foo {a b}}")
+        assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
+      },
+      suite("modified")(
+        test("modified field") {
+          val config = Config.default.withTypes(
+            "Query"    -> Config.Type("identity" -> Config.Field.ofType("Identity").resolveWith(Map("a" -> 1))),
+            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+          )
+
+          for {
+            json <- resolve(config, Map.empty)("query {identity {b}}")
+          } yield assertTrue(json == """{"identity":{"b":1}}""")
+        },
+        test("modified argument name") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "identity" -> Config.Field.int.withArguments("input" -> Config.Arg.int.withName("data"))
+                .resolveWithFunction(_.path("args", "data").toDynamic)
+            )
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity(data: 1000)}""")
+          } yield assertTrue(json == """{"identity":1000}""")
+        },
+        test("modified input field should not be allowed") {
+          val identityType = Config.Type(
+            "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
+              .resolveWithFunction(_.path("args", "input").toDynamic)
+          )
+
+          val config = Config.default.withTypes(
+            "Query"    -> identityType,
+            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+          )
+          for {
+            json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){a}}")
+          } yield assertTrue(json == """{"identity":{"a":1}}""")
+        },
+        test("resolve using env variables") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("identity" -> Config.Field.int.resolveWithFunction(_.path("env", "foo").toDynamic))
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity}""")
+          } yield assertTrue(json == """{"identity":"bar"}""")
+        },
+        test("resolve with headers") {
+          val config = Config.default.withTypes(
+            "Query" -> Config
+              .Type("identity" -> Config.Field.string.resolveWithFunction(_.path("headers", "authorization").toDynamic))
+          )
+          for {
+            json <- resolve(config, Map.empty)("""query {identity}""")
+          } yield assertTrue(json == """{"identity":"bar"}""")
+        },
+      ),
+      suite("unsafe")(test("with http") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
+          .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
+
+        val errors = config.toBlueprint.errors
+
+        assertTrue(errors == Chunk("Type Query with field foo can not have unsafe and http operations together"))
+      }),
+      test("with no base url") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
+
+        val errors = config.toBlueprint.errors
+
+        assertTrue(errors == Chunk("No base URL defined in the server configuration"))
+      },
+      test("http directive") {
+        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
+          "Query" -> Config
+            .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
+          "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {user {id name}}""")
+        } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
+      },
+      test("inline field") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
+              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {foo {c}}""")
+        } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
+      },
+      test("inline with modify field") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "b").withName("bar")
+              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {bar {c}}""")
+        } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
+      },
+      test("inline with list") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
+              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {foo {c}}""")
+        } yield assertTrue(json == """{"foo":[[{"c":"Hello!"}]]}""")
+      },
+      test("inline on index with list") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
+              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {foo {c}}""")
+        } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
+      },
+    ).provide(
+      GraphQLGenerator.default,
+      HttpClient.default,
+      HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
+    ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
-  ): ZIO[HttpDataLoader with GraphQLGenerator, CalibanError, String] = {
-    val blueprint = config.toBlueprint
+  ): ZIO[HttpContext with GraphQLGenerator, Throwable, String] = {
     for {
+      blueprint   <- Transcoder.toBlueprint(config).toTask
       graphQL     <- blueprint.toGraphQL
       interpreter <- graphQL.interpreter
       result      <- interpreter.execute(query, variables = variables)

@@ -1,21 +1,32 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.http.Method
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
-import zio.ZIO
 import zio.json._
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
+import zio.{IO, ZIO}
 
 import java.io.File
+import java.net.URL
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
   def ++(other: Config): Config = self.mergeRight(other)
+
+  def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
+
+  def asJSONConfig: IO[String, String] = ConfigFormat.JSON.encode(self)
+
+  def asYAMLConfig: IO[String, String] = ConfigFormat.YML.encode(self)
+
+  def compress: Config = self.copy(graphQL = self.graphQL.compress, server = self.server.compress)
 
   def mergeRight(other: Config): Config = {
     Config(
@@ -25,9 +36,11 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     )
   }
 
-  def compress: Config = self.copy(graphQL = self.graphQL.compress)
+  def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
-  def toBlueprint: Blueprint = Transcoder.toBlueprint(self).get
+  def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
+
+  def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
@@ -43,11 +56,21 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
   }
+
+  def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
 }
 
 object Config {
 
-  def default: Config = Config.empty.withQuery("Query")
+  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
+  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
+  implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
+  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
+  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
+  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
+  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
+
+  def default: Config = Config.empty.withQuery("Query").withTypes("Query" -> Type())
 
   def empty: Config = Config()
 
@@ -59,21 +82,21 @@ object Config {
     self =>
     def ++(other: Type): Type = self.mergeRight(other)
 
-    def mergeRight(other: Type): Type =
-      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
-
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
 
     def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+
+    def mergeRight(other: Type): Type =
+      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
 
     def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
+    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
+
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
-
-    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
@@ -89,19 +112,19 @@ object Config {
       )
     }
 
-    def withType(name: String, typeInfo: Type): GraphQL = {
-      self.copy(types = self.types.get(name) match {
-        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
-        case None            => self.types + (name -> typeInfo)
-      })
-    }
-
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
     def withQuery(name: String): GraphQL = copy(schema = schema.copy(query = Option(name)))
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
+
+    def withType(name: String, typeInfo: Type): GraphQL = {
+      self.copy(types = self.types.get(name) match {
+        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
+        case None            => self.types + (name -> typeInfo)
+      })
+    }
   }
 
   // TODO: Field and Argument can be merged
@@ -113,10 +136,12 @@ object Config {
 
     // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
-    steps: Option[List[Step]] = None,
+    unsafeSteps: Option[List[Operation]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
+    http: Option[Http] = None,
+    inline: Option[InlineType] = None,
   ) {
     self =>
 
@@ -137,14 +162,8 @@ object Config {
         case _          => None
       }
 
-      val steps = self.steps match {
-        case Some(steps) if steps.nonEmpty =>
-          Option(steps.map {
-            case step @ Step.Http(_, _, _, _) =>
-              val noOutputHttp = step.withOutput(None).withInput(None)
-              if (step.method contains Method.GET) noOutputHttp.copy(method = None) else noOutputHttp
-            case step                         => step
-          })
+      val steps = self.unsafeSteps match {
+        case Some(steps) if steps.nonEmpty => Option(steps.map(_.compress))
         case _                             => None
       }
 
@@ -153,12 +172,17 @@ object Config {
         case _                           => None
       }
 
-      val update = self.modify match {
+      val modify = self.modify match {
         case Some(value) if value.nonEmpty => Some(value)
         case _                             => None
       }
 
-      self.copy(list = isList, required = isRequired, steps = steps, args = args, modify = update)
+      val inline = self.inline match {
+        case Some(value) if value.path.nonEmpty => Some(value)
+        case _                                  => None
+      }
+
+      copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify, inline = inline)
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -167,9 +191,9 @@ object Config {
 
     def resolveWith[A: Schema](a: A): Field = resolveWithFunction(_ => Lambda(DynamicValue(a)))
 
-    def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Step.function(f))
+    def resolveWithFunction(f: DynamicValue ~>> DynamicValue): Field = withSteps(Operation.function(f))
 
-    def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Step.constant(a.toJsonAST.toOption.get))
+    def resolveWithJson[A: JsonEncoder](a: A): Field = withSteps(Operation.constant(a.toJsonAST.toOption.get))
 
     def withArguments(args: (String, Arg)*): Field = withArguments(args.toMap)
 
@@ -177,21 +201,28 @@ object Config {
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
+    def withHttp(http: Http): Field = copy(http = Option(http))
+
+    def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
+
     def withJsonT(head: JsonT, tail: JsonT*): Field =
       withSteps {
         val all = head :: tail.toList
-        Step.transform(all.reduce(_ >>> _))
+        Operation.transform(all.reduce(_ >>> _))
       }
-
-    def withSteps(steps: Step*): Field = copy(steps = Option(steps.toList))
 
     def withName(name: String): Field = withUpdate(ModifyField.empty.withName(name))
 
-    def withUpdate(update: ModifyField): Field =
+    def withOmit(omit: Boolean): Field = withUpdate(ModifyField.empty.withOmit(omit))
+
+    def withSteps(steps: Operation*): Field = copy(unsafeSteps = Option(steps.toList))
+
+    def withUpdate(update: ModifyField): Field = {
       copy(modify = self.modify match {
         case Some(value) => Some(value mergeRight update)
         case None        => Some(update)
       })
+    }
   }
 
   final case class Arg(
@@ -248,14 +279,14 @@ object Config {
   }
 
   object Type {
-    def empty: Type = Type()
-
     def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
+
+    def empty: Type = Type()
   }
 
   object Field {
-    def apply(str: String, operations: Step*): Field =
-      Field(typeOf = str, steps = if (operations.isEmpty) None else Option(operations.toList))
+    def apply(str: String, operations: Operation*): Field =
+      Field(typeOf = str, unsafeSteps = if (operations.isEmpty) None else Option(operations.toList))
 
     def bool: Field = Field(typeOf = "Boolean")
 
@@ -272,12 +303,4 @@ object Config {
     val bool: Arg                 = Arg("Boolean")
     def ofType(name: String): Arg = Arg(name)
   }
-
-  implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
-  implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
-  implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
-  implicit lazy val fieldDefinitionCodec: JsonCodec[Field]       = DeriveJsonCodec.gen[Field]
-  implicit lazy val schemaDefinitionCodec: JsonCodec[RootSchema] = DeriveJsonCodec.gen[RootSchema]
-  implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
-  implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 }

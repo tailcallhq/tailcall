@@ -1,24 +1,18 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
-import tailcall.runtime.transcoder.{Endpoint2Config, Transcoder}
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
-import zio.{Scope, ZIO}
+import zio.{Chunk, Scope, ZIO}
 
-object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
+object Endpoint2SDLSpec extends ZIOSpecDefault {
   private val User = TSchema
     .obj("username" -> TSchema.Str, "id" -> TSchema.Num, "name" -> TSchema.Str, "email" -> TSchema.Str)
 
   private val InputUser = TSchema.obj("username" -> TSchema.Str, "name" -> TSchema.Str, "email" -> TSchema.Str)
 
   private val jsonEndpoint = Endpoint.make("jsonplaceholder.typicode.com").withHttps
-
-  def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, String, TestResult] = {
-    val schema = Transcoder.toGraphQLConfig(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
-    for { result <- schema.toZIO } yield assertTrue(result == expected)
-  }
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("endpoint to graphql schema")(
@@ -30,7 +24,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1: [Type_1!] @steps(value: [{http: {path: "/users"}}])
+                         |  fieldType_1: [Type_1!] @unsafe(steps: [{http: {path: "/users"}}])
                          |}
                          |
                          |type Type_1 {
@@ -51,7 +45,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1: Type_1! @steps(value: [{http: {path: "/abc"}}])
+                         |  fieldType_1: Type_1! @unsafe(steps: [{http: {path: "/abc"}}])
                          |}
                          |
                          |type Type_1 {
@@ -83,7 +77,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldType_1(value: Type_2!): Type_1 @steps(value: [{http: {path: "/user"}}])
+                         |  fieldType_1(value: Type_2!): Type_1 @unsafe(steps: [{http: {path: "/user"}}])
                          |}
                          |
                          |type Type_1 {
@@ -118,7 +112,7 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
                          |}
                          |
                          |type Query {
-                         |  fieldInt(value: Type_1!): Int! @steps(value: [{http: {path: ""}}])
+                         |  fieldInt(value: Type_1!): Int! @unsafe(steps: [{http: {path: ""}}])
                          |}
                          |""".stripMargin
         assertSchema(endpoint)(expected.trim)
@@ -127,32 +121,38 @@ object Endpoint2GraphQLSchemaSpec extends ZIOSpecDefault with Endpoint2Config {
         val endpoint = jsonEndpoint.withOutput(Option(User)).withInput(Option(InputUser)).withPath("/user")
           .withMethod(Method.POST)
 
-        val expected = """
-                         |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
-                         |  query: Query
-                         |  mutation: Mutation
-                         |}
-                         |
-                         |input Type_2 {
-                         |  username: String!
-                         |  name: String!
-                         |  email: String!
-                         |}
-                         |
-                         |type Mutation {
-                         |  fieldType_1(value: Type_2!): Type_1! @steps(value: [{http: {path: "/user",method: "POST"}}])
-                         |}
-                         |
-                         |type Query
-                         |
-                         |type Type_1 {
-                         |  username: String!
-                         |  id: Int!
-                         |  name: String!
-                         |  email: String!
-                         |}
-                         |""".stripMargin
+        val expected =
+          """
+            |schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
+            |  query: Query
+            |  mutation: Mutation
+            |}
+            |
+            |input Type_2 {
+            |  username: String!
+            |  name: String!
+            |  email: String!
+            |}
+            |
+            |type Mutation {
+            |  fieldType_1(value: Type_2!): Type_1! @unsafe(steps: [{http: {path: "/user",method: "POST"}}])
+            |}
+            |
+            |type Query
+            |
+            |type Type_1 {
+            |  username: String!
+            |  id: Int!
+            |  name: String!
+            |  email: String!
+            |}
+            |""".stripMargin
         assertSchema(endpoint)(expected.trim)
       },
     )
+
+  private def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[String], TestResult] = {
+    val schema = Transcoder.toSDL(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
+    for { result <- schema.toZIO } yield assertTrue(result == expected)
+  }
 }

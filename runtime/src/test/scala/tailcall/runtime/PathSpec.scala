@@ -1,6 +1,5 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.TestGen
 import tailcall.runtime.model.Path
 import tailcall.runtime.model.Path.Segment.{Literal, Param}
 import zio.ZIO
@@ -24,27 +23,36 @@ object PathSpec extends ZIOSpecDefault {
           "/{{a}}/{{b}}/{{c}}" -> (Param("a") :: Param("b") :: Param("c") :: Nil),
           "/{{a}}/{{b}}"       -> (Param("a") :: Param("b") :: Nil),
           "/{{a}}"             -> (Param("a") :: Nil),
+          "/a_b"               -> (Literal("a_b") :: Nil),
         )
         checkAll(Gen.fromIterable(input)) { case (input, expected) =>
           val parsed = ZIO.fromEither(syntax.parseString(input)).map(_.segments)
           assertZIO(parsed)(equalTo(expected))
         }
       },
-      test("evaluate") {
+      test("unsafeEvaluate") {
         val inputs = List(
           "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")),
           "/{{a.b.c}}/b/c"     -> DynamicValue(Map("a" -> Map("b" -> Map("c" -> "a")))),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (path, input) =>
-          val string = ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
+          val string = ZIO.fromEither(syntax.parseString(path)).map(_.unsafeEvaluate(input))
           assertZIO(string)(equalTo("/a/b/c"))
         }
       },
-      test("encoding") {
-        check(TestGen.genPath) { path =>
-          val program = path.encode
-          assertTrue(program.isRight)
+      test("evaluate") {
+        val inputs = List(
+          "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b"))             -> "/a/b/{{c}}",
+          "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map("a" -> "a", "b" -> "b", "c" -> "c")) -> "/a/b/c",
+          "/{{a}}/{{b}}/{{c}}" -> DynamicValue(Map.empty[String, String])               -> "/{{a}}/{{b}}/{{c}}",
+        )
+
+        checkAll(Gen.fromIterable(inputs)) { case path -> input -> output =>
+          for {
+            actual   <- ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
+            expected <- ZIO.fromEither(syntax.parseString(output))
+          } yield assertTrue(actual == expected)
         }
       },
     )

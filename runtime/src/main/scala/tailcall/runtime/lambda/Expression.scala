@@ -29,7 +29,6 @@ object Expression {
   final case class Unsafe(operation: Unsafe.Operation) extends Expression
   object Unsafe {
     sealed trait Operation
-    final case class Die(reason: String)              extends Operation
     final case class Debug(prefix: String)            extends Operation
     final case class EndpointCall(endpoint: Endpoint) extends Operation
   }
@@ -76,10 +75,10 @@ object Expression {
   final case class Dynamic(operation: Dynamic.Operation) extends Expression
   object Dynamic {
     sealed trait Operation
-    final case class Typed(ctor: MetaSchema)     extends Operation
-    final case class Path(name: List[String])    extends Operation
-    final case class ToDynamic(ctor: MetaSchema) extends Operation
-    final case class JsonTransform(jsonT: JsonT) extends Operation
+    final case class Typed(ctor: MetaSchema)                    extends Operation
+    final case class Path(name: List[String], nestSeq: Boolean) extends Operation
+    final case class ToDynamic(ctor: MetaSchema)                extends Operation
+    final case class JsonTransform(jsonT: JsonT)                extends Operation
   }
 
   final case class Dict(operation: Dict.Operation) extends Expression
@@ -125,7 +124,6 @@ object Expression {
         }
       case Expression.Pipe(left, right)           => collect(left, f) ++ collect(right, f)
       case Expression.Unsafe(operation)           => operation match {
-          case Unsafe.Die(_)          => f(expr).toList
           case Unsafe.Debug(_)        => f(expr).toList
           case Unsafe.EndpointCall(_) => f(expr).toList
         }

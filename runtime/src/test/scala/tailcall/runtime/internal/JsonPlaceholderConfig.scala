@@ -3,15 +3,18 @@ package tailcall.runtime.internal
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.{Config, Path, Server, Step}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path, Server}
+
+import java.net.URI
 
 object JsonPlaceholderConfig {
-  def createUser: Step.Http = users.withMethod(Method.POST)
-  def posts                 = Step.Http(Path.unsafe.fromString("/posts"))
-  def postsById             = Step.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
-  def userById              = Step.Http(Path.unsafe.fromString("/users/{{userId}}"))
-  def userPosts: Step       = Step.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
-  def users                 = Step.Http(Path.unsafe.fromString("/users"))
+  private def createUser = users.withMethod(Method.POST).withBody(Option("{{args.user}}"))
+  private def posts      = Operation.Http(Path.unsafe.fromString("/posts"))
+  private def postsById  = Operation.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
+  private def userById   = Operation.Http(Path.unsafe.fromString("/users/{{userId}}"))
+  private def userPosts  = Operation.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
+  private def users      = Operation.Http(Path.unsafe.fromString("/users"))
 
   val graphQL = Config.GraphQL(
     schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
@@ -25,9 +28,10 @@ object JsonPlaceholderConfig {
         "posts" -> Field.ofType("Post").withSteps(posts).asList.withDoc("A list of all posts."),
         "users" -> Field.ofType("User").withSteps(users).asList.withDoc("A list of all users."),
         "post" -> Field.ofType("Post").withSteps(postsById)("id" -> Arg.int.asRequired).withDoc("A single post by id."),
-        "user" -> Config.Field("User", Step.transform(JsonT.objPath("userId" -> List("args", "id"))), userById)(
+        "user" -> Config.Field("User", Operation.transform(JsonT.objPath("userId" -> List("args", "id"))), userById)(
           "id" -> Arg.int.asRequired
         ).withDoc("A single user by id."),
+        "unusedField" -> Field.string.withOmit(true).withDoc("An unused field that will be omitted."),
       ),
       "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
         "name"     -> Field.string.asRequired,
@@ -55,7 +59,7 @@ object JsonPlaceholderConfig {
         "title"  -> Field.string,
         "body"   -> Field.string,
         "user"   -> Field.ofType("User")
-          .withSteps(Step.transform(JsonT.objPath("userId" -> (List("value", "userId")))), userById),
+          .withSteps(Operation.transform(JsonT.objPath("userId" -> (List("value", "userId")))), userById),
       ),
       "Address"    -> Type(
         "street"  -> Field.string,
@@ -78,6 +82,6 @@ object JsonPlaceholderConfig {
     ),
   )
 
-  val server = Server(baseURL = Option(new java.net.URL("https://jsonplaceholder.typicode.com")))
+  val server = Server(baseURL = Option(URI.create("https://jsonplaceholder.typicode.com").toURL))
   val config = Config(server = server, graphQL = graphQL)
 }

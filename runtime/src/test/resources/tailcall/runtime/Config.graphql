@@ -8,7 +8,7 @@ input NewAddress {
   street: String
   suite: String
   city: String
-  zipcode: String @modify(rename: "zip")
+  zipcode: String @modify(name: "zip")
 }
 
 input NewCompany {
@@ -38,7 +38,7 @@ type Address {
   street: String
   suite: String
   city: String
-  zipcode: String @modify(rename: "zip")
+  zipcode: String @modify(name: "zip")
 }
 
 type Company {
@@ -58,32 +58,34 @@ type Id {
 }
 
 type Mutation {
-  createUser("User as an argument." user: NewUser!): Id @steps(value: [{http: {path: "/users",method: "POST"}}])
+  createUser("User as an argument." user: NewUser!): Id @unsafe(steps: [{http: {path: "/users",method: "POST",body: "{{args.user}}"}}])
 }
 
 type Post {
   body: String
   id: Int!
-  user: User @steps(value: [{transform: {objPath: {userId: ["value","userId"]}}},{http: {path: "/users/{{userId}}"}}])
+  user: User @unsafe(steps: [{transform: {objPath: {userId: ["value","userId"]}}},{http: {path: "/users/{{userId}}"}}])
   userId: Int!
   title: String
 }
 
 type Query {
-  "A list of all posts."
-  posts: [Post] @steps(value: [{http: {path: "/posts"}}])
-  "A list of all users."
-  users: [User] @steps(value: [{http: {path: "/users"}}])
   "A single post by id."
-  post(id: Int!): Post @steps(value: [{http: {path: "/posts/{{args.id}}"}}])
+  post(id: Int!): Post @unsafe(steps: [{http: {path: "/posts/{{args.id}}"}}])
+  "A list of all posts."
+  posts: [Post] @unsafe(steps: [{http: {path: "/posts"}}])
+  "A list of all users."
+  users: [User] @unsafe(steps: [{http: {path: "/users"}}])
+  "An unused field that will be omitted."
+  unusedField: String @modify(omit: true)
   "A single user by id."
-  user(id: Int!): User @steps(value: [{transform: {objPath: {userId: ["args","id"]}}},{http: {path: "/users/{{userId}}"}}])
+  user(id: Int!): User @unsafe(steps: [{transform: {objPath: {userId: ["args","id"]}}},{http: {path: "/users/{{userId}}"}}])
 }
 
 type User {
   website: String
   name: String!
-  posts: [Post] @steps(value: [{http: {path: "/users/{{value.id}}/posts"}}])
+  posts: [Post] @unsafe(steps: [{http: {path: "/users/{{value.id}}/posts"}}])
   email: String!
   username: String!
   company: Company

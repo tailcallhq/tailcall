@@ -16,7 +16,8 @@ import tailcall.runtime.model.Config.{Arg, Field}
 import tailcall.runtime.model._
 
 /**
- * This is used to generate a .graphQL file from a config
+ * This is used to generate a .graphQL file from a config.
+ * Mostly used for testing and onboarding a new APIs.
  */
 trait Config2Document {
   final def toDocument(config: Config): TValid[Nothing, Document] = {
@@ -44,12 +45,14 @@ trait Config2Document {
                 case Some(name) => setName(ofType, name)
                 case None       => ofType
               }
+
+              val directives = arg.modify.toList.flatMap(_.toDirective.toList)
               InputValueDefinition(
                 name = name,
                 ofType = prefixedOfType,
                 defaultValue = None,
                 description = arg.doc,
-                directives = Nil,
+                directives = directives,
               )
             }
           }
@@ -131,12 +134,16 @@ trait Config2Document {
 
   final private def toDirective(field: Config.Field): List[Directive] = {
     var directives = List.empty[Directive]
-    if (field.steps.nonEmpty) directives = directives ++ field.steps.getOrElse(Nil).toDirective.toList
+    if (field.http.nonEmpty) directives = directives ++ field.http.toList.flatMap(_.toDirective.toList)
+    if (field.unsafeSteps.nonEmpty)
+      directives = directives ++ field.unsafeSteps.flatMap(UnsafeSteps(_).toDirective.toOption).toList
     if (field.modify.nonEmpty) directives = directives ++ field.modify.toList.flatMap(_.toDirective.toList)
+    if (field.inline.exists(_.path.nonEmpty))
+      directives = directives ++ field.inline.flatMap(_.toDirective.toOption).toList
     directives
   }
 
-  private def toInputObjectTypeDefinition(
+  final private def toInputObjectTypeDefinition(
     definition: ObjectTypeDefinition,
     inputNames: Map[String, String],
   ): InputObjectTypeDefinition = {

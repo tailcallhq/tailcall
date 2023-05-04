@@ -7,52 +7,34 @@ import zio.json.{DecoderOps, JsonEncoder}
 import zio.schema.Schema
 import zio.schema.annotation.caseName
 
-trait DirectiveEncoder[A] {
-  final def contramap[B](ab: B => A): DirectiveEncoder[B] = { (b: B) => encode(ab(b)) }
-
-  def encode(a: A): TValid[String, Directive]
-
-  final def withName(name: String): DirectiveEncoder[A] = { (a: A) =>
-    for { directive <- encode(a) } yield directive.copy(name = name)
-  }
+final case class DirectiveEncoder[A](name: String, encode: A => TValid[String, Directive]) {
+  def contramap[B](ab: B => A): DirectiveEncoder[B] = DirectiveEncoder(name, ab andThen encode)
+  def withName(name: String): DirectiveEncoder[A]   = copy(name = name)
 }
 
 object DirectiveEncoder {
+  implicit def encoder[A](implicit codec: DirectiveCodec[A]): DirectiveEncoder[A] = codec.encoder
 
-  def collect[A](f: A => TValid[String, Directive]): DirectiveEncoder[A] = { (a: A) => f(a) }
-
-  def gen[A: Schema]: DirectiveEncoder[A] = fromSchema(Schema[A])
+  def fromJsonEncoder[A](directiveName: String, encoder: JsonEncoder[A]): DirectiveEncoder[A] =
+    DirectiveEncoder(
+      directiveName,
+      a =>
+        TValid.fromEither(encoder.encodeJson(a).fromJson[Map[String, InputValue]])
+          .map(args => Directive(directiveName, args)),
+    )
 
   def fromSchema[A](schema: Schema[A]): DirectiveEncoder[A] = {
-    val encoder  = zio.schema.codec.JsonCodec.jsonEncoder(schema)
-    val nameHint = schema.annotations.collectFirst { case caseName(name) => name }
-    DirectiveEncoder { a: A =>
-      for {
-        name      <- schema match {
-          case schema: Schema.Enum[_]   => TValid.succeed(schema.id.name)
-          case schema: Schema.Record[_] => TValid.succeed(schema.id.name)
-          case _                        => TValid.fail("Can only encode sealed traits and case classes as directives")
-        }
-        directive <- fromJsonEncoder(nameHint.getOrElse(name), encoder).encode(a)
-      } yield directive
+    val jsonEncoder = zio.schema.codec.JsonCodec.jsonEncoder(schema)
+    val nameHint    = schema.annotations.collectFirst { case caseName(name) => name }
+    val schemaName  = schema match {
+      case schema: Schema.Enum[_]   => schema.id.name
+      case schema: Schema.Record[_] => schema.id.name
+      case _                        => throw new RuntimeException("Can only encode case classes as directives")
     }
+    val name        = nameHint.getOrElse(schemaName)
+    val encoder     = fromJsonEncoder(name, jsonEncoder)
+    DirectiveEncoder(name, a => encoder.encode(a))
   }
 
-  def fromJsonEncoder[A](name: String, encoder: JsonEncoder[A]): DirectiveEncoder[A] =
-    DirectiveEncoder { a: A =>
-      for {
-        args <- TValid.fromEither(encoder.encodeJson(a).fromJson[Map[String, InputValue]])
-      } yield Directive(name, args)
-    }
-
-  def fromJsonListEncoder[A](name: String, encoder: JsonEncoder[A]): DirectiveEncoder[List[A]] =
-    DirectiveEncoder[List[A]] { list: List[A] =>
-      for {
-        args <- TValid.fromEither(JsonEncoder.list(encoder).encodeJson(list).fromJson[InputValue])
-      } yield Directive(name, Map("value" -> args))
-    }
-
-  def apply[A](implicit encoder: DirectiveEncoder[A]): DirectiveEncoder[A] = encoder
-
-  implicit def encoder[A](implicit codec: DirectiveCodec[A]): DirectiveEncoder[A] = codec.encoder
+  def gen[A: Schema]: DirectiveEncoder[A] = fromSchema(Schema[A])
 }

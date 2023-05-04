@@ -1,7 +1,9 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.{Method, Request, Scheme}
-import tailcall.runtime.model.Path.Segment
+import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.model.Mustache.MustacheExpression
+import tailcall.runtime.transcoder.Transcoder
 import zio.Chunk
 import zio.schema.{DynamicValue, Schema}
 
@@ -14,7 +16,7 @@ final case class Endpoint(
   output: Option[TSchema] = None,
   headers: Chunk[(String, String)] = Chunk.empty,
   scheme: Scheme = Scheme.Http,
-  body: Option[String] = None,
+  body: Option[MustacheExpression] = None,
   description: Option[String] = None,
 ) {
   self =>
@@ -49,7 +51,8 @@ final case class Endpoint(
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 
-  def withBody(body: String): Endpoint = copy(body = Option(body))
+  def withBody(body: MustacheExpression): Endpoint = copy(body = Option(body))
+  def withBody(body: String): Endpoint             = copy(body = MustacheExpression.syntax.parseString(body).toOption)
 
   lazy val outputSchema: Schema[Any] = output.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
 
@@ -87,6 +90,8 @@ object Endpoint {
   }
 
   def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
+  def get(address: String): Endpoint  = make(address).withMethod(Method.GET)
+  def post(address: String): Endpoint = make(address).withMethod(Method.POST)
 
   def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
     val method     = endpoint.method
@@ -96,21 +101,34 @@ object Endpoint {
       case port => s":$port"
     }
 
-    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) => s"$k=${Mustache.evaluate(v, input)}" }
-      .mkString("?", "&", ""))
+    val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (k, v) =>
+      s"$k=${MustacheExpression.evaluate(v, input).getOrElse(v)}"
+    }.mkString("?", "&", ""))
 
-    val pathString: String = endpoint.path.transform {
-      case Segment.Literal(value)  => Path.Segment.Literal(value)
-      case Segment.Param(mustache) => Path.Segment.Literal(
-          mustache.evaluate(input)
-            .getOrElse(throw new RuntimeException(s"Mustache {{${mustache.path}}} evaluation failed"))
-        )
-    }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
+    val pathString: String = endpoint.path.unsafeEvaluate(input)
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
-    val headers = endpoint.headers.map { case (k, v) => k -> Mustache.evaluate(v, input) }.toMap
+    val headers = endpoint.headers.map { case (k, v) => k -> MustacheExpression.evaluate(v, input).getOrElse(v) }.toMap
 
-    Request(method = method, url = url, headers = headers)
+    val bodyDynamic = endpoint.body match {
+      case Some(value) => DynamicValueUtil.getPath(input, value.path.toList)
+      case None        => Some(input)
+    }
+
+    val body =
+      if (method == Method.GET || method == Method.DELETE) Chunk.empty
+      else for {
+        dynamic <- Chunk.fromIterable(bodyDynamic)
+        json    <- Chunk.fromIterable(Transcoder.toJson(dynamic).toOption)
+        chunk   <- Chunk.fromArray(json.toJson.getBytes())
+      } yield chunk
+
+    val request = Request(
+      method = method,
+      url = url,
+      headers = headers ++ Map("content-length" -> body.size.toString, "content-type" -> "application/json"),
+    )
+    if (body.nonEmpty && method != Method.GET) request.withBody(body) else request
   }
 }

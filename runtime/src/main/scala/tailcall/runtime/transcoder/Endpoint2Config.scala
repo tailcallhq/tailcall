@@ -3,11 +3,11 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.{GraphQL, RootSchema}
-import tailcall.runtime.model.Step.Http
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Endpoint, Server, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 
-import java.net.URL
+import java.net.{URI, URL}
 import java.util.concurrent.atomic.AtomicInteger
 
 trait Endpoint2Config {
@@ -58,7 +58,7 @@ object Endpoint2Config {
         case -1 | 80 | 443 => endpoint.scheme.name + "://" + endpoint.address.host
         case _             => endpoint.scheme.name + "://" + endpoint.address.host + ":" + endpoint.address.port
       }
-      try TValid.succeed(new URL(urlString))
+      try TValid.succeed(URI.create(urlString).toURL)
       catch { case _: Throwable => TValid.fail(s"Invalid URL:  ${urlString}") }
     }
 
@@ -101,7 +101,8 @@ object Endpoint2Config {
 
     private def toRootTypeField(endpoint: Endpoint): Option[(String, Config.Field)] = {
       endpoint.output.map(schema => {
-        var config = toConfigField(schema, isRequired = true, isList = false).withSteps(Http.fromEndpoint(endpoint))
+        var config = toConfigField(schema, isRequired = true, isList = false)
+          .withSteps(Http.fromEndpoint(endpoint).withInput(None).withOutput(None))
 
         config = endpoint.input match {
           case Some(schema) => config.withArguments(toArgumentMap(schema, isRequired = true, isList = false))

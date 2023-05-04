@@ -1,16 +1,14 @@
 package tailcall.runtime
 
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
-import tailcall.runtime.service.{DataLoader, EvaluationRuntime}
+import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.durationInt
-import zio.http.Client
 import zio.schema.DynamicValue
 import zio.test.Assertion._
-import zio.test.TestAspect.timeout
+import zio.test.TestAspect.{parallel, timeout}
 import zio.test._
 
 object LambdaSpec extends ZIOSpecDefault {
@@ -394,6 +392,22 @@ object LambdaSpec extends ZIOSpecDefault {
             val expected = DynamicValue(100)
             assertZIO(p.evaluate)(equalTo(Some(expected)))
           },
+          test("with env") {
+            val context = Context(DynamicValue(()), env = Map("a" -> "100"))
+            val p       = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("env", "a")
+            assertZIO(p.evaluate)(equalTo(Some(DynamicValue("100"))))
+          },
+          test("with empty env") {
+            val context = Context(DynamicValue(()))
+            val p       = Lambda(DynamicValue(context)) >>> Lambda.dynamic.path("env", "a")
+            assertZIO(p.evaluate)(equalTo(None))
+          },
+          test("lists") {
+            val input    = Map("a" -> List(Map("b" -> List(Map("c" -> 1)))))
+            val p        = Lambda(DynamicValue(input)).pathSeq("a", "b", "c")
+            val expected = Option(DynamicValue(List(List(1))))
+            assertZIO(p.evaluate)(equalTo(expected))
+          },
         ),
       ),
       suite("option")(
@@ -434,9 +448,14 @@ object LambdaSpec extends ZIOSpecDefault {
         test("endpoint /users/1") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
             .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
-          val program  = Lambda.unsafe.fromEndpoint(endpoint)
-          val expected = DynamicValueUtil.record("id" -> DynamicValue(1L), "name" -> DynamicValue("Leanne Graham"))
-          assertZIO(program.evaluateWith(DynamicValue(Map("id" -> 1))))(equalTo(expected))
+          val input    = DynamicValue(Map("id" -> 1))
+
+          for {
+            dynamic <- Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(input)
+          } yield assertTrue(
+            DynamicValueUtil.getPath(dynamic, "id").contains(DynamicValue(BigDecimal(1))),
+            DynamicValueUtil.getPath(dynamic, "name").contains(DynamicValue("Leanne Graham")),
+          )
         },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
@@ -444,8 +463,9 @@ object LambdaSpec extends ZIOSpecDefault {
           val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
-          assertZIO(program)(equalTo("HTTP Error: 404"))
+          val expected = "Unexpected status code: 404 url: http://jsonplaceholder.typicode.com/users/100"
+          assertZIO(program)(equalTo(expected))
         },
       ),
-    ).provide(EvaluationRuntime.default, HttpClient.live, Client.default, DataLoader.http) @@ timeout(5 seconds)
+    ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(10 seconds) @@ parallel
 }

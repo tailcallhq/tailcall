@@ -3,9 +3,8 @@ package tailcall.runtime.lambda
 import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
-import tailcall.runtime.service.DataLoader.HttpDataLoader
 import tailcall.runtime.service.EvaluationContext.Binding
-import tailcall.runtime.service.EvaluationRuntime
+import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.ZIO
 import zio.schema.{DynamicValue, Schema}
 
@@ -30,10 +29,10 @@ sealed trait Lambda[-A, +B] {
 
   final def compile: Expression = compile(CompilationContext.initial)
 
-  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
     (self: R1 ~> B).evaluateWith {}
 
-  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpDataLoader, Throwable, B] =
+  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
     EvaluationRuntime.evaluate(self)(r)
 
   final def pipe[C](other: B ~> C): A ~> C = self >>> other
@@ -127,7 +126,10 @@ object Lambda {
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.JsonTransform(jsonT)))
 
     def path(p: String*): DynamicValue ~> Option[DynamicValue] =
-      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList)))
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList, false)))
+
+    def pathSeq(p: String*): DynamicValue ~> Option[DynamicValue] =
+      Lambda.unsafe.attempt(_ => Dynamic(Dynamic.Path(p.toList, true)))
 
     def toDynamic[A](implicit schema: Schema[A]): A ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Dynamic(Dynamic.ToDynamic(schema.ast)))
@@ -160,8 +162,6 @@ object Lambda {
 
   object unsafe {
     def debug[A](prefix: String): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
-
-    def die(reason: String): Any ~> Nothing = Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Die(reason)))
 
     def fromEndpoint(endpoint: Endpoint): DynamicValue ~> DynamicValue =
       Lambda.unsafe.attempt(_ => Unsafe(Unsafe.EndpointCall(endpoint)))

@@ -39,26 +39,12 @@ graphQL:
         zipcode:
           type: String
           modify:
-            rename: zip
+            name: zip
     Query:
       fields:
-        posts:
-          type: Post
-          isList: true
-          steps:
-          - http:
-              path: /posts
-          doc: A list of all posts.
-        users:
-          type: User
-          isList: true
-          steps:
-          - http:
-              path: /users
-          doc: A list of all users.
         post:
           type: Post
-          steps:
+          unsafeSteps:
           - http:
               path: /posts/{{args.id}}
           args:
@@ -66,9 +52,28 @@ graphQL:
               type: Int
               isRequired: true
           doc: A single post by id.
+        posts:
+          type: Post
+          isList: true
+          unsafeSteps:
+          - http:
+              path: /posts
+          doc: A list of all posts.
+        users:
+          type: User
+          isList: true
+          unsafeSteps:
+          - http:
+              path: /users
+          doc: A list of all users.
+        unusedField:
+          type: String
+          doc: An unused field that will be omitted.
+          modify:
+            omit: true
         user:
           type: User
-          steps:
+          unsafeSteps:
           - transform:
               objPath:
                 userId:
@@ -110,7 +115,7 @@ graphQL:
           isRequired: true
         user:
           type: User
-          steps:
+          unsafeSteps:
           - transform:
               objPath:
                 userId:
@@ -133,7 +138,7 @@ graphQL:
         posts:
           type: Post
           isList: true
-          steps:
+          unsafeSteps:
           - http:
               path: /users/{{value.id}}/posts
         email:
@@ -155,10 +160,11 @@ graphQL:
       fields:
         createUser:
           type: Id
-          steps:
+          unsafeSteps:
           - http:
               path: /users
               method: POST
+              body: '{{args.user}}'
           args:
             user:
               type: NewUser
@@ -191,4 +197,4 @@ graphQL:
         zipcode:
           type: String
           modify:
-            rename: zip
+            name: zip

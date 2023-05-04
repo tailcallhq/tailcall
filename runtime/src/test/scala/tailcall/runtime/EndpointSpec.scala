@@ -5,6 +5,8 @@ import tailcall.runtime.model.Endpoint
 import zio.schema.DynamicValue
 import zio.test._
 
+import java.nio.charset.StandardCharsets
+
 object EndpointSpec extends ZIOSpecDefault {
   def spec =
     suite("EndpointSpec")(
@@ -52,7 +54,7 @@ object EndpointSpec extends ZIOSpecDefault {
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
           val request = endpoint.evaluate(input)
-          assertTrue(request.headers == Map("X-Server" -> "1"))
+          assertTrue(request.headers.get("X-Server").contains("1"))
         }
       },
       test("query") {
@@ -67,6 +69,24 @@ object EndpointSpec extends ZIOSpecDefault {
           val request = endpoint.evaluate(input)
           assertTrue(request.url == "http://abc.com?a=1")
         }
+      },
+      test("body") {
+        val endpoint = Endpoint.post("abc.com")
+        val inputs   = List(
+          DynamicValue(Map("a" -> "1"))             -> endpoint.withBody("{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "1"))) -> endpoint.withBody("{{a.b}}"),
+        )
+
+        checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
+          val request = endpoint.evaluate(input)
+          val body    = new String(request.body.toArray, StandardCharsets.UTF_8)
+          assertTrue(body == """"1"""")
+        }
+      },
+      test("noBody") {
+        val request = Endpoint.post("abc.com").evaluate(DynamicValue(Map("a" -> "1")))
+        val body    = new String(request.body.toArray, StandardCharsets.UTF_8)
+        assertTrue(body == """{"a":"1"}""")
       },
     )
 }

@@ -2,8 +2,7 @@ package tailcall.runtime.model
 
 import caliban.GraphQL
 import tailcall.runtime.lambda.{Expression, ~>}
-import tailcall.runtime.service.DataLoader.HttpDataLoader
-import tailcall.runtime.service.GraphQLGenerator
+import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import zio.ZIO
 import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
@@ -29,12 +28,12 @@ import scala.annotation.tailrec
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(definitions: List[Blueprint.Definition] = Nil) {
+final case class Blueprint(definitions: List[Blueprint.Definition], server: Blueprint.Server) {
   self =>
-  def digest: Digest                                                     = Digest.fromBlueprint(self)
-  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpDataLoader]] = GraphQLGenerator.toGraphQL(self)
+  def digest: Digest                                                  = Digest.fromBlueprint(self)
+  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
   def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
-  def resolversMap: Map[String, Map[String, Option[Expression]]] =
+  def resolverMap: Map[String, Map[String, Option[Expression]]] =
     definitions.collect { case r: Blueprint.ObjectTypeDefinition =>
       (r.name, r.fields.map(field => (field.name, field.resolver.map(_.compile))).toMap)
     }.toMap
@@ -54,7 +53,7 @@ object Blueprint {
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
-  def empty: Blueprint = Blueprint()
+  def empty: Blueprint = Blueprint(Nil, Blueprint.Server())
 
   def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
@@ -91,7 +90,13 @@ object Blueprint {
     resolver: Option[DynamicValue ~> DynamicValue] = None,
     directives: List[Directive] = Nil,
     description: Option[String] = None,
-  )
+  ) {
+    def appendResolver(f: DynamicValue ~> DynamicValue): FieldDefinition =
+      resolver match {
+        case Some(resolver) => copy(resolver = Option(resolver >>> f))
+        case None           => copy(resolver = Option(f))
+      }
+  }
 
   final case class Directive(name: String, arguments: Map[String, DynamicValue] = Map.empty, index: Int = 0)
 
@@ -101,7 +106,7 @@ object Blueprint {
     description: Option[String] = None,
   ) extends Definition
 
-  sealed trait Type {
+  sealed trait Type extends Serializable with Product {
     self =>
     @tailrec
     final def defaultName: String =
@@ -132,4 +137,7 @@ object Blueprint {
 
   final case class ListType(ofType: Type, nonNull: Boolean) extends Type
 
+  // TODO: move this to server config
+  // Blueprint should only contain orchestration logic
+  final case class Server(globalResponseTimeout: Option[Int] = None)
 }

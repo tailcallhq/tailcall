@@ -1,23 +1,21 @@
-package tailcall.runtime
+package tailcall.runtime.transcoder
 
-import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
-import zio.test.{ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
 import zio.{ZIO, durationInt}
 
 /**
  * Tests for the generation of GraphQL schema from a config.
  * This is done by writing a test config, converting to
- * graphql, rendering the generated and then comparing with
- * expected output.
+ * blueprint, then to document, rendering the generated and
+ * then comparing with expected output.
  */
-object SchemaGenerationSpec extends ZIOSpecDefault {
+object Config2SDLSpec extends ZIOSpecDefault {
   override def spec =
-    suite("GraphQL Schema Generation")(
+    suite("Config to SDL")(
       test("only query") {
         val config   = Config.default.withTypes("Query" -> Type("hello" -> Field.ofType("String")))
         val expected = """|schema {
@@ -28,7 +26,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  hello: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("multiple query") {
         val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -42,7 +40,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("shared input and output types") {
         val config   = Config.default
@@ -65,7 +63,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("shared nested input and output types") {
         val config   = Config.default.withTypes(
@@ -98,7 +96,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("input and output types") {
         val config   = Config.default
@@ -122,7 +120,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |}
                           |""".stripMargin.trim
 
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("mergeRight") {
         val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
@@ -138,7 +136,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |  bar: String
                           |}
                           |""".stripMargin.trim
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       suite("rename annotations")(
         test("field") {
@@ -151,7 +149,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |  bar: String
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
         test("argument") {
           val config   = Config.default.withTypes(
@@ -167,7 +165,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |  foo(data: Int): String
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
         test("field in input type") {
           val config   = Config.default.withTypes(
@@ -179,115 +177,16 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                             |}
                             |
                             |input Foo {
-                            |  baz: String
+                            |  bar: String
                             |}
                             |
                             |type Query {
                             |  foo(input: Foo): Int
                             |}
                             |""".stripMargin.trim
-          render(config).map(actual => assertTrue(actual == expected))
+          assertSDL(config, expected)
         },
       ),
-      test("json placeholder") {
-        val config   = JsonPlaceholderConfig.config
-        val expected = """|schema {
-                          |  query: Query
-                          |  mutation: Mutation
-                          |}
-                          |
-                          |input NewAddress {
-                          |  geo: NewGeo
-                          |  street: String
-                          |  suite: String
-                          |  city: String
-                          |  zip: String
-                          |}
-                          |
-                          |input NewCompany {
-                          |  name: String
-                          |  catchPhrase: String
-                          |  bs: String
-                          |}
-                          |
-                          |input NewGeo {
-                          |  lat: String
-                          |  lng: String
-                          |}
-                          |
-                          |"A new user."
-                          |input NewUser {
-                          |  website: String
-                          |  name: String!
-                          |  email: String!
-                          |  username: String!
-                          |  company: NewCompany
-                          |  address: NewAddress
-                          |  phone: String
-                          |}
-                          |
-                          |type Address {
-                          |  geo: Geo
-                          |  street: String
-                          |  suite: String
-                          |  city: String
-                          |  zip: String
-                          |}
-                          |
-                          |type Company {
-                          |  name: String
-                          |  catchPhrase: String
-                          |  bs: String
-                          |}
-                          |
-                          |type Geo {
-                          |  lat: String
-                          |  lng: String
-                          |}
-                          |
-                          |"An Id container."
-                          |type Id {
-                          |  id: Int!
-                          |}
-                          |
-                          |type Mutation {
-                          |  createUser("User as an argument." user: NewUser!): Id
-                          |}
-                          |
-                          |type Post {
-                          |  body: String
-                          |  id: Int!
-                          |  user: User
-                          |  userId: Int!
-                          |  title: String
-                          |}
-                          |
-                          |type Query {
-                          |  "A list of all posts."
-                          |  posts: [Post]
-                          |  "A list of all users."
-                          |  users: [User]
-                          |  "A single post by id."
-                          |  post(id: Int!): Post
-                          |  "A single user by id."
-                          |  user(id: Int!): User
-                          |}
-                          |
-                          |type User {
-                          |  website: String
-                          |  name: String!
-                          |  posts: [Post]
-                          |  email: String!
-                          |  username: String!
-                          |  company: Company
-                          |  id: Int!
-                          |  address: Address
-                          |  phone: String
-                          |}
-                          |""".stripMargin.trim
-
-        render(config).map(actual => assertTrue(actual == expected))
-      },
       test("document type generation") {
         val config = Config.default
           .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWith("test")))
@@ -299,7 +198,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test: String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("document with InputValue") {
         val config = Config.default.withTypes(
@@ -316,7 +215,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("blueprint with InputValue and default") {
         val config = Config.default.withTypes(
@@ -333,7 +232,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  test(arg: String = "test"): String
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("with nesting") {
         val config   = Config.default.withTypes(
@@ -356,7 +255,7 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       test("with nesting array") {
         val config   = Config.default.withTypes(
@@ -379,12 +278,10 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
                           |type Query {
                           |  foo: Foo
                           |}""".stripMargin
-        render(config).map(actual => assertTrue(actual == expected))
+        assertSDL(config, expected)
       },
       suite("mutation")(
         test("mutation with primitive input") {
-          // mutation createFoo(input: String){foo: Foo}
-          // type Foo {a: Int, b: Int, c: Int}
           val config = Config.default.withMutation("Mutation").withTypes(
             "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
             "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
@@ -392,30 +289,25 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
               .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("String"))),
           )
 
-          val schema = render(config)
-          assertZIO(schema)(equalTo("""|schema {
-                                       |  query: Query
-                                       |  mutation: Mutation
-                                       |}
-                                       |
-                                       |type Foo {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Mutation {
-                                       |  createFoo(input: String): Foo
-                                       |}
-                                       |
-                                       |type Query {
-                                       |  foo: Foo
-                                       |}""".stripMargin))
+          val expected = """|schema {
+                            |  query: Query
+                            |  mutation: Mutation
+                            |}
+                            |
+                            |type Foo {
+                            |  a: Int
+                            |}
+                            |
+                            |type Mutation {
+                            |  createFoo(input: String): Foo
+                            |}
+                            |
+                            |type Query {
+                            |  foo: Foo
+                            |}""".stripMargin.trim
+          assertSDL(config, expected)
         },
         test("mutation with input type") {
-          // schema {mutation: Mutation}
-          // type Mutation { createFoo(input: FooInput) Foo }
-          // type Foo { foo: String }
-          // input FooInput {a: Int, b: Int, c: Int}
-
           val config = Config.default.withMutation("Mutation").withTypes(
             "Query"    -> Config.Type.empty,
             "Mutation" -> Config
@@ -424,29 +316,121 @@ object SchemaGenerationSpec extends ZIOSpecDefault {
             "FooInput" -> Config.Type("a" -> Config.Field.ofType("Int")),
           )
 
-          val schema = config.toBlueprint.toGraphQL.map(_.render)
-          assertZIO(schema)(equalTo("""|schema {
-                                       |  query: Query
-                                       |  mutation: Mutation
-                                       |}
-                                       |
-                                       |input FooInput {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Foo {
-                                       |  a: Int
-                                       |}
-                                       |
-                                       |type Mutation {
-                                       |  createFoo(input: FooInput): Foo
-                                       |}
-                                       |
-                                       |type Query""".stripMargin))
+          val expected = """|schema {
+                            |  query: Query
+                            |  mutation: Mutation
+                            |}
+                            |
+                            |input FooInput {
+                            |  a: Int
+                            |}
+                            |
+                            |type Foo {
+                            |  a: Int
+                            |}
+                            |
+                            |type Mutation {
+                            |  createFoo(input: FooInput): Foo
+                            |}
+                            |
+                            |type Query""".stripMargin.trim
+          assertSDL(config, expected)
         },
       ),
+      test("omit field") {
+        val config = Config.default
+          .withTypes("Query" -> Config.Type("foo" -> Config.Field.string, "bar" -> Config.Field.string.withOmit(true)))
+
+        val expected = """
+                         |schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type Query {
+                         |  foo: String
+                         |}
+                         |""".stripMargin.trim
+
+        assertSDL(config, expected)
+      },
+      test("inline field") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        val expected = """schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type B {
+                         |  c: String
+                         |}
+                         |
+                         |type Query {
+                         |  foo: B
+                         |}
+                         |""".stripMargin.trim
+
+        assertSDL(config, expected)
+      },
+      test("inline field with lists") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        val expected = """schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type B {
+                         |  c: String
+                         |}
+                         |
+                         |type Query {
+                         |  foo: [[B]]
+                         |}
+                         |""".stripMargin.trim
+
+        assertSDL(config, expected)
+      },
+      test("inline on index with list") {
+        val config = Config.default.withTypes(
+          "Query" -> Config.Type(
+            "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
+              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+          ),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+        )
+
+        val expected = """schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type B {
+                         |  c: String
+                         |}
+                         |
+                         |type Query {
+                         |  foo: [B]
+                         |}
+                         |""".stripMargin.trim
+
+        assertSDL(config, expected)
+      },
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
-  private def render(config: Config): ZIO[GraphQLGenerator, Throwable, String] =
-    config.toBlueprint.toGraphQL.map(_.render)
+  private def assertSDL(
+    config: Config,
+    expected: String,
+    asConfig: Boolean = false,
+  ): ZIO[GraphQLGenerator, Throwable, TestResult] =
+    for { actual <- Transcoder.toSDL(config, asConfig).toTask } yield assertTrue(actual == expected)
 }

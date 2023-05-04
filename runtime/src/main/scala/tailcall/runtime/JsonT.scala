@@ -17,13 +17,13 @@ import zio.schema.{DeriveSchema, DynamicValue, Schema, StandardType}
 
 sealed trait JsonT {
   self =>
-  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def pipe(other: JsonT): JsonT                             = other compose self
+  def compose(other: JsonT): JsonT                          = JsonT.Compose(List(self, other))
   def apply[A](input: A)(implicit ev: JsonT.Accessor[A]): A = run(input)
-
-  def andThen(other: JsonT): JsonT = JsonT.Pipe(self, other)
-  def >>>(other: JsonT): JsonT     = self andThen other
-  def other(other: JsonT): JsonT   = self andThen other
-  def debug(prefix: String): JsonT = self >>> JsonT.debug(prefix)
+  def run[A](input: A)(implicit ev: JsonT.Accessor[A]): A   = JsonT.transform(self, input)
+  def debug(prefix: String): JsonT                          = self >>> JsonT.debug(prefix)
+  def >>>(other: JsonT): JsonT                              = other <<< self
+  def <<<(other: JsonT): JsonT                              = self compose other
 }
 
 object JsonT {
@@ -32,6 +32,9 @@ object JsonT {
 
   @jsonHint("constant")
   final case class Constant(json: Json) extends JsonT
+  object Constant {
+    implicit val jsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder).transform(Constant(_), _.json)
+  }
 
   @jsonHint("toPair")
   case object ToPair extends JsonT
@@ -40,7 +43,10 @@ object JsonT {
   case object ToKeyValue extends JsonT
 
   @jsonHint("compose")
-  final case class Pipe(first: JsonT, second: JsonT) extends JsonT
+  final case class Compose(list: List[JsonT]) extends JsonT
+  object Compose {
+    implicit val jsonCodec: JsonCodec[Compose] = JsonCodec[List[JsonT]].transform(Compose(_), _.list)
+  }
 
   @jsonHint("applySpec")
   final case class ApplySpec(spec: Map[String, JsonT]) extends JsonT
@@ -55,6 +61,12 @@ object JsonT {
       .transform(ObjectPath(_), _.spec)
   }
 
+  @jsonHint("omit")
+  final case class Omit(keys: List[String]) extends JsonT
+  object Omit {
+    implicit val jsonCodec: JsonCodec[Omit] = JsonCodec[List[String]].transform(Omit(_), _.keys)
+  }
+
   @jsonHint("path")
   final case class Path(list: List[String]) extends JsonT
   object Path {
@@ -64,14 +76,31 @@ object JsonT {
   @jsonHint("debug")
   final case class Debug(prefix: String) extends JsonT
 
-  def identity: JsonT                               = Identity
-  def const(json: Json): JsonT                      = Constant(json)
-  def toPair: JsonT                                 = ToPair
-  def toKeyValue: JsonT                             = ToKeyValue
-  def path(list: String*): JsonT                    = Path(list.toList)
+  @jsonHint("map")
+  final case class SeqMap(jsonT: JsonT) extends JsonT
+  object SeqMap {
+    implicit val jsonCodec: JsonCodec[SeqMap] = JsonCodec[JsonT].transform(SeqMap(_), _.jsonT)
+  }
+
+  @jsonHint("flatMap")
+  final case class FlatMap(jsonT: JsonT) extends JsonT
+  object FlatMap {
+    implicit val jsonCodec: JsonCodec[FlatMap] = JsonCodec[JsonT].transform(FlatMap(_), _.jsonT)
+  }
+
   def applySpec(spec: (String, JsonT)*): JsonT      = ApplySpec(spec.toMap)
+  def const(json: Json): JsonT                      = Constant(json)
   def debug(prefix: String): JsonT                  = Debug(prefix)
+  def identity: JsonT                               = Identity
+  def map(jsonT: JsonT): JsonT                      = SeqMap(jsonT)
+  def flatMap(jsonT: JsonT): JsonT                  = FlatMap(jsonT)
   def objPath(spec: (String, List[String])*): JsonT = ObjectPath(spec.toMap)
+  def omit(keys: String*): JsonT                    = Omit(keys.toList)
+  def path(list: String*): JsonT                    = Path(list.toList)
+  def toKeyValue: JsonT                             = ToKeyValue
+  def toPair: JsonT                                 = ToPair
+  def compose(list: JsonT*): JsonT                  = Compose(list.toList)
+  def pipe(list: JsonT*): JsonT                     = Compose(list.toList.reverse)
 
   trait Accessor[A] {
     def keys(a: A): Chunk[String]
@@ -100,7 +129,7 @@ object JsonT {
 
       case ToPair => acc(data.keys.flatMap(key => data.get(key).map(value => acc(Chunk(acc(key), value)))))
 
-      case Pipe(first, second) => second(first(data))
+      case Compose(seq) => seq.foldRight(data) { case (jsonT, data) => jsonT(data) }
 
       case ApplySpec(spec) => data.toChunk match {
           case Some(list) => acc(list.map(transformation.run(_)))
@@ -135,14 +164,29 @@ object JsonT {
       case Debug(prefix) =>
         println(prefix + ": " + data)
         data
+
+      case SeqMap(jsonT)  => data.toChunk match {
+          case Some(list) => acc(list.map(jsonT(_)))
+          case None       => acc(Chunk.empty)
+        }
+      case FlatMap(jsonT) => data.toChunk match {
+          case Some(list) => acc(list.flatMap(jsonT(_).toChunk.getOrElse(Chunk.empty)))
+          case None       => acc(Chunk.empty)
+        }
+
+      case Omit(keys) => acc(data.keyValue.foldLeft(Map.empty[String, A]) { case (map, (key, value)) =>
+          if (keys.contains(key)) map else map + (key -> value)
+        })
     }
   }
 
   implicit final class AccessorSyntax[A](self: A) {
-    def keys(implicit acc: Accessor[A]): Chunk[String]         = acc.keys(self)
-    def values(implicit acc: Accessor[A]): Chunk[A]            = acc.values(self)
-    def get(key: String)(implicit acc: Accessor[A]): Option[A] = acc.get(self, key)
-    def toChunk(implicit acc: Accessor[A]): Option[Chunk[A]]   = acc.toChunk(self)
+    def keys(implicit acc: Accessor[A]): Chunk[String]          = acc.keys(self)
+    def values(implicit acc: Accessor[A]): Chunk[A]             = acc.values(self)
+    def keyValue(implicit acc: Accessor[A]): Chunk[(String, A)] =
+      self.keys.flatMap(key => Chunk.fromIterable(self.get(key).map(key -> _)))
+    def get(key: String)(implicit acc: Accessor[A]): Option[A]  = acc.get(self, key)
+    def toChunk(implicit acc: Accessor[A]): Option[Chunk[A]]    = acc.toChunk(self)
   }
 
   implicit val jsonAccessor: Accessor[Json] = new Accessor[Json] {
@@ -209,9 +253,6 @@ object JsonT {
 
     override def apply(a: Json): DynamicValue = Transcoder.toDynamicValue(a).get
   }
-
-  implicit val constantJsonCodec: JsonCodec[Constant] = JsonCodec(Json.encoder, Json.decoder)
-    .transform(Constant(_), _.json)
 
   implicit final private[JsonT] def jsonSchema: Schema[Json] = JsonSchema.schema
   implicit val jsonCodec: JsonCodec[JsonT]                   = DeriveJsonCodec.gen[JsonT]

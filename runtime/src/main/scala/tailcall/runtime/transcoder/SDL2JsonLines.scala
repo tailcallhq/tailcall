@@ -4,16 +4,17 @@ import caliban.CalibanError.ParsingError
 import caliban.parsing.adt.Definition
 import caliban.parsing.{Parser, adt}
 import tailcall.runtime.model.Blueprint
-import tailcall.runtime.transcoder.GraphQLSchema2JsonLines.TrainingRow
+import tailcall.runtime.transcoder.SDL2JsonLines.TrainingRow
 import zio.ZIO
 import zio.json.{DeriveJsonCodec, EncoderOps, JsonCodec}
 
-trait GraphQLSchema2JsonLines {
+trait SDL2JsonLines {
   def toJsonLines(schema: String): ZIO[Any, ParsingError, String] = {
     for {
       document <- Parser.parseQuery(schema)
       supportedDocument = document.copy(definitions = document.definitions.filter(isSupported))
-      blueprint <- Transcoder.toBlueprint(supportedDocument).toZIO.catchAll(err => ZIO.fail(ParsingError(err)))
+      blueprint <- Transcoder.toBlueprint(supportedDocument).toZIO
+        .catchAll(errors => ZIO.fail(ParsingError(errors.mkString(", "))))
     } yield toTrainingRows(blueprint.definitions).map(_.toJson).mkString("\n")
   }
 
@@ -31,7 +32,7 @@ trait GraphQLSchema2JsonLines {
   }
 }
 
-object GraphQLSchema2JsonLines {
+object SDL2JsonLines {
   final case class TrainingRow(prompt: Map[String, String], completion: String)
   implicit val jsonCodec: JsonCodec[TrainingRow] = DeriveJsonCodec.gen[TrainingRow]
 }
