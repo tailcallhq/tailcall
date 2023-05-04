@@ -36,7 +36,7 @@ object HttpClient {
             else for {
               res  <- client.request(req.toZHttpRequest)
               body <- res.body.asString(StandardCharsets.UTF_8)
-              _    <- ZIO.logDebug(s"code: ${res.status.code}")
+              _    <- ZIO.logInfo(s"code: ${res.status.code}")
               _    <- ZIO.logDebug(s"body: ${body}")
             } yield res
           redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
