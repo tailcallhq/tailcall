@@ -140,6 +140,10 @@ object EvaluationRuntime {
                 input <- LExit.input[Any]
                 _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
               } yield input
+            case Unsafe.Tap(self, f)           => for {
+                b <- evaluate(self, ctx)
+                _ <- LExit.fromZIO(f(b))
+              } yield b
             case Unsafe.EndpointCall(endpoint) => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {

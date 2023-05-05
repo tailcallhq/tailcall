@@ -5,11 +5,11 @@ import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
-import zio.durationInt
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test.TestAspect.{parallel, timeout}
 import zio.test._
+import zio.{Console, durationInt}
 
 object LambdaSpec extends ZIOSpecDefault {
   import tailcall.runtime.lambda.Numeric._
@@ -465,6 +465,13 @@ object LambdaSpec extends ZIOSpecDefault {
 
           val expected = "Unexpected status code: 404 url: http://jsonplaceholder.typicode.com/users/100"
           assertZIO(program)(equalTo(expected))
+        },
+        test("tap") {
+          val program = Lambda("Hello").tap(a => Console.print(a).orDie)
+          for {
+            _   <- program.evaluate
+            out <- TestConsole.output
+          } yield assertTrue(out.contains("Hello"))
         },
       ),
     ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(10 seconds) @@ parallel

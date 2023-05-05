@@ -6,6 +6,7 @@ import tailcall.runtime.service.EvaluationContext.Binding
 import zio.json.JsonCodec
 import zio.schema.meta.MetaSchema
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
+import zio.{UIO, ZIO}
 
 sealed trait Expression {
   self =>
@@ -29,8 +30,12 @@ object Expression {
   final case class Unsafe(operation: Unsafe.Operation) extends Expression
   object Unsafe {
     sealed trait Operation
-    final case class Debug(prefix: String)            extends Operation
-    final case class EndpointCall(endpoint: Endpoint) extends Operation
+    final case class Debug(prefix: String)                      extends Operation
+    final case class EndpointCall(endpoint: Endpoint)           extends Operation
+    final case class Tap(self: Expression, f: Any => UIO[Unit]) extends Operation
+    object Tap {
+      implicit val schema: Schema[Tap] = Schema[Unit].transform[Tap](_ => Tap(Identity, _ => ZIO.unit), _ => ())
+    }
   }
 
   object Math {
@@ -126,6 +131,7 @@ object Expression {
       case Expression.Unsafe(operation)           => operation match {
           case Unsafe.Debug(_)        => f(expr).toList
           case Unsafe.EndpointCall(_) => f(expr).toList
+          case Unsafe.Tap(self, _)    => collect(self, f)
         }
       case Expression.Dynamic(_)                  => f(expr).toList
       case Expression.Dict(operation)             => operation match {
