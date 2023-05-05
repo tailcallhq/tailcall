@@ -142,7 +142,7 @@ object Config {
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
-    http: Option[Http] = None,
+    http: Option[List[Http]] = None,
     inline: Option[InlineType] = None,
   ) {
     self =>
@@ -185,8 +185,8 @@ object Config {
       }
 
       val http = self.http match {
-        case Some(http) => Some(http.compress)
-        case None       => None
+        case Some(http) if http.nonEmpty => Some(http.map(_.compress))
+        case _                           => None
       }
 
       copy(
@@ -216,7 +216,11 @@ object Config {
 
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
-    def withHttp(http: Http): Field = copy(http = Option(http))
+    def withHttp(http: Http*): Field =
+      self.http match {
+        case None       => copy(http = Option(http.toList))
+        case Some(list) => copy(http = Option(http.toList ++ list))
+      }
 
     def withHttp(
       path: Path,
@@ -225,7 +229,7 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-    ): Field = copy(http = Option(Http(path, method, Option(query), input, output, body)))
+    ): Field = withHttp(Http(path, method, Option(query), input, output, body))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 

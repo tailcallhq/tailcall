@@ -64,7 +64,7 @@ trait Document2Config {
       args = Option(args),
       doc = field.description,
       modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
-      http = field.directives.flatMap(_.fromDirective[Http].toList).headOption,
+      http = Option(field.directives.flatMap(_.fromDirective[Http].toList)),
       inline = field.directives.flatMap(_.fromDirective[InlineType].toList).headOption,
     )
   }

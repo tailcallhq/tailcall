@@ -4,10 +4,12 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Blueprint.FieldDefinition
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
+import zio.Chunk
 import zio.schema.DynamicValue
 
 trait Config2Blueprint {
@@ -34,6 +36,24 @@ object Config2Blueprint {
       } yield Blueprint(rootSchema :: definitions, Blueprint.Server(config.server.timeout))
 
     }
+
+    private def appendBatchResolver(
+      bField: Blueprint.FieldDefinition,
+      f: DynamicValue ~> DynamicValue,
+    ): FieldDefinition =
+      bField.batchResolver match {
+        case Some(g) => bField.copy(resolver = Option(g >>> f))
+        case None    => bField.copy(resolver = Option(f))
+      }
+
+    private def appendResolver(
+      bField: Blueprint.FieldDefinition,
+      f: DynamicValue ~> DynamicValue,
+    ): Blueprint.FieldDefinition =
+      bField.resolver match {
+        case Some(g) => bField.copy(resolver = Option(g >>> f))
+        case None    => bField.copy(resolver = Option(f))
+      }
 
     /**
      * Types are input types if they are used as arguments
@@ -137,7 +157,7 @@ object Config2Blueprint {
             val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
 
             var endpoint = Endpoint.make(host).withPort(port).withPath(http.path)
-              .withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
+              .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withQuery(http.query.getOrElse(Map.empty))
               .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
 
             http.body.flatMap(MustacheExpression.syntax.parseString(_).toOption) match {
@@ -151,7 +171,17 @@ object Config2Blueprint {
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
-            Lambda.unsafe.fromEndpoint(endpoint)
+            val f = Lambda.unsafe.fromEndpoint(endpoint)
+            http.batchKey match {
+              case None      => f
+              case Some(key) =>
+                // FIXME: handle single values
+                val g = Lambda.identity[DynamicValue].toTyped[Chunk[DynamicValue]]
+                  .getOrElse(Lambda(Chunk.empty[DynamicValue]))
+                  .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
+                  .get(Lambda.identity[DynamicValue].path("value", key)).map(_.toChunk).toDynamic
+                f >>> g
+            }
           }
         case None          => TValid.fail("No base URL defined in the server configuration")
       }
@@ -195,7 +225,7 @@ object Config2Blueprint {
       var schema = config.graphQL.types.get(fieldType) match {
         case Some(typeInfo) => TSchema.obj(
             typeInfo.fields.filter { case (_, field) =>
-              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.input.isEmpty)
+              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.exists(_.input.isEmpty))
             }.map { case (fieldName, field) => (fieldName, toTSchema(field)) }
           )
 
@@ -244,14 +274,19 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
+
       field.http match {
-        case Some(http) =>
+        case Some(httpList) if httpList.nonEmpty =>
           if (field.isRequired) TValid
             .fail(s"`${typeName}.${bField.name}` has an http operation hence can not be non-nullable")
           else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
-            .fail(s"Type ${typeName} with field ${bField.name} can not have unsafe and http operations together")
-          else toHttpResolver(field, http).map(resolver => bField.appendResolver(resolver))
-        case None       => TValid.succeed(bField)
+            .fail(s"${typeName}.${bField.name} can not have unsafe and http operations together")
+          else TValid.fold(httpList, bField) { case (bField, http) =>
+            toHttpResolver(field, http).map { resolver =>
+              if (http.batchKey.nonEmpty) appendBatchResolver(bField, resolver) else appendResolver(bField, resolver)
+            }
+          }
+        case _                                   => TValid.succeed(bField)
       }
     }
 
@@ -292,7 +327,7 @@ object Config2Blueprint {
             val resolver =
               if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
               else Lambda.identity[DynamicValue].pathSeq(path: _*)
-            bField.appendResolver(resolver.toDynamic).copy(ofType = ofType)
+            appendResolver(bField, resolver.toDynamic).copy(ofType = ofType)
           })
         case _                      => TValid.succeed(bField)
       }
@@ -310,7 +345,7 @@ object Config2Blueprint {
           else {
             val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
             val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
-            TValid.succeed(bField.appendResolver(resolver).copy(name = newName)).some
+            TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
           }
         case Some(ModifyField(Some(_), Some(_)))    => TValid
             .fail(s"Cannot have both name and omit modifier on field ${bField.name}")
@@ -328,7 +363,7 @@ object Config2Blueprint {
       else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField
-            case Some(resolver) => bField.appendResolver(resolver)
+            case Some(resolver) => appendResolver(bField, resolver)
           }
         case None        => TValid.succeed(bField)
       }

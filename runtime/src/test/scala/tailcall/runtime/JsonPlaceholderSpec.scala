@@ -5,12 +5,12 @@ import tailcall.runtime.internal.JsonPlaceholderConfig
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
-import zio.test.Assertion.{anything, equalTo}
+import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
 import zio.{Scope, ZIO, durationInt}
 
-import java.io.File
+import java.io.{File, FileNotFoundException}
 
 object JsonPlaceholderSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] =
@@ -183,7 +183,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(expected))
       },
       test("user posts") {
-        val program  = resolve(JsonPlaceholderConfig.config)(""" query {user(id: 1) { posts { title } } }""")
+        val program  = resolve(JsonPlaceholderConfig.config)("""query {user(id: 1) { posts { title } } }""")
         val expected =
           """{"user":{"posts":[{"title":"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},
             |{"title":"qui est esse"},
@@ -220,13 +220,25 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
         assertZIO(program)(equalTo(expected))
       },
+      test("users posts batching") {
+        for {
+          actual   <- resolve(JsonPlaceholderConfig.config)("""query {users { id posts { userId title } }}""")
+          expected <- readJson("user-posts-batched.json")
+        } yield assertTrue(actual == expected)
 
-      // FIXME: add a proper assertion
-      test("users posts - n + 1") {
-        val program = resolve(JsonPlaceholderConfig.config)("""query {users { posts { title } }}""")
-        assertZIO(program)(anything)
       },
-    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default) @@ timeout(10 seconds)
+    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default) @@ timeout(
+      10 seconds
+    )
+
+  private def readJson(name: String): ZIO[FileIO, Throwable, String] = {
+    for {
+      path    <- ZIO.attempt(getClass.getResource(s"assertions/${name}").toURI.getPath)
+        .refineOrDie { case _: NullPointerException => new FileNotFoundException(s"File $name not found") }
+      file    <- ZIO.attempt(new File(path))
+      content <- FileIO.read(file)
+    } yield content
+  }
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
