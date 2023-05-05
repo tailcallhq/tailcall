@@ -75,7 +75,7 @@ object Mustache {
     def evaluate(mustache: MustacheExpression, input: DynamicValue): TValid[String, String] = {
       for {
         value  <- TValid
-          .fromOption(getPath(input, mustache.path.toList), s"Path ${mustache.path.mkString("[", ", ", "]")} not found")
+          .fromOption(getPath(input, mustache.path.toList), s"Path${mustache.path.mkString("(", ", ", ")")} not found")
         string <- TValid.fromOption(asString(value), s"Value $value is not a string")
       } yield string
     }
