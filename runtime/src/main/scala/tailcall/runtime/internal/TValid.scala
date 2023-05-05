@@ -29,6 +29,9 @@ sealed trait TValid[+E, +A] {
   def getOrThrow(implicit ev: E <:< String): A =
     self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
 
+  def getOrThrow(prefix: String)(implicit ev: E <:< String): A =
+    self.getOrElseWith(e => throw new RuntimeException(prefix + e.mkString("[", ", ", "]")))
+
   def isEmpty: Boolean = self.fold(_ => true, _ => false)
 
   def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
