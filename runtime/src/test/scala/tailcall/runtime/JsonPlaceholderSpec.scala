@@ -2,6 +2,8 @@ package tailcall.runtime
 
 import caliban.InputValue
 import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.model.Config.{Field, Type}
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
@@ -13,6 +15,8 @@ import zio.{Scope, ZIO, durationInt}
 import java.io.{File, FileNotFoundException}
 
 object JsonPlaceholderSpec extends ZIOSpecDefault {
+  private val typicode = Config.default.withBaseURL("https://jsonplaceholder.typicode.com")
+
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("JsonPlaceholder")(
       test("Config.yml is valid Config")(ConfigFileIO.readURL(getClass.getResource("Config.yml")).as(assertCompletes)),
@@ -221,8 +225,18 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         assertZIO(program)(equalTo(expected))
       },
       test("users posts batching") {
+        val users           = Http.fromPath("/users")
+        val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
+          .withGroupBy("userId")
+
+        val config = typicode.withTypes(
+          "Query" -> Type("users" -> Field.ofType("User").asList.withHttp(users)),
+          "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
+          "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+        )
+
         for {
-          actual   <- resolve(JsonPlaceholderConfig.config)("""query {users { id posts { userId title } }}""")
+          actual   <- resolve(config)("""query {users { id posts { userId title } }}""")
           expected <- readJson("user-posts-batched.json")
         } yield assertTrue(actual == expected)
 

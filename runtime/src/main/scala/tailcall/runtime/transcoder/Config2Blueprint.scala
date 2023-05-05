@@ -171,16 +171,14 @@ object Config2Blueprint {
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
-            val f = Lambda.unsafe.fromEndpoint(endpoint)
+            val resolver = Lambda.unsafe.fromEndpoint(endpoint)
             http.batchKey match {
-              case None      => f
+              case None      => resolver
               case Some(key) =>
                 // FIXME: handle single values
-                val g = Lambda.identity[DynamicValue].toTyped[Chunk[DynamicValue]]
-                  .getOrElse(Lambda(Chunk.empty[DynamicValue]))
+                resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
                   .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
                   .get(Lambda.identity[DynamicValue].path("value", key)).map(_.toChunk).toDynamic
-                f >>> g
             }
           }
         case None          => TValid.fail("No base URL defined in the server configuration")
