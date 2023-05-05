@@ -295,7 +295,7 @@ object Config2StepSpec extends ZIOSpecDefault {
 
         val errors = config.toBlueprint.errors
 
-        assertTrue(errors == Chunk("Type Query with field foo can not have unsafe and http operations together"))
+        assertTrue(errors == Chunk("Query.foo can not have unsafe and http operations together"))
       }),
       test("with no base url") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
