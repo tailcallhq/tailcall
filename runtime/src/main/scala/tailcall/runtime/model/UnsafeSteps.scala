@@ -102,6 +102,8 @@ object UnsafeSteps {
           output = endpoint.output,
           body = endpoint.body.flatMap(MustacheExpression.syntax.printString(_).toOption),
         )
+
+      def fromPath(path: String): Http = Http(Path.unsafe.fromString(path))
     }
   }
 }
