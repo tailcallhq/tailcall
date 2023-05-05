@@ -51,6 +51,8 @@ object UnsafeSteps {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
+      groupBy: Option[List[String]] = None,
+      batchKey: Option[String] = None,
     ) extends Operation {
       self =>
       override def compress: Http = {
@@ -59,13 +61,19 @@ object UnsafeSteps {
         self.copy(method = method, query = query)
       }
 
+      def withBatchKey(batchKey: String): Http = copy(batchKey = Option(batchKey))
+
       def withBody(body: Option[String]): Http = copy(body = body)
+
+      def withGroupBy(groupBy: String*): Http = copy(groupBy = Option(groupBy.toList))
 
       def withInput(input: Option[TSchema]): Http = copy(input = input)
 
       def withMethod(method: Method): Http = copy(method = Option(method))
 
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
+
+      def withQuery(query: (String, String)*): Http = copy(query = Option(query.toMap))
     }
 
     @jsonHint("transform")
