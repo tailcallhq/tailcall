@@ -15,7 +15,7 @@ import zio.schema.{DynamicValue, Schema}
 import zio.{IO, ZIO}
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
@@ -42,6 +42,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
 
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
+
+  def withBaseURL(url: String): Config = self.copy(server = self.server.copy(baseURL = Option(URI.create(url).toURL)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
