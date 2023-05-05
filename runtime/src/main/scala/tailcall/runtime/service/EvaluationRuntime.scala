@@ -139,7 +139,10 @@ object EvaluationRuntime {
         case Unsafe(operation)          => operation match {
             case Unsafe.Debug(prefix)                        => for {
                 input <- LExit.input[Any]
-                _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
+                _     <- LExit.fromZIO(prefix match {
+                  case Some(prefix) => Console.printLine(s"${prefix}: $input")
+                  case None         => Console.printLine(input)
+                })
               } yield input
             case Unsafe.Tap(self, f)                      => for {
                 b <- evaluate(self, ctx)

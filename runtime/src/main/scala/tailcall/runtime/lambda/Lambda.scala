@@ -22,7 +22,9 @@ sealed trait Lambda[-A, +B] {
 
   final def compose[C](other: C ~> A): C ~> B = other >>> self
 
-  final def debug(prefix: String): A ~> B = self >>> Lambda.unsafe.debug(prefix)
+  final def debug(prefix: String): A ~> B = self >>> Lambda.unsafe.debug(Option(prefix))
+
+  final def debug: A ~> B = self >>> Lambda.unsafe.debug(None)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -64,9 +66,6 @@ object Lambda {
   def apply[B](b: => B)(implicit schema: Schema[B]): Any ~> B =
     Lambda.unsafe.attempt(_ => Literal(schema.toDynamic(b), schema.ast))
 
-  def tuple[A, A1, A2](t1: A ~> A1, t2: A ~> A2): A ~> (A1, A2) =
-    Lambda.unsafe.attempt(ctx => T2Exp(t1.compile(ctx), T2Exp.Apply(t2.compile(ctx))))
-
   def fromFunction[A, B](f: => A ~>> B): A ~> B = {
     Lambda.unsafe.attempt { ctx =>
       val key   = Binding(ctx.level)
@@ -85,6 +84,9 @@ object Lambda {
       val input = Defer(body)
       FunctionDef(key, body, input)
     }
+
+  def tuple[A, A1, A2](t1: A ~> A1, t2: A ~> A2): A ~> (A1, A2) =
+    Lambda.unsafe.attempt(ctx => T2Exp(t1.compile(ctx), T2Exp.Apply(t2.compile(ctx))))
 
   object logic {
     def and[A](left: A ~> Boolean, right: A ~> Boolean): A ~> Boolean =
@@ -187,7 +189,7 @@ object Lambda {
         override def compile(context: CompilationContext): Expression = eval(context)
       }
 
-    def debug[A](prefix: String): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
+    def debug[A](prefix: Option[String]): A ~> A = Lambda.unsafe.attempt[A, A](_ => Unsafe(Unsafe.Debug(prefix)))
 
     def fromBatchEndpoint(
       endpoint: Endpoint,
