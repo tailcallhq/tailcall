@@ -30,7 +30,7 @@ object Expression {
   final case class Unsafe(operation: Unsafe.Operation) extends Expression
   object Unsafe {
     sealed trait Operation
-    final case class Debug(prefix: Option[String])                                extends Operation
+    final case class Debug(prefix: Option[String])              extends Operation
     final case class EndpointCall(endpoint: Endpoint)           extends Operation
     final case class Tap(self: Expression, f: Any => UIO[Unit]) extends Operation
     object Tap {

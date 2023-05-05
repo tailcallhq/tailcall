@@ -144,7 +144,7 @@ object EvaluationRuntime {
                   case None         => Console.printLine(input)
                 })
               } yield input
-            case Unsafe.Tap(self, f)                      => for {
+            case Unsafe.Tap(self, f)                         => for {
                 b <- evaluate(self, ctx)
                 _ <- LExit.fromZIO(f(b))
               } yield b
