@@ -9,15 +9,12 @@ import tailcall.runtime.model.{Config, Path, Server}
 import java.net.URI
 
 object JsonPlaceholderConfig {
-  private def createUser      = users.withMethod(Method.POST).withBody(Option("{{args.user}}"))
-  private def posts           = Operation.Http(Path.unsafe.fromString("/posts"))
-  private def postsById       = Operation.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
-  private def userById        = Operation.Http(Path.unsafe.fromString("/users/{{userId}}"))
-  private def users           = Operation.Http(Path.unsafe.fromString("/users"))
-  private def userPosts       = Operation.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
-  private def userPostBatched =
-    Operation.Http(Path.unsafe.fromString("/posts")).withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
-      .withGroupBy("userId")
+  private def createUser = users.withMethod(Method.POST).withBody(Option("{{args.user}}"))
+  private def posts      = Operation.Http(Path.unsafe.fromString("/posts"))
+  private def postsById  = Operation.Http(Path.unsafe.fromString("/posts/{{args.id}}"))
+  private def userById   = Operation.Http(Path.unsafe.fromString("/users/{{userId}}"))
+  private def userPosts  = Operation.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
+  private def users      = Operation.Http(Path.unsafe.fromString("/users"))
 
   val graphQL = Config.GraphQL(
     schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
@@ -54,7 +51,7 @@ object JsonPlaceholderConfig {
         "phone"    -> Field.string,
         "website"  -> Field.string,
         "company"  -> Field.ofType("Company"),
-        "posts"    -> Field.ofType("Post").asList.withHttp(userPosts, userPostBatched),
+        "posts"    -> Field.ofType("Post").withSteps(userPosts).asList,
       ),
       "Post"       -> Type(
         "id"     -> Field.int.asRequired,
