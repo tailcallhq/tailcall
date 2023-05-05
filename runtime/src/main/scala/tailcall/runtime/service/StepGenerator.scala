@@ -102,9 +102,9 @@ object StepGenerator {
           ctx.value match {
             // Value is guaranteed to be a seq, we should be able to type-assert it safely
             case DynamicValue.Sequence(values)                                       => Step
-                .ListStep(values.toList.map(value => fromType(field, ofType, ctx.copyFromParent(value = value))))
+                .ListStep(values.toList.map(value => fromType(field, ofType, ctx.copy(value = value))))
             case DynamicValue.SomeValue(DynamicValue.Sequence(values)) if isNullable =>
-              Step.ListStep(values.toList.map(value => fromType(field, ofType, ctx.copyFromParent(value = value))))
+              Step.ListStep(values.toList.map(value => fromType(field, ofType, ctx.copy(value = value))))
             case DynamicValue.NoneValue if isNullable                                => Step.PureStep(Value.NullValue)
             case _ => throw new RuntimeException(s"Unexpected value received for type ${tpe.render}")
           }

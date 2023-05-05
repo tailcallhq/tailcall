@@ -14,7 +14,7 @@ import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{before, parallel, timeout}
-import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.{TestConsole, TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
 import zio.{Chunk, ZIO, durationInt}
 
 import java.net.URI
@@ -171,19 +171,6 @@ object Config2StepSpec extends ZIOSpecDefault {
           """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}"""
         ))
       },
-      test("parent") {
-        val config  = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").resolveWith(100)),
-          "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWith(200)),
-          "Baz"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
-            _.toTypedPath[Int]("parent", "value").toDynamic
-          }),
-        )
-        val program = resolve(config)("query {foo { bar { baz {value} }}}")
-        assertZIO(program)(equalTo("""{"foo":{"bar":{"baz":{"value":100}}}}"""))
-
-      },
       test("partial resolver") {
         val config  = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
@@ -297,100 +284,205 @@ object Config2StepSpec extends ZIOSpecDefault {
 
         assertTrue(errors == Chunk("Query.foo can not have unsafe and http operations together"))
       }),
-      test("with no base url") {
-        val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
+      suite("inline")(
+        test("with no base url") {
+          val http   = Operation.Http(Path.unsafe.fromString("/users"))
+          val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
 
-        val errors = config.toBlueprint.errors
+          val errors = config.toBlueprint.errors
 
-        assertTrue(errors == Chunk("No base URL defined in the server configuration"))
-      },
-      test("http directive") {
-        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
-          "Query" -> Config
-            .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
-          "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
-        )
+          assertTrue(errors == Chunk("No base URL defined in the server configuration"))
+        },
+        test("http directive") {
+          val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
+            "Query" -> Config
+              .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
+            "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
+          )
 
-        for {
-          json <- resolve(config, Map.empty)("""query {user {id name}}""")
-        } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
-      },
-      test("inline field") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
-              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
-          ),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          for {
+            json <- resolve(config, Map.empty)("""query {user {id name}}""")
+          } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
+        },
+        test("inline field") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
+                .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+            ),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        for {
-          json <- resolve(config, Map.empty)("""query {foo {c}}""")
-        } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
-      },
-      test("inline with modify field") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "foo" -> Config.Field.ofType("Foo").withInline("a", "b").withName("bar")
-              .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
-          ),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          for {
+            json <- resolve(config, Map.empty)("""query {foo {c}}""")
+          } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
+        },
+        test("inline with modify field") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "foo" -> Config.Field.ofType("Foo").withInline("a", "b").withName("bar")
+                .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
+            ),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        for {
-          json <- resolve(config, Map.empty)("""query {bar {c}}""")
-        } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
-      },
-      test("inline with list") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
-              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-          ),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          for {
+            json <- resolve(config, Map.empty)("""query {bar {c}}""")
+          } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
+        },
+        test("inline with list") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
+                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+            ),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        for {
-          json <- resolve(config, Map.empty)("""query {foo {c}}""")
-        } yield assertTrue(json == """{"foo":[[{"c":"Hello!"}]]}""")
-      },
-      test("inline on index with list") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
-              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-          ),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          for {
+            json <- resolve(config, Map.empty)("""query {foo {c}}""")
+          } yield assertTrue(json == """{"foo":[[{"c":"Hello!"}]]}""")
+        },
+        test("inline on index with list") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
+                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+            ),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        for {
-          json <- resolve(config, Map.empty)("""query {foo {c}}""")
-        } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
-      },
-      test("parent value") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "bars" -> Config.Field.ofType("Bar").asList
-              .resolveWith(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
-          ),
-          "Bar"   -> Config.Type(
-            "id"  -> Config.Field.int,
-            "foo" -> Config.Field.int.asList.resolveWithFunction(_.pathSeq("parent", "value", "id").toDynamic),
-          ),
-        )
-
-        val expected = """{"bars":[{"id":1,"foo":[1,2,3]},{"id":2,"foo":[1,2,3]},{"id":3,"foo":[1,2,3]}]}"""
-        for { json <- resolve(config, Map.empty)("""query {bars {id foo}}""") } yield assertTrue(json == expected)
-      },
+          for {
+            json <- resolve(config, Map.empty)("""query {foo {c}}""")
+          } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
+        },
+      ),
+      suite("context value")(
+        test("root") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.int.resolveWithFunction(i => i.path("value").debug.toDynamic))
+          )
+          val expected = "Some(Primitive((),unit))"
+          for {
+            _   <- resolve(config)("query {a}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("one level") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+            "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.path("value").debug.toDynamic)),
+          )
+          val expected = "Some(Primitive(100,int))"
+          for {
+            _   <- resolve(config)("query {a{b}}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("one level with list") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 200))),
+            "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.path("value").debug.toDynamic)),
+          )
+          val expected = Set("Some(Primitive(100,int))\n", "Some(Primitive(200,int))\n")
+          for {
+            _   <- resolve(config)("query {a{b}}")
+            out <- TestConsole.output.map(_.toSet)
+          } yield assertTrue(out == expected)
+        },
+        test("two level") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
+            "B"     -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("value").debug.toDynamic)),
+          )
+          val expected = "Some(Primitive(200,int))"
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("two level with list") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
+            "B"     -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("value").debug.toDynamic)),
+          )
+          val expected = Set("Some(Primitive(200,int))\n", "Some(Primitive(201,int))\n")
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output.map(_.toSet)
+          } yield assertTrue(out == expected)
+        },
+      ),
+      suite("context parent")(
+        test("root") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config
+              .Type("a" -> Config.Field.int.resolveWithFunction(i => i.path("parent", "value").debug.toDynamic))
+          )
+          val expected = "None"
+          for {
+            _   <- resolve(config)("query {a}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("one level") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+            "A" -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
+          )
+          val expected = "Some(Primitive((),unit))"
+          for {
+            _   <- resolve(config)("query {a{b}}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("two level") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
+            "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
+          )
+          val expected = "Some(Primitive(100,int))"
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("two level with list") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
+            "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
+          )
+          val expected = Set("Some(Primitive(100,int))\n", "Some(Primitive(101,int))\n")
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output.map(_.toSet)
+          } yield assertTrue(out == expected)
+        },
+        test("two level with optional list") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(Option(List(100, 101)))),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(Option(List(200, 201)))),
+            "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
+          )
+          val expected = Set("Some(Primitive(100,int))\n", "Some(Primitive(101,int))\n")
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output.map(_.toSet)
+          } yield assertTrue(out == expected)
+        },
+      ),
     ).provide(
       GraphQLGenerator.default,
       HttpClient.default,
