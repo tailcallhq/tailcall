@@ -440,7 +440,7 @@ object Config2StepSpec extends ZIOSpecDefault {
             "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
             "A" -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
           )
-          val expected = "Some(Primitive((),unit))"
+          val expected = "Some(Primitive(100,int))"
           for {
             _   <- resolve(config)("query {a{b}}")
             out <- TestConsole.output
@@ -451,6 +451,19 @@ object Config2StepSpec extends ZIOSpecDefault {
             "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
             "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
             "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
+          )
+          val expected = "Some(Primitive(200,int))"
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output
+          } yield assertTrue(out == Vector(expected + "\n"))
+        },
+        test("grand parent two level") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
+            "B"     -> Config
+              .Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "parent", "value").debug.toDynamic)),
           )
           val expected = "Some(Primitive(100,int))"
           for {
@@ -464,7 +477,7 @@ object Config2StepSpec extends ZIOSpecDefault {
             "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
             "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
           )
-          val expected = Set("Some(Primitive(100,int))\n", "Some(Primitive(101,int))\n")
+          val expected = Set("Some(Sequence(Chunk(Primitive(200,int),Primitive(201,int))))\n")
           for {
             _   <- resolve(config)("query {a{b{c}}}")
             out <- TestConsole.output.map(_.toSet)
@@ -476,7 +489,20 @@ object Config2StepSpec extends ZIOSpecDefault {
             "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(Option(List(200, 201)))),
             "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "value").debug.toDynamic)),
           )
-          val expected = Set("Some(Primitive(100,int))\n", "Some(Primitive(101,int))\n")
+          val expected = Set("Some(SomeValue(Sequence(Chunk(Primitive(200,int),Primitive(201,int)))))\n")
+          for {
+            _   <- resolve(config)("query {a{b{c}}}")
+            out <- TestConsole.output.map(_.toSet)
+          } yield assertTrue(out == expected)
+        },
+        test("grand parent two level with optional list") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(Option(List(100, 101)))),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(Option(List(200, 201)))),
+            "B"     -> Config
+              .Type("c" -> Config.Field.int.resolveWithFunction(_.path("parent", "parent", "value").debug.toDynamic)),
+          )
+          val expected = Set("Some(SomeValue(Sequence(Chunk(Primitive(100,int),Primitive(101,int)))))\n")
           for {
             _   <- resolve(config)("query {a{b{c}}}")
             out <- TestConsole.output.map(_.toSet)
