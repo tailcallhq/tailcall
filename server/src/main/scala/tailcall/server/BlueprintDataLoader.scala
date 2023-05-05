@@ -1,5 +1,7 @@
 package tailcall.server
 
+import caliban.wrappers.ApolloTracing.apolloTracing
+import caliban.wrappers.Wrappers.printSlowQueries
 import caliban.{CalibanError, GraphQLInterpreter}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.model.{Blueprint, Digest}
@@ -19,7 +21,13 @@ object BlueprintDataLoader {
   def load(digestId: String): ZIO[GraphQLGenerator with InterpreterLoader, Throwable, BlueprintData] =
     ZIO.serviceWithZIO[InterpreterLoader](_.load(digestId))
 
-  def live: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
+  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
+    live(enableTracing = false, slowQueriesDuration = None)
+
+  def live(
+    enableTracing: Boolean,
+    slowQueriesDuration: Option[Int],
+  ): ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
     ZLayer {
       for {
         registry <- ZIO.service[SchemaRegistry]
@@ -28,9 +36,16 @@ object BlueprintDataLoader {
             maybeBlueprint <- registry.get(Digest.fromHex(digestId))
             blueprint      <- ZIO.fromOption(maybeBlueprint)
               .orElse(ZIO.fail(HttpError.BadRequest(s"Blueprint ${digestId} has not been published yet.")))
-            interpreter    <- blueprint.toGraphQL.flatMap(_.interpreter)
+            gql            <- blueprint.toGraphQL
+            gqlWithTracing     = if (enableTracing) gql @@ apolloTracing else gql
+            gqlWithSlowQueries = slowQueriesDuration match {
+              case Some(duration) => gqlWithTracing @@ printSlowQueries(duration millis)
+              case None           => gqlWithTracing
+            }
+            interpreter <- gqlWithSlowQueries.interpreter
           } yield BlueprintData(blueprint, blueprint.server.globalResponseTimeout.getOrElse(10000), interpreter)
         }
       } yield dl
     }
+
 }
