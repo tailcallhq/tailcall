@@ -24,6 +24,6 @@ object Main extends ZIOAppDefault {
       GraphQLGenerator.default,
       HttpClient.cachedDefault(1000),
       Server.live,
-      BlueprintDataLoader.live,
+      BlueprintDataLoader.live(enableTracing = true, Some(1000)),
     )
 }
