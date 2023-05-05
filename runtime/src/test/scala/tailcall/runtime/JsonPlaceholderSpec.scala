@@ -2,7 +2,7 @@ package tailcall.runtime
 
 import caliban.InputValue
 import tailcall.runtime.internal.JsonPlaceholderConfig
-import tailcall.runtime.model.Config.{Field, Type}
+import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
@@ -224,23 +224,40 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         val expected = """{"user":{"address":{"zip":"92998-3874"}}}"""
         assertZIO(program)(equalTo(expected))
       },
-      test("users posts batching") {
-        val users           = Http.fromPath("/users")
-        val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
-          .withGroupBy("userId")
+      suite("batching")(
+        test("many users to posts") {
+          val users           = Http.fromPath("/users")
+          val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
+            .withGroupBy("userId")
 
-        val config = typicode.withTypes(
-          "Query" -> Type("users" -> Field.ofType("User").asList.withHttp(users)),
-          "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
-          "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
-        )
+          val config = typicode.withTypes(
+            "Query" -> Type("users" -> Field.ofType("User").asList.withHttp(users)),
+            "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+          )
 
-        for {
-          actual   <- resolve(config)("""query {users { id posts { userId title } }}""")
-          expected <- readJson("user-posts-batched.json")
-        } yield assertTrue(actual == expected)
+          for {
+            actual   <- resolve(config)("""query {users { id posts { userId title } }}""")
+            expected <- readJson("user-posts-batched.json")
+          } yield assertTrue(actual == expected)
+        },
+        test("single user to posts") {
+          val user            = Http.fromPath("/users/{{args.id}}")
+          val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
+            .withGroupBy("userId")
 
-      },
+          val config = typicode.withTypes(
+            "Query" -> Type("user" -> Field.ofType("User").withHttp(user).withArguments("id" -> Arg.int.asRequired)),
+            "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+          )
+
+          for {
+            actual   <- resolve(config)("""query {user(id: 1) { id posts {userId title} }}""")
+            expected <- readJson("user-posts-single.json")
+          } yield assertTrue(actual == expected)
+        },
+      ),
     ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default) @@ timeout(
       10 seconds
     )
