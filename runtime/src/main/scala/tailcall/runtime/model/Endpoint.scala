@@ -20,46 +20,8 @@ final case class Endpoint(
   description: Option[String] = None,
 ) {
   self =>
-  def withMethod(method: Method): Endpoint = copy(method = method)
-
-  def withDescription(description: String): Endpoint = copy(description = Option(description))
-
-  def withPath(path: Path): Endpoint = copy(path = path)
-
-  def withPath(path: String): Endpoint = copy(path = Path.unsafe.fromString(path))
-
-  def withQuery(query: (String, String)*): Endpoint = copy(query = Chunk.from(query))
-
-  def withQuery(query: Map[String, String]): Endpoint = copy(query = Chunk.from(query))
-
-  def withAddress(address: Endpoint.InetAddress): Endpoint = copy(address = address)
-
-  def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
-
-  def withInput(schema: Option[TSchema]): Endpoint = copy(input = schema)
-
-  def withOutput(schema: Option[TSchema]): Endpoint = copy(output = schema)
-
-  // TODO: rename to scheme
-  def withProtocol(protocol: Scheme): Endpoint = copy(scheme = protocol)
-
-  def withHttp: Endpoint = withProtocol(Scheme.Http)
-
-  def withHttps: Endpoint = withProtocol(Scheme.Https)
-
-  def withPort(port: Int): Endpoint = {
-    if (port < 0 || port > 65535) throw new IllegalArgumentException("Port must be between 0 and 65535")
-    copy(address = address.copy(port = port))
-  }
-
-  def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
-
-  def withBody(body: MustacheExpression): Endpoint = copy(body = Option(body))
-  def withBody(body: String): Endpoint             = copy(body = MustacheExpression.syntax.parseString(body).toOption)
-
   lazy val outputSchema: Schema[Any] = output.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
-
-  lazy val inputSchema: Schema[Any] = input.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
+  lazy val inputSchema: Schema[Any]  = input.map(TSchema.toZIOSchema).getOrElse(Schema[Unit]).asInstanceOf[Schema[Any]]
 
   def evaluate(input: DynamicValue): Request = Endpoint.evaluate(self, input)
 
@@ -75,27 +37,46 @@ final case class Endpoint(
     val pathString: String = path.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
     List(scheme.name, "://", address.host, portString, pathString, queryString).mkString
   }
+
+  def withAddress(address: Endpoint.InetAddress): Endpoint = copy(address = address)
+
+  def withAddress(address: String): Endpoint = copy(address = Endpoint.inet(address))
+
+  def withBody(body: MustacheExpression): Endpoint = copy(body = Option(body))
+
+  def withBody(body: String): Endpoint = copy(body = MustacheExpression.syntax.parseString(body).toOption)
+
+  def withDescription(description: String): Endpoint = copy(description = Option(description))
+
+  def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
+
+  def withHttp: Endpoint = withScheme(Scheme.Http)
+
+  def withHttps: Endpoint = withScheme(Scheme.Https)
+
+  def withInput(schema: Option[TSchema]): Endpoint = copy(input = schema)
+
+  def withMethod(method: Method): Endpoint = copy(method = method)
+
+  def withOutput(schema: Option[TSchema]): Endpoint = copy(output = schema)
+
+  def withPath(path: Path): Endpoint = copy(path = path)
+
+  def withPath(path: String): Endpoint = copy(path = Path.unsafe.fromString(path))
+
+  def withPort(port: Int): Endpoint = {
+    if (port < 0 || port > 65535) throw new IllegalArgumentException("Port must be between 0 and 65535")
+    copy(address = address.copy(port = port))
+  }
+
+  def withQuery(query: (String, String)*): Endpoint = copy(query = Chunk.from(query))
+
+  def withQuery(query: Map[String, String]): Endpoint = copy(query = Chunk.from(query))
+
+  def withScheme(scheme: Scheme): Endpoint = copy(scheme = scheme)
 }
 
 object Endpoint {
-  final case class InetAddress(host: String, port: Int = 80)
-
-  def inet(host: String, port: Int = 80): InetAddress = InetAddress(host, port)
-
-  def from(url: String): Endpoint = {
-    val uri     = new java.net.URI(url)
-    val path    = Path.unsafe.fromString(uri.getPath())
-    val query   = Option(uri.getQuery).fold(Chunk.empty[(String, String)]) { query =>
-      Chunk.from(query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v })
-    }
-    val address = InetAddress(uri.getHost, uri.getPort)
-    Endpoint(path = path, query = query, address = address)
-  }
-
-  def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
-  def get(address: String): Endpoint  = make(address).withMethod(Method.GET)
-  def post(address: String): Endpoint = make(address).withMethod(Method.POST)
-
   def evaluate(endpoint: Endpoint, input: DynamicValue): Request = {
     val method     = endpoint.method
     val portString = endpoint.address.port match {
@@ -141,4 +122,24 @@ object Endpoint {
     )
     if (body.nonEmpty && method != Method.GET) request.withBody(body) else request
   }
+
+  def from(url: String): Endpoint = {
+    val uri     = new java.net.URI(url)
+    val path    = Path.unsafe.fromString(uri.getPath())
+    val query   = Option(uri.getQuery).fold(Chunk.empty[(String, String)]) { query =>
+      Chunk.from(query.split("&").map(_.split("=")).map { case Array(k, v) => k -> v })
+    }
+    val address = InetAddress(uri.getHost, uri.getPort)
+    Endpoint(path = path, query = query, address = address)
+  }
+
+  def get(address: String): Endpoint = make(address).withMethod(Method.GET)
+
+  def inet(host: String, port: Int = 80): InetAddress = InetAddress(host, port)
+
+  def make(address: String): Endpoint = Endpoint(address = Endpoint.inet(address))
+
+  def post(address: String): Endpoint = make(address).withMethod(Method.POST)
+
+  final case class InetAddress(host: String, port: Int = 80)
 }

@@ -146,7 +146,7 @@ object Config2Blueprint {
             val host     = baseURL.getHost
             val port     = if (baseURL.getPort > 0) baseURL.getPort else 80
             val scheme   = if (baseURL.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http
-            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(scheme)
+            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path).withScheme(scheme)
               .withQuery(http.query.getOrElse(Map.empty)).withMethod(http.method.getOrElse(Method.GET))
               .withInput(http.input).withOutput(http.output)
 
