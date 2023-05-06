@@ -176,9 +176,10 @@ object Config2Blueprint {
               case None      => resolver
               case Some(key) =>
                 // FIXME: handle single values
-                resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
+                val baseResolver = resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
                   .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
-                  .get(Lambda.identity[DynamicValue].path("value", key)).map(_.toChunk).toDynamic
+                  .get(Lambda.identity[DynamicValue].path("value", key))
+                if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
             }
           }
         case None          => TValid.fail("No base URL defined in the server configuration")

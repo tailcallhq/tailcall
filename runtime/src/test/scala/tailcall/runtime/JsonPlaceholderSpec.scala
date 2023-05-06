@@ -277,8 +277,27 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           )
 
           for {
-            actual <- resolve(config)("""query { users { posts { title } } user (id: 1) { posts { title } } }""")
+            actual   <- resolve(config)("""query { users { posts { title } } user (id: 1) { posts { title } } }""")
             expected <- readJson("user-posts-single-vs-batched.json")
+          } yield assertTrue(actual == expected)
+        },
+        test("multiple posts to user") {
+          val postUser = Http.fromPath("/users").withQuery("id" -> "{{parent.value.userId}}").withBatchKey("userId")
+            .withGroupBy("id")
+          val posts    = Http.fromPath("/posts")
+          val config   = typicode.withTypes(
+            "Query" -> Type("posts" -> Field.ofType("Post").asList.withHttp(posts)),
+            "User"  -> Type("id" -> Field.int, "name" -> Field.string),
+            "Post"  -> Type(
+              "userId" -> Field.int,
+              "title"  -> Field.string,
+              "user"   -> Field.ofType("User").withHttp(postUser),
+            ),
+          )
+
+          for {
+            actual   <- resolve(config)("""query {posts { userId user { id name } } }""")
+            expected <- readJson("posts-user-batched.json")
           } yield assertTrue(actual == expected)
         },
       ),
