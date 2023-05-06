@@ -448,19 +448,6 @@ object LambdaSpec extends ZIOSpecDefault {
             DynamicValueUtil.getPath(dynamic, "name").contains(DynamicValue("Leanne Graham")),
           )
         },
-        test("batched") {
-          val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users").withQuery("id" -> "{{id}}")
-          val input    = List(DynamicValue(Map("id" -> "1")), DynamicValue(Map("id" -> "2")))
-          for {
-            map <- Lambda.unsafe.fromBatchEndpoint(endpoint, List("id")).evaluateWith(input)
-          } yield {
-            val dynamic = DynamicValue(map)
-            assertTrue(
-              DynamicValueUtil.getPath(dynamic, "1", "name").contains(DynamicValue("Leanne Graham")),
-              DynamicValueUtil.getPath(dynamic, "2", "name").contains(DynamicValue("Ervin Howell")),
-            )
-          }
-        },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
             .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
