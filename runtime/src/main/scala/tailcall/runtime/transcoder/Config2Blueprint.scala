@@ -152,13 +152,13 @@ object Config2Blueprint {
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
         case Some(baseURL) => TValid.succeed {
-            val steps = field.unsafeSteps.getOrElse(Nil)
-            val host  = baseURL.getHost
-            val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
-
-            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path)
-              .withProtocol(if (port == 443) Scheme.Https else Scheme.Http).withQuery(http.query.getOrElse(Map.empty))
-              .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
+            val steps    = field.unsafeSteps.getOrElse(Nil)
+            val host     = baseURL.getHost
+            val port     = if (baseURL.getPort > 0) baseURL.getPort else 80
+            val scheme   = if (baseURL.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http
+            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path).withProtocol(scheme)
+              .withQuery(http.query.getOrElse(Map.empty)).withMethod(http.method.getOrElse(Method.GET))
+              .withInput(http.input).withOutput(http.output)
 
             http.body.flatMap(MustacheExpression.syntax.parseString(_).toOption) match {
               case Some(value) => endpoint = endpoint.withBody(value)

@@ -40,6 +40,7 @@ final case class Endpoint(
 
   def withOutput(schema: Option[TSchema]): Endpoint = copy(output = schema)
 
+  // TODO: rename to scheme
   def withProtocol(protocol: Scheme): Endpoint = copy(scheme = protocol)
 
   def withHttp: Endpoint = withProtocol(Scheme.Http)
@@ -115,6 +116,7 @@ object Endpoint {
     }.mkString("?", "&", ""))
 
     val pathString: String = endpoint.path.unsafeEvaluate(input)
+
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
