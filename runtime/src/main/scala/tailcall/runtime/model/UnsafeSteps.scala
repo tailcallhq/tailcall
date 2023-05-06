@@ -18,17 +18,13 @@ final case class UnsafeSteps(steps: List[Operation]) {
 object UnsafeSteps {
   implicit val jsonCodec: JsonCodec[UnsafeSteps] = DeriveJsonCodec.gen[UnsafeSteps]
 
-  implicit val directiveCodec: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("unsafe", jsonCodec)
+  implicit val directive: DirectiveCodec[UnsafeSteps] = DirectiveCodec.fromJsonCodec("unsafe", jsonCodec)
 
   def apply(steps: Operation*): UnsafeSteps = UnsafeSteps(steps.toList)
 
   sealed trait Operation {
     self =>
-    def compress: Operation =
-      self match {
-        case step @ Operation.Http(_, Some(Method.GET), _, _, _) => step.copy(method = None)
-        case step                                                => step
-      }
+    def compress: Operation
   }
 
   object Operation {
@@ -43,27 +39,47 @@ object UnsafeSteps {
     def transform(jsonT: JsonT): Operation = Transform(jsonT)
 
     @jsonHint("lambda")
-    final case class LambdaFunction(f: DynamicValue ~>> DynamicValue) extends Operation
+    final case class LambdaFunction(f: DynamicValue ~>> DynamicValue) extends Operation {
+      override def compress: Operation = this
+    }
 
     @jsonHint("http")
     final case class Http(
       path: Path,
       method: Option[Method] = None,
+      query: Option[Map[String, String]] = None,
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
+      groupBy: Option[List[String]] = None,
+      batchKey: Option[String] = None,
     ) extends Operation {
+      self =>
+      override def compress: Http = {
+        val method = self.method.filterNot(_ == Method.GET)
+        val query  = self.query.filter(_.nonEmpty)
+        self.copy(method = method, query = query)
+      }
+
+      def withBatchKey(batchKey: String): Http = copy(batchKey = Option(batchKey))
+
       def withBody(body: Option[String]): Http = copy(body = body)
+
+      def withGroupBy(groupBy: String*): Http = copy(groupBy = Option(groupBy.toList))
 
       def withInput(input: Option[TSchema]): Http = copy(input = input)
 
       def withMethod(method: Method): Http = copy(method = Option(method))
 
       def withOutput(output: Option[TSchema]): Http = copy(output = output)
+
+      def withQuery(query: (String, String)*): Http = copy(query = Option(query.toMap))
     }
 
     @jsonHint("transform")
-    final case class Transform(transformation: JsonT) extends Operation
+    final case class Transform(transformation: JsonT) extends Operation {
+      override def compress: Operation = this
+    }
 
     object LambdaFunction {
       implicit lazy val jsonCodec: JsonCodec[LambdaFunction] = zio.schema.codec.JsonCodec
@@ -86,6 +102,8 @@ object UnsafeSteps {
           output = endpoint.output,
           body = endpoint.body.flatMap(MustacheExpression.syntax.printString(_).toOption),
         )
+
+      def fromPath(path: String): Http = Http(Path.unsafe.fromString(path))
     }
   }
 }

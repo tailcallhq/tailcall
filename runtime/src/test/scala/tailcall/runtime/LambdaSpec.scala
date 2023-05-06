@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.lambda.Lambda.{logic, math}
+import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
@@ -56,16 +57,6 @@ object LambdaSpec extends ZIOSpecDefault {
           assertZIO(program.evaluate)(isFalse)
         },
       ),
-//      suite("equals")(
-//        test("equal") {
-//          val program = Lambda(1) =:= Lambda(1)
-//          assertZIO(program.evaluate)(isTrue)
-//        },
-//        test("not equal") {
-//          val program = Lambda(1) =:= Lambda(2)
-//          assertZIO(program.evaluate)(isFalse)
-//        }
-//      ),
       suite("diverge")(
         test("isTrue") {
           val program = Lambda(true).diverge(Lambda("Yes"), Lambda("No"))
@@ -460,7 +451,8 @@ object LambdaSpec extends ZIOSpecDefault {
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
             .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
-          val program  = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
+
+          val program = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
           val expected = "Unexpected status code: 404 url: http://jsonplaceholder.typicode.com/users/100"
@@ -474,5 +466,9 @@ object LambdaSpec extends ZIOSpecDefault {
           } yield assertTrue(out.contains("Hello"))
         },
       ),
+      suite("sequence")(test("groupBy") {
+        val seq = Lambda(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).groupBy(_ % Lambda(2))
+        assertZIO(seq.evaluate)(equalTo(Map(0 -> Seq(2, 4, 6, 8, 10), 1 -> Seq(1, 3, 5, 7, 9))))
+      }),
     ).provide(EvaluationRuntime.default, HttpContext.default) @@ timeout(10 seconds) @@ parallel
 }

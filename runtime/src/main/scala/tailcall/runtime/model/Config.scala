@@ -1,6 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
+import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
@@ -14,7 +15,7 @@ import zio.schema.{DynamicValue, Schema}
 import zio.{IO, ZIO}
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
@@ -41,6 +42,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
 
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
+
+  def withBaseURL(url: String): Config = self.copy(server = self.server.copy(baseURL = Option(URI.create(url).toURL)))
 
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
@@ -84,7 +87,7 @@ object Config {
 
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
 
-    def compress: Type = self.copy(fields = self.fields.map { case (k, v) => k -> v.compress })
+    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
@@ -101,7 +104,8 @@ object Config {
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
     self =>
-    def compress: GraphQL = self.copy(types = self.types.map { case (k, t) => (k, t.compress) })
+    def compress: GraphQL =
+      self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
 
     def mergeRight(other: GraphQL): GraphQL = {
       other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
@@ -182,7 +186,15 @@ object Config {
         case _                                  => None
       }
 
-      copy(list = isList, required = isRequired, unsafeSteps = steps, args = args, modify = modify, inline = inline)
+      copy(
+        list = isList,
+        required = isRequired,
+        unsafeSteps = steps,
+        args = args,
+        modify = modify,
+        http = http,
+        inline = inline,
+      )
     }
 
     def isList: Boolean = list.getOrElse(false)
@@ -202,6 +214,15 @@ object Config {
     def withDoc(doc: String): Field = copy(doc = Option(doc))
 
     def withHttp(http: Http): Field = copy(http = Option(http))
+
+    def withHttp(
+      path: Path,
+      method: Option[Method] = None,
+      query: Map[String, String] = Map.empty,
+      input: Option[TSchema] = None,
+      output: Option[TSchema] = None,
+      body: Option[String] = None,
+    ): Field = withHttp(Http(path, method, Option(query), input, output, body))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 

@@ -31,7 +31,7 @@ object BlueprintDataLoader {
     ZLayer {
       for {
         registry <- ZIO.service[SchemaRegistry]
-        dl       <- DataLoader.make[String] { digestId =>
+        dl       <- DataLoader.one[String] { digestId =>
           for {
             maybeBlueprint <- registry.get(Digest.fromHex(digestId))
             blueprint      <- ZIO.fromOption(maybeBlueprint)

@@ -29,6 +29,9 @@ sealed trait TValid[+E, +A] {
   def getOrThrow(implicit ev: E <:< String): A =
     self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
 
+  def getOrThrow(prefix: String)(implicit ev: E <:< String): A =
+    self.getOrElseWith(e => throw new RuntimeException(prefix + e.mkString("[", ", ", "]")))
+
   def isEmpty: Boolean = self.fold(_ => true, _ => false)
 
   def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
@@ -55,6 +58,8 @@ sealed trait TValid[+E, +A] {
   def toTask(implicit ev: E <:< String): Task[A] = ZIO.attempt(getOrThrow)
 
   def toZIO: zio.ZIO[Any, Chunk[E], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
+
+  def unit: TValid[E, Unit] = map(_ => ())
 
   def when(cond: Boolean): TValid[E, Unit] =
     self.fold(errors => if (cond) TValid.fail(errors) else TValid.succeed(()), _ => TValid.succeed(()))

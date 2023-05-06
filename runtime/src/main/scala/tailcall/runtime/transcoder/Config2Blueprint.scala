@@ -2,15 +2,16 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model._
+import zio.Chunk
 import zio.schema.DynamicValue
 
 trait Config2Blueprint {
-
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
 }
 
@@ -34,6 +35,15 @@ object Config2Blueprint {
       } yield Blueprint(rootSchema :: definitions, Blueprint.Server(config.server.timeout))
 
     }
+
+    private def appendResolver(
+      bField: Blueprint.FieldDefinition,
+      f: DynamicValue ~> DynamicValue,
+    ): Blueprint.FieldDefinition =
+      bField.resolver match {
+        case Some(g) => bField.copy(resolver = Option(g >>> f))
+        case None    => bField.copy(resolver = Option(f))
+      }
 
     /**
      * Types are input types if they are used as arguments
@@ -132,13 +142,13 @@ object Config2Blueprint {
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
         case Some(baseURL) => TValid.succeed {
-            val steps = field.unsafeSteps.getOrElse(Nil)
-            val host  = baseURL.getHost
-            val port  = if (baseURL.getPort > 0) baseURL.getPort else 80
-
-            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path)
-              .withProtocol(if (port == 443) Scheme.Https else Scheme.Http)
-              .withMethod(http.method.getOrElse(Method.GET)).withInput(http.input).withOutput(http.output)
+            val steps    = field.unsafeSteps.getOrElse(Nil)
+            val host     = baseURL.getHost
+            val port     = if (baseURL.getPort > 0) baseURL.getPort else 80
+            val scheme   = if (baseURL.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http
+            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path).withScheme(scheme)
+              .withQuery(http.query.getOrElse(Map.empty)).withMethod(http.method.getOrElse(Method.GET))
+              .withInput(http.input).withOutput(http.output)
 
             http.body.flatMap(MustacheExpression.syntax.parseString(_).toOption) match {
               case Some(value) => endpoint = endpoint.withBody(value)
@@ -151,7 +161,15 @@ object Config2Blueprint {
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
-            Lambda.unsafe.fromEndpoint(endpoint)
+            val resolver = Lambda.unsafe.fromEndpoint(endpoint)
+            http.batchKey match {
+              case None      => resolver
+              case Some(key) =>
+                val baseResolver = resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
+                  .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
+                  .get(Lambda.identity[DynamicValue].path("value", key))
+                if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
+            }
           }
         case None          => TValid.fail("No base URL defined in the server configuration")
       }
@@ -233,9 +251,9 @@ object Config2Blueprint {
     ): TValid[String, Option[DynamicValue ~> DynamicValue]] = {
       if (steps.isEmpty) TValid.none
       else TValid.foreach(steps) {
-        case http @ Operation.Http(_, _, _, _, _) => toHttpResolver(field, http)
-        case Operation.Transform(jsonT)           => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
-        case Operation.LambdaFunction(func)       => TValid.succeed(Lambda.fromFunction(func))
+        case http: Operation.Http           => toHttpResolver(field, http)
+        case Operation.Transform(jsonT)     => TValid.succeed(Lambda.identity[DynamicValue].transform(jsonT))
+        case Operation.LambdaFunction(func) => TValid.succeed(Lambda.fromFunction(func))
       }.map(_.reduce((f1, f2) => f1 >>> f2)).some
     }
 
@@ -244,14 +262,15 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
+
       field.http match {
         case Some(http) =>
           if (field.isRequired) TValid
             .fail(s"`${typeName}.${bField.name}` has an http operation hence can not be non-nullable")
           else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
-            .fail(s"Type ${typeName} with field ${bField.name} can not have unsafe and http operations together")
-          else toHttpResolver(field, http).map(resolver => bField.appendResolver(resolver))
-        case None       => TValid.succeed(bField)
+            .fail(s"${typeName}.${bField.name} can not have unsafe and http operations together")
+          else toHttpResolver(field, http).map(appendResolver(bField, _))
+        case _          => TValid.succeed(bField)
       }
     }
 
@@ -292,7 +311,7 @@ object Config2Blueprint {
             val resolver =
               if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
               else Lambda.identity[DynamicValue].pathSeq(path: _*)
-            bField.appendResolver(resolver.toDynamic).copy(ofType = ofType)
+            appendResolver(bField, resolver.toDynamic).copy(ofType = ofType)
           })
         case _                      => TValid.succeed(bField)
       }
@@ -310,7 +329,7 @@ object Config2Blueprint {
           else {
             val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
             val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
-            TValid.succeed(bField.appendResolver(resolver).copy(name = newName)).some
+            TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
           }
         case Some(ModifyField(Some(_), Some(_)))    => TValid
             .fail(s"Cannot have both name and omit modifier on field ${bField.name}")
@@ -328,7 +347,7 @@ object Config2Blueprint {
       else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField
-            case Some(resolver) => bField.appendResolver(resolver)
+            case Some(resolver) => appendResolver(bField, resolver)
           }
         case None        => TValid.succeed(bField)
       }

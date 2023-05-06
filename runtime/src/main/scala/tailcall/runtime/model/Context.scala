@@ -12,11 +12,7 @@ final case class Context(
   parent: Option[Context] = None,
   env: Map[String, String] = Map.empty,
   headers: Map[String, String] = Map.empty,
-) {
-  self =>
-  def copyFromParent(value: DynamicValue = value, args: Map[String, DynamicValue] = args): Context =
-    copy(value = value, args = args, parent = Option(self))
-}
+)
 
 object Context {
   implicit val schema: Schema[Context] = DeriveSchema.gen[Context]

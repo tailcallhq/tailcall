@@ -12,9 +12,9 @@ input NewAddress {
 }
 
 input NewCompany {
-  name: String
-  catchPhrase: String
   bs: String
+  catchPhrase: String
+  name: String
 }
 
 input NewGeo {
@@ -42,9 +42,9 @@ type Address {
 }
 
 type Company {
-  name: String
-  catchPhrase: String
   bs: String
+  catchPhrase: String
+  name: String
 }
 
 type Geo {

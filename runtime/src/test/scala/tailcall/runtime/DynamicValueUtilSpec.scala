@@ -48,6 +48,7 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
             DynamicValue(Map("a" -> Map("b" -> Map("c" -> 1)))) -> List("a", "b", "c") -> 1,
             DynamicValue(Map("a" -> List(Map("b" -> 1))))       -> List("a", "0", "b") -> 1,
             record("a" -> DynamicValue(1))                      -> List("a")           -> 1,
+            DynamicValue(Map(1 -> 10))                          -> List("1")           -> 10,
           ))
 
           checkAll(gen) { case dynamic -> path -> expected =>

@@ -26,10 +26,10 @@ trait EvaluationRuntime {
 object EvaluationRuntime {
   import Expression._
 
+  def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
+
   def evaluate[A, B](ab: A ~> B): LExit[EvaluationRuntime with HttpContext, Throwable, A, B] =
     LExit.fromZIO(ZIO.service[EvaluationRuntime]).flatMap(_.evaluate(ab))
-
-  def default: ZLayer[Any, Nothing, EvaluationRuntime] = ZLayer.succeed(new Live())
 
   final class Live extends EvaluationRuntime {
     override def evaluate(plan: Expression, ctx: EvaluationContext): LExit[HttpContext, Throwable, Any, Any] = {
@@ -92,12 +92,12 @@ object EvaluationRuntime {
             } yield res
           }
 
-        case Immediate(eval0)   => for {
+        case Immediate(eval0)           => for {
             eval1 <- evaluateAs[Expression](eval0, ctx)
             eval2 <- evaluate(eval1, ctx)
           } yield eval2
-        case Defer(value)       => LExit.succeed(value)
-        case Dynamic(operation) => LExit.input[Any].map(input =>
+        case Defer(value)               => LExit.succeed(value)
+        case Dynamic(operation)         => LExit.input[Any].map(input =>
             operation match {
               case Dynamic.Typed(meta)     => DynamicValueUtil.toTyped(input.asInstanceOf[DynamicValue])(meta.toSchema)
               case Dynamic.ToDynamic(meta) => meta.toSchema.asInstanceOf[Schema[Any]].toDynamic(input)
@@ -106,7 +106,7 @@ object EvaluationRuntime {
               case Dynamic.JsonTransform(transform) => transform.run(input.asInstanceOf[DynamicValue])
             }
           )
-        case Dict(operation)    => operation match {
+        case Dict(operation)            => operation match {
             case Dict.Get(key, map) => for {
                 k <- evaluate(key, ctx)
                 m <- evaluateAs[Map[Any, Any]](map, ctx)
@@ -120,7 +120,7 @@ object EvaluationRuntime {
 
             case Dict.ToPair => for { map <- LExit.input[Any].map(_.asInstanceOf[Map[_, _]]) } yield map.toList
           }
-        case Opt(operation)     => operation match {
+        case Opt(operation)             => operation match {
             case Opt.IsSome                  => LExit.input.map(_.asInstanceOf[Option[_]].isDefined)
             case Opt.IsNone                  => LExit.input.map(_.asInstanceOf[Option[_]].isEmpty)
             case Opt.Fold(value, none, some) => for {
@@ -134,11 +134,15 @@ object EvaluationRuntime {
                 case None        => LExit.succeed(None)
                 case Some(value) => for { any <- evaluate(value, ctx) } yield Option(any)
               }
+            case Opt.ToSeq(value)            => for { opt <- evaluateAs[Option[_]](value, ctx) } yield opt.toSeq
           }
-        case Unsafe(operation)  => operation match {
+        case Unsafe(operation)          => operation match {
             case Unsafe.Debug(prefix)          => for {
                 input <- LExit.input[Any]
-                _     <- LExit.fromZIO(Console.printLine(s"${prefix}: $input"))
+                _     <- LExit.fromZIO(prefix match {
+                  case Some(prefix) => Console.printLine(s"${prefix}: $input")
+                  case None         => Console.printLine(input)
+                })
               } yield input
             case Unsafe.Tap(self, f)           => for {
                 b <- evaluate(self, ctx)
@@ -147,15 +151,47 @@ object EvaluationRuntime {
             case Unsafe.EndpointCall(endpoint) => for {
                 input <- LExit.input[Any]
                 out   <- LExit.fromZIO {
-                  for {
-                    chunk <- DataLoader.load(endpoint.evaluate(input.asInstanceOf[DynamicValue]))
-                    json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
-                      .mapError(ValidationError.DecodingError("String", "JsonAST", _))
-                    any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
-                      .mapError(new RuntimeException(_))
-                  } yield any
+
+                  val request = endpoint.evaluate(input.asInstanceOf[DynamicValue])
+                  ZIO.logSpan(s"${request.method} ${request.url}") {
+                    for {
+                      chunk <- DataLoader.httpLoad(request)
+                      json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
+                        .mapError(ValidationError.DecodingError("String", "JsonAST", _))
+                      any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
+                        .mapError(new RuntimeException(_))
+                    } yield any
+                  }
                 }
               } yield out
+          }
+        case Sequence(value, operation) => for {
+            seq    <- evaluateAs[Seq[_]](value, ctx)
+            result <- operation match {
+              case Sequence.MakeString => LExit.succeed(seq.mkString)
+              case Sequence.ToChunk    => LExit.succeed(Chunk.from(seq))
+              case Sequence.Head       => LExit.succeed(seq.headOption)
+              case Sequence.Map(f)     => LExit.foreach(seq)(i => evaluate(f, ctx).provideInput(i))
+              case Sequence.FlatMap(f) => LExit.foreach(seq)(i => evaluateAs[Seq[Any]](f, ctx).provideInput(i))
+                  .map(_.flatten)
+              case Sequence.GroupBy(f) => LExit.foreach(seq)(item => evaluate(f, ctx).provideInput(item).map(_ -> item))
+                  .map(_.groupBy(_._1).map { case (key, value) => (key, value.map(_._2)) })
+            }
+          } yield result
+
+        case Str(self, operation)    => operation match {
+            case Str.Concat(other) => for {
+                s1 <- evaluateAs[String](self, ctx)
+                s2 <- evaluateAs[String](other, ctx)
+              } yield s1 + s2
+          }
+        case T2Exp(value, operation) => operation match {
+            case T2Exp._1           => evaluateAs[(_, _)](value, ctx).map(_._1)
+            case T2Exp._2           => evaluateAs[(_, _)](value, ctx).map(_._2)
+            case T2Exp.Apply(other) => for {
+                t1 <- evaluate(value, ctx)
+                t2 <- evaluate(other, ctx)
+              } yield (t1, t2)
           }
       }
     }
