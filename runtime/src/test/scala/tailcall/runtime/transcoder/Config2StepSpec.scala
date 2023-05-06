@@ -417,16 +417,50 @@ object Config2StepSpec extends ZIOSpecDefault {
           )
           assertZIO(program("query {a {b {c {d}}}}"))(equalTo(expected))
         },
-        test("two level with list") {
+        test("one level with list") {
           val program = collect { ref =>
             Config.default.withTypes(
-              "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(List(100, 200, 300))),
-              "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 200))),
+              "A" -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
             )
           }
 
-          val expected = context(value = 100, parent = Option(context(value = 100)))
-          assertZIO(program("query {a {b}}"))(equalTo(expected))
+          val expected = context(value = 200, parent = Option(context(value = Chunk(100, 200))))
+          assertZIO(program("query {a{b}}"))(equalTo(expected))
+        },
+        test("two level with list") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
+              "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
+              "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
+            )
+          }
+
+          val expected = context(
+            value = 201,
+            parent = Option(context(value = Chunk(200, 201), parent = Option(context(value = Chunk(100, 101))))),
+          )
+          assertZIO(program("query {a{b{c}}}"))(equalTo(expected))
+        },
+        test("three level with list") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
+              "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
+              "B"     -> Config.Type("c" -> Config.Field.ofType("C").asList.resolveWith(List(300, 301))),
+              "C" -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
+            )
+          }
+
+          val expected = context(
+            value = 301,
+            parent = Option(context(
+              value = Chunk(300, 301),
+              parent = Option(context(value = Chunk(200, 201), parent = Option(context(value = Chunk(100, 101))))),
+            )),
+          )
+          assertZIO(program("query {a{b{c{d}}}}"))(equalTo(expected))
         },
       ),
       suite("context value")(
