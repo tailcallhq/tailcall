@@ -134,7 +134,7 @@ trait Config2Document {
 
   final private def toDirective(field: Config.Field): List[Directive] = {
     var directives = List.empty[Directive]
-    if (field.http.nonEmpty) directives = directives ++ field.http.toList.flatten.flatMap(_.toDirective.toList)
+    if (field.http.nonEmpty) directives = directives ++ field.http.toList.flatMap(_.toDirective.toList)
     if (field.unsafeSteps.nonEmpty)
       directives = directives ++ field.unsafeSteps.flatMap(UnsafeSteps(_).toDirective.toOption).toList
     if (field.modify.nonEmpty) directives = directives ++ field.modify.toList.flatMap(_.toDirective.toList)

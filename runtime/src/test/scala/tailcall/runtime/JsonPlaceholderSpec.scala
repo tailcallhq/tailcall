@@ -260,7 +260,6 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         test("switching between single resolver and batched resolver") {
           val user            = Http.fromPath("/users/{{args.id}}")
           val users           = Http.fromPath("/users")
-          val userPost        = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}")
           val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
             .withGroupBy("userId")
 
@@ -269,10 +268,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
               "user"  -> Field.ofType("User").withHttp(user).withArguments("id" -> Arg.int.asRequired),
               "users" -> Field.ofType("User").asList.withHttp(users),
             ),
-            "User"  -> Type(
-              "id"    -> Field.int,
-              "posts" -> Field.ofType("Post").asList.withHttp(userPost, userPostBatched),
-            ),
+            "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
             "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
           )
 

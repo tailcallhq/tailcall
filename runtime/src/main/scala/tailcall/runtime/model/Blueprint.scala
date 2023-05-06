@@ -88,7 +88,6 @@ object Blueprint {
     args: List[InputFieldDefinition] = Nil,
     ofType: Type,
     resolver: Option[DynamicValue ~> DynamicValue] = None,
-    batchResolver: Option[DynamicValue ~> DynamicValue] = None,
     directives: List[Directive] = Nil,
     description: Option[String] = None,
   )

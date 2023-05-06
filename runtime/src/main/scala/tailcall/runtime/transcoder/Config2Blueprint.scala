@@ -4,7 +4,6 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
-import tailcall.runtime.model.Blueprint.FieldDefinition
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -36,15 +35,6 @@ object Config2Blueprint {
       } yield Blueprint(rootSchema :: definitions, Blueprint.Server(config.server.timeout))
 
     }
-
-    private def appendBatchResolver(
-      bField: Blueprint.FieldDefinition,
-      f: DynamicValue ~> DynamicValue,
-    ): FieldDefinition =
-      bField.batchResolver match {
-        case Some(g) => bField.copy(resolver = Option(g >>> f))
-        case None    => bField.copy(resolver = Option(f))
-      }
 
     private def appendResolver(
       bField: Blueprint.FieldDefinition,
@@ -224,7 +214,7 @@ object Config2Blueprint {
       var schema = config.graphQL.types.get(fieldType) match {
         case Some(typeInfo) => TSchema.obj(
             typeInfo.fields.filter { case (_, field) =>
-              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.exists(_.input.isEmpty))
+              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.input.isEmpty)
             }.map { case (fieldName, field) => (fieldName, toTSchema(field)) }
           )
 
@@ -275,17 +265,13 @@ object Config2Blueprint {
     ): TValid[String, Blueprint.FieldDefinition] = {
 
       field.http match {
-        case Some(httpList) if httpList.nonEmpty =>
+        case Some(http) =>
           if (field.isRequired) TValid
             .fail(s"`${typeName}.${bField.name}` has an http operation hence can not be non-nullable")
           else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
             .fail(s"${typeName}.${bField.name} can not have unsafe and http operations together")
-          else TValid.fold(httpList, bField) { case (bField, http) =>
-            toHttpResolver(field, http).map { resolver =>
-              if (http.batchKey.nonEmpty) appendBatchResolver(bField, resolver) else appendResolver(bField, resolver)
-            }
-          }
-        case _                                   => TValid.succeed(bField)
+          else toHttpResolver(field, http).map(appendResolver(bField, _))
+        case _          => TValid.succeed(bField)
       }
     }
 
