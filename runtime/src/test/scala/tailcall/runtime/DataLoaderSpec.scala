@@ -30,7 +30,7 @@ object DataLoaderSpec extends ZIOSpecDefault {
       } @@ nonFlaky,
       test("should cache") {
         for {
-          dl  <- DataLoader.one[Int](value => zio.Console.printLine("Load") *> ZIO.succeed(value + 1))
+          dl  <- DataLoader.one[Int](value => zio.Console.print("Load") *> ZIO.succeed(value + 1))
           f1  <- dl.collect(1)
           _   <- dl.dispatch
           f2  <- dl.collect(1)
@@ -38,18 +38,18 @@ object DataLoaderSpec extends ZIOSpecDefault {
           r1  <- f1
           r2  <- f2
           out <- TestConsole.output
-        } yield assertTrue(r1 == 2 && r2 == 2, out == Vector("Load\n"))
+        } yield assertTrue(r1 == 2 && r2 == 2, out == Vector("Load"))
       },
       test("concurrent load") {
         for {
-          dl  <- DataLoader.one[Int](_ => zio.Console.printLine("Load"))
+          dl  <- DataLoader.one[Int](_ => zio.Console.print("Load"))
           _   <- ZIO.foreachParDiscard(0 to 100)(_ => dl.load(1))
           out <- TestConsole.output
-        } yield assertTrue(out == Vector("Load\n"))
+        } yield assertTrue(out == Vector("Load"))
       } @@ nonFlaky,
       test("multi request") {
         for {
-          dl  <- DataLoader.one[Int](_ => zio.Console.printLine("Load").delay(5 second))
+          dl  <- DataLoader.one[Int](_ => zio.Console.print("Load").delay(5 second))
           _   <- dl.load(1).fork
           _   <- TestClock.adjust(5 second)
           f1  <- dl.load(2).fork
@@ -58,7 +58,17 @@ object DataLoaderSpec extends ZIOSpecDefault {
           _   <- TestClock.adjust(5 second)
           _   <- f1.join.zip(f2.join)
           out <- TestConsole.output
-        } yield assertTrue(out == Vector("Load\n", "Load\n"))
+        } yield assertTrue(out == Vector("Load", "Load"))
+      },
+      test("multi request concurrent") {
+        for {
+          dl  <- DataLoader.one[Int](_ => zio.Console.print("Load").delay(5 second))
+          f1  <- dl.load(1).fork
+          f2  <- dl.load(2).fork
+          _   <- TestClock.adjust(5 second)
+          _   <- f1.join.zip(f2.join)
+          out <- TestConsole.output
+        } yield assertTrue(out == Vector("Load", "Load"))
       },
       test("batch") {
         val value: UIO[DataLoader[Any, Nothing, Int, Int]] = DataLoader

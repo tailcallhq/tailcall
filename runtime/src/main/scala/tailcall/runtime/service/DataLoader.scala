@@ -49,7 +49,7 @@ final case class DataLoader[R, E, A, B](
   def load(a: A): ZIO[R, E, B] =
     for {
       state    <- insert(a)
-      _        <- dispatch.when(state._1)
+      _        <- resolver(a).intoPromise(state._2).when(state._1)
       response <- state._2.await
     } yield response
 
