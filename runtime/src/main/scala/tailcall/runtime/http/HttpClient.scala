@@ -18,7 +18,8 @@ object HttpClient {
 
   def cachedDefault(cacheSize: Int): ZLayer[Any, Throwable, HttpClient] =
     HttpCache.live(cacheSize) ++ Client.default >>> cached
-  def cached: ZLayer[HttpCache with Client, Nothing, Live]              =
+
+  def cached: ZLayer[HttpCache with Client, Nothing, Live] =
     ZLayer(for {
       client <- ZIO.service[Client]
       cache  <- ZIO.service[HttpCache]
@@ -29,19 +30,20 @@ object HttpClient {
 
   final case class Live(client: Client, cache: Option[HttpCache]) extends HttpClient {
     def request(req: Request): ZIO[Any, Throwable, Response] = {
-      ZIO.logSpan(s"${req.method} ${req.url}") {
-        for {
-          res              <-
-            if (cache.nonEmpty) { cache.get.get(req) }
-            else for {
-              res  <- client.request(req.toZHttpRequest)
-              body <- res.body.asString(StandardCharsets.UTF_8)
-              _    <- ZIO.logInfo(s"code: ${res.status.code}")
-              _    <- ZIO.logDebug(s"body: ${body}")
+      for {
+        res              <-
+          if (cache.nonEmpty) { cache.get.get(req) <* ZIO.logInfo("serving from cache") }
+          else {
+            for {
+              res <- client.request(req.toZHttpRequest)
+              _   <- ZIO.logInfo(s"serving from http")
             } yield res
-          redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else ZIO.succeed(res)
-        } yield redirectResponse
-      }
+          }
+        body             <- res.body.asString(StandardCharsets.UTF_8)
+        _                <- ZIO.logInfo(s"code: ${res.status.code}")
+        _                <- ZIO.logDebug(s"body: ${body}")
+        redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else { ZIO.succeed(res) }
+      } yield redirectResponse
     }
 
     private def isRedirect(status: Status) = { status.code == 301 || status.code == 302 || status.code == 307 }
