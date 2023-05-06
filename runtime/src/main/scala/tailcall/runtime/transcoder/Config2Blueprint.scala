@@ -165,7 +165,6 @@ object Config2Blueprint {
             http.batchKey match {
               case None      => resolver
               case Some(key) =>
-                // FIXME: handle single values
                 val baseResolver = resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
                   .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
                   .get(Lambda.identity[DynamicValue].path("value", key))
