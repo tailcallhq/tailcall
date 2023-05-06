@@ -87,6 +87,12 @@ object EndpointSpec extends ZIOSpecDefault {
           assertTrue(request.url == "http://abc.com?a=1&a=2&a=3")
         }
       },
+      test("query with duplicate params") {
+        val input    = DynamicValue(Map("a" -> List("1", "1", "2")))
+        val endpoint = Endpoint.make("abc.com").withQuery("a" -> "{{a}}")
+        val request  = endpoint.evaluate(input)
+        assertTrue(request.url == "http://abc.com?a=1&a=2")
+      },
       test("body") {
         val endpoint = Endpoint.post("abc.com")
         val inputs   = List(
