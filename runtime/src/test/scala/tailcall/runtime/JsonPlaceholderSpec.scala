@@ -257,6 +257,30 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
             expected <- readJson("user-posts-single.json")
           } yield assertTrue(actual == expected)
         },
+        test("switching between single resolver and batched resolver") {
+          val user            = Http.fromPath("/users/{{args.id}}")
+          val users           = Http.fromPath("/users")
+          val userPost        = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}")
+          val userPostBatched = Http.fromPath("/posts").withQuery("userId" -> "{{parent.value.id}}").withBatchKey("id")
+            .withGroupBy("userId")
+
+          val config = typicode.withTypes(
+            "Query" -> Type(
+              "user"  -> Field.ofType("User").withHttp(user).withArguments("id" -> Arg.int.asRequired),
+              "users" -> Field.ofType("User").asList.withHttp(users),
+            ),
+            "User"  -> Type(
+              "id"    -> Field.int,
+              "posts" -> Field.ofType("Post").asList.withHttp(userPost, userPostBatched),
+            ),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+          )
+
+          for {
+            actual <- resolve(config)("""query { users { posts { title } } user (id: 1) { posts { title } } }""")
+            expected <- readJson("user-posts-single-vs-batched.json")
+          } yield assertTrue(actual == expected)
+        },
       ),
     ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default) @@ timeout(
       10 seconds
