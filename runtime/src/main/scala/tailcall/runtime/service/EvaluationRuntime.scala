@@ -156,9 +156,9 @@ object EvaluationRuntime {
                   ZIO.logSpan(s"${request.method} ${request.url}") {
                     for {
                       chunk <- DataLoader.httpLoad(request)
-                      json <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
+                      json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
                         .mapError(ValidationError.DecodingError("String", "JsonAST", _))
-                      any <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
+                      any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
                         .mapError(new RuntimeException(_))
                     } yield any
                   }
