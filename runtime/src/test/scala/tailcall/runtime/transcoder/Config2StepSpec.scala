@@ -7,15 +7,16 @@ import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path}
+import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
+import zio.schema.{DynamicValue, Schema}
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{before, parallel, timeout}
 import zio.test.{TestConsole, TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{Chunk, ZIO, durationInt}
+import zio.{Chunk, Ref, ZIO, durationInt}
 
 import java.net.URI
 
@@ -365,6 +366,69 @@ object Config2StepSpec extends ZIOSpecDefault {
           } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
         },
       ),
+      suite("context")(
+        test("one level") {
+          val program = collect { ref =>
+            Config.default
+              .withTypes("Query" -> Config.Type("a" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))))
+          }
+
+          val expected = context(())
+          assertZIO(program("query {a}"))(equalTo(expected))
+        },
+        test("two levels") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+              "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+            )
+          }
+
+          val expected = context(value = 100, parent = Option(context(value = 100)))
+          assertZIO(program("query {a {b}}"))(equalTo(expected))
+        },
+        test("three levels") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+              "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
+              "B"     -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+            )
+          }
+
+          val expected =
+            context(value = 200, parent = Option(context(value = 200, parent = Option(context(value = 100)))))
+          assertZIO(program("query {a {b {c}}}"))(equalTo(expected))
+        },
+        test("four levels") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
+              "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
+              "B"     -> Config.Type("c" -> Config.Field.ofType("C").resolveWith(300)),
+              "C"     -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+            )
+          }
+
+          val expected = context(
+            value = 300,
+            parent =
+              Option(context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))),
+          )
+          assertZIO(program("query {a {b {c {d}}}}"))(equalTo(expected))
+        },
+        test("two level with list") {
+          val program = collect { ref =>
+            Config.default.withTypes(
+              "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(List(100, 200, 300))),
+              "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+            )
+          }
+
+          val expected = context(value = 100, parent = Option(context(value = 100)))
+          assertZIO(program("query {a {b}}"))(equalTo(expected))
+        },
+      ),
       suite("context value")(
         test("root") {
           val config   = Config.default.withTypes(
@@ -514,6 +578,31 @@ object Config2StepSpec extends ZIOSpecDefault {
       HttpClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
+
+  private def collect(
+    f: Ref[DynamicValue] => Config
+  ): String => ZIO[HttpContext with GraphQLGenerator, Throwable, Context] = { q =>
+    for {
+      ref <- Ref.make[DynamicValue](DynamicValue(()))
+      config = f(ref)
+      _       <- resolve(config)(q)
+      data    <- ref.get
+      context <- ZIO.fromEither(data.toTypedValue[Context]) <> ZIO.fail(new Exception("Could not convert to context"))
+    } yield context
+  }
+
+  private def context[A: Schema](
+    value: A,
+    args: Map[String, DynamicValue] = Map.empty,
+    parent: Option[Context] = None,
+  ): Context =
+    Context(
+      Schema[A].toDynamic(value),
+      env = Map("foo" -> "bar"),
+      headers = Map("authorization" -> "bar"),
+      args = args,
+      parent = parent,
+    )
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
