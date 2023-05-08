@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Scheme
+import tailcall.runtime.model.Config.Field
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
 import zio.Chunk
@@ -60,6 +61,20 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
           Endpoint.make("foo.com").withScheme(Scheme.Https).withPath("/users").withOutput(Option(TSchema.string.opt))
         )
         assertZIO(endpoints)(equalTo(expected))
+      },
+      test("endpoint output schema") {
+        val config  = Config.default.withBaseURL("http://abc.com").withTypes(
+          "Query" -> Config.Type("foo" -> Field.ofType("Foo")),
+          "Foo"   -> Config.Type(
+            "a" -> Field.ofType("Foo").withHttp(Http.fromPath("/a")),
+            "b" -> Field.ofType("String"),
+            "c" -> Field.ofType("String"),
+          ),
+        )
+        val schemas = Transcoder.toBlueprint(config).map(_.endpoints.flatMap(_.output.toList)).toTask.orDie
+
+        val expected = List(TSchema.obj("b" -> TSchema.string.opt, "c" -> TSchema.string.opt).opt)
+        assertZIO(schemas)(equalTo(expected))
       },
     )
 }
