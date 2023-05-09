@@ -300,10 +300,9 @@ object Config2Blueprint {
               def invalidPath = s"Inlining path ${inlinedPath.mkString(", ")} is invalid for field ${fieldName}"
 
               for {
-                field <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
-                scalar = isScalar(field)
+                field    <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
                 typeInfo <-
-                  if (scalar) TValid.succeed(Type.empty)
+                  if (isScalar(field)) TValid.succeed(Type.empty)
                   else TValid.fromOption(config.graphQL.types.get(field.typeOf), invalidPath)
                 ofType   <- loop(tail, field, typeInfo)
               } yield if (field.isList && tail.nonEmpty) Blueprint.ListType(ofType, field.isRequired) else ofType
