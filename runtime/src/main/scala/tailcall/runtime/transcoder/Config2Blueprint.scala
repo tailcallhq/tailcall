@@ -274,6 +274,8 @@ object Config2Blueprint {
       }
     }
 
+    private def isScalar(field: Field): Boolean = List("String", "Int", "Boolean").contains(field.typeOf)
+
     private def updateInlineField(
       typeInfo: Type,
       fieldName: String,
@@ -298,8 +300,11 @@ object Config2Blueprint {
               def invalidPath = s"Inlining path ${inlinedPath.mkString(", ")} is invalid for field ${fieldName}"
 
               for {
-                field    <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
-                typeInfo <- TValid.fromOption(config.graphQL.types.get(field.typeOf), invalidPath)
+                field <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
+                scalar = isScalar(field)
+                typeInfo <-
+                  if (scalar) TValid.succeed(Type.empty)
+                  else TValid.fromOption(config.graphQL.types.get(field.typeOf), invalidPath)
                 ofType   <- loop(tail, field, typeInfo)
               } yield if (field.isList && tail.nonEmpty) Blueprint.ListType(ofType, field.isRequired) else ofType
             }

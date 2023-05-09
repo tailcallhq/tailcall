@@ -320,6 +320,15 @@ object Config2StepSpec extends ZIOSpecDefault {
             json <- resolve(config, Map.empty)("""query {foo {c}}""")
           } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
         },
+        test("inline field scalar type") {
+          val config = Config.default.withTypes(
+            "Query" -> Config
+              .Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
+          )
+
+          for { json <- resolve(config, Map.empty)("""query {foo}""") } yield assertTrue(json == """{"foo":"Hello!"}""")
+        },
         test("inline with modify field") {
           val config = Config.default.withTypes(
             "Query" -> Config.Type(
