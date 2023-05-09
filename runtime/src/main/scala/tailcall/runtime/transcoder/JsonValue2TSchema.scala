@@ -27,7 +27,7 @@ trait JsonValue2TSchema {
 
       case Json.Arr(element) => for {
           chunk  <- TValid.foreachChunk(element)(json => toTSchema(json))
-          schema <- SchemaUnifier.unify(chunk.toList).map(_.getOrElse(TSchema.string))
+          schema <- SchemaUnifier.unify(chunk.toList).map(_.getOrElse(TSchema.str))
         } yield schema.arr
 
       case Json.Bool(_) => TValid.succeed(TSchema.Bool)

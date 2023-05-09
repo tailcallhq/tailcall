@@ -36,7 +36,7 @@ object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
           assertZIO(schema.toZIO)(isSome(equalTo(TSchema.obj("a" -> TSchema.num.opt))))
         },
         test("int and string") {
-          val schema = unify(TSchema.num, TSchema.string)
+          val schema = unify(TSchema.num, TSchema.str)
           assertZIO(schema.toZIO)(isNone)
         },
         test("deeply nested") {

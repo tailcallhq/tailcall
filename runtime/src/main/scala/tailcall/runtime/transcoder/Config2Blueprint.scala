@@ -157,7 +157,8 @@ object Config2Blueprint {
 
             // TODO: add unit tests for when we can infer input/output
             val inferOutput = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-            val inferInput  = steps.indexOf(http) == 0 && endpoint.input.isEmpty
+
+            val inferInput = steps.indexOf(http) == 0 && endpoint.input.isEmpty
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
@@ -212,16 +213,15 @@ object Config2Blueprint {
 
       var schema = config.graphQL.types.get(fieldType) match {
         case Some(typeInfo) => TSchema.obj(
-            typeInfo.fields.filter { case (_, field) =>
-              field.unsafeSteps.exists(_.isEmpty) && field.http.exists(_.input.isEmpty)
-            }.map { case (fieldName, field) => (fieldName, toTSchema(field)) }
+            typeInfo.fields.filter { case (_, field) => field.unsafeSteps.forall(_.isEmpty) && field.http.isEmpty }
+              .map { case (fieldName, field) => (fieldName, toTSchema(field)) }
           )
 
         case None => fieldType match {
-            case "String"  => TSchema.string
+            case "String"  => TSchema.str
             case "Int"     => TSchema.num
             case "Boolean" => TSchema.bool
-            case _         => TSchema.string // TODO: default to string?
+            case _         => TSchema.str // TODO: default to string?
           }
       }
 

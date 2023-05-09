@@ -13,10 +13,10 @@ import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
-import zio.test.Assertion.equalTo
+import zio.test.Assertion.{contains, equalTo}
 import zio.test.TestAspect.{before, parallel, timeout}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{Chunk, Ref, ZIO, durationInt}
+import zio.{Chunk, Ref, UIO, ZIO, durationInt}
 
 import java.net.URI
 
@@ -370,35 +370,35 @@ object Config2StepSpec extends ZIOSpecDefault {
         test("one level") {
           val program = collect { ref =>
             Config.default
-              .withTypes("Query" -> Config.Type("a" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))))
+              .withTypes("Query" -> Config.Type("a" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)))))
           }
 
           val expected = context(())
-          assertZIO(program("query {a}"))(equalTo(expected))
+          assertZIO(program("query {a}"))(contains(expected))
         },
         test("two levels") {
           val program = collect { ref =>
             Config.default.withTypes(
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
-              "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+              "A"     -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)))),
             )
           }
 
           val expected = context(value = 100, parent = Option(context(value = 100)))
-          assertZIO(program("query {a {b}}"))(equalTo(expected))
+          assertZIO(program("query {a {b}}"))(contains(expected))
         },
         test("three levels") {
           val program = collect { ref =>
             Config.default.withTypes(
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
               "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
-              "B"     -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+              "B"     -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)))),
             )
           }
 
           val expected =
             context(value = 200, parent = Option(context(value = 200, parent = Option(context(value = 100)))))
-          assertZIO(program("query {a {b {c}}}"))(equalTo(expected))
+          assertZIO(program("query {a {b {c}}}"))(contains(expected))
         },
         test("four levels") {
           val program = collect { ref =>
@@ -406,7 +406,7 @@ object Config2StepSpec extends ZIOSpecDefault {
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").resolveWith(100)),
               "A"     -> Config.Type("b" -> Config.Field.ofType("B").resolveWith(200)),
               "B"     -> Config.Type("c" -> Config.Field.ofType("C").resolveWith(300)),
-              "C"     -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)))),
+              "C"     -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)))),
             )
           }
 
@@ -415,25 +415,27 @@ object Config2StepSpec extends ZIOSpecDefault {
             parent =
               Option(context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))),
           )
-          assertZIO(program("query {a {b {c {d}}}}"))(equalTo(expected))
+          assertZIO(program("query {a {b {c {d}}}}"))(contains(expected))
         },
         test("one level with list") {
           val program = collect { ref =>
             Config.default.withTypes(
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 200))),
-              "A" -> Config.Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
+              "A"     -> Config
+                .Type("b" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)).path("value").toDynamic)),
             )
           }
 
           val expected = context(value = 200, parent = Option(context(value = Chunk(100, 200))))
-          assertZIO(program("query {a{b}}"))(equalTo(expected))
+          assertZIO(program("query {a{b}}"))(contains(expected))
         },
         test("two level with list") {
           val program = collect { ref =>
             Config.default.withTypes(
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
               "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
-              "B" -> Config.Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
+              "B"     -> Config
+                .Type("c" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)).path("value").toDynamic)),
             )
           }
 
@@ -441,7 +443,7 @@ object Config2StepSpec extends ZIOSpecDefault {
             value = 201,
             parent = Option(context(value = Chunk(200, 201), parent = Option(context(value = Chunk(100, 101))))),
           )
-          assertZIO(program("query {a{b{c}}}"))(equalTo(expected))
+          assertZIO(program("query {a{b{c}}}"))(contains(expected))
         },
         test("three level with list") {
           val program = collect { ref =>
@@ -449,7 +451,7 @@ object Config2StepSpec extends ZIOSpecDefault {
               "Query" -> Config.Type("a" -> Config.Field.ofType("A").asList.resolveWith(List(100, 101))),
               "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList.resolveWith(List(200, 201))),
               "B"     -> Config.Type("c" -> Config.Field.ofType("C").asList.resolveWith(List(300, 301))),
-              "C" -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.set(_)).path("value").toDynamic)),
+              "C"     -> Config.Type("d" -> Config.Field.int.resolveWithFunction(_.tap(ref.insert(_)).toDynamic)),
             )
           }
 
@@ -460,7 +462,7 @@ object Config2StepSpec extends ZIOSpecDefault {
               parent = Option(context(value = Chunk(200, 201), parent = Option(context(value = Chunk(100, 101))))),
             )),
           )
-          assertZIO(program("query {a{b{c{d}}}}"))(equalTo(expected))
+          assertZIO(program("query {a{b{c{d}}}}"))(contains(expected))
         },
       ),
     ).provide(
@@ -470,14 +472,16 @@ object Config2StepSpec extends ZIOSpecDefault {
     ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def collect(
-    f: Ref[DynamicValue] => Config
-  ): String => ZIO[HttpContext with GraphQLGenerator, Throwable, Context] = { q =>
+    f: RefList[DynamicValue] => Config
+  ): String => ZIO[HttpContext with GraphQLGenerator, Throwable, List[Context]] = { q =>
     for {
-      ref <- Ref.make[DynamicValue](DynamicValue(()))
+      ref <- Ref.make[List[DynamicValue]](List.empty).map(RefList(_))
       config = f(ref)
       _       <- resolve(config)(q)
       data    <- ref.get
-      context <- ZIO.fromEither(data.toTypedValue[Context]) <> ZIO.fail(new Exception("Could not convert to context"))
+      context <- ZIO.foreach(data)(data =>
+        ZIO.fromEither(data.toTypedValue[Context]) <> ZIO.fail(new Exception("Could not convert to context"))
+      )
     } yield context
   }
 
@@ -507,5 +511,11 @@ object Config2StepSpec extends ZIOSpecDefault {
         case None        => ZIO.unit
       }
     } yield result.data.toString
+  }
+
+  final private case class RefList[A](ref: Ref[List[A]]) {
+    def get: UIO[List[A]] = ref.get
+
+    def insert(value: A): UIO[Unit] = ref.update(_ :+ value)
   }
 }
