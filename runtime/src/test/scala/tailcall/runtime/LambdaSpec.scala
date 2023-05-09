@@ -438,7 +438,7 @@ object LambdaSpec extends ZIOSpecDefault {
       suite("unsafe")(
         test("endpoint /users/1") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
+            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.str)))
           val input    = DynamicValue(Map("id" -> 1))
 
           for {
@@ -450,7 +450,7 @@ object LambdaSpec extends ZIOSpecDefault {
         },
         test("error") {
           val endpoint = Endpoint.make("jsonplaceholder.typicode.com").withPath("/users/{{id}}")
-            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.string)))
+            .withOutput(Option(TSchema.obj("id" -> TSchema.num, "name" -> TSchema.str)))
 
           val program = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)

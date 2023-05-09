@@ -57,9 +57,8 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
         val config    = Config.default.withBaseURL("https://foo.com")
           .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.withHttp(Http.fromPath("/users"))))
         val endpoints = Transcoder.toBlueprint(config).map(_.endpoints).toZIO
-        val expected  = List(
-          Endpoint.make("foo.com").withScheme(Scheme.Https).withPath("/users").withOutput(Option(TSchema.string.opt))
-        )
+        val expected  =
+          List(Endpoint.make("foo.com").withScheme(Scheme.Https).withPath("/users").withOutput(Option(TSchema.str.opt)))
         assertZIO(endpoints)(equalTo(expected))
       },
       test("endpoint output schema") {
@@ -73,7 +72,7 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
         )
         val schemas = Transcoder.toBlueprint(config).map(_.endpoints.flatMap(_.output.toList)).toTask.orDie
 
-        val expected = List(TSchema.obj("b" -> TSchema.string.opt, "c" -> TSchema.string.opt).opt)
+        val expected = List(TSchema.obj("b" -> TSchema.str.opt, "c" -> TSchema.str.opt).opt)
         assertZIO(schemas)(equalTo(expected))
       },
     )

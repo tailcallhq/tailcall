@@ -65,7 +65,7 @@ object TSchema {
       case _      => Opt(schema)
     }
 
-  def string: TSchema = TSchema.Str
+  def str: TSchema = TSchema.Str
 
   def toZIOSchema(schema: TSchema): Schema[_] =
     schema match {

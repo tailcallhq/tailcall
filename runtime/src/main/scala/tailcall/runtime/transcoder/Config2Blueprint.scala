@@ -218,10 +218,10 @@ object Config2Blueprint {
           )
 
         case None => fieldType match {
-            case "String"  => TSchema.string
+            case "String"  => TSchema.str
             case "Int"     => TSchema.num
             case "Boolean" => TSchema.bool
-            case _         => TSchema.string // TODO: default to string?
+            case _         => TSchema.str // TODO: default to string?
           }
       }
 
