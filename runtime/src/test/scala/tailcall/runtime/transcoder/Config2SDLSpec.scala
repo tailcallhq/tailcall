@@ -376,6 +376,21 @@ object Config2SDLSpec extends ZIOSpecDefault {
 
         assertSDL(config, expected)
       },
+      test("inline field scalar type") {
+        val config   = Config.default.withTypes(
+          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
+          "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
+        )
+        val expected = """schema {
+                         |  query: Query
+                         |}
+                         |
+                         |type Query {
+                         |  foo: String
+                         |}
+                         |""".stripMargin.trim
+        assertSDL(config, expected)
+      },
       test("inline field with lists") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
