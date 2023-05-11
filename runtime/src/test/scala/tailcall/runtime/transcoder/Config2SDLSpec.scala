@@ -353,93 +353,96 @@ object Config2SDLSpec extends ZIOSpecDefault {
 
         assertSDL(config, expected)
       },
-      test("inline field") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+      suite("inline")(
+        test("on type") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        val expected = """schema {
-                         |  query: Query
-                         |}
-                         |
-                         |type B {
-                         |  c: String
-                         |}
-                         |
-                         |type Query {
-                         |  foo: B
-                         |}
-                         |""".stripMargin.trim
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type B {
+                           |  c: String
+                           |}
+                           |
+                           |type Query {
+                           |  foo: B
+                           |}
+                           |""".stripMargin.trim
 
-        assertSDL(config, expected)
-      },
-      test("inline field scalar type") {
-        val config   = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
-        )
-        val expected = """schema {
-                         |  query: Query
-                         |}
-                         |
-                         |type Query {
-                         |  foo: String
-                         |}
-                         |""".stripMargin.trim
-        assertSDL(config, expected)
-      },
-      test("inline field with lists") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          assertSDL(config, expected)
+        },
+        test("on scalar") {
+          val config   = Config.default.withTypes(
+            "Query" -> Config
+              .Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
+          )
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query {
+                           |  foo: String
+                           |}
+                           |""".stripMargin.trim
+          assertSDL(config, expected)
+        },
+        test("on lists") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "b")),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        val expected = """schema {
-                         |  query: Query
-                         |}
-                         |
-                         |type B {
-                         |  c: String
-                         |}
-                         |
-                         |type Query {
-                         |  foo: [[B]]
-                         |}
-                         |""".stripMargin.trim
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type B {
+                           |  c: String
+                           |}
+                           |
+                           |type Query {
+                           |  foo: [[B]]
+                           |}
+                           |""".stripMargin.trim
 
-        assertSDL(config, expected)
-      },
-      test("inline on index with list") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
-              .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-          ),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-          "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-          "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-        )
+          assertSDL(config, expected)
+        },
+        test("on index with list") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type(
+              "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
+                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
+            ),
+            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
+            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
+            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
+          )
 
-        val expected = """schema {
-                         |  query: Query
-                         |}
-                         |
-                         |type B {
-                         |  c: String
-                         |}
-                         |
-                         |type Query {
-                         |  foo: [B]
-                         |}
-                         |""".stripMargin.trim
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type B {
+                           |  c: String
+                           |}
+                           |
+                           |type Query {
+                           |  foo: [B]
+                           |}
+                           |""".stripMargin.trim
 
-        assertSDL(config, expected)
-      },
+          assertSDL(config, expected)
+        },
+      ),
     ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
 
   private def assertSDL(
