@@ -42,14 +42,14 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
           val config = Config.default
             .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.withHttp(Http(Path.empty))))
           assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
-            Chunk("""`Query.foo` has an http operation hence can not be non-nullable""")
+            Chunk("""Query.foo @http: can not be used with non-nullable fields""")
           ))
         },
         test("unsafe with required") {
           val config = Config.default
             .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.resolveWith(100)))
           assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
-            Chunk("""`Query.foo` has an unsafe operation hence can not be non-nullable""")
+            Chunk("""Query.foo @unsafe: can not be used with non-nullable fields""")
           ))
         },
       ),

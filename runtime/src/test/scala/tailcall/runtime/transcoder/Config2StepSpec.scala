@@ -283,7 +283,7 @@ object Config2StepSpec extends ZIOSpecDefault {
 
         val errors = config.toBlueprint.errors
 
-        assertTrue(errors == Chunk("Query.foo can not have unsafe and http operations together"))
+        assertTrue(errors == Chunk("Query.foo @unsafe: can not be used with @http"))
       }),
       suite("inline")(
         test("with no base url") {
@@ -292,7 +292,7 @@ object Config2StepSpec extends ZIOSpecDefault {
 
           val errors = config.toBlueprint.errors
 
-          assertTrue(errors == Chunk("No base URL defined in the server configuration"))
+          assertTrue(errors == Chunk("schema @server: No base URL defined in the server configuration"))
         },
         test("http directive") {
           val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
