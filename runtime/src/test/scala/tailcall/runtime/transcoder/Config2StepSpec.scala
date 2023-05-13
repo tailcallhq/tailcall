@@ -76,7 +76,7 @@ object Config2StepSpec extends ZIOSpecDefault {
             "z" -> Field.ofType("A").withSteps(Operation.constant(value), Operation.transform(transformation))
           ),
           "A"     -> Type("a" -> Field.int, "b" -> Field.ofType("B").asList),
-          "B"     -> Type("key" -> Field.string, "value" -> Field.int),
+          "B"     -> Type("key" -> Field.str, "value" -> Field.int),
         )
 
         val program = resolve(config)("""{z {a b {key value}}}""")
@@ -269,7 +269,7 @@ object Config2StepSpec extends ZIOSpecDefault {
         test("resolve with headers") {
           val config = Config.default.withTypes(
             "Query" -> Config
-              .Type("identity" -> Config.Field.string.resolveWithFunction(_.path("headers", "authorization").toDynamic))
+              .Type("identity" -> Config.Field.str.resolveWithFunction(_.path("headers", "authorization").toDynamic))
           )
           for {
             json <- resolve(config, Map.empty)("""query {identity}""")

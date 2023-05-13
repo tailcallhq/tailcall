@@ -315,7 +315,7 @@ object Config {
 
     def ofType(name: String): Field = Field(typeOf = name)
 
-    def string: Field = Field(typeOf = "String")
+    def str: Field = Field(typeOf = "String")
   }
 
   object Arg {

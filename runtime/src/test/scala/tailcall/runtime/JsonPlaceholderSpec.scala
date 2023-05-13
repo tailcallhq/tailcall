@@ -233,7 +233,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           val config = typicode.withTypes(
             "Query" -> Type("users" -> Field.ofType("User").asList.withHttp(users)),
             "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
-            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.str),
           )
 
           for {
@@ -249,7 +249,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           val config = typicode.withTypes(
             "Query" -> Type("user" -> Field.ofType("User").withHttp(user).withArguments("id" -> Arg.int.asRequired)),
             "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
-            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.str),
           )
 
           for {
@@ -269,7 +269,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
               "users" -> Field.ofType("User").asList.withHttp(users),
             ),
             "User"  -> Type("id" -> Field.int, "posts" -> Field.ofType("Post").asList.withHttp(userPostBatched)),
-            "Post"  -> Type("userId" -> Field.int, "title" -> Field.string),
+            "Post"  -> Type("userId" -> Field.int, "title" -> Field.str),
           )
 
           for {
@@ -283,10 +283,10 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           val posts    = Http.fromPath("/posts")
           val config   = typicode.withTypes(
             "Query" -> Type("posts" -> Field.ofType("Post").asList.withHttp(posts)),
-            "User"  -> Type("id" -> Field.int, "name" -> Field.string),
+            "User"  -> Type("id" -> Field.int, "name" -> Field.str),
             "Post"  -> Type(
               "userId" -> Field.int,
-              "title"  -> Field.string,
+              "title"  -> Field.str,
               "user"   -> Field.ofType("User").withHttp(postUser),
             ),
           )

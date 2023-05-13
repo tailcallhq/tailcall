@@ -24,12 +24,12 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.com").toURL).withTypes(
           "Query" -> Config.Type("users" -> Config.Field.ofType("User").asList),
           "User"  -> Config.Type(
-            "name"  -> Config.Field.string,
+            "name"  -> Config.Field.str,
             "id"    -> Config.Field.int,
             "posts" -> Config.Field.ofType("Post").asList.withHttp(Http(path = Path.unsafe.fromString("/posts"))),
           ),
           "Post"  -> Config.Type(
-            "name" -> Config.Field.string,
+            "name" -> Config.Field.str,
             "id"   -> Config.Field.int,
             "user" -> Config.Field.ofType("User").withHttp(Http(path = Path.unsafe.fromString("/users"))),
           ),
@@ -40,14 +40,14 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
       suite("required")(
         test("http with required") {
           val config = Config.default
-            .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.withHttp(Http(Path.empty))))
+            .withTypes("Query" -> Config.Type("foo" -> Config.Field.str.asRequired.withHttp(Http(Path.empty))))
           assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
             Chunk("""Query.foo @http: can not be used with non-nullable fields""")
           ))
         },
         test("unsafe with required") {
           val config = Config.default
-            .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.asRequired.resolveWith(100)))
+            .withTypes("Query" -> Config.Type("foo" -> Config.Field.str.asRequired.resolveWith(100)))
           assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
             Chunk("""Query.foo @unsafe: can not be used with non-nullable fields""")
           ))
@@ -55,7 +55,7 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
       ),
       test("endpoint") {
         val config    = Config.default.withBaseURL("https://foo.com")
-          .withTypes("Query" -> Config.Type("foo" -> Config.Field.string.withHttp(Http.fromPath("/users"))))
+          .withTypes("Query" -> Config.Type("foo" -> Config.Field.str.withHttp(Http.fromPath("/users"))))
         val endpoints = Transcoder.toBlueprint(config).map(_.endpoints).toZIO
         val expected  =
           List(Endpoint.make("foo.com").withScheme(Scheme.Https).withPath("/users").withOutput(Option(TSchema.str.opt)))
