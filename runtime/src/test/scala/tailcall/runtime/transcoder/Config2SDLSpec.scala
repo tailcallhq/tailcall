@@ -188,8 +188,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         },
       ),
       test("document type generation") {
-        val config = Config.default
-          .withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String").resolveWith("test")))
+        val config = Config.default.withTypes("Query" -> Config.Type("test" -> Config.Field.ofType("String")))
 
         val expected = """|schema {
                           |  query: Query
@@ -203,8 +202,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
       test("document with InputValue") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type(
-            "test" -> Config.Field.ofType("String").resolveWith("test")
-              .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
+            "test" -> Config.Field.ofType("String").withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
 
@@ -220,8 +218,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
       test("blueprint with InputValue and default") {
         val config = Config.default.withTypes(
           "Query" -> Config.Type(
-            "test" -> Config.Field.ofType("String").resolveWith("test")
-              .withArguments("arg" -> Arg.ofType("String").withDefault("test"))
+            "test" -> Config.Field.ofType("String").withArguments("arg" -> Arg.ofType("String").withDefault("test"))
           )
         )
 
@@ -238,7 +235,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         val config   = Config.default.withTypes(
           "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
           "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
+          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int")),
         )
         val expected = """|schema {
                           |  query: Query
@@ -379,8 +376,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         },
         test("on scalar") {
           val config   = Config.default.withTypes(
-            "Query" -> Config
-              .Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a")),
             "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
           )
           val expected = """schema {
@@ -417,16 +413,12 @@ object Config2SDLSpec extends ZIOSpecDefault {
           assertSDL(config, expected)
         },
         test("on index with list") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
-                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-            ),
+          val config   = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")),
             "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
             "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
             "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
           )
-
           val expected = """schema {
                            |  query: Query
                            |}
@@ -437,6 +429,57 @@ object Config2SDLSpec extends ZIOSpecDefault {
                            |
                            |type Query {
                            |  foo: [B]
+                           |}
+                           |""".stripMargin.trim
+
+          assertSDL(config, expected)
+        },
+        test("on index with required") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "0").asRequired),
+            "Foo"   -> Config.Type("a" -> Config.Field.string.asList.asRequired),
+          )
+
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query {
+                           |  foo: String
+                           |}
+                           |""".stripMargin.trim
+
+          assertSDL(config, expected)
+        },
+        test("on optional required path") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a")),
+            "Foo"   -> Config.Type("a" -> Config.Field.string.asRequired),
+          )
+
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query {
+                           |  foo: String
+                           |}
+                           |""".stripMargin.trim
+
+          assertSDL(config, expected)
+        },
+        test("on required required path") {
+          val config = Config.default.withTypes(
+            "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a").asRequired),
+            "Foo"   -> Config.Type("a" -> Config.Field.string.asRequired),
+          )
+
+          val expected = """schema {
+                           |  query: Query
+                           |}
+                           |
+                           |type Query {
+                           |  foo: String!
                            |}
                            |""".stripMargin.trim
 

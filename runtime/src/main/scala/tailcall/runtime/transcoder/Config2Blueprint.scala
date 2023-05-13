@@ -7,6 +7,7 @@ import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
 import zio.Chunk
 import zio.schema.DynamicValue
@@ -45,6 +46,16 @@ object Config2Blueprint {
         case None    => bField.copy(resolver = Option(f))
       }
 
+    private def failField(
+      typeName: String,
+      fieldName: String,
+      directiveName: String,
+      message: String,
+    ): TValid[String, Nothing] = TValid.fail(s"${typeName}.${fieldName} @${directiveName}: ${message}")
+
+    private def failType(typeName: String, directiveName: String, message: String): TValid[String, Nothing] =
+      TValid.fail(s"${typeName} @${directiveName}: ${message}")
+
     /**
      * Types are input types if they are used as arguments
      * to a field OR if the are the return types of a field
@@ -82,6 +93,8 @@ object Config2Blueprint {
       val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
       types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
     }
+
+    private def isScalar(field: Field): Boolean = List("String", "Int", "Boolean").contains(field.typeOf)
 
     private def toArgs(field: Field): List[Blueprint.InputFieldDefinition] = {
       field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
@@ -131,9 +144,9 @@ object Config2Blueprint {
           bField      <- toFieldDefault(fieldName, field)
           bField      <- updateUnsafeField(typeName, field, bField)
           bField      <- updateFieldHttp(typeName, field, bField)
-          mayBeBField <- updateModifyField(field, bField, inputTypeNames.contains(typeName))
+          mayBeBField <- updateModifyField(typeName, field, bField, inputTypeNames.contains(typeName))
           bField      <- mayBeBField match {
-            case Some(bField) => updateInlineField(typeInfo, fieldName, field, bField).some
+            case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
             case None         => TValid.none
           }
         } yield bField.toList
@@ -172,7 +185,7 @@ object Config2Blueprint {
                 if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
             }
           }
-        case None          => TValid.fail("No base URL defined in the server configuration")
+        case None          => failType("schema", "server", "No base URL defined in the server configuration")
       }
     }
 
@@ -239,8 +252,8 @@ object Config2Blueprint {
       if (isList) Blueprint.ListType(ofType, false) else ofType
     }
 
-    private def toType(field: Field): TValid[Nothing, Blueprint.Type] = {
-      val ofType = Blueprint.NamedType(field.typeOf, field.isRequired)
+    private def toType(field: Field, isRequired: Boolean = true): TValid[Nothing, Blueprint.Type] = {
+      val ofType = Blueprint.NamedType(field.typeOf, field.isRequired && isRequired)
       val isList = field.isList
       TValid.succeed(if (isList) Blueprint.ListType(ofType, false) else ofType)
     }
@@ -265,18 +278,21 @@ object Config2Blueprint {
 
       field.http match {
         case Some(http) =>
-          if (field.isRequired) TValid
-            .fail(s"`${typeName}.${bField.name}` has an http operation hence can not be non-nullable")
-          else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
-            .fail(s"${typeName}.${bField.name} can not have unsafe and http operations together")
+          if (field.isRequired) {
+            failField(typeName, bField.name, Http.directive.name, "can not be used with non-nullable fields")
+          } else if (field.unsafeSteps.exists(_.nonEmpty)) failField(
+            typeName,
+            bField.name,
+            UnsafeSteps.directive.name,
+            s"can not be used with @${Http.directive.name}",
+          )
           else toHttpResolver(field, http).map(appendResolver(bField, _))
         case _          => TValid.succeed(bField)
       }
     }
 
-    private def isScalar(field: Field): Boolean = List("String", "Int", "Boolean").contains(field.typeOf)
-
     private def updateInlineField(
+      typeName: String,
       typeInfo: Type,
       fieldName: String,
       field: Field,
@@ -284,34 +300,36 @@ object Config2Blueprint {
     ): TValid[String, Blueprint.FieldDefinition] = {
       val inlinedPath = field.inline.map(_.path).getOrElse(Nil)
       val hasIndex    = inlinedPath.exists(_.matches("^\\d+$"))
-      def loop(path: List[String], field: Field, typeInfo: Type): TValid[String, Blueprint.Type] = {
-        path match {
-          case Nil               => toType(field)
-          case fieldName :: tail =>
-            val fieldNameIsIndex = fieldName.matches("^\\d+$")
-            if (fieldNameIsIndex) loop(tail, field, typeInfo).map {
-              case Blueprint.ListType(ofType, _) => ofType
-              case ofType                        => ofType
-            }
-            else {
-              def invalidKey  =
-                s"Inlining path [${inlinedPath
-                    .mkString(", ")}] failed because field '${fieldName}' was not found on type '${field.typeOf}'"
-              def invalidPath = s"Inlining path ${inlinedPath.mkString(", ")} is invalid for field ${fieldName}"
 
-              for {
-                field    <- TValid.fromOption(typeInfo.fields.get(fieldName), invalidKey)
-                typeInfo <-
-                  if (isScalar(field)) TValid.succeed(Type.empty)
-                  else TValid.fromOption(config.graphQL.types.get(field.typeOf), invalidPath)
-                ofType   <- loop(tail, field, typeInfo)
-              } yield if (field.isList && tail.nonEmpty) Blueprint.ListType(ofType, field.isRequired) else ofType
-            }
+      def invalidPath: TValid[String, Nothing] =
+        failField(typeName, fieldName, InlineType.directive.name, s"unreachable path: ${inlinedPath.mkString(".")}")
+
+      def loop(
+        path: List[String],
+        field: Field,
+        typeInfo: Type,
+        isRequired: Boolean,
+      ): TValid[String, Blueprint.Type] = {
+        path match {
+          case Nil               => toType(field, isRequired)
+          case fieldName :: tail =>
+            val isNumeric = fieldName.matches("^\\d+$")
+            if (isNumeric) loop(tail, field.copy(list = Option(false)), typeInfo, false)
+            else for {
+              field0 <- TValid.fromOption(typeInfo.fields.get(fieldName)) <> invalidPath
+              isRequired0 = isRequired && field0.isRequired
+              ofType <-
+                if (isScalar(field0)) loop(tail, field0, typeInfo, isRequired0)
+                else for {
+                  typeInfo <- TValid.fromOption(config.graphQL.types.get(field0.typeOf)) <> invalidPath
+                  ofType   <- loop(tail, field0, typeInfo, isRequired0)
+                } yield if (field.isList) Blueprint.ListType(ofType, isRequired) else ofType
+            } yield ofType
         }
       }
 
       field.inline match {
-        case Some(InlineType(path)) => loop(fieldName :: inlinedPath, field, typeInfo).map(ofType => {
+        case Some(InlineType(path)) => loop(fieldName :: inlinedPath, field, typeInfo, field.isRequired).map(ofType => {
             val resolver =
               if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
               else Lambda.identity[DynamicValue].pathSeq(path: _*)
@@ -322,6 +340,7 @@ object Config2Blueprint {
     }
 
     private def updateModifyField(
+      typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
       isInputType: Boolean,
@@ -335,8 +354,8 @@ object Config2Blueprint {
             val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
             TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
           }
-        case Some(ModifyField(Some(_), Some(_)))    => TValid
-            .fail(s"Cannot have both name and omit modifier on field ${bField.name}")
+        case Some(ModifyField(Some(_), Some(_)))    =>
+          failField(typeName, bField.name, ModifyField.directive.name, "can not have both name and omit modifier")
         case _                                      => TValid.succeed(bField).some
       }
     }
@@ -346,9 +365,9 @@ object Config2Blueprint {
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
-      if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) TValid
-        .fail(s"`${typeName}.${bField.name}` has an unsafe operation hence can not be non-nullable")
-      else field.unsafeSteps match {
+      if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) {
+        failField(typeName, bField.name, UnsafeSteps.directive.name, "can not be used with non-nullable fields")
+      } else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField
             case Some(resolver) => appendResolver(bField, resolver)
