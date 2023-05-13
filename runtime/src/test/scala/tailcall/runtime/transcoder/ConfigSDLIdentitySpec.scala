@@ -118,8 +118,8 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
       test("input type directives") {
         val config = Config.default.withTypes(
           "Query" -> Config
-            .Type("foo" -> Config.Field.string.withArguments("input" -> Config.Arg.ofType("Foo").withName("data"))),
-          "Foo"   -> Config.Type("bar" -> Config.Field.string),
+            .Type("foo" -> Config.Field.str.withArguments("input" -> Config.Arg.ofType("Foo").withName("data"))),
+          "Foo"   -> Config.Type("bar" -> Config.Field.str),
         )
 
         val expected = """schema {
@@ -219,7 +219,7 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
 
         val config = Config.default.withTypes(
           "Query" -> Type("posts" -> Field.ofType("Post").asList),
-          "User"  -> Type("id" -> Field.int, "name" -> Field.string),
+          "User"  -> Type("id" -> Field.int, "name" -> Field.str),
           "Post"  -> Type(
             "id"     -> Field.int,
             "userId" -> Field.int,

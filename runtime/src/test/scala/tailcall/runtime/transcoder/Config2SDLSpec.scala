@@ -336,7 +336,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
       ),
       test("omit field") {
         val config = Config.default
-          .withTypes("Query" -> Config.Type("foo" -> Config.Field.string, "bar" -> Config.Field.string.withOmit(true)))
+          .withTypes("Query" -> Config.Type("foo" -> Config.Field.str, "bar" -> Config.Field.str.withOmit(true)))
 
         val expected = """
                          |schema {
@@ -437,7 +437,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         test("on index with required") {
           val config = Config.default.withTypes(
             "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a", "0").asRequired),
-            "Foo"   -> Config.Type("a" -> Config.Field.string.asList.asRequired),
+            "Foo"   -> Config.Type("a" -> Config.Field.str.asList.asRequired),
           )
 
           val expected = """schema {
@@ -454,7 +454,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         test("on optional required path") {
           val config = Config.default.withTypes(
             "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a")),
-            "Foo"   -> Config.Type("a" -> Config.Field.string.asRequired),
+            "Foo"   -> Config.Type("a" -> Config.Field.str.asRequired),
           )
 
           val expected = """schema {
@@ -471,7 +471,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         test("on required required path") {
           val config = Config.default.withTypes(
             "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").withInline("a").asRequired),
-            "Foo"   -> Config.Type("a" -> Config.Field.string.asRequired),
+            "Foo"   -> Config.Type("a" -> Config.Field.str.asRequired),
           )
 
           val expected = """schema {
