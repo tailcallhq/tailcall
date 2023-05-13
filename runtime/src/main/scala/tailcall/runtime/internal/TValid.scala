@@ -4,7 +4,7 @@ import zio.{Chunk, NonEmptyChunk, Task, ZIO}
 
 sealed trait TValid[+E, +A] {
   self =>
-  def <>[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] = self orElse other
+  def <>[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
   def errors: Chunk[E] = fold(_.toChunk, _ => Chunk.empty)
 
@@ -40,7 +40,7 @@ sealed trait TValid[+E, +A] {
 
   def nonEmpty: Boolean = !isEmpty
 
-  def orElse[E1, A1 >: A](other: TValid[E1, A1]): TValid[E1, A1] =
+  def orElse[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
 
   def some: TValid[E, Option[A]] = self.map(Some(_))
@@ -118,6 +118,8 @@ object TValid {
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
 
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
+
+  def unit: TValid[Nothing, Unit] = succeed(())
 
   final case class Errors[E](chunk: NonEmptyChunk[E]) extends TValid[E, Nothing]
   final case class Succeed[A](value: A)               extends TValid[Nothing, A]
