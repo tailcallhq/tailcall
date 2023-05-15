@@ -135,7 +135,7 @@ object CommandExecutor {
     ): ZIO[Any, Throwable, Unit] = {
       for {
         config    <- configFile.readAll(files.map(_.toFile))
-        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
+        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError.apply)
         digest = blueprint.digest
         seq    = Seq(
           "Digest"    -> s"${digest.hex}",
@@ -194,7 +194,7 @@ object CommandExecutor {
     private def runRemotePublish(base: URL, path: ::[Path]): ZIO[Any, Throwable, Unit] = {
       for {
         config    <- configFile.readAll(path.map(_.toFile))
-        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
+        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError.apply)
         digest    <- registry.add(base, blueprint)
         _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
         seq       <- ZIO.succeed(Seq(

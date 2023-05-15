@@ -15,7 +15,8 @@ trait ToDynamicValue {
 
   final def toDynamicValue(input: ResponseValue): TValid[String, DynamicValue] = {
     input match {
-      case ResponseList(values)    => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence)
+      case ResponseList(values)    => TValid.foreachChunk(Chunk.from(values))(toDynamicValue)
+          .map(DynamicValue.Sequence.apply)
       case ResponseObject(fields)  => TValid.foreach(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries: _*))
       case StringValue(value)      => TValid.succeed(DynamicValue(value))
@@ -36,7 +37,7 @@ trait ToDynamicValue {
     json match {
       case Json.Obj(fields)   => TValid.foreach(fields.toList) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(ListMap.from(_)).map(DynamicValue.Record(TypeId.Structural, _))
-      case Json.Arr(elements) => TValid.foreachChunk(elements)(toDynamicValue).map(DynamicValue.Sequence)
+      case Json.Arr(elements) => TValid.foreachChunk(elements)(toDynamicValue).map(DynamicValue.Sequence.apply)
       case Json.Bool(value)   => TValid.succeed(DynamicValue(value))
       case Json.Str(value)    => TValid.succeed(DynamicValue(value))
       case Json.Num(value)    => TValid.succeed(DynamicValue(value))
@@ -52,7 +53,7 @@ trait ToDynamicValue {
 
   final def toDynamicValue(input: InputValue): TValid[String, DynamicValue] = {
     input match {
-      case ListValue(values)       => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence)
+      case ListValue(values) => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence.apply)
       case ObjectValue(fields)     => TValid.foreachIterable(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries.toList: _*))
       case StringValue(value)      => TValid.succeed(DynamicValue(value))

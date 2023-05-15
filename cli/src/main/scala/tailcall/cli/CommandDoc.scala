@@ -58,6 +58,6 @@ object CommandDoc {
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
-    .make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
+    .make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(CommandExecutor.execute)
     .summary(HelpDoc.Span.Text("Tailcall CLI"))
 }
