@@ -2,7 +2,7 @@ val calibanVersion   = "2.2.1"
 val zioVersion       = "2.0.13"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
-val zioSchemaVersion = "0.4.10+3-6104a0e7-SNAPSHOT"
+val zioSchemaVersion = "0.4.11"
 
 val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
 val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
@@ -59,11 +59,11 @@ lazy val registry = (project in file("registry"))
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
 
-ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / scalaVersion                                   := scala3Version
+ThisBuild / crossScalaVersions                             := Seq(scala3Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
+ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Xfatal-warnings", "-deprecation")
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
