@@ -96,6 +96,9 @@ object Config2Blueprint {
 
     private def isScalar(field: Field): Boolean = List("String", "Int", "Boolean").contains(field.typeOf)
 
+    private def needsResolving(field: Config.Field): Boolean =
+      field.unsafeSteps.exists(_.nonEmpty) || field.http.isDefined
+
     private def toArgs(field: Field): List[Blueprint.InputFieldDefinition] = {
       field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
         val ofType = toType(arg)
@@ -330,9 +333,10 @@ object Config2Blueprint {
 
       field.inline match {
         case Some(InlineType(path)) => loop(fieldName :: inlinedPath, field, typeInfo, field.isRequired).map(ofType => {
+            val nPath    = if (needsResolving(field)) path else "value" :: fieldName :: path
             val resolver =
-              if (hasIndex) Lambda.identity[DynamicValue].path(path: _*)
-              else Lambda.identity[DynamicValue].pathSeq(path: _*)
+              if (hasIndex) Lambda.identity[DynamicValue].path(nPath: _*)
+              else Lambda.identity[DynamicValue].pathSeq(nPath: _*)
             appendResolver(bField, resolver.toDynamic).copy(ofType = ofType)
           })
         case _                      => TValid.succeed(bField)
