@@ -82,6 +82,6 @@ object JsonPlaceholderConfig {
     ),
   )
 
-  val server = Server(baseURL = Option(URI.create("https://jsonplaceholder.typicode.com").toURL))
-  val config = Config(server = server, graphQL = graphQL)
+  val server: Server = Server(baseURL = Option(URI.create("https://jsonplaceholder.typicode.com").toURL))
+  val config: Config = Config(server = server, graphQL = graphQL)
 }
