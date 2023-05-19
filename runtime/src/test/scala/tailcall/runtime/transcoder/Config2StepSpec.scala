@@ -374,6 +374,19 @@ object Config2StepSpec extends ZIOSpecDefault {
             json <- resolve(config, Map.empty)("""query {foo {c}}""")
           } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
         },
+        test("resolved by parent") {
+          val config = Config.default.withTypes(
+            "Query"   -> Config.Type(
+              "user" -> Config.Field.ofType("User").resolveWith(Map("address" -> Map("street" -> "James Street")))
+            ),
+            "User"    -> Config.Type("address" -> Config.Field.ofType("Address").withInline("street")),
+            "Address" -> Config.Type("street" -> Config.Field.str),
+          )
+
+          for {
+            json <- resolve(config, Map.empty)("""query {user {address}}""")
+          } yield assertTrue(json == """{"user":{"address":"James Street"}}""")
+        },
       ),
       suite("context")(
         test("one level") {
