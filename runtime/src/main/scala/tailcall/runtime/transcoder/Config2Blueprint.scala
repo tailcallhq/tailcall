@@ -18,11 +18,8 @@ trait Config2Blueprint {
 
 object Config2Blueprint {
   final case class Live(config: Config) {
-    private val outputTypes    = getOutputTypes.toSet
-    private val inputTypes     = getInputTypes.toSet
-    private val inputTypeNames = inputTypes.map { name =>
-      if (outputTypes.contains(name)) name -> (name + "Input") else name -> name
-    }.toMap
+    private val outputTypes = config.graphQL.types.filterNot(_._2.isInput).keySet
+    private val inputTypes  = config.graphQL.types.filter(_._2.isInput).keySet
 
     /**
      * Encodes a config into a Blueprint.
@@ -46,70 +43,26 @@ object Config2Blueprint {
         case None    => bField.copy(resolver = Option(f))
       }
 
-    private def failField(
+    private def failFieldDirective(
       typeName: String,
       fieldName: String,
       directiveName: String,
       message: String,
     ): TValid[String, Nothing] = TValid.fail(s"${typeName}.${fieldName} @${directiveName}: ${message}")
 
-    private def failType(typeName: String, directiveName: String, message: String): TValid[String, Nothing] =
-      TValid.fail(s"${typeName} @${directiveName}: ${message}")
-
-    /**
-     * Types are input types if they are used as arguments
-     * to a field OR if the are the return types of a field
-     * defined in an input type.
-     */
-    private def getInputTypes: List[String] = {
-
-      def collectReturnTypes(name: String, returnTypes: List[String]): List[String] = {
-        if (returnTypes.contains(name)) returnTypes
-        else config.graphQL.types.get(name) match {
-          case Some(typeInfo) => typeInfo.returnTypes.flatMap(collectReturnTypes(_, name :: returnTypes))
-          case None           => returnTypes
-        }
-      }
-
-      config.graphQL.types.values.toList.flatMap(_.fields.values.toList)
-        .flatMap(_.args.getOrElse(Map.empty).values.toList).map(_.typeOf).flatMap(collectReturnTypes(_, Nil))
-    }
-
-    /**
-     * Goes over every possible object type and creates a
-     * map of type name to whether it's an input type or
-     * not.
-     */
-    private def getOutputTypes: List[String] = {
-      def loop(name: String, result: List[String]): List[String] = {
-        if (result.contains(name)) result
-        else config.graphQL.types.get(name) match {
-          case Some(typeInfo) => typeInfo.fields.values.toList
-              .flatMap[String](field => loop(field.typeOf, name :: result))
-          case None           => result
-        }
-      }
-
-      val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
-      types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
-    }
-
-    private def isScalar(field: Field): Boolean = List("String", "Int", "Boolean").contains(field.typeOf)
+    private def isScalar(typeName: String): Boolean = List("String", "Int", "Boolean").contains(typeName)
 
     private def needsResolving(field: Config.Field): Boolean =
       field.unsafeSteps.exists(_.nonEmpty) || field.http.isDefined
 
-    private def toArgs(field: Field): List[Blueprint.InputFieldDefinition] = {
-      field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
+    private def toArgs(field: Field): TValid[String, List[Blueprint.InputFieldDefinition]] = {
+      TValid.foreach(field.args.getOrElse(Map.empty).toList) { case (name, arg) =>
         val ofType = toType(arg)
-
-        val prefixedOfType: Blueprint.Type = inputTypeNames.get(ofType.defaultName) match {
-          case Some(name) => ofType.withName(name)
-          case None       => ofType
-        }
-        Blueprint.InputFieldDefinition(
+        for {
+          _ <- assertTypeName(ofType.defaultName, isInput = true).tag(name)
+        } yield Blueprint.InputFieldDefinition(
           name = arg.modify.flatMap(_.name).getOrElse(name),
-          ofType = prefixedOfType,
+          ofType = ofType,
           defaultValue = arg.defaultValue.flatMap(Transcoder.toDynamicValue(_).toOption),
           description = arg.doc,
         )
@@ -118,36 +71,35 @@ object Config2Blueprint {
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
       TValid.foreach(config.graphQL.types.toList) { case (name, typeInfo) =>
-        for {
-          fields <- toFieldList(name, typeInfo)
-        } yield {
-
-          // NOTE: Should create a list of definitions
-          // There should be an object type or a list of input object type
-          val definition      = Blueprint.ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc)
-          val inputDefinition = toInputObjectTypeDefinition(definition)
-
-          if (outputTypes.contains(name) && inputTypes.contains(name)) List(definition, inputDefinition)
-          else if (inputTypes.contains(name)) inputDefinition :: Nil
-          else definition :: Nil
+        toFieldList(name, typeInfo).map { fields =>
+          val definition = Blueprint.ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc)
+          if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
         }
-      }.map(_.flatten)
+      }
     }
 
     private def toFieldDefault(fieldName: String, field: Field): TValid[String, Blueprint.FieldDefinition] = {
-      val args = toArgs(field)
-      toType(field).map(ofType =>
-        Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
-      )
+      for {
+        args   <- toArgs(field)
+        ofType <- toType(field)
+      } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
+
+    }
+
+    private def assertTypeName(typeName: String, isInput: Boolean): TValid[String, Unit] = {
+      val inInputs  = inputTypes.contains(typeName)
+      val inOutputs = outputTypes.contains(typeName)
+      TValid.fail(s"undefined input name $typeName").when(isInput && !inInputs && !isScalar(typeName)) <>
+        TValid.fail(s"undefined type name $typeName").when(!inOutputs && !isScalar(typeName))
     }
 
     private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         for {
-          bField      <- toFieldDefault(fieldName, field)
+          bField      <- toFieldDefault(fieldName, field).tag(typeName, fieldName)
           bField      <- updateUnsafeField(typeName, field, bField)
           bField      <- updateFieldHttp(typeName, field, bField)
-          mayBeBField <- updateModifyField(typeName, field, bField, inputTypeNames.contains(typeName))
+          mayBeBField <- updateModifyField(typeName, field, bField)
           bField      <- mayBeBField match {
             case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
             case None         => TValid.none
@@ -188,7 +140,7 @@ object Config2Blueprint {
                 if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
             }
           }
-        case None          => failType("schema", "server", "No base URL defined in the server configuration")
+        case None          => TValid.fail("No base URL defined in the server configuration").tag("schema", "server")
       }
     }
 
@@ -203,16 +155,12 @@ object Config2Blueprint {
       val fields = definition.fields.map { field =>
         Blueprint.InputFieldDefinition(
           name = field.name, // field already has the new name
-          ofType = field.ofType.withName(inputTypeNames.getOrElse(field.ofType.defaultName, field.ofType.defaultName)),
+          ofType = field.ofType.withName(field.ofType.defaultName),
           defaultValue = None,
           description = field.description,
         )
       }
-      Blueprint.InputObjectTypeDefinition(
-        name = inputTypeNames.getOrElse(definition.name, definition.name),
-        fields = fields,
-        description = definition.description,
-      )
+      Blueprint.InputObjectTypeDefinition(name = definition.name, fields = fields, description = definition.description)
     }
 
     // TODO: Add unit test for mutations
@@ -282,8 +230,8 @@ object Config2Blueprint {
       field.http match {
         case Some(http) =>
           if (field.isRequired) {
-            failField(typeName, bField.name, Http.directive.name, "can not be used with non-nullable fields")
-          } else if (field.unsafeSteps.exists(_.nonEmpty)) failField(
+            failFieldDirective(typeName, bField.name, Http.directive.name, "can not be used with non-nullable fields")
+          } else if (field.unsafeSteps.exists(_.nonEmpty)) failFieldDirective(
             typeName,
             bField.name,
             UnsafeSteps.directive.name,
@@ -305,7 +253,12 @@ object Config2Blueprint {
       val hasIndex    = inlinedPath.exists(_.matches("^\\d+$"))
 
       def invalidPath: TValid[String, Nothing] =
-        failField(typeName, fieldName, InlineType.directive.name, s"unreachable path: ${inlinedPath.mkString(".")}")
+        failFieldDirective(
+          typeName,
+          fieldName,
+          InlineType.directive.name,
+          s"unreachable path: ${inlinedPath.mkString(".")}",
+        )
 
       def loop(
         path: List[String],
@@ -322,7 +275,7 @@ object Config2Blueprint {
               field0 <- TValid.fromOption(typeInfo.fields.get(fieldName)) <> invalidPath
               isRequired0 = isRequired && field0.isRequired
               ofType <-
-                if (isScalar(field0)) loop(tail, field0, typeInfo, isRequired0)
+                if (isScalar(field0.typeOf)) loop(tail, field0, typeInfo, isRequired0)
                 else for {
                   typeInfo <- TValid.fromOption(config.graphQL.types.get(field0.typeOf)) <> invalidPath
                   ofType   <- loop(tail, field0, typeInfo, isRequired0)
@@ -347,19 +300,19 @@ object Config2Blueprint {
       typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
-      isInputType: Boolean,
     ): TValid[String, Option[Blueprint.FieldDefinition]] = {
       field.modify match {
         case Some(ModifyField(None, Some(true)))    => TValid.none
         case Some(ModifyField(Some(newName), None)) =>
-          if (isInputType) TValid.succeed(bField).some
-          else {
-            val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
-            val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
-            TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
-          }
-        case Some(ModifyField(Some(_), Some(_)))    =>
-          failField(typeName, bField.name, ModifyField.directive.name, "can not have both name and omit modifier")
+          val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
+          val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
+          TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
+        case Some(ModifyField(Some(_), Some(_)))    => failFieldDirective(
+            typeName,
+            bField.name,
+            ModifyField.directive.name,
+            "can not have both name and omit modifier",
+          )
         case _                                      => TValid.succeed(bField).some
       }
     }
@@ -370,7 +323,12 @@ object Config2Blueprint {
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
       if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) {
-        failField(typeName, bField.name, UnsafeSteps.directive.name, "can not be used with non-nullable fields")
+        failFieldDirective(
+          typeName,
+          bField.name,
+          UnsafeSteps.directive.name,
+          "can not be used with non-nullable fields",
+        )
       } else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField

@@ -138,7 +138,7 @@ trait Document2Config {
     }.map(_.toMap)
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _))
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _).asInput)
     }.map(_.toMap)
 
     (outputTypes zip inputTypes)(_ ++ _)

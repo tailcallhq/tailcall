@@ -21,83 +21,24 @@ import tailcall.runtime.model._
  */
 trait Config2Document {
   final def toDocument(config: Config): TValid[Nothing, Document] = {
+    val schema     = config.graphQL.schema
     val rootSchema = SchemaDefinition(
-      query = config.graphQL.schema.query,
-      mutation = config.graphQL.schema.mutation,
+      query = schema.query,
+      mutation = schema.mutation,
       subscription = None,
       directives = toServerDirective(config).toList,
     )
 
-    val outputTypes    = getOutputTypes(config).toSet
-    val inputTypes     = getInputTypes(config).toSet
-    val inputTypeNames = inputTypes.map { name =>
-      if (outputTypes.contains(name)) name -> (name + "Input") else name -> name
-    }.toMap
-
-    val definitions: List[Definition] = config.graphQL.types.toList.flatMap { case (name, typeInfo) =>
-      val fields: List[FieldDefinition] = {
-        typeInfo.fields.toList.map { case (name, field) =>
-          val args: List[InputValueDefinition] = {
-            field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
-              val ofType = toType(arg)
-
-              val prefixedOfType: Type = inputTypeNames.get(getName(ofType)) match {
-                case Some(name) => setName(ofType, name)
-                case None       => ofType
-              }
-
-              val directives = arg.modify.toList.flatMap(_.toDirective.toList)
-              InputValueDefinition(
-                name = name,
-                ofType = prefixedOfType,
-                defaultValue = None,
-                description = arg.doc,
-                directives = directives,
-              )
-            }
-          }
-
-          val ofType     = toType(field)
-          val directives = toDirective(field)
-          FieldDefinition(name = name, args = args, ofType = ofType, directives = directives, description = field.doc)
-        }
-      }
-
-      // NOTE: Should create a list of definitions
-      // There should be an object type or a list of input object type
-      val definition      = ObjectTypeDefinition(
-        name = name,
-        fields = fields,
-        description = typeInfo.doc,
-        implements = Nil,
-        directives = Nil,
-      )
-      val inputDefinition = toInputObjectTypeDefinition(definition, inputTypeNames)
-      if (outputTypes.contains(name) && inputTypes.contains(name)) List(definition, inputDefinition)
-      else if (inputTypes.contains(name)) inputDefinition :: Nil
-      else definition :: Nil
-    }
+    val definitions: List[Definition] = getDefinitions(config)
 
     TValid.succeed(Document(rootSchema :: definitions, SourceMapper.empty))
   }
 
-  /**
-   * Types are input types if they are used as arguments to
-   * a field OR if the are the return types of a field
-   * defined in an input type.
-   */
-  final private def getInputTypes(config: Config): List[String] = {
-
-    def collectReturnTypes(name: String, returnTypes: List[String]): List[String] = {
-      if (returnTypes.contains(name)) returnTypes
-      else config.graphQL.types.get(name) match {
-        case Some(typeInfo) => typeInfo.returnTypes.flatMap(collectReturnTypes(_, name :: returnTypes))
-        case None           => returnTypes
-      }
+  private def getDefinitions(config: Config): List[Definition] = {
+    config.graphQL.types.toList.map { case (name, typeInfo) =>
+      val definition = toObjectTypeDefinition(name, typeInfo)
+      if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
     }
-
-    config.graphQL.types.values.toList.flatMap(_.fields.values.toList)
-      .flatMap(_.args.getOrElse(Map.empty).values.toList).map(_.typeOf).flatMap(collectReturnTypes(_, Nil))
   }
 
   final private def getName(typeOf: Type): String = {
@@ -105,24 +46,6 @@ trait Config2Document {
       case NamedType(name, _)  => name
       case ListType(ofType, _) => getName(ofType)
     }
-  }
-
-  /**
-   * Goes over every possible object type and creates a map
-   * of type name to whether it's an input type or not.
-   */
-  final private def getOutputTypes(config: Config): List[String] = {
-    def loop(name: String, result: List[String]): List[String] = {
-      if (result.contains(name)) result
-      else config.graphQL.types.get(name) match {
-        case Some(typeInfo) => typeInfo.fields.values.toList
-            .flatMap[String](field => loop(field.typeOf, name :: result))
-        case None           => result
-      }
-    }
-
-    val types = config.graphQL.schema.query.toList ++ config.graphQL.schema.mutation.toList
-    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
   final private def setName(typeOf: Type, name: String): Type = {
@@ -143,14 +66,35 @@ trait Config2Document {
     directives
   }
 
-  final private def toInputObjectTypeDefinition(
-    definition: ObjectTypeDefinition,
-    inputNames: Map[String, String],
-  ): InputObjectTypeDefinition = {
+  final private def toFieldDefinition(typeInfo: Config.Type): List[FieldDefinition] = {
+    typeInfo.fields.toList.map { case (name, field) =>
+      val args: List[InputValueDefinition] = {
+        field.args.getOrElse(Map.empty).toList.map { case (name, arg) =>
+          val ofType     = toType(arg)
+          val directives = arg.modify.toList.flatMap(_.toDirective.toList)
+
+          InputValueDefinition(
+            name = name,
+            ofType = ofType,
+            defaultValue = None,
+            description = arg.doc,
+            directives = directives,
+          )
+        }
+      }
+
+      val ofType     = toType(field)
+      val directives = toDirective(field)
+      FieldDefinition(name = name, args = args, ofType = ofType, directives = directives, description = field.doc)
+    }
+
+  }
+
+  final private def toInputObjectTypeDefinition(definition: ObjectTypeDefinition): InputObjectTypeDefinition = {
     val fields = definition.fields.map { field =>
       InputValueDefinition(
         name = field.name,
-        ofType = setName(field.ofType, inputNames.getOrElse(getName(field.ofType), getName(field.ofType))),
+        ofType = setName(field.ofType, getName(field.ofType)),
         defaultValue = None,
         description = field.description,
 
@@ -159,11 +103,16 @@ trait Config2Document {
       )
     }
     InputObjectTypeDefinition(
-      name = inputNames.getOrElse(definition.name, definition.name),
+      name = definition.name,
       fields = fields,
       description = definition.description,
       directives = Nil,
     )
+  }
+
+  final private def toObjectTypeDefinition(name: String, typeInfo: Config.Type): ObjectTypeDefinition = {
+    val fields: List[FieldDefinition] = toFieldDefinition(typeInfo)
+    ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc, implements = Nil, directives = Nil)
   }
 
   final private def toServerDirective(config: Config): Option[Directive] = {

@@ -89,7 +89,6 @@ object Config {
     input: Option[Boolean] = None,
   ) {
     self =>
-
     def ++(other: Type): Type = self.mergeRight(other)
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
@@ -99,6 +98,8 @@ object Config {
     def asInput: Type = self.copy(input = Option(true))
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
+
+    def isInput: Boolean = input.getOrElse(false)
 
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
