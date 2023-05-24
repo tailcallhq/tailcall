@@ -144,7 +144,6 @@
       },
       "NewUser" : {
         "doc" : "A new user.",
-        "input" : true,
         "fields" : {
           "website" : {
             "type" : "String"
@@ -170,7 +169,8 @@
           "phone" : {
             "type" : "String"
           }
-        }
+        },
+        "input" : true
       },
       "Post" : {
         "fields" : {
@@ -277,7 +277,6 @@
         }
       },
       "NewGeo" : {
-        "input" : true,
         "fields" : {
           "lat" : {
             "type" : "String"
@@ -285,10 +284,10 @@
           "lng" : {
             "type" : "String"
           }
-        }
+        },
+        "input" : true
       },
       "NewCompany" : {
-        "input" : true,
         "fields" : {
           "bs" : {
             "type" : "String"
@@ -299,10 +298,10 @@
           "name" : {
             "type" : "String"
           }
-        }
+        },
+        "input" : true
       },
       "NewAddress" : {
-        "input" : true,
         "fields" : {
           "geo" : {
             "type" : "NewGeo"
@@ -322,7 +321,8 @@
               "name" : "zip"
             }
           }
-        }
+        },
+        "input" : true
       }
     }
   }

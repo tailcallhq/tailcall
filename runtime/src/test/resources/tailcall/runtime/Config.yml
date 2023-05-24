@@ -88,7 +88,6 @@ graphQL:
           doc: A single user by id.
     NewUser:
       doc: A new user.
-      input: true
       fields:
         website:
           type: String
@@ -107,6 +106,7 @@ graphQL:
           type: NewAddress
         phone:
           type: String
+      input: true
     Post:
       fields:
         body:
@@ -172,14 +172,13 @@ graphQL:
               isRequired: true
               doc: User as an argument.
     NewGeo:
-      input: true
       fields:
         lat:
           type: String
         lng:
           type: String
-    NewCompany:
       input: true
+    NewCompany:
       fields:
         bs:
           type: String
@@ -187,8 +186,8 @@ graphQL:
           type: String
         name:
           type: String
-    NewAddress:
       input: true
+    NewAddress:
       fields:
         geo:
           type: NewGeo
@@ -202,3 +201,4 @@ graphQL:
           type: String
           modify:
             name: zip
+      input: true
