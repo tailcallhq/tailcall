@@ -6,199 +6,199 @@ graphQL:
     query: Query
     mutation: Mutation
   types:
-    Geo:
-      fields:
-        lat:
-          type: String
-        lng:
-          type: String
-    Id:
-      doc: An Id container.
-      fields:
-        id:
-          type: Int
-          required: true
-    Company:
-      fields:
-        name:
-          type: String
-        catchPhrase:
-          type: String
-        bs:
-          type: String
-    Address:
-      fields:
-        geo:
-          type: Geo
-        street:
-          type: String
-        suite:
-          type: String
-        city:
-          type: String
-        zipcode:
-          type: String
-          modify:
-            name: zip
-    Query:
-      fields:
-        post:
-          type: Post
-          unsafeSteps:
-          - http:
-              path: /posts/{{args.id}}
-          args:
-            id:
-              type: Int
-              isRequired: true
-          doc: A single post by id.
-        posts:
-          type: Post
-          list: true
-          unsafeSteps:
-          - http:
-              path: /posts
-          doc: A list of all posts.
-        users:
-          type: User
-          list: true
-          unsafeSteps:
-          - http:
-              path: /users
-          doc: A list of all users.
-        unusedField:
-          type: String
-          doc: An unused field that will be omitted.
-          modify:
-            omit: true
-        user:
-          type: User
-          unsafeSteps:
-          - transform:
-              objPath:
-                userId:
-                - args
-                - id
-          - http:
-              path: /users/{{userId}}
-          args:
-            id:
-              type: Int
-              isRequired: true
-          doc: A single user by id.
-    NewUser:
-      doc: A new user.
-      fields:
-        website:
-          type: String
-        name:
-          type: String
-          required: true
-        email:
-          type: String
-          required: true
-        username:
-          type: String
-          required: true
-        company:
-          type: NewCompany
-        address:
-          type: NewAddress
-        phone:
-          type: String
-      input: true
-    Post:
-      fields:
-        body:
-          type: String
-        id:
-          type: Int
-          required: true
-        user:
-          type: User
-          unsafeSteps:
-          - transform:
-              objPath:
-                userId:
-                - value
-                - userId
-          - http:
-              path: /users/{{userId}}
-        userId:
-          type: Int
-          required: true
-        title:
-          type: String
-    User:
-      fields:
-        website:
-          type: String
-        name:
-          type: String
-          required: true
-        posts:
-          type: Post
-          list: true
-          unsafeSteps:
-          - http:
-              path: /users/{{value.id}}/posts
-        email:
-          type: String
-          required: true
-        username:
-          type: String
-          required: true
-        company:
-          type: Company
-        id:
-          type: Int
-          required: true
-        address:
-          type: Address
-        phone:
-          type: String
-    Mutation:
-      fields:
-        createUser:
-          type: Id
-          unsafeSteps:
-          - http:
-              path: /users
-              method: POST
-              body: '{{args.user}}'
-          args:
-            user:
-              type: NewUser
-              isRequired: true
-              doc: User as an argument.
-    NewGeo:
-      fields:
-        lat:
-          type: String
-        lng:
-          type: String
-      input: true
-    NewCompany:
-      fields:
-        name:
-          type: String
-        catchPhrase:
-          type: String
-        bs:
-          type: String
-      input: true
-    NewAddress:
-      fields:
-        geo:
-          type: NewGeo
-        street:
-          type: String
-        suite:
-          type: String
-        city:
-          type: String
-        zipcode:
-          type: String
-          modify:
-            name: zip
-      input: true
+  - name: NewGeo
+    input: true
+    fields:
+      lat:
+        type: String
+      lng:
+        type: String
+  - name: Geo
+    fields:
+      lat:
+        type: String
+      lng:
+        type: String
+  - name: NewCompany
+    input: true
+    fields:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+  - name: Company
+    fields:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+  - name: NewAddress
+    input: true
+    fields:
+      geo:
+        type: NewGeo
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
+        type: String
+        modify:
+          name: zip
+  - name: Address
+    fields:
+      geo:
+        type: Geo
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
+        type: String
+        modify:
+          name: zip
+  - name: Post
+    fields:
+      body:
+        type: String
+      id:
+        type: Int
+        required: true
+      user:
+        type: User
+        unsafeSteps:
+        - transform:
+            objPath:
+              userId:
+              - value
+              - userId
+        - http:
+            path: /users/{{userId}}
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+  - name: User
+    fields:
+      website:
+        type: String
+      name:
+        type: String
+        required: true
+      posts:
+        type: Post
+        list: true
+        unsafeSteps:
+        - http:
+            path: /users/{{value.id}}/posts
+      email:
+        type: String
+        required: true
+      username:
+        type: String
+        required: true
+      company:
+        type: Company
+      id:
+        type: Int
+        required: true
+      address:
+        type: Address
+      phone:
+        type: String
+  - name: NewUser
+    doc: A new user.
+    input: true
+    fields:
+      website:
+        type: String
+      name:
+        type: String
+        required: true
+      email:
+        type: String
+        required: true
+      username:
+        type: String
+        required: true
+      company:
+        type: NewCompany
+      address:
+        type: NewAddress
+      phone:
+        type: String
+  - name: Query
+    fields:
+      post:
+        type: Post
+        unsafeSteps:
+        - http:
+            path: /posts/{{args.id}}
+        args:
+          id:
+            type: Int
+            isRequired: true
+        doc: A single post by id.
+      posts:
+        type: Post
+        list: true
+        unsafeSteps:
+        - http:
+            path: /posts
+        doc: A list of all posts.
+      users:
+        type: User
+        list: true
+        unsafeSteps:
+        - http:
+            path: /users
+        doc: A list of all users.
+      unusedField:
+        type: String
+        doc: An unused field that will be omitted.
+        modify:
+          omit: true
+      user:
+        type: User
+        unsafeSteps:
+        - transform:
+            objPath:
+              userId:
+              - args
+              - id
+        - http:
+            path: /users/{{userId}}
+        args:
+          id:
+            type: Int
+            isRequired: true
+        doc: A single user by id.
+  - name: Id
+    doc: An Id container.
+    fields:
+      id:
+        type: Int
+        required: true
+  - name: Mutation
+    fields:
+      createUser:
+        type: Id
+        unsafeSteps:
+        - http:
+            path: /users
+            method: POST
+            body: '{{args.user}}'
+        args:
+          user:
+            type: NewUser
+            isRequired: true
+            doc: User as an argument.

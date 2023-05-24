@@ -18,8 +18,8 @@ trait Config2Blueprint {
 
 object Config2Blueprint {
   final case class Live(config: Config) {
-    private val outputTypes = config.graphQL.types.filterNot(_._2.isInput).keySet
-    private val inputTypes  = config.graphQL.types.filter(_._2.isInput).keySet
+    private val outputTypes = config.graphQL.types.filterNot(_.isInput).map(_.name).toSet
+    private val inputTypes  = config.graphQL.types.filter(_.isInput).map(_.name).toSet
 
     /**
      * Encodes a config into a Blueprint.
@@ -70,9 +70,10 @@ object Config2Blueprint {
     }
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
-      TValid.foreach(config.graphQL.types.toList) { case (name, typeInfo) =>
-        toFieldList(name, typeInfo).map { fields =>
-          val definition = Blueprint.ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc)
+      TValid.foreach(config.graphQL.types) { case (typeInfo) =>
+        toFieldList(typeInfo).map { fields =>
+          val definition = Blueprint
+            .ObjectTypeDefinition(name = typeInfo.name, fields = fields, description = typeInfo.doc)
           if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
         }
       }
@@ -93,8 +94,9 @@ object Config2Blueprint {
         TValid.fail(s"undefined type name $typeName").when(!inOutputs && !isScalar(typeName))
     }
 
-    private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
+    private def toFieldList(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
+        val typeName = typeInfo.name
         for {
           bField      <- toFieldDefault(fieldName, field).tag(typeName, fieldName)
           bField      <- updateUnsafeField(typeName, field, bField)
@@ -174,8 +176,7 @@ object Config2Blueprint {
     }
 
     private def toTSchema(fieldType: String, isRequired: Boolean, isList: Boolean): TSchema = {
-
-      var schema = config.graphQL.types.get(fieldType) match {
+      var schema = config.graphQL.types.find(_.name == fieldType) match {
         case Some(typeInfo) => TSchema.obj(
             typeInfo.fields.filter { case (_, field) => field.unsafeSteps.forall(_.isEmpty) && field.http.isEmpty }
               .map { case (fieldName, field) => (fieldName, toTSchema(field)) }
@@ -277,7 +278,7 @@ object Config2Blueprint {
               ofType <-
                 if (isScalar(field0.typeOf)) loop(tail, field0, typeInfo, isRequired0)
                 else for {
-                  typeInfo <- TValid.fromOption(config.graphQL.types.get(field0.typeOf)) <> invalidPath
+                  typeInfo <- TValid.fromOption(config.graphQL.types.find(_.name == field0.typeOf)) <> invalidPath
                   ofType   <- loop(tail, field0, typeInfo, isRequired0)
                 } yield if (field.isList) Blueprint.ListType(ofType, isRequired) else ofType
             } yield ofType

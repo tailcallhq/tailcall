@@ -8,8 +8,10 @@
       "query" : "Query",
       "mutation" : "Mutation"
     },
-    "types" : {
-      "Geo" : {
+    "types" : [
+      {
+        "name" : "NewGeo",
+        "input" : true,
         "fields" : {
           "lat" : {
             "type" : "String"
@@ -19,16 +21,20 @@
           }
         }
       },
-      "Id" : {
-        "doc" : "An Id container.",
+      {
+        "name" : "Geo",
         "fields" : {
-          "id" : {
-            "type" : "Int",
-            "required" : true
+          "lat" : {
+            "type" : "String"
+          },
+          "lng" : {
+            "type" : "String"
           }
         }
       },
-      "Company" : {
+      {
+        "name" : "NewCompany",
+        "input" : true,
         "fields" : {
           "name" : {
             "type" : "String"
@@ -41,7 +47,46 @@
           }
         }
       },
-      "Address" : {
+      {
+        "name" : "Company",
+        "fields" : {
+          "name" : {
+            "type" : "String"
+          },
+          "catchPhrase" : {
+            "type" : "String"
+          },
+          "bs" : {
+            "type" : "String"
+          }
+        }
+      },
+      {
+        "name" : "NewAddress",
+        "input" : true,
+        "fields" : {
+          "geo" : {
+            "type" : "NewGeo"
+          },
+          "street" : {
+            "type" : "String"
+          },
+          "suite" : {
+            "type" : "String"
+          },
+          "city" : {
+            "type" : "String"
+          },
+          "zipcode" : {
+            "type" : "String",
+            "modify" : {
+              "name" : "zip"
+            }
+          }
+        }
+      },
+      {
+        "name" : "Address",
         "fields" : {
           "geo" : {
             "type" : "Geo"
@@ -63,7 +108,122 @@
           }
         }
       },
-      "Query" : {
+      {
+        "name" : "Post",
+        "fields" : {
+          "body" : {
+            "type" : "String"
+          },
+          "id" : {
+            "type" : "Int",
+            "required" : true
+          },
+          "user" : {
+            "type" : "User",
+            "unsafeSteps" : [
+              {
+                "transform" : {
+                  "objPath" : {
+                    "userId" : [
+                      "value",
+                      "userId"
+                    ]
+                  }
+                }
+              },
+              {
+                "http" : {
+                  "path" : "/users/{{userId}}"
+                }
+              }
+            ]
+          },
+          "userId" : {
+            "type" : "Int",
+            "required" : true
+          },
+          "title" : {
+            "type" : "String"
+          }
+        }
+      },
+      {
+        "name" : "User",
+        "fields" : {
+          "website" : {
+            "type" : "String"
+          },
+          "name" : {
+            "type" : "String",
+            "required" : true
+          },
+          "posts" : {
+            "type" : "Post",
+            "list" : true,
+            "unsafeSteps" : [
+              {
+                "http" : {
+                  "path" : "/users/{{value.id}}/posts"
+                }
+              }
+            ]
+          },
+          "email" : {
+            "type" : "String",
+            "required" : true
+          },
+          "username" : {
+            "type" : "String",
+            "required" : true
+          },
+          "company" : {
+            "type" : "Company"
+          },
+          "id" : {
+            "type" : "Int",
+            "required" : true
+          },
+          "address" : {
+            "type" : "Address"
+          },
+          "phone" : {
+            "type" : "String"
+          }
+        }
+      },
+      {
+        "name" : "NewUser",
+        "doc" : "A new user.",
+        "input" : true,
+        "fields" : {
+          "website" : {
+            "type" : "String"
+          },
+          "name" : {
+            "type" : "String",
+            "required" : true
+          },
+          "email" : {
+            "type" : "String",
+            "required" : true
+          },
+          "username" : {
+            "type" : "String",
+            "required" : true
+          },
+          "company" : {
+            "type" : "NewCompany"
+          },
+          "address" : {
+            "type" : "NewAddress"
+          },
+          "phone" : {
+            "type" : "String"
+          }
+        }
+      },
+      {
+        "name" : "Query",
         "fields" : {
           "post" : {
             "type" : "Post",
@@ -142,118 +302,18 @@
           }
         }
       },
-      "NewUser" : {
-        "doc" : "A new user.",
+      {
+        "name" : "Id",
+        "doc" : "An Id container.",
         "fields" : {
-          "website" : {
-            "type" : "String"
-          },
-          "name" : {
-            "type" : "String",
-            "required" : true
-          },
-          "email" : {
-            "type" : "String",
-            "required" : true
-          },
-          "username" : {
-            "type" : "String",
-            "required" : true
-          },
-          "company" : {
-            "type" : "NewCompany"
-          },
-          "address" : {
-            "type" : "NewAddress"
-          },
-          "phone" : {
-            "type" : "String"
-          }
-        },
-        "input" : true
-      },
-      "Post" : {
-        "fields" : {
-          "body" : {
-            "type" : "String"
-          },
           "id" : {
             "type" : "Int",
             "required" : true
-          },
-          "user" : {
-            "type" : "User",
-            "unsafeSteps" : [
-              {
-                "transform" : {
-                  "objPath" : {
-                    "userId" : [
-                      "value",
-                      "userId"
-                    ]
-                  }
-                }
-              },
-              {
-                "http" : {
-                  "path" : "/users/{{userId}}"
-                }
-              }
-            ]
-          },
-          "userId" : {
-            "type" : "Int",
-            "required" : true
-          },
-          "title" : {
-            "type" : "String"
           }
         }
       },
-      "User" : {
-        "fields" : {
-          "website" : {
-            "type" : "String"
-          },
-          "name" : {
-            "type" : "String",
-            "required" : true
-          },
-          "posts" : {
-            "type" : "Post",
-            "list" : true,
-            "unsafeSteps" : [
-              {
-                "http" : {
-                  "path" : "/users/{{value.id}}/posts"
-                }
-              }
-            ]
-          },
-          "email" : {
-            "type" : "String",
-            "required" : true
-          },
-          "username" : {
-            "type" : "String",
-            "required" : true
-          },
-          "company" : {
-            "type" : "Company"
-          },
-          "id" : {
-            "type" : "Int",
-            "required" : true
-          },
-          "address" : {
-            "type" : "Address"
-          },
-          "phone" : {
-            "type" : "String"
-          }
-        }
-      },
-      "Mutation" : {
+      {
+        "name" : "Mutation",
         "fields" : {
           "createUser" : {
             "type" : "Id",
@@ -275,55 +335,7 @@
             }
           }
         }
-      },
-      "NewGeo" : {
-        "fields" : {
-          "lat" : {
-            "type" : "String"
-          },
-          "lng" : {
-            "type" : "String"
-          }
-        },
-        "input" : true
-      },
-      "NewCompany" : {
-        "fields" : {
-          "name" : {
-            "type" : "String"
-          },
-          "catchPhrase" : {
-            "type" : "String"
-          },
-          "bs" : {
-            "type" : "String"
-          }
-        },
-        "input" : true
-      },
-      "NewAddress" : {
-        "fields" : {
-          "geo" : {
-            "type" : "NewGeo"
-          },
-          "street" : {
-            "type" : "String"
-          },
-          "suite" : {
-            "type" : "String"
-          },
-          "city" : {
-            "type" : "String"
-          },
-          "zipcode" : {
-            "type" : "String",
-            "modify" : {
-              "name" : "zip"
-            }
-          }
-        },
-        "input" : true
       }
-    }
+    ]
   }
 }

@@ -21,7 +21,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   self =>
   def ++(other: Config): Config = self.mergeRight(other)
 
-  def apply(input: (String, Type)*): Config = withTypes(input: _*)
+  def apply(input: (String, TypeInfo)*): Config = withTypes(input: _*)
 
   def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
 
@@ -41,7 +41,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
-  def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
+  def unsafeCount: Int = self.graphQL.types.flatMap(_.fields.values.toList).count(_.unsafeSteps.nonEmpty)
 
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
@@ -56,7 +56,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withTypes(input: (String, Type)*): Config = {
+  def withTypes(input: (String, TypeInfo)*): Config = {
     input.foldLeft(self) { case (config, (name, typeInfo)) =>
       config.copy(graphQL = config.graphQL.withType(name, typeInfo))
     }
@@ -75,7 +75,7 @@ object Config {
   implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
   implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 
-  def default: Config = Config.empty.withQuery("Query").withTypes("Query" -> Type())
+  def default: Config = Config.empty.withQuery("Query")
 
   def empty: Config = Config()
 
@@ -84,18 +84,12 @@ object Config {
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
   final case class Type(
+    name: String,
     doc: Option[String] = None,
-    fields: Map[String, Field] = Map.empty,
     input: Option[Boolean] = None,
+    fields: Map[String, Field] = Map.empty,
   ) {
     self =>
-    def ++(other: Type): Type = self.mergeRight(other)
-
-    def apply(input: (String, Field)*): Type = withFields(input: _*)
-
-    def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
-
-    def asInput: Type = self.copy(input = Option(true))
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
@@ -103,25 +97,34 @@ object Config {
 
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
+  }
 
-    // TODO: helper function should be moved to it's usage
-    def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
+  final case class TypeInfo(
+    doc: Option[String] = None,
+    fields: Map[String, Field] = Map.empty,
+    input: Option[Boolean] = None,
+  ) {
+    self =>
+    def apply(input: (String, Field)*): TypeInfo = withFields(input: _*)
 
-    def withDoc(doc: String): Type = self.copy(doc = Option(doc))
+    def asInput: TypeInfo = self.copy(input = Option(true))
 
-    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
+    def toType(name: String): Type = Type(name, doc, input, fields)
 
-    def withFields(input: (String, Field)*): Type =
+    def withDoc(doc: String): TypeInfo = self.copy(doc = Option(doc))
+
+    def withField(name: String, field: Field): TypeInfo = self.copy(fields = self.fields + (name -> field))
+
+    def withFields(input: (String, Field)*): TypeInfo =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
   }
 
-  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
+  final case class GraphQL(schema: RootSchema = RootSchema(), types: List[Type] = List.empty) {
     self =>
-    def compress: GraphQL =
-      self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
+    def compress: GraphQL = self.copy(types = self.types.sortBy(_.name).map(_.compress))
 
     def mergeRight(other: GraphQL): GraphQL = {
-      other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
+      other.types.foldLeft(self) { case (config, typeOf) => config.withType(typeOf) }.copy(schema =
         RootSchema(
           query = other.schema.query.orElse(self.schema.query),
           mutation = other.schema.mutation.orElse(self.schema.mutation),
@@ -136,10 +139,12 @@ object Config {
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
 
-    def withType(name: String, typeInfo: Type): GraphQL = {
-      self.copy(types = self.types.get(name) match {
-        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
-        case None            => self.types + (name -> typeInfo)
+    def withType(name: String, typeInfo: TypeInfo): GraphQL = { withType(typeInfo.toType(name)) }
+
+    def withType(typeOf: Type): GraphQL = {
+      self.copy(types = self.types.find(_.name == typeOf.name) match {
+        case Some(current) => (current mergeRight typeOf) :: self.types
+        case None          => typeOf :: self.types
       })
     }
   }
@@ -309,9 +314,9 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
-    def empty: Type                           = Type()
-    def input: Type                           = Type(input = Option(true))
+    def apply(fields: (String, Field)*): TypeInfo = TypeInfo(fields = fields.toMap)
+    def empty: TypeInfo                           = TypeInfo()
+    def input: TypeInfo                           = TypeInfo(input = Option(true))
   }
 
   object Field {

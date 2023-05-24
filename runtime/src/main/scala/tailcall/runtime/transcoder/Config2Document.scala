@@ -35,8 +35,8 @@ trait Config2Document {
   }
 
   private def getDefinitions(config: Config): List[Definition] = {
-    config.graphQL.types.toList.map { case (name, typeInfo) =>
-      val definition = toObjectTypeDefinition(name, typeInfo)
+    config.graphQL.types.map { case (typeInfo) =>
+      val definition = toObjectTypeDefinition(typeInfo)
       if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
     }
   }
@@ -110,9 +110,15 @@ trait Config2Document {
     )
   }
 
-  final private def toObjectTypeDefinition(name: String, typeInfo: Config.Type): ObjectTypeDefinition = {
+  final private def toObjectTypeDefinition(typeInfo: Config.Type): ObjectTypeDefinition = {
     val fields: List[FieldDefinition] = toFieldDefinition(typeInfo)
-    ObjectTypeDefinition(name = name, fields = fields, description = typeInfo.doc, implements = Nil, directives = Nil)
+    ObjectTypeDefinition(
+      name = typeInfo.name,
+      fields = fields,
+      description = typeInfo.doc,
+      implements = Nil,
+      directives = Nil,
+    )
   }
 
   final private def toServerDirective(config: Config): Option[Directive] = {
