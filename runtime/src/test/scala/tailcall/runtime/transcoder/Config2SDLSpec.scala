@@ -29,23 +29,27 @@ object Config2SDLSpec extends ZIOSpecDefault {
         assertSDL(config, expected)
       },
       test("multiple query") {
-        val config   = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
+        val config = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
           .withTypes("Query" -> Type("bar" -> Field.ofType("String")))
+
         val expected = """|schema {
                           |  query: Query
                           |}
                           |
                           |type Query {
-                          |  foo: String
                           |  bar: String
+                          |  foo: String
                           |}
                           |""".stripMargin.trim
         assertSDL(config, expected)
       },
       test("shared input and output types") {
-        val config   = Config.default
-          .withTypes("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))))
-          .withTypes("Foo" -> Type("bar" -> Field.ofType("String")))
+        val config = Config.default.withTypes(
+          "Query"    -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))),
+          "Foo"      -> Type("bar" -> Field.ofType("String")),
+          "FooInput" -> Type.input("bar" -> Field.ofType("String")),
+        )
+
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -67,9 +71,11 @@ object Config2SDLSpec extends ZIOSpecDefault {
       },
       test("shared nested input and output types") {
         val config   = Config.default.withTypes(
-          "Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("Foo"))),
-          "Foo"   -> Type("bar" -> Field.ofType("Bar")),
-          "Bar"   -> Type("baz" -> Field.ofType("String")),
+          "Query"    -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))),
+          "Foo"      -> Type("bar" -> Field.ofType("Bar")),
+          "Bar"      -> Type("baz" -> Field.ofType("String")),
+          "FooInput" -> Type.input("bar" -> Field.ofType("BarInput")),
+          "BarInput" -> Type.input("baz" -> Field.ofType("String")),
         )
         val expected = """|schema {
                           |  query: Query
@@ -102,7 +108,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         val config   = Config.default
           .withTypes("Query" -> Type("foo" -> Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))))
           .withTypes("Foo" -> Type("bar" -> Field.ofType("String")))
-          .withTypes("FooInput" -> Type("bar" -> Field.ofType("String")))
+          .withTypes("FooInput" -> Type.input("bar" -> Field.ofType("String")))
         val expected = """|schema {
                           |  query: Query
                           |}
@@ -126,14 +132,14 @@ object Config2SDLSpec extends ZIOSpecDefault {
         val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
         val config2 = Config.default.withTypes("Query" -> Type("bar" -> Field.ofType("String")))
 
-        val config   = config1 mergeRight config2
+        val config   = ConfigMerge.mergeRight(config1, config2)
         val expected = """|schema {
                           |  query: Query
                           |}
                           |
                           |type Query {
-                          |  foo: String
                           |  bar: String
+                          |  foo: String
                           |}
                           |""".stripMargin.trim
         assertSDL(config, expected)
@@ -170,7 +176,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         test("field in input type") {
           val config   = Config.default.withTypes(
             "Query" -> Type("foo" -> Field.ofType("Int").withArguments("input" -> Arg.ofType("Foo"))),
-            "Foo"   -> Type("bar" -> Field.ofType("String").withName("baz")),
+            "Foo"   -> Type.input("bar" -> Field.ofType("String").withName("baz")),
           )
           val expected = """|schema {
                             |  query: Query
@@ -310,7 +316,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
             "Mutation" -> Config
               .Type("createFoo" -> Config.Field.ofType("Foo").withArguments("input" -> Arg.ofType("FooInput"))),
             "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
-            "FooInput" -> Config.Type("a" -> Config.Field.ofType("Int")),
+            "FooInput" -> Config.Type.input("a" -> Config.Field.ofType("Int")),
           )
 
           val expected = """|schema {

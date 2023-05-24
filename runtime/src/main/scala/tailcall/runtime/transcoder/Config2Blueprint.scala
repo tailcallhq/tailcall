@@ -84,7 +84,6 @@ object Config2Blueprint {
         args   <- toArgs(field)
         ofType <- toType(field)
       } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
-
     }
 
     private def assertTypeName(typeName: String, isInput: Boolean): TValid[String, Unit] = {
@@ -98,15 +97,19 @@ object Config2Blueprint {
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         val typeName = typeInfo.name
         for {
-          bField      <- toFieldDefault(fieldName, field).tag(typeName, fieldName)
-          bField      <- updateUnsafeField(typeName, field, bField)
-          bField      <- updateFieldHttp(typeName, field, bField)
-          mayBeBField <- updateModifyField(typeName, field, bField)
-          bField      <- mayBeBField match {
-            case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
-            case None         => TValid.none
-          }
-        } yield bField.toList
+          bField <- toFieldDefault(fieldName, field).tag(typeName, fieldName)
+          bField <-
+            if (typeInfo.isInput) TValid.succeed(List(bField))
+            else for {
+              bField      <- updateUnsafeField(typeName, field, bField)
+              bField      <- updateFieldHttp(typeName, field, bField)
+              mayBeBField <- updateModifyField(typeName, field, bField)
+              bField      <- mayBeBField match {
+                case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
+                case None         => TValid.none
+              }
+            } yield bField.toList
+        } yield bField
       }.map(_.flatten)
 
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {

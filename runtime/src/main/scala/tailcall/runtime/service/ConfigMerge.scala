@@ -30,7 +30,7 @@ object ConfigMerge {
     Config(version = newVersion, server = newServer, graphQL = newGraphQL)
   }
 
-  private def mergeTypes(types: List[Config.Type]): List[Config.Type] = {
+  def mergeTypes(types: List[Config.Type]): List[Config.Type] = {
     types.groupBy(t => (t.isInput, t.name)).values.map(_.reduce(mergeTypes)).toList
   }
 

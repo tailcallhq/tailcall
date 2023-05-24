@@ -74,7 +74,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |  geo: NewGeo
                           |  street: String
                           |  suite: String
-                          |  zip: String
+                          |  zipcode: String
                           |}
                           |
                           |input NewCompany {
@@ -222,7 +222,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
       },
       test("create user with zip code") {
         val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },

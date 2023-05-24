@@ -14,6 +14,7 @@ import tailcall.runtime.DirectiveCodec.EncoderSyntax
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.{Arg, Field}
 import tailcall.runtime.model._
+import tailcall.runtime.service.ConfigMerge
 
 /**
  * This is used to generate a .graphQL file from a config.
@@ -35,7 +36,7 @@ trait Config2Document {
   }
 
   private def getDefinitions(config: Config): List[Definition] = {
-    config.graphQL.types.map { case (typeInfo) =>
+    ConfigMerge.mergeTypes(config.graphQL.types).map { typeInfo =>
       val definition = toObjectTypeDefinition(typeInfo)
       if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
     }
