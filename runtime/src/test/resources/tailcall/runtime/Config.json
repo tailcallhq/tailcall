@@ -24,7 +24,7 @@
         "fields" : {
           "id" : {
             "type" : "Int",
-            "isRequired" : true
+            "required" : true
           }
         }
       },
@@ -84,7 +84,7 @@
           },
           "posts" : {
             "type" : "Post",
-            "isList" : true,
+            "list" : true,
             "unsafeSteps" : [
               {
                 "http" : {
@@ -96,7 +96,7 @@
           },
           "users" : {
             "type" : "User",
-            "isList" : true,
+            "list" : true,
             "unsafeSteps" : [
               {
                 "http" : {
@@ -144,21 +144,22 @@
       },
       "NewUser" : {
         "doc" : "A new user.",
+        "input" : true,
         "fields" : {
           "website" : {
             "type" : "String"
           },
           "name" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "email" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "username" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "company" : {
             "type" : "NewCompany"
@@ -178,7 +179,7 @@
           },
           "id" : {
             "type" : "Int",
-            "isRequired" : true
+            "required" : true
           },
           "user" : {
             "type" : "User",
@@ -202,7 +203,7 @@
           },
           "userId" : {
             "type" : "Int",
-            "isRequired" : true
+            "required" : true
           },
           "title" : {
             "type" : "String"
@@ -216,11 +217,11 @@
           },
           "name" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "posts" : {
             "type" : "Post",
-            "isList" : true,
+            "list" : true,
             "unsafeSteps" : [
               {
                 "http" : {
@@ -231,18 +232,18 @@
           },
           "email" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "username" : {
             "type" : "String",
-            "isRequired" : true
+            "required" : true
           },
           "company" : {
             "type" : "Company"
           },
           "id" : {
             "type" : "Int",
-            "isRequired" : true
+            "required" : true
           },
           "address" : {
             "type" : "Address"
@@ -276,6 +277,7 @@
         }
       },
       "NewGeo" : {
+        "input" : true,
         "fields" : {
           "lat" : {
             "type" : "String"
@@ -286,6 +288,7 @@
         }
       },
       "NewCompany" : {
+        "input" : true,
         "fields" : {
           "bs" : {
             "type" : "String"
@@ -299,6 +302,7 @@
         }
       },
       "NewAddress" : {
+        "input" : true,
         "fields" : {
           "geo" : {
             "type" : "NewGeo"

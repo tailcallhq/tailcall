@@ -21,6 +21,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   self =>
   def ++(other: Config): Config = self.mergeRight(other)
 
+  def apply(input: (String, Type)*): Config = withTypes(input: _*)
+
   def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
 
   def asJSONConfig: IO[String, String] = ConfigFormat.JSON.encode(self)
@@ -81,17 +83,27 @@ object Config {
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
-  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class Type(
+    doc: Option[String] = None,
+    input: Option[Boolean] = None,
+    fields: Map[String, Field] = Map.empty,
+  ) {
     self =>
+
     def ++(other: Type): Type = self.mergeRight(other)
 
+    def apply(input: (String, Field)*): Type = withFields(input: _*)
+
     def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
+
+    def asInput: Type = self.copy(input = Option(true))
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def mergeRight(other: Type): Type =
       self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
 
+    // TODO: helper function should be moved to it's usage
     def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
@@ -106,6 +118,8 @@ object Config {
     self =>
     def compress: GraphQL =
       self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
+
+    def inputs: Map[String, Type] = self.types.filter(_._2.input.getOrElse(false))
 
     def mergeRight(other: GraphQL): GraphQL = {
       other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
@@ -134,12 +148,8 @@ object Config {
   // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
-
-    // TODO: rename to `list`
-    @jsonField("isList") list: Option[Boolean] = None,
-
-    // TODO: rename to `required`
-    @jsonField("isRequired") required: Option[Boolean] = None,
+    list: Option[Boolean] = None,
+    required: Option[Boolean] = None,
     unsafeSteps: Option[List[Operation]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
@@ -301,8 +311,8 @@ object Config {
 
   object Type {
     def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
-
-    def empty: Type = Type()
+    def empty: Type                           = Type()
+    def input: Type                           = Type(input = Option(true))
   }
 
   object Field {

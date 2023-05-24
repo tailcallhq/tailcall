@@ -17,7 +17,7 @@ graphQL:
       fields:
         id:
           type: Int
-          isRequired: true
+          required: true
     Company:
       fields:
         bs:
@@ -54,14 +54,14 @@ graphQL:
           doc: A single post by id.
         posts:
           type: Post
-          isList: true
+          list: true
           unsafeSteps:
           - http:
               path: /posts
           doc: A list of all posts.
         users:
           type: User
-          isList: true
+          list: true
           unsafeSteps:
           - http:
               path: /users
@@ -88,18 +88,19 @@ graphQL:
           doc: A single user by id.
     NewUser:
       doc: A new user.
+      input: true
       fields:
         website:
           type: String
         name:
           type: String
-          isRequired: true
+          required: true
         email:
           type: String
-          isRequired: true
+          required: true
         username:
           type: String
-          isRequired: true
+          required: true
         company:
           type: NewCompany
         address:
@@ -112,7 +113,7 @@ graphQL:
           type: String
         id:
           type: Int
-          isRequired: true
+          required: true
         user:
           type: User
           unsafeSteps:
@@ -125,7 +126,7 @@ graphQL:
               path: /users/{{userId}}
         userId:
           type: Int
-          isRequired: true
+          required: true
         title:
           type: String
     User:
@@ -134,24 +135,24 @@ graphQL:
           type: String
         name:
           type: String
-          isRequired: true
+          required: true
         posts:
           type: Post
-          isList: true
+          list: true
           unsafeSteps:
           - http:
               path: /users/{{value.id}}/posts
         email:
           type: String
-          isRequired: true
+          required: true
         username:
           type: String
-          isRequired: true
+          required: true
         company:
           type: Company
         id:
           type: Int
-          isRequired: true
+          required: true
         address:
           type: Address
         phone:
@@ -171,12 +172,14 @@ graphQL:
               isRequired: true
               doc: User as an argument.
     NewGeo:
+      input: true
       fields:
         lat:
           type: String
         lng:
           type: String
     NewCompany:
+      input: true
       fields:
         bs:
           type: String
@@ -185,6 +188,7 @@ graphQL:
         name:
           type: String
     NewAddress:
+      input: true
       fields:
         geo:
           type: NewGeo
