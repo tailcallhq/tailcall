@@ -4,6 +4,8 @@ import zio.{Chunk, NonEmptyChunk, Task, ZIO}
 
 sealed trait TValid[+E, +A] {
   self =>
+  def |[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] = self orElse other
+
   def <>[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
   def errors: Chunk[E] = fold(_.toChunk, _ => Chunk.empty)
@@ -12,7 +14,7 @@ sealed trait TValid[+E, +A] {
 
   def fold[B](isError: NonEmptyChunk[E] => B, isSucceed: A => B): B =
     self match {
-      case TValid.Errors(errors) => isError(errors)
+      case TValid.Errors(errors) => isError(errors.map(_.error))
       case TValid.Succeed(value) => isSucceed(value)
     }
 
@@ -45,9 +47,15 @@ sealed trait TValid[+E, +A] {
 
   def some: TValid[E, Option[A]] = self.map(Some(_))
 
+  def tag(paths: String*): TValid[E, A] =
+    self match {
+      case TValid.Errors(chunk) => TValid.Errors(chunk.map(cause => cause.copy(path = cause.path ++ paths)))
+      case self                 => self
+    }
+
   def toEither: Either[NonEmptyChunk[E], A] =
     self match {
-      case TValid.Errors(errors) => Left(errors)
+      case TValid.Errors(errors) => Left(errors.map(_.error))
       case TValid.Succeed(value) => Right(value)
     }
 
@@ -60,6 +68,8 @@ sealed trait TValid[+E, +A] {
   def toZIO: zio.ZIO[Any, Chunk[E], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
   def unit: TValid[E, Unit] = map(_ => ())
+
+  def unless(cond: Boolean): TValid[E, Unit] = when(!cond)
 
   def when(cond: Boolean): TValid[E, Unit] =
     self.fold(errors => if (cond) TValid.fail(errors) else TValid.succeed(()), _ => TValid.succeed(()))
@@ -78,9 +88,11 @@ sealed trait TValid[+E, +A] {
 }
 
 object TValid {
-  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors)
+  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors.map(Cause(_, Vector.empty)))
 
   def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
+
+  def failCause[E](errors: NonEmptyChunk[Cause[E]]): TValid[E, Nothing] = Errors(errors)
 
   def fold[E, A, B](list: List[A], b: B)(f: (B, A) => TValid[E, B]): TValid[E, B] =
     list.foldLeft[TValid[E, B]](succeed(b))((tValid, a) => tValid.flatMap(b => f(b, a)))
@@ -92,7 +104,7 @@ object TValid {
 
   def foreachIterable[A, E, B](iter: Iterable[A])(f: A => TValid[E, B]): TValid[E, Iterable[B]] = {
     val valuesBuilder = Iterable.newBuilder[B]
-    var errorChunk    = Chunk.empty[E]
+    var errorChunk    = Chunk.empty[Cause[E]]
 
     iter foreach { a =>
       f(a) match {
@@ -101,7 +113,7 @@ object TValid {
       }
     }
 
-    errorChunk.nonEmptyOrElse[TValid[E, Iterable[B]]](TValid.succeed(valuesBuilder.result()))(TValid.fail)
+    errorChunk.nonEmptyOrElse[TValid[E, Iterable[B]]](TValid.succeed(valuesBuilder.result()))(TValid.failCause(_))
   }
 
   def fromEither[E, A](either: Either[E, A]): TValid[E, A] =
@@ -121,6 +133,7 @@ object TValid {
 
   def unit: TValid[Nothing, Unit] = succeed(())
 
-  final case class Errors[E](chunk: NonEmptyChunk[E]) extends TValid[E, Nothing]
-  final case class Succeed[A](value: A)               extends TValid[Nothing, A]
+  final case class Errors[+E](chunk: NonEmptyChunk[Cause[E]]) extends TValid[E, Nothing]
+  final case class Succeed[+A](value: A)                      extends TValid[Nothing, A]
+  final case class Cause[+E](error: E, path: Vector[String])
 }
