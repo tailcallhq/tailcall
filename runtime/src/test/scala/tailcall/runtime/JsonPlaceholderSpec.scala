@@ -39,10 +39,18 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
         val sourceConfig = JsonPlaceholderConfig.config.compress
         checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
           for {
-            config   <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
+            config <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}")).map(_.compress)
+          } yield assertTrue(config == sourceConfig)
+        }
+      },
+      test("equals placeholder schema") {
+        val sourceConfig = JsonPlaceholderConfig.config.compress
+        checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
+          for {
+            config   <- ConfigFileIO.readURL(getClass.getResource(s"Config.${format.ext}"))
             actual   <- format.encode(config)
             expected <- format.encode(sourceConfig)
-          } yield assertTrue(config == sourceConfig, actual == expected)
+          } yield assertTrue(actual == expected)
         }
       },
 
@@ -63,17 +71,17 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |}
                           |
                           |input NewAddress {
+                          |  city: String
                           |  geo: NewGeo
                           |  street: String
                           |  suite: String
-                          |  city: String
                           |  zipcode: String
                           |}
                           |
                           |input NewCompany {
-                          |  name: String
-                          |  catchPhrase: String
                           |  bs: String
+                          |  catchPhrase: String
+                          |  name: String
                           |}
                           |
                           |input NewGeo {
@@ -83,27 +91,27 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |
                           |"A new user."
                           |input NewUser {
-                          |  website: String
-                          |  name: String!
-                          |  email: String!
-                          |  username: String!
-                          |  company: NewCompany
                           |  address: NewAddress
+                          |  company: NewCompany
+                          |  email: String!
+                          |  name: String!
                           |  phone: String
+                          |  username: String!
+                          |  website: String
                           |}
                           |
                           |type Address {
+                          |  city: String
                           |  geo: Geo
                           |  street: String
                           |  suite: String
-                          |  city: String
                           |  zip: String
                           |}
                           |
                           |type Company {
-                          |  name: String
-                          |  catchPhrase: String
                           |  bs: String
+                          |  catchPhrase: String
+                          |  name: String
                           |}
                           |
                           |type Geo {
@@ -123,9 +131,9 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |type Post {
                           |  body: String
                           |  id: Int!
+                          |  title: String
                           |  user: User
                           |  userId: Int!
-                          |  title: String
                           |}
                           |
                           |type Query {
@@ -133,22 +141,22 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |  post(id: Int!): Post
                           |  "A list of all posts."
                           |  posts: [Post]
-                          |  "A list of all users."
-                          |  users: [User]
                           |  "A single user by id."
                           |  user(id: Int!): User
+                          |  "A list of all users."
+                          |  users: [User]
                           |}
                           |
                           |type User {
-                          |  website: String
-                          |  name: String!
-                          |  posts: [Post]
-                          |  email: String!
-                          |  username: String!
-                          |  company: Company
-                          |  id: Int!
                           |  address: Address
+                          |  company: Company
+                          |  email: String!
+                          |  id: Int!
+                          |  name: String!
                           |  phone: String
+                          |  posts: [Post]
+                          |  username: String!
+                          |  website: String
                           |}
                           |""".stripMargin.trim
 
