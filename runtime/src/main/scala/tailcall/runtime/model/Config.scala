@@ -7,7 +7,7 @@ import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
-import tailcall.runtime.service.ConfigFileIO
+import tailcall.runtime.service.{ConfigFileIO, ConfigMerge}
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
 import zio.json.ast.Json
@@ -19,7 +19,6 @@ import java.net.{URI, URL}
 
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def ++(other: Config): Config = self.mergeRight(other)
 
   def apply(input: (String, TypeInfo)*): Config = withTypes(input: _*)
 
@@ -31,13 +30,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def compress: Config = self.copy(graphQL = self.graphQL.compress, server = self.server.compress)
 
-  def mergeRight(other: Config): Config = {
-    Config(
-      version = other.version,
-      server = self.server.mergeRight(other.server),
-      graphQL = self.graphQL.mergeRight(other.graphQL),
-    )
-  }
+  def mergeRight(other: Config): Config = ConfigMerge.mergeRight(self, other)
 
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
@@ -57,9 +50,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
   def withTypes(input: (String, TypeInfo)*): Config = {
-    input.foldLeft(self) { case (config, (name, typeInfo)) =>
-      config.copy(graphQL = config.graphQL.withType(name, typeInfo))
-    }
+    self.copy(graphQL = self.graphQL.withTypes(input.map { case (name, typeInfo) => typeInfo.toType(name) }))
   }
 
   def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
@@ -94,9 +85,6 @@ object Config {
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def isInput: Boolean = input.getOrElse(false)
-
-    def mergeRight(other: Type): Type =
-      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
   }
 
   final case class TypeInfo(
@@ -123,15 +111,6 @@ object Config {
     self =>
     def compress: GraphQL = self.copy(types = self.types.sortBy(_.name).map(_.compress))
 
-    def mergeRight(other: GraphQL): GraphQL = {
-      other.types.foldLeft(self) { case (config, typeOf) => config.withType(typeOf) }.copy(schema =
-        RootSchema(
-          query = other.schema.query.orElse(self.schema.query),
-          mutation = other.schema.mutation.orElse(self.schema.mutation),
-        )
-      )
-    }
-
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
     def withQuery(name: String): GraphQL = copy(schema = schema.copy(query = Option(name)))
@@ -141,12 +120,9 @@ object Config {
 
     def withType(name: String, typeInfo: TypeInfo): GraphQL = { withType(typeInfo.toType(name)) }
 
-    def withType(typeOf: Type): GraphQL = {
-      self.copy(types = self.types.find(_.name == typeOf.name) match {
-        case Some(current) => (current mergeRight typeOf) :: self.types
-        case None          => typeOf :: self.types
-      })
-    }
+    def withType(typeOf: Type): GraphQL = self.copy(types = typeOf :: self.types)
+
+    def withTypes(value: Seq[Type]): GraphQL = copy(types = types ++ value.toList)
   }
 
   // TODO: Field and Argument can be merged
