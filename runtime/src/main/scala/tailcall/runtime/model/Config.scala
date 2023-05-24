@@ -85,8 +85,8 @@ object Config {
 
   final case class Type(
     doc: Option[String] = None,
-    input: Option[Boolean] = None,
     fields: Map[String, Field] = Map.empty,
+    input: Option[Boolean] = None,
   ) {
     self =>
 
@@ -118,8 +118,6 @@ object Config {
     self =>
     def compress: GraphQL =
       self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
-
-    def inputs: Map[String, Type] = self.types.filter(_._2.input.getOrElse(false))
 
     def mergeRight(other: GraphQL): GraphQL = {
       other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
