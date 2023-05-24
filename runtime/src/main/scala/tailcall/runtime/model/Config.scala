@@ -122,7 +122,7 @@ object Config {
 
     def withType(typeOf: Type): GraphQL = self.copy(types = typeOf :: self.types)
 
-    def withTypes(value: Seq[Type]): GraphQL = copy(types = types ++ value.toList)
+    def withTypes(value: Seq[Type]): GraphQL = copy(types = ConfigMerge.mergeTypes(types ++ value.toList))
   }
 
   // TODO: Field and Argument can be merged
