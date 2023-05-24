@@ -56,9 +56,8 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
 
       // NOTE: This test just re-writes the configuration files
       test("write generated config") {
-        val config = JsonPlaceholderConfig.config.compress
+        val config = JsonPlaceholderConfig.config
         checkAll(Gen.fromIterable(ConfigFormat.all)) { format =>
-          // TODO: find a better way to get the path instead of hardcoding
           val url = new File(s"src/test/resources/tailcall/runtime/Config.${format.ext}")
           ConfigFileIO.write(url, config).as(assertCompletes)
         }
@@ -75,7 +74,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
                           |  geo: NewGeo
                           |  street: String
                           |  suite: String
-                          |  zipcode: String
+                          |  zip: String
                           |}
                           |
                           |input NewCompany {
@@ -223,7 +222,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
       },
       test("create user with zip code") {
         val program = resolve(JsonPlaceholderConfig.config)(
-          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zipcode: "1234-4321"}}) { id } } """
+          """ mutation { createUser(user: {name: "test", email: "test@abc.com", username: "test", address: {zip: "1234-4321"}}) { id } } """
         )
         assertZIO(program)(equalTo("""{"createUser":{"id":11}}"""))
       },

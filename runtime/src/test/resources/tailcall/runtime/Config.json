@@ -30,13 +30,13 @@
       },
       "Company" : {
         "fields" : {
-          "bs" : {
+          "name" : {
             "type" : "String"
           },
           "catchPhrase" : {
             "type" : "String"
           },
-          "name" : {
+          "bs" : {
             "type" : "String"
           }
         }
@@ -289,13 +289,13 @@
       },
       "NewCompany" : {
         "fields" : {
-          "bs" : {
+          "name" : {
             "type" : "String"
           },
           "catchPhrase" : {
             "type" : "String"
           },
-          "name" : {
+          "bs" : {
             "type" : "String"
           }
         },
