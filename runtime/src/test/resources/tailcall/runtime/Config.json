@@ -8,9 +8,8 @@
       "query" : "Query",
       "mutation" : "Mutation"
     },
-    "types" : [
-      {
-        "name" : "Geo",
+    "types" : {
+      "Geo" : {
         "fields" : {
           "lat" : {
             "type" : "String"
@@ -20,8 +19,7 @@
           }
         }
       },
-      {
-        "name" : "Id",
+      "Id" : {
         "doc" : "An Id container.",
         "fields" : {
           "id" : {
@@ -30,8 +28,7 @@
           }
         }
       },
-      {
-        "name" : "Company",
+      "Company" : {
         "fields" : {
           "name" : {
             "type" : "String"
@@ -44,8 +41,7 @@
           }
         }
       },
-      {
-        "name" : "Address",
+      "Address" : {
         "fields" : {
           "geo" : {
             "type" : "Geo"
@@ -67,8 +63,7 @@
           }
         }
       },
-      {
-        "name" : "Query",
+      "Query" : {
         "fields" : {
           "post" : {
             "type" : "Post",
@@ -147,8 +142,7 @@
           }
         }
       },
-      {
-        "name" : "NewUser",
+      "NewUser" : {
         "doc" : "A new user.",
         "fields" : {
           "website" : {
@@ -177,8 +171,7 @@
           }
         }
       },
-      {
-        "name" : "Post",
+      "Post" : {
         "fields" : {
           "body" : {
             "type" : "String"
@@ -216,8 +209,7 @@
           }
         }
       },
-      {
-        "name" : "User",
+      "User" : {
         "fields" : {
           "website" : {
             "type" : "String"
@@ -260,8 +252,7 @@
           }
         }
       },
-      {
-        "name" : "Mutation",
+      "Mutation" : {
         "fields" : {
           "createUser" : {
             "type" : "Id",
@@ -284,8 +275,7 @@
           }
         }
       },
-      {
-        "name" : "NewGeo",
+      "NewGeo" : {
         "fields" : {
           "lat" : {
             "type" : "String"
@@ -295,8 +285,7 @@
           }
         }
       },
-      {
-        "name" : "NewCompany",
+      "NewCompany" : {
         "fields" : {
           "name" : {
             "type" : "String"
@@ -309,8 +298,7 @@
           }
         }
       },
-      {
-        "name" : "NewAddress",
+      "NewAddress" : {
         "fields" : {
           "geo" : {
             "type" : "NewGeo"
@@ -332,6 +320,6 @@
           }
         }
       }
-    ]
+    }
   }
 }

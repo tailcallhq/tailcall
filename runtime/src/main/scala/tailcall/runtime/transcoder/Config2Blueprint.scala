@@ -70,15 +70,14 @@ object Config2Blueprint {
     }
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
-      TValid.foreach(config.graphQL.types) { typeInfo =>
-        val dblUsage = inputTypes.contains(typeInfo.name) && outputTypes.contains(typeInfo.name)
+      TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
+        val dblUsage = inputTypes.contains(typeName) && outputTypes.contains(typeName)
         for {
-          _      <- TValid.fail(s"${typeInfo.name} cannot be both used both as input and output type").when(dblUsage)
-          fields <- toFieldList(typeInfo)
+          _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
+          fields <- toFieldList(typeName, typeInfo)
         } yield {
-          val definition = Blueprint
-            .ObjectTypeDefinition(name = typeInfo.name, fields = fields, description = typeInfo.doc)
-          if (inputTypes.contains(typeInfo.name)) toInputObjectTypeDefinition(definition) else definition
+          val definition = Blueprint.ObjectTypeDefinition(name = typeName, fields = fields, description = typeInfo.doc)
+          if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition) else definition
         }
       }
     }
@@ -90,13 +89,12 @@ object Config2Blueprint {
       } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
     }
 
-    private def toFieldList(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
+    private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] = {
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
-        val typeName = typeInfo.name
         (for {
           bField <- toFieldDefault(fieldName, field)
           bField <-
-            if (inputTypes.contains(typeInfo.name)) TValid.succeed(List(bField))
+            if (inputTypes.contains(typeName)) TValid.succeed(List(bField))
             else for {
               bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
               bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)
@@ -108,7 +106,8 @@ object Config2Blueprint {
               }
             } yield bField.toList
         } yield bField).trace(fieldName)
-      }.map(_.flatten).trace(typeInfo.name)
+      }.map(_.flatten).trace(typeName)
+    }
 
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
@@ -177,7 +176,7 @@ object Config2Blueprint {
     }
 
     private def toTSchema(fieldType: String, isRequired: Boolean, isList: Boolean): TSchema = {
-      var schema = config.graphQL.types.find(_.name == fieldType) match {
+      var schema = config.getType(fieldType) match {
         case Some(typeInfo) => TSchema.obj(
             typeInfo.fields.filter { case (_, field) => field.unsafeSteps.forall(_.isEmpty) && field.http.isEmpty }
               .map { case (fieldName, field) => (fieldName, toTSchema(field)) }
@@ -268,7 +267,7 @@ object Config2Blueprint {
               ofType <-
                 if (isScalar(field0.typeOf)) loop(tail, field0, typeInfo, isRequired0)
                 else for {
-                  typeInfo <- TValid.fromOption(config.graphQL.types.find(_.name == field0.typeOf)) <> invalidPath
+                  typeInfo <- TValid.fromOption(config.getType(field0.typeOf)) <> invalidPath
                   ofType   <- loop(tail, field0, typeInfo, isRequired0)
                 } yield if (field.isList) Blueprint.ListType(ofType, isRequired) else ofType
             } yield ofType

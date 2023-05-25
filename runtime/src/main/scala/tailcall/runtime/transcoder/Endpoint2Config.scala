@@ -94,8 +94,8 @@ object Endpoint2Config {
         GraphQL(
           schema = rootSchema,
           types = types.toList.map { case (key, value) =>
-            Config.Type(key, doc = endpoint.description, fields = value.toMap)
-          },
+            key -> Config.Type(doc = endpoint.description, fields = value.toMap)
+          }.toMap,
         )
       }
 

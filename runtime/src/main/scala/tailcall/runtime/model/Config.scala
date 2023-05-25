@@ -7,7 +7,7 @@ import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
-import tailcall.runtime.service.{ConfigFileIO, ConfigMerge}
+import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.json._
 import zio.json.ast.Json
@@ -43,7 +43,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     }
 
     for {
-      typeInfo <- self.graphQL.types
+      typeInfo <- self.graphQL.types.values.toList
       field    <- typeInfo.fields.values.toList
       arg      <- field.args.getOrElse(Map.empty).values.toList
       types    <- loop(arg.typeOf, Nil)
@@ -68,15 +68,27 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
   }
 
-  def getType(name: String): Option[Config.Type] = { self.graphQL.types.find(_.name == name) }
+  def getType(name: String): Option[Config.Type] = { self.graphQL.types.get(name) }
 
-  def mergeRight(other: Config): Config = ConfigMerge.mergeRight(self, other)
+  def mergeRight(other: Config): Config = {
+    val newVersion = other.version match {
+      case 0 => self.version
+      case _ => other.version
+    }
 
-  def mergeTypes: List[Config.Type] = ConfigMerge.mergeTypes(self.graphQL.types)
+    val newServer = Server(
+      baseURL = other.server.baseURL.orElse(self.server.baseURL),
+      vars = other.server.vars.orElse(self.server.vars),
+    )
+
+    val newGraphQL = other.graphQL.mergeRight(self.graphQL)
+
+    Config(version = newVersion, server = newServer, graphQL = newGraphQL)
+  }
 
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
-  def unsafeCount: Int = self.graphQL.types.flatMap(_.fields.values.toList).count(_.unsafeSteps.nonEmpty)
+  def unsafeCount: Int = self.graphQL.types.flatMap(_._2.fields.values.toList).count(_.unsafeSteps.nonEmpty)
 
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
@@ -91,9 +103,10 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withTypes(input: (String, Type)*): Config = {
-    self.copy(graphQL = self.graphQL.withTypes(input.map { case (name, typeInfo) => typeInfo.withName(name) }))
-  }
+  def withTypes(types: Map[String, Type]): Config =
+    copy(graphQL = self.graphQL.copy(types = mergeTypeMap(self.graphQL.types, types)))
+
+  def withTypes(input: (String, Type)*): Config = withTypes(input.toMap)
 
   def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
 }
@@ -113,14 +126,32 @@ object Config {
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
-  final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
+  private def mergeTypeMap(m1: Map[String, Type], m2: Map[String, Type]) = {
+    (for {
+      key    <- m1.keys ++ m2.keys
+      typeOf <- (m1.get(key), m2.get(key)) match {
+        case (Some(t1), Some(t2)) => List(t1.merge(t2))
+        case (t1, t2)             => t2.orElse(t1).toList
+      }
+    } yield key -> typeOf).toMap
+  }
 
-  final case class Type(name: String, doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None) {
+    def mergeRight(other: RootSchema): RootSchema =
+      RootSchema(query = other.query.orElse(query), mutation = other.mutation.orElse(mutation))
+  }
+
+  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
+
+    def merge(other: Config.Type): Config.Type = {
+      val newFields = other.fields ++ self.fields
+      Config.Type(doc = other.doc.orElse(self.doc), fields = newFields)
+    }
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
@@ -128,13 +159,15 @@ object Config {
 
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
-
-    def withName(name: String): Type = self.copy(name = name)
   }
 
-  final case class GraphQL(schema: RootSchema = RootSchema(), types: List[Type] = List.empty) {
+  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
     self =>
-    def compress: GraphQL = self.copy(types = self.types.sortBy(_.name).map(_.compress))
+    def compress: GraphQL =
+      self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
+
+    def mergeRight(other: GraphQL): GraphQL =
+      GraphQL(schema = self.schema.mergeRight(other.schema), types = mergeTypeMap(self.types, other.types))
 
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
@@ -142,10 +175,6 @@ object Config {
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
-
-    def withType(typeOf: Type): GraphQL = self.copy(types = typeOf :: self.types)
-
-    def withTypes(value: Seq[Type]): GraphQL = copy(types = ConfigMerge.mergeTypes(types ++ value.toList))
   }
 
   // TODO: Field and Argument can be merged
@@ -309,8 +338,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = empty.withFields(fields: _*)
-    def empty: Type                           = Type(name = "$__PLACE_HOLDER__$")
+    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
+    def empty: Type                           = Type(None, Map.empty[String, Field])
   }
 
   object Field {

@@ -132,7 +132,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
         val config1 = Config.default.withTypes("Query" -> Type("foo" -> Field.ofType("String")))
         val config2 = Config.default.withTypes("Query" -> Type("bar" -> Field.ofType("String")))
 
-        val config   = ConfigMerge.mergeRight(config1, config2)
+        val config   = config1.mergeRight(config2)
         val expected = """|schema {
                           |  query: Query
                           |}

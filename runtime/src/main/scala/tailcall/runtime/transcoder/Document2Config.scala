@@ -123,16 +123,16 @@ trait Document2Config {
     TValid.foreach(directives)(_.fromDirective[UnsafeSteps]).toOption.flatMap(_.headOption).toList.flatMap(_.steps)
   }
 
-  final private def toTypes(document: Document): TValid[String, List[Config.Type]] = {
+  final private def toTypes(document: Document): TValid[String, Map[String, Config.Type]] = {
     val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(Config.Type(definition.name, doc = definition.description, _)).trace(definition.name)
-    }
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _)).trace(definition.name)
+    }.map(_.toMap)
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(Config.Type(definition.name, doc = definition.description, _)).trace(definition.name)
-    }
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _)).trace(definition.name)
+    }.map(_.toMap)
 
-    (outputTypes zip inputTypes)(_ ++ _)
+    (outputTypes zipPar inputTypes)(_ ++ _)
   }
 
 }

@@ -14,7 +14,6 @@ import tailcall.runtime.DirectiveCodec.EncoderSyntax
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.{Arg, Field}
 import tailcall.runtime.model._
-import tailcall.runtime.service.ConfigMerge
 
 /**
  * This is used to generate a .graphQL file from a config.
@@ -37,9 +36,9 @@ trait Config2Document {
 
   private def getDefinitions(config: Config): List[Definition] = {
     val inputTypes = config.getInputTypes.toSet
-    ConfigMerge.mergeTypes(config.graphQL.types).map { typeInfo =>
-      val definition = toObjectTypeDefinition(typeInfo)
-      if (inputTypes.contains(typeInfo.name)) toInputObjectTypeDefinition(definition) else definition
+    config.graphQL.types.toList.map { case (typeName, typeInfo) =>
+      val definition = toObjectTypeDefinition(typeName, typeInfo)
+      if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition) else definition
     }
   }
 
@@ -112,10 +111,10 @@ trait Config2Document {
     )
   }
 
-  final private def toObjectTypeDefinition(typeInfo: Config.Type): ObjectTypeDefinition = {
+  final private def toObjectTypeDefinition(typeName: String, typeInfo: Config.Type): ObjectTypeDefinition = {
     val fields: List[FieldDefinition] = toFieldDefinition(typeInfo)
     ObjectTypeDefinition(
-      name = typeInfo.name,
+      name = typeName,
       fields = fields,
       description = typeInfo.doc,
       implements = Nil,
