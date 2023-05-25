@@ -237,7 +237,7 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
                         |}
                         |""".stripMargin
 
-        val errors = "Query.foo has an unrecognized directive: @fooBar"
+        val errors = "[Query, foo]: has an unrecognized directive: @fooBar"
         assertZIO(ConfigFormat.GRAPHQL.decode(graphQL).flip)(equalTo(errors))
       },
     )

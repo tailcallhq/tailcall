@@ -3,6 +3,7 @@ package tailcall.runtime.transcoder
 import caliban.InputValue
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.HttpClient
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
@@ -202,7 +203,7 @@ object Config2StepSpec extends ZIOSpecDefault {
               .resolveWith(Map("a" -> 1))
           ),
           "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
-          "FooInput" -> Config.Type(
+          "FooInput" -> Config.Type.input(
             "a" -> Config.Field.ofType("Int"),
             "b" -> Config.Field.ofType("Int"),
             "c" -> Config.Field.ofType("Int"),
@@ -245,18 +246,17 @@ object Config2StepSpec extends ZIOSpecDefault {
           } yield assertTrue(json == """{"identity":1000}""")
         },
         test("modified input field should not be allowed") {
-          val identityType = Config.Type(
-            "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("Identity"))
-              .resolveWithFunction(_.path("args", "input").toDynamic)
-          )
-
           val config = Config.default.withTypes(
-            "Query"    -> identityType,
-            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+            "Query"         -> Config.Type(
+              "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("IdentityInput"))
+                .resolveWithFunction(_.path("args", "input").toDynamic)
+            ),
+            "Identity"      -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
+            "IdentityInput" -> Config.Type.input("a" -> Config.Field.ofType("Int").withName("b")),
           )
           for {
-            json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){a}}")
-          } yield assertTrue(json == """{"identity":{"a":1}}""")
+            json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){b}}")
+          } yield assertTrue(json == """{"identity":{"b":1}}""")
         },
         test("resolve using env variables") {
           val config = Config.default.withTypes(
@@ -281,18 +281,20 @@ object Config2StepSpec extends ZIOSpecDefault {
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
           .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
 
-        val errors = config.toBlueprint.errors
+        val errors = config.toBlueprint
 
-        assertTrue(errors == Chunk("Query.foo @unsafe: can not be used with @http"))
+        assertTrue(errors == TValid.fail("can not be used with @unsafe").trace("Query", "foo", "@http"))
       }),
       suite("inline")(
         test("with no base url") {
           val http   = Operation.Http(Path.unsafe.fromString("/users"))
           val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
 
-          val errors = config.toBlueprint.errors
+          val errors = config.toBlueprint
 
-          assertTrue(errors == Chunk("schema @server: No base URL defined in the server configuration"))
+          assertTrue(
+            errors == TValid.fail("No base URL defined in the server configuration").trace("Query", "foo", "@unsafe")
+          )
         },
         test("http directive") {
           val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(

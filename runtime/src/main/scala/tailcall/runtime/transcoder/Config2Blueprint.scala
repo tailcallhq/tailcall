@@ -43,13 +43,6 @@ object Config2Blueprint {
         case None    => bField.copy(resolver = Option(f))
       }
 
-    private def failFieldDirective(
-      typeName: String,
-      fieldName: String,
-      directiveName: String,
-      message: String,
-    ): TValid[String, Nothing] = TValid.fail(s"${typeName}.${fieldName} @${directiveName}: ${message}")
-
     private def isScalar(typeName: String): Boolean = List("String", "Int", "Boolean").contains(typeName)
 
     private def needsResolving(field: Config.Field): Boolean =
@@ -59,7 +52,7 @@ object Config2Blueprint {
       TValid.foreach(field.args.getOrElse(Map.empty).toList) { case (name, arg) =>
         val ofType = toType(arg)
         for {
-          _ <- assertTypeName(ofType.defaultName, isInput = true).tag(name)
+          _ <- assertTypeName(ofType.defaultName, isInput = true).trace(name)
         } yield Blueprint.InputFieldDefinition(
           name = arg.modify.flatMap(_.name).getOrElse(name),
           ofType = ofType,
@@ -96,21 +89,22 @@ object Config2Blueprint {
     private def toFieldList(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         val typeName = typeInfo.name
-        for {
-          bField <- toFieldDefault(fieldName, field).tag(typeName, fieldName)
+        (for {
+          bField <- toFieldDefault(fieldName, field)
           bField <-
             if (typeInfo.isInput) TValid.succeed(List(bField))
             else for {
-              bField      <- updateUnsafeField(typeName, field, bField)
-              bField      <- updateFieldHttp(typeName, field, bField)
-              mayBeBField <- updateModifyField(typeName, field, bField)
+              bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
+              bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)
+              mayBeBField <- updateModifyField(field, bField).trace("@" + ModifyField.directive.name)
               bField      <- mayBeBField match {
                 case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
+                    .trace("@" + InlineType.directive.name)
                 case None         => TValid.none
               }
             } yield bField.toList
-        } yield bField
-      }.map(_.flatten)
+        } yield bField).trace(fieldName)
+      }.map(_.flatten).trace(typeInfo.name)
 
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       config.server.baseURL match {
@@ -145,7 +139,7 @@ object Config2Blueprint {
                 if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
             }
           }
-        case None          => TValid.fail("No base URL defined in the server configuration").tag("schema", "server")
+        case None          => TValid.fail("No base URL defined in the server configuration")
       }
     }
 
@@ -226,21 +220,15 @@ object Config2Blueprint {
     }
 
     private def updateFieldHttp(
-      typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
 
       field.http match {
         case Some(http) =>
-          if (field.isRequired) {
-            failFieldDirective(typeName, bField.name, Http.directive.name, "can not be used with non-nullable fields")
-          } else if (field.unsafeSteps.exists(_.nonEmpty)) failFieldDirective(
-            typeName,
-            bField.name,
-            UnsafeSteps.directive.name,
-            s"can not be used with @${Http.directive.name}",
-          )
+          if (field.isRequired) { TValid.fail("can not be used with non-nullable fields") }
+          else if (field.unsafeSteps.exists(_.nonEmpty)) TValid
+            .fail(s"can not be used with @${UnsafeSteps.directive.name}")
           else toHttpResolver(field, http).map(appendResolver(bField, _))
         case _          => TValid.succeed(bField)
       }
@@ -257,12 +245,7 @@ object Config2Blueprint {
       val hasIndex    = inlinedPath.exists(_.matches("^\\d+$"))
 
       def invalidPath: TValid[String, Nothing] =
-        failFieldDirective(
-          typeName,
-          fieldName,
-          InlineType.directive.name,
-          s"unreachable path: ${inlinedPath.mkString(".")}",
-        )
+        TValid.fail(typeName, fieldName, InlineType.directive.name, s"unreachable path: ${inlinedPath.mkString(".")}")
 
       def loop(
         path: List[String],
@@ -301,7 +284,6 @@ object Config2Blueprint {
     }
 
     private def updateModifyField(
-      typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Option[Blueprint.FieldDefinition]] = {
@@ -311,28 +293,17 @@ object Config2Blueprint {
           val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
           val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
           TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
-        case Some(ModifyField(Some(_), Some(_)))    => failFieldDirective(
-            typeName,
-            bField.name,
-            ModifyField.directive.name,
-            "can not have both name and omit modifier",
-          )
+        case Some(ModifyField(Some(_), Some(_)))    => TValid.fail("can not have both name and omit modifier")
         case _                                      => TValid.succeed(bField).some
       }
     }
 
     private def updateUnsafeField(
-      typeName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
     ): TValid[String, Blueprint.FieldDefinition] = {
       if (field.unsafeSteps.exists(_.nonEmpty) && field.isRequired) {
-        failFieldDirective(
-          typeName,
-          bField.name,
-          UnsafeSteps.directive.name,
-          "can not be used with non-nullable fields",
-        )
+        TValid.fail("can not be used with non-nullable fields")
       } else field.unsafeSteps match {
         case Some(steps) => toUnsafeStepsResolver(field, steps).map {
             case None           => bField

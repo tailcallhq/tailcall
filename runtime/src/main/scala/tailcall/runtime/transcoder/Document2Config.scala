@@ -32,25 +32,17 @@ trait Document2Config {
     } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
   }
 
-  final private def assertFieldDirectives(
-    typeName: String,
-    fieldName: String,
-    field: FieldDefinition,
-  ): TValid[String, Unit] = {
+  final private def assertFieldDirectives(field: FieldDefinition): TValid[String, Unit] = {
     TValid.foreach(field.directives)(directive =>
       if (allowedFieldDirectives.contains(directive.name)) TValid.succeed(())
-      else TValid.fail(s"${typeName}.${fieldName} has an unrecognized directive: @${directive.name}")
+      else TValid.fail(s"has an unrecognized directive: @${directive.name}")
     ).unit
 
   }
 
-  final private def toField(
-    typeName: String,
-    fieldName: String,
-    field: FieldDefinition,
-  ): TValid[String, Config.Field] = {
+  final private def toField(field: FieldDefinition): TValid[String, Config.Field] = {
     for {
-      _    <- assertFieldDirectives(typeName, fieldName, field)
+      _    <- assertFieldDirectives(field)
       args <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
       steps      = toSteps(field.directives)
       typeof     = innerType(field.ofType)
@@ -86,12 +78,11 @@ trait Document2Config {
     }
 
   final private def toFieldMap(definition: ObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
-    TValid.foreach(definition.fields)(field => toField(definition.name, field.name, field).map(field.name -> _))
-      .map(_.toMap)
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
   }
 
   final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
-    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _)).map(_.toMap)
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
   }
 
   private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
@@ -135,10 +126,12 @@ trait Document2Config {
   final private def toTypes(document: Document): TValid[String, List[Config.Type]] = {
     val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
       toFieldMap(definition).map(Config.Type(definition.name, doc = definition.description, input = None, _))
+        .trace(definition.name)
     }
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
       toFieldMap(definition).map(Config.Type(definition.name, doc = definition.description, input = Option(true), _))
+        .trace(definition.name)
     }
 
     (outputTypes zip inputTypes)(_ ++ _)
