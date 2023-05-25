@@ -17,7 +17,7 @@ graphQL:
       fields:
         id:
           type: Int
-          required: true
+          isRequired: true
     Company:
       fields:
         name:
@@ -54,14 +54,14 @@ graphQL:
           doc: A single post by id.
         posts:
           type: Post
-          list: true
+          isList: true
           unsafeSteps:
           - http:
               path: /posts
           doc: A list of all posts.
         users:
           type: User
-          list: true
+          isList: true
           unsafeSteps:
           - http:
               path: /users
@@ -93,13 +93,13 @@ graphQL:
           type: String
         name:
           type: String
-          required: true
+          isRequired: true
         email:
           type: String
-          required: true
+          isRequired: true
         username:
           type: String
-          required: true
+          isRequired: true
         company:
           type: NewCompany
         address:
@@ -112,7 +112,7 @@ graphQL:
           type: String
         id:
           type: Int
-          required: true
+          isRequired: true
         user:
           type: User
           unsafeSteps:
@@ -125,7 +125,7 @@ graphQL:
               path: /users/{{userId}}
         userId:
           type: Int
-          required: true
+          isRequired: true
         title:
           type: String
     User:
@@ -134,24 +134,24 @@ graphQL:
           type: String
         name:
           type: String
-          required: true
+          isRequired: true
         posts:
           type: Post
-          list: true
+          isList: true
           unsafeSteps:
           - http:
               path: /users/{{value.id}}/posts
         email:
           type: String
-          required: true
+          isRequired: true
         username:
           type: String
-          required: true
+          isRequired: true
         company:
           type: Company
         id:
           type: Int
-          required: true
+          isRequired: true
         address:
           type: Address
         phone:

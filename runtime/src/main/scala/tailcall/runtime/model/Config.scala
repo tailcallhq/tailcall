@@ -180,8 +180,8 @@ object Config {
   // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
-    list: Option[Boolean] = None,
-    required: Option[Boolean] = None,
+    @jsonField("isList") list: Option[Boolean] = None,
+    @jsonField("isRequired") required: Option[Boolean] = None,
     unsafeSteps: Option[List[Operation]] = None,
     args: Option[Map[String, Arg]] = None,
     doc: Option[String] = None,
