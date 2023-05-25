@@ -18,8 +18,8 @@ trait Config2Blueprint {
 
 object Config2Blueprint {
   final case class Live(config: Config) {
-    private val outputTypes = config.graphQL.types.filterNot(_.isInput).map(_.name).toSet
-    private val inputTypes  = config.graphQL.types.filter(_.isInput).map(_.name).toSet
+    private val outputTypes: Set[String] = config.getOutputTypes.toSet
+    private val inputTypes: Set[String]  = config.getInputTypes.toSet
 
     /**
      * Encodes a config into a Blueprint.
@@ -42,6 +42,13 @@ object Config2Blueprint {
         case Some(g) => bField.copy(resolver = Option(g >>> f))
         case None    => bField.copy(resolver = Option(f))
       }
+
+    private def assertTypeName(typeName: String, isInput: Boolean): TValid[String, Unit] = {
+      val inInputs  = inputTypes.contains(typeName)
+      val inOutputs = outputTypes.contains(typeName)
+      TValid.fail(s"undefined input name $typeName").when(isInput && !inInputs && !isScalar(typeName)) <>
+        TValid.fail(s"undefined type name $typeName").when(!inOutputs && !isScalar(typeName))
+    }
 
     private def isScalar(typeName: String): Boolean = List("String", "Int", "Boolean").contains(typeName)
 
@@ -67,7 +74,7 @@ object Config2Blueprint {
         toFieldList(typeInfo).map { fields =>
           val definition = Blueprint
             .ObjectTypeDefinition(name = typeInfo.name, fields = fields, description = typeInfo.doc)
-          if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
+          if (inputTypes.contains(typeInfo.name)) toInputObjectTypeDefinition(definition) else definition
         }
       }
     }
@@ -79,20 +86,13 @@ object Config2Blueprint {
       } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
     }
 
-    private def assertTypeName(typeName: String, isInput: Boolean): TValid[String, Unit] = {
-      val inInputs  = inputTypes.contains(typeName)
-      val inOutputs = outputTypes.contains(typeName)
-      TValid.fail(s"undefined input name $typeName").when(isInput && !inInputs && !isScalar(typeName)) <>
-        TValid.fail(s"undefined type name $typeName").when(!inOutputs && !isScalar(typeName))
-    }
-
     private def toFieldList(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] =
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         val typeName = typeInfo.name
         (for {
           bField <- toFieldDefault(fieldName, field)
           bField <-
-            if (typeInfo.isInput) TValid.succeed(List(bField))
+            if (inputTypes.contains(typeInfo.name)) TValid.succeed(List(bField))
             else for {
               bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
               bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)

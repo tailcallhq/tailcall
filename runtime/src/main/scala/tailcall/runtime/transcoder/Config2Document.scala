@@ -36,9 +36,10 @@ trait Config2Document {
   }
 
   private def getDefinitions(config: Config): List[Definition] = {
+    val inputTypes = config.getInputTypes.toSet
     ConfigMerge.mergeTypes(config.graphQL.types).map { typeInfo =>
       val definition = toObjectTypeDefinition(typeInfo)
-      if (typeInfo.isInput) toInputObjectTypeDefinition(definition) else definition
+      if (inputTypes.contains(typeInfo.name)) toInputObjectTypeDefinition(definition) else definition
     }
   }
 

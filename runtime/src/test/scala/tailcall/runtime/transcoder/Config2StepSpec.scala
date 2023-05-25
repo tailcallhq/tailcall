@@ -203,7 +203,7 @@ object Config2StepSpec extends ZIOSpecDefault {
               .resolveWith(Map("a" -> 1))
           ),
           "Foo"      -> Config.Type("a" -> Config.Field.ofType("Int")),
-          "FooInput" -> Config.Type.input(
+          "FooInput" -> Config.Type(
             "a" -> Config.Field.ofType("Int"),
             "b" -> Config.Field.ofType("Int"),
             "c" -> Config.Field.ofType("Int"),
@@ -252,7 +252,7 @@ object Config2StepSpec extends ZIOSpecDefault {
                 .resolveWithFunction(_.path("args", "input").toDynamic)
             ),
             "Identity"      -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
-            "IdentityInput" -> Config.Type.input("a" -> Config.Field.ofType("Int").withName("b")),
+            "IdentityInput" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
           )
           for {
             json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){b}}")

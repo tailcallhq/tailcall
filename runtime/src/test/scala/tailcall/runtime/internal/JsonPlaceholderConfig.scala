@@ -32,7 +32,7 @@ object JsonPlaceholderConfig {
         ).withDoc("A single user by id."),
         "unusedField" -> Field.str.withOmit(true).withDoc("An unused field that will be omitted."),
       ),
-      "NewUser"    -> Type.input.withDoc("A new user.").withFields(
+      "NewUser"    -> Type.empty.withDoc("A new user.").withFields(
         "name"     -> Field.str.asRequired,
         "username" -> Field.str.asRequired,
         "email"    -> Field.str.asRequired,
@@ -67,7 +67,7 @@ object JsonPlaceholderConfig {
         "zipcode" -> Field.str.withName("zip"),
         "geo"     -> Field.ofType("Geo"),
       ),
-      "NewAddress" -> Type.input(
+      "NewAddress" -> Type(
         "street"  -> Field.str,
         "suite"   -> Field.str,
         "city"    -> Field.str,
@@ -75,8 +75,8 @@ object JsonPlaceholderConfig {
         "geo"     -> Field.ofType("NewGeo"),
       ),
       "Company"    -> Type("name" -> Field.str, "catchPhrase" -> Field.str, "bs" -> Field.str),
-      "NewCompany" -> Type.input("name" -> Field.str, "catchPhrase" -> Field.str, "bs" -> Field.str),
+      "NewCompany" -> Type("name" -> Field.str, "catchPhrase" -> Field.str, "bs" -> Field.str),
       "Geo"        -> Type("lat" -> Field.str, "lng" -> Field.str),
-      "NewGeo"     -> Type.input("lat" -> Field.str, "lng" -> Field.str),
+      "NewGeo"     -> Type("lat" -> Field.str, "lng" -> Field.str),
     )
 }

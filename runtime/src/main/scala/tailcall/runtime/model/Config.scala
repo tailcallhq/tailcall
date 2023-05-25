@@ -30,7 +30,49 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 
   def compress: Config = self.copy(graphQL = self.graphQL.compress, server = self.server.compress)
 
+  def getInputTypes: List[String] = {
+    def loop(name: String, returnTypes: List[String]): List[String] = {
+      if (returnTypes.contains(name)) returnTypes
+      else getType(name) match {
+        case Some(typeInfo) => for {
+            fields <- typeInfo.fields.values.toList
+            types  <- loop(fields.typeOf, name :: returnTypes)
+          } yield types
+        case None           => returnTypes
+      }
+    }
+
+    for {
+      typeInfo <- self.graphQL.types
+      field    <- typeInfo.fields.values.toList
+      arg      <- field.args.getOrElse(Map.empty).values.toList
+      types    <- loop(arg.typeOf, Nil)
+    } yield types
+  }
+
+  /**
+   * Goes over every possible object type and creates a map
+   * of type name to whether it's an input type or not.
+   */
+  def getOutputTypes: List[String] = {
+    def loop(name: String, result: List[String]): List[String] = {
+      if (result.contains(name)) result
+      else getType(name) match {
+        case Some(typeInfo) => typeInfo.fields.values.toList
+            .flatMap[String](field => loop(field.typeOf, name :: result))
+        case None           => result
+      }
+    }
+
+    val types = self.graphQL.schema.query.toList ++ self.graphQL.schema.mutation.toList
+    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
+  }
+
+  def getType(name: String): Option[Config.Type] = { self.graphQL.types.find(_.name == name) }
+
   def mergeRight(other: Config): Config = ConfigMerge.mergeRight(self, other)
+
+  def mergeTypes: List[Config.Type] = ConfigMerge.mergeTypes(self.graphQL.types)
 
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
@@ -57,7 +99,6 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 }
 
 object Config {
-
   implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
   implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
   implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
@@ -74,21 +115,12 @@ object Config {
 
   final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
 
-  final case class Type(
-    name: String,
-    doc: Option[String] = None,
-    input: Option[Boolean] = None,
-    fields: Map[String, Field] = Map.empty,
-  ) {
+  final case class Type(name: String, doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def asInput: Type = self.copy(input = Option(true))
-
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
-
-    def isInput: Boolean = input.getOrElse(false)
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
@@ -229,11 +261,7 @@ object Config {
 
   final case class Arg(
     @jsonField("type") typeOf: String,
-
-    // TODO: rename to `list`
     @jsonField("isList") list: Option[Boolean] = None,
-
-    // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
@@ -283,7 +311,6 @@ object Config {
   object Type {
     def apply(fields: (String, Field)*): Type = empty.withFields(fields: _*)
     def empty: Type                           = Type(name = "__PLACE_HOLDER__")
-    def input: Type                           = empty.asInput
   }
 
   object Field {

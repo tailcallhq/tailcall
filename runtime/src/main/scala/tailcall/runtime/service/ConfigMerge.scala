@@ -2,8 +2,8 @@ package tailcall.runtime.service
 
 import tailcall.runtime.model.{Config, Server}
 
+// TODO: move to config.scala
 object ConfigMerge {
-
   def mergeAll(configs: List[Config]): Config = configs.reduce(mergeRight)
 
   /**
@@ -31,7 +31,7 @@ object ConfigMerge {
   }
 
   def mergeTypes(types: List[Config.Type]): List[Config.Type] = {
-    types.groupBy(t => (t.isInput, t.name)).values.map(_.reduce(mergeTypes)).toList
+    types.groupBy(_.name).values.map(_.reduce(mergeTypes)).toList
   }
 
   /**
@@ -40,6 +40,6 @@ object ConfigMerge {
    */
   private def mergeTypes(t1: Config.Type, t2: Config.Type): Config.Type = {
     val newFields = t2.fields ++ t1.fields
-    Config.Type(name = t2.name, doc = t2.doc.orElse(t1.doc), input = t2.input.orElse(t1.input), fields = newFields)
+    Config.Type(name = t2.name, doc = t2.doc.orElse(t1.doc), fields = newFields)
   }
 }
