@@ -310,7 +310,7 @@ object Config {
 
   object Type {
     def apply(fields: (String, Field)*): Type = empty.withFields(fields: _*)
-    def empty: Type                           = Type(name = "__PLACE_HOLDER__")
+    def empty: Type                           = Type(name = "$__PLACE_HOLDER__$")
   }
 
   object Field {

@@ -70,8 +70,12 @@ object Config2Blueprint {
     }
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
-      TValid.foreach(config.graphQL.types) { case (typeInfo) =>
-        toFieldList(typeInfo).map { fields =>
+      TValid.foreach(config.graphQL.types) { typeInfo =>
+        val dblUsage = inputTypes.contains(typeInfo.name) && outputTypes.contains(typeInfo.name)
+        for {
+          _      <- TValid.fail(s"${typeInfo.name} cannot be both used both as input and output type").when(dblUsage)
+          fields <- toFieldList(typeInfo)
+        } yield {
           val definition = Blueprint
             .ObjectTypeDefinition(name = typeInfo.name, fields = fields, description = typeInfo.doc)
           if (inputTypes.contains(typeInfo.name)) toInputObjectTypeDefinition(definition) else definition
