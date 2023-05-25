@@ -20,7 +20,7 @@ import java.net.{URI, URL}
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
 
-  def apply(input: (String, TypeInfo)*): Config = withTypes(input: _*)
+  def apply(input: (String, Type)*): Config = withTypes(input: _*)
 
   def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
 
@@ -49,8 +49,8 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withTypes(input: (String, TypeInfo)*): Config = {
-    self.copy(graphQL = self.graphQL.withTypes(input.map { case (name, typeInfo) => typeInfo.toType(name) }))
+  def withTypes(input: (String, Type)*): Config = {
+    self.copy(graphQL = self.graphQL.withTypes(input.map { case (name, typeInfo) => typeInfo.withName(name) }))
   }
 
   def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
@@ -82,29 +82,22 @@ object Config {
   ) {
     self =>
 
+    def apply(input: (String, Field)*): Type = withFields(input: _*)
+
+    def asInput: Type = self.copy(input = Option(true))
+
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def isInput: Boolean = input.getOrElse(false)
-  }
 
-  final case class TypeInfo(
-    doc: Option[String] = None,
-    fields: Map[String, Field] = Map.empty,
-    input: Option[Boolean] = None,
-  ) {
-    self =>
-    def apply(input: (String, Field)*): TypeInfo = withFields(input: _*)
+    def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
-    def asInput: TypeInfo = self.copy(input = Option(true))
+    def withField(name: String, field: Field): Type = self.copy(fields = self.fields + (name -> field))
 
-    def toType(name: String): Type = Type(name, doc, input, fields)
-
-    def withDoc(doc: String): TypeInfo = self.copy(doc = Option(doc))
-
-    def withField(name: String, field: Field): TypeInfo = self.copy(fields = self.fields + (name -> field))
-
-    def withFields(input: (String, Field)*): TypeInfo =
+    def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
+
+    def withName(name: String): Type = self.copy(name = name)
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: List[Type] = List.empty) {
@@ -117,8 +110,6 @@ object Config {
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
-
-    def withType(name: String, typeInfo: TypeInfo): GraphQL = { withType(typeInfo.toType(name)) }
 
     def withType(typeOf: Type): GraphQL = self.copy(types = typeOf :: self.types)
 
@@ -290,9 +281,9 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): TypeInfo = TypeInfo(fields = fields.toMap)
-    def empty: TypeInfo                           = TypeInfo()
-    def input: TypeInfo                           = TypeInfo(input = Option(true))
+    def apply(fields: (String, Field)*): Type = empty.withFields(fields: _*)
+    def empty: Type                           = Type(name = "__PLACE_HOLDER__")
+    def input: Type                           = empty.asInput
   }
 
   object Field {
