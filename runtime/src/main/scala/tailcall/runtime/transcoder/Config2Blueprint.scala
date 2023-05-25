@@ -18,8 +18,8 @@ trait Config2Blueprint {
 
 object Config2Blueprint {
   final case class Live(config: Config) {
-    private val outputTypes: Set[String] = config.getOutputTypes.toSet
-    private val inputTypes: Set[String]  = config.getInputTypes.toSet
+    private val outputTypes: Set[String] = config.outputTypes.toSet
+    private val inputTypes: Set[String]  = config.inputTypes.toSet
 
     /**
      * Encodes a config into a Blueprint.
@@ -176,7 +176,7 @@ object Config2Blueprint {
     }
 
     private def toTSchema(fieldType: String, isRequired: Boolean, isList: Boolean): TSchema = {
-      var schema = config.getType(fieldType) match {
+      var schema = config.findType(fieldType) match {
         case Some(typeInfo) => TSchema.obj(
             typeInfo.fields.filter { case (_, field) => field.unsafeSteps.forall(_.isEmpty) && field.http.isEmpty }
               .map { case (fieldName, field) => (fieldName, toTSchema(field)) }
@@ -267,7 +267,7 @@ object Config2Blueprint {
               ofType <-
                 if (isScalar(field0.typeOf)) loop(tail, field0, typeInfo, isRequired0)
                 else for {
-                  typeInfo <- TValid.fromOption(config.getType(field0.typeOf)) <> invalidPath
+                  typeInfo <- TValid.fromOption(config.findType(field0.typeOf)) <> invalidPath
                   ofType   <- loop(tail, field0, typeInfo, isRequired0)
                 } yield if (field.isList) Blueprint.ListType(ofType, isRequired) else ofType
             } yield ofType

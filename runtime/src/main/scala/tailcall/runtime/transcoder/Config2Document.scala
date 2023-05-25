@@ -35,7 +35,7 @@ trait Config2Document {
   }
 
   private def getDefinitions(config: Config): List[Definition] = {
-    val inputTypes = config.getInputTypes.toSet
+    val inputTypes = config.inputTypes.toSet
     config.graphQL.types.toList.map { case (typeName, typeInfo) =>
       val definition = toObjectTypeDefinition(typeName, typeInfo)
       if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition) else definition
