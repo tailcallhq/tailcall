@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 case class ServerCli(
   port: Int = SchemaRegistry.PORT,
   globalResponseTimeout: Duration = Duration(10000, TimeUnit.SECONDS),
-  enableHttpCache: Boolean = false,
+  httpCacheSize: Option[Int] = None,
   enableTracing: Boolean = false,
   slowQueryDuration: Option[Duration] = None,
 )
@@ -23,14 +23,14 @@ object ServerCli {
 
   private def command: Command[ServerCli] =
     Command("server", serverOptions).withHelp(s"starts the server on port: ${default.port}").map {
-      case (port, globalResponseTimeout, enableHttpCache, enableTracing, slowQueryDuration) =>
-        ServerCli(port, globalResponseTimeout, enableHttpCache, enableTracing, slowQueryDuration)
+      case (port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration) =>
+        ServerCli(port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration)
     }
 
   private def serverOptions =
     CustomOptions.int("port").withDefault(default.port) ++
       CustomOptions.duration("timeout").withDefault(default.globalResponseTimeout) ++
-      Options.boolean("http-cache").withDefault(default.enableHttpCache) ++
+      CustomOptions.int("http-cache").optional.withDefault(default.httpCacheSize) ++
       Options.boolean("tracing").withDefault(default.enableTracing) ++
       CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration)
 

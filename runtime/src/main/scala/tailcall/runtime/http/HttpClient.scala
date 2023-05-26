@@ -14,17 +14,20 @@ trait HttpClient {
 
 // TODO: handle cancellation
 object HttpClient {
-  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live
-
-  def cachedDefault(cacheSize: Int): ZLayer[Any, Throwable, HttpClient] =
-    HttpCache.live(cacheSize) ++ Client.default >>> cached
-
   def cached: ZLayer[HttpCache with Client, Nothing, Live] =
     ZLayer(for {
       client <- ZIO.service[Client]
       cache  <- ZIO.service[HttpCache]
       _      <- cache.init(Lookup(a => client.request(a.toZHttpRequest)))
     } yield Live(client, Option(cache)))
+
+  def cachedDefault(cacheSize: Option[Int]): ZLayer[Any, Throwable, HttpClient] =
+    cacheSize match {
+      case Some(size) => HttpCache.live(size) ++ Client.default >>> cached
+      case None       => Client.default >>> live
+    }
+
+  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live
 
   def live: ZLayer[Client, Nothing, HttpClient] = ZLayer.fromFunction(Live(_, None))
 
