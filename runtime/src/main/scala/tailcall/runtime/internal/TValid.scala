@@ -9,6 +9,8 @@ sealed trait TValid[+E, +A] {
 
   final def <>[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] = self orElse other
 
+  final def as[B](b: => B): TValid[E, B] = self.map(_ => b)
+
   final def errors: Chunk[TValid.Cause[E]] = fold(_.toChunk, _ => Chunk.empty)
 
   final def flatMap[E1 >: E, B](ab: A => TValid[E1, B]): TValid[E1, B] = self.fold(TValid.failCause(_), ab)
@@ -95,6 +97,8 @@ sealed trait TValid[+E, +A] {
 }
 
 object TValid {
+  def all[E, A](seq: TValid[E, A]*): TValid[E, A] = seq.reduce(_ <> _)
+
   def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors.map(Cause(_)))
 
   def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
@@ -108,6 +112,8 @@ object TValid {
 
   def foreachChunk[A, E, B](chunk: Chunk[A])(f: A => TValid[E, B]): TValid[E, Chunk[B]] =
     foreachIterable(chunk)(f).map(Chunk.fromIterable(_))
+
+  def foreachDiscard[A, E, B](list: List[A])(f: A => TValid[E, B]): TValid[E, Unit] = foreach(list)(f).unit
 
   def foreachIterable[A, E, B](iter: Iterable[A])(f: A => TValid[E, B]): TValid[E, Iterable[B]] = {
     val valuesBuilder = Iterable.newBuilder[B]
