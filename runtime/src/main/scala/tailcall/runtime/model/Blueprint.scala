@@ -80,7 +80,6 @@ object Blueprint {
     ofType: Type,
     defaultValue: Option[DynamicValue],
     description: Option[String] = None,
-    annotations: List[ModifyField] = Nil,
   )
 
   final case class FieldDefinition(
