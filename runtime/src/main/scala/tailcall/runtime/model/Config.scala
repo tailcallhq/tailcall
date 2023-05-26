@@ -263,7 +263,7 @@ object Config {
     (for {
       key    <- m1.keys ++ m2.keys
       typeOf <- (m1.get(key), m2.get(key)) match {
-        case (Some(t1), Some(t2)) => List(t1.merge(t2))
+        case (Some(t1), Some(t2)) => List(t1.mergeRight(t2))
         case (t1, t2)             => t2.orElse(t1).toList
       }
     } yield key -> typeOf).toMap
@@ -281,7 +281,7 @@ object Config {
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
-    def merge(other: Config.Type): Config.Type = {
+    def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields
       Config.Type(doc = other.doc.orElse(self.doc), fields = newFields)
     }
