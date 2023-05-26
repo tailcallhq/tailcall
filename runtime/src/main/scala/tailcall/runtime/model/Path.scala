@@ -25,7 +25,7 @@ final case class Path(segments: List[Path.Segment]) {
     transform {
       case Path.Segment.Literal(value)  => Path.Segment.Literal(value)
       case Path.Segment.Param(mustache) => Path.Segment
-          .Literal(MustacheExpression.evaluate(mustache, input).getOrThrow("Mustache evaluation failed: "))
+          .Literal(MustacheExpression.evaluate(mustache, input).unwrapWith("Mustache evaluation failed: "))
     }.encode.getOrElse(throw new RuntimeException("Path encoding failed"))
 
   def withLiteral(literal: String): Path = Path(segments :+ Path.Segment.Literal(literal))

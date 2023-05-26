@@ -13,18 +13,13 @@ import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
-import zio.json.{DecoderOps, EncoderOps}
 
 /**
  * Used to read a .graphQL file that contains the
  * orchestration specification.
  */
 trait Document2Config {
-
-  private val allowedFieldDirectives: List[String] =
-    List(InlineType.directive, ModifyField.directive, UnsafeSteps.directive, Http.directive).map(_.name)
-
-  final def toConfig(document: Document): TValid[String, Config] = {
+  final def toConfig(document: Document): TValid[Nothing, Config] = {
     for {
       schema <- toSchemaDefinition(document)
       types  <- toTypes(document)
@@ -32,17 +27,8 @@ trait Document2Config {
     } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
   }
 
-  final private def assertFieldDirectives(field: FieldDefinition): TValid[String, Unit] = {
-    TValid.foreach(field.directives)(directive =>
-      if (allowedFieldDirectives.contains(directive.name)) TValid.succeed(())
-      else TValid.fail(s"has an unrecognized directive: @${directive.name}")
-    ).unit
-
-  }
-
-  final private def toField(field: FieldDefinition): TValid[String, Config.Field] = {
+  final private def toField(field: FieldDefinition): TValid[Nothing, Config.Field] = {
     for {
-      _    <- assertFieldDirectives(field)
       args <- TValid.foreach(field.args)(toLabelledArgument(_)).map(_.toMap)
       steps      = toSteps(field.directives)
       typeof     = innerType(field.ofType)
@@ -77,11 +63,11 @@ trait Document2Config {
       )
     }
 
-  final private def toFieldMap(definition: ObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+  final private def toFieldMap(definition: ObjectTypeDefinition): TValid[Nothing, Map[String, Config.Field]] = {
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
   }
 
-  final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[String, Map[String, Config.Field]] = {
+  final private def toFieldMap(definition: InputObjectTypeDefinition): TValid[Nothing, Map[String, Config.Field]] = {
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
   }
 
@@ -89,7 +75,7 @@ trait Document2Config {
     field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption
   }
 
-  final private def toLabelledArgument(arg: InputValueDefinition): TValid[String, (String, Config.Arg)] = {
+  final private def toLabelledArgument(arg: InputValueDefinition): TValid[Nothing, (String, Config.Arg)] = {
     val typeof     = innerType(arg.ofType)
     val isList     = arg.ofType.isInstanceOf[Type.ListType]
     val isRequired = arg.ofType.nonNull
@@ -105,25 +91,26 @@ trait Document2Config {
     )
   }
 
-  final private def toSchemaDefinition(document: Document): TValid[String, Config.RootSchema] = {
+  final private def toSchemaDefinition(document: Document): TValid[Nothing, Config.RootSchema] = {
     document.schemaDefinition match {
       case Some(value) => TValid.succeed(Config.RootSchema(value.query, value.mutation))
       case None        => TValid.succeed(Config.RootSchema())
     }
   }
 
-  final private def toServer(document: Document): TValid[String, Server] = {
-    document.schemaDefinition.flatMap(_.directives.find(_.name == "server")) match {
-      case Some(directive) => TValid.fromEither(directive.arguments.toJson.fromJson[Server])
-      case None            => TValid.succeed(Server())
+  final private def toServer(document: Document): TValid[Nothing, Server] =
+    TValid.succeed {
+      document.schemaDefinition.flatMap(_.directives.find(_.name == Server.directive.name)) match {
+        case Some(directive) => Server.directive.decode(directive).getOrElse(Server())
+        case None            => Server()
+      }
     }
-  }
 
   private def toSteps(directives: List[Directive]): List[Operation] = {
     TValid.foreach(directives)(_.fromDirective[UnsafeSteps]).toOption.flatMap(_.headOption).toList.flatMap(_.steps)
   }
 
-  final private def toTypes(document: Document): TValid[String, Map[String, Config.Type]] = {
+  final private def toTypes(document: Document): TValid[Nothing, Map[String, Config.Type]] = {
     val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
       toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _)).trace(definition.name)
     }.map(_.toMap)

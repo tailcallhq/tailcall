@@ -29,15 +29,6 @@ sealed trait TValid[+E, +A] {
 
   final def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[Cause[E]] => A1): A1 = self.fold[A1](orElse, identity)
 
-  final def getOrThrow(implicit ev: E <:< String): A =
-    self.getOrElseWith(e => throw new RuntimeException(e.mkString("[", ", ", "]")))
-
-  final def getOrThrow(prefix: String)(implicit ev: E <:< String): A =
-    self.getOrElseWith(e => throw new RuntimeException(prefix + e.mkString("[", ", ", "]")))
-
-  final def inlinePath(implicit ev: E <:< String): TValid[String, A] =
-    self.fold(chunks => TValid.failCause(chunks.map(_.inlinePath)), TValid.succeed(_))
-
   final def isEmpty: Boolean = self.fold(_ => true, _ => false)
 
   final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
@@ -53,9 +44,9 @@ sealed trait TValid[+E, +A] {
 
   final def some: TValid[E, Option[A]] = self.map(Some(_))
 
-  final def toEither: Either[NonEmptyChunk[E], A] =
+  final def toEither: Either[NonEmptyChunk[Cause[E]], A] =
     self match {
-      case TValid.Errors(errors) => Left(errors.map(_.message))
+      case TValid.Errors(errors) => Left(errors)
       case TValid.Succeed(value) => Right(value)
     }
 
@@ -63,20 +54,29 @@ sealed trait TValid[+E, +A] {
 
   final def toOption: Option[A] = self.fold[Option[A]](_ => None, Some(_))
 
-  final def toTask(implicit ev: E <:< String): Task[A] = ZIO.attempt(getOrThrow)
+  final def toTask(implicit ev: E <:< String): Task[A] = ZIO.attempt(unwrap)
 
-  final def toZIO(implicit ev: E <:< String): zio.ZIO[Any, Chunk[String], A] =
-    self.inlinePath.fold(errors => zio.ZIO.fail(errors.map(_.message)), zio.ZIO.succeed(_))
+  final def toZIO: zio.ZIO[Any, Chunk[Cause[E]], A] = self.fold(zio.ZIO.fail(_), zio.ZIO.succeed(_))
 
   final def trace(paths: String*): TValid[E, A] =
     self match {
-      case TValid.Errors(chunk) => TValid.Errors(chunk.map(cause => cause.copy(trace = paths.toVector ++ cause.trace)))
+      case TValid.Errors(chunk) => TValid.Errors(chunk.map(cause => cause.copy(trace = paths.toList ++ cause.trace)))
       case self                 => self
     }
 
   final def unit: TValid[E, Unit] = map(_ => ())
 
   final def unless(cond: Boolean): TValid[E, Unit] = when(!cond)
+
+  final def unwrap(implicit ev: E <:< String): A = unwrapWith("")
+
+  final def unwrapWith(prefix: String)(implicit ev: E <:< String): A =
+    self.getOrElseWith(e =>
+      throw new RuntimeException(prefix + e.map(cause => {
+        val str = if (cause.trace.isEmpty) "" else cause.trace.mkString("[", ", ", "]") + ": "
+        s"${str}${cause.message}"
+      }).mkString("[", ", ", "]"))
+    )
 
   final def when(cond: Boolean): TValid[E, Unit] =
     self.fold(errors => if (cond) TValid.failCause(errors) else TValid.succeed(()), _ => TValid.succeed(()))
@@ -95,7 +95,7 @@ sealed trait TValid[+E, +A] {
 }
 
 object TValid {
-  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors.map(Cause(_, Vector.empty)))
+  def fail[E](errors: NonEmptyChunk[E]): TValid[E, Nothing] = Errors(errors.map(Cause(_)))
 
   def fail[E](head: E, tail: E*): TValid[E, Nothing] = fail(NonEmptyChunk.fromIterable(head, tail.toList))
 
@@ -142,9 +142,5 @@ object TValid {
 
   final case class Errors[+E](chunk: NonEmptyChunk[Cause[E]]) extends TValid[E, Nothing]
   final case class Succeed[+A](value: A)                      extends TValid[Nothing, A]
-  final case class Cause[+E](message: E, trace: Vector[String] = Vector.empty) {
-    def inlinePath(implicit ev: E <:< String): Cause[String] = {
-      if (trace.isEmpty) Cause(message) else Cause(trace.mkString("[", ", ", "]") + ": " + ev(message), Vector.empty)
-    }
-  }
+  final case class Cause[+E](message: E, trace: List[String] = Nil)
 }

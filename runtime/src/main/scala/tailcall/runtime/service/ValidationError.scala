@@ -1,5 +1,6 @@
 package tailcall.runtime.service
 
+import tailcall.runtime.internal.TValid
 import zio.{Chunk, ZIO}
 
 /**
@@ -32,9 +33,9 @@ object ValidationError {
   /**
    * Error in the blueprint generation
    */
-  final case class BlueprintGenerationError(errors: Chunk[String]) extends ValidationError {
+  final case class BlueprintGenerationError(errors: Chunk[TValid.Cause[String]]) extends ValidationError {
     override def message: String = {
-      errors.map(e => s"  - $e").mkString(
+      errors.map(e => s"  - ${e.trace.mkString("[", ", ", "]")}: ${e.message}").mkString(
         """
           |Blueprint generation error:
           |
