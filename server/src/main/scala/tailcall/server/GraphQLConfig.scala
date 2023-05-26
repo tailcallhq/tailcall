@@ -6,7 +6,7 @@ import zio.{Duration, ZIO, ZIOAppArgs}
 
 import java.util.concurrent.TimeUnit
 
-case class ServerCli(
+case class GraphQLConfig(
   port: Int = SchemaRegistry.PORT,
   globalResponseTimeout: Duration = Duration(10000, TimeUnit.SECONDS),
   httpCacheSize: Option[Int] = None,
@@ -14,17 +14,17 @@ case class ServerCli(
   slowQueryDuration: Option[Duration] = None,
 )
 
-object ServerCli {
-  val default: ServerCli = ServerCli()
+object GraphQLConfig {
+  val default: GraphQLConfig = GraphQLConfig()
 
-  def bootstrap[R, E, A](run: ServerCli => ZIO[R, E, A]): ZIO[R with ZIOAppArgs, Any, Any] =
+  def bootstrap[R, E, A](run: GraphQLConfig => ZIO[R, E, A]): ZIO[R with ZIOAppArgs, Any, Any] =
     ZIOAppArgs.getArgs
       .flatMap(args => CliApp.make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(run(_)).run(args.toList))
 
-  private def command: Command[ServerCli] =
+  private def command: Command[GraphQLConfig] =
     Command("server", serverOptions).withHelp(s"starts the server on port: ${default.port}").map {
       case (port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration) =>
-        ServerCli(port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration)
+        GraphQLConfig(port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration)
     }
 
   private def serverOptions =

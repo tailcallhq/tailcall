@@ -12,9 +12,9 @@ import zio.http.model.HttpError
 object BlueprintDataLoader {
   type InterpreterLoader = DataLoader[GraphQLGenerator, Throwable, String, BlueprintData]
 
-  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] = live(ServerCli.default)
+  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] = live(GraphQLConfig.default)
 
-  def live(config: ServerCli): ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
+  def live(config: GraphQLConfig): ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
     ZLayer {
       for {
         registry <- ZIO.service[SchemaRegistry]

@@ -8,15 +8,15 @@ import zio.http._
 import zio.http.model.{HttpError, Method, Status}
 
 object Main extends ZIOAppDefault {
-  override val run   = ServerCli.bootstrap { cli =>
+  override val run   = GraphQLConfig.bootstrap { config =>
     Server.install(server).flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never)
       .exitCode.provide(
-        ServerConfig.live.update(_.port(cli.port)).update(_.objectAggregator(Int.MaxValue)),
+        ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
         SchemaRegistry.memory,
         GraphQLGenerator.default,
-        HttpClient.cachedDefault(cli.httpCacheSize),
+        HttpClient.cachedDefault(config.httpCacheSize),
         Server.live,
-        BlueprintDataLoader.live(cli),
+        BlueprintDataLoader.live(config),
       )
   }
   private val server = (AdminServer.rest ++ Http.collectRoute[Request] {
