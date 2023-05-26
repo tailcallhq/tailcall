@@ -59,5 +59,5 @@ trait Document2Blueprint {
 
   final def toBlueprint(document: Document): TValid[String, Blueprint] =
     TValid.foreach(document.definitions)(toBlueprintDefinition(_))
-      .map(defs => Blueprint(defs.collect { case Some(d) => d }, Blueprint.Server()))
+      .map(defs => Blueprint(defs.collect { case Some(d) => d }))
 }

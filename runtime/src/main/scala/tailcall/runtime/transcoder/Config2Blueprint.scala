@@ -28,9 +28,7 @@ object Config2Blueprint {
       val rootSchema = Blueprint
         .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
-      for {
-        definitions <- toDefinitions
-      } yield Blueprint(rootSchema :: definitions, Blueprint.Server(config.server.timeout))
+      for { definitions <- toDefinitions } yield Blueprint(rootSchema :: definitions)
 
     }
 

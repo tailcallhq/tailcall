@@ -10,24 +10,11 @@ import zio._
 import zio.http.model.HttpError
 
 object BlueprintDataLoader {
-  final case class BlueprintData(
-    blueprint: Blueprint,
-    timeout: Int,
-    interpreter: GraphQLInterpreter[HttpContext, CalibanError],
-  )
-
   type InterpreterLoader = DataLoader[GraphQLGenerator, Throwable, String, BlueprintData]
 
-  def load(digestId: String): ZIO[GraphQLGenerator with InterpreterLoader, Throwable, BlueprintData] =
-    ZIO.serviceWithZIO[InterpreterLoader](_.load(digestId))
+  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] = live(ServerCli.default)
 
-  def default: ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
-    live(enableTracing = false, slowQueriesDuration = None)
-
-  def live(
-    enableTracing: Boolean,
-    slowQueriesDuration: Option[Int],
-  ): ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
+  def live(config: ServerCli): ZLayer[SchemaRegistry, Nothing, InterpreterLoader] =
     ZLayer {
       for {
         registry <- ZIO.service[SchemaRegistry]
@@ -37,15 +24,24 @@ object BlueprintDataLoader {
             blueprint      <- ZIO.fromOption(maybeBlueprint)
               .orElse(ZIO.fail(HttpError.BadRequest(s"Blueprint ${digestId} has not been published yet.")))
             gql            <- blueprint.toGraphQL
-            gqlWithTracing     = if (enableTracing) gql @@ apolloTracing else gql
-            gqlWithSlowQueries = slowQueriesDuration match {
-              case Some(duration) => gqlWithTracing @@ printSlowQueries(duration millis)
+            gqlWithTracing     = if (config.enableTracing) gql @@ apolloTracing else gql
+            gqlWithSlowQueries = config.slowQueryDuration match {
+              case Some(duration) => gqlWithTracing @@ printSlowQueries(duration)
               case None           => gqlWithTracing
             }
             interpreter <- gqlWithSlowQueries.interpreter
-          } yield BlueprintData(blueprint, blueprint.server.globalResponseTimeout.getOrElse(10000), interpreter)
+          } yield BlueprintData(blueprint, config.globalResponseTimeout.toSeconds, interpreter)
         }
       } yield dl
     }
+
+  def load(digestId: String): ZIO[GraphQLGenerator with InterpreterLoader, Throwable, BlueprintData] =
+    ZIO.serviceWithZIO[InterpreterLoader](_.load(digestId))
+
+  final case class BlueprintData(
+    blueprint: Blueprint,
+    timeout: Long,
+    interpreter: GraphQLInterpreter[HttpContext, CalibanError],
+  )
 
 }

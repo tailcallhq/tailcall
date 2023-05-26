@@ -14,13 +14,6 @@ import java.net.URI
 object Config2BlueprintSpec extends ZIOSpecDefault {
   def spec =
     suite("Config to Blueprint")(
-      test("timeout") {
-        val config  =
-          Config(server = Server(baseURL = Some(URI.create("http://localhost:8080").toURL), timeout = Some(1000)))
-        val timeout = Transcoder.toBlueprint(config).toOption.flatMap(_.server.globalResponseTimeout)
-
-        assertTrue(timeout == Option(1000))
-      },
       test("cyclic types") {
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.com").toURL).withTypes(
           "Query" -> Config.Type("users" -> Config.Field.ofType("User").asList),
