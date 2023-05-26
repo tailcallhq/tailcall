@@ -93,7 +93,7 @@ object Endpoint2Config {
         val types       = inputTypes ++ outputTypes ++ rootTypes
         GraphQL(
           schema = rootSchema,
-          types = types.map { case (key, value) =>
+          types = types.toList.map { case (key, value) =>
             key -> Config.Type(doc = endpoint.description, fields = value.toMap)
           }.toMap,
         )

@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Method
+import tailcall.runtime.internal.TValid.Cause
 import tailcall.runtime.model.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
@@ -151,7 +152,7 @@ object Endpoint2SDLSpec extends ZIOSpecDefault {
       },
     )
 
-  private def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[String], TestResult] = {
+  private def assertSchema(endpoint: Endpoint)(expected: String): ZIO[Any, Chunk[Cause[String]], TestResult] = {
     val schema = Transcoder.toSDL(endpoint, NameGenerator.incremental).map(_.stripMargin.trim)
     for { result <- schema.toZIO } yield assertTrue(result == expected)
   }

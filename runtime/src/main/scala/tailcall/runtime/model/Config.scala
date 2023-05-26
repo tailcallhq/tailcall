@@ -9,62 +9,242 @@ import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
+import zio.ZIO
 import zio.json._
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
-import zio.{IO, ZIO}
 
 import java.io.File
 import java.net.{URI, URL}
 
+/**
+ * A configuration class for generating a GraphQL server.
+ *
+ * @param version:
+ *   The version of the config.
+ * @param server:
+ *   The server configuration.
+ * @param graphQL:
+ *   The GraphQL configuration.
+ */
 final case class Config(version: Int = 0, server: Server = Server(), graphQL: GraphQL = GraphQL()) {
   self =>
-  def ++(other: Config): Config = self.mergeRight(other)
 
-  def asGraphQLConfig: IO[String, String] = ConfigFormat.GRAPHQL.encode(self)
+  /**
+   * Creates a new Config object with types specified.
+   *
+   * @param input
+   *   : A variable number of tuple pairs (String, Type).
+   * @return
+   *   A new Config instance with the specified types.
+   */
+  def apply(input: (String, Type)*): Config = withTypes(input: _*)
 
-  def asJSONConfig: IO[String, String] = ConfigFormat.JSON.encode(self)
-
-  def asYAMLConfig: IO[String, String] = ConfigFormat.YML.encode(self)
-
+  /**
+   * Compresses the GraphQL and server configurations.
+   *
+   * @return
+   *   A new Config instance with compressed GraphQL and
+   *   server configurations.
+   */
   def compress: Config = self.copy(graphQL = self.graphQL.compress, server = self.server.compress)
 
-  def mergeRight(other: Config): Config = {
-    Config(
-      version = other.version,
-      server = self.server.mergeRight(other.server),
-      graphQL = self.graphQL.mergeRight(other.graphQL),
-    )
+  /**
+   * Retrieves a specific type in the current GraphQL
+   * configuration.
+   *
+   * @param name
+   *   : The name of the type to retrieve.
+   * @return
+   *   An Option containing the Type if it exists.
+   */
+  def findType(name: String): Option[Config.Type] = { self.graphQL.types.get(name) }
+
+  /**
+   * Retrieves all input types in the current GraphQL
+   * configuration.
+   *
+   * @return
+   *   A list of input types as strings.
+   */
+  def inputTypes: List[String] = {
+    def loop(name: String, returnTypes: List[String]): List[String] = {
+      if (returnTypes.contains(name)) returnTypes
+      else findType(name) match {
+        case Some(typeInfo) => for {
+            fields <- typeInfo.fields.values.toList
+            types  <- loop(fields.typeOf, name :: returnTypes)
+          } yield types
+        case None           => returnTypes
+      }
+    }
+
+    for {
+      typeInfo <- self.graphQL.types.values.toList
+      field    <- typeInfo.fields.values.toList
+      arg      <- field.args.getOrElse(Map.empty).values.toList
+      types    <- loop(arg.typeOf, Nil)
+    } yield types
   }
 
+  /**
+   * Merges the current Config instance with another, taking
+   * the right-side values when conflicts occur.
+   *
+   * @param other
+   *   : The other Config instance to merge with.
+   * @return
+   *   A new Config instance that is the result of the
+   *   merge.
+   */
+  def mergeRight(other: Config): Config = {
+    val newVersion = other.version match {
+      case 0 => self.version
+      case _ => other.version
+    }
+
+    val newServer = Server(
+      baseURL = other.server.baseURL.orElse(self.server.baseURL),
+      vars = other.server.vars.orElse(self.server.vars),
+    )
+
+    val newGraphQL = other.graphQL.mergeRight(self.graphQL)
+
+    Config(version = newVersion, server = newServer, graphQL = newGraphQL)
+  }
+
+  /**
+   * Retrieves all output types in the current GraphQL
+   * configuration.
+   *
+   * @return
+   *   A list of output types as strings.
+   */
+  def outputTypes: List[String] = {
+    def loop(name: String, result: List[String]): List[String] = {
+      if (result.contains(name)) result
+      else findType(name) match {
+        case Some(typeInfo) => typeInfo.fields.values.toList
+            .flatMap[String](field => loop(field.typeOf, name :: result))
+        case None           => result
+      }
+    }
+
+    val types = self.graphQL.schema.query.toList ++ self.graphQL.schema.mutation.toList
+    types ++ types.foldLeft(List.empty[String]) { case (list, name) => loop(name, list) }
+  }
+
+  /**
+   * Transforms the current Config instance into a
+   * Blueprint.
+   *
+   * @return
+   *   A TValid instance that either contains an error
+   *   string or the Blueprint.
+   */
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
-  def unsafeCount: Int = self.graphQL.types.values.flatMap(_.fields.values.toList).toList.count(_.unsafeSteps.nonEmpty)
+  /**
+   * Counts the number of fields in the GraphQL
+   * configuration with non-empty unsafe steps.
+   *
+   * @return
+   *   The count of fields with non-empty unsafe steps.
+   */
+  def unsafeCount: Int = self.graphQL.types.flatMap(_._2.fields.values.toList).count(_.unsafeSteps.nonEmpty)
 
+  /**
+   * Creates a new Config instance with a specified baseURL.
+   *
+   * @param url
+   *   : The URL as a URL instance.
+   * @return
+   *   A new Config instance with the specified baseURL.
+   */
   def withBaseURL(url: URL): Config = self.copy(server = self.server.copy(baseURL = Option(url)))
 
+  /**
+   * Creates a new Config instance with a specified baseURL.
+   *
+   * @param url
+   *   : The URL as a string.
+   * @return
+   *   A new Config instance with the specified baseURL.
+   */
   def withBaseURL(url: String): Config = self.copy(server = self.server.copy(baseURL = Option(URI.create(url).toURL)))
 
+  /**
+   * Creates a new Config instance with a specified
+   * mutation.
+   *
+   * @param mutation
+   *   : The mutation as a string.
+   * @return
+   *   A new Config instance with the specified mutation.
+   */
   def withMutation(mutation: String): Config = self.copy(graphQL = self.graphQL.withMutation(mutation))
 
+  /**
+   * Creates a new Config instance with a specified query.
+   *
+   * @param query
+   *   : The query as a string.
+   * @return
+   *   A new Config instance with the specified query.
+   */
   def withQuery(query: String): Config = self.copy(graphQL = self.graphQL.withQuery(query))
 
+  /**
+   * Creates a new Config instance with a specified root
+   * schema.
+   *
+   * @param query
+   *   : The query as an Option. Default is the current
+   *   GraphQL schema's query.
+   * @param mutation
+   *   : The mutation as an Option. Default is the current
+   *   GraphQL schema's mutation.
+   * @return
+   *   A new Config instance with the specified root schema.
+   */
   def withRootSchema(
     query: Option[String] = graphQL.schema.query,
     mutation: Option[String] = graphQL.schema.mutation,
   ): Config = self.copy(graphQL = self.graphQL.copy(schema = RootSchema(query, mutation)))
 
-  def withTypes(input: (String, Type)*): Config = {
-    input.foldLeft(self) { case (config, (name, typeInfo)) =>
-      config.copy(graphQL = config.graphQL.withType(name, typeInfo))
-    }
-  }
+  /**
+   * Creates a new Config instance with specified types.
+   *
+   * @param types
+   *   : A map of types.
+   * @return
+   *   A new Config instance with the specified types.
+   */
+  def withTypes(types: Map[String, Type]): Config =
+    copy(graphQL = self.graphQL.copy(types = mergeTypeMap(self.graphQL.types, types)))
 
+  /**
+   * Creates a new Config instance with specified types.
+   *
+   * @param input
+   *   : A variable number of tuple pairs (String, Type).
+   * @return
+   *   A new Config instance with the specified types.
+   */
+  def withTypes(input: (String, Type)*): Config = withTypes(input.toMap)
+
+  /**
+   * Creates a new Config instance with specified variables.
+   *
+   * @param vars
+   *   : A variable number of tuple pairs (String, String).
+   * @return
+   *   A new Config instance with the specified variables.
+   */
   def withVars(vars: (String, String)*): Config = self.copy(server = self.server.copy(vars = Option(vars.toMap)))
 }
 
 object Config {
-
   implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
   implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
   implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
@@ -73,26 +253,38 @@ object Config {
   implicit lazy val graphQLCodec: JsonCodec[GraphQL]             = DeriveJsonCodec.gen[GraphQL]
   implicit lazy val jsonCodec: JsonCodec[Config]                 = DeriveJsonCodec.gen[Config]
 
-  def default: Config = Config.empty.withQuery("Query").withTypes("Query" -> Type())
+  def default: Config = Config.empty.withQuery("Query")
 
   def empty: Config = Config()
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
-  final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None)
+  private def mergeTypeMap(m1: Map[String, Type], m2: Map[String, Type]) = {
+    (for {
+      key    <- m1.keys ++ m2.keys
+      typeOf <- (m1.get(key), m2.get(key)) match {
+        case (Some(t1), Some(t2)) => List(t1.mergeRight(t2))
+        case (t1, t2)             => t2.orElse(t1).toList
+      }
+    } yield key -> typeOf).toMap
+  }
+
+  final case class RootSchema(query: Option[String] = None, mutation: Option[String] = None) {
+    def mergeRight(other: RootSchema): RootSchema =
+      RootSchema(query = other.query.orElse(query), mutation = other.mutation.orElse(mutation))
+  }
 
   final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
     self =>
-    def ++(other: Type): Type = self.mergeRight(other)
 
-    def argTypes: List[String] = fields.values.toList.flatMap(_.args.toList.flatMap(_.toList)).map(_._2.typeOf)
+    def apply(input: (String, Field)*): Type = withFields(input: _*)
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
-    def mergeRight(other: Type): Type =
-      self.copy(doc = other.doc.orElse(self.doc), fields = self.fields ++ other.fields)
-
-    def returnTypes: List[String] = fields.values.toList.map(_.typeOf)
+    def mergeRight(other: Config.Type): Config.Type = {
+      val newFields = other.fields ++ self.fields
+      Config.Type(doc = other.doc.orElse(self.doc), fields = newFields)
+    }
 
     def withDoc(doc: String): Type = self.copy(doc = Option(doc))
 
@@ -107,14 +299,8 @@ object Config {
     def compress: GraphQL =
       self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
 
-    def mergeRight(other: GraphQL): GraphQL = {
-      other.types.foldLeft(self) { case (config, (name, typeInfo)) => config.withType(name, typeInfo) }.copy(schema =
-        RootSchema(
-          query = other.schema.query.orElse(self.schema.query),
-          mutation = other.schema.mutation.orElse(self.schema.mutation),
-        )
-      )
-    }
+    def mergeRight(other: GraphQL): GraphQL =
+      GraphQL(schema = self.schema.mergeRight(other.schema), types = mergeTypeMap(self.types, other.types))
 
     def withMutation(name: String): GraphQL = copy(schema = schema.copy(mutation = Option(name)))
 
@@ -122,23 +308,11 @@ object Config {
 
     def withSchema(query: Option[String], mutation: Option[String]): GraphQL =
       copy(schema = RootSchema(query, mutation))
-
-    def withType(name: String, typeInfo: Type): GraphQL = {
-      self.copy(types = self.types.get(name) match {
-        case Some(typeInfo0) => self.types + (name -> (typeInfo0 mergeRight typeInfo))
-        case None            => self.types + (name -> typeInfo)
-      })
-    }
   }
 
-  // TODO: Field and Argument can be merged
   final case class Field(
     @jsonField("type") typeOf: String,
-
-    // TODO: rename to `list`
     @jsonField("isList") list: Option[Boolean] = None,
-
-    // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     unsafeSteps: Option[List[Operation]] = None,
     args: Option[Map[String, Arg]] = None,
@@ -248,11 +422,7 @@ object Config {
 
   final case class Arg(
     @jsonField("type") typeOf: String,
-
-    // TODO: rename to `list`
     @jsonField("isList") list: Option[Boolean] = None,
-
-    // TODO: rename to `required`
     @jsonField("isRequired") required: Option[Boolean] = None,
     doc: Option[String] = None,
     modify: Option[ModifyField] = None,
@@ -300,9 +470,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(fields = fields.toMap)
-
-    def empty: Type = Type()
+    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
+    def empty: Type                           = Type(None, Map.empty[String, Field])
   }
 
   object Field {

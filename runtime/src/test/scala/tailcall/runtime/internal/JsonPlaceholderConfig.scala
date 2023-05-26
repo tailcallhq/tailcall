@@ -4,7 +4,7 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path, Server}
+import tailcall.runtime.model.{Config, Path}
 
 import java.net.URI
 
@@ -16,9 +16,8 @@ object JsonPlaceholderConfig {
   private def userPosts  = Operation.Http(Path.unsafe.fromString("/users/{{value.id}}/posts"))
   private def users      = Operation.Http(Path.unsafe.fromString("/users"))
 
-  val graphQL = Config.GraphQL(
-    schema = Config.RootSchema(query = Some("Query"), mutation = Some("Mutation")),
-    types = Map(
+  val config: Config = Config.default.withMutation("Mutation")
+    .withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
       "Mutation"   -> Type(
         "createUser" -> Field.ofType("Id").withSteps(createUser)
           .withArguments(Map("user" -> Arg.ofType("NewUser").asRequired.withDoc("User as an argument.")))
@@ -79,9 +78,5 @@ object JsonPlaceholderConfig {
       "NewCompany" -> Type("name" -> Field.str, "catchPhrase" -> Field.str, "bs" -> Field.str),
       "Geo"        -> Type("lat" -> Field.str, "lng" -> Field.str),
       "NewGeo"     -> Type("lat" -> Field.str, "lng" -> Field.str),
-    ),
-  )
-
-  val server: Server = Server(baseURL = Option(URI.create("https://jsonplaceholder.typicode.com").toURL))
-  val config: Config = Config(server = server, graphQL = graphQL)
+    )
 }

@@ -4,10 +4,10 @@ schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
 }
 
 input NewAddress {
+  city: String
   geo: NewGeo
   street: String
   suite: String
-  city: String
   zipcode: String @modify(name: "zip")
 }
 
@@ -24,20 +24,20 @@ input NewGeo {
 
 "A new user."
 input NewUser {
-  website: String
-  name: String!
-  email: String!
-  username: String!
-  company: NewCompany
   address: NewAddress
+  company: NewCompany
+  email: String!
+  name: String!
   phone: String
+  username: String!
+  website: String
 }
 
 type Address {
+  city: String
   geo: Geo
   street: String
   suite: String
-  city: String
   zipcode: String @modify(name: "zip")
 }
 
@@ -64,9 +64,9 @@ type Mutation {
 type Post {
   body: String
   id: Int!
+  title: String
   user: User @unsafe(steps: [{transform: {objPath: {userId: ["value","userId"]}}},{http: {path: "/users/{{userId}}"}}])
   userId: Int!
-  title: String
 }
 
 type Query {
@@ -74,22 +74,22 @@ type Query {
   post(id: Int!): Post @unsafe(steps: [{http: {path: "/posts/{{args.id}}"}}])
   "A list of all posts."
   posts: [Post] @unsafe(steps: [{http: {path: "/posts"}}])
-  "A list of all users."
-  users: [User] @unsafe(steps: [{http: {path: "/users"}}])
   "An unused field that will be omitted."
   unusedField: String @modify(omit: true)
   "A single user by id."
   user(id: Int!): User @unsafe(steps: [{transform: {objPath: {userId: ["args","id"]}}},{http: {path: "/users/{{userId}}"}}])
+  "A list of all users."
+  users: [User] @unsafe(steps: [{http: {path: "/users"}}])
 }
 
 type User {
-  website: String
-  name: String!
-  posts: [Post] @unsafe(steps: [{http: {path: "/users/{{value.id}}/posts"}}])
-  email: String!
-  username: String!
-  company: Company
-  id: Int!
   address: Address
+  company: Company
+  email: String!
+  id: Int!
+  name: String!
   phone: String
+  posts: [Post] @unsafe(steps: [{http: {path: "/users/{{value.id}}/posts"}}])
+  username: String!
+  website: String
 }

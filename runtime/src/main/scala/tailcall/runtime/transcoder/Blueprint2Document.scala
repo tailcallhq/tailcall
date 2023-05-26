@@ -16,17 +16,11 @@ import tailcall.runtime.model.Blueprint
  * Converts the blueprint into a the final output document.
  */
 trait Blueprint2Document {
+
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
       CalibanDocument(
-        blueprint.definitions.sortBy {
-          case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
-          case Blueprint.ObjectTypeDefinition(name, _, _)
-              if Option(name) == (blueprint.schema.map(_.query) orElse blueprint.schema.map(_.mutation)) => "b" + name
-          case Blueprint.ScalarTypeDefinition(name, _, _)      => "c" + name
-          case Blueprint.InputObjectTypeDefinition(name, _, _) => "d" + name
-          case Blueprint.ObjectTypeDefinition(name, _, _)      => "e" + name
-        }.map {
+        blueprint.definitions.map {
           case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
               .TypeSystemDefinition
               .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)

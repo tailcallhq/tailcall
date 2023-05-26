@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.Scheme
+import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.Field
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
@@ -41,16 +42,19 @@ object Config2BlueprintSpec extends ZIOSpecDefault {
         test("http with required") {
           val config = Config.default
             .withTypes("Query" -> Config.Type("foo" -> Config.Field.str.asRequired.withHttp(Http(Path.empty))))
-          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
-            Chunk("""Query.foo @http: can not be used with non-nullable fields""")
-          ))
+
+          val expected =
+            Chunk(TValid.Cause("""can not be used with non-nullable fields""", "Query" :: "foo" :: "@http" :: Nil))
+          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(expected))
         },
         test("unsafe with required") {
           val config = Config.default
             .withTypes("Query" -> Config.Type("foo" -> Config.Field.str.asRequired.resolveWith(100)))
-          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(
-            Chunk("""Query.foo @unsafe: can not be used with non-nullable fields""")
-          ))
+
+          val expected =
+            Chunk(TValid.Cause("can not be used with non-nullable fields", "Query" :: "foo" :: "@unsafe" :: Nil))
+
+          assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(expected))
         },
       ),
       test("endpoint") {

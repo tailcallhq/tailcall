@@ -20,11 +20,11 @@ graphQL:
           isRequired: true
     Company:
       fields:
-        bs:
+        name:
           type: String
         catchPhrase:
           type: String
-        name:
+        bs:
           type: String
     Address:
       fields:
@@ -178,11 +178,11 @@ graphQL:
           type: String
     NewCompany:
       fields:
-        bs:
+        name:
           type: String
         catchPhrase:
           type: String
-        name:
+        bs:
           type: String
     NewAddress:
       fields:
