@@ -58,6 +58,25 @@ object ConfigSpec extends ZIOSpecDefault {
           val expected = List()
           assertTrue(actual == expected)
         },
+        test("cycles") {
+          val config   = Config.default(
+            "Query" -> Type("f1" -> Field.ofType("F1").asList.resolveWith(0)),
+            "F1"    -> Type("f1" -> Field.ofType("F1"), "f2" -> Field.ofType("F2").asList),
+            "F2"    -> Type("f3" -> Field.str),
+          )
+          val actual   = config.nPlusOne
+          val expected = List()
+          assertTrue(actual == expected)
+        },
+        test("cycles with resolvers") {
+          val config   = Config.default(
+            "Query" -> Type("f1" -> Field.ofType("F1").asList.resolveWith(0)),
+            "F1"    -> Type("f1" -> Field.ofType("F1").asList, "f2" -> Field.str.resolveWith(0)),
+          )
+          val actual   = config.nPlusOne
+          val expected = List(List("Query" -> "f1", "F1" -> "f1", "F1" -> "f2"), List("Query" -> "f1", "F1" -> "f2"))
+          assertTrue(actual == expected)
+        },
       ),
     ))
 }
