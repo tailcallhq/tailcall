@@ -136,7 +136,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
         case Some(typeOf) => typeOf.fields.toList.flatMap { case (name, field) =>
             val newPath = path :+ (typeName, name)
             if (path.contains((typeName, name))) List.empty
-            else if (field.hasResolver && isList) List(newPath)
+            else if (field.hasResolver && !field.hasBatchedResolver && isList) List(newPath)
             else findFanOut(field.typeOf, newPath, field.isList || isList)
           }
         case None         => List.empty
@@ -448,7 +448,9 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-    ): Field = withHttp(Http(path, method, Option(query), input, output, body))
+      groupBy: List[String] = Nil,
+      batchKey: Option[String] = None,
+    ): Field = withHttp(Http(path, method, Option(query), input, output, body, Option(groupBy), batchKey))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 

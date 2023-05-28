@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Path, TSchema}
 import zio.test.{ZIOSpecDefault, assertTrue}
 
@@ -24,6 +25,17 @@ object ConfigSpec extends ZIOSpecDefault {
           )
           val actual   = config.nPlusOne
           val expected = List(List("Query" -> "f1", "F1" -> "f2"))
+          assertTrue(actual == expected)
+        },
+        test("with batched resolvers") {
+          val http     = Http.fromPath("/f2").withGroupBy("a").withBatchKey("b")
+          val config   = Config.default(
+            "Query" -> Type("f1" -> Field.ofType("F1").asList.resolveWith(0)),
+            "F1"    -> Type("f2" -> Field.ofType("F2").asList.withHttp(http)),
+            "F2"    -> Type("f3" -> Field.str),
+          )
+          val actual   = config.nPlusOne
+          val expected = List()
           assertTrue(actual == expected)
         },
         test("with nested resolvers") {
