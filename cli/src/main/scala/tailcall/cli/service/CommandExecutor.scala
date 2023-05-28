@@ -93,7 +93,7 @@ object CommandExecutor {
     private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions): ZIO[Any, IOException, Unit] = {
       for {
         _ <- Console.printLine(Fmt.heading("Blueprint:\n") ++ Fmt.blueprint(blueprint)).when(options.blueprint)
-        _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint)))
+        _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint.sorted)))
           .when(options.schema)
         _ <- Console.printLine(Fmt.heading("Endpoints:\n") ++ endpoints(blueprint.endpoints)).when(options.endpoints)
 
