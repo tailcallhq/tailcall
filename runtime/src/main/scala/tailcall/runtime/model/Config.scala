@@ -374,16 +374,6 @@ object Config {
     def asRequired: Field = copy(required = Option(true))
 
     def compress: Field = {
-      val isList = self.list match {
-        case Some(true) => Some(true)
-        case _          => None
-      }
-
-      val isRequired = self.required match {
-        case Some(true) => Some(true)
-        case _          => None
-      }
-
       val steps = self.unsafeSteps match {
         case Some(steps) if steps.nonEmpty => Option(steps.map(_.compress))
         case _                             => None
@@ -394,24 +384,14 @@ object Config {
         case _                           => None
       }
 
-      val modify = self.modify match {
-        case Some(value) if value.nonEmpty => Some(value)
-        case _                             => None
-      }
-
-      val inline = self.inline match {
-        case Some(value) if value.path.nonEmpty => Some(value)
-        case _                                  => None
-      }
-
       copy(
-        list = isList,
-        required = isRequired,
+        list = self.list.filter(_ == true),
+        required = self.required.filter(_ == true),
         unsafeSteps = steps,
         args = args,
-        modify = modify,
-        http = http,
-        inline = inline,
+        modify = self.modify.filter(_.nonEmpty),
+        http = http.map(_.compress),
+        inline = self.inline.filter(_.path.nonEmpty),
       )
     }
 
