@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import caliban.GraphQL
+import caliban.execution.Feature
 import caliban.introspection.adt.__Directive
 import caliban.parsing.adt.Definition.TypeSystemDefinition
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition
@@ -26,6 +27,7 @@ trait Document2SDL {
         }
         override protected val wrappers: List[Wrapper[Any]]            = Nil
         override protected val additionalDirectives: List[__Directive] = Nil
+        override protected val features: Set[Feature]                  = Set.empty
       }.render
     }
 
