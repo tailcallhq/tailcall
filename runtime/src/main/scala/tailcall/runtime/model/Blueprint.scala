@@ -30,13 +30,7 @@ import scala.annotation.tailrec
  */
 final case class Blueprint(definitions: List[Blueprint.Definition]) {
   self =>
-  def digest: Digest                                                  = Digest.fromBlueprint(self)
-  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
-  def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
-  def resolverMap: Map[String, Map[String, Option[Expression]]] =
-    definitions.collect { case r: Blueprint.ObjectTypeDefinition =>
-      (r.name, r.fields.map(field => (field.name, field.resolver.map(_.compile))).toMap)
-    }.toMap
+  def digest: Digest = Digest.fromBlueprint(self)
 
   def endpoints: List[Endpoint] =
     for {
@@ -45,6 +39,27 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
       resolver   <- definition.resolver.toList.map(_.compile)
       endpoint   <- resolver.collect { case Expression.Unsafe(Expression.Unsafe.EndpointCall(endpoint)) => endpoint }
     } yield endpoint
+
+  def resolverMap: Map[String, Map[String, Option[Expression]]] =
+    definitions.collect { case r: Blueprint.ObjectTypeDefinition =>
+      (r.name, r.fields.map(field => (field.name, field.resolver.map(_.compile))).toMap)
+    }.toMap
+
+  def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
+
+  def sorted: Blueprint =
+    copy(definitions = definitions.sortBy {
+      case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
+      case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
+      case Blueprint.InputObjectTypeDefinition(name, _, _) => "c" + name
+      case Blueprint.ObjectTypeDefinition(name, _, _)      => "d" + name
+    }.map {
+      case self @ Blueprint.ObjectTypeDefinition(_, fields, _)      => self.copy(fields = fields.sortBy(_.name))
+      case self @ Blueprint.InputObjectTypeDefinition(_, fields, _) => self.copy(fields = fields.sortBy(_.name))
+      case self                                                     => self
+    })
+
+  def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
 }
 
 object Blueprint {
@@ -58,6 +73,33 @@ object Blueprint {
   def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
   sealed trait Definition
+
+  sealed trait Type extends Serializable with Product {
+    self =>
+    @tailrec
+    final def defaultName: String =
+      self match {
+        case NamedType(name, _)  => name
+        case ListType(ofType, _) => ofType.defaultName
+      }
+
+    final def render: String = {
+      def renderNonNull(tpe: Type): String =
+        tpe match {
+          case NamedType(name, true)   => s"$name!"
+          case ListType(ofType, true)  => s"[${renderNonNull(ofType)}]!"
+          case NamedType(name, false)  => name
+          case ListType(ofType, false) => s"[${renderNonNull(ofType)}]"
+        }
+      renderNonNull(self)
+    }
+
+    final def withName(name: String): Type =
+      self match {
+        case NamedType(_, nonNull)     => NamedType(name, nonNull)
+        case ListType(ofType, nonNull) => ListType(ofType.withName(name), nonNull)
+      }
+  }
 
   final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
       extends Definition
@@ -98,33 +140,6 @@ object Blueprint {
     directive: List[Directive] = Nil,
     description: Option[String] = None,
   ) extends Definition
-
-  sealed trait Type extends Serializable with Product {
-    self =>
-    @tailrec
-    final def defaultName: String =
-      self match {
-        case NamedType(name, _)  => name
-        case ListType(ofType, _) => ofType.defaultName
-      }
-
-    final def withName(name: String): Type =
-      self match {
-        case NamedType(_, nonNull)     => NamedType(name, nonNull)
-        case ListType(ofType, nonNull) => ListType(ofType.withName(name), nonNull)
-      }
-
-    final def render: String = {
-      def renderNonNull(tpe: Type): String =
-        tpe match {
-          case NamedType(name, true)   => s"$name!"
-          case ListType(ofType, true)  => s"[${renderNonNull(ofType)}]!"
-          case NamedType(name, false)  => name
-          case ListType(ofType, false) => s"[${renderNonNull(ofType)}]"
-        }
-      renderNonNull(self)
-    }
-  }
 
   final case class NamedType(name: String, nonNull: Boolean) extends Type
 

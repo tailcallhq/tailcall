@@ -26,10 +26,18 @@ object CommandExecutor {
 
   def default: ZLayer[Any, Throwable, CommandExecutor] = { Env.default >>> live }
 
-  def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
-
   def execute(command: CommandADT): ZIO[CommandExecutor, Nothing, ExitCode] =
     ZIO.serviceWithZIO[CommandExecutor](_.dispatch(command))
+
+  def live: ZLayer[Env, Nothing, CommandExecutor] = ZLayer.fromFunction(Live.apply _)
+
+  private def nPlusOneData(nPlusOne: Boolean, config: Config, seq: Seq[(String, String)]) = {
+    ZIO.succeed(
+      if (nPlusOne)
+        seq :+ ("N + 1"    -> (config.nPlusOne.length.toString + Fmt.nPlusOne(config.nPlusOne.map(_.map(_._2)))))
+      else seq :+ ("N + 1" -> config.nPlusOne.length.toString)
+    )
+  }
 
   final private case class Live(
     graphQLGen: GraphQLGenerator,
@@ -43,8 +51,8 @@ object CommandExecutor {
         command match {
           case CommandADT.Generate(files, sourceFormat, targetFormat, write) =>
             runGenerate(files, sourceFormat, targetFormat, write)
-          case CommandADT.Check(files, remote, options)                      => runCheck(files, remote, options)
-          case CommandADT.Remote(base, command)                              => command match {
+          case CommandADT.Check(files, remote, nPlusOne, options) => runCheck(files, remote, nPlusOne, options)
+          case CommandADT.Remote(base, command)                   => command match {
               case Remote.Publish(path)          => runRemotePublish(base, path)
               case Remote.Drop(digest)           => runRemoteDrop(base, digest)
               case Remote.ListAll(index, offset) => runRemoteList(base, index, offset)
@@ -85,9 +93,10 @@ object CommandExecutor {
     private def blueprintDetails(blueprint: Blueprint, options: BlueprintOptions): ZIO[Any, IOException, Unit] = {
       for {
         _ <- Console.printLine(Fmt.heading("Blueprint:\n") ++ Fmt.blueprint(blueprint)).when(options.blueprint)
-        _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint)))
+        _ <- Console.printLine(Fmt.heading("GraphQL Schema:\n") ++ Fmt.graphQL(graphQLGen.toGraphQL(blueprint.sorted)))
           .when(options.schema)
         _ <- Console.printLine(Fmt.heading("Endpoints:\n") ++ endpoints(blueprint.endpoints)).when(options.endpoints)
+
       } yield ()
     }
 
@@ -118,25 +127,31 @@ object CommandExecutor {
       } yield out
     }
 
-    private def runCheck(files: ::[Path], remote: Option[URL], options: BlueprintOptions): ZIO[Any, Throwable, Unit] = {
+    private def runCheck(
+      files: ::[Path],
+      remote: Option[URL],
+      nPlusOne: Boolean,
+      options: BlueprintOptions,
+    ): ZIO[Any, Throwable, Unit] = {
       for {
         config    <- configFile.readAll(files.map(_.toFile))
         blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
         digest = blueprint.digest
-        seq0   = Seq(
+        seq    = Seq(
           "Digest"    -> s"${digest.hex}",
           "Endpoints" -> blueprint.endpoints.length.toString,
-          "Unsafe"    -> config.unsafeCount.toString,
+          "Unsafe"    -> config.unsafeSteps.length.toString,
         )
-        seq1 <- remote match {
+        seq <- remote match {
           case Some(remote) => registry.get(remote, digest).map {
-              case Some(_) => seq0 :+ ("Playground", Fmt.playground(remote, digest))
-              case None    => seq0 :+ ("Playground" -> "Unavailable")
+              case Some(_) => seq :+ ("Playground", Fmt.playground(remote, digest))
+              case None    => seq :+ ("Playground" -> "Unavailable")
             }
-          case None         => ZIO.succeed(seq0)
+          case None         => ZIO.succeed(seq)
         }
+        seq <- nPlusOneData(nPlusOne, config, seq)
         _ <- Console.printLine(Fmt.success("No errors found."))
-        _ <- Console.printLine(Fmt.table(seq1))
+        _ <- Console.printLine(Fmt.table(seq))
         _ <- blueprintDetails(blueprint, options)
       } yield ()
     }
@@ -182,12 +197,14 @@ object CommandExecutor {
         blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
         digest    <- registry.add(base, blueprint)
         _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
-        _         <- Console.printLine(Fmt.table(Seq(
+        seq       <- ZIO.succeed(Seq(
           "Digest"     -> s"${digest.hex}",
           "Endpoints"  -> blueprint.endpoints.length.toString,
-          "Unsafe"     -> config.unsafeCount.toString,
+          "Unsafe"     -> config.unsafeSteps.length.toString,
           "Playground" -> Fmt.playground(base, digest),
-        )))
+        ))
+        seq       <- nPlusOneData(false, config, seq)
+        _         <- Console.printLine(Fmt.table(seq))
       } yield ()
     }
 
@@ -219,14 +236,6 @@ object CommandExecutor {
       Fmt.table(blueprints.zipWithIndex.map { case (blueprint, index) => ((index + 1).toString, blueprint.digest.hex) })
     }
 
-    def table(labels: Seq[(String, String)]): String = {
-      def maxLength = labels.map(_._1.length).max + 1
-      def padding   = " " * maxLength
-      labels.map { case (key, value) => heading((key + ":" + padding).take(maxLength)) + " " ++ value }.mkString("\n")
-    }
-
-    def heading(str: String): String = fansi.Str(str).overlay(fansi.Bold.On).render
-
     def caption(str: String): String = fansi.Str(str).overlay(fansi.Color.DarkGray).render
 
     def error(message: String): String = fansi.Str(message).overlay(fansi.Color.Red).render
@@ -241,10 +250,27 @@ object CommandExecutor {
 
     def graphQL(graphQL: GraphQL[_]): String = { graphQL.render }
 
+    def heading(str: String): String = fansi.Str(str).overlay(fansi.Bold.On).render
+
     def meta(str: String): String = fansi.Str(str).overlay(fansi.Color.LightYellow).render
+
+    def nPlusOne(list: List[List[String]]): String =
+      meta(
+        list.sortBy(_.mkString("_")).map { path =>
+          "  query { " + path.foldRight("") { case (value, acc) =>
+            if (acc.isEmpty) value else s"${value} { ${acc} }"
+          } + " }"
+        }.mkString("\n", "\n", "")
+      )
 
     def playground(url: URL, digest: Digest): String = s"${url.encode}/graphql/${digest.hex}."
 
     def success(str: String): String = fansi.Str(str).overlay(fansi.Color.Green).render
+
+    def table(labels: Seq[(String, String)]): String = {
+      def maxLength = labels.map(_._1.length).max + 1
+      def padding   = " " * maxLength
+      labels.map { case (key, value) => heading((key + ":" + padding).take(maxLength)) + " " ++ value }.mkString("\n")
+    }
   }
 }

@@ -228,7 +228,7 @@ object ConfigSDLIdentitySpec extends ZIOSpecDefault {
           ),
         )
 
-        assertIdentity(config, graphQL)
+        assertIdentity(config.compress, graphQL)
       },
       test("invalid directive on field") {
         val graphQL = """

@@ -114,6 +114,39 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   }
 
   /**
+   * Returns the type information for mutation.
+   * @return
+   *   The type information for mutation.
+   */
+  def mutationType: Option[Type] = graphQL.schema.query.flatMap(findType(_))
+
+  /**
+   * Identifies potential N + 1 fanouts in the current
+   * configuration
+   * @return
+   *   A list of paths to N + 1 fanouts.
+   */
+  def nPlusOne: List[List[(String, String)]] = {
+    def findFanOut(
+      typeName: String,
+      path: Vector[(String, String)],
+      isList: Boolean,
+    ): List[Vector[(String, String)]] = {
+      findType(typeName) match {
+        case Some(typeOf) => typeOf.fields.toList.flatMap { case (name, field) =>
+            val newPath = path :+ (typeName, name)
+            if (path.contains((typeName, name))) List.empty
+            else if (field.hasResolver && !field.hasBatchedResolver && isList) List(newPath)
+            else findFanOut(field.typeOf, newPath, field.isList || isList)
+          }
+        case None         => List.empty
+      }
+    }
+
+    graphQL.schema.query.toList.flatMap(findFanOut(_, Vector.empty, false).map(_.toList))
+  }
+
+  /**
    * Retrieves all output types in the current GraphQL
    * configuration.
    *
@@ -135,6 +168,13 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   }
 
   /**
+   * Returns the type information for query.
+   * @return
+   *   The type information for query.
+   */
+  def queryType: Option[Type] = graphQL.schema.query.flatMap(findType(_))
+
+  /**
    * Transforms the current Config instance into a
    * Blueprint.
    *
@@ -145,13 +185,17 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
   def toBlueprint: TValid[String, Blueprint] = Transcoder.toBlueprint(self)
 
   /**
-   * Counts the number of fields in the GraphQL
-   * configuration with non-empty unsafe steps.
+   * Lists the type name and the field name where an unsafe
+   * step is defined.
    *
    * @return
-   *   The count of fields with non-empty unsafe steps.
+   *   Name of the type and the field in a tuple.
    */
-  def unsafeCount: Int = self.graphQL.types.flatMap(_._2.fields.values.toList).count(_.unsafeSteps.nonEmpty)
+  def unsafeSteps: List[(String, String)] =
+    self.graphQL.types.toList.flatMap { case (typeName, typeOf) =>
+      typeOf.fields.toList
+        .collect { case (fieldName, field) if field.unsafeSteps.exists(_.nonEmpty) => (typeName, fieldName) }
+    }
 
   /**
    * Creates a new Config instance with a specified baseURL.
@@ -330,16 +374,6 @@ object Config {
     def asRequired: Field = copy(required = Option(true))
 
     def compress: Field = {
-      val isList = self.list match {
-        case Some(true) => Some(true)
-        case _          => None
-      }
-
-      val isRequired = self.required match {
-        case Some(true) => Some(true)
-        case _          => None
-      }
-
       val steps = self.unsafeSteps match {
         case Some(steps) if steps.nonEmpty => Option(steps.map(_.compress))
         case _                             => None
@@ -350,26 +384,24 @@ object Config {
         case _                           => None
       }
 
-      val modify = self.modify match {
-        case Some(value) if value.nonEmpty => Some(value)
-        case _                             => None
-      }
-
-      val inline = self.inline match {
-        case Some(value) if value.path.nonEmpty => Some(value)
-        case _                                  => None
-      }
-
       copy(
-        list = isList,
-        required = isRequired,
+        list = self.list.filter(_ == true),
+        required = self.required.filter(_ == true),
         unsafeSteps = steps,
         args = args,
-        modify = modify,
-        http = http,
-        inline = inline,
+        modify = self.modify.filter(_.nonEmpty),
+        http = http.map(_.compress),
+        inline = self.inline.filter(_.path.nonEmpty),
       )
     }
+
+    def hasBatchedResolver: Boolean =
+      http match {
+        case Some(http) => http.batchKey.nonEmpty && http.groupBy.nonEmpty
+        case None       => false
+      }
+
+    def hasResolver: Boolean = http.isDefined || unsafeSteps.exists(_.nonEmpty)
 
     def isList: Boolean = list.getOrElse(false)
 
@@ -396,7 +428,9 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-    ): Field = withHttp(Http(path, method, Option(query), input, output, body))
+      groupBy: List[String] = Nil,
+      batchKey: Option[String] = None,
+    ): Field = withHttp(Http(path, method, Option(query), input, output, body, Option(groupBy), batchKey))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 
