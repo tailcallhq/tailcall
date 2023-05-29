@@ -63,8 +63,11 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
 }
 
 object Blueprint {
-  implicit val schema: Schema[Blueprint]   = DeriveSchema.gen[Blueprint]
-  implicit val codec: JsonCodec[Blueprint] = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  import caliban.schema.Schema.auto._
+
+  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = implicitly[caliban.schema.Schema[Any, Blueprint]]
+  implicit val schema: Schema[Blueprint]                            = DeriveSchema.gen[Blueprint]
+  implicit val codec: JsonCodec[Blueprint]                          = zio.schema.codec.JsonCodec.jsonCodec(schema)
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
