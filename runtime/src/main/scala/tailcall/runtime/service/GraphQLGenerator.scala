@@ -1,6 +1,7 @@
 package tailcall.runtime.service
 
 import caliban.GraphQL
+import caliban.execution.Feature
 import caliban.introspection.adt.__Directive
 import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.tools.RemoteSchema
@@ -34,6 +35,7 @@ object GraphQLGenerator {
         }
         override protected val wrappers: List[Wrapper[Any]]                  = Nil
         override protected val additionalDirectives: List[__Directive]       = Nil
+        override protected val features: Set[Feature]                        = Set.empty
       }
     }
   }
