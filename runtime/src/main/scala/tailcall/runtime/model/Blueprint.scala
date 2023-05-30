@@ -30,7 +30,7 @@ import scala.annotation.tailrec
  */
 final case class Blueprint(definitions: List[Blueprint.Definition]) {
   self =>
-  def digest: Digest = Digest.fromBlueprint(self)
+  def digest: Digest = Digest.fromBlueprint(self.sorted)
 
   def endpoints: List[Endpoint] =
     for {
