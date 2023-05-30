@@ -12,7 +12,11 @@ object Main extends ZIOAppDefault {
     Server.install(server).flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never)
       .exitCode.provide(
         ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
-        SchemaRegistry.memory,
+
+        // Use in-memory schema registry if no database is configured
+        config.database.fold(SchemaRegistry.memory: ZLayer[Any, Throwable, SchemaRegistry])(db =>
+          SchemaRegistry.mysql(db.host, db.port, db.username, db.password)
+        ),
         GraphQLGenerator.default,
         HttpClient.cachedDefault(config.httpCacheSize),
         Server.live,
