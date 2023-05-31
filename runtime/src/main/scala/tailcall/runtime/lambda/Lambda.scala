@@ -1,5 +1,6 @@
 package tailcall.runtime.lambda
 
+import caliban.Value
 import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
@@ -58,7 +59,7 @@ sealed trait Lambda[-A, +B] {
 
 object Lambda {
   implicit def calibanSchema[A, B]: caliban.schema.Schema[Any, A ~> B] =
-    caliban.schema.Schema.stringSchema.contramap[A ~> B](_.toJson)
+    caliban.schema.Schema.scalarSchema("Lambda", None, None, None, l => Value.StringValue(l.toJson))
 
   implicit def json[A, B]: JsonCodec[A ~> B] = jsonCodec[A ~> B](schema)
 
