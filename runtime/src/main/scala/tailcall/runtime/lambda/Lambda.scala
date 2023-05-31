@@ -1,12 +1,11 @@
 package tailcall.runtime.lambda
 
-import caliban.Value
 import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
-import zio.json.{EncoderOps, JsonCodec}
+import zio.json.JsonCodec
 import zio.schema.codec.JsonCodec.jsonCodec
 import zio.schema.{DynamicValue, Schema}
 import zio.{UIO, ZIO}
@@ -58,9 +57,6 @@ sealed trait Lambda[-A, +B] {
 }
 
 object Lambda {
-  implicit def calibanSchema[A, B]: caliban.schema.Schema[Any, A ~> B] =
-    caliban.schema.Schema.scalarSchema("Lambda", None, None, None, l => Value.StringValue(l.toJson))
-
   implicit def json[A, B]: JsonCodec[A ~> B] = jsonCodec[A ~> B](schema)
 
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
