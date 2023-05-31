@@ -57,7 +57,7 @@ lazy val registry = (project in file("registry"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioRedis)).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
-val scala3Version = "3.2.2"
+val scala3Version = "3.3.0"
 
 ThisBuild / scalaVersion                                   := scala3Version
 ThisBuild / crossScalaVersions                             := Seq(scala3Version)
