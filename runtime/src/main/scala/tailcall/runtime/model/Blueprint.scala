@@ -1,11 +1,11 @@
 package tailcall.runtime.model
 
-import caliban.GraphQL
+import caliban.{GraphQL, Value}
 import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
-import zio.json.JsonCodec
+import zio.json.{EncoderOps, JsonCodec}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import scala.annotation.tailrec
@@ -64,19 +64,16 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
 }
 
 object Blueprint {
-  import caliban.schema.Schema.auto._
-  implicit def dynamicValueSchema: caliban.schema.Schema[Any, DynamicValue] =
-    caliban.schema.Schema.scalarSchema[DynamicValue](
-      name = "DynamicValue",
-      description = None,
-      specifiedBy = None,
-      directives = None,
-      makeResponse = dynamic => Transcoder.toResponseValue(dynamic).unwrap,
-    )
+  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = caliban.schema.Schema.scalarSchema(
+    name = "Blueprint",
+    description = None,
+    specifiedBy = None,
+    directives = None,
+    makeResponse = blueprint => Value.StringValue(blueprint.toJson),
+  )
 
-  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = { caliban.schema.Schema.gen[Any, Blueprint] }
-  implicit val schema: Schema[Blueprint]                            = DeriveSchema.gen[Blueprint]
-  implicit val codec: JsonCodec[Blueprint]                          = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  implicit val schema: Schema[Blueprint]   = DeriveSchema.gen[Blueprint]
+  implicit val codec: JsonCodec[Blueprint] = zio.schema.codec.JsonCodec.jsonCodec(schema)
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
