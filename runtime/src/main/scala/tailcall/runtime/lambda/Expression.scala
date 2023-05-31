@@ -129,8 +129,8 @@ object Expression {
     case class Apply(other: Expression) extends Operation
   }
 
-  implicit val schema: Schema[Expression]       = DeriveSchema.gen[Expression]
-  implicit val jsonCodec: JsonCodec[Expression] = zio.schema.codec.JsonCodec.jsonCodec(schema)
+  implicit val schema: Schema[Expression]  = DeriveSchema.gen[Expression]
+  implicit val json: JsonCodec[Expression] = zio.schema.codec.JsonCodec.jsonCodec(schema)
 
   def collect[A](expr: Expression, f: Expression => Option[A]): List[A] = {
     expr match {
