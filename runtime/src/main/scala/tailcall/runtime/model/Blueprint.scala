@@ -1,10 +1,10 @@
 package tailcall.runtime.model
 
-import caliban.{GraphQL, Value}
+import caliban.{GraphQL, ResponseValue, Value}
 import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import zio.ZIO
-import zio.json.{EncoderOps, JsonCodec}
+import zio.json.{DecoderOps, EncoderOps, JsonCodec}
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
 
 import scala.annotation.tailrec
@@ -63,8 +63,13 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
 }
 
 object Blueprint {
-  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = caliban.schema.Schema
-    .scalarSchema(name = "Blueprint", description = None, None, None, blueprint => Value.StringValue(blueprint.toJson))
+  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = caliban.schema.Schema.scalarSchema(
+    name = "Blueprint",
+    description = None,
+    None,
+    None,
+    _.toJson.fromJson[ResponseValue].getOrElse(Value.NullValue),
+  )
 
   implicit val schema: Schema[Blueprint] = DeriveSchema.gen[Blueprint]
 
