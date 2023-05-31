@@ -13,7 +13,7 @@ object CustomOptions {
     Options.boolean("blueprint").withDefault(false) ++
       Options.boolean("endpoints").withDefault(false) ++
       Options.boolean("schema").alias("s").withDefault(false)
-  }.map(BlueprintOptions.tupled)
+  }.map(BlueprintOptions(_, _, _))
 
   val sourceFormat: Options[SourceFormat] = Options
     .enumeration("source")(SourceFormat.Postman.named, SourceFormat.SchemaDefinitionLanguage.named)
