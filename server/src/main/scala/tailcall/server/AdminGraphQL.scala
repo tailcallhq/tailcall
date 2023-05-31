@@ -10,7 +10,7 @@ import zio.ZIO
 object AdminGraphQL {
   type AdminGraphQLEnv = SchemaRegistry
   private object adminGraphQLEnvSchema extends GenericSchema[AdminGraphQLEnv]
-  import adminGraphQLEnvSchema.auto._
+  import adminGraphQLEnvSchema.auto.*
 
   final case class BlueprintSpec(digest: Digest, source: Blueprint, url: String)
   object BlueprintSpec {
@@ -24,9 +24,6 @@ object AdminGraphQL {
     blueprints: ZIO[R, E, List[BlueprintSpec]],
     digests: ZIO[R, E, List[Digest]],
   )
-
-  implicit def digestAlgArgBuilder: ArgBuilder[Digest.Algorithm] = { ArgBuilder.gen[Digest.Algorithm] }
-  implicit def digestArgBuilder: ArgBuilder[Digest]              = { ArgBuilder.gen[Digest] }
 
   val graphQL: GraphQL[AdminGraphQLEnv] = caliban
     .graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(

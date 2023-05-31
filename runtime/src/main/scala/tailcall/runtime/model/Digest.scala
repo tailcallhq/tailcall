@@ -1,12 +1,13 @@
 package tailcall.runtime.model
 
+import caliban.schema.ArgBuilder
 import tailcall.runtime.model.Digest.Algorithm
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}
 
 import java.security.MessageDigest
 
-final case class Digest(alg: Algorithm, hex: String) {
+final case class Digest(alg: Algorithm, hex: String) derives ArgBuilder.GenAuto {
   def getBytes: Array[Byte] = hex.getBytes
 }
 
