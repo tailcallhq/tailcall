@@ -41,8 +41,8 @@ object GraphQLConfig {
     val options: Options[DBConfig] = {
       Options.text("db-host").withDefault("localhost") ++
         CustomOptions.int("db-port").withDefault(3306) ++
-        Options.text("db-username").alias("uname").optional ++
-        Options.text("db-password").alias("pass").optional
+        Options.text("db-username").optional ++
+        Options.text("db-password").optional
     }.map((DBConfig.apply _).tupled)
   }
 

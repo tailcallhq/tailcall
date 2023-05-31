@@ -36,8 +36,11 @@ object SchemaRegistry {
   def list(index: Int, max: Int): ZIO[SchemaRegistry, Throwable, List[Blueprint]] =
     ZIO.serviceWithZIO[SchemaRegistry](_.list(index, max))
 
-  def memory: ZLayer[Any, Nothing, SchemaRegistry] =
-    ZLayer.fromZIO(for { ref <- Ref.make(Map.empty[Digest, Blueprint]) } yield Memory(ref))
+  def memory: ZLayer[Any, Throwable, SchemaRegistry] =
+    ZLayer.fromZIO(for {
+      ref <- Ref.make(Map.empty[Digest, Blueprint])
+      _   <- ZIO.log("Initialized in-memory schema registry")
+    } yield Memory(ref))
 
   def mysql(
     host: String,
@@ -45,14 +48,18 @@ object SchemaRegistry {
     uname: Option[String],
     password: Option[String],
   ): ZLayer[Any, Throwable, SchemaRegistry] =
-    ZLayer.succeed {
-      val dataSource = new MysqlDataSource()
-      dataSource.setServerName(host)
-      dataSource.setPort(port)
-      dataSource.setDatabaseName("tailcall_main_db")
-      uname.foreach(dataSource.setUser)
-      password.foreach(dataSource.setPassword)
-      FromMySQL(dataSource, new MysqlZioJdbcContext(SnakeCase))
+    ZLayer.fromZIO {
+      for {
+        dataSource <- ZIO.attempt(new MysqlDataSource())
+        _          <- ZIO.attempt {
+          dataSource.setServerName(host)
+          dataSource.setPort(port)
+          dataSource.setDatabaseName("tailcall_main_db")
+          uname.foreach(dataSource.setUser)
+          password.foreach(dataSource.setPassword)
+        }
+        _          <- ZIO.log(s"Initialized persistent schema registry @${host}:${port}")
+      } yield FromMySQL(dataSource, new MysqlZioJdbcContext(SnakeCase))
     }
 
   def redis: ZLayer[Redis, Nothing, SchemaRegistry] = ZLayer.fromFunction(FromRedis(_))
