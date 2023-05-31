@@ -3,6 +3,7 @@ package tailcall.runtime.model
 import caliban.GraphQL
 import tailcall.runtime.lambda.{Expression, ~>}
 import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
+import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO
 import zio.json.JsonCodec
 import zio.schema.{DeriveSchema, DynamicValue, Schema}
@@ -64,8 +65,16 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
 
 object Blueprint {
   import caliban.schema.Schema.auto._
+  implicit def dynamicValueSchema: caliban.schema.Schema[Any, DynamicValue] =
+    caliban.schema.Schema.scalarSchema[DynamicValue](
+      name = "DynamicValue",
+      description = None,
+      specifiedBy = None,
+      directives = None,
+      makeResponse = dynamic => Transcoder.toResponseValue(dynamic).unwrap,
+    )
 
-  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = implicitly[caliban.schema.Schema[Any, Blueprint]]
+  implicit val calibanSchema: caliban.schema.Schema[Any, Blueprint] = { caliban.schema.Schema.gen[Any, Blueprint] }
   implicit val schema: Schema[Blueprint]                            = DeriveSchema.gen[Blueprint]
   implicit val codec: JsonCodec[Blueprint]                          = zio.schema.codec.JsonCodec.jsonCodec(schema)
 

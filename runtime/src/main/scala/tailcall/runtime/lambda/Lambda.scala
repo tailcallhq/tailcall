@@ -1,10 +1,13 @@
 package tailcall.runtime.lambda
 
+import caliban.Value
 import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
+import zio.json.{EncoderOps, JsonCodec}
+import zio.schema.codec.JsonCodec.jsonCodec
 import zio.schema.{DynamicValue, Schema}
 import zio.{UIO, ZIO}
 
@@ -43,6 +46,8 @@ sealed trait Lambda[-A, +B] {
 
   final def toDynamic[B1 >: B](implicit ev: Schema[B1]): A ~> DynamicValue = self >>> Lambda.dynamic.toDynamic[B1]
 
+  final def widen[B1](implicit ev: B <:< B1): A ~> B1 = self.asInstanceOf[A ~> B1]
+
   /**
    * NOTE: Only used for testing purposes. The operator is
    * ignore from the expression tree at the time of
@@ -50,11 +55,14 @@ sealed trait Lambda[-A, +B] {
    */
   final private[tailcall] def tap(f: B => UIO[Unit]): A ~> B =
     Lambda.unsafe.attempt(_ => Unsafe(Unsafe.Tap(self.compile, f.asInstanceOf[Any => UIO[Unit]])))
-
-  final def widen[B1](implicit ev: B <:< B1): A ~> B1 = self.asInstanceOf[A ~> B1]
 }
 
 object Lambda {
+  implicit def calibanSchema[A, B]: caliban.schema.Schema[Any, A ~> B] =
+    caliban.schema.Schema.scalarSchema("Lambda", None, None, None, l => Value.StringValue(l.toJson))
+
+  implicit def json[A, B]: JsonCodec[A ~> B] = jsonCodec[A ~> B](schema)
+
   implicit def schema[A, B]: Schema[A ~> B] = anySchema.asInstanceOf[Schema[A ~> B]]
 
   implicit def schemaFunction[A, B]: Schema[A ~>> B] =
