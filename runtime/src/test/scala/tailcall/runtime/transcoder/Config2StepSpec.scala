@@ -436,8 +436,9 @@ object Config2StepSpec extends ZIOSpecDefault {
 
           val expected = context(
             value = 300,
-            parent =
-              Option(context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))),
+            parent = Option(
+              context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))
+            ),
           )
           assertZIO(program("query {a {b {c {d}}}}"))(contains(expected))
         },
