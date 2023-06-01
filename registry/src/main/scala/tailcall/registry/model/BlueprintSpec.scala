@@ -13,7 +13,7 @@ case class BlueprintSpec(
   digestAlg: Digest.Algorithm,
   blueprint: Blueprint,
   blueprintFormat: Format = Format.Json,
-  created: Timestamp,
+  created: Option[Timestamp],
   dropped: Option[Timestamp] = None,
 )
 
@@ -34,13 +34,22 @@ object BlueprintSpec {
   implicit val digestAlgDecoder: MappedEncoding[String, Digest.Algorithm] =
     MappedEncoding[String, Digest.Algorithm](Digest.Algorithm.fromString(_).get)
 
-  sealed trait Format
+  sealed trait Format {
+    def name: String
+  }
 
   object Format {
-    implicit val encoding: MappedEncoding[Format, String] = MappedEncoding[Format, String] { case Json => "json" }
+    implicit val encoding: MappedEncoding[Format, String] = MappedEncoding[Format, String](_.name)
+    implicit val decoder: MappedEncoding[String, Format]  = MappedEncoding[String, Format](fromName)
 
-    implicit val decoder: MappedEncoding[String, Format] = MappedEncoding[String, Format] { case "json" => Format.Json }
+    def fromName(name: String): Format =
+      name match {
+        case Json.name => Json
+        case _         => Json
+      }
 
-    case object Json extends Format
+    case object Json extends Format {
+      override val name: String = "json"
+    }
   }
 }
