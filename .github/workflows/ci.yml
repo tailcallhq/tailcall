@@ -93,6 +93,8 @@ jobs:
 
       - run: cp ./fly.toml target/docker/stage/
 
+      - uses: mirromutth/mysql-action@v1.1
+
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'

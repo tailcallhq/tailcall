@@ -109,6 +109,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
     WorkflowStep.Checkout,
     WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
+    WorkflowStep.Use(UseRef.Public("mirromutth", "mysql-action", "v1.1")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
     WorkflowStep.Run(
       commands = List("flyctl deploy --remote-only ./target/docker/stage"),
