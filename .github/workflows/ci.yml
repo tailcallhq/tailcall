@@ -63,7 +63,7 @@ jobs:
       - name: Setup MySQL
         uses: mirromutth/mysql-action@v1.1
         with:
-          mysql root password: '1234'
+          mysql root password: 'password'
 
       - name: Build project
         run: sbt ++${{ matrix.scala }} test

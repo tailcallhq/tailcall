@@ -1,5 +1,6 @@
 package tailcall.registry
 
+import com.mysql.cj.jdbc.MysqlDataSource
 import io.getquill._
 import org.flywaydb.core.Flyway
 import tailcall.runtime.model.{Blueprint, Digest}
@@ -40,17 +41,23 @@ object SchemaRegistry {
     port: Int,
     uname: Option[String],
     password: Option[String],
+    autoMigrate: Boolean = true,
   ): ZLayer[Any, Throwable, SchemaRegistry] =
     ZLayer.fromZIO {
       for {
         _          <- ZIO.log(s"Initialized persistent schema registry @${host}:${port}")
         dataSource <- MySQLRegistry.dataSource(host, port, uname, password)
-        flyway     <- ZIO.succeed(Flyway.configure().dataSource(dataSource).load())
-        migration  <- ZIO.attemptBlocking(flyway.migrate())
-        _          <- ZIO.log(s"Migrations executed: ${migration.migrationsExecuted}")
+        _          <- migrate(dataSource).when(autoMigrate)
       } yield MySQLRegistry(dataSource, new MysqlZioJdbcContext(SnakeCase))
     }
 
   def redis: ZLayer[Redis, Nothing, SchemaRegistry] = ZLayer.fromFunction(RedisRegistry(_))
 
+  private def migrate(dataSource: MysqlDataSource): ZIO[Any, Throwable, Unit] = {
+    for {
+      flyway    <- ZIO.succeed(Flyway.configure().dataSource(dataSource).load())
+      migration <- ZIO.attemptBlocking(flyway.migrate())
+      _         <- ZIO.log(s"Migrations executed: ${migration.migrationsExecuted}")
+    } yield ()
+  }
 }
