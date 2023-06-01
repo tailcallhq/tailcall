@@ -10,23 +10,21 @@ import zio.Task
 import java.sql.Timestamp
 import java.util.Date
 import javax.sql.DataSource
-
 final case class MySQLRegistry(source: javax.sql.DataSource, ctx: MysqlZioJdbcContext[SnakeCase])
     extends SchemaRegistry {
+
   import BlueprintSpec._
 
   implicit private val dataSource: ImplicitSyntax.Implicit[DataSource] = ImplicitSyntax.Implicit(source)
   import ctx._
 
   override def add(blueprint: Blueprint): Task[Digest] = {
-    val blueprintSpec = BlueprintSpec(
-      digestHex = blueprint.digest.hex,
-      digestAlg = blueprint.digest.alg,
-      blueprint = blueprint,
-      created = new Timestamp(new java.util.Date().getTime),
-    )
-
-    val sql = quote(query[BlueprintSpec].insertValue(lift(blueprintSpec)))
+    val sql = quote(query[BlueprintSpec].insert(
+      _.digestHex       -> lift(blueprint.digest.hex),
+      _.digestAlg       -> lift(blueprint.digest.alg),
+      _.blueprint       -> lift(blueprint),
+      _.blueprintFormat -> lift(Format.Json: Format),
+    ))
     ctx.run(sql).as(blueprint.digest).implicitDS
   }
 
