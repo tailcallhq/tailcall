@@ -60,6 +60,8 @@ jobs:
       - name: Check that workflows are up to date
         run: sbt ++${{ matrix.scala }} githubWorkflowCheck
 
+      - uses: mirromutth/mysql-action@v1.1
+
       - name: Build project
         run: sbt ++${{ matrix.scala }} test
 
@@ -92,8 +94,6 @@ jobs:
       - run: sbt ++${{ matrix.scala }} Docker/stage
 
       - run: cp ./fly.toml target/docker/stage/
-
-      - uses: mirromutth/mysql-action@v1.1
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
