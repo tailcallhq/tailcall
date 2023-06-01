@@ -6,7 +6,6 @@ import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
 
 object SchemaRegistrySpec extends ZIOSpecDefault {
-
   val config = Config.default.withTypes(
     "Query" -> Config.Type(
       "name" -> Config.Field.ofType("String").resolveWithJson("John Doe"),
