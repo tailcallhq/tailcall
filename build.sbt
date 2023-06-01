@@ -98,34 +98,6 @@ addCommandAlias("tc", "cli/run")
 addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
 
-ThisBuild / githubWorkflowBuild ++= Seq(
-  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
-)
-ThisBuild / githubWorkflowJavaVersions ++= Seq(JavaSpec.temurin("20"))
-ThisBuild / githubWorkflowBuild                 := {
-  val mySQL = WorkflowStep.Use(UseRef.Public("mirromutth", "mysql-action", "v1.1"), name = Option("Setup MySQL"))
-  mySQL +: (ThisBuild / githubWorkflowBuild).value
-}
-ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
-  "deploy",
-  "Deploy",
-  List(
-    WorkflowStep.Checkout,
-    WorkflowStep.Sbt(List("Docker/stage")),
-    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
-    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
-    WorkflowStep.Run(
-      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
-      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
-    ),
-  ),
-  needs = List("build"),
-  scalas = List(scala2Version),
-))
-
-ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-
 val zioTestDependencies = Seq(zioTest, zioTestSBT)
 
 // The assembly merge settings
