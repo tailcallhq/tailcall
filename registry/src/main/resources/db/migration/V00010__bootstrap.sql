@@ -1,10 +1,3 @@
-drop
-    database if exists tailcall_main_db;
-
-create
-    database tailcall_main_db;
-
-
 create table tailcall_main_db.blueprint_spec
 (
     id               int auto_increment primary key,
