@@ -104,7 +104,6 @@ ThisBuild / githubWorkflowBuild ++= Seq(
 ThisBuild / githubWorkflowJavaVersions ++= Seq(JavaSpec.temurin("20"))
 ThisBuild / githubWorkflowBuild                 := {
   val mySQL = WorkflowStep.Use(UseRef.Public("mirromutth", "mysql-action", "v1.1"), name = Option("Setup MySQL"))
-
   mySQL +: (ThisBuild / githubWorkflowBuild).value
 }
 ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
