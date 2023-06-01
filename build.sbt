@@ -4,10 +4,13 @@ val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
 val zioQuillVersion  = "4.6.0"
 val zioSchemaVersion = "0.4.11"
+val flywayVersion    = "9.19.1"
 
 val caliban             = "com.github.ghostdogpr" %% "caliban"               % calibanVersion
 val calibanTools        = "com.github.ghostdogpr" %% "caliban-tools"         % calibanVersion
 val fansi               = "com.lihaoyi"           %% "fansi"                 % "0.4.0"
+val flyway              = "org.flywaydb"           % "flyway-core"           % flywayVersion
+val flywayMySQL         = "org.flywaydb"           % "flyway-mysql"          % flywayVersion
 val mySQL               = "mysql"                  % "mysql-connector-java"  % "8.0.33"
 val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
@@ -57,7 +60,17 @@ lazy val server = (project in file("server"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI)).dependsOn(runtime, registry)
 
 lazy val registry = (project in file("registry")).settings(
-  libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioRedis, zioQuill, zioQuillJDBCZIO, mySQL)
+  libraryDependencies ++= zioTestDependencies ++ Seq(
+    zio,
+    zioHttp,
+    zioRedis,
+    zioQuill,
+    zioQuillJDBCZIO,
+    mySQL,
+    flyway,
+    flywayMySQL,
+    zioCLI,
+  )
 ).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
@@ -82,6 +95,7 @@ addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 addCommandAlias("tc", "cli/run")
+addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
 
 ThisBuild / githubWorkflowBuild ++= Seq(

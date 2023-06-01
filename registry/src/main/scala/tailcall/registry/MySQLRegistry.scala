@@ -1,11 +1,12 @@
 package tailcall.registry
 
+import com.mysql.cj.jdbc.MysqlDataSource
 import io.getquill._
 import io.getquill.context.ZioJdbc.QuillZioDataSourceExt
 import io.getquill.context.qzio.ImplicitSyntax
 import tailcall.registry.model.BlueprintSpec
 import tailcall.runtime.model.{Blueprint, Digest}
-import zio.Task
+import zio.{Task, ZIO}
 
 import java.sql.Timestamp
 import java.util.Date
@@ -45,4 +46,24 @@ final case class MySQLRegistry(source: javax.sql.DataSource, ctx: MysqlZioJdbcCo
 
   private def filterByDigest(digest: Digest): Quoted[EntityQuery[BlueprintSpec]] =
     quote(query[BlueprintSpec].filter(b => b.digestHex == lift(digest.hex) && b.digestAlg == lift(digest.alg)))
+}
+
+object MySQLRegistry {
+  def dataSource(
+    host: String,
+    port: Int,
+    uname: Option[String],
+    pass: Option[String],
+  ): ZIO[Any, Throwable, MysqlDataSource] =
+    for {
+      dataSource <- ZIO.attempt(new MysqlDataSource())
+      _          <- ZIO.attempt {
+        dataSource.setServerName(host)
+        dataSource.setPort(port)
+        dataSource.setDatabaseName("tailcall_main_db")
+        uname.foreach(dataSource.setUser)
+        pass.foreach(dataSource.setPassword)
+        dataSource.setCreateDatabaseIfNotExist(true)
+      }
+    } yield dataSource
 }

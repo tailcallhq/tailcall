@@ -1,6 +1,5 @@
 package tailcall.registry
 
-import com.mysql.cj.jdbc.MysqlDataSource
 import io.getquill._
 import tailcall.runtime.model.{Blueprint, Digest}
 import zio._
@@ -43,14 +42,7 @@ object SchemaRegistry {
   ): ZLayer[Any, Throwable, SchemaRegistry] =
     ZLayer.fromZIO {
       for {
-        dataSource <- ZIO.attempt(new MysqlDataSource())
-        _          <- ZIO.attempt {
-          dataSource.setServerName(host)
-          dataSource.setPort(port)
-          dataSource.setDatabaseName("tailcall_main_db")
-          uname.foreach(dataSource.setUser)
-          password.foreach(dataSource.setPassword)
-        }
+        dataSource <- MySQLRegistry.dataSource(host, port, uname, password)
         _          <- ZIO.log(s"Initialized persistent schema registry @${host}:${port}")
       } yield MySQLRegistry(dataSource, new MysqlZioJdbcContext(SnakeCase))
     }
