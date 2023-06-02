@@ -24,7 +24,7 @@ object SchemaRegistrySpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment with Scope, Any] = {
     suite("SchemaRegistrySpec")(
       suite("In Memory")(registrySpec).provide(SchemaRegistry.memory),
-      suite("My SQL")(registrySpec).provide(SchemaRegistry.mysql("localhost", 3306, Option("root"), Option("password"))),
+      suite("My SQL")(registrySpec).provide(SchemaRegistry.mysql("localhost", 3306, Option("tailcall_main_user"), Option("tailcall"))),
     )
   }
 }
