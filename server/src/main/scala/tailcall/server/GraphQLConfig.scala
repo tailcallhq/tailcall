@@ -34,16 +34,19 @@ object GraphQLConfig {
       CustomOptions.int("http-cache").optional.withDefault(default.httpCacheSize) ++
       Options.boolean("tracing").withDefault(default.enableTracing) ++
       CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration) ++
-      DBConfig.options.optional.withDefault(default.database)
+      DBConfig.options
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {
-    val options: Options[DBConfig] = {
-      Options.text("db-host").withDefault("localhost") ++
+    val options: Options[Option[DBConfig]] = {
+      Options.boolean("db").withDefault(false) ++
+        Options.text("db-host").withDefault("localhost") ++
         CustomOptions.int("db-port").withDefault(3306) ++
         Options.text("db-username").optional ++
         Options.text("db-password").optional
-    }.map((DBConfig.apply _).tupled)
+    }.map { case (enable, host, port, username, password) =>
+      if (enable) Some(DBConfig(host, port, username, password)) else None
+    }
   }
 
   private object CustomOptions {
