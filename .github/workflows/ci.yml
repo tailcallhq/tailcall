@@ -63,7 +63,7 @@ jobs:
           mysql version: '8.0'
           mysql user: 'tailcall_main_user'
           mysql database: 'tailcall_main_db'
-          mysql root password: 'tailcall'
+          mysql password: 'tailcall'
 
       - name: Build project
         run: sbt ++${{ matrix.scala }} test
