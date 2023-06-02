@@ -60,7 +60,9 @@ jobs:
       - name: Setup MySQL
         uses: mirromutth/mysql-action@v1.1
         with:
+          mysql version: '8.0'
           mysql user: 'tailcall_main_user'
+          mysql database: 'tailcall_main_db'
           mysql root password: 'tailcall'
 
       - name: Build project
