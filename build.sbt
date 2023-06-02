@@ -2,26 +2,32 @@ val calibanVersion   = "2.2.1"
 val zioVersion       = "2.0.13"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
+val zioQuillVersion  = "4.6.0"
 val zioSchemaVersion = "0.4.11"
+val flywayVersion    = "9.19.1"
 
-val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
-val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
-val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
-val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
-val zio                 = "dev.zio"               %% "zio"                   % zioVersion
 val caliban             = "com.github.ghostdogpr" %% "caliban"               % calibanVersion
 val calibanTools        = "com.github.ghostdogpr" %% "caliban-tools"         % calibanVersion
+val fansi               = "com.lihaoyi"           %% "fansi"                 % "0.4.0"
+val flyway              = "org.flywaydb"           % "flyway-core"           % flywayVersion
+val flywayMySQL         = "org.flywaydb"           % "flyway-mysql"          % flywayVersion
+val mySQL               = "mysql"                  % "mysql-connector-java"  % "8.0.33"
+val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
+val zio                 = "dev.zio"               %% "zio"                   % zioVersion
+val zioCLI              = "dev.zio"               %% "zio-cli"               % "0.5.0"
+val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
+val zioHttp             = "dev.zio"               %% "zio-http"              % "0.0.5"
 val zioJson             = "dev.zio"               %% "zio-json"              % zioJsonVersion
 val zioJsonYaml         = "dev.zio"               %% "zio-json-yaml"         % zioJsonVersion
 val zioParser           = "dev.zio"               %% "zio-parser"            % "0.1.9"
-val zioHttp             = "dev.zio"               %% "zio-http"              % "0.0.5"
-val zioCLI              = "dev.zio"               %% "zio-cli"               % "0.5.0"
-val fansi               = "com.lihaoyi"           %% "fansi"                 % "0.4.0"
+val zioQuill            = "io.getquill"           %% "quill-zio"             % zioQuillVersion
+val zioQuillJDBCZIO     = "io.getquill"           %% "quill-jdbc-zio"        % zioQuillVersion
 val zioRedis            = "dev.zio"               %% "zio-redis"             % "0.2.0"
+val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
+val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
+val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion % Test
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion % Test
-val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
-///
 
 lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
 lazy val runtime = (project in file("runtime")).settings(
@@ -53,8 +59,19 @@ lazy val cli = (project in file("cli")).settings(libraryDependencies ++= zioTest
 lazy val server = (project in file("server"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI)).dependsOn(runtime, registry)
 
-lazy val registry = (project in file("registry"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioRedis)).dependsOn(runtime)
+lazy val registry = (project in file("registry")).settings(
+  libraryDependencies ++= zioTestDependencies ++ Seq(
+    zio,
+    zioHttp,
+    zioRedis,
+    zioQuill,
+    zioQuillJDBCZIO,
+    mySQL,
+    flyway,
+    flywayMySQL,
+    zioCLI,
+  )
+).dependsOn(runtime)
 
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
@@ -78,31 +95,8 @@ addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 addCommandAlias("tc", "cli/run")
+addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
-
-ThisBuild / githubWorkflowBuild ++= Seq(
-  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
-)
-ThisBuild / githubWorkflowJavaVersions ++= Seq(JavaSpec.temurin("20"))
-ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
-  "deploy",
-  "Deploy",
-  List(
-    WorkflowStep.Checkout,
-    WorkflowStep.Sbt(List("Docker/stage")),
-    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
-    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
-    WorkflowStep.Run(
-      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
-      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
-    ),
-  ),
-  needs = List("build"),
-  scalas = List(scala2Version),
-))
-
-ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 val zioTestDependencies = Seq(zioTest, zioTestSBT)
 

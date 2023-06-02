@@ -1,15 +1,63 @@
-Contribution Guidelines
----
+## Contribution Guidelines
 
 <!-- TOC -->
 
-* [Contribution Guidelines](#contribution-guidelines)
-* [Error Handling Strategy](#error-handling-strategy)
-  * [Application Errors](#application-errors)
-  * [User Errors](#user-errors)
-* [Additional Contribution Guidelines](#additional-contribution-guidelines)
+- [Contribution Guidelines](#contribution-guidelines)
+- [Setting Up the Database](#setting-up-the-database)
+- [Error Handling Strategy](#error-handling-strategy)
+  - [Application Errors](#application-errors)
+  - [User Errors](#user-errors)
+- [Additional Contribution Guidelines](#additional-contribution-guidelines)
 
 <!-- TOC -->
+
+<!--
+ Link to the GPT conversation to continue later
+
+ https://chat.openai.com/share/9d4446bd-2465-4514-99a5-702b502c3364
+ -->
+
+## Setting Up the Database
+
+The Schema Registry for this project requires MySQL 8.0. To set it up:
+
+1. **Install MySQL:** If MySQL 8.0 is not installed, download it from the
+   [official website](https://dev.mysql.com/downloads/mysql/).
+
+2. **Execute the** `nuke_registry.sql` **script:** This script is located at
+   `/registry/src/main/resources/db/nuke_registry.sql`. When executed, it will
+   drop (if they exist) and create the database `tailcall_main_db` and the user
+   `tailcall_main_user` with the default password `tailcall`. The user will be
+   granted all privileges on the `tailcall_main_db`.
+
+   > ❗️ **Warning:** Running this script will destroy any existing data in the
+   > database. Ensure you back up any necessary data before proceeding.
+
+   To run this script, use the command:
+
+   ```
+   mysql -u root -p < /registry/src/main/resources/db/nuke_registry.sql
+   ```
+
+3. **Run Unit Tests:** After setting up the database, run the unit tests to
+   ensure that the database is properly connected. From the sbt console, execute
+   the tests using the command:
+
+   ```
+   sbt:tailcall> registry/test
+   ```
+
+4. **Start the server:** When starting the server, specify the database
+   username and password as `tailcall_main_user` and `tailcall` respectively.
+   From the sbt console, use the following command to start the server:
+
+   ```
+   sbt:tailcall> ~ server/reStart --db-username tailcall_main_user --db-password tailcall
+   ```
+
+   The server startup should log information about the migrations that were
+   executed. These migrations happen automatically every time the server
+   restarts.
 
 ## Error Handling Strategy
 
