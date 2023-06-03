@@ -9,6 +9,7 @@ import tailcall.runtime.model.{Blueprint, Digest}
 import zio.{Task, ZIO, ZLayer}
 
 import java.sql.Timestamp
+import java.time.Instant
 import java.util.Date
 
 final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends SchemaRegistry {
@@ -17,13 +18,33 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
   import ctx._
 
   override def add(blueprint: Blueprint): Task[Digest] = {
-    val sql = quote(query[BlueprintSpec].insert(
-      _.digestHex       -> lift(blueprint.digest.hex),
-      _.digestAlg       -> lift(blueprint.digest.alg),
-      _.blueprint       -> lift(blueprint),
-      _.blueprintFormat -> lift(Format.Json: Format),
-    ))
-    ctx.run(sql).as(blueprint.digest)
+    val blueprintSpec = BlueprintSpec(
+      None,
+      blueprint.digest.hex,
+      blueprint.digest.alg,
+      blueprint,
+      Format.json,
+      Option(Timestamp.from(Instant.now())),
+      None,
+    )
+
+    ctx.transaction {
+      for {
+        // - find all the blueprints with the provided digest
+        blueprints <- ctx.run(query[BlueprintSpec].filter(b =>
+          b.digestHex == lift(blueprint.digest.hex) && b.digestAlg == lift(blueprint.digest.alg)
+        ))
+
+        // - if the list is empty then insert the new blueprint
+        _          <- ctx.run(query[BlueprintSpec].insertValue(lift(blueprintSpec))).when(blueprints.isEmpty)
+
+        // - if the list is non-empty then set the dropped to none, and created to current timestamp
+        _ <- ctx.run {
+          liftQuery(blueprints)
+            .foreach(b => query[BlueprintSpec].filter(_.id == b.id).update(_.dropped -> lift(Option.empty[Timestamp])))
+        }.when(blueprints.nonEmpty)
+      } yield blueprint.digest
+    }
   }
 
   override def drop(digest: Digest): Task[Boolean] = {
@@ -42,7 +63,10 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
   }
 
   private def filterByDigest(digest: Digest): Quoted[EntityQuery[BlueprintSpec]] =
-    quote(query[BlueprintSpec].filter(b => b.digestHex == lift(digest.hex) && b.digestAlg == lift(digest.alg)))
+    quote(
+      query[BlueprintSpec]
+        .filter(b => b.digestHex == lift(digest.hex) && b.digestAlg == lift(digest.alg) && b.dropped.isEmpty)
+    )
 }
 
 object MySQLRegistry {
