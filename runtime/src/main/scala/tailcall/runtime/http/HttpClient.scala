@@ -35,15 +35,15 @@ object HttpClient {
     def request(req: Request): ZIO[Any, Throwable, Response] = {
       for {
         res              <-
-          if (cache.nonEmpty) { cache.get.get(req) <* ZIO.logInfo("serving from cache") }
+          if (cache.nonEmpty) { cache.get.get(req) <* ZIO.logInfo("cache hit") }
           else {
             for {
               res <- client.request(req.toZHttpRequest)
-              _   <- ZIO.logInfo(s"serving from http")
+              _   <- ZIO.logInfo(s"cache miss")
             } yield res
           }
         body             <- res.body.asString(StandardCharsets.UTF_8)
-        _                <- ZIO.logInfo(s"code: ${res.status.code}")
+        _                <- ZIO.logInfo(s"${res.status.code}")
         _                <- ZIO.logDebug(s"body: ${body}")
         redirectResponse <- if (isRedirect(res.status)) redirect(req, res) else { ZIO.succeed(res) }
       } yield redirectResponse

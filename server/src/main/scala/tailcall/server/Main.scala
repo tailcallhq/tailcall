@@ -8,14 +8,12 @@ import zio._
 import zio.http._
 import zio.http.model.{HttpError, Method, Status}
 import zio.json.EncoderOps
-import zio.logging.{LogColor, LogFilter}
 
 object Main extends ZIOAppDefault {
-  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers ++ Runtime
-    .addLogger(format.toLogger.map(println(_)))
-  override val run                                     = GraphQLConfig.bootstrap { config =>
+
+  override val run = GraphQLConfig.bootstrap { config =>
     Server.install(server).flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never)
-      .exitCode.provide(
+      .provide(
         ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
 
         // Use in-memory schema registry if no database is configured
@@ -28,12 +26,6 @@ object Main extends ZIOAppDefault {
       )
   }
 
-  private val format = {
-    import zio.logging.LogFormat._
-    level |-|
-      timestamp.fixed(32).color(LogColor.YELLOW) |-|
-      quoted(line) + (space + label("cause", cause)).filter(LogFilter.causeNonEmpty)
-  }
   private val server = (AdminServer.rest ++ Http.collectRoute[Request] {
     case Method.POST -> !! / "graphql"     => AdminServer.graphQL
     case Method.POST -> !! / "graphql" / _ => GenericServer.graphQL
