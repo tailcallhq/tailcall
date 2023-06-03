@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        scala: [ 2.13.11 ]
+        scala: [ 3.2.2 ]
         java: [ temurin@11, temurin@20 ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -69,7 +69,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
 
       - name: Lint
-        if: matrix.scala == '2.13.10'
+        if: matrix.scala == '3.2.2'
         run: sbt ++${{ matrix.scala }} lintCheck
 
       - name: Compress target directories
@@ -87,7 +87,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        scala: [ 2.13.10 ]
+        scala: [ 3.2.2 ]
         java: [ temurin@11 ]
     runs-on: ${{ matrix.os }}
     steps:
