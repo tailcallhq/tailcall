@@ -4,13 +4,14 @@ import caliban.schema.Annotations.GQLName
 import caliban.schema.{ArgBuilder, GenericSchema}
 import caliban.{GraphQL, RootResolver}
 import tailcall.registry.SchemaRegistry
+import tailcall.runtime.model.Digest.Algorithm
 import tailcall.runtime.model.{Blueprint, Digest}
 import zio.ZIO
 
 object AdminGraphQL {
   type AdminGraphQLEnv = SchemaRegistry
   private object adminGraphQLEnvSchema extends GenericSchema[AdminGraphQLEnv]
-  import adminGraphQLEnvSchema.auto._
+  import adminGraphQLEnvSchema.auto.*
 
   final case class BlueprintSpec(digest: Digest, source: Blueprint, url: String)
   object BlueprintSpec {
@@ -25,8 +26,8 @@ object AdminGraphQL {
     digests: ZIO[R, E, List[Digest]],
   )
 
-  implicit def digestAlgArgBuilder: ArgBuilder[Digest.Algorithm] = { ArgBuilder.gen[Digest.Algorithm] }
-  implicit def digestArgBuilder: ArgBuilder[Digest]              = { ArgBuilder.gen[Digest] }
+  implicit val calibanSchema: caliban.schema.Schema[Any, Digest] = caliban.schema.Schema.Auto.derived
+  implicit val calibanArgBuilder: ArgBuilder[Digest]             = ArgBuilder.Auto.derived
 
   val graphQL: GraphQL[AdminGraphQLEnv] = caliban
     .graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(

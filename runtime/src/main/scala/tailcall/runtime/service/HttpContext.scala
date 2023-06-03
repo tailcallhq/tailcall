@@ -2,7 +2,7 @@ package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
 import zio._
-import zio.http.model.Headers
+import zio.http.Headers
 import zio.http.{Request => ZRequest}
 
 trait HttpContext {

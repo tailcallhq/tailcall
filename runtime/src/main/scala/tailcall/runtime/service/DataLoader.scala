@@ -99,8 +99,9 @@ object DataLoader {
   def one[A]: PartiallyAppliedDataLoaderOne[A] = new PartiallyAppliedDataLoaderOne(())
 
   private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
-    req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
-      .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
+    req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.headerName).toLowerCase())))
+      .getOrElse(List.empty).map(header => (String.valueOf(header.headerName), String.valueOf(header.renderedValue)))
+      .toMap
   }
 
   sealed trait Resolver[R, E, A, B] {

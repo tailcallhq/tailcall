@@ -1,5 +1,7 @@
 package tailcall.runtime.model
 
+import caliban.schema
+import caliban.schema.ArgBuilder
 import tailcall.runtime.model.Digest.Algorithm
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}

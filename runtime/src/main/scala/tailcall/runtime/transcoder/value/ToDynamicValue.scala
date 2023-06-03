@@ -15,7 +15,7 @@ trait ToDynamicValue {
 
   final def toDynamicValue(input: ResponseValue): TValid[String, DynamicValue] = {
     input match {
-      case ResponseList(values)    => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence(_))
+      case ResponseList(values) => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence(_))
       case ResponseObject(fields)  => TValid.foreach(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries: _*))
       case StringValue(value)      => TValid.succeed(DynamicValue(value))
@@ -52,12 +52,12 @@ trait ToDynamicValue {
 
   final def toDynamicValue(input: InputValue): TValid[String, DynamicValue] = {
     input match {
-      case ListValue(values)       => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence(_))
-      case ObjectValue(fields)     => TValid.foreachIterable(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
+      case ListValue(values)   => TValid.foreachChunk(Chunk.from(values))(toDynamicValue).map(DynamicValue.Sequence(_))
+      case ObjectValue(fields) => TValid.foreachIterable(fields) { case (k, v) => toDynamicValue(v).map(k -> _) }
           .map(entries => DynamicValueUtil.record(entries.toList: _*))
-      case StringValue(value)      => TValid.succeed(DynamicValue(value))
-      case NullValue               => TValid.succeed(DynamicValue(()))
-      case BooleanValue(value)     => TValid.succeed(DynamicValue(value))
+      case StringValue(value)  => TValid.succeed(DynamicValue(value))
+      case NullValue           => TValid.succeed(DynamicValue(()))
+      case BooleanValue(value) => TValid.succeed(DynamicValue(value))
       case BigDecimalNumber(value) => TValid.succeed(DynamicValue(value))
       case DoubleNumber(value)     => TValid.succeed(DynamicValue(value))
       case FloatNumber(value)      => TValid.succeed(DynamicValue(value))

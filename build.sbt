@@ -1,8 +1,8 @@
 val calibanVersion   = "2.2.1"
-val zioVersion       = "2.0.13"
+val zioVersion       = "2.0.14"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
-val zioQuillVersion  = "4.6.1"
+val zioQuillVersion  = "4.6.0.1"
 val zioSchemaVersion = "0.4.11"
 val flywayVersion    = "9.19.1"
 
@@ -16,7 +16,7 @@ val pprint              = "com.lihaoyi"           %% "pprint"                % "
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
 val zioCLI              = "dev.zio"               %% "zio-cli"               % "0.5.0"
 val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
-val zioHttp             = "dev.zio"               %% "zio-http"              % "0.0.5"
+val zioHttp             = "dev.zio"               %% "zio-http"              % "3.0.0-RC2"
 val zioJson             = "dev.zio"               %% "zio-json"              % zioJsonVersion
 val zioJsonYaml         = "dev.zio"               %% "zio-json-yaml"         % zioJsonVersion
 val zioParser           = "dev.zio"               %% "zio-parser"            % "0.1.9"
@@ -64,8 +64,8 @@ lazy val registry = (project in file("registry")).settings(
     zio,
     zioHttp,
     zioRedis,
-    zioQuill,
-    zioQuillJDBCZIO,
+    zioQuill.exclude("com.lihaoyi", "geny_2.13"),
+    zioQuillJDBCZIO.exclude("com.lihaoyi", "geny_2.13"),
     mySQL,
     flyway,
     flywayMySQL,
@@ -76,16 +76,15 @@ lazy val registry = (project in file("registry")).settings(
 val scala2Version = "2.13.11"
 val scala3Version = "3.2.2"
 
-ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / scalaVersion                                   := scala3Version
+ThisBuild / crossScalaVersions                             := Seq(scala3Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
+ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Xfatal-warnings", "-deprecation", "-Xmax-inlines", "128")
 
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
 ThisBuild / Test / fork       := true
-Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt; sFix;")

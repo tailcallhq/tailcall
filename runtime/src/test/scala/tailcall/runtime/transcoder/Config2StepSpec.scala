@@ -10,7 +10,7 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
-import zio.http.model.Headers
+import zio.http.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
@@ -436,8 +436,9 @@ object Config2StepSpec extends ZIOSpecDefault {
 
           val expected = context(
             value = 300,
-            parent =
-              Option(context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))),
+            parent = Option(
+              context(value = 300, parent = Option(context(value = 200, parent = Option(context(value = 100)))))
+            ),
           )
           assertZIO(program("query {a {b {c {d}}}}"))(contains(expected))
         },

@@ -2,8 +2,7 @@ package tailcall.runtime.http
 
 import tailcall.runtime.service.HttpCache
 import zio.cache.Lookup
-import zio.http.model.Status
-import zio.http.{Client, Response}
+import zio.http.{Client, Response, Status}
 import zio.{ZIO, ZLayer}
 
 import java.nio.charset.StandardCharsets

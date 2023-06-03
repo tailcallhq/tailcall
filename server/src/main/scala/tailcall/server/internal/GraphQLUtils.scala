@@ -3,7 +3,7 @@ package tailcall.server.internal
 import caliban.GraphQLRequest
 import zio._
 import zio.http._
-import zio.http.model.HttpError
+import zio.http.HttpError
 import zio.json.DecoderOps
 
 import java.nio.charset.StandardCharsets

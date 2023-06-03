@@ -5,14 +5,14 @@ import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
-import zio.http.model.{HttpError, Method}
+import zio.http.{HttpError, Method}
 import zio.json.EncoderOps
 
 import java.nio.charset.StandardCharsets
 
 object AdminServer {
   val rest = Http.collectZIO[Request] {
-    case req @ Method.PUT -> !! / "schemas" => for {
+    case req @ Method.PUT -> Root / "schemas" => for {
         body      <- req.body.asString(StandardCharsets.UTF_8)
         blueprint <- Blueprint.decode(body) match {
           case Left(value)  => ZIO.fail(HttpError.BadRequest(value))
@@ -21,16 +21,16 @@ object AdminServer {
         digest    <- SchemaRegistry.add(blueprint)
       } yield Response.json(digest.toJson)
 
-    case Method.GET -> !! / "schemas" => for {
+    case Method.GET -> Root / "schemas" => for {
         list <- SchemaRegistry.list(0, Int.MaxValue)
       } yield Response.json(list.toJson)
 
-    case Method.DELETE -> !! / "schemas" / digest => for {
+    case Method.DELETE -> Root / "schemas" / digest => for {
         found <- SchemaRegistry.drop(Digest.fromHex(digest))
         _     <- ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found")).when(found)
       } yield Response.ok
 
-    case Method.GET -> !! / "schemas" / digest => for {
+    case Method.GET -> Root / "schemas" / digest => for {
         schema    <- SchemaRegistry.get(Digest.fromHex(digest))
         blueprint <- schema match {
           case Some(blueprint) => ZIO.succeed(blueprint)
@@ -38,7 +38,7 @@ object AdminServer {
         }
       } yield Response.json(blueprint.toJson)
 
-    case Method.GET -> !! / "health" => ZIO.succeed(Response.ok)
+    case Method.GET -> Root / "health" => ZIO.succeed(Response.ok)
   }
 
   val graphQL = Http.collectZIO[Request] { case req =>
