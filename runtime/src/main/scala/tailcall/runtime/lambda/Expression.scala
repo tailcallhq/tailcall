@@ -107,9 +107,9 @@ object Expression {
   final case class Sequence(value: Expression, operation: Sequence.Operation) extends Expression
   object Sequence {
     sealed trait Operation
-    final case object MakeString            extends Operation
-    final case object ToChunk               extends Operation
-    final case object Head                  extends Operation
+    case object MakeString            extends Operation
+    case object ToChunk               extends Operation
+    case object Head                  extends Operation
     final case class Map(f: Expression)     extends Operation
     final case class FlatMap(f: Expression) extends Operation
     final case class GroupBy(f: Expression) extends Operation

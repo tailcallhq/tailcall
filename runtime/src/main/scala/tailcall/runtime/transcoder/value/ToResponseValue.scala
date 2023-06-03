@@ -8,7 +8,7 @@ import zio.schema.DynamicValue
 trait ToResponseValue {
   final def toResponseValue(input: DynamicValue): TValid[String, ResponseValue] = {
     input match {
-      case DynamicValue.Sequence(values) => TValid.foreach(values.toList)(toResponseValue).map(ResponseValue.ListValue)
+      case DynamicValue.Sequence(values) => TValid.foreach(values.toList)(toResponseValue).map(ResponseValue.ListValue(_))
       case DynamicValue.Primitive(input, standardType) => Transcoder.toValue(input, standardType)
       case DynamicValue.Dictionary(chunks)             => TValid.foreachChunk(chunks) { case (k, v) =>
           DynamicValueUtil.toTyped[String](k) match {
