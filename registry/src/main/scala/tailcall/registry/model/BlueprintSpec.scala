@@ -48,6 +48,8 @@ object BlueprintSpec {
         case _         => Json
       }
 
+    def json: Format = Json
+
     case object Json extends Format {
       override val name: String = "json"
     }
