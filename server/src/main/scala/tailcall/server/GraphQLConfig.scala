@@ -42,8 +42,8 @@ object GraphQLConfig {
       Options.boolean("db").withDefault(false) ++
         Options.text("db-host").withDefault("localhost") ++
         CustomOptions.int("db-port").withDefault(3306) ++
-        Options.text("db-username").optional ++
-        Options.text("db-password").optional
+        Options.text("db-username").withDefault("tailcall_main_user").optional ++
+        Options.text("db-password").withDefault("tailcall").optional
     }.map { case (enable, host, port, username, password) =>
       if (enable) Some(DBConfig(host, port, username, password)) else None
     }

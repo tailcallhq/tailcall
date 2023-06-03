@@ -47,12 +47,11 @@ The Schema Registry for this project requires MySQL 8.0. To set it up:
    sbt:tailcall> registry/test
    ```
 
-4. **Start the server:** When starting the server, specify the database
-   username and password as `tailcall_main_user` and `tailcall` respectively.
+4. **Start the server:** When starting the server, specify the database flag `--db` to use the newly created database.
    From the sbt console, use the following command to start the server:
 
    ```
-   sbt:tailcall> ~ server/reStart --db-username tailcall_main_user --db-password tailcall
+   sbt:tailcall> ~ server/reStart --db
    ```
 
    The server startup should log information about the migrations that were
