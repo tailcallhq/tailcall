@@ -92,16 +92,17 @@ ThisBuild / githubWorkflowBuild ++= Seq(
 val javaVersion = JavaSpec.temurin("20")
 ThisBuild / githubWorkflowJavaVersions          := Seq(javaVersion)
 ThisBuild / githubWorkflowBuild                 := {
-  val currentJob = (ThisBuild / githubWorkflowBuild).value
-  currentJob :+ WorkflowStep.Use(
-    UseRef.Public("mirromutth", "mysql-action", "1.1"),
-    Map(
+  val mySQLWorkflowStep = WorkflowStep.Use(
+    name = Option("Setup Mysql"),
+    ref = UseRef.Public("mirromutth", "mysql-action", "1.1"),
+    params = Map(
       "mysql version"  -> "8.0",
       "mysql user"     -> "tailcall_main_user",
       "mysql database" -> "tailcall_main_db",
       "mysql password" -> "tailcall",
     ),
   )
+  mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
 }
 ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "deploy",

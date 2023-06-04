@@ -42,19 +42,20 @@ jobs:
       - name: Check that workflows are up to date
         run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
+      - name: Setup Mysql
+        uses: mirromutth/mysql-action@1.1
+        with:
+          mysql version: 8.0
+          mysql user: tailcall_main_user
+          mysql database: tailcall_main_db
+          mysql password: tailcall
+
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
 
       - name: Lint
         if: matrix.scala == '2.13.11'
         run: sbt '++ ${{ matrix.scala }}' lintCheck
-
-      - uses: mirromutth/mysql-action@1.1
-        with:
-          mysql version: 8.0
-          mysql user: tailcall_main_user
-          mysql database: tailcall_main_db
-          mysql password: tailcall
 
       - name: Compress target directories
         run: tar cf targets.tar registry/target server/target target cli/target runtime/target project/target
