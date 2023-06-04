@@ -94,7 +94,7 @@ ThisBuild / githubWorkflowJavaVersions          := Seq(javaVersion)
 ThisBuild / githubWorkflowBuild                 := {
   val mySQLWorkflowStep = WorkflowStep.Use(
     name = Option("Setup Mysql"),
-    ref = UseRef.Public("mirromutth", "mysql-action", "1.1"),
+    ref = UseRef.Public("mirromutth", "mysql-action", "v1.1"),
     params = Map(
       "mysql version"  -> "8.0",
       "mysql user"     -> "tailcall_main_user",
