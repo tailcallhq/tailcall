@@ -1,0 +1,77 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: 'Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+  - title: 'Improvements'
+    labels:
+      - 'perf'
+      - 'refactor'
+  - title: 'Tests'
+    labels:
+      - 'tests'
+      - 'testing'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+      - 'hotfix'
+      - 'revert'
+  - title: 'Maintenance'
+    labels:
+      - 'docs'
+      - 'chore'
+      - 'maintenance'
+      - 'style'
+      - 'build'
+      - 'chores'
+      - 'ci'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+exclude-labels:
+  - 'skip-changelog'
+template: |
+  ## Changes
+
+  $CHANGES
+autolabeler:
+  - label: 'maintenance'
+    files:
+      - '*.yml'
+      - '*.conf'
+      - '*.sbt'
+    branch:
+      - '/chore\/.+/'
+      - '/refactor\/.+/'
+      - '/maintenance\/.+/'
+  - label: 'bug'
+    branch:
+      - '/fix\/.+/'
+    title:
+      - '/fix/i'
+  - label: 'enhancement'
+    branch:
+      - '/feat\/.+/'
+      - '/refactor\/.+/'
+  - label: 'docs'
+    files:
+      - '*.md'
+      - '*.txt'
+    branch:
+      - '/doc\/.+/'
+      - '/docs\/.+/'    
