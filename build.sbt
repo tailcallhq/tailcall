@@ -80,13 +80,49 @@ ThisBuild / scalaVersion                                   := scala2Version
 ThisBuild / crossScalaVersions                             := Seq(scala2Version)
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
-
+ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-
 ThisBuild / Test / fork       := true
 Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / githubWorkflowBuild ++= Seq(
+  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
+)
+val javaVersion = JavaSpec.temurin("20")
+ThisBuild / githubWorkflowJavaVersions          := Seq(javaVersion)
+ThisBuild / githubWorkflowBuild                 := {
+  val currentJob = (ThisBuild / githubWorkflowBuild).value
+  currentJob :+ WorkflowStep.Use(
+    UseRef.Public("mirromutth", "mysql-action", "1.1"),
+    Map(
+      "mysql version"  -> "8.0",
+      "mysql user"     -> "tailcall_main_user",
+      "mysql database" -> "tailcall_main_db",
+      "mysql password" -> "tailcall",
+    ),
+  )
+}
+ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
+  "deploy",
+  "Deploy",
+  List(
+    WorkflowStep.Checkout,
+    WorkflowStep.SetupJava(List(javaVersion)),
+    WorkflowStep.Sbt(List("Docker/stage")),
+    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
+    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
+    WorkflowStep.Run(
+      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
+      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
+      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
+    ),
+  ),
+  needs = List("build"),
+  scalas = List(scala2Version),
+))
+
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt; sFix;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; sFixCheck")
