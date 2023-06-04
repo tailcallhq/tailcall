@@ -75,18 +75,57 @@ lazy val registry = (project in file("registry")).settings(
 
 val scala2Version = "2.13.10"
 val scala3Version = "3.2.2"
+val scalaVersions = List(scala2Version)
+val javaVersions  = List(JavaSpec.temurin("20"))
 
 ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / crossScalaVersions                             := scalaVersions
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
-ThisBuild / scalacOptions := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
-
+ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-
 ThisBuild / Test / fork       := true
 Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild / githubWorkflowBuild ++= Seq(
+  WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
+)
+
+ThisBuild / githubWorkflowJavaVersions          := javaVersions
+ThisBuild / githubWorkflowBuild                 := {
+  val mySQLWorkflowStep = WorkflowStep.Use(
+    name = Option("Setup Mysql"),
+    ref = UseRef.Public("mirromutth", "mysql-action", "v1.1"),
+    params = Map(
+      "mysql version"  -> "8.0",
+      "mysql user"     -> "tailcall_main_user",
+      "mysql database" -> "tailcall_main_db",
+      "mysql password" -> "tailcall",
+    ),
+  )
+  mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
+}
+ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
+  "deploy",
+  "Deploy",
+  steps = List(
+    WorkflowStep.Checkout,
+    WorkflowStep.Sbt(List("Docker/stage")),
+    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
+    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
+    WorkflowStep.Run(
+      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
+      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
+      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
+    ),
+  ),
+  needs = List("build"),
+  scalas = scalaVersions,
+  javas = javaVersions,
+))
+
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 addCommandAlias("fmt", "scalafmt; Test / scalafmt; sFix;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; sFixCheck")

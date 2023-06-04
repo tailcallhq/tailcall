@@ -9,9 +9,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ '**' ]
+    branches: ['**']
   push:
-    branches: [ '**' ]
+    branches: ['**']
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -21,80 +21,65 @@ jobs:
     name: Build and Test
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        scala: [ 2.13.10 ]
-        java: [ temurin@11, temurin@20 ]
+        os: [ubuntu-latest]
+        scala: [2.13.10]
+        java: [temurin@20]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Setup Java (temurin@11)
-        if: matrix.java == 'temurin@11'
-        uses: actions/setup-java@v2
-        with:
-          distribution: temurin
-          java-version: 11
-
       - name: Setup Java (temurin@20)
         if: matrix.java == 'temurin@20'
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 20
+          cache: sbt
 
-      - name: Cache sbt
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.coursier/cache/v1
-            ~/.cache/coursier/v1
-            ~/AppData/Local/Coursier/Cache/v1
-            ~/Library/Caches/Coursier/v1
-          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+      - name: Check that workflows are up to date
+        run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
-      - name: Setup MySQL
+      - name: Setup Mysql
         uses: mirromutth/mysql-action@v1.1
         with:
-          mysql version: '8.0'
-          mysql user: 'tailcall_main_user'
-          mysql database: 'tailcall_main_db'
-          mysql password: 'tailcall'
+          mysql version: 8.0
+          mysql user: tailcall_main_user
+          mysql database: tailcall_main_db
+          mysql password: tailcall
 
       - name: Build project
-        run: sbt ++${{ matrix.scala }} test
+        run: sbt '++ ${{ matrix.scala }}' test
 
       - name: Lint
         if: matrix.scala == '2.13.10'
-        run: sbt ++${{ matrix.scala }} lintCheck
+        run: sbt '++ ${{ matrix.scala }}' lintCheck
 
       - name: Compress target directories
         run: tar cf targets.tar registry/target server/target target cli/target runtime/target project/target
 
       - name: Upload target directories
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
           path: targets.tar
 
   deploy:
     name: Deploy
-    needs: [ build ]
+    needs: [build]
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        scala: [ 2.13.10 ]
-        java: [ temurin@11 ]
+        os: [ubuntu-latest]
+        scala: [2.13.10]
+        java: [temurin@20]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (fast)
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - run: sbt ++${{ matrix.scala }} Docker/stage
+      - run: sbt Docker/stage
 
       - run: cp ./fly.toml target/docker/stage/
 
