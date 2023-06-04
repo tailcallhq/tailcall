@@ -75,9 +75,11 @@ lazy val registry = (project in file("registry")).settings(
 
 val scala2Version = "2.13.11"
 val scala3Version = "3.2.2"
+val scalaVersions = List(scala2Version)
+val javaVersions  = List(JavaSpec.temurin("20"))
 
 ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := Seq(scala2Version)
+ThisBuild / crossScalaVersions                             := scalaVersions
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
@@ -89,8 +91,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
-val javaVersion = JavaSpec.temurin("20")
-ThisBuild / githubWorkflowJavaVersions          := Seq(javaVersion)
+
+ThisBuild / githubWorkflowJavaVersions          := javaVersions
 ThisBuild / githubWorkflowBuild                 := {
   val mySQLWorkflowStep = WorkflowStep.Use(
     name = Option("Setup Mysql"),
@@ -107,7 +109,7 @@ ThisBuild / githubWorkflowBuild                 := {
 ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "deploy",
   "Deploy",
-  List(
+  steps = List(
     WorkflowStep.Checkout,
     WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
@@ -119,7 +121,8 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
     ),
   ),
   needs = List("build"),
-  scalas = List(scala2Version),
+  scalas = scalaVersions,
+  javas = javaVersions,
 ))
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
