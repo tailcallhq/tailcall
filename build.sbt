@@ -73,7 +73,7 @@ lazy val registry = (project in file("registry")).settings(
   )
 ).dependsOn(runtime)
 
-val scala2Version = "2.13.10"
+val scala2Version = "2.13.11"
 val scala3Version = "3.2.2"
 
 ThisBuild / scalaVersion                                   := scala2Version
@@ -108,7 +108,6 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
   "Deploy",
   List(
     WorkflowStep.Checkout,
-    WorkflowStep.SetupJava(List(javaVersion)),
     WorkflowStep.Sbt(List("Docker/stage")),
     WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
     WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
