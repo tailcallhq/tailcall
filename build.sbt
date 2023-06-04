@@ -85,7 +85,6 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 ThisBuild / Test / fork       := true
-Global / semanticdbEnabled    := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / githubWorkflowBuild ++= Seq(
