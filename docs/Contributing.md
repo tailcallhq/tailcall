@@ -1,13 +1,14 @@
-## Contribution Guidelines
+# Contribution Guidelines
 
 <!-- TOC -->
 
 - [Contribution Guidelines](#contribution-guidelines)
-- [Setting Up the Database](#setting-up-the-database)
-- [Error Handling Strategy](#error-handling-strategy)
-  - [Application Errors](#application-errors)
-  - [User Errors](#user-errors)
-- [Additional Contribution Guidelines](#additional-contribution-guidelines)
+  - [Setting Up the Database](#setting-up-the-database)
+  - [Error Handling Strategy](#error-handling-strategy)
+    - [Application Errors](#application-errors)
+    - [User Errors](#user-errors)
+  - [Writing and Including Unit Tests](#writing-and-including-unit-tests)
+  - [Additional Contribution Guidelines](#additional-contribution-guidelines)
 
 <!-- TOC -->
 
@@ -101,6 +102,28 @@ on how to fix the error.
 
 By adhering to this error handling strategy, we can maintain a consistent approach to handling both application and user
 errors throughout the project, ensuring a better user experience and easier debugging.
+
+## Writing and Including Unit Tests
+
+When contributing, please adhere to the following guidelines for effective and efficient unit testing:
+
+1. **Mirror your source files:** For each source file, there should be a corresponding unit test file mirroring its structure. For instance, a source file `UserService.scala` should have a corresponding unit test file `UserServiceSpec.scala`.
+
+   While integration tests are not required to mirror source files, their names should indicate their purpose clearly.
+
+2. **Write concise, maintainable tests:** Your tests should be brief and directly related to the behavior of your changes. Avoid extensive bootstrapping and boilerplate. Utilize the `TailcallSpec` for testing with ZIO as it includes safe defaults.
+
+   Remember, good tests also serve as clear, concise documentation. Prioritize readability and understandability in your test writing.
+
+3. **Run all tests before pushing changes:** Use the following command in the sbt console to execute all tests:
+
+   ```
+   sbt:tailcall> test
+   ```
+
+   Failed tests provide valuable insight into the aspects that need improvement. Use the error messages to guide your debugging.
+
+By ensuring well-written, precise unit tests are included in your pull requests, you contribute to the overall quality of the project and expedite the review process.
 
 ## Additional Contribution Guidelines
 
