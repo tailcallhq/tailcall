@@ -164,7 +164,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ref = UseRef.Public("TheDoctor0", "zio-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
-            "filename"   -> "tailcall-${{steps.create_release.outputs.tag_name}}.zip",
+            "filename"   -> "tailcall-${{steps.release.outputs.tag_name}}.zip",
             "directory"  -> "target/universal/stage",
             "exclusions" -> "*.git*, .metals",
           ),
@@ -177,7 +177,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           params = Map(
             "draft"       -> "true",
             "append_body" -> "true",
-            "tage_name"   -> "${{steps.create_release.outputs.tag_name}}",
+            "tag_name"    -> "${{steps.release.outputs.tag_name}}",
             "files"       -> "*.zip",
           ),
         ),
