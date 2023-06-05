@@ -14,7 +14,8 @@ private[tailcall] trait HttpCache  {
 private[tailcall] object HttpCache {
   val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
   final def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] = {
-    val headers      = res.headers.toList.map(x => String.valueOf(x.key).toLowerCase -> String.valueOf(x.value)).toMap
+    val headers      = res.headers.toList
+      .map(x => String.valueOf(x.headerName).toLowerCase -> String.valueOf(x.renderedValue)).toMap
     val cacheControl = headers.get("cache-control").map(_.split(",").map(_.trim).toSet).getOrElse(Set.empty)
     val maxAge       = cacheControl.find(_.startsWith("max-age=")).map(_.split("=").last).flatMap(_.toLongOption)
     val expires      = maxAge.map(_ => None).getOrElse(headers.get("expires"))

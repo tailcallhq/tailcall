@@ -7,7 +7,7 @@ import tailcall.registry.SchemaRegistry
 import tailcall.runtime.model.{Blueprint, Digest}
 import tailcall.runtime.service.{DataLoader, GraphQLGenerator, HttpContext}
 import zio._
-import zio.http.model.HttpError
+import zio.http.HttpError
 
 object BlueprintDataLoader {
   type InterpreterLoader = DataLoader[GraphQLGenerator, Throwable, String, BlueprintData]

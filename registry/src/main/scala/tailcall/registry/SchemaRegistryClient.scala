@@ -2,8 +2,7 @@ package tailcall.registry
 
 import tailcall.runtime.internal.HttpAssertions
 import tailcall.runtime.model.{Blueprint, Digest}
-import zio.http._
-import zio.http.model.Status
+import zio.http.{Status, _}
 import zio.json.DecoderOps
 import zio.{Chunk, Task, ZIO, ZLayer}
 

@@ -10,8 +10,7 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
-import zio.http.model.Headers
-import zio.http.{Request, URL => ZURL}
+import zio.http.{Headers, Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 import zio.test.Assertion.{contains, equalTo}

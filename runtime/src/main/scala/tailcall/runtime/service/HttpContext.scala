@@ -2,8 +2,7 @@ package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
 import zio._
-import zio.http.model.Headers
-import zio.http.{Request => ZRequest}
+import zio.http.{Headers, Request => ZRequest}
 
 trait HttpContext {
   def dataLoader: DataLoader[Any, Throwable, Request, Chunk[Byte]]

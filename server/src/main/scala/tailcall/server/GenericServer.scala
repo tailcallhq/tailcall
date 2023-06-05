@@ -6,8 +6,7 @@ import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
 import tailcall.server.BlueprintDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
-import zio.http._
-import zio.http.model.{HttpError, Method}
+import zio.http.{HttpError, Method, _}
 import zio.json.EncoderOps
 
 object GenericServer {
@@ -20,7 +19,7 @@ object GenericServer {
   }
 
   def graphQL: Http[HttpClient with GraphQLGenerator with InterpreterLoader, Throwable, Request, Response] =
-    Http.collectZIO[Request] { case req @ Method.POST -> !! / "graphql" / id =>
+    Http.collectZIO[Request] { case req @ Method.POST -> Root / "graphql" / id =>
       for {
         blueprintData <- load(id)
         query         <- GraphQLUtils.decodeQuery(req.body)

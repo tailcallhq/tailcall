@@ -33,7 +33,7 @@ object CustomOptions {
 
   def urlOption(name: String): Options[URL] =
     Options.text(name).mapOrFail { string =>
-      URL.fromString(string) match {
+      URL.decode(string) match {
         case Left(_) => Left(ValidationError(ValidationErrorType.InvalidArgument, HelpDoc.p(s"Invalid URL: ${string}")))
         case Right(value) => Right(value)
       }
