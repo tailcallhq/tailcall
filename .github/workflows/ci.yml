@@ -111,7 +111,7 @@ jobs:
   release:
     name: Github Release
     needs: [build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'release' && github.event.action == 'published'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -136,6 +136,5 @@ jobs:
           append_body: true
           tage_name: ${{steps.create_release.outputs.tag_name}}
           files: |
-
              target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
             

@@ -107,7 +107,8 @@ ThisBuild / githubWorkflowBuild                 := {
 }
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val isMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val isMain             = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val isReleasePublished = Option("github.event_name == 'release' && github.event.action == 'published'")
 
   Seq(
     // Deploy to fly.io
@@ -175,16 +176,15 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "append_body" -> "true",
             "tage_name"   -> "${{steps.create_release.outputs.tag_name}}",
             "files"       ->
-              """
-                | target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
-                |""".stripMargin,
+              """| target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
+                 |""".stripMargin,
           ),
         ),
       ),
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
-      cond = isMain,
+      cond = isReleasePublished,
     ),
   )
 }
