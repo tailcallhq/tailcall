@@ -52,14 +52,14 @@ lazy val runtime = (project in file("runtime")).settings(
     zioCache,
   ),
   libraryDependencies ++= zioTestDependencies,
-).dependsOn(testUtils)
+).dependsOn(testUtils % Test)
 
 lazy val cli = (project in file("cli")).settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi))
-  .dependsOn(runtime, registry, testUtils)
+  .dependsOn(runtime, registry, testUtils % Test)
 
 lazy val server = (project in file("server"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI))
-  .dependsOn(runtime, registry, testUtils)
+  .dependsOn(runtime, registry, testUtils % Test)
 
 lazy val registry = (project in file("registry")).settings(
   libraryDependencies ++= zioTestDependencies ++ Seq(
@@ -73,7 +73,7 @@ lazy val registry = (project in file("registry")).settings(
     flywayMySQL,
     zioCLI,
   )
-).dependsOn(runtime, testUtils)
+).dependsOn(runtime, testUtils % Test)
 
 lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
 

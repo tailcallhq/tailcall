@@ -3,7 +3,7 @@ package tailcall.runtime
 import tailcall.runtime.service.DataLoader
 import tailcall.test.TailcallSpec
 import zio._
-import zio.test.TestAspect.{nonFlaky, silent}
+import zio.test.TestAspect.nonFlaky
 import zio.test._
 
 object DataLoaderSpec extends TailcallSpec {
@@ -82,5 +82,5 @@ object DataLoaderSpec extends TailcallSpec {
           r  <- ZIO.foreach(f)(identity)
         } yield assertTrue(r == Chunk(2, 3, 4, 5))
       },
-    ) @@ silent
+    )
 }

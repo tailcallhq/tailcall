@@ -9,5 +9,5 @@ trait TailcallSpec extends ZIOSpecDefault {
     .removeDefaultLoggers ++ ZLayer.succeed(ZLogger.default.filterLogLevel(_ >= LogLevel.Warning))
 
   override def aspects: Chunk[TestAspectAtLeastR[TestEnvironment]] =
-    super.aspects :+ TestAspect.timed :+ TestAspect.timeout(10 seconds) :+ TestAspect.parallel
+    super.aspects :+ TestAspect.timed :+ TestAspect.timeout(10 seconds) :+ TestAspect.parallel :+ TestAspect.silent
 }
