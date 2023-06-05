@@ -7,13 +7,14 @@ import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
+import tailcall.test.TailcallSpec
 import zio.test.Assertion.equalTo
 import zio.test._
 import zio.{Scope, ZIO}
 
 import java.io.{File, FileNotFoundException}
 
-object JsonPlaceholderSpec extends ZIOSpecDefault {
+object JsonPlaceholderSpec extends TailcallSpec {
   private val typicode = Config.default.withBaseURL("https://jsonplaceholder.typicode.com")
 
   override def spec: Spec[TestEnvironment with Scope, Any] =

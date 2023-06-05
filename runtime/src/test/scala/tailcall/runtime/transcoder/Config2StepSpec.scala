@@ -10,13 +10,14 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
+import tailcall.test.TailcallSpec
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 import zio.test.Assertion.{contains, equalTo}
 import zio.test.TestAspect.{before, parallel}
-import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.{TestSystem, assertTrue, assertZIO}
 import zio.{Chunk, Ref, UIO, ZIO}
 
 import java.net.URI
@@ -26,7 +27,7 @@ import java.net.URI
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object Config2StepSpec extends ZIOSpecDefault {
+object Config2StepSpec extends TailcallSpec {
   override def spec =
     suite("Config to GraphQL Step")(
       test("rename a field") {

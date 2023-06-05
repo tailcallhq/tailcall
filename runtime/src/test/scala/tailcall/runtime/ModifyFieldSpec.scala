@@ -4,10 +4,11 @@ import caliban.Value.StringValue
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.model.ModifyField
+import tailcall.test.TailcallSpec
 import zio.test.Assertion.equalTo
-import zio.test.{ZIOSpecDefault, assertZIO}
+import zio.test.assertZIO
 
-object ModifyFieldSpec extends ZIOSpecDefault {
+object ModifyFieldSpec extends TailcallSpec {
   override def spec =
     suite("FieldUpdateAnnotationSpec")(suite("directive")(
       test("encoding") {

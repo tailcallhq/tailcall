@@ -8,11 +8,12 @@ import tailcall.runtime.http.Method
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Path, UnsafeSteps}
+import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
+import zio.test.{Spec, TestEnvironment, assertZIO}
 
-object OperationSpec extends ZIOSpecDefault {
+object OperationSpec extends TailcallSpec {
   final case class User(name: String, age: Option[Int])
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("directive")(

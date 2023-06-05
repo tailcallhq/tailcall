@@ -1,11 +1,12 @@
 package tailcall.runtime
 
 import tailcall.runtime.service.DataLoader
+import tailcall.test.TailcallSpec
 import zio._
 import zio.test.TestAspect.{nonFlaky, silent}
 import zio.test._
 
-object DataLoaderSpec extends ZIOSpecDefault {
+object DataLoaderSpec extends TailcallSpec {
   def spec =
     suite("DataLoaderSpec")(
       test("fail first") {

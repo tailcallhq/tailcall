@@ -4,10 +4,11 @@ import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid.Cause
 import tailcall.runtime.model.{Endpoint, TSchema}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
-import zio.test.{Spec, TestEnvironment, TestResult, ZIOSpecDefault, assertTrue}
+import tailcall.test.TailcallSpec
+import zio.test.{Spec, TestEnvironment, TestResult, assertTrue}
 import zio.{Chunk, Scope, ZIO}
 
-object Endpoint2SDLSpec extends ZIOSpecDefault {
+object Endpoint2SDLSpec extends TailcallSpec {
   private val User = TSchema
     .obj("username" -> TSchema.Str, "id" -> TSchema.Num, "name" -> TSchema.Str, "email" -> TSchema.Str)
 

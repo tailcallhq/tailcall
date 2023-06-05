@@ -4,9 +4,9 @@ import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, Path, TSchema}
-import zio.test.{ZIOSpecDefault, assertTrue}
-
-object ConfigSpec extends ZIOSpecDefault {
+import tailcall.test.TailcallSpec
+import zio.test.assertTrue
+object ConfigSpec extends TailcallSpec {
   def spec =
     suite("ConfigSpec")(suite("compression")(
       test("http with schema") {

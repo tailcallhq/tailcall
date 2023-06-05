@@ -6,12 +6,13 @@ import caliban.Value.StringValue
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.model.Server
+import tailcall.test.TailcallSpec
 import zio.test.Assertion.equalTo
-import zio.test.{ZIOSpecDefault, assertZIO}
+import zio.test.assertZIO
 
 import java.net.URI
 
-object ServerSpec extends ZIOSpecDefault {
+object ServerSpec extends TailcallSpec {
   def spec =
     suite("ServerSpec")(suite("directive")(
       test("baseURL") {

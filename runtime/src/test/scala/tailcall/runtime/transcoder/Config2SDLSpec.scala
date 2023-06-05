@@ -3,8 +3,9 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
+import tailcall.test.TailcallSpec
 import zio.ZIO
-import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
+import zio.test.{TestResult, assertTrue}
 
 /**
  * Tests for the generation of GraphQL schema from a config.
@@ -12,7 +13,7 @@ import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
  * blueprint, then to document, rendering the generated and
  * then comparing with expected output.
  */
-object Config2SDLSpec extends ZIOSpecDefault {
+object Config2SDLSpec extends TailcallSpec {
   override def spec =
     suite("Config to SDL")(
       test("only query") {

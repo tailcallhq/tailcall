@@ -2,11 +2,12 @@ package tailcall.runtime
 
 import tailcall.runtime.model.Mustache
 import tailcall.runtime.model.Mustache.{MustacheExpression, prm, txt}
+import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._
 
-object MustacheSpec extends ZIOSpecDefault {
+object MustacheSpec extends TailcallSpec {
   def spec =
     suite("Mustache")(
       test("syntax") {

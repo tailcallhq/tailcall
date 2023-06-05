@@ -2,12 +2,13 @@ package tailcall.runtime
 
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Endpoint
+import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
 import zio.test._
 
 import java.nio.charset.StandardCharsets
 
-object EndpointSpec extends ZIOSpecDefault {
+object EndpointSpec extends TailcallSpec {
   def spec =
     suite("EndpointSpec")(
       test("method") {

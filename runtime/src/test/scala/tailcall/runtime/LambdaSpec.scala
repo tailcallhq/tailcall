@@ -6,13 +6,14 @@ import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
+import tailcall.test.TailcallSpec
 import zio.Console
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test.TestAspect.parallel
 import zio.test._
 
-object LambdaSpec extends ZIOSpecDefault {
+object LambdaSpec extends TailcallSpec {
   import tailcall.runtime.lambda.Numeric._
 
   def spec =

@@ -29,7 +29,8 @@ val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % z
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
-lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
+lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, testUtils).settings(name := "tailcall")
+
 lazy val runtime = (project in file("runtime")).settings(
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
@@ -51,13 +52,14 @@ lazy val runtime = (project in file("runtime")).settings(
     zioCache,
   ),
   libraryDependencies ++= zioTestDependencies,
-)
+).dependsOn(testUtils)
 
 lazy val cli = (project in file("cli")).settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi))
-  .dependsOn(runtime, registry)
+  .dependsOn(runtime, registry, testUtils)
 
 lazy val server = (project in file("server"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI)).dependsOn(runtime, registry)
+  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI))
+  .dependsOn(runtime, registry, testUtils)
 
 lazy val registry = (project in file("registry")).settings(
   libraryDependencies ++= zioTestDependencies ++ Seq(
@@ -71,7 +73,7 @@ lazy val registry = (project in file("registry")).settings(
     flywayMySQL,
     zioCLI,
   )
-).dependsOn(runtime, testUtils % Test)
+).dependsOn(runtime, testUtils)
 
 lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
 

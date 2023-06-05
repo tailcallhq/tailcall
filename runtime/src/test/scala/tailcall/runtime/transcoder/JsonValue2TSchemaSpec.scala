@@ -1,12 +1,13 @@
 package tailcall.runtime.transcoder
 
 import tailcall.runtime.model.TSchema
+import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.json.ast.Json
 import zio.test.Assertion.{equalTo, isNone, isSome}
 import zio.test._
 
-object JsonValue2TSchemaSpec extends ZIOSpecDefault with JsonValue2TSchema {
+object JsonValue2TSchemaSpec extends TailcallSpec with JsonValue2TSchema {
   override def spec: Spec[TestEnvironment with Scope, Any] = {
     import tailcall.runtime.SchemaUnifier.unify
     suite("json to TSchema")(
