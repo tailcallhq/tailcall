@@ -91,44 +91,49 @@ jobs:
         run: flyctl deploy --remote-only ./target/docker/stage
 
   update_release_draft:
-    name: Release Drafter
+    name: Create a Release Draft
     strategy:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.10]
-        java: [temurin@11]
+        java: [temurin@8]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
-      - name: Checkout current branch (fast)
-        uses: actions/checkout@v2
-
-      - id: build_stage
-        run: sbt ++${{ matrix.scala }} Universal/stage
-
       - name: Create Release Draft
-        id: create_release
         uses: release-drafter/release-drafter@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-name: release-drafter.yml
 
-      - name: Create Zip
-        uses: TheDoctor0/zip-release@0.7.1
+  release:
+    name: Github Release
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.11]
+        java: [temurin@20]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: sbt Universal/stage
+
+      - name: Create ZIP
+        uses: TheDoctor0/zio-release@0.7.1
         with:
           type: zip
           filename: release-${{steps.create_release.outputs.tag_name}}.zip
-          directory: 'target/universal/stage'
+          directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
-      - name: Release Upload Assets
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
           draft: true
           append_body: true
-          tag_name: ${{steps.create_release.outputs.tag_name}}
+          tage_name: ${{steps.create_release.outputs.tag_name}}
           files: |
-            target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
 
+             target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
+            
