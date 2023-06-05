@@ -66,8 +66,8 @@ jobs:
           name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
           path: targets.tar
 
-  deploy:
-    name: Deploy
+  fly:
+    name: Deploy to fly.io
     needs: [build]
     strategy:
       matrix:
