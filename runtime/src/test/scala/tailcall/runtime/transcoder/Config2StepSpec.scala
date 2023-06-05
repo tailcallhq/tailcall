@@ -16,7 +16,7 @@ import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 import zio.test.Assertion.{contains, equalTo}
-import zio.test.TestAspect.{before, parallel}
+import zio.test.TestAspect.before
 import zio.test.{TestSystem, assertTrue, assertZIO}
 import zio.{Chunk, Ref, UIO, ZIO}
 
@@ -494,7 +494,7 @@ object Config2StepSpec extends TailcallSpec {
       GraphQLGenerator.default,
       HttpClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
-    ) @@ parallel @@ before(TestSystem.putEnv("foo", "bar"))
+    ) @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def collect(
     f: RefList[DynamicValue] => Config
