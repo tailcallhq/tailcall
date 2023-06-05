@@ -66,8 +66,8 @@ jobs:
           name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
           path: targets.tar
 
-  fly:
-    name: Deploy to fly.io
+  deploy:
+    name: Deploy
     needs: [build]
     strategy:
       matrix:
@@ -90,8 +90,8 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: flyctl deploy --remote-only ./target/docker/stage
 
-  update_release_draft:
-    name: Create a Release Draft
+  draft:
+    name: Release (draft)
     needs: [build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
@@ -109,7 +109,7 @@ jobs:
           config-name: release-drafter.yml
 
   release:
-    name: Github Release
+    name: Release
     needs: [build]
     if: github.event_name == 'release' && github.event.action == 'published'
     strategy:

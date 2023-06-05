@@ -113,8 +113,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
   Seq(
     // Deploy to fly.io
     WorkflowJob(
-      "fly",
-      "Deploy to fly.io",
+      "deploy",
+      "Deploy",
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(List("Docker/stage")),
@@ -133,8 +133,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
 
     // Draft a new Release
     WorkflowJob(
-      "update_release_draft",
-      "Create a Release Draft",
+      "draft",
+      "Release (draft)",
       steps = List(WorkflowStep.Use(
         name = Option("Create Release Draft"),
         ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
@@ -152,7 +152,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     // Should run only on main
     WorkflowJob(
       "release",
-      "Github Release",
+      "Release",
       steps = List(
         // Create a ZIP file
         WorkflowStep.Sbt(List("Universal/stage")),
