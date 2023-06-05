@@ -175,9 +175,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "draft"       -> "true",
             "append_body" -> "true",
             "tage_name"   -> "${{steps.create_release.outputs.tag_name}}",
-            "files"       ->
-              """| target/universal/stage/release-${{steps.create_release.outputs.tag_name}}.zip
-                 |""".stripMargin,
+            "files"       -> "*.zip",
           ),
         ),
       ),
