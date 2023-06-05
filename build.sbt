@@ -78,15 +78,15 @@ val scala3Version = "3.2.2"
 val scalaVersions = List(scala2Version)
 val javaVersions  = List(JavaSpec.temurin("20"))
 
-ThisBuild / scalaVersion                                   := scala2Version
-ThisBuild / crossScalaVersions                             := scalaVersions
-ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / scalaVersion       := scala2Version
+ThisBuild / crossScalaVersions := scalaVersions
 
 ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 ThisBuild / Test / fork       := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
-
+Global / semanticdbEnabled    := true
+Global / semanticdbVersion    := scalafixSemanticdb.revision
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
@@ -126,7 +126,7 @@ ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
-addCommandAlias("fmt", "scalafmt; Test / scalafmt; sFix;")
+addCommandAlias("fmt", "scalafmt; Test / scalafmt;")
 addCommandAlias("fmtCheck", "scalafmtCheck; Test / scalafmtCheck; sFixCheck")
 addCommandAlias("sFix", "scalafixAll; Test / scalafixAll")
 addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
