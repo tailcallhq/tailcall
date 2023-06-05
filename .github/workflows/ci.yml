@@ -92,6 +92,8 @@ jobs:
 
   update_release_draft:
     name: Create a Release Draft
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
