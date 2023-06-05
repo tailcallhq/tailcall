@@ -146,9 +146,9 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
           params = Map("config-name" -> "release-drafter.yml"),
         ),
-        WorkflowStep.Sbt(name = Option("Create Jar"), commands = List("Universal/stage")),
+        WorkflowStep.Sbt(name = Option("Create Jars"), commands = List("Universal/stage")),
         WorkflowStep.Use(
-          name = Option("Generate ZIPs"),
+          name = Option("Create ZIPs"),
           ref = UseRef.Public("TheDoctor0", "zio-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
