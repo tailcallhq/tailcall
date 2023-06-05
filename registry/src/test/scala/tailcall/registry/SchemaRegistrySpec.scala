@@ -1,12 +1,13 @@
 package tailcall.registry
 
 import tailcall.runtime.model.Config
+import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.Assertion.{equalTo, isNone, isSome}
 import zio.test.TestAspect.sequential
 import zio.test._
 
-object SchemaRegistrySpec extends ZIOSpecDefault {
+object SchemaRegistrySpec extends TailcallSpec {
   private val config = Config.default.withTypes(
     "Query" -> Config.Type(
       "name" -> Config.Field.ofType("String").resolveWithJson("John Doe"),

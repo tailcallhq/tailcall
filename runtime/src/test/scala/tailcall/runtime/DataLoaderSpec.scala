@@ -1,11 +1,12 @@
 package tailcall.runtime
 
 import tailcall.runtime.service.DataLoader
+import tailcall.test.TailcallSpec
 import zio._
-import zio.test.TestAspect.{nonFlaky, silent, timeout}
+import zio.test.TestAspect.nonFlaky
 import zio.test._
 
-object DataLoaderSpec extends ZIOSpecDefault {
+object DataLoaderSpec extends TailcallSpec {
   def spec =
     suite("DataLoaderSpec")(
       test("fail first") {
@@ -81,5 +82,5 @@ object DataLoaderSpec extends ZIOSpecDefault {
           r  <- ZIO.foreach(f)(identity)
         } yield assertTrue(r == Chunk(2, 3, 4, 5))
       },
-    ) @@ silent @@ timeout(5 seconds)
+    )
 }

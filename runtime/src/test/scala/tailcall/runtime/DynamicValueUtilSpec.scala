@@ -3,12 +3,11 @@ package tailcall.runtime
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen, TValid}
 import tailcall.runtime.transcoder.Transcoder
-import zio.durationInt
+import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
-import zio.test.TestAspect.timeout
 import zio.test._
 
-object DynamicValueUtilSpec extends ZIOSpecDefault {
+object DynamicValueUtilSpec extends TailcallSpec {
   override def spec =
     suite("DynamicValueUtilSpec")(
       suite("asString")(
@@ -96,5 +95,5 @@ object DynamicValueUtilSpec extends ZIOSpecDefault {
         val expected = TValid.succeed(json)
         assertTrue(actual == expected)
       })),
-    ) @@ timeout(10.seconds)
+    )
 }

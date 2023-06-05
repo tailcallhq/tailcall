@@ -7,14 +7,14 @@ import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
+import tailcall.test.TailcallSpec
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
 import zio.test._
-import zio.{Scope, ZIO, durationInt}
+import zio.{Scope, ZIO}
 
 import java.io.{File, FileNotFoundException}
 
-object JsonPlaceholderSpec extends ZIOSpecDefault {
+object JsonPlaceholderSpec extends TailcallSpec {
   private val typicode = Config.default.withBaseURL("https://jsonplaceholder.typicode.com")
 
   override def spec: Spec[TestEnvironment with Scope, Any] =
@@ -304,9 +304,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           } yield assertTrue(actual == expected)
         },
       ),
-    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default) @@ timeout(
-      10 seconds
-    )
+    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default)
 
   private def readJson(name: String): ZIO[FileIO, Throwable, String] = {
     for {

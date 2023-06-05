@@ -4,6 +4,7 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, ConfigFormat, Path}
+import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.json.yaml.EncoderYamlOps
 import zio.test.Assertion.equalTo
@@ -14,7 +15,7 @@ import zio.test._
  * Converts a SDL to a Config and then vice-versa, and
  * asserts that the they are equal.
  */
-object ConfigSDLIdentitySpec extends ZIOSpecDefault {
+object ConfigSDLIdentitySpec extends TailcallSpec {
   def spec =
     suite("graphql config identity")(
       test("inline field as config SDL") {

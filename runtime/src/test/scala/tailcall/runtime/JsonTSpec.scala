@@ -1,11 +1,12 @@
 package tailcall.runtime
 
+import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.json.EncoderOps
 import zio.json.ast.Json
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
+import zio.test.{Spec, TestEnvironment, assertTrue}
 
-object JsonTSpec extends ZIOSpecDefault {
+object JsonTSpec extends TailcallSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("JsonTSpec")(
       test("constant") {

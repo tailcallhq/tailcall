@@ -4,13 +4,14 @@ import caliban.InputValue.ObjectValue
 import caliban.Value
 import caliban.parsing.adt.Directive
 import tailcall.runtime.internal.TValid
+import tailcall.test.TailcallSpec
 import zio.schema.DeriveSchema
 import zio.schema.annotation.{caseName, fieldName}
 import zio.test.Assertion.equalTo
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue, assertZIO}
+import zio.test.{Spec, TestEnvironment, assertTrue, assertZIO}
 import zio.{Chunk, Scope}
 
-object DirectiveCodecSpec extends ZIOSpecDefault {
+object DirectiveCodecSpec extends TailcallSpec {
   import DirectiveCodec._
 
   @caseName("foo")

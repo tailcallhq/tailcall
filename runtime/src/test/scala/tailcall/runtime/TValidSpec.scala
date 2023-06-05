@@ -1,10 +1,11 @@
 package tailcall.runtime
 
 import tailcall.runtime.internal.TValid
+import tailcall.test.TailcallSpec
 import zio.Scope
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
+import zio.test.{Spec, TestEnvironment, assertTrue}
 
-object TValidSpec extends ZIOSpecDefault {
+object TValidSpec extends TailcallSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("TValid")(
       suite("foreach")(

@@ -6,10 +6,11 @@ import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.InlineType
+import tailcall.test.TailcallSpec
 import zio.Scope
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
+import zio.test.{Spec, TestEnvironment, assertTrue}
 
-object InlineTypeSpec extends ZIOSpecDefault {
+object InlineTypeSpec extends TailcallSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("InlineType")(
       test("toDirective") {

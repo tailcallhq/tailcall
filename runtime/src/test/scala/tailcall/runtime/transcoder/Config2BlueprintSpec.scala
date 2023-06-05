@@ -5,13 +5,14 @@ import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.Field
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
+import tailcall.test.TailcallSpec
 import zio.Chunk
 import zio.test.Assertion.equalTo
 import zio.test._
 
 import java.net.URI
 
-object Config2BlueprintSpec extends ZIOSpecDefault {
+object Config2BlueprintSpec extends TailcallSpec {
   def spec =
     suite("Config to Blueprint")(
       test("cyclic types") {

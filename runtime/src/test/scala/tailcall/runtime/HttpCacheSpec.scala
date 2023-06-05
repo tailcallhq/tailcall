@@ -2,6 +2,7 @@ package tailcall.runtime
 
 import tailcall.runtime.service.HttpCache
 import tailcall.runtime.service.HttpCache.dateFormat
+import tailcall.test.TailcallSpec
 import zio._
 import zio.http.Response
 import zio.http.model.Headers
@@ -11,7 +12,7 @@ import zio.test._
 
 import java.time.Instant
 
-object HttpCacheSpec extends ZIOSpecDefault {
+object HttpCacheSpec extends TailcallSpec {
   def spec =
     suite("HttpCacheSpec Cache-Control")(
       test("ttl") {
