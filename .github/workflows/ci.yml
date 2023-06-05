@@ -104,6 +104,7 @@ jobs:
       contents: write
     steps:
       - name: Create Release
+        id: create_release
         uses: release-drafter/release-drafter@v5
         with:
           config-name: release-drafter.yml
@@ -115,7 +116,7 @@ jobs:
         uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
-          filename: tailcall-${{steps.release.outputs.tag_name}}.zip
+          filename: tailcall-${{steps.create_release.outputs.tag_name}}.zip
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
@@ -124,5 +125,5 @@ jobs:
         with:
           draft: true
           append_body: true
-          tag_name: ${{steps.release.outputs.tag_name}}
+          tag_name: ${{steps.create_release.outputs.tag_name}}
           files: '*.zip'
