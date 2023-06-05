@@ -89,3 +89,50 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: flyctl deploy --remote-only ./target/docker/stage
+
+  draft:
+    name: Release (draft)
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.10]
+        java: [temurin@8]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Create Release Draft
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+
+  release:
+    name: Release
+    needs: [build]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.11]
+        java: [temurin@20]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: sbt Universal/stage
+
+      - name: Create ZIP
+        uses: TheDoctor0/zio-release@0.7.1
+        with:
+          type: zip
+          filename: tailcall-${{steps.create_release.outputs.tag_name}}.zip
+          directory: target/universal/stage
+          exclusions: '*.git*, .metals'
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          append_body: true
+          tage_name: ${{steps.create_release.outputs.tag_name}}
+          files: '*.zip'

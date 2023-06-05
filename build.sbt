@@ -105,24 +105,87 @@ ThisBuild / githubWorkflowBuild                 := {
   )
   mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
 }
-ThisBuild / githubWorkflowAddedJobs ++= Seq(WorkflowJob(
-  "deploy",
-  "Deploy",
-  steps = List(
-    WorkflowStep.Checkout,
-    WorkflowStep.Sbt(List("Docker/stage")),
-    WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
-    WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
-    WorkflowStep.Run(
-      commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-      cond = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'"),
-      env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
+
+ThisBuild / githubWorkflowAddedJobs ++= {
+  val isMain             = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val isReleasePublished = Option("github.event_name == 'release' && github.event.action == 'published'")
+
+  Seq(
+    // Deploy to fly.io
+    WorkflowJob(
+      "deploy",
+      "Deploy",
+      steps = List(
+        WorkflowStep.Checkout,
+        WorkflowStep.Sbt(List("Docker/stage")),
+        WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
+        WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
+        WorkflowStep.Run(
+          commands = List("flyctl deploy --remote-only ./target/docker/stage"),
+          cond = isMain,
+          env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
+        ),
+      ),
+      needs = List("build"),
+      scalas = scalaVersions,
+      javas = javaVersions,
     ),
-  ),
-  needs = List("build"),
-  scalas = scalaVersions,
-  javas = javaVersions,
-))
+
+    // Draft a new Release
+    WorkflowJob(
+      "draft",
+      "Release (draft)",
+      steps = List(WorkflowStep.Use(
+        name = Option("Create Release Draft"),
+        ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
+        params = Map("config-name" -> "release-drafter.yml"),
+      )),
+      permissions = Option(
+        sbtghactions.Permissions
+          .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
+      ),
+      needs = List("build"),
+      cond = isMain,
+    ),
+
+    // Release to Github
+    // Should run only on main
+    WorkflowJob(
+      "release",
+      "Release",
+      steps = List(
+        // Create a ZIP file
+        WorkflowStep.Sbt(List("Universal/stage")),
+        WorkflowStep.Use(
+          name = Option("Create ZIP"),
+          ref = UseRef.Public("TheDoctor0", "zio-release", "0.7.1"),
+          params = Map(
+            "type"       -> "zip",
+            "filename"   -> "tailcall-${{steps.create_release.outputs.tag_name}}.zip",
+            "directory"  -> "target/universal/stage",
+            "exclusions" -> "*.git*, .metals",
+          ),
+        ),
+
+        // Upload to Github
+        WorkflowStep.Use(
+          name = Option("Upload Release Assets"),
+          ref = UseRef.Public("softprops", "action-gh-release", "v1"),
+          params = Map(
+            "draft"       -> "true",
+            "append_body" -> "true",
+            "tage_name"   -> "${{steps.create_release.outputs.tag_name}}",
+            "files"       -> "*.zip",
+          ),
+        ),
+      ),
+      needs = List("build"),
+      scalas = scalaVersions,
+      javas = javaVersions,
+      cond = isReleasePublished,
+    ),
+  )
+}
 
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
