@@ -92,7 +92,6 @@ jobs:
 
   draft:
     name: Release (draft)
-    needs: [build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:

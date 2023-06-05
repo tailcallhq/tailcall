@@ -148,7 +148,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         sbtghactions.Permissions
           .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
       ),
-      needs = List("build"),
       cond = isMain,
     ),
 
