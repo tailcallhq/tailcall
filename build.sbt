@@ -26,8 +26,8 @@ val zioRedis            = "dev.zio"               %% "zio-redis"             % "
 val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
 val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
 val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
-val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion % Test
-val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion % Test
+val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
+val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
 lazy val root    = (project in file(".")).aggregate(runtime, server, cli, registry).settings(name := "tailcall")
 lazy val runtime = (project in file("runtime")).settings(
@@ -71,7 +71,9 @@ lazy val registry = (project in file("registry")).settings(
     flywayMySQL,
     zioCLI,
   )
-).dependsOn(runtime)
+).dependsOn(runtime, testUtils % Test)
+
+lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
 
 val scala2Version = "2.13.11"
 val scala3Version = "3.2.2"
@@ -199,7 +201,7 @@ addCommandAlias("tc", "cli/run")
 addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
 
-val zioTestDependencies = Seq(zioTest, zioTestSBT)
+val zioTestDependencies = Seq(zioTest % Test, zioTestSBT % Test)
 
 // The assembly merge settings
 ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }

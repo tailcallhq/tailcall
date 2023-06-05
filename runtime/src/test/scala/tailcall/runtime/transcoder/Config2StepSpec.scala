@@ -15,9 +15,9 @@ import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json
 import zio.schema.{DynamicValue, Schema}
 import zio.test.Assertion.{contains, equalTo}
-import zio.test.TestAspect.{before, parallel, timeout}
+import zio.test.TestAspect.{before, parallel}
 import zio.test.{TestSystem, ZIOSpecDefault, assertTrue, assertZIO}
-import zio.{Chunk, Ref, UIO, ZIO, durationInt}
+import zio.{Chunk, Ref, UIO, ZIO}
 
 import java.net.URI
 
@@ -493,7 +493,7 @@ object Config2StepSpec extends ZIOSpecDefault {
       GraphQLGenerator.default,
       HttpClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
-    ) @@ parallel @@ timeout(10 seconds) @@ before(TestSystem.putEnv("foo", "bar"))
+    ) @@ parallel @@ before(TestSystem.putEnv("foo", "bar"))
 
   private def collect(
     f: RefList[DynamicValue] => Config

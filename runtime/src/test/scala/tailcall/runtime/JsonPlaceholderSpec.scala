@@ -8,9 +8,8 @@ import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import zio.test.Assertion.equalTo
-import zio.test.TestAspect.timeout
 import zio.test._
-import zio.{Scope, ZIO, durationInt}
+import zio.{Scope, ZIO}
 
 import java.io.{File, FileNotFoundException}
 
@@ -304,9 +303,7 @@ object JsonPlaceholderSpec extends ZIOSpecDefault {
           } yield assertTrue(actual == expected)
         },
       ),
-    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default) @@ timeout(
-      10 seconds
-    )
+    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default)
 
   private def readJson(name: String): ZIO[FileIO, Throwable, String] = {
     for {

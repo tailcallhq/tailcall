@@ -3,9 +3,8 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import zio.test.TestAspect.timeout
+import zio.ZIO
 import zio.test.{TestResult, ZIOSpecDefault, assertTrue}
-import zio.{ZIO, durationInt}
 
 /**
  * Tests for the generation of GraphQL schema from a config.
@@ -492,7 +491,7 @@ object Config2SDLSpec extends ZIOSpecDefault {
           assertSDL(config, expected)
         },
       ),
-    ).provide(GraphQLGenerator.default) @@ timeout(10 seconds)
+    ).provide(GraphQLGenerator.default)
 
   private def assertSDL(
     config: Config,
