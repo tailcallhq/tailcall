@@ -3,6 +3,9 @@ package tailcall.test
 import zio.test.{TestAspect, TestAspectAtLeastR, TestEnvironment, ZIOSpecDefault, testEnvironment}
 import zio.{Chunk, LogLevel, ZLayer, ZLogger, durationInt}
 
+/**
+ * A global test spec that is to be used for all tests.
+ */
 trait TailcallSpec extends ZIOSpecDefault {
   self =>
   override val bootstrap: ZLayer[Any, Any, TestEnvironment] = testEnvironment ++ zio.Runtime
