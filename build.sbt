@@ -111,8 +111,7 @@ ThisBuild / githubWorkflowBuild                 := {
 }
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val isMain             = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  val isReleasePublished = Option("github.event_name == 'release' && github.event.action == 'published'")
+  val isMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
 
   Seq(
     // Deploy to fly.io
@@ -135,22 +134,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       javas = javaVersions,
     ),
 
-    // Draft a new Release
-    WorkflowJob(
-      "draft",
-      "Release (draft)",
-      steps = List(WorkflowStep.Use(
-        name = Option("Create Release Draft"),
-        ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
-        params = Map("config-name" -> "release-drafter.yml"),
-      )),
-      permissions = Option(
-        sbtghactions.Permissions
-          .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
-      ),
-      cond = isMain,
-    ),
-
     // Release to Github
     // Should run only on main
     WorkflowJob(
@@ -158,9 +141,14 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "Release",
       steps = List(
         // Create a ZIP file
-        WorkflowStep.Sbt(List("Universal/stage")),
         WorkflowStep.Use(
-          name = Option("Create ZIP"),
+          name = Option("Create Release"),
+          ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
+          params = Map("config-name" -> "release-drafter.yml"),
+        ),
+        WorkflowStep.Sbt(name = Option("Create Jar"), commands = List("Universal/stage")),
+        WorkflowStep.Use(
+          name = Option("Generate ZIPs"),
           ref = UseRef.Public("TheDoctor0", "zio-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
@@ -172,7 +160,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
 
         // Upload to Github
         WorkflowStep.Use(
-          name = Option("Upload Release Assets"),
+          name = Option("Upload ZIPs"),
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
             "draft"       -> "true",
@@ -185,7 +173,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
-      cond = isReleasePublished,
+      permissions = Option(
+        sbtghactions.Permissions
+          .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
+      ),
+      cond = isMain,
     ),
   )
 }
