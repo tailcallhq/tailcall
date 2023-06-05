@@ -1,5 +1,5 @@
 val calibanVersion   = "2.2.1"
-val zioVersion       = "2.0.13"
+val zioVersion       = "2.0.14"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
 val zioQuillVersion  = "4.6.1"
@@ -16,7 +16,7 @@ val pprint              = "com.lihaoyi"           %% "pprint"                % "
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
 val zioCLI              = "dev.zio"               %% "zio-cli"               % "0.5.0"
 val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
-val zioHttp             = "dev.zio"               %% "zio-http"              % "0.0.5"
+val zioHttp             = "dev.zio"               %% "zio-http"              % "3.0.0-RC2"
 val zioJson             = "dev.zio"               %% "zio-json"              % zioJsonVersion
 val zioJsonYaml         = "dev.zio"               %% "zio-json-yaml"         % zioJsonVersion
 val zioParser           = "dev.zio"               %% "zio-parser"            % "0.1.9"
