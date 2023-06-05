@@ -149,7 +149,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Sbt(name = Option("Create Jars"), commands = List("Universal/stage")),
         WorkflowStep.Use(
           name = Option("Create ZIPs"),
-          ref = UseRef.Public("TheDoctor0", "zio-release", "0.7.1"),
+          ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
             "filename"   -> "tailcall-${{steps.release.outputs.tag_name}}.zip",

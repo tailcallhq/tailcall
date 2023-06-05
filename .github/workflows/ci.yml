@@ -112,7 +112,7 @@ jobs:
         run: sbt Universal/stage
 
       - name: Create ZIPs
-        uses: TheDoctor0/zio-release@0.7.1
+        uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
           filename: tailcall-${{steps.release.outputs.tag_name}}.zip
