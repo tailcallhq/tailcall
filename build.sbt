@@ -107,13 +107,14 @@ ThisBuild / githubWorkflowBuild                 := {
       "mysql password" -> "tailcall",
     ),
   )
+
   mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
 }
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val isMain          = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  val createReleaseId = "create_release"
-  val fileName        = "tailcall-${{steps." + createReleaseId + ".outputs.tag_name}}.zip"
+  val githubActionIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val createReleaseId    = "create_release"
+  val fileName           = "tailcall-${{steps." + createReleaseId + ".outputs.tag_name}}.zip"
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -126,7 +127,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
           commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-          cond = isMain,
+          cond = githubActionIsMain,
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
@@ -136,18 +137,26 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     ),
 
     // Release to Github
-    // Should run only on main
     WorkflowJob(
-      "release",
-      "Release",
+      id = "release",
+      name = "Release",
+      // FIXME: uncomment
+      // cond = isMain,
+      needs = List("build"),
+      scalas = scalaVersions,
+      javas = javaVersions,
+      permissions = Option(sbtghactions.Permissions.Specify(Map(
+        sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
+        sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
+      ))),
       steps = List(
         WorkflowStep.Checkout,
+        WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
         WorkflowStep.Use(
           id = Option(createReleaseId),
           ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
           params = Map("config-name" -> "release-drafter.yml"),
         ),
-        WorkflowStep.Sbt(commands = List("Universal/stage")),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
@@ -157,26 +166,16 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "exclusions" -> "*.git*, .metals",
           ),
         ),
-
-        // Upload to Github
         WorkflowStep.Use(
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
             "draft"       -> "true",
             "append_body" -> "true",
             "tag_name"    -> ("${{steps." + createReleaseId + ".outputs.tag_name}}"),
-            "files"       -> List(fileName).mkString("\n"),
+            "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
           ),
         ),
       ),
-      needs = List("build"),
-      scalas = scalaVersions,
-      javas = javaVersions,
-      permissions = Option(sbtghactions.Permissions.Specify(Map(
-        sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
-        sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
-      ))),
-      // cond = isMain,
     ),
   )
 }
