@@ -112,9 +112,10 @@ ThisBuild / githubWorkflowBuild                 := {
 }
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val githubActionIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  val createReleaseId    = "create_release"
-  val fileName           = "tailcall-${{steps." + createReleaseId + ".outputs.tag_name}}.zip"
+  val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val createReleaseId      = "create_release"
+  val tagName              = "${{steps." + createReleaseId + ".outputs.tag_name}}"
+  val fileName             = "tailcall-" + tagName + ".zip"
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -127,7 +128,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
           commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-          cond = githubActionIsMain,
+          cond = githubWorkflowIsMain,
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
@@ -140,8 +141,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       id = "release",
       name = "Release",
-      // FIXME: uncomment
-      // cond = isMain,
+      cond = githubWorkflowIsMain,
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
@@ -171,7 +171,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           params = Map(
             "draft"       -> "true",
             "append_body" -> "true",
-            "tag_name"    -> ("${{steps." + createReleaseId + ".outputs.tag_name}}"),
+            "tag_name"    -> tagName,
             "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
           ),
         ),
