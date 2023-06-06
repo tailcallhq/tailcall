@@ -172,10 +172,10 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
-      permissions = Option(
-        sbtghactions.Permissions
-          .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
-      ),
+      permissions = Option(sbtghactions.Permissions.Specify(Map(
+        sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
+        sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
+      ))),
       // cond = isMain,
     ),
   )
