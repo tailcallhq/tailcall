@@ -140,16 +140,14 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "release",
       "Release",
       steps = List(
-        // Create a ZIP file
+        WorkflowStep.Checkout,
         WorkflowStep.Use(
           id = Option(createReleaseId),
-          name = Option("Create Release"),
           ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
           params = Map("config-name" -> "release-drafter.yml"),
         ),
-        WorkflowStep.Sbt(name = Option("Create Jars"), commands = List("Universal/stage")),
+        WorkflowStep.Sbt(commands = List("Universal/stage")),
         WorkflowStep.Use(
-          name = Option("Create ZIPs"),
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
@@ -178,7 +176,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         sbtghactions.Permissions
           .Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Write))
       ),
-      cond = isMain,
+      // cond = isMain,
     ),
   )
 }

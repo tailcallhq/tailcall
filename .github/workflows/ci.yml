@@ -93,7 +93,6 @@ jobs:
   release:
     name: Release
     needs: [build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -103,17 +102,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Create Release
-        id: create_release
+      - name: Checkout current branch (fast)
+        uses: actions/checkout@v3
+
+      - id: create_release
         uses: release-drafter/release-drafter@v5
         with:
           config-name: release-drafter.yml
 
-      - name: Create Jars
-        run: sbt Universal/stage
+      - run: sbt Universal/stage
 
-      - name: Create ZIPs
-        uses: TheDoctor0/zip-release@0.7.1
+      - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
           filename: tailcall-${{steps.create_release.outputs.tag_name}}.zip
