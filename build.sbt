@@ -113,6 +113,7 @@ ThisBuild / githubWorkflowBuild                 := {
 ThisBuild / githubWorkflowAddedJobs ++= {
   val isMain          = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId = "create_release"
+  val fileName        = "tailcall-${{steps." + createReleaseId + ".outputs.tag_name}}.zip"
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -151,7 +152,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
-            "filename"   -> ("tailcall-${{steps." + createReleaseId + ".outputs.tag_name}}.zip"),
+            "filename"   -> fileName,
             "directory"  -> "target/universal/stage",
             "exclusions" -> "*.git*, .metals",
           ),
@@ -159,13 +160,12 @@ ThisBuild / githubWorkflowAddedJobs ++= {
 
         // Upload to Github
         WorkflowStep.Use(
-          name = Option("Upload ZIPs"),
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
             "draft"       -> "true",
             "append_body" -> "true",
             "tag_name"    -> ("${{steps." + createReleaseId + ".outputs.tag_name}}"),
-            "files"       -> "*.zip",
+            "files"       -> List(fileName).mkString("\n"),
           ),
         ),
       ),
