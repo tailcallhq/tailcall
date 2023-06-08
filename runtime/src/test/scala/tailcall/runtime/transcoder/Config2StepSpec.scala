@@ -287,7 +287,7 @@ object Config2StepSpec extends TailcallSpec {
         )
       },
       test("with local url") {
-        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val http   = Operation.Http(Path.unsafe.fromString("/users/1"))
           .withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
         val config = Config.default.withTypes(
           "Query" -> Type("users" -> Config.Field.ofType("User").withSteps(http)),
@@ -300,7 +300,7 @@ object Config2StepSpec extends TailcallSpec {
 
         for {
           json <- resolve(config, Map.empty)("""query {users {name}}""")
-        } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
+        } yield assertTrue(json == """{"users":{"name":"Leanne Graham"}}""")
       },
       suite("unsafe")(test("with http") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
