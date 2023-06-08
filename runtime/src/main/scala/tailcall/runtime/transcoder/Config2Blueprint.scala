@@ -111,7 +111,7 @@ object Config2Blueprint {
       config.server.baseURL match {
         case Some(baseURL) => TValid.succeed {
             val steps    = field.unsafeSteps.getOrElse(Nil)
-            val url = http.baseURL.getOrElse(baseURL)
+            val url      = http.baseURL.getOrElse(baseURL)
             val host     = url.getHost
             val port     = if (url.getPort > 0) url.getPort else 80
             val scheme   = if (url.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http

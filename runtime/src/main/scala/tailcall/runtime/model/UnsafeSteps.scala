@@ -94,7 +94,7 @@ object UnsafeSteps {
     }
 
     object Http {
-      implicit val urlCodec: JsonCodec[URL]          = JsonCodec[String].transformOrFail[URL](
+      implicit val urlCodec: JsonCodec[URL] = JsonCodec[String].transformOrFail[URL](
         string =>
           try Right(URI.create(string).toURL)
           catch { case _: Throwable => Left(s"Malformed url: ${string}") },
