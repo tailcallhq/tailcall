@@ -1,14 +1,14 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service._
 import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.test.{TestResult, assertTrue}
+
 import java.net.URI
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.Path
 
 /**
  * Tests for the generation of GraphQL schema from a config.
