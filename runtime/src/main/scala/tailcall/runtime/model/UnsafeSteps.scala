@@ -9,6 +9,7 @@ import zio.json._
 import zio.json.ast.Json
 import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
+import java.net.{URI, URL}
 
 @caseName("unsafe")
 final case class UnsafeSteps(steps: List[Operation]) {
@@ -53,6 +54,7 @@ object UnsafeSteps {
       body: Option[String] = None,
       groupBy: Option[List[String]] = None,
       batchKey: Option[String] = None,
+      baseURL: Option[URL] = None,
     ) extends Operation {
       self =>
       override def compress: Http = {
@@ -92,6 +94,13 @@ object UnsafeSteps {
     }
 
     object Http {
+      implicit val urlCodec: JsonCodec[URL]          = JsonCodec[String].transformOrFail[URL](
+        string =>
+          try Right(URI.create(string).toURL)
+          catch { case _: Throwable => Left(s"Malformed url: ${string}") },
+        _.toString,
+      )
+
       implicit val jsonCodec: JsonCodec[Http]      = DeriveJsonCodec.gen[Http]
       implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
 
