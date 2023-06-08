@@ -9,6 +9,7 @@ import zio.json._
 import zio.json.ast.Json
 import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
+
 import java.net.{URI, URL}
 
 @caseName("unsafe")
