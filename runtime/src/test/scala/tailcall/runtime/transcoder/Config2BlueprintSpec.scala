@@ -30,7 +30,7 @@ object Config2BlueprintSpec extends TailcallSpec {
           ),
         )
 
-        assertTrue(Transcoder.toBlueprint(config).nonEmpty)
+        assertTrue(Transcoder.toBlueprint(config).isValid)
       },
       suite("required")(
         test("http with required") {
