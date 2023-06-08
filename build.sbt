@@ -4,7 +4,7 @@ val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
 val zioQuillVersion  = "4.6.1"
 val zioSchemaVersion = "0.4.12"
-val flywayVersion    = "9.19.1"
+val flywayVersion    = "9.19.3"
 
 val caliban             = "com.github.ghostdogpr" %% "caliban"               % calibanVersion
 val calibanTools        = "com.github.ghostdogpr" %% "caliban-tools"         % calibanVersion
