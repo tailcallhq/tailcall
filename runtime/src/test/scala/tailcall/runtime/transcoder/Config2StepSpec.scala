@@ -277,6 +277,31 @@ object Config2StepSpec extends TailcallSpec {
           } yield assertTrue(json == """{"identity":"bar"}""")
         },
       ),
+      test("with no base url") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+        val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
+        val errors = config.toBlueprint
+
+        assertTrue(
+          errors == TValid.fail("No base URL defined in the server configuration").trace("Query", "foo", "@unsafe")
+        )
+      },
+      test("with local url") {
+        val http   = Operation.Http(Path.unsafe.fromString("/users"))
+          .withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
+        val config = Config.default.withTypes(
+          "Query" -> Type("users" -> Config.Field.ofType("User").withSteps(http)),
+          "User"  -> Type(
+            "id"    -> Config.Field.ofType("Int"),
+            "name"  -> Config.Field.ofType("String"),
+            "email" -> Config.Field.ofType("String"),
+          ),
+        )
+
+        for {
+          json <- resolve(config, Map.empty)("""query {users {name}}""")
+        } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
+      },
       suite("unsafe")(test("with http") {
         val http   = Operation.Http(Path.unsafe.fromString("/users"))
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
@@ -287,16 +312,6 @@ object Config2StepSpec extends TailcallSpec {
         assertTrue(errors == TValid.fail("can not be used with @unsafe").trace("Query", "foo", "@http"))
       }),
       suite("inline")(
-        test("with no base url") {
-          val http   = Operation.Http(Path.unsafe.fromString("/users"))
-          val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
-
-          val errors = config.toBlueprint
-
-          assertTrue(
-            errors == TValid.fail("No base URL defined in the server configuration").trace("Query", "foo", "@unsafe")
-          )
-        },
         test("http directive") {
           val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
             "Query" -> Config
