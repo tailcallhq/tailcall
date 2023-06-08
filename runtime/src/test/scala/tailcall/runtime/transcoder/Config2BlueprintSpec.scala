@@ -17,24 +17,17 @@ object Config2BlueprintSpec extends TailcallSpec {
     suite("Config to Blueprint")(
       test("cyclic types") {
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.com").toURL).withTypes(
-          "Query"   -> Config.Type("users" -> Config.Field.ofType("User").asList),
-          "Query"   -> Config.Type(
-            "countries" -> Config.Field.ofType("Country").asList.withHttp(Http(
-              baseURL = Some(URI.create("https://restcountries.com").toURL),
-              path = Path(List(Path.Segment.Literal("v3.1"), Path.Segment.Literal("all"))),
-            ))
-          ),
-          "User"    -> Config.Type(
+          "Query" -> Config.Type("users" -> Config.Field.ofType("User").asList),
+          "User"  -> Config.Type(
             "name"  -> Config.Field.str,
             "id"    -> Config.Field.int,
             "posts" -> Config.Field.ofType("Post").asList.withHttp(Http(path = Path.unsafe.fromString("/posts"))),
           ),
-          "Post"    -> Config.Type(
+          "Post"  -> Config.Type(
             "name" -> Config.Field.str,
             "id"   -> Config.Field.int,
             "user" -> Config.Field.ofType("User").withHttp(Http(path = Path.unsafe.fromString("/users"))),
           ),
-          "Country" -> Config.Type("region" -> Config.Field.str, "Subregion" -> Config.Field.str),
         )
 
         assertTrue(Transcoder.toBlueprint(config).isValid)

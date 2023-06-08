@@ -65,6 +65,8 @@ object UnsafeSteps {
         self.copy(method = method, query = query, groupBy = groupBy)
       }
 
+      def withBaseURL(url: URL): Http = copy(baseURL = Option(url))
+
       def withBatchKey(batchKey: String): Http = copy(batchKey = Option(batchKey))
 
       def withBody(body: Option[String]): Http = copy(body = body)
