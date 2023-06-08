@@ -31,15 +31,15 @@ sealed trait TValid[+E, +A] {
 
   final def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[Cause[E]] => A1): A1 = self.fold[A1](orElse, identity)
 
-  final def isEmpty: Boolean = self.fold(_ => true, _ => false)
+  final def isInvalid: Boolean = !isValid
+
+  final def isValid: Boolean = self.fold(_ => false, _ => true)
 
   final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
   final def mapError[E1](f: E => E1): TValid[E1, A] =
     self
       .fold(errors => TValid.failCause(errors.map(cause => cause.copy(message = f(cause.message)))), TValid.succeed(_))
-
-  final def nonEmpty: Boolean = !isEmpty
 
   final def orElse[E1, A1 >: A](other: => TValid[E1, A1]): TValid[E1, A1] =
     self.fold[TValid[E1, A1]](_ => other, TValid.succeed(_))
