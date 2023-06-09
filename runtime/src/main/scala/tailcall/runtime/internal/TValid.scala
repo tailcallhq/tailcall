@@ -31,14 +31,9 @@ sealed trait TValid[+E, +A] {
 
   final def getOrElseWith[A1 >: A](orElse: NonEmptyChunk[Cause[E]] => A1): A1 = self.fold[A1](orElse, identity)
 
-<<<<<<< HEAD
   final def isInvalid: Boolean = !isValid
 
   final def isValid: Boolean = self.fold(_ => false, _ => true)
-=======
-  // FIXME: this should be renamed to "isValid"
-  final def isEmpty: Boolean = self.fold(_ => true, _ => false)
->>>>>>> 6b3306f (chore: Add tests)
 
   final def map[B](ab: A => B): TValid[E, B] = self.flatMap(a => TValid.succeed(ab(a)))
 
