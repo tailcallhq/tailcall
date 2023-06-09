@@ -29,7 +29,8 @@ val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % z
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
-lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, testUtils).settings(name := "tailcall")
+lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, registryClient, testUtils)
+  .settings(name := "tailcall")
 
 lazy val runtime = (project in file("runtime")).settings(
   resolvers +=
@@ -55,7 +56,7 @@ lazy val runtime = (project in file("runtime")).settings(
 ).dependsOn(testUtils % Test)
 
 lazy val cli = (project in file("cli")).settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi))
-  .dependsOn(runtime, registry, testUtils % Test)
+  .dependsOn(runtime, registryClient, testUtils % Test)
 
 lazy val server = (project in file("server"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI))
@@ -74,6 +75,9 @@ lazy val registry = (project in file("registry")).settings(
     zioCLI,
   )
 ).dependsOn(runtime, testUtils % Test)
+
+lazy val registryClient = (project in file("registry-client"))
+  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp)).dependsOn(runtime, testUtils % Test)
 
 lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
 
