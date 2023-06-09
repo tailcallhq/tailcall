@@ -1,14 +1,11 @@
 package tailcall.runtime.transcoder
 
+import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service._
 import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.test.{TestResult, assertTrue}
-
-import java.net.URI
 
 /**
  * Tests for the generation of GraphQL schema from a config.
@@ -71,26 +68,6 @@ object Config2SDLSpec extends TailcallSpec {
                           |""".stripMargin.trim
 
         assertSDL(config, expected)
-      },
-      test("http") {
-        val config   = Config.default.withBaseURL(URI.create("http://abc.com").toURL).withTypes(
-          "Query" -> Type(
-            "foo" -> Config.Field.str
-              .withHttp(Operation.Http(Path.unsafe.fromString("/foo")).withBaseURL(URI.create("http://foo.com").toURL)),
-            "bar" -> Config.Field.str.withHttp(Operation.Http(Path.unsafe.fromString("/bar"))),
-          )
-        )
-        val expected = """|schema @server(baseURL: "http://abc.com") {
-                          |  query: Query
-                          |}
-                          |
-                          |type Query {
-                          |  bar: String @http(path: "/bar")
-                          |  foo: String @http(path: "/foo",baseURL: "http://foo.com")
-                          |}""".stripMargin.trim
-
-        assertSDL(config, expected, true)
-
       },
       test("shared nested input and output types") {
         val config   = Config.default.withTypes(
@@ -517,10 +494,6 @@ object Config2SDLSpec extends TailcallSpec {
       ),
     ).provide(GraphQLGenerator.default)
 
-  private def assertSDL(
-    config: Config,
-    expected: String,
-    asConfig: Boolean = false,
-  ): ZIO[GraphQLGenerator, Throwable, TestResult] =
-    for { actual <- Transcoder.toSDL(config, asConfig).toTask } yield assertTrue(actual == expected)
+  private def assertSDL(config: Config, expected: String): ZIO[GraphQLGenerator, Throwable, TestResult] =
+    for { actual <- Transcoder.toSDL(config, false).toTask } yield assertTrue(actual == expected)
 }

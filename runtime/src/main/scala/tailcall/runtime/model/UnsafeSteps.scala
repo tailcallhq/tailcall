@@ -1,6 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.Method
+import tailcall.runtime.internal.JsonCodecImplicits._
 import tailcall.runtime.lambda.~>>
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -10,7 +11,7 @@ import zio.json.ast.Json
 import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
 
-import java.net.{URI, URL}
+import java.net.URL
 
 @caseName("unsafe")
 final case class UnsafeSteps(steps: List[Operation]) {
@@ -97,13 +98,6 @@ object UnsafeSteps {
     }
 
     object Http {
-      implicit val urlCodec: JsonCodec[URL] = JsonCodec[String].transformOrFail[URL](
-        string =>
-          try Right(URI.create(string).toURL)
-          catch { case _: Throwable => Left(s"Malformed url: ${string}") },
-        _.toString,
-      )
-
       implicit val jsonCodec: JsonCodec[Http]      = DeriveJsonCodec.gen[Http]
       implicit val directive: DirectiveCodec[Http] = DirectiveCodec.fromJsonCodec("http", jsonCodec)
 
