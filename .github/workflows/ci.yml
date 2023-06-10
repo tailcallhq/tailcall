@@ -61,7 +61,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' lintCheck
 
       - name: Compress target directories
-        run: tar cf targets.tar registry/target server/target target test-utils/target cli/target runtime/target project/target
+        run: tar cf targets.tar registry/target server/target target registry-client/target test-utils/target cli/target runtime/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v3
