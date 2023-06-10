@@ -13,6 +13,7 @@ val flyway              = "org.flywaydb"           % "flyway-core"           % f
 val flywayMySQL         = "org.flywaydb"           % "flyway-mysql"          % flywayVersion
 val mySQL               = "mysql"                  % "mysql-connector-java"  % "8.0.33"
 val pprint              = "com.lihaoyi"           %% "pprint"                % "0.8.1"
+val slf4j               = "org.slf4j"              % "slf4j-nop"             % "2.0.7"
 val zio                 = "dev.zio"               %% "zio"                   % zioVersion
 val zioCLI              = "dev.zio"               %% "zio-cli"               % "0.5.0"
 val zioCache            = "dev.zio"               %% "zio-cache"             % "0.2.3"
@@ -55,7 +56,8 @@ lazy val runtime = (project in file("runtime")).settings(
   libraryDependencies ++= zioTestDependencies,
 ).dependsOn(testUtils % Test)
 
-lazy val cli = (project in file("cli")).settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi))
+lazy val cli = (project in file("cli"))
+  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi, slf4j))
   .dependsOn(runtime, registryClient, testUtils % Test)
 
 lazy val server = (project in file("server"))
