@@ -1,9 +1,10 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.DirectiveCodec
+import tailcall.runtime.internal.JsonCodecImplicits._
 import zio.json.{DeriveJsonCodec, JsonCodec, jsonHint}
 
-import java.net.{URI, URL}
+import java.net.URL
 
 @jsonHint("server")
 final case class Server(
@@ -25,12 +26,6 @@ final case class Server(
 }
 
 object Server {
-  implicit val urlCodec: JsonCodec[URL]          = JsonCodec[String].transformOrFail[URL](
-    string =>
-      try Right(URI.create(string).toURL)
-      catch { case _: Throwable => Left(s"Malformed url: ${string}") },
-    _.toString,
-  )
   implicit val json: JsonCodec[Server]           = DeriveJsonCodec.gen[Server]
   implicit val directive: DirectiveCodec[Server] = DirectiveCodec.fromJsonCodec("server", json)
 }

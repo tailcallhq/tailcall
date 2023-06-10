@@ -1,6 +1,7 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.http.Method
+import tailcall.runtime.internal.JsonCodecImplicits._
 import tailcall.runtime.lambda.~>>
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -9,6 +10,8 @@ import zio.json._
 import zio.json.ast.Json
 import zio.schema.annotation.caseName
 import zio.schema.{DynamicValue, Schema}
+
+import java.net.URL
 
 @caseName("unsafe")
 final case class UnsafeSteps(steps: List[Operation]) {
@@ -53,6 +56,7 @@ object UnsafeSteps {
       body: Option[String] = None,
       groupBy: Option[List[String]] = None,
       batchKey: Option[String] = None,
+      baseURL: Option[URL] = None,
     ) extends Operation {
       self =>
       override def compress: Http = {
@@ -61,6 +65,8 @@ object UnsafeSteps {
         val groupBy = self.groupBy.filter(_.nonEmpty)
         self.copy(method = method, query = query, groupBy = groupBy)
       }
+
+      def withBaseURL(url: URL): Http = copy(baseURL = Option(url))
 
       def withBatchKey(batchKey: String): Http = copy(batchKey = Option(batchKey))
 

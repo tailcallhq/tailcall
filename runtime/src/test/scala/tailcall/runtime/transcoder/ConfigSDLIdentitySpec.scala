@@ -11,6 +11,8 @@ import zio.test.Assertion.equalTo
 import zio.test.TestAspect.{failing, ignore}
 import zio.test._
 
+import java.net.URI
+
 /**
  * Converts a SDL to a Config and then vice-versa, and
  * asserts that the they are equal.
@@ -85,6 +87,27 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
           "User"  -> Type("id" -> Field.ofType("Int"), "name" -> Field.ofType("String")),
         )
 
+        assertIdentity(config, graphQL)
+      },
+      test("http directive with baseURL") {
+        val graphQL = """
+                        |schema @server(baseURL: "http://abc.com") {
+                        |  query: Query
+                        |}
+                        |
+                        |type Query {
+                        |  bar: String @http(path: "/bar")
+                        |  foo: String @http(path: "/foo",baseURL: "http://foo.com")
+                        |}
+                        |""".stripMargin.trim
+
+        val config = Config.default.withBaseURL(URI.create("http://abc.com").toURL).withTypes(
+          "Query" -> Type(
+            "foo" -> Config.Field.str
+              .withHttp(Operation.Http(Path.unsafe.fromString("/foo")).withBaseURL(URI.create("http://foo.com").toURL)),
+            "bar" -> Config.Field.str.withHttp(Operation.Http(Path.unsafe.fromString("/bar"))),
+          )
+        )
         assertIdentity(config, graphQL)
       },
       test("unsafe directive") {

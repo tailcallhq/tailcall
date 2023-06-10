@@ -494,10 +494,6 @@ object Config2SDLSpec extends TailcallSpec {
       ),
     ).provide(GraphQLGenerator.default)
 
-  private def assertSDL(
-    config: Config,
-    expected: String,
-    asConfig: Boolean = false,
-  ): ZIO[GraphQLGenerator, Throwable, TestResult] =
-    for { actual <- Transcoder.toSDL(config, asConfig).toTask } yield assertTrue(actual == expected)
+  private def assertSDL(config: Config, expected: String): ZIO[GraphQLGenerator, Throwable, TestResult] =
+    for { actual <- Transcoder.toSDL(config, false).toTask } yield assertTrue(actual == expected)
 }
