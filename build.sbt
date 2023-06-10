@@ -111,6 +111,10 @@ ThisBuild / githubWorkflowBuild                 := {
   mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
 }
 
+ThisBuild / githubWorkflowPermissions           := Option(
+  sbtghactions.Permissions.Specify(Map(sbtghactions.PermissionScope.Contents -> sbtghactions.PermissionValue.Read))
+)
+
 ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val draftJobId           = "draft"
