@@ -98,6 +98,9 @@ jobs:
         scala: [2.13.10]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - id: create_release
         uses: release-drafter/release-drafter@v5

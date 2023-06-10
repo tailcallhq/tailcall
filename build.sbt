@@ -118,7 +118,12 @@ ThisBuild / githubWorkflowAddedJobs ++= {
 
   val tagName = List("needs", draftJobId, "outputs", "tag_name").mkString("${{", ".", "}}")
 
-  val fileName = "tailcall-" + tagName + ".zip"
+  val fileName       = "tailcall-" + tagName + ".zip"
+  val jobPermissions = sbtghactions.Permissions.Specify(Map(
+    sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
+    sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
+  ))
+
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -149,6 +154,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
         params = Map("config-name" -> "release-drafter.yml"),
       )),
+      permissions = Option(jobPermissions),
     ),
 
     // Release to Github
@@ -159,10 +165,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
-      permissions = Option(sbtghactions.Permissions.Specify(Map(
-        sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
-        sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
-      ))),
+      permissions = Option(jobPermissions),
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
