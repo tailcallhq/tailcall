@@ -113,9 +113,12 @@ ThisBuild / githubWorkflowBuild                 := {
 
 ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val draftJobId           = "draft"
   val createReleaseId      = "create_release"
-  val tagName              = "${{steps." + createReleaseId + ".outputs.tag_name}}"
-  val fileName             = "tailcall-" + tagName + ".zip"
+
+  val tagName = List("needs", draftJobId, "outputs", "tag_name").mkString("${{", ".", "}}")
+
+  val fileName = "tailcall-" + tagName + ".zip"
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -137,6 +140,17 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       javas = javaVersions,
     ),
 
+    // Update draft release
+    WorkflowJob(
+      draftJobId,
+      "Draft Release",
+      steps = List(WorkflowStep.Use(
+        id = Option(createReleaseId),
+        ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
+        params = Map("config-name" -> "release-drafter.yml"),
+      )),
+    ),
+
     // Release to Github
     WorkflowJob(
       id = "release",
@@ -152,11 +166,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
-        WorkflowStep.Use(
-          id = Option(createReleaseId),
-          ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
-          params = Map("config-name" -> "release-drafter.yml"),
-        ),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
