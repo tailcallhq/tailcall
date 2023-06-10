@@ -13,6 +13,9 @@ on:
   push:
     branches: ['**']
 
+permissions:
+  contents: read
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -90,6 +93,23 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: flyctl deploy --remote-only ./target/docker/stage
 
+  draft:
+    name: Draft Release
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.10]
+        java: [temurin@8]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: create_release
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+
   release:
     name: Release
     needs: [build]
@@ -110,15 +130,10 @@ jobs:
       - name: Universal Stage
         run: sbt Universal/stage
 
-      - id: create_release
-        uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yml
-
       - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
-          filename: tailcall-${{steps.create_release.outputs.tag_name}}.zip
+          filename: tailcall-${{needs.draft.outputs.tag_name}}.zip
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
@@ -126,5 +141,5 @@ jobs:
         with:
           draft: true
           append_body: true
-          tag_name: ${{steps.create_release.outputs.tag_name}}
-          files: target/universal/stage/tailcall-${{steps.create_release.outputs.tag_name}}.zip
+          tag_name: ${{needs.draft.outputs.tag_name}}
+          files: target/universal/stage/tailcall-${{needs.draft.outputs.tag_name}}.zip
