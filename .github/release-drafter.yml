@@ -1,12 +1,12 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
-  - title: 'Features'
+  - title: '🚀 Features'
     labels:
       - 'feature'
       - 'enhancement'
       - 'feat'
-  - title: 'Improvements'
+  - title: '🔧 Improvements'
     labels:
       - 'perf'
       - 'refactor'
@@ -21,7 +21,7 @@ categories:
       - 'bug'
       - 'hotfix'
       - 'revert'
-  - title: 'Maintenance'
+  - title: '🧰 Maintenance'
     labels:
       - 'docs'
       - 'chore'
