@@ -259,7 +259,7 @@ Docker / mappings := {
   filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
 }
 
-maintainer         := "tushar@tailcall.in"
+maintainer         := "tushar@tailcall.run"
 dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main")
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
