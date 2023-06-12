@@ -37,7 +37,7 @@ object StepGenerator {
 
     // A map of all the object types and a way to construct an instance of them.
     private val objectStepRef: Map[String, Context => Step[HttpContext]] = blueprint.definitions
-      .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
+      .collect { case obj @ Blueprint.ObjectTypeDefinition(_, _, _, _) => (obj.name, ctx => fromObjectDef(obj, ctx)) }
       .toMap
 
     def resolve: StepResult[HttpContext] = {

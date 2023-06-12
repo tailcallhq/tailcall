@@ -267,6 +267,50 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
         // Config will need to have support for keeping a copy of all the directives.
         // Currently we lose them when we parse a doc into a Config.
       } @@ ignore,
+      test("extends directive") {
+        val graphQL = """
+                        |schema @server(baseURL: "http://foo.com") {
+                        |  query: Query
+                        |}
+                        |
+                        |type Query {
+                        |  users: [UserQuery] @http(path: "/users")
+                        |}
+                        |
+                        |type Identified {
+                        |  id: Int
+                        |}
+                        |
+                        |type User @extends(type: "Identified") {
+                        |  name: String
+                        |}
+                        |
+                        |type UserQuery @extends(type: "User") {
+                        |  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+                        |}
+                        |
+                        |type Post {
+                        |  id: Int
+                        |  userId: Int
+                        |}
+                        |""".stripMargin.trim
+
+        val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
+          "Query"      -> Config.Type(
+            "users" -> Config.Field.ofType("UserQuery").asList
+              .withHttp(Operation.Http(Path.unsafe.fromString("/users")))
+          ),
+          "Identified" -> Config.Type("id" -> Config.Field.int),
+          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(typeName = "Identified"),
+          "UserQuery"  -> Config.Type(
+            "posts" -> Config.Field.ofType("Post").asList
+              .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
+          ).withExtends(typeName = "User"),
+          "Post"       -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
+        )
+
+        assertIdentity(config, graphQL)
+      } @@ failing,
     )
 
   private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] = {
