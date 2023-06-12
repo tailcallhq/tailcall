@@ -318,7 +318,11 @@ object Config {
       RootSchema(query = other.query.orElse(query), mutation = other.mutation.orElse(mutation))
   }
 
-  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class Type(
+    doc: Option[String] = None,
+    `extends`: Option[ExtendsType] = None,
+    fields: Map[String, Field] = Map.empty,
+  ) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
@@ -336,6 +340,8 @@ object Config {
 
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
+
+    def withExtends(typeName: String): Type = self.copy(`extends` = Option(ExtendsType(`type` = typeName)))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
@@ -452,6 +458,7 @@ object Config {
         case None        => Some(update)
       })
     }
+
   }
 
   final case class Arg(
@@ -504,8 +511,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
-    def empty: Type                           = Type(None, Map.empty[String, Field])
+    def apply(fields: (String, Field)*): Type = Type(None, None, fields.toMap)
+    def empty: Type                           = Type(None, None, Map.empty[String, Field])
   }
 
   object Field {
