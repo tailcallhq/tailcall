@@ -9,6 +9,7 @@ categories:
   - title: '🔧 Improvements'
     labels:
       - 'perf'
+      - 'performance'
       - 'refactor'
   - title: 'Tests'
     labels:
@@ -30,15 +31,23 @@ categories:
       - 'build'
       - 'chores'
       - 'ci'
+  - title: '💥Breaking Changes'
+    labels:
+      - 'breaking change'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
   major:
     labels:
       - 'major'
+      - 'breaking change'
   minor:
     labels:
-      - 'minor'
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+      - 'perf'
+      - 'performance'
   patch:
     labels:
       - 'patch'
@@ -74,4 +83,4 @@ autolabeler:
       - '*.txt'
     branch:
       - '/doc\/.+/'
-      - '/docs\/.+/'    
+      - '/docs\/.+/'
