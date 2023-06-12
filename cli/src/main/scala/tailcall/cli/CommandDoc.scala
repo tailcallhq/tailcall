@@ -19,7 +19,7 @@ object CommandDoc {
     },
 
     // publish
-    Command("publish", CustomOptions.remoteOption, Args.file.repeat1)
+    Command("publish", CustomOptions.remoteOption.withDefault(CLIConfig.remote), Args.file.repeat1)
       .withHelp("Publish the configuration file to the remote environment.").map { case (remote, config) =>
         Remote(remote, Remote.Publish(config))
       },
