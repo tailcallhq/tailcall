@@ -10,7 +10,7 @@ import zio.schema.{DeriveSchema, Schema}
 final case class ExtendsType(`type`: String)
 
 object ExtendsType {
-  implicit val schema: Schema[ExtendsType] = DeriveSchema.gen[ExtendsType]
-  implicit val json: JsonCodec[ExtendsType] = jsonCodec(schema)
+  implicit val schema: Schema[ExtendsType]            = DeriveSchema.gen[ExtendsType]
+  implicit val json: JsonCodec[ExtendsType]           = jsonCodec(schema)
   implicit val directive: DirectiveCodec[ExtendsType] = DirectiveCodec.gen[ExtendsType]
 }
