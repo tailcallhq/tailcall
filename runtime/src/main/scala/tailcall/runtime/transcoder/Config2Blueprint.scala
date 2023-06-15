@@ -2,8 +2,10 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
+import tailcall.runtime.internal.TValid.{Errors, Succeed}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Blueprint.ObjectTypeDefinition
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -11,9 +13,6 @@ import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
 import zio.Chunk
 import zio.schema.DynamicValue
-import tailcall.runtime.model.Blueprint.ObjectTypeDefinition
-import tailcall.runtime.internal.TValid.Succeed
-import tailcall.runtime.internal.TValid.Errors
 
 trait Config2Blueprint {
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
