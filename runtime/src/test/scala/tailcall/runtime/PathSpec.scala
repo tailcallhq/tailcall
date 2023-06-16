@@ -56,5 +56,12 @@ object PathSpec extends TailcallSpec {
           } yield assertTrue(actual == expected)
         }
       },
+      test("unreserved characters in path segment") {
+        val inputs = List("/v1.1", "/v2~2", "/some-name", "/some_name")
+
+        checkAll(Gen.fromIterable(inputs)) { case str =>
+          assertTrue(Path.unsafe.fromString(str).encode.getOrElse("") == str)
+        }
+      },
     )
 }

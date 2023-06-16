@@ -62,7 +62,7 @@ object Path {
   }
 
   object syntax {
-    val segment = (Syntax.alphaNumeric | Syntax.charIn('-', '_')).repeat
+    val segment = (Syntax.alphaNumeric | Syntax.charIn('-', '_', '.', '~')).repeat
       .transform[String](_.asString, Chunk.fromIterable(_))
 
     val param = MustacheExpression.syntax.transform[Segment.Param](Segment.Param(_), _.mustache)

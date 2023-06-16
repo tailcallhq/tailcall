@@ -267,6 +267,34 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
         // Config will need to have support for keeping a copy of all the directives.
         // Currently we lose them when we parse a doc into a Config.
       } @@ ignore,
+      test("path with unreserved characters") {
+        val graphQL = """
+                        |schema {
+                        |  query: Query
+                        |}
+                        |
+                        |type Query {
+                        |  bar: [User] @http(path: "/v1~1/users")
+                        |  foo: [User] @http(path: "/v1.1/users")
+                        |}
+                        |
+                        |type User {
+                        |  id: Int
+                        |  name: String
+                        |}
+                        |
+                        |""".stripMargin.trim
+
+        val config = Config.default.withTypes(
+          "Query" -> Type(
+            "foo" -> Field.ofType("User").asList.withHttp(Operation.Http(Path.unsafe.fromString("/v1.1/users"))),
+            "bar" -> Field.ofType("User").asList.withHttp(Operation.Http(Path.unsafe.fromString("/v1~1/users"))),
+          ),
+          "User"  -> Type("id" -> Field.ofType("Int"), "name" -> Field.ofType("String")),
+        )
+
+        assertIdentity(config, graphQL)
+      },
     )
 
   private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] = {
