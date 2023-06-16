@@ -3,11 +3,14 @@ package tailcall.runtime.service
 import tailcall.runtime.http.{HttpClient, Request}
 import zio._
 import zio.http.model.Headers
-import zio.http.{Request => ZRequest}
+import zio.http.{Response, Request => ZRequest}
 
 trait HttpContext {
-  def dataLoader: DataLoader[Any, Throwable, Request, Chunk[Byte]]
-  def headers: Headers
+  def dataLoader: DataLoader[Any, Throwable, Request, Response]
+  def requestHeaders: Headers
+  final def responseHeaders: UIO[Headers] = updateResponseHeaders(identity)
+
+  def updateResponseHeaders(headers: Headers =>  Headers): UIO[Headers]
 }
 
 object HttpContext {
@@ -15,10 +18,14 @@ object HttpContext {
   def live(req: Option[ZRequest]): ZLayer[HttpClient, Nothing, HttpContext] =
     DataLoader.http(req) >>> ZLayer {
       for {
-        dataLoader <- ZIO.service[DataLoader[Any, Throwable, Request, Chunk[Byte]]]
-      } yield Live(dataLoader, req.map(_.headers).getOrElse(Headers.empty))
+        ref <- Ref.make(Headers.empty)
+        dataLoader <- ZIO.service[DataLoader[Any, Throwable, Request, Response]]
+      } yield Live(dataLoader, req.map(_.headers).getOrElse(Headers.empty), ref)
     }
 
-  final case class Live(dataLoader: DataLoader[Any, Throwable, Request, Chunk[Byte]], headers: Headers)
-      extends HttpContext {}
+  final case class Live(dataLoader: DataLoader[Any, Throwable, Request, Response], requestHeaders: Headers, ref: Ref[Headers])
+      extends HttpContext {
+    override def updateResponseHeaders(f: Headers => Headers): UIO[Headers] = ref.updateAndGet(f)
+
+  }
 }

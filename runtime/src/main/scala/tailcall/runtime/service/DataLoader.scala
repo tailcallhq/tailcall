@@ -2,7 +2,7 @@ package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
 import zio._
-import zio.http.{Request => ZRequest}
+import zio.http.{Response, Request => ZRequest}
 
 final case class DataLoader[R, E, A, B](
   ref: Ref[DataLoader.State[E, A, B]],
@@ -66,7 +66,7 @@ final case class DataLoader[R, E, A, B](
 }
 
 object DataLoader {
-  type HttpDataLoader = DataLoader[Any, Throwable, Request, Chunk[Byte]]
+  type HttpDataLoader = DataLoader[Any, Throwable, Request, Response]
   // TODO: make this configurable
   private val allowedHeaders: Set[String] = Set("authorization", "cookie")
 
@@ -76,22 +76,23 @@ object DataLoader {
 
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
-      ZIO.service[HttpClient].flatMap { client =>
-        DataLoader.one[Request] { request =>
-          val finalHeaders = request.headers ++ getForwardedHeaders(req)
-          for {
-            response <- client.request(request.copy(headers = finalHeaders))
-            _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
-            chunk <- response.body.asChunk
-          } yield chunk
-        }
+      ZIO.serviceWithZIO[HttpClient] {
+        client =>
+          DataLoader.one[Request] { request =>
+            val finalHeaders = request.headers ++ getForwardedHeaders(req)
+            for {
+              response <- client.request(request.copy(headers = finalHeaders))
+              _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
+
+            } yield response
+          }
       }
     }
 
-  def httpCollect(requests: Chunk[Request]): ZIO[HttpContext, Throwable, Chunk[ZIO[Any, Throwable, Chunk[Byte]]]] =
+  def httpCollect(requests: Chunk[Request]): ZIO[HttpContext, Throwable, Chunk[ZIO[Any, Throwable, Response]]] =
     ZIO.serviceWithZIO[HttpContext](_.dataLoader.collect(requests: _*))
 
-  def httpLoad(request: Request): ZIO[HttpContext, Throwable, Chunk[Byte]] =
+  def httpLoad(request: Request): ZIO[HttpContext, Throwable, Response] =
     ZIO.serviceWithZIO[HttpContext](_.dataLoader.load(request))
 
   def many[A]: PartiallyAppliedDataLoaderMany[A] = new PartiallyAppliedDataLoaderMany(())
