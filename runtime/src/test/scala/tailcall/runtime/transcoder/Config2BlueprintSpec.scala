@@ -73,5 +73,60 @@ object Config2BlueprintSpec extends TailcallSpec {
         val expected = List(TSchema.obj("b" -> TSchema.str.opt, "c" -> TSchema.str.opt).opt)
         assertZIO(schemas)(equalTo(expected))
       },
+      test("extends support") {
+        val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
+          "Identified" -> Config.Type("id" -> Config.Field.int),
+          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(typeName = "Identified"),
+          "UserQuery"  -> Config.Type(
+            "posts" -> Config.Field.ofType("Post").asList
+              .withHttp(Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
+          ).withExtends(typeName = "User"),
+          "Post"       -> Config.Type("title" -> Config.Field.str),
+          "Query"      -> Config
+            .Type("users" -> Config.Field.ofType("User").asList.withHttp(Http(path = Path.unsafe.fromString("/users")))),
+        )
+
+        val blueprintOption = Transcoder.toBlueprint(config)
+        assertTrue(blueprintOption.isValid)
+
+        val blueprint = blueprintOption.toList.head
+
+        def findInterfaceByName(definitionName: String) = {
+          blueprint.definitions.find {
+            case Blueprint.InterfaceTypeDefinition(name, _, _) => name == definitionName
+            case _                                             => false
+          }
+        }
+
+        def findObjectTypeByName(definitionName: String) = {
+          blueprint.definitions.find {
+            case Blueprint.ObjectTypeDefinition(name, _, _, _) => name == definitionName
+            case _                                             => false
+          }
+        }
+
+        def getImplementsForType(definitionName: String) = {
+          val definition = findObjectTypeByName(definitionName)
+          definition match {
+            case Some(d) => d match {
+                case Blueprint.ObjectTypeDefinition(_, _, _, implements) => implements match {
+                    case Some(l) => l.head.name
+                    case _       => ""
+                  }
+                case _                                                   => ""
+              }
+            case _       => "None"
+          }
+        }
+
+        assertTrue(findInterfaceByName("IIdentified").isDefined)
+        assertTrue(findInterfaceByName("IUser").isDefined)
+        assertTrue(findObjectTypeByName("User").isDefined)
+        assertTrue(findObjectTypeByName("UserQuery").isDefined)
+        assertTrue(findObjectTypeByName("Post").isDefined)
+        assertTrue(getImplementsForType("User").equals("IIdentified"))
+        assertTrue(getImplementsForType("UserQuery").equals("IUser"))
+
+      },
     )
 }
