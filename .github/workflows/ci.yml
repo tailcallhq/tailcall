@@ -26,7 +26,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.11]
-        java: [graal_23.0.0@20]
+        java: [graal_22.3.2@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -34,12 +34,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup GraalVM (graal_23.0.0@20)
-        if: matrix.java == 'graal_23.0.0@20'
+      - name: Setup GraalVM (graal_22.3.2@17)
+        if: matrix.java == 'graal_22.3.2@17'
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 23.0.0
-          java-version: 20
+          version: 22.3.2
+          java-version: 17
           components: native-image
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: sbt
@@ -79,7 +79,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.11]
-        java: [graal_23.0.0@20]
+        java: [graal_22.3.2@17]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (fast)
@@ -103,7 +103,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.11]
-        java: [graal_23.0.0@20]
+        java: [graal_22.3.2@17]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write

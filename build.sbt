@@ -1,5 +1,5 @@
 val calibanVersion   = "2.2.1"
-val graalVMVersion   = "23.0.0"
+val graalVMVersion   = "22.3.2"
 val zioVersion       = "2.0.15"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
@@ -94,7 +94,7 @@ lazy val testUtils = (project in file("test-utils")).settings(libraryDependencie
 val scala2Version      = "2.13.11"
 val scala3Version      = "3.2.2"
 val scalaVersions      = List(scala2Version)
-val defaultJavaVersion = JavaSpec.graalvm(graalVMVersion, "20")
+val defaultJavaVersion = JavaSpec.graalvm(graalVMVersion, "17")
 val javaVersions       = List(defaultJavaVersion)
 val appVersionEnv      = "APP_VERSION"
 
