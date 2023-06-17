@@ -94,7 +94,7 @@ lazy val testUtils = (project in file("test-utils")).settings(libraryDependencie
 val scala2Version      = "2.13.11"
 val scala3Version      = "3.2.2"
 val scalaVersions      = List(scala2Version)
-val defaultJavaVersion = JavaSpec.temurin("20")
+val defaultJavaVersion = JavaSpec.graalvm(graalVMVersion, "20")
 val javaVersions       = List(defaultJavaVersion)
 val appVersionEnv      = "APP_VERSION"
 
