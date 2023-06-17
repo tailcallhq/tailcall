@@ -1,4 +1,5 @@
 val calibanVersion   = "2.2.1"
+val graalVMVersion   = "23.0.0"
 val zioVersion       = "2.0.15"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
@@ -29,6 +30,7 @@ val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % z
 val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
+val graalVM             = "org.graalvm.sdk"        % "graal-sdk"             % graalVMVersion
 
 lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, registryClient, testUtils)
   .settings(name := "tailcall")
@@ -52,6 +54,7 @@ lazy val runtime = (project in file("runtime")).settings(
     zioParser,
     zioHttp,
     zioCache,
+    graalVM,
     betterFiles,
   ),
   libraryDependencies ++= zioTestDependencies,
