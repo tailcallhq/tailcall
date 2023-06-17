@@ -1,7 +1,6 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.DirectiveCodec
-
 import zio.json._
 import zio.schema.annotation.caseName
 

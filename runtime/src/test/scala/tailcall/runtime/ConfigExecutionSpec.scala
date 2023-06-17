@@ -5,8 +5,7 @@ import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.Operation
-import tailcall.runtime.model.{Config, Context, Path}
+import tailcall.runtime.model.{Config, Context, Operation, Path}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec

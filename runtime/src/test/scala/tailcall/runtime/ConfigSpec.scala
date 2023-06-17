@@ -1,9 +1,8 @@
 package tailcall.runtime
 
 import tailcall.runtime.model.Config.{Field, Type}
-import tailcall.runtime.model.Operation
 import tailcall.runtime.model.Operation.Http
-import tailcall.runtime.model.{Config, Path, TSchema}
+import tailcall.runtime.model.{Config, Operation, Path, TSchema}
 import tailcall.test.TailcallSpec
 import zio.test.assertTrue
 

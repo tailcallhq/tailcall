@@ -5,9 +5,8 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.Operation
 import tailcall.runtime.model.Operation.Http
-import tailcall.runtime.model._
+import tailcall.runtime.model.{Operation, _}
 
 /**
  * Used to read a .graphQL file that contains the
