@@ -124,7 +124,9 @@ ThisBuild / githubWorkflowBuild                 := {
     ),
   )
 
-  mySQLWorkflowStep +: (ThisBuild / githubWorkflowBuild).value
+  val installJS = WorkflowStep.Run(List("gu install org.graalvm.js"), name = Option("Install JS Language"))
+
+  mySQLWorkflowStep +: installJS +: (ThisBuild / githubWorkflowBuild).value
 }
 
 ThisBuild / githubWorkflowPermissions           := Option(

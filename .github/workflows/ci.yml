@@ -55,6 +55,9 @@ jobs:
           mysql database: tailcall_main_db
           mysql password: tailcall
 
+      - name: Install JS Language
+        run: gu install org.graalvm.js
+
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
 
