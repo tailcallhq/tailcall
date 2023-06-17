@@ -7,8 +7,8 @@ import tailcall.runtime.lambda._
 import tailcall.runtime.model.Blueprint.NamedType
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.model._
 import zio.Chunk
 import zio.schema.DynamicValue

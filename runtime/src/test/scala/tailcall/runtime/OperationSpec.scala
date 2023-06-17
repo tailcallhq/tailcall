@@ -5,8 +5,8 @@ import caliban.Value
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec._
 import tailcall.runtime.http.Method
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.model.{Path, UnsafeSteps}
 import tailcall.test.TailcallSpec
 import zio.Scope

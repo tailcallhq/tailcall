@@ -3,7 +3,7 @@ package tailcall.runtime
 import caliban.InputValue
 import tailcall.runtime.internal.{JSONPlaceholderClient, JsonPlaceholderConfig}
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder

@@ -3,7 +3,7 @@ package tailcall.runtime.transcoder
 import tailcall.runtime.http.Scheme
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.Field
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.model._
 import tailcall.test.TailcallSpec
 import zio.Chunk

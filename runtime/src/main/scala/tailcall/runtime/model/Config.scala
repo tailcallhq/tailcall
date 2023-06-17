@@ -5,8 +5,8 @@ import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.service.ConfigFileIO
 import tailcall.runtime.transcoder.Transcoder
 import zio.ZIO

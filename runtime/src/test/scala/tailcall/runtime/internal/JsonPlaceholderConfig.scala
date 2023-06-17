@@ -3,7 +3,7 @@ package tailcall.runtime.internal
 import tailcall.runtime.JsonT
 import tailcall.runtime.http.Method
 import tailcall.runtime.model.Config.{Arg, Field, Type}
-import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.Operation
 import tailcall.runtime.model.{Config, Path}
 
 import java.net.URI

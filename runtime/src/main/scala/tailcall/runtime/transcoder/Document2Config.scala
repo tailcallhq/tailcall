@@ -5,8 +5,8 @@ import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.model.UnsafeSteps.Operation
-import tailcall.runtime.model.UnsafeSteps.Operation.Http
+import tailcall.runtime.model.Operation
+import tailcall.runtime.model.Operation.Http
 import tailcall.runtime.model._
 
 /**
