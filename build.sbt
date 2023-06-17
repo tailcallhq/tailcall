@@ -1,5 +1,5 @@
 val calibanVersion   = "2.2.1"
-val graalVMVersion   = "22.3.2"
+val graalVMVersion   = "20.0.1"
 val zioVersion       = "2.0.15"
 val zioJsonVersion   = "0.5.0"
 val rocksDB          = "0.4.2"
