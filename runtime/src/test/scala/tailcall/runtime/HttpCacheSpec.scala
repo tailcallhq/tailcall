@@ -13,7 +13,7 @@ import zio.test._
 import java.time.Instant
 
 object HttpCacheSpec extends TailcallSpec {
-  def spec =
+  def spec = {
     suite("HttpCacheSpec Cache-Control")(
       test("ttl") {
         val ttl      = HttpCache.ttl(Response.ok.addHeaders(headers = Header("Cache-Control", "max-age=1000")))
@@ -50,6 +50,38 @@ object HttpCacheSpec extends TailcallSpec {
         val expected   = Some(Duration.fromSeconds(1000))
         assert(p)(equalTo(expected))
       },
+      suite("calculate Minimum Headers")(
+        test("private") {
+          val headers  = List(
+            ("Cache-Control", "public, max-age=3600"),
+            ("Cache-Control", "private, max-age=1800"),
+            ("Expires", "Fri, 17 Jun 2023 12:00:00 GMT"),
+            ("Expires", "Fri, 17 Jun 2023 13:30:00 GMT"),
+          )
+          val expected = Some("Cache-Control: private")
+          val actual   = HttpCache.calculateMinimumHeader(headers)
+          assertTrue(actual == expected)
+        },
+        test("default values") {
+          val headers = List(("Cache-Control", "max-age=0"), ("Expires", "-1"))
+          assertTrue(HttpCache.calculateMinimumHeader(headers).isEmpty)
+        },
+        test("Minimum possible input") {
+          val headers = List(("Cache-Control", "max-age=0"), ("Expires", "Thu, 01 Jan 1970 00:00:00 GMT"))
+          assertTrue(HttpCache.calculateMinimumHeader(headers).isEmpty)
+        },
+        test("Multiple Cache-Control headers with different max-age values:") {
+          val headers = List(
+            ("Cache-Control", "max-age=3600"),
+            ("Cache-Control", "max-age=1800"),
+            ("Expires", "Fri, 17 Jun 2023 12:00:00 GMT"),
+            ("Expires", "Fri, 17 Jun 2023 13:30:00 GMT"),
+          )
+          assertTrue(HttpCache.calculateMinimumHeader(headers).contains("Cache-Control: max-age=1800"))
+
+        },
+      ),
     )
+  }
 
 }

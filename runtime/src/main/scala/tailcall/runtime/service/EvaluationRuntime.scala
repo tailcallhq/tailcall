@@ -155,11 +155,13 @@ object EvaluationRuntime {
                   val request = endpoint.evaluate(input.asInstanceOf[DynamicValue])
                   ZIO.logSpan(s"${request.method} ${request.url}") {
                     for {
-                      res <- DataLoader.httpLoad(request)
-                      chunk <- res.body.asChunk
-                      json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
+                      res     <- DataLoader.httpLoad(request)
+                      httpctx <- ZIO.service[HttpContext]
+                      _       <- httpctx.updateState(_ => HttpContext.State(HttpCache.ttlHeaders(res.headers)))
+                      chunk   <- res.body.asChunk
+                      json    <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
                         .mapError(ValidationError.DecodingError("String", "JsonAST", _))
-                      any   <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
+                      any     <- Transcoder.toDynamicValue(json).toZIO.mapError(_.mkString(", "))
                         .mapError(new RuntimeException(_))
                     } yield any
                   }

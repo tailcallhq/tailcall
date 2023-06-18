@@ -3,6 +3,7 @@ import tailcall.runtime.http.Request
 import zio._
 import zio.cache.{Cache, CacheStats, Lookup}
 import zio.http.Response
+import zio.http.model.Headers
 
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -13,11 +14,14 @@ private[tailcall] trait HttpCache  {
 }
 private[tailcall] object HttpCache {
   val dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z")
-  final def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] = {
-    val headers      = res.headers.toList.map(x => String.valueOf(x.key).toLowerCase -> String.valueOf(x.value)).toMap
-    val cacheControl = headers.get("cache-control").map(_.split(",").map(_.trim).toSet).getOrElse(Set.empty)
+  final def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] =
+    ttlHeaders(res.headers, currentMillis)
+
+  final def ttlHeaders(headers: Headers, currentMillis: => Instant = Instant.now()): Option[Duration] = {
+    val headerList   = headers.toList.map(x => String.valueOf(x.key).toLowerCase -> String.valueOf(x.value)).toMap
+    val cacheControl = headerList.get("cache-control").map(_.split(",").map(_.trim).toSet).getOrElse(Set.empty)
     val maxAge       = cacheControl.find(_.startsWith("max-age=")).map(_.split("=").last).flatMap(_.toLongOption)
-    val expires      = maxAge.map(_ => None).getOrElse(headers.get("expires"))
+    val expires      = maxAge.map(_ => None).getOrElse(headerList.get("expires"))
     if (cacheControl.contains("private")) None
     else if (expires.isEmpty) maxAge.map(Duration.fromSeconds)
     else expires match {
@@ -29,6 +33,27 @@ private[tailcall] object HttpCache {
         }
       case None        => None
     }
+  }
+
+  import scala.util.Try
+
+  def calculateMinimumHeader(headers: List[(String, String)]): Option[String] = {
+    val cacheControlDirectives = headers.filter { case (key, _) => key.equalsIgnoreCase("Cache-Control") }
+      .flatMap { case (_, value) => value.split(",") }
+
+    val cacheControlMaxAgeValues = cacheControlDirectives.flatMap(header => Try(header.split("=")(1).toInt).toOption)
+      .filter(value => value > 0)
+
+    val expiresValues = headers.filter { case (key, _) => key.equalsIgnoreCase("Expires") }.flatMap { case (_, value) =>
+      Try(java.time.ZonedDateTime.parse(value)).toOption
+    }
+
+    val isPrivate        = cacheControlDirectives.exists(_.toLowerCase.contains("private"))
+    val minMaxAgeHeader  = cacheControlMaxAgeValues.minOption.map(value => s"Cache-Control: max-age=$value")
+    val minExpiresHeader = expiresValues.minOption.map(value => s"Expires: $value")
+
+    val finalCacheControlHeader = if (isPrivate) Some("Cache-Control: private") else minMaxAgeHeader
+    finalCacheControlHeader.orElse(minExpiresHeader)
   }
 
   def live(cacheSize: Int): ZLayer[Any, Nothing, Live] =
