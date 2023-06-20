@@ -116,7 +116,7 @@ object Blueprint {
     name: String,
     fields: List[FieldDefinition],
     description: Option[String] = None,
-    implements: Option[List[NamedType]] = None,
+    implements: List[NamedType] = Nil,
   ) extends Definition
 
   final case class InterfaceTypeDefinition(

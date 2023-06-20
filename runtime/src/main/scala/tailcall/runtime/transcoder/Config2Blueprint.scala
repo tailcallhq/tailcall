@@ -72,7 +72,7 @@ object Config2Blueprint {
       typeInfo: Type,
       types: List[(String, Type)],
     ): TValid[String, List[Blueprint.FieldDefinition]] = {
-      typeInfo.`extends` match {
+      typeInfo.extendsFrom match {
         case Some(ext) =>
           val parent = getTypeByName(ext.`type`, types)
           parent match {
@@ -90,7 +90,7 @@ object Config2Blueprint {
     }
 
     private def getParentTypeName(typeInfo: Type): String = {
-      typeInfo.`extends` match {
+      typeInfo.extendsFrom match {
         case Some(value) => value.`type`
         case _           => ""
       }
@@ -113,8 +113,7 @@ object Config2Blueprint {
             name = typeName,
             fields = fields,
             description = typeInfo.doc,
-            implements =
-              if (parentTypeName.nonEmpty) Some(List(Blueprint.NamedType(s"I${parentTypeName}", true))) else None,
+            implements = if (parentTypeName.nonEmpty) List(Blueprint.NamedType(s"I${parentTypeName}", true)) else Nil,
           )
           if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(objDefinition) else objDefinition
         }
