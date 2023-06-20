@@ -17,10 +17,14 @@ trait GraphQLGenerator {
 object GraphQLGenerator {
   final case class Live(sGen: StepGenerator) extends GraphQLGenerator {
     override def toGraphQL(blueprint: Blueprint): GraphQL[HttpContext] = {
+      val schema          = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
+      val additionalTypes = schema match {
+        case Some(s) => s.types
+        case None    => Nil
+      }
       new GraphQL[HttpContext] {
         override protected val schemaBuilder: RootSchemaBuilder[HttpContext] = {
           val stepResult = sGen.resolve(blueprint)
-          val schema     = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
 
           val queryOperation = for {
             __type  <- schema.map(_.queryType)
@@ -36,7 +40,7 @@ object GraphQLGenerator {
         override protected val wrappers: List[Wrapper[Any]]                  = Nil
         override protected val additionalDirectives: List[__Directive]       = Nil
         override protected val features: Set[Feature]                        = Set.empty
-      }
+      }.withAdditionalTypes(additionalTypes)
     }
   }
 
