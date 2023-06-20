@@ -112,10 +112,15 @@ jobs:
       - name: Universal Stage
         run: sbt Universal/stage
 
+      - id: create_release
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+
       - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
-          filename: tailcall.zip
+          filename: tailcall-${{steps.create_release.outputs.name}}.zip
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
@@ -123,5 +128,5 @@ jobs:
         with:
           draft: true
           append_body: true
-          files: target/universal/stage/tailcall.zip
-          generate_release_notes: true
+          files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
+          tag_name: ${{steps.create_release.outputs.name}}

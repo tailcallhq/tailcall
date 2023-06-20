@@ -124,7 +124,8 @@ ThisBuild / githubWorkflowPermissions           := Option(
 ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId      = "create_release"
-  val fileName             = "tailcall" + ".zip"
+  val tagName              = List("steps", createReleaseId, "outputs", "name").mkString("${{", ".", "}}")
+  val fileName             = "tailcall-" + tagName + ".zip"
   val jobPermissions       = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
@@ -165,6 +166,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
         WorkflowStep.Use(
+          id = Option(createReleaseId),
+          ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
+          params = Map("config-name" -> "release-drafter.yml"),
+        ),
+        WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
             "type"       -> "zip",
@@ -176,10 +182,10 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
-            "draft"                  -> "true",
-            "append_body"            -> "true",
-            "files"                  -> List("target/universal/stage/" + fileName).mkString("\n"),
-            "generate_release_notes" -> "true",
+            "draft"       -> "true",
+            "append_body" -> "true",
+            "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
+            "tag_name"    -> tagName,
           ),
         ),
       ),
