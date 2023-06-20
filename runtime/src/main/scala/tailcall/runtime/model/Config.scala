@@ -320,7 +320,7 @@ object Config {
 
   final case class Type(
     doc: Option[String] = None,
-    `extends`: Option[ExtendsType] = None,
+    @jsonField("extends") extendsFrom: Option[ExtendsType] = None,
     fields: Map[String, Field] = Map.empty,
   ) {
     self =>
@@ -341,7 +341,7 @@ object Config {
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
 
-    def withExtends(typeName: String): Type = self.copy(`extends` = Option(ExtendsType(`type` = typeName)))
+    def withExtends(typeName: String): Type = self.copy(extendsFrom = Option(ExtendsType(`type` = typeName)))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
