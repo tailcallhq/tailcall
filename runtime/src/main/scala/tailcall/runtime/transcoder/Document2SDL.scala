@@ -14,10 +14,14 @@ import tailcall.runtime.internal.TValid
 trait Document2SDL {
   final def toSDL(document: Document): TValid[Nothing, String] =
     TValid.succeed {
-      val normalized = normalize(document)
+      val normalized      = normalize(document)
+      val schema          = RemoteSchema.parseRemoteSchema(normalized)
+      val additionalTypes = schema match {
+        case Some(s) => s.types
+        case None    => Nil
+      }
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
-          val schema = RemoteSchema.parseRemoteSchema(normalized)
           RootSchemaBuilder(
             schema.map(_.queryType).map(__type => Operation(__type, Step.NullStep)),
             schema.flatMap(_.mutationType).map(__type => Operation(__type, Step.NullStep)),
@@ -28,7 +32,7 @@ trait Document2SDL {
         override protected val wrappers: List[Wrapper[Any]]            = Nil
         override protected val additionalDirectives: List[__Directive] = Nil
         override protected val features: Set[Feature]                  = Set.empty
-      }.render
+      }.withAdditionalTypes(additionalTypes).render
     }
 
   /**
