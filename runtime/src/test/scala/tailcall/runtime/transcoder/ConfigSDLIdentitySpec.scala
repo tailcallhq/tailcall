@@ -273,12 +273,17 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
                         |  query: Query
                         |}
                         |
-                        |type Query {
-                        |  users: [UserQuery] @http(path: "/users")
-                        |}
-                        |
                         |type Identified {
                         |  id: Int
+                        |}
+                        |
+                        |type Post {
+                        |  id: Int
+                        |  userId: Int
+                        |}
+                        |
+                        |type Query {
+                        |  users: [UserQuery] @http(path: "/users")
                         |}
                         |
                         |type User @extends(type: "Identified") {
@@ -289,10 +294,6 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
                         |  posts: [Post] @http(path: "/users/{{value.id}}/posts")
                         |}
                         |
-                        |type Post {
-                        |  id: Int
-                        |  userId: Int
-                        |}
                         |""".stripMargin.trim
 
         val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
@@ -310,7 +311,7 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
         )
 
         assertIdentity(config, graphQL)
-      } @@ failing,
+      },
     )
 
   private def assertIdentity(config: Config, sdl: String): ZIO[Any, String, TestResult] = {
