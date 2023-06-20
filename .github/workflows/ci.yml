@@ -130,3 +130,35 @@ jobs:
           release_id: ${{steps.create_release.outputs.id}}
           file: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
           overwrite: true
+
+  homebrew-update:
+    name: Update Homebrew
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.10]
+        java: [temurin@8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: tailcallhq/homebrew-tailcall
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew formula
+        run: |
+          URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/tailcall-${{ github.event.release.tag_name }}.zip"
+          SHA256="$(curl -L -s ${URL} | sha256sum | cut -d ' ' -f 1)"
+
+          cd Formula
+          sed -i "s|url .*|url \"$URL\"|" tailcall.rb
+          sed -i "s|sha256 .*|sha256 \"$SHA256\"|" tailcall.rb
+          sed -i "s|version .*|version \"${{ github.event.release.tag_name }}\"|" tailcall.rb
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "cli-app ${{ github.event.release.tag_name }}"
+          git push

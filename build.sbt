@@ -189,6 +189,37 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         ),
       ),
     ),
+    WorkflowJob(
+      id = "homebrew-update",
+      name = "Update Homebrew",
+      cond = Option("github.event_name == 'push'"),
+      steps = List(
+        WorkflowStep.Use(
+          ref = UseRef.Public("actions", "checkout", "v3"),
+          params = Map("repository" -> "tailcallhq/homebrew-tailcall", "token" -> "${{ secrets.GITHUB_TOKEN }}"),
+        ),
+        WorkflowStep.Run(
+          name = Option("Update Homebrew formula"),
+          commands = List(
+            "URL=\"https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/tailcall-${{ github.event.release.tag_name }}.zip\"\n" +
+              "SHA256=\"$(curl -L -s ${URL} | sha256sum | cut -d ' ' -f 1)\"\n\n" +
+              "cd Formula\n" +
+              "sed -i \"s|url .*|url \\\"$URL\\\"|\" tailcall.rb\n" +
+              "sed -i \"s|sha256 .*|sha256 \\\"$SHA256\\\"|\" tailcall.rb\n" +
+              "sed -i \"s|version .*|version \\\"${{ github.event.release.tag_name }}\\\"|\" tailcall.rb"
+          ),
+        ),
+        WorkflowStep.Run(
+          name = Option("Commit and push"),
+          commands = List(
+            "git config user.name \"GitHub Actions\"\n" +
+              "git config user.email \"actions@github.com\"\n" +
+              "git commit -am \"cli-app ${{ github.event.release.tag_name }}\"\n" +
+              "git push"
+          ),
+        ),
+      ),
+    ),
   )
 }
 
