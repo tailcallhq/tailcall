@@ -96,6 +96,7 @@ jobs:
   release:
     name: Release
     needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
