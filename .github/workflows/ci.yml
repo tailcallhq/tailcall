@@ -112,22 +112,16 @@ jobs:
       - name: Universal Stage
         run: sbt Universal/stage
 
-      - id: create_release
-        uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yml
-
       - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
-          filename: tailcall-${{steps.create_release.outputs.name}}.zip
+          filename: tailcall.zip
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
       - uses: softprops/action-gh-release@v1
         with:
-          append_body: true
           draft: true
-          files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
+          append_body: true
+          files: target/universal/stage/tailcall.zip
           generate_release_notes: true
-          tag_name: ${{steps.create_release.outputs.name}}
