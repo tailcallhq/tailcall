@@ -156,7 +156,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       id = "release",
       name = "Release",
-      cond = githubWorkflowIsMain,
+      // FIXME: enable this workflow
+      // cond = githubWorkflowIsMain,
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
