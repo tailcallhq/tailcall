@@ -120,7 +120,7 @@ jobs:
       - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
-          filename: tailcall-${{create_release.outputs.tag_name}}.zip
+          filename: tailcall-${{steps.create_release.outputs.tag_name}}.zip
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
@@ -128,5 +128,5 @@ jobs:
         with:
           draft: true
           append_body: true
-          tag_name: ${{create_release.outputs.tag_name}}
-          files: target/universal/stage/tailcall-${{create_release.outputs.tag_name}}.zip
+          tag_name: ${{steps.create_release.outputs.tag_name}}
+          files: target/universal/stage/tailcall-${{steps.create_release.outputs.tag_name}}.zip
