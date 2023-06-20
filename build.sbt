@@ -181,10 +181,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
-            "draft"       -> "true",
-            "append_body" -> "true",
-            "tag_name"    -> tagName,
-            "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
+            "draft"                  -> "true",
+            "append_body"            -> "true",
+            "tag_name"               -> tagName,
+            "files"                  -> List("target/universal/stage/" + fileName).mkString("\n"),
+            "generate_release_notes" -> "true",
           ),
         ),
       ),
