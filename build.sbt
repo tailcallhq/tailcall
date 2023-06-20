@@ -156,8 +156,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       id = "release",
       name = "Release",
-      // FIXME: enable this workflow
-      // cond = githubWorkflowIsMain,
+      cond = githubWorkflowIsMain,
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
@@ -183,7 +182,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ref = UseRef.Public("softprops", "action-gh-release", "v1"),
           params = Map(
             "draft"       -> "true",
-            "append_body" -> "true",
+            "append_body" -> "false",
             "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
             "tag_name"    -> tagName,
           ),

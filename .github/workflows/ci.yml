@@ -96,6 +96,7 @@ jobs:
   release:
     name: Release
     needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -127,6 +128,6 @@ jobs:
       - uses: softprops/action-gh-release@v1
         with:
           draft: true
-          append_body: true
+          append_body: false
           files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
           tag_name: ${{steps.create_release.outputs.name}}
