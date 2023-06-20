@@ -137,8 +137,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       "deploy",
       "Deploy",
-      // FIXME: this needs to be only on main
-      cond = disable,
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(List("Docker/stage")),
