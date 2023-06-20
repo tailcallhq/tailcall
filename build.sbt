@@ -122,7 +122,6 @@ ThisBuild / githubWorkflowPermissions           := Option(
 )
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val disable              = Option("false")
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId      = "create_release"
   val tagName              = List(createReleaseId, "outputs", "tag_name").mkString("${{", ".", "}}")
