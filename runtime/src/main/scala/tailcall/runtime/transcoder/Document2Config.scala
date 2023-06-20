@@ -116,7 +116,7 @@ trait Document2Config {
       toFieldMap(definition).map(
         definition.name -> Config.Type(
           doc = definition.description,
-          `extends` = definition.directives.flatMap(_.fromDirective[ExtendsType].toList).headOption,
+          extendsFrom = definition.directives.flatMap(_.fromDirective[ExtendsType].toList).headOption,
           _,
         )
       ).trace(definition.name)

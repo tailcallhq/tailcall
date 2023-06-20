@@ -71,9 +71,6 @@ trait Blueprint2Document {
       case Blueprint.ListType(ofType, nonNull) => CalibanType.ListType(toCalibanType(ofType), nonNull)
     }
 
-  final private def toCalibanImplements(implements: Option[List[Blueprint.NamedType]]): List[CalibanType.NamedType] =
-    implements match {
-      case Some(list) => list.map(t => CalibanType.NamedType(t.name, t.nonNull))
-      case None       => List[CalibanType.NamedType]()
-    }
+  final private def toCalibanImplements(implements: List[Blueprint.NamedType]): List[CalibanType.NamedType] =
+    if (implements.nonEmpty) implements.map(t => CalibanType.NamedType(t.name, t.nonNull)) else Nil
 }
