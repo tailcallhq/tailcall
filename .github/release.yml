@@ -1,0 +1,44 @@
+# .github/release.yml
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - octocat
+  categories:
+    - title: '🚀 Features'
+      labels:
+        - 'feature'
+        - 'enhancement'
+        - 'feat'
+    - title: '🔧 Improvements'
+      labels:
+        - 'perf'
+        - 'performance'
+        - 'refactor'
+    - title: 'Tests'
+      labels:
+        - 'tests'
+        - 'testing'
+    - title: '🐛 Bug Fixes'
+      labels:
+        - 'fix'
+        - 'bugfix'
+        - 'bug'
+        - 'hotfix'
+        - 'revert'
+    - title: '🧰 Maintenance'
+      labels:
+        - 'docs'
+        - 'chore'
+        - 'maintenance'
+        - 'style'
+        - 'build'
+        - 'chores'
+        - 'ci'
+    - title: '💥Breaking Changes'
+      labels:
+        - 'breaking change'
+    - title: Other Changes
+      labels:
+        - "*"
