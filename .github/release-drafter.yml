@@ -1,39 +1,5 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
-categories:
-  - title: '🚀 Features'
-    labels:
-      - 'feature'
-      - 'enhancement'
-      - 'feat'
-  - title: '🔧 Improvements'
-    labels:
-      - 'perf'
-      - 'performance'
-      - 'refactor'
-  - title: 'Tests'
-    labels:
-      - 'tests'
-      - 'testing'
-  - title: '🐛 Bug Fixes'
-    labels:
-      - 'fix'
-      - 'bugfix'
-      - 'bug'
-      - 'hotfix'
-      - 'revert'
-  - title: '🧰 Maintenance'
-    labels:
-      - 'docs'
-      - 'chore'
-      - 'maintenance'
-      - 'style'
-      - 'build'
-      - 'chores'
-      - 'ci'
-  - title: '💥Breaking Changes'
-    labels:
-      - 'breaking change'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
