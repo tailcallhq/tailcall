@@ -126,8 +126,5 @@ jobs:
 
       - uses: softprops/action-gh-release@v1
         with:
-          append_body: true
-          draft: true
-          files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
-          generate_release_notes: true
           tag_name: ${{steps.create_release.outputs.name}}
+          files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
