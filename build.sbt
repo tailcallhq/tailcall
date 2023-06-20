@@ -124,7 +124,7 @@ ThisBuild / githubWorkflowPermissions           := Option(
 ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId      = "create_release"
-  val tagName              = List("steps", createReleaseId, "outputs", "tag_name").mkString("${{", ".", "}}")
+  val tagName              = List("steps", createReleaseId, "outputs", "name").mkString("${{", ".", "}}")
   val fileName             = "tailcall-" + tagName + ".zip"
   val jobPermissions       = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
