@@ -123,13 +123,10 @@ ThisBuild / githubWorkflowPermissions           := Option(
 
 ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  val draftJobId           = "draft"
   val createReleaseId      = "create_release"
-
-  val tagName = List("needs", draftJobId, "outputs", "tag_name").mkString("${{", ".", "}}")
-
-  val fileName       = "tailcall-" + tagName + ".zip"
-  val jobPermissions = sbtghactions.Permissions.Specify(Map(
+  val tagName              = List("needs", createReleaseId, "outputs", "tag_name").mkString("${{", ".", "}}")
+  val fileName             = "tailcall-" + tagName + ".zip"
+  val jobPermissions       = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
@@ -155,23 +152,12 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       javas = javaVersions,
     ),
 
-    // Update draft release
-    WorkflowJob(
-      draftJobId,
-      "Draft Release",
-      steps = List(WorkflowStep.Use(
-        id = Option(createReleaseId),
-        ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
-        params = Map("config-name" -> "release-drafter.yml"),
-      )),
-      permissions = Option(jobPermissions),
-    ),
-
     // Release to Github
     WorkflowJob(
       id = "release",
       name = "Release",
-      cond = githubWorkflowIsMain,
+      // FIXME: enable this condition
+      // cond = githubWorkflowIsMain,
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
@@ -179,6 +165,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
+        WorkflowStep.Use(
+          id = Option(createReleaseId),
+          ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
+          params = Map("config-name" -> "release-drafter.yml"),
+        ),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
