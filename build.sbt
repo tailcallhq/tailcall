@@ -122,9 +122,10 @@ ThisBuild / githubWorkflowPermissions           := Option(
 )
 
 ThisBuild / githubWorkflowAddedJobs ++= {
+  val disable              = Option("false")
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId      = "create_release"
-  val tagName              = List("needs", createReleaseId, "outputs", "tag_name").mkString("${{", ".", "}}")
+  val tagName              = List(createReleaseId, "outputs", "tag_name").mkString("${{", ".", "}}")
   val fileName             = "tailcall-" + tagName + ".zip"
   val jobPermissions       = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
@@ -136,6 +137,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       "deploy",
       "Deploy",
+      // FIXME: this needs to be only on main
+      cond = disable,
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Sbt(List("Docker/stage")),
