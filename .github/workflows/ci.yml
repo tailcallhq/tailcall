@@ -150,7 +150,7 @@ jobs:
           ref: main
           token: ${{ secrets.HOMEBREW_ACCESS }}
 
-      - name: Update Homebrew formula
+      - name: Update homebrew formula
         run: ./update-formula.sh ${{ github.event.release.tag_name }}
 
       - name: Commit and push
