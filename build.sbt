@@ -159,7 +159,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       id = "release",
       name = "Release",
-      cond = githubWorkflowIsMain,
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
@@ -192,6 +191,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "file"       -> List("target/universal/stage/" + fileName).mkString(";"),
             "overwrite"  -> "true",
           ),
+          cond = githubWorkflowIsMain,
         ),
       ),
     ),
