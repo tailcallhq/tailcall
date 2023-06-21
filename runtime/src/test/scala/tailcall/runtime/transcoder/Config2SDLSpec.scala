@@ -372,16 +372,8 @@ object Config2SDLSpec extends TailcallSpec {
                            |  query: Query
                            |}
                            |
-                           |type A {
-                           |  b: B
-                           |}
-                           |
                            |type B {
                            |  c: String
-                           |}
-                           |
-                           |type Foo {
-                           |  a: A
                            |}
                            |
                            |type Query {
@@ -398,10 +390,6 @@ object Config2SDLSpec extends TailcallSpec {
           )
           val expected = """schema {
                            |  query: Query
-                           |}
-                           |
-                           |type Foo {
-                           |  a: String
                            |}
                            |
                            |type Query {
@@ -422,16 +410,8 @@ object Config2SDLSpec extends TailcallSpec {
                            |  query: Query
                            |}
                            |
-                           |type A {
-                           |  b: [B]
-                           |}
-                           |
                            |type B {
                            |  c: String
-                           |}
-                           |
-                           |type Foo {
-                           |  a: [A]
                            |}
                            |
                            |type Query {
@@ -452,16 +432,8 @@ object Config2SDLSpec extends TailcallSpec {
                            |  query: Query
                            |}
                            |
-                           |type A {
-                           |  b: [B]
-                           |}
-                           |
                            |type B {
                            |  c: String
-                           |}
-                           |
-                           |type Foo {
-                           |  a: [A]
                            |}
                            |
                            |type Query {
@@ -481,10 +453,6 @@ object Config2SDLSpec extends TailcallSpec {
                            |  query: Query
                            |}
                            |
-                           |type Foo {
-                           |  a: [String!]
-                           |}
-                           |
                            |type Query {
                            |  foo: String
                            |}
@@ -502,10 +470,6 @@ object Config2SDLSpec extends TailcallSpec {
                            |  query: Query
                            |}
                            |
-                           |type Foo {
-                           |  a: String!
-                           |}
-                           |
                            |type Query {
                            |  foo: String
                            |}
@@ -521,10 +485,6 @@ object Config2SDLSpec extends TailcallSpec {
 
           val expected = """schema {
                            |  query: Query
-                           |}
-                           |
-                           |type Foo {
-                           |  a: String!
                            |}
                            |
                            |type Query {
