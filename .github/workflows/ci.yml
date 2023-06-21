@@ -110,13 +110,15 @@ jobs:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v3
 
-      - name: Universal Stage
-        run: sbt Universal/stage
-
       - id: create_release
         uses: release-drafter/release-drafter@v5
         with:
           config-name: release-drafter.yml
+
+      - name: Universal Stage
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
+        run: sbt Universal/stage
 
       - uses: TheDoctor0/zip-release@0.7.1
         with:

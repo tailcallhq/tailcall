@@ -87,16 +87,17 @@ val scala2Version = "2.13.11"
 val scala3Version = "3.2.2"
 val scalaVersions = List(scala2Version)
 val javaVersions  = List(JavaSpec.temurin("20"))
+val appVersionEnv = "APP_VERSION"
 
 ThisBuild / scalaVersion       := scala2Version
 ThisBuild / crossScalaVersions := scalaVersions
-
-ThisBuild / scalacOptions     := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
+ThisBuild / version            := sys.env.getOrElse(appVersionEnv, "0.1.0-SNAPSHOT")
+ThisBuild / scalacOptions      := Seq("-language:postfixOps", "-Ywarn-unused", "-Xfatal-warnings", "-deprecation")
 ThisBuild / testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-ThisBuild / Test / fork       := true
-Global / onChangedBuildSource := ReloadOnSourceChanges
-Global / semanticdbEnabled    := true
-Global / semanticdbVersion    := scalafixSemanticdb.revision
+ThisBuild / Test / fork        := true
+Global / onChangedBuildSource  := ReloadOnSourceChanges
+Global / semanticdbEnabled     := true
+Global / semanticdbVersion     := scalafixSemanticdb.revision
 ThisBuild / githubWorkflowBuild ++= Seq(
   WorkflowStep.Sbt(List("lintCheck"), name = Some("Lint"), cond = Some(s"matrix.scala == '${scala2Version}'"))
 )
@@ -164,11 +165,15 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       permissions = Option(jobPermissions),
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Sbt(commands = List("Universal/stage"), name = Option("Universal Stage")),
         WorkflowStep.Use(
           id = Option(createReleaseId),
           ref = UseRef.Public("release-drafter", "release-drafter", "v5"),
           params = Map("config-name" -> "release-drafter.yml"),
+        ),
+        WorkflowStep.Sbt(
+          commands = List("Universal/stage"),
+          name = Option("Universal Stage"),
+          env = Map(appVersionEnv -> tagName),
         ),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
