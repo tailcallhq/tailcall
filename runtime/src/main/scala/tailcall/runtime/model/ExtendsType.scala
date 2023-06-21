@@ -7,7 +7,7 @@ import zio.schema.codec.JsonCodec.jsonCodec
 import zio.schema.{DeriveSchema, Schema}
 
 @caseName("extends")
-final case class ExtendsType(`type`: String)
+final case class ExtendsType(types: List[String])
 
 object ExtendsType {
   implicit val schema: Schema[ExtendsType]            = DeriveSchema.gen[ExtendsType]
