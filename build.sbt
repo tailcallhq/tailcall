@@ -125,6 +125,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
   val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
   val createReleaseId      = "create_release"
   val tagName              = List("steps", createReleaseId, "outputs", "name").mkString("${{", ".", "}}")
+  val releaseId            = List("steps", createReleaseId, "outputs", "id").mkString("${{", ".", "}}")
   val fileName             = "tailcall-" + tagName + ".zip"
   val jobPermissions       = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
@@ -179,12 +180,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ),
         ),
         WorkflowStep.Use(
-          ref = UseRef.Public("softprops", "action-gh-release", "v1"),
+          ref = UseRef.Public("xresloader", "upload-to-github-release", "v1"),
           params = Map(
-            "draft"       -> "true",
-            "append_body" -> "false",
-            "files"       -> List("target/universal/stage/" + fileName).mkString("\n"),
-            "tag_name"    -> tagName,
+            "release_id" -> releaseId,
+            "file"       -> List("target/universal/stage/" + fileName).mkString(";"),
+            "overwrite"  -> "true",
           ),
         ),
       ),

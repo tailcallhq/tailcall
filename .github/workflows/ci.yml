@@ -125,9 +125,8 @@ jobs:
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
-      - uses: softprops/action-gh-release@v1
+      - uses: xresloader/upload-to-github-release@v1
         with:
-          draft: true
-          append_body: false
-          files: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
-          tag_name: ${{steps.create_release.outputs.name}}
+          release_id: ${{steps.create_release.outputs.id}}
+          file: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
+          overwrite: true
