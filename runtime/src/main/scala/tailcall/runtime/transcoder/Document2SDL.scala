@@ -1,6 +1,7 @@
 package tailcall.runtime.transcoder
 
 import caliban.GraphQL
+import caliban.InputValue.ListValue
 import caliban.execution.Feature
 import caliban.introspection.adt.__Directive
 import caliban.parsing.adt.Definition.TypeSystemDefinition
@@ -14,12 +15,29 @@ import tailcall.runtime.internal.TValid
 trait Document2SDL {
   final def toSDL(document: Document): TValid[Nothing, String] =
     TValid.succeed {
-      val normalized      = normalize(document)
-      val schema          = RemoteSchema.parseRemoteSchema(normalized)
+      val normalized        = normalize(document)
+      val schema            = RemoteSchema.parseRemoteSchema(normalized)
+      val extDirectiveTypes = document.objectTypeDefinitions.map(definition => {
+        val extendsDirective = definition.directives.find(directive => directive.name == "extends")
+        extendsDirective match {
+          case Some(value) =>
+            val typesOption = value.arguments.get("types")
+            typesOption match {
+              case Some(inputValue) => inputValue match {
+                  case ListValue(values) => values.map(_.toString)
+                  case _                 => Nil
+                }
+              case _                => Nil
+            }
+          case None        => Nil
+        }
+      }).flatten
+
       val additionalTypes = schema match {
-        case Some(s) => s.types
+        case Some(s) => s.types.filter(t => extDirectiveTypes.contains(s"\"${t.name.getOrElse("")}\""))
         case None    => Nil
       }
+
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {
           RootSchemaBuilder(
