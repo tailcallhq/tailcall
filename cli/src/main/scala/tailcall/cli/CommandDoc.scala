@@ -58,6 +58,8 @@ object CommandDoc {
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
-    .make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
+    .make("tailcall", cliVersion, command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
     .summary(HelpDoc.Span.Text("Tailcall CLI"))
+
+  private def cliVersion: String = Option(getClass.getPackage.getImplementationVersion).getOrElse("0.1.0-SNAPSHOT")
 }
