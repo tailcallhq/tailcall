@@ -1,6 +1,6 @@
-# monotail
+# tailcall
 
-[![Continuous Integration](https://github.com/tailcallhq/monotail/actions/workflows/ci.yml/badge.svg)](https://github.com/tailcallhq/monotail/actions/workflows/ci.yml)
+[![Continuous Integration](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml/badge.svg)](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml)
 
 API Orchestration for Scale
 
@@ -13,12 +13,12 @@ By providing a solution for API composition, Tailcall is addressing a critical p
 
 ## Getting Started
 
-To use monotail, you'll need to have Scala, SBT, and Java 11 or above installed on your machine. 
+To use tailcall, you'll need to have Scala, SBT, and Java 11 or above installed on your machine. 
 
 ### Installation
 
-1. Clone the repository: `git clone https://github.com/tailcallhq/monotail.git`
-2. Navigate to the project directory: `cd monotail`
+1. Clone the repository: `git clone https://github.com/tailcallhq/tailcall.git`
+2. Navigate to the project directory: `cd tailcall`
 3. Open the SBT console: `sbt`
 4. To start the server, run the following command inside the SBT console: `~server/reStart`
 5. Open a browser and go to `http://localhost:8080/`
