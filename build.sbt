@@ -193,10 +193,15 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       id = "homebrew-update",
       name = "Update Homebrew",
       cond = Option("github.event_name == 'push'"),
+      permissions = Option(jobPermissions),
       steps = List(
         WorkflowStep.Use(
           ref = UseRef.Public("actions", "checkout", "v3"),
-          params = Map("repository" -> "tailcallhq/homebrew-tailcall", "token" -> "${{ secrets.GITHUB_TOKEN }}"),
+          params = Map(
+            "repository" -> "tailcallhq/homebrew-tailcall",
+            "ref"        -> "main",
+            "token"      -> "${{ secrets.GITHUB_TOKEN }}",
+          ),
         ),
         WorkflowStep.Run(
           name = Option("Update Homebrew formula"),

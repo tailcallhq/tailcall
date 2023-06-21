@@ -140,10 +140,14 @@ jobs:
         scala: [2.13.10]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
         with:
           repository: tailcallhq/homebrew-tailcall
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Homebrew formula
