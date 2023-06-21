@@ -152,6 +152,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
+      cond = githubWorkflowIsMain,
     ),
 
     // Release to Github
