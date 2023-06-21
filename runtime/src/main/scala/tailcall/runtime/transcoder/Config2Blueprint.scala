@@ -2,7 +2,7 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
-import tailcall.runtime.internal.TValid.Succeed
+// import tailcall.runtime.internal.TValid.Succeed
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
@@ -72,23 +72,18 @@ object Config2Blueprint {
       typeInfo: Type,
       types: List[(String, Type)],
     ): TValid[String, List[Blueprint.FieldDefinition]] = {
-      val allParentFields = typeInfo.extendsFrom.types.map(name => {
-        val parent = getTypeByName(name, types)
-        parent match {
-          case Some((parentTypeName, parentTypeInfo)) =>
-            val parentFields   = toFieldList(parentTypeName, parentTypeInfo)
-            val ancestorFields = getAllParentFields(parentTypeInfo, types)
-            parentFields.zip(ancestorFields)((a, b) => a ::: b)
-          case _                                      => TValid.fail(s"Could not find definition for ${name}")
+      TValid.foreach(typeInfo.extendsFrom.types) { name =>
+        {
+          val parent = getTypeByName(name, types)
+          parent match {
+            case Some((parentTypeName, parentTypeInfo)) =>
+              val parentFields   = toFieldList(parentTypeName, parentTypeInfo)
+              val ancestorFields = getAllParentFields(parentTypeInfo, types)
+              parentFields.zip(ancestorFields)((a, b) => a ::: b)
+            case _                                      => TValid.fail(s"Could not find definition for ${name}")
+          }
         }
-      })
-
-      val newList = TValid.foreach(allParentFields) {
-        case Succeed(value) => TValid.succeed(value)
-        case e              => e
       }.map(definitionList => definitionList.foldLeft(List[Blueprint.FieldDefinition]())((acc, l) => acc ::: l))
-
-      newList
     }
 
     private def toCombinedFieldList(
@@ -137,8 +132,7 @@ object Config2Blueprint {
             .InterfaceTypeDefinition(name = s"I${parentTypeName}", fields = parentFields, description = None)
         }
 
-        val allDefinitions = interfaceDefinitions.zip(definition)((a, b) => b :: a)
-        allDefinitions
+        interfaceDefinitions.zip(definition)((a, b) => b :: a)
 
       }.map(_.flatten)
     }
