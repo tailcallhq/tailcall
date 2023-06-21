@@ -207,21 +207,14 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         ),
         WorkflowStep.Run(
           name = Option("Update Homebrew formula"),
-          commands = List(
-            "URL=\"https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/tailcall-${{ github.event.release.tag_name }}.zip\"\n" +
-              "SHA256=\"$(curl -L -s ${URL} | sha256sum | cut -d ' ' -f 1)\"\n\n" +
-              "cd Formula\n" +
-              "sed -i \"s|url .*|url \\\"$URL\\\"|\" tailcall.rb\n" +
-              "sed -i \"s|sha256 .*|sha256 \\\"$SHA256\\\"|\" tailcall.rb\n" +
-              "sed -i \"s|version .*|version \\\"${{ github.event.release.tag_name }}\\\"|\" tailcall.rb"
-          ),
+          commands = List("./update-formula.sh ${{ github.event.release.tag_name }}"),
         ),
         WorkflowStep.Run(
           name = Option("Commit and push"),
           commands = List(
             "git config user.name \"GitHub Actions\"\n" +
               "git config user.email \"actions@github.com\"\n" +
-              "git commit -am \"tc-cli ${{ github.event.release.tag_name }}\"\n" +
+              "git commit -am \"update tailcall cli version: ${{ github.event.release.tag_name }}\"\n" +
               "git push"
           ),
         ),

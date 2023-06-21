@@ -151,18 +151,11 @@ jobs:
           token: ${{ secrets.HOMEBREW_ACCESS }}
 
       - name: Update Homebrew formula
-        run: |
-          URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/tailcall-${{ github.event.release.tag_name }}.zip"
-          SHA256="$(curl -L -s ${URL} | sha256sum | cut -d ' ' -f 1)"
-
-          cd Formula
-          sed -i "s|url .*|url \"$URL\"|" tailcall.rb
-          sed -i "s|sha256 .*|sha256 \"$SHA256\"|" tailcall.rb
-          sed -i "s|version .*|version \"${{ github.event.release.tag_name }}\"|" tailcall.rb
+        run: ./update-formula.sh ${{ github.event.release.tag_name }}
 
       - name: Commit and push
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -am "tc-cli ${{ github.event.release.tag_name }}"
+          git commit -am "update tailcall cli version: ${{ github.event.release.tag_name }}"
           git push
