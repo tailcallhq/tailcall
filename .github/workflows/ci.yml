@@ -72,6 +72,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -96,7 +97,6 @@ jobs:
   release:
     name: Release
     needs: [build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -127,7 +127,8 @@ jobs:
           directory: target/universal/stage
           exclusions: '*.git*, .metals'
 
-      - uses: xresloader/upload-to-github-release@v1
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{steps.create_release.outputs.id}}
           file: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
