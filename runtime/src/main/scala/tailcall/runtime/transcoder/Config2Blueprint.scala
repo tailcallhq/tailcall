@@ -11,6 +11,7 @@ import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
 import zio.Chunk
 import zio.schema.DynamicValue
+import tailcall.runtime.internal.TValid.Succeed
 
 trait Config2Blueprint {
   def toBlueprint(config: Config): TValid[String, Blueprint] = Config2Blueprint.Live(config).toBlueprint
@@ -67,33 +68,40 @@ object Config2Blueprint {
       }
     }
 
+    private def getAllParentFields(
+      typeInfo: Type,
+      types: List[(String, Type)],
+    ): TValid[String, List[Blueprint.FieldDefinition]] = {
+      val allParentFields = typeInfo.extendsFrom.types.map(name => {
+        val parent = getTypeByName(name, types)
+        parent match {
+          case Some((parentTypeName, parentTypeInfo)) =>
+            val parentFields   = toFieldList(parentTypeName, parentTypeInfo)
+            val ancestorFields = getAllParentFields(parentTypeInfo, types)
+            parentFields.zip(ancestorFields)((a, b) => a ::: b)
+          case _                                      => TValid.fail(s"Could not find definition for ${name}")
+        }
+      })
+
+      val newList = TValid.foreach(allParentFields) {
+        case Succeed(value) => TValid.succeed(value)
+        case e              => e
+      }.map(definitionList => definitionList.foldLeft(List[Blueprint.FieldDefinition]())((acc, l) => acc ::: l))
+
+      newList
+    }
+
     private def toCombinedFieldList(
       typeName: String,
       typeInfo: Type,
       types: List[(String, Type)],
     ): TValid[String, List[Blueprint.FieldDefinition]] = {
-      typeInfo.extendsFrom match {
-        case Some(ext) =>
-          val parent = getTypeByName(ext.`type`, types)
-          parent match {
-            case Some((parentTypeName, parentTypeInfo)) =>
-              val objFields      = toFieldList(typeName, typeInfo)
-              val parentFields   = toCombinedFieldList(parentTypeName, parentTypeInfo, types)
-              val duplicateField = objFields
-                .zip(parentFields)((a, b) => a.exists(field => b.map(_.name).contains(field.name)))
-              if (duplicateField.getOrElse(false)) TValid.fail(s"Duplicate field found for ${typeName}")
-              else objFields.zip(parentFields)((a, b) => a ::: b)
-            case _                                      => TValid.fail(s"Could not find definition for ${ext.`type`}")
-          }
-        case _         => toFieldList(typeName, typeInfo)
-      }
-    }
-
-    private def getParentTypeName(typeInfo: Type): String = {
-      typeInfo.extendsFrom match {
-        case Some(value) => value.`type`
-        case _           => ""
-      }
+      val objFields       = toFieldList(typeName, typeInfo)
+      val allParentFields = getAllParentFields(typeInfo, types)
+      val duplicateField  = objFields
+        .zip(allParentFields)((a, b) => a.exists(field => b.map(_.name).contains(field.name)))
+      if (duplicateField.getOrElse(false)) TValid.fail(s"Duplicate field found for ${typeName}")
+      else objFields.zip(allParentFields)((a, b) => a ::: b)
     }
 
     private def getTypeByName(name: String, types: List[(String, Type)]): Option[(String, Type)] = {
@@ -102,8 +110,6 @@ object Config2Blueprint {
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
       TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
-        val parentTypeName = getParentTypeName(typeInfo)
-
         val dblUsage   = inputTypes.contains(typeName) && outputTypes.contains(typeName)
         val definition = for {
           _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
@@ -113,30 +119,25 @@ object Config2Blueprint {
             name = typeName,
             fields = fields,
             description = typeInfo.doc,
-            implements = if (parentTypeName.nonEmpty) List(Blueprint.NamedType(s"I${parentTypeName}", true)) else Nil,
+            implements =
+              if (typeInfo.extendsFrom.types.nonEmpty) typeInfo.extendsFrom.types
+                .map(name => Blueprint.NamedType(s"I${name}", true))
+              else Nil,
           )
           if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(objDefinition) else objDefinition
         }
 
-        val interfaceDefinition =
-          if (parentTypeName.nonEmpty) {
-            val parent = getTypeByName(parentTypeName, config.graphQL.types.toList)
-            parent match {
-              case Some((parentTypeName, parentTypeInfo)) =>
-                for {
-                  parentFields <- toCombinedFieldList(parentTypeName, parentTypeInfo, config.graphQL.types.toList),
-                } yield Blueprint
-                  .InterfaceTypeDefinition(name = s"I${parentTypeName}", fields = parentFields, description = None)
-              case _                                      => TValid.succeed(None)
-            }
-          } else TValid.succeed(None)
+        val parentTypes = typeInfo.extendsFrom.types
+          .map(parentTypeName => getTypeByName(parentTypeName, config.graphQL.types.toList)).flatten
 
-        val allDefinitions = definition.zip(interfaceDefinition)((a, b) =>
-          b match {
-            case i: Blueprint.InterfaceTypeDefinition => List[Blueprint.Definition](a, i)
-            case _                                    => List[Blueprint.Definition](a)
-          }
-        )
+        val interfaceDefinitions = TValid.foreach(parentTypes) { case (parentTypeName, parentTypeInfo) =>
+          for {
+            parentFields <- toCombinedFieldList(parentTypeName, parentTypeInfo, config.graphQL.types.toList),
+          } yield Blueprint
+            .InterfaceTypeDefinition(name = s"I${parentTypeName}", fields = parentFields, description = None)
+        }
+
+        val allDefinitions = interfaceDefinitions.zip(definition)((a, b) => b :: a)
         allDefinitions
 
       }.map(_.flatten)

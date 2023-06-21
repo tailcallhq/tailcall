@@ -286,11 +286,11 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
                         |  users: [UserQuery] @http(path: "/users")
                         |}
                         |
-                        |type User @extends(type: "Identified") {
+                        |type User @extends(types: ["Identified"]) {
                         |  name: String
                         |}
                         |
-                        |type UserQuery @extends(type: "User") {
+                        |type UserQuery @extends(types: ["User"]) {
                         |  posts: [Post] @http(path: "/users/{{value.id}}/posts")
                         |}
                         |
@@ -302,11 +302,11 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
               .withHttp(Operation.Http(Path.unsafe.fromString("/users")))
           ),
           "Identified" -> Config.Type("id" -> Config.Field.int),
-          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(typeName = "Identified"),
+          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified")),
           "UserQuery"  -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
-          ).withExtends(typeName = "User"),
+          ).withExtends(types = List("User")),
           "Post"       -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
         )
 
