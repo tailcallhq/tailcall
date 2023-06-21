@@ -2,7 +2,6 @@ package tailcall.runtime.transcoder
 
 import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
-// import tailcall.runtime.internal.TValid.Succeed
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config._
