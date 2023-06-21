@@ -123,12 +123,15 @@ ThisBuild / githubWorkflowPermissions           := Option(
 )
 
 ThisBuild / githubWorkflowAddedJobs ++= {
-  val githubWorkflowIsMain = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
-  val createReleaseId      = "create_release"
-  val tagName              = List("steps", createReleaseId, "outputs", "name").mkString("${{", ".", "}}")
-  val releaseId            = List("steps", createReleaseId, "outputs", "id").mkString("${{", ".", "}}")
-  val fileName             = "tailcall-" + tagName + ".zip"
-  val jobPermissions       = sbtghactions.Permissions.Specify(Map(
+  val githubWorkflowIsMain    = Option("github.event_name == 'push' && github.ref == 'refs/heads/main'")
+  val githubWorkflowIsRelease = Option(
+    "github.event_name == 'release' && github.event.action == 'published' && startsWith(github.ref, 'refs/tags/v')"
+  )
+  val createReleaseId         = "create_release"
+  val tagName                 = List("steps", createReleaseId, "outputs", "name").mkString("${{", ".", "}}")
+  val releaseId               = List("steps", createReleaseId, "outputs", "id").mkString("${{", ".", "}}")
+  val fileName                = "tailcall-" + tagName + ".zip"
+  val jobPermissions          = sbtghactions.Permissions.Specify(Map(
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
@@ -192,6 +195,35 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "overwrite"  -> "true",
           ),
           cond = githubWorkflowIsMain,
+        ),
+      ),
+    ),
+    WorkflowJob(
+      id = "homebrew-update",
+      name = "Update Homebrew",
+      cond = githubWorkflowIsRelease,
+      permissions = Option(jobPermissions),
+      steps = List(
+        WorkflowStep.Use(
+          ref = UseRef.Public("actions", "checkout", "v3"),
+          params = Map(
+            "repository" -> "tailcallhq/homebrew-tailcall",
+            "ref"        -> "main",
+            "token"      -> "${{ secrets.HOMEBREW_ACCESS }}",
+          ),
+        ),
+        WorkflowStep.Run(
+          name = Option("Update homebrew formula"),
+          commands = List("./update-formula.sh ${{ github.event.release.tag_name }}"),
+        ),
+        WorkflowStep.Run(
+          name = Option("Commit and push"),
+          commands = List(
+            """git config user.name "GitHub Actions"""",
+            """git config user.email "actions@github.com"""",
+            """git commit -am "update tailcall cli version: ${{ github.event.release.tag_name }}"""",
+            "git push",
+          ),
         ),
       ),
     ),
