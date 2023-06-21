@@ -267,7 +267,7 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
         // Config will need to have support for keeping a copy of all the directives.
         // Currently we lose them when we parse a doc into a Config.
       } @@ ignore,
-      test("extends directive") {
+      test("extends") {
         val graphQL = """
                         |schema @server(baseURL: "http://foo.com") {
                         |  query: Query
@@ -308,6 +308,56 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
               .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
           ).withExtends(types = List("User")),
           "Post"       -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
+        )
+
+        assertIdentity(config, graphQL)
+      },
+      test("extends multiple") {
+        val graphQL = """
+                        |schema @server(baseURL: "http://foo.com") {
+                        |  query: Query
+                        |}
+                        |
+                        |type Addressable {
+                        |  address: String
+                        |}
+                        |
+                        |type Identified {
+                        |  id: Int
+                        |}
+                        |
+                        |type Post {
+                        |  id: Int
+                        |  userId: Int
+                        |}
+                        |
+                        |type Query {
+                        |  users: [UserQuery] @http(path: "/users")
+                        |}
+                        |
+                        |type User @extends(types: ["Identified","Addressable"]) {
+                        |  name: String
+                        |}
+                        |
+                        |type UserQuery @extends(types: ["User"]) {
+                        |  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+                        |}
+                        |
+                        |""".stripMargin.trim
+
+        val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
+          "Query"       -> Config.Type(
+            "users" -> Config.Field.ofType("UserQuery").asList
+              .withHttp(Operation.Http(Path.unsafe.fromString("/users")))
+          ),
+          "Identified"  -> Config.Type("id" -> Config.Field.int),
+          "Addressable" -> Config.Type("address" -> Config.Field.str),
+          "User"      -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified", "Addressable")),
+          "UserQuery" -> Config.Type(
+            "posts" -> Config.Field.ofType("Post").asList
+              .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
+          ).withExtends(types = List("User")),
+          "Post"      -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
         )
 
         assertIdentity(config, graphQL)
