@@ -192,7 +192,9 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       id = "homebrew-update",
       name = "Update Homebrew",
-      cond = Option("github.event_name == 'push'"),
+      cond = Option(
+        "github.event_name == 'release' && github.event.action == 'published' && startsWith(github.ref, 'refs/tags/v')"
+      ),
       permissions = Option(jobPermissions),
       steps = List(
         WorkflowStep.Use(
@@ -200,7 +202,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           params = Map(
             "repository" -> "tailcallhq/homebrew-tailcall",
             "ref"        -> "main",
-            "token"      -> "${{ secrets.GITHUB_TOKEN }}",
+            "token"      -> "${{ secrets.HOMEBREW_ACCESS }}",
           ),
         ),
         WorkflowStep.Run(
@@ -219,7 +221,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           commands = List(
             "git config user.name \"GitHub Actions\"\n" +
               "git config user.email \"actions@github.com\"\n" +
-              "git commit -am \"cli-app ${{ github.event.release.tag_name }}\"\n" +
+              "git commit -am \"tc-cli ${{ github.event.release.tag_name }}\"\n" +
               "git push"
           ),
         ),

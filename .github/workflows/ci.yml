@@ -133,7 +133,7 @@ jobs:
 
   homebrew-update:
     name: Update Homebrew
-    if: github.event_name == 'push'
+    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.ref, 'refs/tags/v')
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -148,7 +148,7 @@ jobs:
         with:
           repository: tailcallhq/homebrew-tailcall
           ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HOMEBREW_ACCESS }}
 
       - name: Update Homebrew formula
         run: |
@@ -164,5 +164,5 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -am "cli-app ${{ github.event.release.tag_name }}"
+          git commit -am "tc-cli ${{ github.event.release.tag_name }}"
           git push
