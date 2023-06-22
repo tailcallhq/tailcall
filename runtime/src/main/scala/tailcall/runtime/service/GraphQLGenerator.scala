@@ -7,7 +7,6 @@ import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.tools.RemoteSchema
 import caliban.wrappers.Wrapper
 import tailcall.runtime.model.Blueprint
-import tailcall.runtime.model.Blueprint.InterfaceTypeDefinition
 import tailcall.runtime.transcoder.Transcoder
 import zio.{ZIO, ZLayer}
 
@@ -19,16 +18,6 @@ object GraphQLGenerator {
   final case class Live(sGen: StepGenerator) extends GraphQLGenerator {
     override def toGraphQL(blueprint: Blueprint): GraphQL[HttpContext] = {
       val schema = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
-      val possibleAdditionalTypeNames = blueprint.definitions.map(d =>
-        d match {
-          case InterfaceTypeDefinition(name, _, _) => name.substring(1, name.length)
-          case _                                   => ""
-        }
-      ).filter(_.nonEmpty)
-      val additionalTypes             = schema match {
-        case Some(s) => s.types.filter(t => possibleAdditionalTypeNames.contains(t.name.getOrElse("")))
-        case None    => Nil
-      }
       new GraphQL[HttpContext] {
         override protected val schemaBuilder: RootSchemaBuilder[HttpContext] = {
           val stepResult = sGen.resolve(blueprint)
@@ -47,7 +36,7 @@ object GraphQLGenerator {
         override protected val wrappers: List[Wrapper[Any]]                  = Nil
         override protected val additionalDirectives: List[__Directive]       = Nil
         override protected val features: Set[Feature]                        = Set.empty
-      }.withAdditionalTypes(additionalTypes)
+      }
     }
   }
 
