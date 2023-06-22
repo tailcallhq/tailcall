@@ -49,7 +49,7 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
 
   override def drop(digest: Digest): Task[Boolean] = {
     val sql = quote(filterByDigest(digest).update(_.dropped -> lift(Option(new Timestamp(new Date().getTime)))))
-    ctx.run(sql).map(_ > 0)
+    ctx.run(sql).debug("value").map(_ > 0)
   }
 
   override def get(digest: Digest): Task[Option[Blueprint]] = {
@@ -63,10 +63,9 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
   }
 
   private def filterByDigest(digest: Digest): Quoted[EntityQuery[BlueprintSpec]] =
-    quote(
-      query[BlueprintSpec]
-        .filter(b => b.digestHex == lift(digest.hex) && b.digestAlg == lift(digest.alg) && b.dropped.isEmpty)
-    )
+    quote(query[BlueprintSpec].filter(b =>
+      (b.digestHex like lift(digest.prefix + "%")) && b.digestAlg == lift(digest.alg) && b.dropped.isEmpty
+    ))
 }
 
 object MySQLRegistry {

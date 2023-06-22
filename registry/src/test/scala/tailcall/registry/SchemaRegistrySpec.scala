@@ -40,6 +40,32 @@ object SchemaRegistrySpec extends TailcallSpec {
         actual    <- SchemaRegistry.get(blueprint.digest)
       } yield assert(actual)(isNone)
     },
+    suite("short sha")(
+      test("set & get") {
+        for {
+          blueprint <- config.toBlueprint.toTask
+          digest    <- SchemaRegistry.add(blueprint)
+          actual    <- SchemaRegistry.get(digest.copy(hex = digest.prefix))
+        } yield assert(actual)(isSome(equalTo(blueprint)))
+      },
+      test("add multiple times") {
+        for {
+          blueprint <- config.toBlueprint.toTask
+          _         <- SchemaRegistry.add(blueprint)
+          _         <- SchemaRegistry.add(blueprint)
+          _         <- SchemaRegistry.add(blueprint)
+          actual    <- SchemaRegistry.get(blueprint.digest.copy(hex = blueprint.digest.prefix))
+        } yield assert(actual)(isSome(equalTo(blueprint)))
+      },
+      test("drop by short sha") {
+        for {
+          blueprint <- config.toBlueprint.toTask
+          _         <- SchemaRegistry.add(blueprint)
+          _         <- SchemaRegistry.drop(blueprint.digest.copy(hex = blueprint.digest.prefix))
+          actual    <- SchemaRegistry.get(blueprint.digest.copy(hex = blueprint.digest.prefix))
+        } yield assert(actual)(isNone)
+      },
+    ),
   )
 
   override def spec: Spec[TestEnvironment with Scope, Any] = {
