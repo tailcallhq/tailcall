@@ -71,7 +71,7 @@ object Config2Blueprint {
       typeInfo: Type,
       types: List[(String, Type)],
     ): TValid[String, List[Blueprint.FieldDefinition]] = {
-      TValid.foreach(typeInfo.extendsFrom.types) { name =>
+      TValid.foreach(typeInfo.extendsFrom.toList.flatten) { name =>
         {
           val parent = getTypeByName(name, types)
           parent match {
@@ -104,25 +104,20 @@ object Config2Blueprint {
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
       TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
+        val extensions = typeInfo.extendsFrom.toList.flatten
         val dblUsage   = inputTypes.contains(typeName) && outputTypes.contains(typeName)
         val definition = for {
           _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
           fields <- toCombinedFieldList(typeName, typeInfo, config.graphQL.types.toList)
         } yield {
-          val objDefinition = Blueprint.ObjectTypeDefinition(
-            name = typeName,
-            fields = fields,
-            description = typeInfo.doc,
-            implements =
-              if (typeInfo.extendsFrom.types.nonEmpty) typeInfo.extendsFrom.types
-                .map(name => Blueprint.NamedType(s"I${name}", true))
-              else Nil,
-          )
+          val implements    =
+            if (extensions.isEmpty) Nil else extensions.map(name => Blueprint.NamedType(s"I${name}", true))
+          val objDefinition = Blueprint
+            .ObjectTypeDefinition(name = typeName, fields = fields, description = typeInfo.doc, implements = implements)
           if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(objDefinition) else objDefinition
         }
 
-        val parentTypes = typeInfo.extendsFrom.types
-          .map(parentTypeName => getTypeByName(parentTypeName, config.graphQL.types.toList)).flatten
+        val parentTypes = extensions.flatMap(getTypeByName(_, config.graphQL.types.toList))
 
         val interfaceDefinitions = TValid.foreach(parentTypes) { case (parentTypeName, parentTypeInfo) =>
           for {

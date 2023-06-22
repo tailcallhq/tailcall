@@ -76,28 +76,28 @@ object Config2BlueprintSpec extends TailcallSpec {
       test("extends with duplicate field") {
         val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
           "Identified" -> Config.Type("id" -> Config.Field.int),
-          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified")),
+          "User"       -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
           "UserQuery"  -> Config.Type(
             "name"  -> Config.Field.str,
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts"))),
-          ).withExtends(types = List("User")),
+          ).extendsWith("User"),
           "Post"       -> Config.Type("title" -> Config.Field.str),
           "Query"      -> Config
             .Type("users" -> Config.Field.ofType("User").asList.withHttp(Http(path = Path.unsafe.fromString("/users")))),
         )
 
-        val expected = Chunk(TValid.Cause("""Duplicate field found for UserQuery""", List[String]()))
+        val expected = Chunk(TValid.Cause("""Duplicate field found for UserQuery""", Nil))
         assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(expected))
       },
       test("extends with missing parent type") {
         val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
           // "Identified" -> Config.Type("id" -> Config.Field.int),
-          "User"      -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified")),
+          "User"      -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
           "UserQuery" -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
-          ).withExtends(types = List("User")),
+          ).extendsWith("User"),
           "Post"      -> Config.Type("title" -> Config.Field.str),
           "Query"     -> Config
             .Type("users" -> Config.Field.ofType("User").asList.withHttp(Http(path = Path.unsafe.fromString("/users")))),
@@ -113,11 +113,11 @@ object Config2BlueprintSpec extends TailcallSpec {
       test("extends") {
         val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
           "Identified" -> Config.Type("id" -> Config.Field.int),
-          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(types = List[String]("Identified")),
+          "User"       -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
           "UserQuery"  -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
-          ).withExtends(types = List[String]("User")),
+          ).extendsWith("User"),
           "Post"       -> Config.Type("title" -> Config.Field.str),
           "Query"      -> Config
             .Type("users" -> Config.Field.ofType("User").asList.withHttp(Http(path = Path.unsafe.fromString("/users")))),

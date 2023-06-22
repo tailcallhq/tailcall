@@ -302,11 +302,11 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
               .withHttp(Operation.Http(Path.unsafe.fromString("/users")))
           ),
           "Identified" -> Config.Type("id" -> Config.Field.int),
-          "User"       -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified")),
+          "User"       -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
           "UserQuery"  -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
-          ).withExtends(types = List("User")),
+          ).extendsWith("User"),
           "Post"       -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
         )
 
@@ -352,12 +352,12 @@ object ConfigSDLIdentitySpec extends TailcallSpec {
           ),
           "Identified"  -> Config.Type("id" -> Config.Field.int),
           "Addressable" -> Config.Type("address" -> Config.Field.str),
-          "User"      -> Config.Type("name" -> Config.Field.str).withExtends(types = List("Identified", "Addressable")),
-          "UserQuery" -> Config.Type(
+          "User"        -> Config.Type("name" -> Config.Field.str).extendsWith("Identified", "Addressable"),
+          "UserQuery"   -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
               .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
-          ).withExtends(types = List("User")),
-          "Post"      -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
+          ).extendsWith("User"),
+          "Post"        -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
         )
 
         assertIdentity(config, graphQL)
