@@ -2,7 +2,6 @@ package tailcall.registry
 
 import tailcall.runtime.model.{Blueprint, Digest}
 import zio._
-import zio.redis.Redis
 
 trait SchemaRegistry {
   def add(blueprint: Blueprint): Task[Digest]
@@ -41,5 +40,4 @@ object SchemaRegistry {
     autoMigrate: Boolean = true,
   ): ZLayer[Any, Throwable, SchemaRegistry] = MySQLRegistry.default(host, port, uname, password, autoMigrate)
 
-  def redis: ZLayer[Redis, Nothing, SchemaRegistry] = ZLayer.fromFunction(RedisRegistry(_))
 }
