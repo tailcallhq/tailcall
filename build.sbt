@@ -148,7 +148,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
           commands = List("flyctl deploy --remote-only ./target/docker/stage"),
-          cond = githubWorkflowIsMain,
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
@@ -166,6 +165,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       scalas = scalaVersions,
       javas = javaVersions,
       permissions = Option(jobPermissions),
+      cond = githubWorkflowIsMain,
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Use(
@@ -194,7 +194,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "file"       -> List("target/universal/stage/" + fileName).mkString(";"),
             "overwrite"  -> "true",
           ),
-          cond = githubWorkflowIsMain,
         ),
       ),
     ),
