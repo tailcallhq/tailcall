@@ -1,11 +1,14 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
+import tailcall.runtime.model.UnsafeSteps.Operation
+import tailcall.runtime.model.{Config, Path}
 import tailcall.runtime.service._
 import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.test.{TestResult, assertTrue}
+
+import java.net.URI
 
 /**
  * NOTE: These tests are not required anymore.
@@ -495,6 +498,77 @@ object Config2SDLSpec extends TailcallSpec {
           assertSDL(config, expected)
         },
       ),
+      test("blueprint graphql for extends") {
+        val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
+          "Query"       -> Config.Type(
+            "users" -> Config.Field.ofType("UserQuery").asList
+              .withHttp(Operation.Http(Path.unsafe.fromString("/users")))
+          ),
+          "Identified"  -> Config.Type("id" -> Config.Field.int),
+          "Addressable" -> Config.Type("address" -> Config.Field.str),
+          "User"        -> Config.Type("name" -> Config.Field.str).extendsWith("Identified", "Addressable"),
+          "UserQuery"   -> Config.Type(
+            "posts" -> Config.Field.ofType("Post").asList
+              .withHttp(Operation.Http(path = Path.unsafe.fromString("/users/{{value.id}}/posts")))
+          ).extendsWith("User"),
+          "Post"        -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int),
+        )
+
+        val expected = """
+                         |schema {
+                         |  query: Query
+                         |}
+                         |
+                         |interface IAddressable {
+                         |  address: String
+                         |}
+                         |
+                         |interface IIdentified {
+                         |  id: Int
+                         |}
+                         |
+                         |interface IUser {
+                         |  name: String
+                         |  id: Int
+                         |  address: String
+                         |}
+                         |
+                         |type Addressable {
+                         |  address: String
+                         |}
+                         |
+                         |type Identified {
+                         |  id: Int
+                         |}
+                         |
+                         |type Post {
+                         |  userId: Int
+                         |  id: Int
+                         |}
+                         |
+                         |type Query {
+                         |  users: [UserQuery]
+                         |}
+                         |
+                         |type User implements IIdentified & IAddressable {
+                         |  name: String
+                         |  id: Int
+                         |  address: String
+                         |}
+                         |
+                         |type UserQuery implements IUser {
+                         |  posts: [Post]
+                         |  name: String
+                         |  id: Int
+                         |  address: String
+                         |}
+                         |""".stripMargin.trim
+
+        for {
+          blueprint <- Transcoder.toBlueprint(config).toTask
+          graphQL   <- blueprint.toGraphQL
+        } yield assertTrue(graphQL.render == expected)
+      },
     ).provide(GraphQLGenerator.default)
 
   private def assertSDL(config: Config, expected: String): ZIO[GraphQLGenerator, Throwable, TestResult] =
