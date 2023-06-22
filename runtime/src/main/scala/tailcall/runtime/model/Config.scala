@@ -303,6 +303,12 @@ object Config {
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
+  private def compressOptional[A](data: Option[List[A]]): Option[List[A]] =
+    data match {
+      case Some(Nil) => None
+      case data      => data
+    }
+
   private def mergeTypeMap(m1: Map[String, Type], m2: Map[String, Type]) = {
     (for {
       key    <- m1.keys ++ m2.keys
@@ -320,14 +326,19 @@ object Config {
 
   final case class Type(
     doc: Option[String] = None,
-    @jsonField("extends") extendsFrom: ExtendsType = ExtendsType(types = Nil),
     fields: Map[String, Field] = Map.empty,
+    @jsonField("extends") extendsFrom: Option[List[String]] = None,
   ) {
     self =>
-
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
+    def compress: Type =
+      self.copy(
+        fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap,
+        extendsFrom = compressOptional(self.extendsFrom),
+      )
+
+    def extendsWith(types: String*): Type = self.copy(extendsFrom = Option(types.toList))
 
     def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields
@@ -340,8 +351,6 @@ object Config {
 
     def withFields(input: (String, Field)*): Type =
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
-
-    def withExtends(types: List[String]): Type = self.copy(extendsFrom = ExtendsType(types = types))
   }
 
   final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
@@ -511,8 +520,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(None, ExtendsType(types = Nil), fields.toMap)
-    def empty: Type                           = Type(None, ExtendsType(types = Nil), Map.empty[String, Field])
+    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
+    def empty: Type                           = Type(None, Map.empty[String, Field])
   }
 
   object Field {

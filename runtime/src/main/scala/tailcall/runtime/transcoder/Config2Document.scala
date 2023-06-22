@@ -118,7 +118,9 @@ trait Config2Document {
       fields = fields,
       description = typeInfo.doc,
       implements = Nil,
-      directives = if (typeInfo.extendsFrom.types.nonEmpty) typeInfo.extendsFrom.toDirective.toList else Nil,
+      directives =
+        if (typeInfo.extendsFrom.exists(_.nonEmpty)) ExtendsType(typeInfo.extendsFrom.toList.flatten).toDirective.toList
+        else Nil,
     )
   }
 

@@ -115,16 +115,14 @@ trait Document2Config {
       toFieldMap(definition).map(
         definition.name -> Config.Type(
           doc = definition.description,
-          extendsFrom = definition.directives.flatMap(_.fromDirective[ExtendsType].toList).headOption
-            .getOrElse(ExtendsType(types = Nil)),
           _,
+          Option(definition.directives.flatMap(_.fromDirective[ExtendsType].toList).flatMap(_.types)),
         )
       ).trace(definition.name)
     }.map(_.toMap)
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition)
-        .map(definition.name -> Config.Type(doc = definition.description, ExtendsType(types = Nil), _))
+      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _, None))
         .trace(definition.name)
     }.map(_.toMap)
 
