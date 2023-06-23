@@ -263,7 +263,7 @@ object CommandExecutor {
         }.mkString("\n", "\n", "")
       )
 
-    def playground(url: URL, digest: Digest): String = s"${url.encode}/graphql/${digest.hex}."
+    def playground(url: URL, digest: Digest): String = s"${url.encode}/graphql/${digest.prefix}"
 
     def success(str: String): String = fansi.Str(str).overlay(fansi.Color.Green).render
 
