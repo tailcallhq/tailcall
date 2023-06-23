@@ -5,9 +5,10 @@ permissions:
   pull-requests: write
 on:
   pull_request:
-    types: [ opened, reopened, synchronize ]
+    types: ['labeled']
 jobs:
   code-review:
+    if: ${{ github.event.label.name == 'gpt review' }}
     runs-on: ubuntu-latest
     steps:
       - uses: anc95/ChatGPT-CodeReview@main
