@@ -18,10 +18,3 @@ jobs:
 
       - name: Update homebrew formula
         run: ./update-formula.sh ${{ github.event.release.tag_name }}
-
-      - name: Commit and push
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git commit -am "update tailcall cli version: ${{ github.event.release.tag_name }}"
-          git push
