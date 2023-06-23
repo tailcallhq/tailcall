@@ -20,7 +20,7 @@ object SchemaRegistrySpec extends TailcallSpec {
       for {
         blueprint <- config.toBlueprint.toTask
         digest    <- SchemaRegistry.add(blueprint)
-        actual    <- SchemaRegistry.get(digest)
+        actual    <- SchemaRegistry.get(digest.hex)
       } yield assert(actual)(isSome(equalTo(blueprint)))
     },
     test("add multiple times") {
@@ -29,15 +29,15 @@ object SchemaRegistrySpec extends TailcallSpec {
         _         <- SchemaRegistry.add(blueprint)
         _         <- SchemaRegistry.add(blueprint)
         _         <- SchemaRegistry.add(blueprint)
-        actual    <- SchemaRegistry.get(blueprint.digest)
+        actual    <- SchemaRegistry.get(blueprint.digest.hex)
       } yield assert(actual)(isSome(equalTo(blueprint)))
     },
     test("drop") {
       for {
         blueprint <- config.toBlueprint.toTask
         _         <- SchemaRegistry.add(blueprint)
-        _         <- SchemaRegistry.drop(blueprint.digest)
-        actual    <- SchemaRegistry.get(blueprint.digest)
+        _         <- SchemaRegistry.drop(blueprint.digest.hex)
+        actual    <- SchemaRegistry.get(blueprint.digest.hex)
       } yield assert(actual)(isNone)
     },
     suite("short sha")(
@@ -45,7 +45,7 @@ object SchemaRegistrySpec extends TailcallSpec {
         for {
           blueprint <- config.toBlueprint.toTask
           digest    <- SchemaRegistry.add(blueprint)
-          actual    <- SchemaRegistry.get(digest.copy(hex = digest.prefix))
+          actual    <- SchemaRegistry.get(digest.prefix)
         } yield assert(actual)(isSome(equalTo(blueprint)))
       },
       test("add multiple times") {
@@ -54,15 +54,15 @@ object SchemaRegistrySpec extends TailcallSpec {
           _         <- SchemaRegistry.add(blueprint)
           _         <- SchemaRegistry.add(blueprint)
           _         <- SchemaRegistry.add(blueprint)
-          actual    <- SchemaRegistry.get(blueprint.digest.copy(hex = blueprint.digest.prefix))
+          actual    <- SchemaRegistry.get(blueprint.digest.prefix)
         } yield assert(actual)(isSome(equalTo(blueprint)))
       },
       test("drop by short sha") {
         for {
           blueprint <- config.toBlueprint.toTask
           _         <- SchemaRegistry.add(blueprint)
-          _         <- SchemaRegistry.drop(blueprint.digest.copy(hex = blueprint.digest.prefix))
-          actual    <- SchemaRegistry.get(blueprint.digest.copy(hex = blueprint.digest.prefix))
+          _         <- SchemaRegistry.drop(blueprint.digest.prefix)
+          actual    <- SchemaRegistry.get(blueprint.digest.prefix)
         } yield assert(actual)(isNone)
       },
     ),

@@ -1,7 +1,7 @@
 package tailcall.server
 
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.model.{Blueprint, Digest}
+import tailcall.runtime.model.Blueprint
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
@@ -25,16 +25,16 @@ object AdminServer {
         list <- SchemaRegistry.list(0, Int.MaxValue)
       } yield Response.json(list.toJson)
 
-    case Method.DELETE -> !! / "schemas" / digest => for {
-        found <- SchemaRegistry.drop(Digest.fromHex(digest))
-        _     <- ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found")).when(found)
+    case Method.DELETE -> !! / "schemas" / hex => for {
+        found <- SchemaRegistry.drop(hex)
+        _     <- ZIO.fail(HttpError.NotFound(s"Schema ${hex} not found")).when(found)
       } yield Response.ok
 
-    case Method.GET -> !! / "schemas" / digest => for {
-        schema    <- SchemaRegistry.get(Digest.fromHex(digest))
+    case Method.GET -> !! / "schemas" / hex => for {
+        schema    <- SchemaRegistry.get(hex)
         blueprint <- schema match {
           case Some(blueprint) => ZIO.succeed(blueprint)
-          case None            => ZIO.fail(HttpError.NotFound(s"Schema ${digest} not found"))
+          case None            => ZIO.fail(HttpError.NotFound(s"Schema ${hex} not found"))
         }
       } yield Response.json(blueprint.toJson)
 

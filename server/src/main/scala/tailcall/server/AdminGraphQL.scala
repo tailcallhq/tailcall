@@ -14,13 +14,15 @@ object AdminGraphQL {
 
   final case class BlueprintSpec(digest: Digest, source: Blueprint, url: String)
   object BlueprintSpec {
-    def apply(digest: Digest, source: Blueprint): BlueprintSpec =
+    def apply(source: Blueprint): BlueprintSpec = {
+      val digest = source.digest
       BlueprintSpec(digest, source, s"/graphql/${digest.hex}")
+    }
   }
 
   @GQLName("Query")
   final case class Query[R, E](
-    blueprint: Digest => ZIO[R, E, Option[BlueprintSpec]],
+    blueprint: String => ZIO[R, E, Option[BlueprintSpec]],
     blueprints: ZIO[R, E, List[BlueprintSpec]],
     digests: ZIO[R, E, List[Digest]],
   )
@@ -30,12 +32,12 @@ object AdminGraphQL {
 
   val graphQL: GraphQL[AdminGraphQLEnv] = caliban
     .graphQL[AdminGraphQLEnv, Query[AdminGraphQLEnv, Throwable], Unit, Unit](RootResolver(Query(
-      digest =>
-        SchemaRegistry.get(digest).map {
-          case Some(blueprint) => Option(BlueprintSpec(digest, blueprint))
+      hex =>
+        SchemaRegistry.get(hex).map {
+          case Some(blueprint) => Option(BlueprintSpec(blueprint))
           case None            => None
         },
-      SchemaRegistry.list(0, Int.MaxValue).map(_.map(blueprint => BlueprintSpec(blueprint.digest, blueprint))),
+      SchemaRegistry.list(0, Int.MaxValue).map(_.map(BlueprintSpec(_))),
       SchemaRegistry.digests(0, Int.MaxValue),
     )))
 }

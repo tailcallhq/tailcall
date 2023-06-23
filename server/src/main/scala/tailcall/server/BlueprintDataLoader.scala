@@ -4,7 +4,7 @@ import caliban.wrappers.ApolloTracing.apolloTracing
 import caliban.wrappers.Wrappers.printSlowQueries
 import caliban.{CalibanError, GraphQLInterpreter}
 import tailcall.registry.SchemaRegistry
-import tailcall.runtime.model.{Blueprint, Digest}
+import tailcall.runtime.model.Blueprint
 import tailcall.runtime.service.{DataLoader, GraphQLGenerator, HttpContext}
 import zio._
 import zio.http.model.HttpError
@@ -18,11 +18,11 @@ object BlueprintDataLoader {
     ZLayer {
       for {
         registry <- ZIO.service[SchemaRegistry]
-        dl       <- DataLoader.one[String] { digestId =>
+        dl       <- DataLoader.one[String] { hex =>
           for {
-            maybeBlueprint <- registry.get(Digest.fromHex(digestId))
+            maybeBlueprint <- registry.get(hex)
             blueprint      <- ZIO.fromOption(maybeBlueprint)
-              .orElse(ZIO.fail(HttpError.BadRequest(s"Blueprint ${digestId} has not been published yet.")))
+              .orElseFail(HttpError.BadRequest(s"Blueprint ${hex} has not been published yet."))
             gql            <- blueprint.toGraphQL
             gqlWithTracing     = if (config.enableTracing) gql @@ apolloTracing else gql
             gqlWithSlowQueries = config.slowQueryDuration match {

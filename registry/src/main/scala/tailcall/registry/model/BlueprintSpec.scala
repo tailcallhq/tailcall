@@ -24,10 +24,6 @@ object BlueprintSpec {
   implicit val blueprintDecoder: MappedEncoding[Array[Byte], Blueprint] =
     MappedEncoding[Array[Byte], Blueprint](bytes => new String(bytes).fromJson[Blueprint].toOption.get)
 
-  implicit val digestEncoder: MappedEncoding[Digest, String] = MappedEncoding[Digest, String](_.hex)
-
-  implicit val digestDecoder: MappedEncoding[String, Digest] = MappedEncoding[String, Digest](Digest.fromHex)
-
   implicit val digestAlgEncoder: MappedEncoding[Digest.Algorithm, String] =
     MappedEncoding[Digest.Algorithm, String](_.name)
 
