@@ -15,7 +15,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           # Optional
-          OPENAI_API_ENDPOINT: <https://api.openai.com/v1>
+          OPENAI_API_ENDPOINT: https://api.openai.com/v1
           MODEL: text-davinci-003
           top_p: 1
           temperature: 1
