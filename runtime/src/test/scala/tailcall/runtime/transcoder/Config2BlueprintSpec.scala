@@ -92,7 +92,6 @@ object Config2BlueprintSpec extends TailcallSpec {
       },
       test("extends with missing parent type") {
         val config = Config.default.withBaseURL(URI.create("http://foo.com").toURL).withTypes(
-          // "Identified" -> Config.Type("id" -> Config.Field.int),
           "User"      -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
           "UserQuery" -> Config.Type(
             "posts" -> Config.Field.ofType("Post").asList
