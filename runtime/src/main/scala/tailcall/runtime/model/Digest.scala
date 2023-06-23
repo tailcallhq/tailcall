@@ -8,6 +8,10 @@ import java.security.MessageDigest
 
 final case class Digest(alg: Algorithm, hex: String) {
   def getBytes: Array[Byte] = hex.getBytes
+
+  def prefix: String = hex.slice(0, 7)
+
+  def prefixBytes: Array[Byte] = prefix.getBytes
 }
 
 object Digest {

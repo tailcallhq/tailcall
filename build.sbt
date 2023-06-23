@@ -23,7 +23,6 @@ val zioJsonYaml         = "dev.zio"               %% "zio-json-yaml"         % z
 val zioParser           = "dev.zio"               %% "zio-parser"            % "0.1.9"
 val zioQuill            = "io.getquill"           %% "quill-zio"             % zioQuillVersion
 val zioQuillJDBCZIO     = "io.getquill"           %% "quill-jdbc-zio"        % zioQuillVersion
-val zioRedis            = "dev.zio"               %% "zio-redis"             % "0.2.0"
 val zioSchema           = "dev.zio"               %% "zio-schema"            % zioSchemaVersion
 val zioSchemaDerivation = "dev.zio"               %% "zio-schema-derivation" % zioSchemaVersion
 val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % zioSchemaVersion
@@ -68,7 +67,6 @@ lazy val registry = (project in file("registry")).settings(
   libraryDependencies ++= zioTestDependencies ++ Seq(
     zio,
     zioHttp,
-    zioRedis,
     zioQuill,
     zioQuillJDBCZIO,
     mySQL,

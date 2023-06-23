@@ -47,13 +47,13 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
     }
   }
 
-  override def drop(digest: Digest): Task[Boolean] = {
-    val sql = quote(filterByDigest(digest).update(_.dropped -> lift(Option(new Timestamp(new Date().getTime)))))
+  override def drop(hex: String): Task[Boolean] = {
+    val sql = quote(filterByDigest(hex).update(_.dropped -> lift(Option(new Timestamp(new Date().getTime)))))
     ctx.run(sql).map(_ > 0)
   }
 
-  override def get(digest: Digest): Task[Option[Blueprint]] = {
-    val sql = quote(filterByDigest(digest).map(_.blueprint))
+  override def get(hex: String): Task[Option[Blueprint]] = {
+    val sql = quote(filterByDigest(hex).map(_.blueprint))
     ctx.run(sql).map(_.headOption)
   }
 
@@ -62,11 +62,8 @@ final case class MySQLRegistry(ctx: Quill[MySQLDialect, SnakeCase]) extends Sche
     ctx.run(sql)
   }
 
-  private def filterByDigest(digest: Digest): Quoted[EntityQuery[BlueprintSpec]] =
-    quote(
-      query[BlueprintSpec]
-        .filter(b => b.digestHex == lift(digest.hex) && b.digestAlg == lift(digest.alg) && b.dropped.isEmpty)
-    )
+  private def filterByDigest(hex: String): Quoted[EntityQuery[BlueprintSpec]] =
+    quote(query[BlueprintSpec].filter(b => b.digestHex.like(lift(hex + "%")) && b.dropped.isEmpty))
 }
 
 object MySQLRegistry {
