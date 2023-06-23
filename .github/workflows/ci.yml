@@ -132,32 +132,3 @@ jobs:
           release_id: ${{steps.create_release.outputs.id}}
           file: target/universal/stage/tailcall-${{steps.create_release.outputs.name}}.zip
           overwrite: true
-
-  homebrew-update:
-    name: Update Homebrew
-    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.ref, 'refs/tags/v')
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.13.10]
-        java: [temurin@8]
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: tailcallhq/homebrew-tailcall
-          ref: main
-          token: ${{ secrets.HOMEBREW_ACCESS }}
-
-      - name: Update homebrew formula
-        run: ./update-formula.sh ${{ github.event.release.tag_name }}
-
-      - name: Commit and push
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git commit -am "update tailcall cli version: ${{ github.event.release.tag_name }}"
-          git push
