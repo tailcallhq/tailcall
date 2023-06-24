@@ -1,6 +1,5 @@
 package tailcall.cli
 
-import buildinfo.BuildInfo
 import tailcall.cli.CommandADT.Remote
 import tailcall.cli.service.CommandExecutor
 import zio.cli._
@@ -59,6 +58,6 @@ object CommandDoc {
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
-    .make("tailcall", BuildInfo.version, command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
+    .make("tailcall", tailcall.BuildInfo.version, command.helpDoc.getSpan, command)(CommandExecutor.execute(_))
     .summary(HelpDoc.Span.Text("Tailcall CLI"))
 }
