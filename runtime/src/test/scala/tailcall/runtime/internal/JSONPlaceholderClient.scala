@@ -34,33 +34,27 @@ class JSONPlaceholderClient extends HttpClient {
   def getPostsBatched = ZIO.readFile(getClass.getResource("postsBatched.json").toURI.getPath).map(Response.json(_))
 
   override def request(req: Request): ZIO[Any, Throwable, Response] =
-    req match {
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/comments"  => comments
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/posts"     => posts
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/todos"     => todos
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/users"     => users
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/albums"    => albums
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/users/1"   => userById(1)
-      case Request(url, Method.GET, _, _) if url == "http://jsonplaceholder.typicode.com/users/1"    => userById(1)
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/users/100" => userById(100)
-      case Request(url, Method.GET, _, _) if url == "http://jsonplaceholder.typicode.com/users/100"  => userById(100)
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/posts/1"   => postById(1)
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/posts?userId=1"  =>
-        postsByUserId(1)
-      case Request(url, Method.GET, _, _)
+    (req.url, req.method) match {
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/comments"        => comments
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/posts"           => posts
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/todos"           => todos
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users"           => users
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/albums"          => albums
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users/1"         => userById(1)
+      case (url, Method.GET) if url == "http://jsonplaceholder.typicode.com/users/1"          => userById(1)
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users/100"       => userById(100)
+      case (url, Method.GET) if url == "http://jsonplaceholder.typicode.com/users/100"        => userById(100)
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/posts/1"         => postById(1)
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/posts?userId=1"  => postsByUserId(1)
+      case (url, Method.GET)
           if url == "https://jsonplaceholder.typicode.com/users?id=5&id=2&id=1&id=10&id=3&id=8&id=7&id=6&id=9&id=4" =>
         getUsersBatched
-      case Request(url, Method.GET, _, _)
+      case (url, Method.GET)
           if url == "https://jsonplaceholder.typicode.com/posts?userId=6&userId=1&userId=5&userId=2&userId=8&userId=3&userId=9&userId=7&userId=4&userId=10" =>
         getPostsBatched
-      case Request(url, Method.GET, _, _) if url == "https://jsonplaceholder.typicode.com/users/1/posts"   =>
-        postsByUserId(1)
-      case Request(url, Method.POST, _, _) if url.startsWith("https://jsonplaceholder.typicode.com/users") =>
-        ZIO.succeed(Response.json("""{
-                                    |  "id": 11,
-                                    |  "name": "Leanne Graham",
-                                    |  "username": "Bret",
-                                    |  "email":"" }""".stripMargin))
+      case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users/1/posts"   => postsByUserId(1)
+      case (url, Method.POST) if url.startsWith("https://jsonplaceholder.typicode.com/users") =>
+        ZIO.readFile(getClass.getResource("createUser.json").toURI.getPath).map(Response.json(_))
       case _ => ZIO.fail(new IllegalArgumentException(s"Invalid request: $req"))
 
     }
