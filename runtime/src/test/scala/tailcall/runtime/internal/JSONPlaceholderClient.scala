@@ -11,10 +11,10 @@ import java.io.{File, FileNotFoundException}
 class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
   private def readFile(name: String)                   =
     for {
-      path <- ZIO.attempt(getClass.getResource(s"${name}").toURI.getPath).refineOrDie { case _: NullPointerException =>
+      path    <- ZIO.attempt(getClass.getResource(name).toURI.getPath).refineOrDie { case _: NullPointerException =>
         new FileNotFoundException(s"File $name not found")
       }
-      file <- ZIO.attempt(new File(path))
+      file    <- ZIO.attempt(new File(path))
       content <- fileIO.read(file)
     } yield content
   val comments                                         = readFile("comments.json").map(Response.json(_))
@@ -24,25 +24,25 @@ class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
   val albums                                           = readFile("albums.json").map(Response.json(_))
   def userById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
-      case 1 => readFile("userById.json").map(Response.json(_))
+      case 1 => readFile("user-by-id.json").map(Response.json(_))
       case _ => ZIO.succeed(
           Response.fromHttpError(HttpError.NotFound(s"404 url: http://jsonplaceholder.typicode.com/users/${id}"))
         )
     }
   def postById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
-      case 1 => readFile("postById.json").map(Response.json(_))
+      case 1 => readFile("post-by-Id.json").map(Response.json(_))
       case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Post with id $id not found")))
     }
 
   def postsByUserId(userId: Int): ZIO[Any, Throwable, Response] =
     userId match {
-      case 1 => readFile("postByUserId.json").map(Response.json(_))
+      case 1 => readFile("post-by-user-id.json").map(Response.json(_))
       case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Posts with userId $userId not found")))
     }
 
-  def getUsersBatched = readFile("usersBatched.json").map(Response.json(_))
-  def getPostsBatched = readFile("postsBatched.json").map(Response.json(_))
+  def getUsersBatched = readFile("users-batched.json").map(Response.json(_))
+  def getPostsBatched = readFile("posts-batched.json").map(Response.json(_))
 
   override def request(req: Request): ZIO[Any, Throwable, Response] =
     (req.url, req.method) match {
@@ -65,7 +65,7 @@ class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
         getPostsBatched
       case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users/1/posts"   => postsByUserId(1)
       case (url, Method.POST) if url.startsWith("https://jsonplaceholder.typicode.com/users") =>
-        readFile("createUser.json").map(Response.json(_))
+        readFile("create-user.json").map(Response.json(_))
       case _ => ZIO.fail(new IllegalArgumentException(s"Invalid request: $req"))
 
     }
