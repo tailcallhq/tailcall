@@ -91,7 +91,7 @@ jobs:
 
       - env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --remote-only ./target/docker/stage
+        run: flyctl deploy --remote-only ./target/docker/stage --wait-timeout 120
 
   release:
     name: Release
