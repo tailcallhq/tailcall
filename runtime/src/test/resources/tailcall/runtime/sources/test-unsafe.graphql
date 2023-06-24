@@ -1,0 +1,12 @@
+schema {
+  query: Query
+}
+
+type Query {
+  foo: [User] @unsafe(steps: [{http: {path: "/users"}},{transform: {path: ["data","users"]}}])
+}
+
+type User {
+  id: Int
+  name: String
+}

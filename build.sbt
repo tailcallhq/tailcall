@@ -6,6 +6,7 @@ val zioQuillVersion  = "4.6.1"
 val zioSchemaVersion = "0.4.12"
 val flywayVersion    = "9.20.0"
 
+val betterFiles         = "com.github.pathikrit"  %% "better-files"          % "3.9.2"
 val caliban             = "com.github.ghostdogpr" %% "caliban"               % calibanVersion
 val calibanTools        = "com.github.ghostdogpr" %% "caliban-tools"         % calibanVersion
 val fansi               = "com.lihaoyi"           %% "fansi"                 % "0.4.0"
@@ -51,6 +52,7 @@ lazy val runtime = (project in file("runtime")).settings(
     zioParser,
     zioHttp,
     zioCache,
+    betterFiles
   ),
   libraryDependencies ++= zioTestDependencies,
   buildInfoKeys    := Seq(name, version, scalaVersion, sbtVersion),
