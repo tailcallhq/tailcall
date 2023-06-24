@@ -150,7 +150,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
-          commands = List("flyctl deploy --remote-only ./target/docker/stage --wait-timeout 120"),
+          commands = List("flyctl deploy --remote-only ./target/docker/stage --wait-timeout 300"),
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
