@@ -2,8 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.InputValue
 import tailcall.runtime.JsonT
-import tailcall.runtime.http.HttpClient
-import tailcall.runtime.internal.TValid
+import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.Config.{Arg, Field, Type}
@@ -507,7 +506,7 @@ object Config2StepSpec extends TailcallSpec {
       ),
     ).provide(
       GraphQLGenerator.default,
-      HttpClient.default,
+      JSONPlaceholderClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ before(TestSystem.putEnv("foo", "bar"))
 

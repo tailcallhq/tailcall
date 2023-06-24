@@ -1,37 +1,48 @@
 package tailcall.runtime.internal
 
 import tailcall.runtime.http.{HttpClient, Method, Request}
+import tailcall.runtime.service.FileIO
 import zio.http.Response
 import zio.http.model.HttpError
-import zio.{ULayer, ZIO, ZLayer}
+import zio.{ZIO, ZLayer}
 
-class JSONPlaceholderClient extends HttpClient {
-  val comments = ZIO.readFile(getClass.getResource("comments.json").toURI.getPath).map(Response.json(_))
-  val posts    = ZIO.readFile(getClass.getResource("posts.json").toURI.getPath).map(Response.json(_))
-  val todos    = ZIO.readFile(getClass.getResource("todos.json").toURI.getPath).map(Response.json(_))
-  val users    = ZIO.readFile(getClass.getResource("users.json").toURI.getPath).map(Response.json(_))
-  val albums   = ZIO.readFile(getClass.getResource("albums.json").toURI.getPath).map(Response.json(_))
+import java.io.{File, FileNotFoundException}
+
+class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
+  private def readFile(name: String)                   =
+    for {
+      path <- ZIO.attempt(getClass.getResource(s"${name}").toURI.getPath).refineOrDie { case _: NullPointerException =>
+        new FileNotFoundException(s"File $name not found")
+      }
+      file <- ZIO.attempt(new File(path))
+      content <- fileIO.read(file)
+    } yield content
+  val comments                                         = readFile("comments.json").map(Response.json(_))
+  val posts                                            = readFile("posts.json").map(Response.json(_))
+  val todos                                            = readFile("todos.json").map(Response.json(_))
+  val users                                            = readFile("users.json").map(Response.json(_))
+  val albums                                           = readFile("albums.json").map(Response.json(_))
   def userById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
-      case 1 => ZIO.readFile(getClass.getResource("userById.json").toURI.getPath).map(Response.json(_))
+      case 1 => readFile("userById.json").map(Response.json(_))
       case _ => ZIO.succeed(
           Response.fromHttpError(HttpError.NotFound(s"404 url: http://jsonplaceholder.typicode.com/users/${id}"))
         )
     }
   def postById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
-      case 1 => ZIO.readFile(getClass.getResource("postById.json").toURI.getPath).map(Response.json(_))
+      case 1 => readFile("postById.json").map(Response.json(_))
       case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Post with id $id not found")))
     }
 
   def postsByUserId(userId: Int): ZIO[Any, Throwable, Response] =
     userId match {
-      case 1 => ZIO.readFile(getClass.getResource("postByUserId.json").toURI.getPath).map(Response.json(_))
+      case 1 => readFile("postByUserId.json").map(Response.json(_))
       case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Posts with userId $userId not found")))
     }
 
-  def getUsersBatched = ZIO.readFile(getClass.getResource("usersBatched.json").toURI.getPath).map(Response.json(_))
-  def getPostsBatched = ZIO.readFile(getClass.getResource("postsBatched.json").toURI.getPath).map(Response.json(_))
+  def getUsersBatched = readFile("usersBatched.json").map(Response.json(_))
+  def getPostsBatched = readFile("postsBatched.json").map(Response.json(_))
 
   override def request(req: Request): ZIO[Any, Throwable, Response] =
     (req.url, req.method) match {
@@ -54,13 +65,12 @@ class JSONPlaceholderClient extends HttpClient {
         getPostsBatched
       case (url, Method.GET) if url == "https://jsonplaceholder.typicode.com/users/1/posts"   => postsByUserId(1)
       case (url, Method.POST) if url.startsWith("https://jsonplaceholder.typicode.com/users") =>
-        ZIO.readFile(getClass.getResource("createUser.json").toURI.getPath).map(Response.json(_))
+        readFile("createUser.json").map(Response.json(_))
       case _ => ZIO.fail(new IllegalArgumentException(s"Invalid request: $req"))
 
     }
 }
 object JSONPlaceholderClient {
-  def apply(): JSONPlaceholderClient = new JSONPlaceholderClient()
-
-  def default: ULayer[JSONPlaceholderClient] = ZLayer.succeed(apply())
+  def default: ZLayer[Any, Throwable, JSONPlaceholderClient] =
+    FileIO.default >>> ZLayer.fromFunction(new JSONPlaceholderClient(_))
 }
