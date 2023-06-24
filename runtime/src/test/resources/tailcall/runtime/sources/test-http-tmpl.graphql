@@ -1,4 +1,4 @@
-schema {
+schema @server(baseURL : "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
