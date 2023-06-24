@@ -2,7 +2,7 @@
 app = "monotail"
 kill_signal = "SIGINT"
 kill_timeout = 5
-primary_region = "maa"
+primary_region = "bom"
 processes = []
 
 [env]
@@ -39,7 +39,7 @@ timeout = "2s"
 interval = 10000
 grace_period = "5s"
 method = "get"
-path = "/graphql"
+path = "/health"
 protocol = "http"
 restart_limit = 0
 timeout = 2000
