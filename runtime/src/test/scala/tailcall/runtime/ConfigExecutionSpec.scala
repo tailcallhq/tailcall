@@ -1,7 +1,6 @@
-package tailcall.runtime.transcoder
+package tailcall.runtime
 
 import caliban.InputValue
-import tailcall.runtime.JsonT
 import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
@@ -9,6 +8,7 @@ import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
+import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
@@ -26,7 +26,7 @@ import java.net.URI
  * This is done by writing a test config, converting to
  * graphql and testing it with sample graphql queries.
  */
-object Config2StepSpec extends TailcallSpec {
+object ConfigExecutionSpec extends TailcallSpec {
   override def spec =
     suite("Config to GraphQL Step")(
       test("rename a field") {

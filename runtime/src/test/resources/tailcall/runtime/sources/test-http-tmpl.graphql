@@ -1,0 +1,18 @@
+schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  id: Int
+  user: User @http(path: "/users",query: {id: "{{value.userId}}"})
+  userId: Int
+}
+
+type Query {
+  posts: [Post]
+}
+
+type User {
+  id: Int
+  name: String
+}
