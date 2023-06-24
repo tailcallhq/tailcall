@@ -30,7 +30,13 @@ val zioTest             = "dev.zio"               %% "zio-test"              % z
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
 lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, registryClient, testUtils)
-  .settings(name := "tailcall")
+  .enablePlugins(BuildInfoPlugin).settings(
+    name             := "tailcall",
+    buildInfoKeys    := Seq(name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "com.tailcall",
+    buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoOptions += BuildInfoOption.ToJson,
+  )
 
 lazy val runtime = (project in file("runtime")).settings(
   resolvers +=
