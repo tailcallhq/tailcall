@@ -1,7 +1,7 @@
 package tailcall.runtime
 
 import caliban.InputValue
-import tailcall.runtime.internal.JsonPlaceholderConfig
+import tailcall.runtime.internal.{JSONPlaceholderClient, JsonPlaceholderConfig}
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Config, ConfigFormat}
@@ -304,7 +304,13 @@ object JsonPlaceholderSpec extends TailcallSpec {
           } yield assertTrue(actual == expected)
         },
       ),
-    ).provide(ConfigFileIO.default, GraphQLGenerator.default, HttpContext.default, FileIO.default)
+    ).provide(
+      ConfigFileIO.default,
+      GraphQLGenerator.default,
+      JSONPlaceholderClient.default,
+      HttpContext.live(None),
+      FileIO.default,
+    )
 
   private def readJson(name: String): ZIO[FileIO, Throwable, String] = {
     for {

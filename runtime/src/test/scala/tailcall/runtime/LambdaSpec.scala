@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.DynamicValueUtil
+import tailcall.runtime.internal.{DynamicValueUtil, JSONPlaceholderClient}
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
@@ -470,5 +470,5 @@ object LambdaSpec extends TailcallSpec {
         val seq = Lambda(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).groupBy(_ % Lambda(2))
         assertZIO(seq.evaluate)(equalTo(Map(0 -> Seq(2, 4, 6, 8, 10), 1 -> Seq(1, 3, 5, 7, 9))))
       }),
-    ).provide(EvaluationRuntime.default, HttpContext.default)
+    ).provide(EvaluationRuntime.default, JSONPlaceholderClient.default, HttpContext.live(None))
 }
