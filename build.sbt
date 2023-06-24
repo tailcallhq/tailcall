@@ -261,6 +261,6 @@ Docker / mappings := {
 }
 
 maintainer         := "tushar@tailcall.run"
-dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024", "--tracing=true")
+dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024", "--tracing=false")
 dockerBaseImage    := "eclipse-temurin:11"
 dockerExposedPorts := Seq(8080)
