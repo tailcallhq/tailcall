@@ -38,7 +38,9 @@ object HttpClient {
           if (cache.nonEmpty) { cache.get.get(req) <* ZIO.logInfo("cache hit") }
           else {
             for {
-              res <- client.request(req.toZHttpRequest)
+              res <- client.request(req.toZHttpRequest.withUserAgent(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+              ))
               _   <- ZIO.logInfo(s"cache miss")
             } yield res
           }
