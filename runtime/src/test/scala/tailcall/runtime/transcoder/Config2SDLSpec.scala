@@ -8,6 +8,9 @@ import zio.ZIO
 import zio.test.{TestResult, assertTrue}
 
 /**
+ * NOTE: These tests are not required anymore.
+ * ConfigPropertySpec is the new way to test.
+ *
  * Tests for the generation of GraphQL schema from a config.
  * This is done by writing a test config, converting to
  * blueprint, then to document, rendering the generated and
