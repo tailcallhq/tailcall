@@ -5,17 +5,32 @@ permissions:
   pull-requests: write
 on:
   pull_request:
-    types: ['labeled']
+    types: [ opened, reopened, synchronize, labeled ]
 jobs:
-  code-review:
-    if: ${{ github.event.label.name == 'gpt review' }}
+  test:
+    if: contains(github.event.pull_request.labels.*.name, 'gpt review')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Read Contribution Guidelines
+        id: package
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./docs/Contributing.md
       - uses: anc95/ChatGPT-CodeReview@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_API_ENDPOINT: https://api.openai.com/v1
           MODEL: gpt-3.5-turbo
+          PROMPT: >
+            Perform a code review on the following code snippet based on the provided contribution guidelines.
+            Identify bugs, security vulnerabilities, and other issues. 
+            
+            Contribution Guidelines:
+            ${{ steps.package.outputs.content }}
+            
+            Code Snippet:
           top_p: 1
           temperature: 1
