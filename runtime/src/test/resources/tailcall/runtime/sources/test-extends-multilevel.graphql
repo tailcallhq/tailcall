@@ -16,4 +16,6 @@ type C {
 
 type Query {
   a: A
+  b: B
+  c: C
 }

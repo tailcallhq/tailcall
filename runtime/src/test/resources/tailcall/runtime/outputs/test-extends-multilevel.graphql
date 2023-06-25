@@ -7,12 +7,27 @@ interface IB {
   c: String
 }
 
-type A implements IB {
+interface IC {
+  c: String
+}
+
+type A implements IB & IC {
   a: String
   b: String
   c: String
 }
 
+type B implements IB & IC {
+  b: String
+  c: String
+}
+
+type C {
+  c: String
+}
+
 type Query {
   a: A
+  b: B
+  c: C
 }
