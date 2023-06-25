@@ -1,0 +1,19 @@
+schema {
+  query: Query
+}
+
+type A @extends(types: ["B"]) {
+  a: String
+}
+
+type B @extends(types: ["C"]) {
+  b: String
+}
+
+type C {
+  c: String
+}
+
+type Query {
+  a: A
+}

@@ -1,0 +1,21 @@
+schema {
+  query: Query
+}
+
+type Post {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  user: [UserQuery]
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type UserQuery @extends(types: ["User"]) {
+  posts: [Post]
+}

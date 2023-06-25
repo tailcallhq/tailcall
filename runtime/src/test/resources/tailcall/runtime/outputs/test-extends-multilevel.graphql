@@ -1,0 +1,18 @@
+schema {
+  query: Query
+}
+
+interface IB {
+  b: String
+  c: String
+}
+
+type A implements IB {
+  a: String
+  b: String
+  c: String
+}
+
+type Query {
+  a: A
+}
