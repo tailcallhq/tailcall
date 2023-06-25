@@ -29,7 +29,7 @@ object GenericServer {
               blueprintData.timeout.millis
             )
           _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
-          maxAge <- HttpContext.getState
+          maxAge <- HttpContext.getState.map(_.value)
         } yield Response.json(res.toJson).withCacheControlMaxAge(maxAge.getOrElse(0 second)))
           .provideLayer(HttpContext.live(Option(req)))
 
