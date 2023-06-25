@@ -1,12 +1,16 @@
 package tailcall.registry
 
 import tailcall.runtime.model.{Blueprint, Digest}
-import zio.{Ref, Task, UIO}
+import zio.{Ref, Task, UIO, ZIO}
 
 final case class MemoryRegistry(ref: Ref[List[(String, Blueprint)]]) extends SchemaRegistry {
   override def add(blueprint: Blueprint): Task[Digest] = {
     val digest: Digest = blueprint.digest
-    ref.update((digest.hex -> blueprint) :: _).as(digest)
+    ref.get.map(_.find(_._1 == digest.hex)).flatMap {
+      case Some(_) => ZIO.succeed(digest)
+      case None    => ref.update((digest.hex -> blueprint) :: _).as(digest)
+
+    }
   }
 
   override def drop(hex: String): UIO[Boolean] = {
