@@ -21,7 +21,7 @@ trait Document2SDL {
 
       // Types that are extended by @extends directives
       val extDirectiveTypes = document.objectTypeDefinitions
-        .flatMap(_.directives.flatMap(_.fromDirective[ExtendsType].toList.flatMap(_.types))).toSet
+        .flatMap(_.directives.flatMap(_.fromDirective[ExtendsType].toList.map(_.typeOf))).toSet
 
       new GraphQL[Any] {
         override protected val schemaBuilder: RootSchemaBuilder[Any]   = {

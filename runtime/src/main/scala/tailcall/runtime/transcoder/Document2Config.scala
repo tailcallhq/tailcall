@@ -116,7 +116,7 @@ trait Document2Config {
         definition.name -> Config.Type(
           doc = definition.description,
           _,
-          Option(definition.directives.flatMap(_.fromDirective[ExtendsType].toList).flatMap(_.types)),
+          Option(definition.directives.flatMap(_.fromDirective[ExtendsType].toList).map(_.typeOf)),
         )
       ).trace(definition.name)
     }.map(_.toMap)

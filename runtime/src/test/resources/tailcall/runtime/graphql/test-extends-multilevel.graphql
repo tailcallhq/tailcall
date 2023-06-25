@@ -2,11 +2,11 @@ schema {
   query: Query
 }
 
-type A @extends(types: ["B"]) {
+type A @extends(type: "B") {
   a: String
 }
 
-type B @extends(types: ["C"]) {
+type B @extends(type: "C") {
   b: String
 }
 
