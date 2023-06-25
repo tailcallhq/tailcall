@@ -7,8 +7,8 @@ on:
   pull_request:
     types: [ opened, reopened, synchronize, labeled ]
 jobs:
-  test:
-    if: contains(github.event.pull_request.labels.*.name, 'gpt review')
+  code-review:
+    if: ${{ contains(github.event.*.labels.*.name, 'gpt review') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
