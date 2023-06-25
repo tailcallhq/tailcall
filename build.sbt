@@ -52,7 +52,7 @@ lazy val runtime = (project in file("runtime")).settings(
     zioParser,
     zioHttp,
     zioCache,
-    betterFiles
+    betterFiles,
   ),
   libraryDependencies ++= zioTestDependencies,
   buildInfoKeys    := Seq(name, version, scalaVersion, sbtVersion),
@@ -88,11 +88,12 @@ lazy val registryClient = (project in file("registry-client"))
 
 lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
 
-val scala2Version = "2.13.11"
-val scala3Version = "3.2.2"
-val scalaVersions = List(scala2Version)
-val javaVersions  = List(JavaSpec.temurin("20"))
-val appVersionEnv = "APP_VERSION"
+val scala2Version      = "2.13.11"
+val scala3Version      = "3.2.2"
+val scalaVersions      = List(scala2Version)
+val defaultJavaVersion = JavaSpec.temurin("20")
+val javaVersions       = List(defaultJavaVersion)
+val appVersionEnv      = "APP_VERSION"
 
 ThisBuild / scalaVersion       := scala2Version
 ThisBuild / crossScalaVersions := scalaVersions
@@ -264,5 +265,5 @@ Docker / mappings := {
 
 maintainer         := "tushar@tailcall.run"
 dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024")
-dockerBaseImage    := "eclipse-temurin:11"
+dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
