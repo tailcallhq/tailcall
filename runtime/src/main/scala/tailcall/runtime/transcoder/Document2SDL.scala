@@ -61,9 +61,9 @@ trait Document2SDL {
           case _: TypeSystemDefinition.SchemaDefinition        => "b"
           case definition: TypeSystemDefinition.TypeDefinition => definition match {
               case _: TypeDefinition.ScalarTypeDefinition      => "c" + definition.name
-              case _: TypeDefinition.InputObjectTypeDefinition => "d" + definition.name
-              case _: TypeDefinition.ObjectTypeDefinition      => "e" + definition.name
-              case _: TypeDefinition.InterfaceTypeDefinition   => definition.name
+              case _: TypeDefinition.InterfaceTypeDefinition   => "d" + definition.name
+              case _: TypeDefinition.InputObjectTypeDefinition => "e" + definition.name
+              case _: TypeDefinition.ObjectTypeDefinition      => "f" + definition.name
               case _: TypeDefinition.EnumTypeDefinition        => definition.name
               case _: TypeDefinition.UnionTypeDefinition       => definition.name
             }
