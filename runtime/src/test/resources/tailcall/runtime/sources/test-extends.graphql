@@ -16,6 +16,6 @@ type User {
   name: String!
 }
 
-type UserQuery @extends(types: ["User"]) {
+type UserQuery @extends(type: "User") {
   posts: [Post]
 }
