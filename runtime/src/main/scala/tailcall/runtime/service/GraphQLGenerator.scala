@@ -7,7 +7,6 @@ import caliban.schema.{Operation, RootSchemaBuilder}
 import caliban.tools.RemoteSchema
 import caliban.wrappers.Wrapper
 import tailcall.runtime.model.Blueprint
-import tailcall.runtime.model.Blueprint.InterfaceTypeDefinition
 import tailcall.runtime.transcoder.Transcoder
 import zio.{ZIO, ZLayer}
 
@@ -18,19 +17,10 @@ trait GraphQLGenerator {
 object GraphQLGenerator {
   final case class Live(sGen: StepGenerator) extends GraphQLGenerator {
     override def toGraphQL(blueprint: Blueprint): GraphQL[HttpContext] = {
-      val schema = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
-
-      // Interfaces created by extending from types have an `I` prefix
-      val objTypesForInterfaces = blueprint.definitions
-        .collect { case InterfaceTypeDefinition(name, _, _) if name.startsWith("I") => name.substring(1, name.length) }
-      // Types that are extended by @extends directives
-      val additionalTypes       = schema match {
-        case Some(s) => s.types.filter(t => t.name.exists(objTypesForInterfaces.contains))
-        case None    => Nil
-      }
       new GraphQL[HttpContext] {
         override protected val schemaBuilder: RootSchemaBuilder[HttpContext] = {
           val stepResult = sGen.resolve(blueprint)
+          val schema     = Transcoder.toDocument(blueprint).toOption.flatMap(RemoteSchema.parseRemoteSchema)
 
           val queryOperation = for {
             __type  <- schema.map(_.queryType)
@@ -41,7 +31,7 @@ object GraphQLGenerator {
             __type  <- schema.flatMap(_.mutationType)
             resolve <- stepResult.mutation
           } yield Operation(__type, resolve)
-          RootSchemaBuilder(query = queryOperation, mutationOperation, None, additionalTypes)
+          RootSchemaBuilder(query = queryOperation, mutationOperation, None)
         }
         override protected val wrappers: List[Wrapper[Any]]                  = Nil
         override protected val additionalDirectives: List[__Directive]       = Nil
