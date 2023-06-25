@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker._
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 val calibanVersion   = "2.2.1"
 val zioVersion       = "2.0.15"
 val zioJsonVersion   = "0.5.0"
@@ -52,7 +54,7 @@ lazy val runtime = (project in file("runtime")).settings(
     zioParser,
     zioHttp,
     zioCache,
-    betterFiles
+    betterFiles,
   ),
   libraryDependencies ++= zioTestDependencies,
   buildInfoKeys    := Seq(name, version, scalaVersion, sbtVersion),
@@ -66,9 +68,68 @@ lazy val cli = (project in file("cli"))
   .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi, slf4j))
   .dependsOn(runtime, registryClient, testUtils % Test)
 
-lazy val server = (project in file("server"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI))
-  .dependsOn(runtime, registry, testUtils % Test)
+val server = (project in file("server")).enablePlugins(GraalVMNativeImagePlugin).enablePlugins(JavaAppPackaging)
+  .settings(
+    compile / mainClass := Some("tailcall.server.Main"),
+    run / javaOptions += "-agentlib:native-image-agent=config-merge-dir=src/main/resources/META-INF/native-image",
+    dockerBaseImage     := "ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.2",
+    dockerUpdateLatest  := true,
+    dockerExposedPorts  := Seq(8080),
+    dockerCommands ++= Seq(
+      Cmd("FROM", dockerBaseImage.value),
+      Cmd("WORKDIR", "/opt/docker"),
+      Cmd("COPY", "stage /opt/docker"),
+      Cmd("RUN", "gu install native-image"),
+      Cmd(
+        "RUN",
+        "native-image",
+        "--class-path",
+        (Compile / fullClasspath).value.files.absString,
+        "--verbose",
+        "-H:IncludeResources=logback.xml",
+        "-H:ReflectionConfigurationFiles=reflectionconfig.json",
+        "-H:EnableURLProtocols=http",
+        "--no-fallback",
+        "-H:-AllowVMInspection",
+        "-H:+ReportExceptionStackTraces",
+        "--initialize-at-build-time",
+        "-H:IncludeResourceBundles=com.sun.org.apache.xerces.internal.impl.msg.XMLMessages",
+        s"-H:Name=${executableScriptName.value}",
+        s"-H:Class=${Some("tailcall.server.Main").getOrElse("")}",
+        "-H:+StackTrace",
+      ),
+      Cmd("ENTRYPOINT", s"./${executableScriptName.value}"),
+    ),
+    graalVMNativeImageOptions ++= List(
+      "-H:ResourceConfigurationFiles=../../src/main/resources/resource-config.json",
+      "--report-unsupported-elements-at-runtime",
+      "--verbose",
+      "--no-server",
+      "--allow-incomplete-classpath",
+      "--no-fallback",
+      "--install-exit-handlers",
+      "-H:+ReportExceptionStackTraces",
+      "-H:+RemoveSaturatedTypeFlows",
+      "-H:+TraceClassInitialization",
+      "--initialize-at-run-time=io.netty.channel.epoll.Epoll",
+      "--initialize-at-run-time=io.netty.channel.epoll.Native",
+      "--initialize-at-run-time=io.netty.channel.epoll.EpollEventLoop",
+      "--initialize-at-run-time=io.netty.channel.epoll.EpollEventArray",
+      "--initialize-at-run-time=io.netty.channel.DefaultFileRegion",
+      "--initialize-at-run-time=io.netty.channel.kqueue.KQueueEventArray",
+      "--initialize-at-run-time=io.netty.channel.kqueue.KQueueEventLoop",
+      "--initialize-at-run-time=io.netty.channel.kqueue.Native",
+      "--initialize-at-run-time=io.netty.channel.unix.Errors",
+      "--initialize-at-run-time=io.netty.channel.unix.IovArray",
+      "--initialize-at-run-time=io.netty.channel.unix.Limits",
+      "--initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger",
+      "--initialize-at-run-time=io.netty.util.AbstractReferenceCounted",
+      "--initialize-at-run-time=io.netty.channel.kqueue.KQueue",
+      "--initialize-at-build-time=org.slf4j.LoggerFactory",
+      "-H:IncludeResources='.*'",
+    ),
+    libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI),
+  ).dependsOn(runtime, registry, testUtils % Test)
 
 lazy val registry = (project in file("registry")).settings(
   libraryDependencies ++= zioTestDependencies ++ Seq(
@@ -224,7 +285,7 @@ ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }
 
 // Disable the main class discovery such that only the CLI is used as it's main class
 // That way the executable script is only created for the CLI
-Compile / discoveredMainClasses := (cli / Compile / mainClass).value.toSeq ++ (server / Compile / mainClass).value.toSeq
+// Compile / discoveredMainClasses := (cli / Compile / mainClass).value.toSeq ++ (server / Compile / mainxClass).value.toSeq
 
 // The bash scripts classpath only needs the fat jar
 // Script class path is used in stage command and not not docker stage
@@ -253,16 +314,16 @@ Universal / mappings := {
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
 // This is where we can add or remove files from the final package
-Docker / mappings := {
-  val serverJar = (server / Compile / assembly).value
-  // removing means filtering
-  val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
-
-  // add the fat jar
-  filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
-}
-
-maintainer         := "tushar@tailcall.run"
-dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024")
-dockerBaseImage    := "eclipse-temurin:11"
-dockerExposedPorts := Seq(8080)
+//Docker / mappings := {
+//  val serverJar = (server / Compile / assembly).value
+//  // removing means filtering
+//  val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
+//
+//  // add the fat jar
+//  filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
+//}
+//
+//maintainer         := "tushar@tailcall.run"
+//dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024")
+//dockerBaseImage    := "eclipse-temurin:11"
+//dockerExposedPorts := Seq(8080)
