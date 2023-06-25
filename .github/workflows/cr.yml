@@ -27,8 +27,6 @@ jobs:
           PROMPT: >
             Perform a code review on the following code snippet based on the provided contribution guidelines.
             Identify bugs, security vulnerabilities, and other issues. 
-            If there is nothing meaningful to contribute give feedback on how to improve the guidelines.
-            
             
             Contribution Guidelines:
             ${{ steps.package.outputs.content }}
