@@ -41,7 +41,7 @@ object EndpointGenerator {
             headers,
             request.body.map(body => Chunk.fromIterable(body.raw.toString().getBytes(Charset.defaultCharset())))
               .getOrElse(Chunk.empty),
-          )).flatMap(res => res.body.asChunk ).map(resp =>
+          )).flatMap(res => res.body.asChunk).map(resp =>
             endpointWithHost.withMethod(request.method)
               .withInput(request.body.flatMap(body => Transcoder.toTSchema(body.raw.toString()).toOption))
               .withOutput(Transcoder.toTSchema(new String(resp.toArray, StandardCharsets.UTF_8)).toOption)

@@ -2,7 +2,7 @@ package tailcall.runtime.service
 
 import tailcall.runtime.http.{HttpClient, Request}
 import zio._
-import zio.http.{Response, Request => ZRequest}
+import zio.http.{Request => ZRequest, Response}
 
 final case class DataLoader[R, E, A, B](
   ref: Ref[DataLoader.State[E, A, B]],
@@ -76,16 +76,15 @@ object DataLoader {
 
   def http(req: Option[ZRequest] = None): ZLayer[HttpClient, Nothing, HttpDataLoader] =
     ZLayer {
-      ZIO.serviceWithZIO[HttpClient] {
-        client =>
-          DataLoader.one[Request] { request =>
-            val finalHeaders = request.headers ++ getForwardedHeaders(req)
-            for {
-              response <- client.request(request.copy(headers = finalHeaders))
-              _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
+      ZIO.serviceWithZIO[HttpClient] { client =>
+        DataLoader.one[Request] { request =>
+          val finalHeaders = request.headers ++ getForwardedHeaders(req)
+          for {
+            response <- client.request(request.copy(headers = finalHeaders))
+            _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
 
-            } yield response
-          }
+          } yield response
+        }
       }
     }
 
