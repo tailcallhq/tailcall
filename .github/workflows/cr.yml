@@ -3,12 +3,13 @@ name: Code Review
 permissions:
   contents: read
   pull-requests: write
+
 on:
   pull_request:
-    types: ['labeled']
+    types: [ opened, reopened, synchronize ]
 jobs:
-  code-review:
-    if: ${{ github.event.label.name == 'gpt review' }}
+  test:
+    if: ${{ contains(github.event.*.labels.*.name, 'gpt review') }} # Optional; to run only when a label is attached
     runs-on: ubuntu-latest
     steps:
       - uses: anc95/ChatGPT-CodeReview@main
