@@ -13,11 +13,11 @@ graphQL:
         lng:
           type: String
     Id:
-      doc: An Id container.
       fields:
         id:
           type: Int
           isRequired: true
+      doc: An Id container.
     Company:
       fields:
         name:
@@ -87,7 +87,6 @@ graphQL:
               isRequired: true
           doc: A single user by id.
     NewUser:
-      doc: A new user.
       fields:
         website:
           type: String
@@ -106,6 +105,7 @@ graphQL:
           type: NewAddress
         phone:
           type: String
+      doc: A new user.
     Post:
       fields:
         body:

@@ -321,18 +321,31 @@ object Config {
   final case class Type(
     fields: Map[String, Field] = Map.empty,
     doc: Option[String] = None,
-    isInterface: Boolean = false,
+    interface: Option[Boolean] = None,
     implements: Option[List[String]] = None,
   ) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def asInterface: Type = self.copy(isInterface = true)
+    def asInterface: Type = self.copy(interface = Option(true))
 
-    def asType: Type = self.copy(isInterface = false)
+    def asType: Type = self.copy(interface = None)
 
-    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
+    def compress: Type =
+      self.copy(
+        fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap,
+        interface = self.interface match {
+          case Some(true) => Some(true)
+          case _          => None
+        },
+        implements = self.implements match {
+          case Some(list) if list.nonEmpty => Some(list)
+          case _                           => None
+        },
+      )
+
+    def isInterface: Boolean = interface.getOrElse(false)
 
     def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields

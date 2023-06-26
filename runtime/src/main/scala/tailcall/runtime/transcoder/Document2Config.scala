@@ -127,9 +127,9 @@ trait Document2Config {
 
     val interfaceTypes: TValid[Nothing, Map[String, Config.Type]] = TValid
       .foreach(document.interfaceTypeDefinitions) { definition =>
-        toFieldMap(definition).map(fields =>
-          definition.name -> Config.Type(isInterface = true, doc = definition.description, fields = fields)
-        ).trace(definition.name)
+        toFieldMap(definition)
+          .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields).asInterface)
+          .trace(definition.name)
       }.map(_.toMap)
 
     (outputTypes zipPar inputTypes)(_ ++ _).zipPar(interfaceTypes)(_ ++ _)
