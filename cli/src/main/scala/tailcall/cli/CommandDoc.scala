@@ -19,13 +19,13 @@ object CommandDoc {
     },
 
     // publish
-    Command("publish", CustomOptions.remoteOption, Args.file.repeat1)
+    Command("publish", CustomOptions.remoteDefaultOption, Args.file.repeat1)
       .withHelp("Publish the configuration file to the remote environment.").map { case (remote, config) =>
         Remote(remote, Remote.Publish(config))
       },
 
     // drop
-    Command("drop", CustomOptions.remoteOption, CustomArgs.digestArgs)
+    Command("drop", CustomOptions.remoteDefaultOption, CustomArgs.digestArgs)
       .withHelp("Remove the composition spec from the remote environments using its SHA-256 hash.").map {
         case (remote, digest) => Remote(remote, Remote.Drop(digest))
       },
@@ -33,7 +33,7 @@ object CommandDoc {
     // list
     Command(
       "list",
-      CustomOptions.remoteOption ++
+      CustomOptions.remoteDefaultOption ++
         CustomOptions.integerOption("offset").withDefault(0) ++
         CustomOptions.integerOption("limit").withDefault(Int.MaxValue),
     ).withHelp("List all published composition specs on the remote address.").map { case (remote, offset, limit) =>
@@ -41,7 +41,7 @@ object CommandDoc {
     },
 
     // info
-    Command("show", CustomOptions.remoteOption ++ CustomOptions.blueprintOptions, CustomArgs.digestArgs)
+    Command("show", CustomOptions.remoteDefaultOption ++ CustomOptions.blueprintOptions, CustomArgs.digestArgs)
       .withHelp("Display info for a composition spec using its SHA-256 hash on the remote server.")
       .map { case (remote, blueprintOptions) -> digest =>
         Remote(remote, Remote.Show(digest = digest, options = blueprintOptions))

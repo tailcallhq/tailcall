@@ -6,8 +6,8 @@ import zio.cli._
 import zio.http.URL
 
 object CustomOptions {
-
-  val remoteOption: Options[URL] = CustomOptions.urlOption("remote").alias("r").withDefault(CLIConfig.remote)
+  val remoteOption: Options[URL]        = CustomOptions.urlOption("remote").alias("r")
+  val remoteDefaultOption: Options[URL] = remoteOption.withDefault(CLIConfig.remote)
 
   val blueprintOptions: Options[BlueprintOptions] = {
     Options.boolean("blueprint").withDefault(false) ++
