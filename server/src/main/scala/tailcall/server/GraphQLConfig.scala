@@ -13,6 +13,7 @@ case class GraphQLConfig(
   enableTracing: Boolean = false,
   slowQueryDuration: Option[Duration] = None,
   database: Option[GraphQLConfig.DBConfig] = None,
+  persistedQueries: Boolean = false,
 )
 
 object GraphQLConfig {
@@ -24,8 +25,16 @@ object GraphQLConfig {
 
   private def command: Command[GraphQLConfig] =
     Command("server", options).withHelp(s"starts the server on port: ${default.port}").map {
-      case (port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration, database) =>
-        GraphQLConfig(port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration, database)
+      case (port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration, database, persistedQueries) =>
+        GraphQLConfig(
+          port,
+          globalResponseTimeout,
+          httpCacheSize,
+          enableTracing,
+          slowQueryDuration,
+          database,
+          persistedQueries,
+        )
     }
 
   private def options =
@@ -34,7 +43,8 @@ object GraphQLConfig {
       CustomOptions.int("http-cache").optional.withDefault(default.httpCacheSize) ++
       Options.boolean("tracing").withDefault(default.enableTracing) ++
       CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration) ++
-      DBConfig.options
+      DBConfig.options ++
+      Options.boolean("persisted-queries").withDefault(default.persistedQueries)
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {

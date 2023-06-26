@@ -1,5 +1,6 @@
 package tailcall.server
 
+import caliban.wrappers.ApolloPersistedQueries.{ApolloPersistence, apolloPersistedQueries}
 import caliban.wrappers.ApolloTracing.apolloTracing
 import caliban.wrappers.Wrappers.printSlowQueries
 import caliban.{CalibanError, GraphQLInterpreter}
@@ -24,12 +25,15 @@ object BlueprintDataLoader {
             blueprint      <- ZIO.fromOption(maybeBlueprint)
               .orElseFail(HttpError.BadRequest(s"Blueprint ${hex} has not been published yet."))
             gql            <- blueprint.toGraphQL
-            gqlWithTracing     = if (config.enableTracing) gql @@ apolloTracing else gql
-            gqlWithSlowQueries = config.slowQueryDuration match {
+            gqlWithTracing          = if (config.enableTracing) gql @@ apolloTracing else gql
+            gqlWithSlowQueries      = config.slowQueryDuration match {
               case Some(duration) => gqlWithTracing @@ printSlowQueries(duration)
               case None           => gqlWithTracing
             }
-            interpreter <- gqlWithSlowQueries.interpreter
+            gqlWithPersistedQueries =
+              if (config.persistedQueries) gqlWithSlowQueries @@ apolloPersistedQueries else gqlWithSlowQueries
+
+            interpreter <- gqlWithPersistedQueries.interpreter
           } yield BlueprintData(blueprint, config.globalResponseTimeout.toSeconds, interpreter)
         }
       } yield dl
@@ -41,7 +45,7 @@ object BlueprintDataLoader {
   final case class BlueprintData(
     blueprint: Blueprint,
     timeout: Long,
-    interpreter: GraphQLInterpreter[HttpContext, CalibanError],
+    interpreter: GraphQLInterpreter[HttpContext with ApolloPersistence, CalibanError],
   )
 
 }

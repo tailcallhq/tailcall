@@ -1,5 +1,6 @@
 package tailcall.server
 
+import caliban.wrappers.ApolloPersistedQueries
 import caliban.{GraphQLResponse, Value}
 import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
@@ -21,15 +22,17 @@ object Main extends ZIOAppDefault {
           .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password)),
         GraphQLGenerator.default,
         HttpClient.cachedDefault(config.httpCacheSize),
+        ApolloPersistedQueries.live,
         Server.live,
         BlueprintDataLoader.live(config),
       )
   }
 
   private val server = (AdminServer.rest ++ Http.collectRoute[Request] {
-    case Method.POST -> !! / "graphql"     => AdminServer.graphQL
-    case Method.POST -> !! / "graphql" / _ => GenericServer.graphQL
-    case Method.GET -> _                   => Http.fromResource("graphiql.html")
+    case Method.POST -> !! / "graphql"                                          => AdminServer.graphQL
+    case Method.POST -> !! / "graphql" / _                                      => GenericServer.graphQL
+    case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL
+    case Method.GET -> _                                                        => Http.fromResource("graphiql.html")
   }).tapErrorZIO(error => ZIO.logErrorCause(s"HttpError", Cause.fail(error))).mapError {
     case error: HttpError => jsonError(error.message)
     case error            => jsonError(error.getMessage)
