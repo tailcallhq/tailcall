@@ -10,7 +10,7 @@ object GraphQLUtilsSpec extends TailcallSpec {
   override def spec =
     suite("GraphQLUtils")(test("decodeQuery QueryParams") {
       val queryParams = QueryParams.decode(
-        "query=query { hello }&extensions={\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"7396e63fd4ecca35d454df01c5296efc920ad2d8cc45c5ec876bc3239b8679e3\"}}"
+        """query=query { hello }&extensions={"persistedQuery":{"version":1,"sha256Hash":"7396e63fd4ecca35d454df01c5296efc920ad2d8cc45c5ec876bc3239b8679e3"}}"""
       )
       val expected    = GraphQLRequest(
         query = Some("query { hello }"),
