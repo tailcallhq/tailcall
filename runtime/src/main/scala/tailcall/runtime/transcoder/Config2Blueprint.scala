@@ -75,7 +75,9 @@ object Config2Blueprint {
           fields <- toFieldList(typeName, typeInfo)
         } yield {
           val definition = Blueprint.ObjectTypeDefinition(name = typeName, fields = fields, description = typeInfo.doc)
-          if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition) else definition
+          if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
+          else if (typeInfo.isInterface) toInterfaceDefinition(definition)
+          else definition
         }
       }
     }
@@ -161,6 +163,14 @@ object Config2Blueprint {
         )
       }
       Blueprint.InputObjectTypeDefinition(name = definition.name, fields = fields, description = definition.description)
+    }
+
+    private def toInterfaceDefinition(definition: Blueprint.ObjectTypeDefinition): Blueprint.InterfaceTypeDefinition = {
+      Blueprint.InterfaceTypeDefinition(
+        name = definition.name,
+        fields = definition.fields,
+        description = definition.description,
+      )
     }
 
     // TODO: Add unit test for mutations

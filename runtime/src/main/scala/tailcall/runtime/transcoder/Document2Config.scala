@@ -112,11 +112,15 @@ trait Document2Config {
 
   final private def toTypes(document: Document): TValid[Nothing, Map[String, Config.Type]] = {
     val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _)).trace(definition.name)
+      toFieldMap(definition)
+        .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields))
+        .trace(definition.name)
     }.map(_.toMap)
 
     val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition).map(definition.name -> Config.Type(doc = definition.description, _)).trace(definition.name)
+      toFieldMap(definition)
+        .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields))
+        .trace(definition.name)
     }.map(_.toMap)
 
     (outputTypes zipPar inputTypes)(_ ++ _)

@@ -51,8 +51,9 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
     copy(definitions = definitions.sortBy {
       case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
       case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
-      case Blueprint.InputObjectTypeDefinition(name, _, _) => "c" + name
-      case Blueprint.ObjectTypeDefinition(name, _, _)      => "d" + name
+      case Blueprint.InterfaceTypeDefinition(name, _, _)   => "c" + name
+      case Blueprint.InputObjectTypeDefinition(name, _, _) => "d" + name
+      case Blueprint.ObjectTypeDefinition(name, _, _)      => "e" + name
     }.map {
       case self @ Blueprint.ObjectTypeDefinition(_, fields, _)      => self.copy(fields = fields.sortBy(_.name))
       case self @ Blueprint.InputObjectTypeDefinition(_, fields, _) => self.copy(fields = fields.sortBy(_.name))
@@ -109,6 +110,12 @@ object Blueprint {
         case ListType(ofType, nonNull) => ListType(ofType.withName(name), nonNull)
       }
   }
+
+  final case class InterfaceTypeDefinition(
+    name: String,
+    fields: List[FieldDefinition],
+    description: Option[String] = None,
+  ) extends Definition
 
   final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
       extends Definition

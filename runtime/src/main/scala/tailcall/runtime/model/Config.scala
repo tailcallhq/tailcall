@@ -318,10 +318,19 @@ object Config {
       RootSchema(query = other.query.orElse(query), mutation = other.mutation.orElse(mutation))
   }
 
-  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class Type(
+    fields: Map[String, Field] = Map.empty,
+    doc: Option[String] = None,
+    isInterface: Boolean = false,
+    implements: Option[List[String]] = None,
+  ) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
+
+    def asInterface: Type = self.copy(isInterface = true)
+
+    def asType: Type = self.copy(isInterface = false)
 
     def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
@@ -504,8 +513,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
-    def empty: Type                           = Type(None, Map.empty[String, Field])
+    def apply(fields: (String, Field)*): Type = Type(fields.toMap)
+    def empty: Type                           = Type()
   }
 
   object Field {
