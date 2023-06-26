@@ -40,7 +40,6 @@ object GenericServer {
           _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
           maxAge <- HttpContext.getState.map(_.cacheMaxAge)
           jsonResponse = Response.json(res.toJson)
-          _            = println(jsonResponse.headers)
         } yield
           if (method == Method.POST || res.errors.nonEmpty) jsonResponse
           else jsonResponse.withCacheControlMaxAge(maxAge.getOrElse(0 seconds)))
