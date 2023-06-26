@@ -4,6 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Blueprint.NamedType
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -20,6 +21,13 @@ object Config2Blueprint {
   final case class Live(config: Config) {
     private val outputTypes: Set[String] = config.outputTypes.toSet
     private val inputTypes: Set[String]  = config.inputTypes.toSet
+
+    // FIXME: interfaces should also contains field information
+    private val interfaces: Map[String, List[Blueprint.FieldDefinition]]  = ???
+
+    // FIXME: implement this method
+    // Use it while creating a ObjectTypeDefinition
+    private val outputTypeImplements: Map[String, Set[String]] = ???
 
     /**
      * Encodes a config into a Blueprint.
@@ -116,7 +124,7 @@ object Config2Blueprint {
           name = typeName,
           fields = fields,
           description = typeInfo.doc,
-          implements = extensions.map(name => Blueprint.NamedType(s"I${name}", true)),
+          implements = outputTypeImplements.getOrElse(typeName, Set.empty).toList.map(s => NamedType(s"I${s}", true)),
         )
 
         val typeDefinition =
