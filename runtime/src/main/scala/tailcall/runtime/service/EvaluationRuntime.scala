@@ -156,7 +156,7 @@ object EvaluationRuntime {
                   ZIO.logSpan(s"${request.method} ${request.url}") {
                     for {
                       res   <- DataLoader.httpLoad(request)
-                      _     <- HttpContext.update(_ => HttpContext.State(HttpCache.ttlHeaders(res.headers)))
+                      _     <- HttpContext.update(_.addHeaders(res.headers))
                       chunk <- res.body.asChunk
                       json  <- ZIO.fromEither(new String(chunk.toArray, StandardCharsets.UTF_8).fromJson[Json])
                         .mapError(ValidationError.DecodingError("String", "JsonAST", _))

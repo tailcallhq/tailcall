@@ -21,12 +21,17 @@ object HttpContext {
   def live(req: Option[ZRequest]): ZLayer[HttpClient, Nothing, HttpContext] =
     DataLoader.http(req) >>> ZLayer {
       for {
-        ref        <- Ref.make(State(None))
+        ref        <- Ref.make(State.empty)
         dataLoader <- ZIO.service[DataLoader[Any, Throwable, Request, Response]]
       } yield Live(dataLoader, req.map(_.headers).getOrElse(Headers.empty), ref)
     }
 
-  final case class State(cacheMaxAge: Option[Duration])
+  final case class State(headers: Headers) {
+    def addHeaders(headers: Headers): State = copy(this.headers ++ headers)
+  }
+  object State                             {
+    def empty: State = State(Headers.empty)
+  }
 
   final case class Live(
     dataLoader: DataLoader[Any, Throwable, Request, Response],
