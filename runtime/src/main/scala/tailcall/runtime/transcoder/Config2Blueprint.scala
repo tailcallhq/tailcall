@@ -76,7 +76,7 @@ object Config2Blueprint {
     }
 
     private def getAllParentFields(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] = {
-      TValid.foreach(typeInfo.extendsFrom.toList.flatten) { parentTypeName =>
+      TValid.foreach(typeInfo.baseType.toList.flatten) { parentTypeName =>
         {
           val parent = config.findType(parentTypeName)
           parent match {
@@ -103,8 +103,9 @@ object Config2Blueprint {
       else objFields.zip(allParentFields)((a, b) => a ::: b)
     }
 
+
     private def toDefinitions(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.Definition]] = {
-      val extensions = typeInfo.extendsFrom.toList.flatten
+      val extensions = typeInfo.baseType.toList.flatten
       val dblUsage   = inputTypes.contains(typeName) && outputTypes.contains(typeName)
       for {
         _          <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
