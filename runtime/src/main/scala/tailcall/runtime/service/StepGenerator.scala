@@ -43,7 +43,10 @@ object StepGenerator {
     def resolve: StepResult[HttpContext] = {
       def withHeaders(f: Context => Step[HttpContext]): ZQuery[HttpContext, Nothing, Step[HttpContext]] =
         ZQuery.fromZIO(ZIO.service[HttpContext].map(h =>
-          f(rootContext.copy(headers = h.headers.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap))
+          f(
+            rootContext
+              .copy(headers = h.requestHeaders.map(h => String.valueOf(h.key) -> String.valueOf(h.value)).toMap)
+          )
         ))
       val queryStep                                                                                     = for {
         query <- blueprint.schema.flatMap(_.query)

@@ -13,7 +13,7 @@ import zio.test._
 import java.time.Instant
 
 object HttpCacheSpec extends TailcallSpec {
-  def spec =
+  def spec = {
     suite("HttpCacheSpec Cache-Control")(
       test("ttl") {
         val ttl      = HttpCache.ttl(Response.ok.addHeaders(headers = Header("Cache-Control", "max-age=1000")))
@@ -51,5 +51,6 @@ object HttpCacheSpec extends TailcallSpec {
         assert(p)(equalTo(expected))
       },
     )
+  }
 
 }
