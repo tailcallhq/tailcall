@@ -327,9 +327,8 @@ object Config {
   final case class Type(
     doc: Option[String] = None,
     fields: Map[String, Field] = Map.empty,
-    // FIXME: keep it as Option[String]
     // FIXME: validate if the type extends itself
-    @jsonField("extends") baseType: Option[List[String]] = None,
+    @jsonField("extends") baseType: Option[String] = None,
   ) {
     self =>
     def apply(input: (String, Field)*): Type = withFields(input: _*)
@@ -341,6 +340,8 @@ object Config {
       )
 
     def extendsWith(types: String*): Type = self.copy(baseType = Option(types.toList))
+
+    def extendsWith(typeOf: String): Type = self.copy(baseType = Option(typeOf))
 
     def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields

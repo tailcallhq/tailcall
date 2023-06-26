@@ -2,10 +2,10 @@ package tailcall.registry
 
 import tailcall.runtime.model.Config
 import tailcall.test.TailcallSpec
-import zio.Scope
 import zio.test.Assertion.{equalTo, isNone, isSome}
-import zio.test.TestAspect.sequential
+import zio.test.TestAspect.{nonFlaky, sequential}
 import zio.test._
+import zio.{Scope, ZIO}
 
 object SchemaRegistrySpec extends TailcallSpec {
   private val config = Config.default.withTypes(
@@ -32,6 +32,13 @@ object SchemaRegistrySpec extends TailcallSpec {
         actual    <- SchemaRegistry.get(blueprint.digest.hex)
       } yield assert(actual)(isSome(equalTo(blueprint)))
     },
+    test("add multiple times in parallel") {
+      for {
+        blueprint <- config.toBlueprint.toTask
+        _         <- ZIO.foreachParDiscard(1 to 2)(_ => SchemaRegistry.add(blueprint))
+        actual    <- SchemaRegistry.list(0, 10)
+      } yield assert(actual)(equalTo(List(blueprint)))
+    } @@ nonFlaky,
     test("drop") {
       for {
         blueprint <- config.toBlueprint.toTask

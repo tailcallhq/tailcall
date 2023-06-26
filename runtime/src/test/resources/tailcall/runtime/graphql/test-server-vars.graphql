@@ -1,0 +1,17 @@
+#> server-sdl
+schema @server(vars: {foo: "bar"}) {
+  query: Query
+}
+
+type Query {
+  foo: String
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: String
+}
