@@ -223,6 +223,30 @@ object ConfigExecutionSpec extends TailcallSpec {
         val program = resolve(config)("query {foo {a b}}")
         assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
       },
+      test("extends") {
+        val users = Json.Arr(Json.Obj(
+          "id"       -> Json.Num(1),
+          "name"     -> Json.Str("Leanne Graham"),
+          "username" -> Json.Str("Bret"),
+          "email"    -> Json.Str("Sincere@april.biz"),
+        ))
+
+        val posts = Json.Arr(Json.Obj("title" -> Json.Str("Some title")))
+
+        val config = Config.default.withTypes(
+          "Query"      -> Config
+            .Type("users" -> Config.Field.ofType("UserQuery").asList.withSteps(Operation.constant(users))),
+          "Identified" -> Config.Type("id" -> Config.Field.int),
+          "User"       -> Config.Type("name" -> Config.Field.str).extendsWith("Identified"),
+          "UserQuery" -> Config.Type("posts" -> Config.Field.ofType("Post").asList.withSteps(Operation.constant(posts)))
+            .extendsWith("User"),
+          "Post" -> Config.Type("userId" -> Config.Field.int, "id" -> Config.Field.int, "title" -> Config.Field.str),
+        )
+
+        val program = resolve(config)(""" query { users { id, name, posts { title }} } """)
+
+        assertZIO(program)(equalTo("""{"users":[{"id":1,"name":"Leanne Graham","posts":[{"title":"Some title"}]}]}"""))
+      },
       suite("modified")(
         test("modified field") {
           val config = Config.default.withTypes(

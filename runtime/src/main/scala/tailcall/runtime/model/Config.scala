@@ -303,12 +303,6 @@ object Config {
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
-  private def compressOptional[A](data: Option[List[A]]): Option[List[A]] =
-    data match {
-      case Some(Nil) => None
-      case data      => data
-    }
-
   private def mergeTypeMap(m1: Map[String, Type], m2: Map[String, Type]) = {
     (for {
       key    <- m1.keys ++ m2.keys
@@ -333,13 +327,7 @@ object Config {
     self =>
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def compress: Type =
-      self.copy(
-        fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap,
-        baseType = compressOptional(self.baseType),
-      )
-
-    def extendsWith(types: String*): Type = self.copy(baseType = Option(types.toList))
+    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
     def extendsWith(typeOf: String): Type = self.copy(baseType = Option(typeOf))
 

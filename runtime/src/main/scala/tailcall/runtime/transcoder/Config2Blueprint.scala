@@ -23,11 +23,34 @@ object Config2Blueprint {
     private val inputTypes: Set[String]  = config.inputTypes.toSet
 
     // FIXME: interfaces should also contains field information
-    private val interfaces: Map[String, List[Blueprint.FieldDefinition]]  = ???
+    // private val interfaces: Map[String, List[Blueprint.FieldDefinition]] = ???
 
-    // FIXME: implement this method
-    // Use it while creating a ObjectTypeDefinition
-    private val outputTypeImplements: Map[String, Set[String]] = ???
+    private val outputTypeImplements: Map[String, Set[String]] = {
+      val combinedParentNames = config.graphQL.types.toList
+        .map(typeTuple => typeTuple match { case (_, typeInfo) => getAllParentNames(typeInfo) }).flatten
+
+      config.graphQL.types.toList.foldLeft(Map.empty[String, Set[String]])((outputMap, typeTuple) =>
+        typeTuple match {
+          case (typeName, typeInfo) =>
+            val directParentNames = getAllParentNames(typeInfo)
+            val allParentNames    =
+              if (combinedParentNames.contains(typeName)) typeName :: directParentNames else directParentNames
+            outputMap.updated(typeName, allParentNames.toSet)
+        }
+      )
+    }
+
+    private def getAllParentNames(typeInfo: Type): List[String] =
+      typeInfo.baseType match {
+        case Some(parentTypeName) =>
+          val parent = config.findType(parentTypeName)
+          parent match {
+            case Some(parentTypeInfo) => parentTypeName :: getAllParentNames(parentTypeInfo)
+            case _                    => Nil
+          }
+        case None                 => Nil
+
+      }
 
     /**
      * Encodes a config into a Blueprint.
@@ -35,7 +58,6 @@ object Config2Blueprint {
     def toBlueprint: TValid[String, Blueprint] = {
       val rootSchema = Blueprint
         .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
-
       TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) => toDefinitions(typeName, typeInfo) }
         .map(_.flatten).map(definitions => Blueprint(rootSchema :: definitions))
     }
@@ -76,12 +98,8 @@ object Config2Blueprint {
     }
 
     private def getAllParentFields(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] = {
-<<<<<<< HEAD
-      TValid.foreach(typeInfo.baseType.toList.flatten) { parentTypeName =>
-=======
       // FIXME: foreach isn't required
       TValid.foreach(typeInfo.baseType.toList) { parentTypeName =>
->>>>>>> 11a3d2c277840ea531f9d14bd9a7b6e68ab63a48
         {
           val parent = config.findType(parentTypeName)
           parent match {
@@ -91,42 +109,6 @@ object Config2Blueprint {
               parentFields.zip(ancestorFields)((a, b) => a ::: b)
             case _                    => TValid.fail(s"Could not find definition for ${parentTypeName}")
           }
-<<<<<<< HEAD
-        }
-      }.map(definitionList => definitionList.foldLeft(List[Blueprint.FieldDefinition]())((acc, l) => acc ::: l))
-    }
-
-    private def toCombinedFieldList(
-      typeName: String,
-      typeInfo: Type,
-    ): TValid[String, List[Blueprint.FieldDefinition]] = {
-
-      val objFields       = toFieldList(typeName, typeInfo)
-      val allParentFields = getAllParentFields(typeInfo)
-      val duplicateField  = objFields
-        .zip(allParentFields)((a, b) => a.exists(field => b.map(_.name).contains(field.name)))
-      if (duplicateField.getOrElse(false)) TValid.fail(s"Duplicate field found for ${typeName}")
-      else objFields.zip(allParentFields)((a, b) => a ::: b)
-    }
-
-
-    private def toDefinitions(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.Definition]] = {
-      val extensions = typeInfo.baseType.toList.flatten
-      val dblUsage   = inputTypes.contains(typeName) && outputTypes.contains(typeName)
-      for {
-        _          <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
-        fields     <- toCombinedFieldList(typeName, typeInfo)
-        interfaces <- TValid.foreach(extensions) { parentTypeName =>
-          config.findType(parentTypeName) match {
-            case None => TValid.fail(s"Could not find base type ${parentTypeName}")
-
-            case Some(parentTypeInfo) => toCombinedFieldList(parentTypeName, parentTypeInfo).map(parentFields =>
-                Blueprint
-                  .InterfaceTypeDefinition(name = s"I${parentTypeName}", fields = parentFields, description = None)
-              )
-          }
-        }
-=======
         }
       }.map(definitionList => definitionList.foldLeft(List[Blueprint.FieldDefinition]())((acc, l) => acc ::: l))
     }
@@ -161,7 +143,6 @@ object Config2Blueprint {
               )
           }
         }
->>>>>>> 11a3d2c277840ea531f9d14bd9a7b6e68ab63a48
       } yield {
         val objDefinition = Blueprint.ObjectTypeDefinition(
           name = typeName,

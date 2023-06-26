@@ -1,3 +1,4 @@
+#> server-sdl
 schema {
   query: Query
 }
@@ -11,6 +12,41 @@ type B @extends(type: "C") {
 }
 
 type C {
+  c: String
+}
+
+type Query {
+  a: A
+  b: B
+  c: C
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+interface IB {
+  b: String
+  c: String
+}
+
+interface IC {
+  c: String
+}
+
+type A implements IB & IC {
+  a: String
+  b: String
+  c: String
+}
+
+type B implements IB & IC {
+  b: String
+  c: String
+}
+
+type C implements IC {
   c: String
 }
 
