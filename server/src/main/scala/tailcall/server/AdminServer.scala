@@ -43,9 +43,9 @@ object AdminServer {
 
   val graphQL = Http.collectZIO[Request] { case req =>
     for {
-      query       <- GraphQLUtils.decodeQuery(req.body)
+      gReq        <- GraphQLUtils.decodeRequest(req.body)
       interpreter <- AdminGraphQL.graphQL.interpreter
-      res         <- interpreter.execute(query)
+      res         <- interpreter.executeRequest(gReq)
       _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
     } yield Response.json(res.toJson)
   }
