@@ -26,12 +26,12 @@ object HttpContext {
       } yield Live(dataLoader, req.map(_.headers).getOrElse(Headers.empty), ref)
     }
 
-  final case class State(cacheMaxAge: Duration) {
+  final case class State(cacheMaxAge: Option[Duration]) {
     def withCacheMaxAge(maxAge: Duration): State =
-      copy(cacheMaxAge = Math.min(cacheMaxAge.toMillis, maxAge.toMillis) millis)
+      copy(cacheMaxAge = cacheMaxAge.map(_ min maxAge).orElse(Some(maxAge)))
   }
-  object State                                  {
-    def empty: State = State(0 second)
+  object State                                          {
+    def empty: State = State(None)
   }
 
   final case class Live(
