@@ -1,18 +1,28 @@
+#> server-sdl
 schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
-type Post {
-  id: Int
-  user: User @http(path: "/users",query: {id: "{{value.userId}}"})
-  userId: Int
-}
-
 type Query {
-  posts: [Post]
+  foo: [User] @http(path: "/users")
 }
 
 type User {
   id: Int
   name: String
 }
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: [User]
+}
+
+type User {
+  id: Int
+  name: String
+}
+

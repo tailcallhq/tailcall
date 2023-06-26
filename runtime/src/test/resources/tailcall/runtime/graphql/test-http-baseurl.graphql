@@ -1,3 +1,4 @@
+#> server-sdl
 schema @server(baseURL: "http://abc.com") {
   query: Query
 }
@@ -5,4 +6,14 @@ schema @server(baseURL: "http://abc.com") {
 type Query {
   bar: String @http(path: "/bar")
   foo: String @http(path: "/foo",baseURL: "http://foo.com")
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  bar: String
+  foo: String
 }
