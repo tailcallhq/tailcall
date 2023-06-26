@@ -1,38 +1,43 @@
 #> server-sdl
 schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
-    query: Query
+  query: Query
 }
+
 interface IA {
-    a: String
+  a: String
 }
 
 interface IB {
-    b: String
+  b: String
 }
 
 type B implements IA & IB {
-    a: String
-    b: String
+  a: String
+  b: String
 }
 
 type Query {
-    bar: B @http(path: "/user")
+  bar: B @http(path: "/user")
 }
 
 #> client-sdl
 schema {
-    query: Query
+  query: Query
 }
+
 interface IA {
-    a: String
+  a: String
 }
+
 interface IB {
-    b: String
+  b: String
 }
+
 type B implements IA & IB {
-    a: String
-    b: String
+  a: String
+  b: String
 }
+
 type Query {
-    bar: B
+  bar: B
 }
