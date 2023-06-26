@@ -17,7 +17,7 @@ private[tailcall] object HttpCache {
   final def ttl(res: Response, currentMillis: => Instant = Instant.now()): Option[Duration] =
     ttlHeaders(res.headers, currentMillis)
 
-  final def ttlHeaders(headers: Headers, currentMillis: => Instant = Instant.now()): Option[Duration] = {
+  final def ttlHeaders(headers: Headers, currentMillis: Instant = Instant.now()): Option[Duration] = {
     val headerList   = headers.toList.map(x => String.valueOf(x.key).toLowerCase -> String.valueOf(x.value)).toMap
     val cacheControl = headerList.get("cache-control").map(_.split(",").map(_.trim).toSet).getOrElse(Set.empty)
     val maxAge       = cacheControl.find(_.startsWith("max-age=")).map(_.split("=").last).flatMap(_.toLongOption)
