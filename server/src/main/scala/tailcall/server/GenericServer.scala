@@ -30,7 +30,7 @@ object GenericServer {
         blueprintData <- load(id)
         query         <-
           if (req.url.queryParams != QueryParams.empty) GraphQLUtils.decodeRequest(req.url.queryParams)
-          else GraphQLUtils.decodeQuery(req.body)
+          else GraphQLUtils.decodeRequest(req.body)
         persistence   <- ZIO.service[ApolloPersistence]
         res           <- blueprintData.interpreter.executeRequest(query)
           .provideLayer(HttpContext.live(Option(req)) ++ ZLayer.succeed(persistence))

@@ -9,7 +9,7 @@ import zio.json._
 import java.nio.charset.StandardCharsets
 
 object GraphQLUtils {
-  def decodeQuery(body: Body): ZIO[Any, Throwable, GraphQLRequest] =
+  def decodeRequest(body: Body): ZIO[Any, Throwable, GraphQLRequest] =
     for {
       text <- body.asString(StandardCharsets.UTF_8)
       req  <- text.fromJson[GraphQLRequest] match {
