@@ -34,7 +34,7 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
 
   def endpoints: List[Endpoint] =
     for {
-      fields     <- definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields, _) => fields }
+      fields     <- definitions.collect { case Blueprint.ObjectTypeDefinition(_, fields, _, _) => fields }
       definition <- fields
       resolver   <- definition.resolver.toList.map(_.compile)
       endpoint   <- resolver.collect { case Expression.Unsafe(Expression.Unsafe.EndpointCall(endpoint)) => endpoint }
@@ -53,11 +53,12 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
       case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
       case Blueprint.InterfaceTypeDefinition(name, _, _)   => "c" + name
       case Blueprint.InputObjectTypeDefinition(name, _, _) => "d" + name
-      case Blueprint.ObjectTypeDefinition(name, _, _)      => "e" + name
+      case Blueprint.ObjectTypeDefinition(name, _, _, _)   => "e" + name
     }.map {
-      case self @ Blueprint.ObjectTypeDefinition(_, fields, _)      => self.copy(fields = fields.sortBy(_.name))
-      case self @ Blueprint.InputObjectTypeDefinition(_, fields, _) => self.copy(fields = fields.sortBy(_.name))
-      case self                                                     => self
+      case self @ Blueprint.ObjectTypeDefinition(_, fields, _, implements) => self
+          .copy(fields = fields.sortBy(_.name), implements = implements.sortBy(_.defaultName))
+      case self @ Blueprint.InputObjectTypeDefinition(_, fields, _)        => self.copy(fields = fields.sortBy(_.name))
+      case self                                                            => self
     })
 
   def toGraphQL: ZIO[GraphQLGenerator, Nothing, GraphQL[HttpContext]] = GraphQLGenerator.toGraphQL(self)
@@ -117,8 +118,12 @@ object Blueprint {
     description: Option[String] = None,
   ) extends Definition
 
-  final case class ObjectTypeDefinition(name: String, fields: List[FieldDefinition], description: Option[String] = None)
-      extends Definition
+  final case class ObjectTypeDefinition(
+    name: String,
+    fields: List[FieldDefinition],
+    description: Option[String] = None,
+    implements: List[NamedType] = Nil,
+  ) extends Definition
 
   final case class InputObjectTypeDefinition(
     name: String,

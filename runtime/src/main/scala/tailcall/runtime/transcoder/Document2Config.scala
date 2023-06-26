@@ -1,11 +1,6 @@
 package tailcall.runtime.transcoder
 
-import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
-  FieldDefinition,
-  InputObjectTypeDefinition,
-  InputValueDefinition,
-  ObjectTypeDefinition,
-}
+import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition._
 import caliban.parsing.adt.Type.innerType
 import caliban.parsing.adt.{Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
@@ -71,6 +66,10 @@ trait Document2Config {
     TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
   }
 
+  final private def toFieldMap(definition: InterfaceTypeDefinition): TValid[Nothing, Map[String, Config.Field]] = {
+    TValid.foreach(definition.fields)(field => toField(field).map(field.name -> _).trace(field.name)).map(_.toMap)
+  }
+
   private def toFieldUpdateAnnotation(field: InputValueDefinition): Option[ModifyField] = {
     field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption
   }
@@ -111,19 +110,29 @@ trait Document2Config {
   }
 
   final private def toTypes(document: Document): TValid[Nothing, Map[String, Config.Type]] = {
-    val outputTypes = TValid.foreach(document.objectTypeDefinitions) { definition =>
-      toFieldMap(definition)
-        .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields))
-        .trace(definition.name)
-    }.map(_.toMap)
+    val outputTypes: TValid[Nothing, Map[String, Config.Type]] = TValid
+      .foreach(document.objectTypeDefinitions) { definition =>
+        toFieldMap(definition).map(fields =>
+          definition.name -> Config
+            .Type(doc = definition.description, fields = fields, implements = Option(definition.implements.map(_.name)))
+        ).trace(definition.name)
+      }.map(_.toMap)
 
-    val inputTypes = TValid.foreach(document.inputObjectTypeDefinitions) { definition =>
-      toFieldMap(definition)
-        .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields))
-        .trace(definition.name)
-    }.map(_.toMap)
+    val inputTypes: TValid[Nothing, Map[String, Config.Type]] = TValid
+      .foreach(document.inputObjectTypeDefinitions) { definition =>
+        toFieldMap(definition)
+          .map(fields => definition.name -> Config.Type(doc = definition.description, fields = fields))
+          .trace(definition.name)
+      }.map(_.toMap)
 
-    (outputTypes zipPar inputTypes)(_ ++ _)
+    val interfaceTypes: TValid[Nothing, Map[String, Config.Type]] = TValid
+      .foreach(document.interfaceTypeDefinitions) { definition =>
+        toFieldMap(definition).map(fields =>
+          definition.name -> Config.Type(isInterface = true, doc = definition.description, fields = fields)
+        ).trace(definition.name)
+      }.map(_.toMap)
+
+    (outputTypes zipPar inputTypes)(_ ++ _).zipPar(interfaceTypes)(_ ++ _)
   }
 
 }

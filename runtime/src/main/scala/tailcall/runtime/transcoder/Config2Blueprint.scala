@@ -4,6 +4,7 @@ import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
+import tailcall.runtime.model.Blueprint.NamedType
 import tailcall.runtime.model.Config._
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -29,7 +30,6 @@ object Config2Blueprint {
         .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
       for { definitions <- toDefinitions } yield Blueprint(rootSchema :: definitions)
-
     }
 
     private def appendResolver(
@@ -74,7 +74,12 @@ object Config2Blueprint {
           _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
           fields <- toFieldList(typeName, typeInfo)
         } yield {
-          val definition = Blueprint.ObjectTypeDefinition(name = typeName, fields = fields, description = typeInfo.doc)
+          val definition = Blueprint.ObjectTypeDefinition(
+            name = typeName,
+            fields = fields,
+            description = typeInfo.doc,
+            implements = typeInfo.implements.toList.flatten.map(NamedType(_, true)),
+          )
           if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
           else if (typeInfo.isInterface) toInterfaceDefinition(definition)
           else definition
