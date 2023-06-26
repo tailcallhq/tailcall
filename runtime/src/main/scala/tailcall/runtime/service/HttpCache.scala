@@ -35,27 +35,6 @@ private[tailcall] object HttpCache {
     }
   }
 
-  import scala.util.Try
-
-  def calculateMinimumHeader(headers: List[(String, String)]): Option[String] = {
-    val cacheControlDirectives = headers.filter { case (key, _) => key.equalsIgnoreCase("Cache-Control") }
-      .flatMap { case (_, value) => value.split(",") }
-
-    val cacheControlMaxAgeValues = cacheControlDirectives.flatMap(header => Try(header.split("=")(1).toInt).toOption)
-      .filter(value => value > 0)
-
-    val expiresValues = headers.filter { case (key, _) => key.equalsIgnoreCase("Expires") }.flatMap { case (_, value) =>
-      Try(java.time.ZonedDateTime.parse(value)).toOption
-    }
-
-    val isPrivate        = cacheControlDirectives.exists(_.toLowerCase.contains("private"))
-    val minMaxAgeHeader  = cacheControlMaxAgeValues.minOption.map(value => s"Cache-Control: max-age=$value")
-    val minExpiresHeader = expiresValues.minOption.map(value => s"Expires: $value")
-
-    val finalCacheControlHeader = if (isPrivate) Some("Cache-Control: private") else minMaxAgeHeader
-    finalCacheControlHeader.orElse(minExpiresHeader)
-  }
-
   def live(cacheSize: Int): ZLayer[Any, Nothing, Live] =
     ZLayer.fromZIO(for {
       cache <- Ref.make[Option[Cache[Request, Throwable, Response]]](None)

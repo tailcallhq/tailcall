@@ -4,7 +4,7 @@ import tailcall.runtime.http.{HttpClient, Request}
 import tailcall.runtime.service.HttpContext.State
 import zio._
 import zio.http.model.Headers
-import zio.http.{Response, Request => ZRequest}
+import zio.http.{Request => ZRequest, Response}
 
 trait HttpContext {
   def dataLoader: DataLoader[Any, Throwable, Request, Response]
@@ -26,11 +26,12 @@ object HttpContext {
       } yield Live(dataLoader, req.map(_.headers).getOrElse(Headers.empty), ref)
     }
 
-  final case class State(headers: Headers) {
-    def addHeaders(headers: Headers): State = copy(this.headers ++ headers)
+  final case class State(cacheMaxAge: Duration) {
+    def withCacheMaxAge(maxAge: Duration): State =
+      copy(cacheMaxAge = Math.min(cacheMaxAge.toMillis, maxAge.toMillis) millis)
   }
-  object State                             {
-    def empty: State = State(Headers.empty)
+  object State                                  {
+    def empty: State = State(0 second)
   }
 
   final case class Live(
