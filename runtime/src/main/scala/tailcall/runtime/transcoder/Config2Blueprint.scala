@@ -23,7 +23,7 @@ object Config2Blueprint {
     private val inputTypes: Set[String]  = config.inputTypes.toSet
 
     // FIXME: interfaces should also contains field information
-    private val interfaces: Map[String, List[Blueprint.FieldDefinition]]  = ???
+    // private val interfaces: Map[String, List[Blueprint.FieldDefinition]] = ???
 
     // FIXME: implement this method
     // Use it while creating a ObjectTypeDefinition
@@ -76,7 +76,8 @@ object Config2Blueprint {
     }
 
     private def getAllParentFields(typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] = {
-      TValid.foreach(typeInfo.baseType.toList.flatten) { parentTypeName =>
+      // FIXME: foreach isn't required
+      TValid.foreach(typeInfo.baseType.toList) { parentTypeName =>
         {
           val parent = config.findType(parentTypeName)
           parent match {
@@ -103,14 +104,14 @@ object Config2Blueprint {
       else objFields.zip(allParentFields)((a, b) => a ::: b)
     }
 
-
     private def toDefinitions(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.Definition]] = {
-      val extensions = typeInfo.baseType.toList.flatten
-      val dblUsage   = inputTypes.contains(typeName) && outputTypes.contains(typeName)
+      val dblUsage = inputTypes.contains(typeName) && outputTypes.contains(typeName)
       for {
-        _          <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
-        fields     <- toCombinedFieldList(typeName, typeInfo)
-        interfaces <- TValid.foreach(extensions) { parentTypeName =>
+        _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
+        fields <- toCombinedFieldList(typeName, typeInfo)
+
+        // FIXME: foreach isn't required
+        interfaces <- TValid.foreach(typeInfo.baseType.toList) { parentTypeName =>
           config.findType(parentTypeName) match {
             case None => TValid.fail(s"Could not find base type ${parentTypeName}")
 

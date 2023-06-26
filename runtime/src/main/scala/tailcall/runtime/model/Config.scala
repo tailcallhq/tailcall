@@ -303,12 +303,6 @@ object Config {
 
   def fromFile(file: File): ZIO[ConfigFileIO, Throwable, Config] = ConfigFileIO.readFile(file)
 
-  private def compressOptional[A](data: Option[List[A]]): Option[List[A]] =
-    data match {
-      case Some(Nil) => None
-      case data      => data
-    }
-
   private def mergeTypeMap(m1: Map[String, Type], m2: Map[String, Type]) = {
     (for {
       key    <- m1.keys ++ m2.keys
@@ -327,20 +321,15 @@ object Config {
   final case class Type(
     doc: Option[String] = None,
     fields: Map[String, Field] = Map.empty,
-    // FIXME: keep it as Option[String]
     // FIXME: validate if the type extends itself
-    @jsonField("extends") baseType: Option[List[String]] = None,
+    @jsonField("extends") baseType: Option[String] = None,
   ) {
     self =>
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def compress: Type =
-      self.copy(
-        fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap,
-        baseType = compressOptional(self.baseType),
-      )
+    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
 
-    def extendsWith(types: String*): Type = self.copy(baseType = Option(types.toList))
+    def extendsWith(typeOf: String): Type = self.copy(baseType = Option(typeOf))
 
     def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields
