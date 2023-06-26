@@ -1,3 +1,4 @@
+#> server-sdl
 schema {
   query: Query
 }
@@ -16,4 +17,17 @@ type Foo {
 
 type Query {
   foo: Foo @inline(path: ["a","b"])
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+type B {
+  c: String
+}
+
+type Query {
+  foo: B
 }

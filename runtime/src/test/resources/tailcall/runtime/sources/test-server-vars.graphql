@@ -1,7 +1,0 @@
-schema @server(vars: {foo: "bar"}) {
-  query: Query
-}
-
-type Query {
-  foo: String
-}
