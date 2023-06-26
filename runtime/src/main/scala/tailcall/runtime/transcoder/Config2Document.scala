@@ -119,7 +119,7 @@ trait Config2Document {
       description = typeInfo.doc,
       implements = Nil,
       directives =
-        if (typeInfo.extendsFrom.exists(_.nonEmpty)) typeInfo.extendsFrom.toList.flatten
+        if (typeInfo.baseType.exists(_.nonEmpty)) typeInfo.baseType.toList.flatten
           .flatMap(ExtendsType(_).toDirective.toList)
         else Nil,
     )
