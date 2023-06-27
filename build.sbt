@@ -67,7 +67,7 @@ lazy val cli = (project in file("cli"))
   .dependsOn(runtime, registryClient, testUtils % Test)
 
 lazy val server = (project in file("server"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI))
+  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI, slf4j))
   .dependsOn(runtime, registry, testUtils % Test)
 
 lazy val registry = (project in file("registry")).settings(
