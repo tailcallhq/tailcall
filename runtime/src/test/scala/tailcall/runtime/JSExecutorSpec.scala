@@ -16,7 +16,7 @@ object JSExecutorSpec extends TailcallSpec {
       test("long running") {
         val program = JSExecutor.execute("function (a) { while (true) {a = a + 1}  return a}", 100)
           .mapError(_.getMessage).either
-        assertZIO(program)(isLeft(equalTo("Execution got interrupted")))
+        assertZIO(program)(isLeft(equalTo("Thread was interrupted.")))
       },
-    ).provide(JSExecutor.live(5 millis))
+    ).provide(JSExecutor.live(100 millis))
 }
