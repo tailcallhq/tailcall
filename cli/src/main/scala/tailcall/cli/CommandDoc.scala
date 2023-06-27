@@ -10,7 +10,7 @@ object CommandDoc {
     Command(
       "check",
       CustomOptions.remoteOption.optional ++
-        Options.boolean("nPlusOne").alias("npo") ++
+        Options.boolean("n-plus-one-queries").alias("npo") ++
         CustomOptions.blueprintOptions,
       Args.file.repeat1,
     ).withHelp("Validate a composition spec, display its status when remote is passed.").map {
