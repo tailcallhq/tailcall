@@ -1,10 +1,12 @@
 package tailcall.server
 
-import caliban.CalibanError
-import caliban.wrappers.ApolloPersistedQueries.ApolloPersistence
+import caliban.{CalibanError, GraphQL}
+import caliban.wrappers.ApolloPersistedQueries.{ApolloPersistence, apolloPersistedQueries}
+import caliban.wrappers.ApolloTracing.apolloTracing
+import caliban.wrappers.Wrappers.printSlowQueries
+import tailcall.registry.SchemaRegistry
 import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
-import tailcall.server.BlueprintDataLoader.{InterpreterLoader, load}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
@@ -20,23 +22,38 @@ object GenericServer {
     }
   }
   def graphQL: Http[
-    HttpClient with GraphQLGenerator with InterpreterLoader with ApolloPersistence,
+    HttpClient with GraphQLGenerator with ApolloPersistence with SchemaRegistry with GraphQLConfig,
     Throwable,
     Request,
     Response,
   ] =
     Http.collectZIO[Request] { case req @ method -> !! / "graphql" / id =>
       for {
-        blueprintData <- load(id)
-        gReq          <-
+        config         <- ZIO.service[GraphQLConfig]
+        gReq           <-
           if (req.url.queryParams != QueryParams.empty) GraphQLUtils.decodeRequest(req.url.queryParams)
           else GraphQLUtils.decodeRequest(req.body)
-        persistence   <- ZIO.service[ApolloPersistence]
-        res           <- (for {
-          res <- blueprintData.interpreter.executeRequest(gReq)
-            .map(res => res.copy(errors = res.errors.map(toBetterError))).timeoutFail(HttpError.RequestTimeout(
-              s"Request timed out after ${blueprintData.timeout}ms"
-            ))(blueprintData.timeout.millis)
+        persistence    <- ZIO.service[ApolloPersistence]
+        maybeBlueprint <- if (id == "0") SchemaRegistry.list(0, 1).map(_.headOption) else SchemaRegistry.get(id)
+        blueprint      <- ZIO.fromOption(maybeBlueprint)
+          .orElseFail(HttpError.BadRequest(s"Blueprint ${id} has not been published yet."))
+        gql            <- blueprint.toGraphQL
+        gql            <- ZIO.succeed {
+          var _gql: GraphQL[HttpContext with ApolloPersistence] = gql
+          if (config.enableTracing) _gql = _gql @@ apolloTracing
+          config.slowQueryDuration match {
+            case Some(duration) => _gql = _gql @@ printSlowQueries(duration)
+            case None           => ()
+          }
+          if (config.persistedQueries) _gql = _gql @@ apolloPersistedQueries
+          _gql
+        }
+        interpreter    <- gql.interpreter
+        res            <- (for {
+          res <- interpreter.executeRequest(gReq).map(res => res.copy(errors = res.errors.map(toBetterError)))
+            .timeoutFail(HttpError.RequestTimeout(s"Request timed out after ${config.globalResponseTimeout}ms"))(
+              config.globalResponseTimeout
+            )
           _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
           maxAge <- HttpContext.getState.map(_.cacheMaxAge)
           jsonResponse = Response.json(res.toJson)

@@ -24,7 +24,7 @@ object Main extends ZIOAppDefault {
         HttpClient.cachedDefault(config.httpCacheSize),
         ApolloPersistedQueries.live,
         Server.live,
-        BlueprintDataLoader.live(config),
+        ZLayer.succeed(config),
       )
   }
 
