@@ -34,7 +34,7 @@ object Main extends ZIOAppDefault {
     case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL
     case Method.GET -> _                                                        => Http.fromResource("graphiql.html")
   }).tapErrorZIO(error => ZIO.logErrorCause(s"HttpError", Cause.fail(error))).mapError {
-    case error: HttpError => jsonError(error.message)
+    case error: HttpError => jsonError(error.message, error.status)
     case error            => jsonError(error.getMessage)
   }
 

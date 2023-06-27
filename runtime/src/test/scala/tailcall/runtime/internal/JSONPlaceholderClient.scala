@@ -25,20 +25,19 @@ class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
   def userById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
       case 1 => readFile("user-by-id.json").map(Response.json(_))
-      case _ => ZIO.succeed(
-          Response.fromHttpError(HttpError.NotFound(s"404 url: http://jsonplaceholder.typicode.com/users/${id}"))
-        )
+      case _ => ZIO
+          .succeed(Response.fromHttpError(HttpError.NotFound(s"http://jsonplaceholder.typicode.com/users/${id}")))
     }
   def postById(id: Int): ZIO[Any, Throwable, Response] =
     id match {
       case 1 => readFile("post-by-Id.json").map(Response.json(_))
-      case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Post with id $id not found")))
+      case _ => ZIO.succeed(Response.fromHttpError(HttpError.BadRequest(s"Post with id $id not found")))
     }
 
   def postsByUserId(userId: Int): ZIO[Any, Throwable, Response] =
     userId match {
       case 1 => readFile("post-by-user-id.json").map(Response.json(_))
-      case _ => ZIO.succeed(Response.fromHttpError(HttpError.NotFound(s"Posts with userId $userId not found")))
+      case _ => ZIO.succeed(Response.fromHttpError(HttpError.BadRequest(s"Posts with userId $userId not found")))
     }
 
   def getUsersBatched = readFile("users-batched.json").map(Response.json(_))
