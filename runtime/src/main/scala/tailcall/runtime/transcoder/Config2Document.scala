@@ -2,12 +2,7 @@ package tailcall.runtime.transcoder
 
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.SchemaDefinition
-import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{
-  FieldDefinition,
-  InputObjectTypeDefinition,
-  InputValueDefinition,
-  ObjectTypeDefinition,
-}
+import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition._
 import caliban.parsing.adt.Type.{ListType, NamedType}
 import caliban.parsing.adt.{Definition, Directive, Document, Type}
 import tailcall.runtime.DirectiveCodec.EncoderSyntax
@@ -38,7 +33,9 @@ trait Config2Document {
     val inputTypes = config.inputTypes.toSet
     config.graphQL.types.toList.map { case (typeName, typeInfo) =>
       val definition = toObjectTypeDefinition(typeName, typeInfo)
-      if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition) else definition
+      if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
+      else if (typeInfo.isInterface) toInterfaceTypeDefinition(definition)
+      else definition
     }
   }
 
@@ -111,13 +108,21 @@ trait Config2Document {
     )
   }
 
+  final private def toInterfaceTypeDefinition(definition: ObjectTypeDefinition): InterfaceTypeDefinition =
+    InterfaceTypeDefinition(
+      name = definition.name,
+      fields = definition.fields,
+      directives = definition.directives,
+      description = definition.description,
+    )
+
   final private def toObjectTypeDefinition(typeName: String, typeInfo: Config.Type): ObjectTypeDefinition = {
     val fields: List[FieldDefinition] = toFieldDefinition(typeInfo)
     ObjectTypeDefinition(
       name = typeName,
       fields = fields,
       description = typeInfo.doc,
-      implements = Nil,
+      implements = typeInfo.implements.toList.flatten.map(NamedType(_, false)),
       directives = Nil,
     )
   }

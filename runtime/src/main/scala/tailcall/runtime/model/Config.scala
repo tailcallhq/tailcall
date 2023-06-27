@@ -318,12 +318,34 @@ object Config {
       RootSchema(query = other.query.orElse(query), mutation = other.mutation.orElse(mutation))
   }
 
-  final case class Type(doc: Option[String] = None, fields: Map[String, Field] = Map.empty) {
+  final case class Type(
+    fields: Map[String, Field] = Map.empty,
+    doc: Option[String] = None,
+    interface: Option[Boolean] = None,
+    implements: Option[List[String]] = None,
+  ) {
     self =>
 
     def apply(input: (String, Field)*): Type = withFields(input: _*)
 
-    def compress: Type = self.copy(fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap)
+    def asInterface: Type = self.copy(interface = Option(true))
+
+    def asType: Type = self.copy(interface = None)
+
+    def compress: Type =
+      self.copy(
+        fields = self.fields.toSeq.sortBy(_._1).map { case (k, v) => k -> v.compress }.toMap,
+        interface = self.interface match {
+          case Some(true) => Some(true)
+          case _          => None
+        },
+        implements = self.implements match {
+          case Some(list) if list.nonEmpty => Some(list)
+          case _                           => None
+        },
+      )
+
+    def isInterface: Boolean = interface.getOrElse(false)
 
     def mergeRight(other: Config.Type): Config.Type = {
       val newFields = other.fields ++ self.fields
@@ -504,8 +526,8 @@ object Config {
   }
 
   object Type {
-    def apply(fields: (String, Field)*): Type = Type(None, fields.toMap)
-    def empty: Type                           = Type(None, Map.empty[String, Field])
+    def apply(fields: (String, Field)*): Type = Type(fields.toMap)
+    def empty: Type                           = Type()
   }
 
   object Field {

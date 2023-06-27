@@ -24,12 +24,20 @@ trait Blueprint2Document {
           case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
               .TypeSystemDefinition
               .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
-          case Blueprint.ObjectTypeDefinition(name, fields, description)      => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.ObjectTypeDefinition(description, name, Nil, Nil, fields.map(toCalibanField))
+          case Blueprint.ObjectTypeDefinition(name, fields, description, implements) => CalibanDefinition
+              .TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition(
+                description,
+                name,
+                implements.map(tpe => CalibanType.NamedType(tpe.name, true)),
+                Nil,
+                fields.map(toCalibanField),
+              )
           case Blueprint.InputObjectTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
           case Blueprint.ScalarTypeDefinition(name, directives, description)  => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
+          case Blueprint.InterfaceTypeDefinition(name, fields, description)   => CalibanDefinition.TypeSystemDefinition
+              .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
         },
         SourceMapper.empty,
       )
