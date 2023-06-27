@@ -25,16 +25,16 @@ object AdminServer {
         list <- SchemaRegistry.list(0, Int.MaxValue)
       } yield Response.json(list.toJson)
 
-    case Method.DELETE -> !! / "schemas" / hex => for {
+    case req @ Method.DELETE -> !! / "schemas" / hex => for {
         found <- SchemaRegistry.drop(hex)
-        _     <- ZIO.fail(HttpError.NotFound(s"Schema ${hex} not found")).when(found)
+        _     <- ZIO.fail(HttpError.NotFound(req.url.encode)).when(found)
       } yield Response.ok
 
-    case Method.GET -> !! / "schemas" / hex => for {
+    case req @ Method.GET -> !! / "schemas" / hex => for {
         schema    <- SchemaRegistry.get(hex)
         blueprint <- schema match {
           case Some(blueprint) => ZIO.succeed(blueprint)
-          case None            => ZIO.fail(HttpError.NotFound(s"Schema ${hex} not found"))
+          case None            => ZIO.fail(HttpError.NotFound(req.url.encode))
         }
       } yield Response.json(blueprint.toJson)
 
