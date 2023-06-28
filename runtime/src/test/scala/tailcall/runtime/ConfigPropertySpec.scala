@@ -1,11 +1,13 @@
 package tailcall.runtime
 
-import tailcall.runtime.internal.GraphQLTestSpec
+import tailcall.runtime.internal.{GraphQLTestSpec, TValid}
 import tailcall.runtime.model.ConfigFormat
 import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
 import zio.test.{Spec, TestEnvironment, assertTrue, checkAll}
 import zio.{Scope, ZIO}
+
+import scala.collection.immutable.ArraySeq.unsafeWrapArray
 
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] = {
@@ -24,12 +26,21 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
       },
       test("config to client SDL") {
         checkAll(graphQLSpecGen("graphql")) { spec =>
-          val expected = spec.clientSDL
+          val expected =
+            if (spec.clientError.isBlank) spec.clientSDL
+            else {
+              val parts = spec.clientError.replace("# ", "").split("\n")
+              TValid.fail(parts(0)).trace(unsafeWrapArray(parts(1).split(",")): _*)
+            }
           val content  = spec.serverSDL
           for {
             config <- ConfigFormat.GRAPHQL.decode(content)
-            actual <- ZIO.attempt(Transcoder.toSDL(config, false).unwrap.trim)
-          } yield assertTrue(actual == expected)
+            sdl    <- ZIO.attempt(Transcoder.toSDL(config, false))
+          } yield {
+            val actual = if (sdl.isValid) sdl.unwrap.trim else sdl
+            assertTrue(actual == expected)
+          }
+
         }
       },
     )

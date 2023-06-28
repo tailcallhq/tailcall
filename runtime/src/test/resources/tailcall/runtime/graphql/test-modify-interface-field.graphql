@@ -1,0 +1,39 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+interface IA {
+  a: String
+}
+
+type B implements IA {
+  a: String @modify(name: "x")
+  b: String
+}
+
+type Query {
+  bar: B
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+interface IA {
+  a: String
+}
+
+type B implements IA {
+  b: String
+  x: String
+}
+
+type Query {
+  bar: B
+}
+
+#> client-error
+# Cannot use modify on field a on type B because it implements interface IA with the same field
+# B,a
