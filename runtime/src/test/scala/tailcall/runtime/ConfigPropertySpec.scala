@@ -26,12 +26,7 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
       },
       test("config to client SDL") {
         checkAll(graphQLSpecGen("graphql")) { spec =>
-          val expected =
-            if (spec.clientError.isBlank) spec.clientSDL
-            else {
-              val parts = spec.clientError.replace("# ", "").split("\n")
-              TValid.fail(parts(0)).trace(unsafeWrapArray(parts(1).split(",")): _*)
-            }
+          val expected = if (spec.clientError.isBlank) spec.clientSDL else buildExpectedError(spec.clientError)
           val content  = spec.serverSDL
           for {
             config <- ConfigFormat.GRAPHQL.decode(content)
@@ -40,9 +35,13 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
             val actual = if (sdl.isValid) sdl.unwrap.trim else sdl
             assertTrue(actual == expected)
           }
-
         }
       },
     )
+  }
+
+  def buildExpectedError(inputString: String): TValid[String, String] = {
+    val parts = inputString.replace("# ", "").split("\n")
+    TValid.fail(parts(0)).trace(unsafeWrapArray(parts(1).split(",")): _*)
   }
 }

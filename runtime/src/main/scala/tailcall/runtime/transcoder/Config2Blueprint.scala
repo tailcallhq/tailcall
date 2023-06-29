@@ -133,7 +133,6 @@ object Config2Blueprint {
     ): TValid[String, List[Blueprint.FieldDefinition]] = {
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         {
-
           for {
             bField <- toFieldDefault(fieldName, field)
             bField <-
