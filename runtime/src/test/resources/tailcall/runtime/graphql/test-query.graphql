@@ -13,5 +13,10 @@ schema {
 }
 
 type Query {
-  foo: String
+  foo: String @constant(value: """Hello World""")
+}
+
+#> client-query
+query {
+  foo
 }
