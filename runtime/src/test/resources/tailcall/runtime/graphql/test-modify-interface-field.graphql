@@ -36,4 +36,4 @@ type Query {
 
 #> client-error
 # Cannot use modify on field a on type B because it implements interface IA with the same field
-# B,a
+# B,a,@modify

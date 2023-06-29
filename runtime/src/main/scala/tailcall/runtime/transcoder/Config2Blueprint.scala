@@ -94,38 +94,6 @@ object Config2Blueprint {
       } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
     }
 
-    private def validateModify(
-      fieldName: String,
-      field: Field,
-      typeName: String,
-      typeInfo: Type,
-      types: List[(String, Type)],
-    ): TValid[String, String] = {
-      field.modify match {
-        case Some(ModifyField(None, None)) => TValid.succeed("")
-        case None                          => TValid.succeed("")
-        case _                             =>
-          val interfaceWithSameField = types.filter(_._2.interface.isDefined)
-            .filter(interface => typeInfo.implements.toList.flatten.contains(interface._1))
-            .find(interface => interface._2.fields.find { case (iFieldName, _) => iFieldName == fieldName }.isDefined)
-
-          interfaceWithSameField match {
-            case Some(value) => TValid.fail(
-                s"Cannot use modify on field ${fieldName} on type ${typeName} because it implements interface ${value._1} with the same field"
-              )
-            case _           => TValid.succeed("")
-          }
-      }
-    }
-
-    private def validateField(
-      fieldName: String,
-      field: Field,
-      typeName: String,
-      typeInfo: Type,
-      types: List[(String, Type)],
-    ): TValid[String, String] = { for { _ <- validateModify(fieldName, field, typeName, typeInfo, types) } yield "" }
-
     private def toFieldList(
       typeName: String,
       typeInfo: Type,
@@ -138,10 +106,10 @@ object Config2Blueprint {
             bField <-
               if (inputTypes.contains(typeName)) TValid.succeed(List(bField))
               else for {
-                _           <- validateField(fieldName, field, typeName, typeInfo, types)
                 bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
                 bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)
-                mayBeBField <- updateModifyField(field, bField).trace("@" + ModifyField.directive.name)
+                mayBeBField <- updateModifyField(fieldName, field, bField, typeName, typeInfo, types)
+                  .trace("@" + ModifyField.directive.name)
                 bField      <- mayBeBField match {
                   case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
                       .trace("@" + InlineType.directive.name)
@@ -339,15 +307,28 @@ object Config2Blueprint {
     }
 
     private def updateModifyField(
+      fieldName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
+      typeName: String,
+      typeInfo: Type,
+      types: List[(String, Type)],
     ): TValid[String, Option[Blueprint.FieldDefinition]] = {
       field.modify match {
         case Some(ModifyField(None, Some(true)))    => TValid.none
         case Some(ModifyField(Some(newName), None)) =>
-          val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
-          val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
-          TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
+          val interfaceWithSameField = types.filter(_._2.interface.isDefined)
+            .filter(interface => typeInfo.implements.toList.flatten.contains(interface._1))
+            .find(interface => interface._2.fields.find { case (iFieldName, _) => iFieldName == fieldName }.isDefined)
+          interfaceWithSameField match {
+            case Some(value) => TValid.fail(
+                s"Cannot use modify on field ${fieldName} on type ${typeName} because it implements interface ${value._1} with the same field"
+              )
+            case _           =>
+              val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
+              val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
+              TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
+          }
         case Some(ModifyField(Some(_), Some(_)))    => TValid.fail("can not have both name and omit modifier")
         case _                                      => TValid.succeed(bField).some
       }
