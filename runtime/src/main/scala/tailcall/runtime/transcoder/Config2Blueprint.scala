@@ -72,7 +72,7 @@ object Config2Blueprint {
         val dblUsage = inputTypes.contains(typeName) && outputTypes.contains(typeName)
         for {
           _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
-          fields <- toFieldList(typeName, typeInfo, config.graphQL.types.toList)
+          fields <- toFieldList(typeName, typeInfo)
         } yield {
           val definition = Blueprint.ObjectTypeDefinition(
             name = typeName,
@@ -94,11 +94,7 @@ object Config2Blueprint {
       } yield Blueprint.FieldDefinition(name = fieldName, args = args, ofType = ofType, description = field.doc)
     }
 
-    private def toFieldList(
-      typeName: String,
-      typeInfo: Type,
-      types: List[(String, Type)],
-    ): TValid[String, List[Blueprint.FieldDefinition]] = {
+    private def toFieldList(typeName: String, typeInfo: Type): TValid[String, List[Blueprint.FieldDefinition]] = {
       TValid.foreach(typeInfo.fields.toList) { case (fieldName, field) =>
         {
           for {
@@ -108,8 +104,7 @@ object Config2Blueprint {
               else for {
                 bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
                 bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)
-                mayBeBField <- updateModifyField(fieldName, field, bField, typeName, typeInfo, types)
-                  .trace("@" + ModifyField.directive.name)
+                mayBeBField <- updateModifyField(field, bField, typeInfo).trace("@" + ModifyField.directive.name)
                 bField      <- mayBeBField match {
                   case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
                       .trace("@" + InlineType.directive.name)
@@ -307,23 +302,19 @@ object Config2Blueprint {
     }
 
     private def updateModifyField(
-      fieldName: String,
       field: Field,
       bField: Blueprint.FieldDefinition,
-      typeName: String,
       typeInfo: Type,
-      types: List[(String, Type)],
     ): TValid[String, Option[Blueprint.FieldDefinition]] = {
       field.modify match {
         case Some(ModifyField(None, Some(true)))    => TValid.none
         case Some(ModifyField(Some(newName), None)) =>
-          val interfaceWithSameField = types.filter(_._2.interface.isDefined)
+          val interfaceWithSameField = config.graphQL.types.toList.filter(_._2.interface.isDefined)
             .filter(interface => typeInfo.implements.toList.flatten.contains(interface._1))
-            .find(interface => interface._2.fields.find { case (iFieldName, _) => iFieldName == fieldName }.isDefined)
+            .find(interface => interface._2.fields.find { case (iFieldName, _) => iFieldName == bField.name }.isDefined)
           interfaceWithSameField match {
-            case Some(value) => TValid.fail(
-                s"Cannot use modify on field ${fieldName} on type ${typeName} because it implements interface ${value._1} with the same field"
-              )
+            case Some(value) => TValid
+                .fail(s"Cannot use modify on field ${bField.name} because it is implemented from interface ${value._1}")
             case _           =>
               val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
               val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic

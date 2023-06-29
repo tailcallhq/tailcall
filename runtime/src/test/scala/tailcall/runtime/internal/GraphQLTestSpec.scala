@@ -22,6 +22,7 @@ trait GraphQLTestSpec {
     } yield contentList.map { case (file, content) =>
       val components = content.split("#>").map(_.trim)
       GraphQLSpec(
+        file.name,
         extractComponent(file, components.toList, "server-sdl"),
         extractComponent(file, components.toList, "client-sdl"),
         extractComponent(file, components.toList, "client-error"),
@@ -30,5 +31,5 @@ trait GraphQLTestSpec {
 }
 
 object GraphQLTestSpec {
-  final case class GraphQLSpec(serverSDL: String, clientSDL: String, clientError: String)
+  final case class GraphQLSpec(name: String, serverSDL: String, clientSDL: String, clientError: String)
 }

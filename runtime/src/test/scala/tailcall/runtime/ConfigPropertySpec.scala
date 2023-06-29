@@ -41,7 +41,9 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   }
 
   def buildExpectedError(inputString: String): TValid[String, String] = {
-    val parts = inputString.replace("# ", "").split("\n")
-    TValid.fail(parts(0)).trace(unsafeWrapArray(parts(1).split(",")): _*)
+    val parts    = inputString.split("] ")
+    val message  = parts(1)
+    val location = parts(0).replace("# - [", "").split(",").map(_.trim)
+    TValid.fail(message).trace(unsafeWrapArray(location): _*)
   }
 }
