@@ -103,7 +103,7 @@ object Config2Blueprint {
             else for {
               bField      <- updateUnsafeField(field, bField).trace("@" + UnsafeSteps.directive.name)
               bField      <- updateFieldHttp(field, bField).trace("@" + Http.directive.name)
-              mayBeBField <- updateModifyField(field, bField).trace("@" + ModifyField.directive.name)
+              mayBeBField <- updateModifyField(field, bField, typeInfo).trace("@" + ModifyField.directive.name)
               bField      <- mayBeBField match {
                 case Some(bField) => updateInlineField(typeName, typeInfo, fieldName, field, bField).some
                     .trace("@" + InlineType.directive.name)
@@ -302,13 +302,20 @@ object Config2Blueprint {
     private def updateModifyField(
       field: Field,
       bField: Blueprint.FieldDefinition,
+      typeInfo: Type,
     ): TValid[String, Option[Blueprint.FieldDefinition]] = {
       field.modify match {
         case Some(ModifyField(None, Some(true)))    => TValid.none
         case Some(ModifyField(Some(newName), None)) =>
-          val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
-          val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
-          TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
+          val matchingInterfaceName = typeInfo.implements.toList.flatten
+            .find(iName => config.findType(iName).exists(_.fields.get(bField.name).isDefined))
+          matchingInterfaceName match {
+            case Some(name) => TValid.fail(s"Implemented field from interface ${name} is unmodifiable")
+            case None       =>
+              val resolverPath = if (bField.resolver.isEmpty) List("value", bField.name) else List()
+              val resolver     = Lambda.identity[DynamicValue].path(resolverPath: _*).toDynamic
+              TValid.succeed(appendResolver(bField, resolver).copy(name = newName)).some
+          }
         case Some(ModifyField(Some(_), Some(_)))    => TValid.fail("can not have both name and omit modifier")
         case _                                      => TValid.succeed(bField).some
       }

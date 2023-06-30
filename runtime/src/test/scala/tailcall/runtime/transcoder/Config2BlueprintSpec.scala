@@ -73,5 +73,28 @@ object Config2BlueprintSpec extends TailcallSpec {
         val expected = List(TSchema.obj("b" -> TSchema.str.opt, "c" -> TSchema.str.opt).opt)
         assertZIO(schemas)(equalTo(expected))
       },
+      test("no modify on interface implemented field") {
+        val config = Config.default.withBaseURL("http://abc.com").withTypes(
+          "Query" -> Config.Type("foo" -> Field.ofType("Foo")),
+          "IA"    -> Config.Type("a" -> Field.ofType("String")).asInterface,
+          "Foo"   -> Config.Type("a" -> Field.ofType("String").withName("x"), "b" -> Field.ofType("String"))
+            .copy(implements = Some(List("IA"))),
+        )
+
+        val expected =
+          Chunk(TValid.Cause("Implemented field from interface IA is unmodifiable", "Foo" :: "a" :: "@modify" :: Nil))
+
+        assertZIO(Transcoder.toBlueprint(config).toZIO.flip)(equalTo(expected))
+      },
+      test("modify allowed on non interface implemented field") {
+        val config = Config.default.withBaseURL("http://abc.com").withTypes(
+          "Query" -> Config.Type("foo" -> Field.ofType("Foo")),
+          "IA"    -> Config.Type("a" -> Field.ofType("String")).asInterface,
+          "Foo"   -> Config.Type("a" -> Field.ofType("String"), "b" -> Field.ofType("String").withName("x"))
+            .copy(implements = Some(List("IA"))),
+        )
+
+        assertTrue(Transcoder.toBlueprint(config).isValid)
+      },
     )
 }
