@@ -138,11 +138,11 @@ object Config2Blueprint {
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 
             val resolver = Lambda.unsafe.fromEndpoint(endpoint)
-            http.batchKey match {
+            http.matchKey match {
               case None      => resolver
               case Some(key) =>
                 val baseResolver = resolver.toTyped[Chunk[DynamicValue]].getOrElse(Lambda(Chunk.empty[DynamicValue]))
-                  .groupBy(_.pathSeq(http.groupBy.getOrElse(List("id")): _*))
+                  .groupBy(_.pathSeq(http.matchPath.getOrElse(List("id")): _*))
                   .get(Lambda.identity[DynamicValue].path("value", key))
                 if (field.isList) baseResolver.map(_.toChunk).toDynamic else baseResolver.flatMap(_.head).toDynamic
             }

@@ -419,7 +419,7 @@ object Config {
 
     def hasBatchedResolver: Boolean =
       http match {
-        case Some(http) => http.batchKey.nonEmpty && http.groupBy.nonEmpty
+        case Some(http) => http.matchKey.nonEmpty && http.matchPath.nonEmpty
         case None       => false
       }
 
