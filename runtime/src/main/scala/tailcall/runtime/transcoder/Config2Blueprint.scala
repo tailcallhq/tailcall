@@ -308,7 +308,7 @@ object Config2Blueprint {
         case Some(ModifyField(None, Some(true)))    => TValid.none
         case Some(ModifyField(Some(newName), None)) =>
           val matchingInterfaceName = typeInfo.implements.toList.flatten
-            .find(iName => config.findType(iName).exists(_.fields.get(bField.name).isDefined))
+            .find(iName => config.findType(iName).exists(_.fields.contains(bField.name)))
           matchingInterfaceName match {
             case Some(name) => TValid.fail(s"Implemented field from interface ${name} is unmodifiable")
             case None       =>
