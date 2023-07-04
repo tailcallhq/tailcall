@@ -1,0 +1,22 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo(input: Int @modify(name: "data")): Bar
+}
+
+type Bar {
+  bar: Int @constant(value: "1")
+}
+
+#> client-query
+query {
+  foo(data: 1) {
+    bar
+  }
+}
+
+#> query-response
+# {"foo":{"bar":1}}

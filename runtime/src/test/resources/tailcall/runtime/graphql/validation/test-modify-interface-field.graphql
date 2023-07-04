@@ -1,0 +1,24 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+interface IA {
+  a: String
+}
+
+type B implements IA {
+  a: String @modify(name: "x")
+  b: String
+}
+
+type Query {
+  bar: B
+}
+
+#> validation-messages
+# message: Implemented field from interface IA is unmodifiable
+# location:
+#   - B
+#   - a
+#   - "@modify"

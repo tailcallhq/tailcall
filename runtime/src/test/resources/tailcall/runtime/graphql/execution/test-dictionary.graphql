@@ -1,0 +1,32 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  z: A @constant(value: """{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}""")
+}
+
+type A {
+  a: Int
+  b: [B]
+}
+
+type B {
+  key: String
+  value: Int
+}
+
+#> client-query
+query {
+  z {
+    a 
+    b {
+      key
+      value
+    }
+  }
+}
+
+#> query-response
+# {"z":{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}}

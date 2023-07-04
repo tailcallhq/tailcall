@@ -1,0 +1,20 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo @inline(path: ["a"]) @constant(value: """{"a":"Hello"}""")
+}
+
+type Foo {
+  a: String
+}
+
+#> client-query
+query {
+  foo
+}
+
+#> query-response 
+# {"foo":"Hello"}

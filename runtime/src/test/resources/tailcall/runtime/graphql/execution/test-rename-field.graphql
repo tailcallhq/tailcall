@@ -1,0 +1,16 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: String @modify(name: "bar") @constant(value: "\"Hello World\"")
+}
+
+#> client-query
+query {
+  bar
+}
+
+#> query-response
+# {"bar":"Hello World"}

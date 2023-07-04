@@ -1,0 +1,28 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  a: A @constant(value: "{\"b\":[{\"c\":1},{\"c\":2},{\"c\":3}]}")
+}
+
+type A {
+  b: [B]
+}
+
+type B {
+  c: Int
+}
+
+#> client-query
+query {
+  a {
+    b {
+      c
+    }
+  }
+}
+
+#> query-response
+# {"a":{"b":[{"c":1},{"c":2},{"c":3}]}}

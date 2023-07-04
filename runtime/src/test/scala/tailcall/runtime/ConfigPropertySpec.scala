@@ -1,6 +1,7 @@
 package tailcall.runtime
 
 import tailcall.runtime.internal.GraphQLTestSpec
+import tailcall.runtime.internal.GraphQLTestSpec.GraphQLSDLSpec
 import tailcall.runtime.model.ConfigFormat
 import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
@@ -13,7 +14,8 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
       // Read .graphql files from resources
       // Perform a check from Document to Config and back to Document
       test("config to document identity") {
-        checkAll(graphQLSpecGen("graphql")) { spec =>
+        checkAll(graphQLSpecGen[GraphQLSDLSpec]("graphql")) { spec =>
+          println(spec.name)
           val content  = spec.serverSDL
           val expected = content
           for {
@@ -23,7 +25,7 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
         }
       },
       test("config to client SDL") {
-        checkAll(graphQLSpecGen("graphql")) { spec =>
+        checkAll(graphQLSpecGen[GraphQLSDLSpec]("graphql")) { spec =>
           val expected = spec.clientSDL
           val content  = spec.serverSDL
           for {

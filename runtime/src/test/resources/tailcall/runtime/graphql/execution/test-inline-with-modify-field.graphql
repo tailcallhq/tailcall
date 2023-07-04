@@ -1,0 +1,30 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo @inline(path: ["a","b"]) @modify(name: "bar") @constant(value: """{"a":{"b":{"c":"Hello"}}}""")
+}
+
+type Foo {
+  a: A
+}
+
+type A {
+  b: B
+}
+
+type B {
+  c: String
+}
+
+#> client-query
+query {
+  bar {
+    c
+  }
+}
+
+#> query-response 
+# {"bar":{"c":"Hello"}}

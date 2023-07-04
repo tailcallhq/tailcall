@@ -1,0 +1,26 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  user: User @constant(value: """{"address":{"street": "James Street"}}""")
+}
+
+type User {
+  address: Address @inline(path: ["street"])
+}
+
+type Address {
+  street: String
+}
+
+#> client-query
+query {
+  user {
+    address
+  }
+}
+
+#> query-response
+# {"user":{"address":"James Street"}}
