@@ -87,14 +87,14 @@ object Endpoint {
 
     val queryString = endpoint.query.nonEmptyOrElse("")(_.map { case (key, string) =>
       MustacheExpression.syntax.parseString(string) match {
-        case Left(_)           => s"$key=${string}"
+        case Left(_)           => Some(s"$key=${string}")
         case Right(expression) => DynamicValueUtil.getPath(input, expression.path.toList, true) match {
-            case Some(DynamicValue.Sequence(values)) => values.toSet.flatMap(DynamicValueUtil.asString)
-                .map(input => s"$key=${input}").mkString("&")
-            case _ => s"$key=${MustacheExpression.evaluate(string, input).getOrElse(string)}"
+            case Some(DynamicValue.Sequence(values)) =>
+              Some(values.toSet.flatMap(DynamicValueUtil.asString).map(input => s"$key=${input}").mkString("&"))
+            case _ => MustacheExpression.evaluate(string, input).map(str => s"$key=$str").toOption
           }
       }
-    }.mkString("?", "&", ""))
+    }.collect { case Some(a) => a }.mkString("?", "&", ""))
 
     val pathString: String = endpoint.path.unsafeEvaluate(input)
 
