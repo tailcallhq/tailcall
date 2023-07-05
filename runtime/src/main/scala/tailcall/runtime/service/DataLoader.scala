@@ -67,8 +67,6 @@ final case class DataLoader[R, E, A, B](
 
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Response]
-  // TODO: make this configurable
-  private val allowedHeaders: Set[String] = Set("authorization", "cookie")
 
   def dispatch: ZIO[HttpContext, Throwable, Unit] = ZIO.serviceWithZIO[HttpContext](_.dataLoader.dispatch)
 
@@ -78,7 +76,7 @@ object DataLoader {
     ZLayer {
       ZIO.serviceWithZIO[HttpClient] { client =>
         DataLoader.one[Request] { request =>
-          val finalHeaders = request.headers ++ getForwardedHeaders(req)
+          val finalHeaders = request.headers ++ getForwardedHeaders(req, client.allowedHeaders)
           for {
             response <- client.request(request.copy(headers = finalHeaders))
             _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
@@ -98,7 +96,7 @@ object DataLoader {
 
   def one[A]: PartiallyAppliedDataLoaderOne[A] = new PartiallyAppliedDataLoaderOne(())
 
-  private def getForwardedHeaders(req: Option[ZRequest]): Map[String, String] = {
+  private def getForwardedHeaders(req: Option[ZRequest], allowedHeaders: Set[String]): Map[String, String] = {
     req.map(_.headers.toList.filter(x => allowedHeaders.contains(String.valueOf(x.key).toLowerCase())))
       .getOrElse(List.empty).map(header => (String.valueOf(header.key), String.valueOf(header.value))).toMap
   }

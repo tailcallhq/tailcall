@@ -9,29 +9,31 @@ import zio.{ZIO, ZLayer}
 import java.nio.charset.StandardCharsets
 
 trait HttpClient {
+  def allowedHeaders: Set[String]
   def request(req: Request): ZIO[Any, Throwable, Response]
 }
 
 // TODO: handle cancellation
 object HttpClient {
-  def cached: ZLayer[HttpCache with Client, Nothing, Live] =
+  def cached(allowedHeaders: Set[String]): ZLayer[HttpCache with Client, Nothing, Live] =
     ZLayer(for {
       client <- ZIO.service[Client]
       cache  <- ZIO.service[HttpCache]
       _      <- cache.init(Lookup(a => client.request(a.toZHttpRequest)))
-    } yield Live(client, Option(cache)))
+    } yield Live(client, Option(cache), allowedHeaders))
 
-  def cachedDefault(cacheSize: Option[Int]): ZLayer[Any, Throwable, HttpClient] =
+  def cachedDefault(cacheSize: Option[Int], allowedHeaders: Set[String]): ZLayer[Any, Throwable, HttpClient] =
     cacheSize match {
-      case Some(size) => HttpCache.live(size) ++ Client.default >>> cached
-      case None       => Client.default >>> live
+      case Some(size) => HttpCache.live(size) ++ Client.default >>> cached(allowedHeaders)
+      case None       => Client.default >>> live(allowedHeaders)
     }
 
-  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live
+  def default: ZLayer[Any, Throwable, HttpClient] = Client.default >>> live(Set.empty)
 
-  def live: ZLayer[Client, Nothing, HttpClient] = ZLayer.fromFunction(Live(_, None))
+  def live(allowedHeaders: Set[String]): ZLayer[Client, Nothing, HttpClient] =
+    ZLayer.fromFunction(Live(_, None, allowedHeaders))
 
-  final case class Live(client: Client, cache: Option[HttpCache]) extends HttpClient {
+  final case class Live(client: Client, cache: Option[HttpCache], allowedHeaders: Set[String]) extends HttpClient {
     def request(req: Request): ZIO[Any, Throwable, Response] = {
       for {
         res              <-

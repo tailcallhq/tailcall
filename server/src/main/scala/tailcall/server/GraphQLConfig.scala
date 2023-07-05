@@ -55,7 +55,8 @@ object GraphQLConfig {
       CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration) ++
       DBConfig.options ++
       Options.boolean("persisted-queries").withDefault(default.persistedQueries) ++
-      Options.text("allowed-headers").alias("H").map(_.split(",").map(_.trim().toLowerCase()).toSet).withDefault(default.allowedHeaders) ?? "comma separated list of headers"
+      Options.text("allowed-headers").alias("H").map(_.split(",").map(_.trim().toLowerCase()).toSet)
+        .withDefault(default.allowedHeaders) ?? "comma separated list of headers"
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {
