@@ -69,8 +69,10 @@ object Config2Blueprint {
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
       TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
-        val dblUsage = inputTypes.contains(typeName) && outputTypes.contains(typeName)
-        for {
+        val dblUsage    = inputTypes.contains(typeName) && outputTypes.contains(typeName)
+        val enumeration = typeInfo.variants.getOrElse(List.empty)
+        if (enumeration.nonEmpty) TValid.succeed(toEnumDefinition(typeName, enumeration))
+        else for {
           _      <- TValid.fail(s"$typeName cannot be both used both as input and output type").when(dblUsage)
           fields <- toFieldList(typeName, typeInfo)
         } yield {
@@ -86,6 +88,12 @@ object Config2Blueprint {
         }
       }
     }
+
+    private def toEnumDefinition(name: String, variants: List[String]): Blueprint.EnumTypeDefinition =
+      Blueprint.EnumTypeDefinition(
+        name = name,
+        enumValueDefinition = variants.map(name => Blueprint.EnumValueDefinition(None, name, Nil)),
+      )
 
     private def toFieldDefault(fieldName: String, field: Field): TValid[String, Blueprint.FieldDefinition] = {
       for {

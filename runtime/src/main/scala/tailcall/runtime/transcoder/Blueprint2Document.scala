@@ -4,8 +4,8 @@ import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
   Directive,
+  Definition => CalibanDefinition,
   Document => CalibanDocument,
   Type => CalibanType,
 }
@@ -36,7 +36,14 @@ trait Blueprint2Document {
               .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
           case Blueprint.ScalarTypeDefinition(name, directives, description)  => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
-          case Blueprint.InterfaceTypeDefinition(name, fields, description)   => CalibanDefinition.TypeSystemDefinition
+          case Blueprint.EnumTypeDefinition(name, directives, description, values) => CalibanDefinition
+              .TypeSystemDefinition.TypeDefinition.EnumTypeDefinition(
+                description,
+                name,
+                directives.map(toCalibanDirective(_)),
+                values.map(toCalibanEnumValue(_)),
+              )
+          case Blueprint.InterfaceTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
         },
         SourceMapper.empty,
@@ -49,6 +56,15 @@ trait Blueprint2Document {
       directive.arguments.map { case (key, value) => key -> Transcoder.toInputValue(value).getOrElse(Value.NullValue) },
     )
   }
+
+  final private def toCalibanEnumValue(
+    definition: Blueprint.EnumValueDefinition
+  ): CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition =
+    CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition(
+      definition.description,
+      definition.enumValue,
+      definition.directives.map(toCalibanDirective(_)),
+    )
 
   final private def toCalibanField(field: Blueprint.FieldDefinition): FieldDefinition = {
     val directives = field.directives.map(toCalibanDirective(_))

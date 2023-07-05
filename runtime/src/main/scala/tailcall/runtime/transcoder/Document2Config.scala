@@ -132,7 +132,14 @@ trait Document2Config {
           .trace(definition.name)
       }.map(_.toMap)
 
-    (outputTypes zipPar inputTypes)(_ ++ _).zipPar(interfaceTypes)(_ ++ _)
+    val enums = TValid.foreach(document.enumTypeDefinitions) { definition =>
+      TValid.succeed(
+        definition.name -> Config
+          .Type(doc = definition.description, variants = Option(definition.enumValuesDefinition.map(_.enumValue)))
+      )
+    }.map(_.toMap)
+
+    TValid.parWith(outputTypes, inputTypes, interfaceTypes, enums)(_ ++ _)
   }
 
 }

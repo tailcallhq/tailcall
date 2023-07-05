@@ -323,6 +323,7 @@ object Config {
     doc: Option[String] = None,
     interface: Option[Boolean] = None,
     implements: Option[List[String]] = None,
+    @jsonField("enum") variants: Option[List[String]] = None,
   ) {
     self =>
 
