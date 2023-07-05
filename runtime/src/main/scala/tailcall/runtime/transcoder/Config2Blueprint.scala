@@ -124,12 +124,15 @@ object Config2Blueprint {
 
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       http.baseURL.orElse(config.server.baseURL) match {
-        case Some(baseURL) => TValid.succeed {
-            val steps    = field.unsafeSteps.getOrElse(Nil)
-            val host     = baseURL.getHost
-            val port     = if (baseURL.getPort > 0) baseURL.getPort else 80
-            val scheme   = if (baseURL.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http
-            var endpoint = Endpoint.make(host).withPort(port).withPath(http.path).withScheme(scheme)
+        case Some(baseURL) => for {
+            basePath <- TValid.fromEither(Path.decode(baseURL.getPath))
+          } yield {
+            val steps  = field.unsafeSteps.getOrElse(Nil)
+            val host   = baseURL.getHost
+            val port   = if (baseURL.getPort > 0) baseURL.getPort else 80
+            val scheme = if (baseURL.getProtocol.toLowerCase == "https" || port == 443) Scheme.Https else Scheme.Http
+
+            var endpoint = Endpoint.make(host).withPort(port).withPath(basePath ++ http.path).withScheme(scheme)
               .withQuery(http.query.getOrElse(Map.empty)).withMethod(http.method.getOrElse(Method.GET))
               .withInput(http.input).withOutput(http.output)
 
@@ -140,8 +143,7 @@ object Config2Blueprint {
 
             // TODO: add unit tests for when we can infer input/output
             val inferOutput = steps.indexOf(http) == steps.length - 1 && endpoint.output.isEmpty
-
-            val inferInput = steps.indexOf(http) == 0 && endpoint.input.isEmpty
+            val inferInput  = steps.indexOf(http) == 0 && endpoint.input.isEmpty
             if (inferOutput) endpoint = endpoint.withOutput(Option(toTSchema(field)))
             if (inferInput) endpoint = endpoint.withInput(Option(toTSchema(field.args)))
 

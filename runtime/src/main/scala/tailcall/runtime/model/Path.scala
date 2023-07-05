@@ -9,6 +9,8 @@ import zio.schema.DynamicValue
 
 final case class Path(segments: List[Path.Segment]) {
   self =>
+  def ++(other: Path): Path = Path(self.segments ++ other.segments)
+
   def encode: Either[String, String] = Path.encode(self)
 
   def evaluate(input: DynamicValue): Path = {
