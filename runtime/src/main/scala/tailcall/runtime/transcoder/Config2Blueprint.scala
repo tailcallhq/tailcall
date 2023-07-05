@@ -125,7 +125,10 @@ object Config2Blueprint {
     private def toHttpResolver(field: Field, http: Operation.Http): TValid[String, DynamicValue ~> DynamicValue] = {
       http.baseURL.orElse(config.server.baseURL) match {
         case Some(baseURL) => for {
-            basePath <- TValid.fromEither(Path.decode(baseURL.getPath))
+            basePath <- Option(baseURL.getPath) match {
+              case Some(basePath) if basePath.nonEmpty => TValid.fromEither(Path.decode(basePath))
+              case _                                   => TValid.succeed(Path.empty)
+            }
           } yield {
             val steps  = field.unsafeSteps.getOrElse(Nil)
             val host   = baseURL.getHost
