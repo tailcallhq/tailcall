@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.http.{HttpClient, Request, Scheme}
 import tailcall.runtime.model.{Endpoint, Postman}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
@@ -21,33 +21,40 @@ object EndpointGenerator {
   def generate(postman: Postman): ZIO[EndpointGenerator, Throwable, List[Endpoint]] =
     ZIO.serviceWithZIO(_.generate(postman))
 
+  def extractValueItems(item: Postman.Item): List[Postman.Item.ValueItem] = {
+    item match {
+      case Postman.Item.FolderItem(_, item)          => item.flatMap(extractValueItems(_))
+      case item @ Postman.Item.ValueItem(_, _, _, _) => List(item)
+    }
+  }
   final case class Live(httpContext: HttpContext) extends EndpointGenerator {
     override def generate(postman: Postman): Task[List[Endpoint]] = {
-      ZIO.foreach(postman.collection.item.filter(item => item.request.url.nonEmpty)) { item =>
-        {
-          val request          = item.request
-          val host             = request.url match {
-            case Some(value) => value.protocol.name + "://" + value.host.mkString(".")
-            case None        => throw new Exception("Host is not defined")
+      ZIO.foreach(postman.collection.item.flatMap(extractValueItems(_)).filter(item => item.request.url.nonEmpty)) {
+        item =>
+          {
+            val request          = item.request
+            val host             = request.url match {
+              case Some(value) => value.protocol.getOrElse(Scheme.Http).name + "://" + value.host.mkString(".")
+              case None        => throw new Exception("Host is not defined")
+            }
+            val path             = request.url.map(_.path.mkString("/"))
+            val endpoint         = Endpoint.make(host).withDescription(item.name)
+            val headers          = request.header.map(h => (h.key, h.value)).toMap
+            val endpointWithPath = if (path.nonEmpty) endpoint.withPath("/" + path.get) else endpoint
+            val endpointWithHost = endpointWithPath.withAddress(host)
+            httpContext.dataLoader.load(Request(
+              host + "/" + path.getOrElse(""),
+              request.method,
+              headers,
+              request.body.map(body => Chunk.fromIterable(body.raw.toString().getBytes(Charset.defaultCharset())))
+                .getOrElse(Chunk.empty),
+            )).flatMap(res => res.body.asChunk).map(resp =>
+              endpointWithHost.withMethod(request.method)
+                .withInput(request.body.flatMap(body => Transcoder.toTSchema(body.raw.toString()).toOption))
+                .withOutput(Transcoder.toTSchema(new String(resp.toArray, StandardCharsets.UTF_8)).toOption)
+                .withHeader(headers.toList: _*)
+            )
           }
-          val path             = request.url.map(_.path.mkString("/"))
-          val endpoint         = Endpoint.make(host).withDescription(item.name)
-          val headers          = request.header.map(h => (h.key, h.value)).toMap
-          val endpointWithPath = if (path.nonEmpty) endpoint.withPath("/" + path.get) else endpoint
-          val endpointWithHost = endpointWithPath.withAddress(host)
-          httpContext.dataLoader.load(Request(
-            host + "/" + path.getOrElse(""),
-            request.method,
-            headers,
-            request.body.map(body => Chunk.fromIterable(body.raw.toString().getBytes(Charset.defaultCharset())))
-              .getOrElse(Chunk.empty),
-          )).flatMap(res => res.body.asChunk).map(resp =>
-            endpointWithHost.withMethod(request.method)
-              .withInput(request.body.flatMap(body => Transcoder.toTSchema(body.raw.toString()).toOption))
-              .withOutput(Transcoder.toTSchema(new String(resp.toArray, StandardCharsets.UTF_8)).toOption)
-              .withHeader(headers.toList: _*)
-          )
-        }
       }
     }
 

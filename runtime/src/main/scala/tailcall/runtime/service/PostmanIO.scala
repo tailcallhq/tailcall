@@ -1,6 +1,7 @@
 package tailcall.runtime.service
 
 import tailcall.runtime.model.Postman
+import tailcall.runtime.model.Postman._
 import zio.json.DecoderOps
 import zio.{Task, ZIO, ZLayer}
 
@@ -9,6 +10,7 @@ import java.net.URL
 
 trait PostmanIO {
   def read(url: URL): Task[Postman]
+  def read(file: File): Task[Postman] = read(file.toURI.toURL)
 }
 
 object PostmanIO {
@@ -22,8 +24,15 @@ object PostmanIO {
     override def read(url: URL): Task[Postman] = {
       for {
         file    <- fileIO.read(new File(url.getFile))
-        postman <- ZIO.fromEither(file.fromJson[Postman]).mapError(new RuntimeException(_))
+        postman <- parse(file).mapError(new RuntimeException(_))
       } yield postman
+    }
+
+    private def parse(file: String): ZIO[Any, String, Postman] = {
+      val asPostman    = ZIO.fromEither(file.fromJson[Postman])
+      val asCollection = ZIO.fromEither(file.fromJson[Collection])
+
+      asCollection.map(Postman(_)) <> asPostman
     }
   }
 }

@@ -22,7 +22,8 @@ trait CommandExecutor {
 }
 
 object CommandExecutor {
-  type Env = GraphQLGenerator with ConfigFileIO with FileIO with SchemaRegistryClient with EndpointGenerator
+  type Env = GraphQLGenerator
+    with ConfigFileIO with FileIO with SchemaRegistryClient with EndpointGenerator with PostmanIO
 
   def default: ZLayer[Any, Throwable, CommandExecutor] = { Env.default >>> live }
 
@@ -43,6 +44,7 @@ object CommandExecutor {
     graphQLGen: GraphQLGenerator,
     configFile: ConfigFileIO,
     fileIO: FileIO,
+    postmanIO: PostmanIO,
     registry: SchemaRegistryClient,
     endpointGen: EndpointGenerator,
   ) extends CommandExecutor {
@@ -115,7 +117,7 @@ object CommandExecutor {
     private def postman2GraphQL(files: ::[Path], dSLFormat: ConfigFormat): ZIO[Any, Throwable, String] = {
       val nameGen = NameGenerator.incremental
       for {
-        postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
+        postmanCollection <- ZIO.foreachPar(files.toList)(path => postmanIO.read(path.toFile))
         endpoints         <- ZIO.foreachPar(postmanCollection)(endpointGen.generate(_)).map(_.flatten)
         mergedEndpoints   <- EndpointUnifier.unify(endpoints).toZIO
           .mapError(errors => new RuntimeException(errors.mkString(", ")))
@@ -225,8 +227,12 @@ object CommandExecutor {
   }
 
   object Env {
-    val default: ZLayer[Any, Throwable, Env] = GraphQLGenerator.default ++ ConfigFileIO.default ++ FileIO
-      .default ++ SchemaRegistryClient.default ++ EndpointGenerator.default
+    val default: ZLayer[Any, Throwable, Env] = GraphQLGenerator.default ++
+      ConfigFileIO.default ++
+      (FileIO.default) ++
+      SchemaRegistryClient.default ++
+      EndpointGenerator.default ++
+      PostmanIO.default
   }
 
   object Fmt {
