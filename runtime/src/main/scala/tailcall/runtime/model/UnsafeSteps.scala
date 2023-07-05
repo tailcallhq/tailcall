@@ -57,13 +57,15 @@ object UnsafeSteps {
       matchPath: Option[List[String]] = None,
       matchKey: Option[String] = None,
       baseURL: Option[URL] = None,
+      headers: Option[Map[String, String]] = None,
     ) extends Operation {
       self =>
       override def compress: Http = {
         val method  = self.method.filterNot(_ == Method.GET)
         val query   = self.query.filter(_.nonEmpty)
         val groupBy = self.matchPath.filter(_.nonEmpty)
-        self.copy(method = method, query = query, matchPath = groupBy)
+        val headers = self.headers.filter(_.nonEmpty)
+        self.copy(method = method, query = query, matchPath = groupBy, headers = headers)
       }
 
       def withBaseURL(url: URL): Http = copy(baseURL = Option(url))
@@ -108,6 +110,7 @@ object UnsafeSteps {
           input = endpoint.input,
           output = endpoint.output,
           body = endpoint.body.flatMap(MustacheExpression.syntax.printString(_).toOption),
+          headers = Option(endpoint.headers.toMap),
         )
 
       def fromPath(path: String): Http = Http(Path.unsafe.fromString(path))

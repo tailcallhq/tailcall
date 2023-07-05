@@ -50,6 +50,8 @@ final case class Endpoint(
 
   def withHeader(headers: (String, String)*): Endpoint = copy(headers = Chunk.from(headers))
 
+  def withHeaders(headers: Map[String, String]): Endpoint = copy(headers = Chunk.from(headers))
+
   def withHttp: Endpoint = withScheme(Scheme.Http)
 
   def withHttps: Endpoint = withScheme(Scheme.Https)

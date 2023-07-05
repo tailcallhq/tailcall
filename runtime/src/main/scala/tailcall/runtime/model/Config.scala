@@ -451,9 +451,21 @@ object Config {
       input: Option[TSchema] = None,
       output: Option[TSchema] = None,
       body: Option[String] = None,
-      groupBy: List[String] = Nil,
-      batchKey: Option[String] = None,
-    ): Field = withHttp(Http(path, method, Option(query), input, output, body, Option(groupBy), batchKey))
+      matchPath: List[String] = Nil,
+      matchKey: Option[String] = None,
+      headers: Option[Map[String, String]] = None,
+    ): Field =
+      withHttp(Http(
+        path = path,
+        method = method,
+        query = Option(query),
+        input = input,
+        output = output,
+        body = body,
+        matchPath = Option(matchPath),
+        matchKey = matchKey,
+        headers = headers,
+      ))
 
     def withInline(path: String*): Field = copy(inline = Option(InlineType(path.toList)))
 
