@@ -64,7 +64,8 @@ object UnsafeSteps {
         val method  = self.method.filterNot(_ == Method.GET)
         val query   = self.query.filter(_.nonEmpty)
         val groupBy = self.matchPath.filter(_.nonEmpty)
-        self.copy(method = method, query = query, matchPath = groupBy)
+        val headers = self.headers.filter(_.nonEmpty)
+        self.copy(method = method, query = query, matchPath = groupBy, headers = headers)
       }
 
       def withBaseURL(url: URL): Http = copy(baseURL = Option(url))
