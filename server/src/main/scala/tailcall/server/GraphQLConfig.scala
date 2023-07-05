@@ -6,7 +6,7 @@ import zio.{Duration, ZIO, ZIOAppArgs}
 
 case class GraphQLConfig(
   port: Int = SchemaRegistry.PORT,
-  globalResponseTimeout: Int = 10,
+  globalResponseTimeout: Int = 10000,
   httpCacheSize: Option[Int] = None,
   enableTracing: Boolean = false,
   slowQueryDuration: Option[Int] = None,
@@ -47,16 +47,16 @@ object GraphQLConfig {
 
   private def options =
     CustomOptions.int("port").withDefault(default.port) ?? "port on which the server starts" ++
-      CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in seconds" ++
+      CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in millis" ++
       CustomOptions.int("http-cache").optional
         .withDefault(default.httpCacheSize) ?? "size of the in-memory http cache" ++
       Options.boolean("tracing")
         .withDefault(default.enableTracing) ?? "enables low-level tracing (affects performance)" ++
       CustomOptions.int("slow-query").optional
-        .withDefault(default.slowQueryDuration) ?? "slow-query identifier in seconds" ++
+        .withDefault(default.slowQueryDuration) ?? "slow-query identifier in millis" ++
       DBConfig.options ++
       Options.boolean("persisted-queries").withDefault(default.persistedQueries) ?? "enable persisted-queries" ++
-      Options.text("allowed-headers").alias("H").map(_.split(",").map(_.trim().toLowerCase()).toSet)
+      Options.text("allowed-headers").map(_.split(",").map(_.trim().toLowerCase()).toSet)
         .withDefault(default.allowedHeaders) ?? "comma separated list of headers"
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])

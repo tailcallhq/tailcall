@@ -29,7 +29,7 @@ object BlueprintDataLoader {
               var _gql: GraphQL[HttpContext with ApolloPersistence] = gql
               if (config.enableTracing) _gql = _gql @@ apolloTracing
               config.slowQueryDuration match {
-                case Some(duration) => _gql = _gql @@ printSlowQueries(Duration.fromSeconds(duration))
+                case Some(duration) => _gql = _gql @@ printSlowQueries(Duration.fromMillis(duration))
                 case None           => ()
               }
               if (config.persistedQueries) _gql = _gql @@ apolloPersistedQueries
