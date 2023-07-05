@@ -64,6 +64,7 @@ object EndpointSpec extends TailcallSpec {
           DynamicValue(())                          -> root.withQuery("a" -> "1"),
           DynamicValue(Map("a" -> "1"))             -> root.withQuery("a" -> "{{a}}"),
           DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withQuery("a" -> "{{a.b}}"),
+          DynamicValue(Map("a" -> "1"))             -> root.withQuery("a" -> "{{a}}", "b" -> "{{b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
