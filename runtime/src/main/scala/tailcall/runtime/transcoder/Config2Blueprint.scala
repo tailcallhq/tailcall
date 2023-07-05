@@ -48,7 +48,7 @@ object Config2Blueprint {
         TValid.fail(s"undefined type name $typeName").when(!inOutputs && !isScalar(typeName))
     }
 
-    private def isScalar(typeName: String): Boolean = List("String", "Int", "Boolean").contains(typeName)
+    private def isScalar(typeName: String): Boolean = List("String", "Int", "Boolean", "JSON").contains(typeName)
 
     private def needsResolving(field: Config.Field): Boolean =
       field.unsafeSteps.exists(_.nonEmpty) || field.http.isDefined
