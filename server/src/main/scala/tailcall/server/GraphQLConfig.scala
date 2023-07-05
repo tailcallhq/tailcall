@@ -4,14 +4,12 @@ import tailcall.registry.SchemaRegistry
 import zio.cli.{CliApp, Command, Options}
 import zio.{Duration, ZIO, ZIOAppArgs}
 
-import java.util.concurrent.TimeUnit
-
 case class GraphQLConfig(
   port: Int = SchemaRegistry.PORT,
-  globalResponseTimeout: Duration = Duration(10000, TimeUnit.SECONDS),
+  globalResponseTimeout: Int = 10,
   httpCacheSize: Option[Int] = None,
   enableTracing: Boolean = false,
-  slowQueryDuration: Option[Duration] = None,
+  slowQueryDuration: Option[Int] = None,
   database: Option[GraphQLConfig.DBConfig] = None,
   persistedQueries: Boolean = false,
   allowedHeaders: Set[String] = Set("cookie", "authorization"),
@@ -48,24 +46,27 @@ object GraphQLConfig {
     }
 
   private def options =
-    CustomOptions.int("port").withDefault(default.port) ++
-      CustomOptions.duration("timeout").withDefault(default.globalResponseTimeout) ++
-      CustomOptions.int("http-cache").optional.withDefault(default.httpCacheSize) ++
-      Options.boolean("tracing").withDefault(default.enableTracing) ++
-      CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration) ++
+    CustomOptions.int("port").withDefault(default.port) ?? "port on which the server starts" ++
+      CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in seconds" ++
+      CustomOptions.int("http-cache").optional
+        .withDefault(default.httpCacheSize) ?? "size of the in-memory http cache" ++
+      Options.boolean("tracing")
+        .withDefault(default.enableTracing) ?? "enables low-level tracing (affects performance)" ++
+      CustomOptions.int("slow-query").optional
+        .withDefault(default.slowQueryDuration) ?? "slow-query identifier in seconds" ++
       DBConfig.options ++
-      Options.boolean("persisted-queries").withDefault(default.persistedQueries) ++
+      Options.boolean("persisted-queries").withDefault(default.persistedQueries) ?? "enable persisted-queries" ++
       Options.text("allowed-headers").alias("H").map(_.split(",").map(_.trim().toLowerCase()).toSet)
         .withDefault(default.allowedHeaders) ?? "comma separated list of headers"
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {
     val options: Options[Option[DBConfig]] = {
-      Options.boolean("db").withDefault(false) ++
-        Options.text("db-host").withDefault("localhost") ++
-        CustomOptions.int("db-port").withDefault(3306) ++
-        Options.text("db-username").withDefault("tailcall_main_user").optional ++
-        Options.text("db-password").withDefault("tailcall").optional
+      Options.boolean("db").withDefault(false) ?? "enable database for persistence" ++
+        Options.text("db-host").withDefault("localhost") ?? "database hostname" ++
+        CustomOptions.int("db-port").withDefault(3306) ?? "database port" ++
+        Options.text("db-username").withDefault("tailcall_main_user").optional ?? "database username" ++
+        Options.text("db-password").withDefault("tailcall").optional ?? "database password"
     }.map { case (enable, host, port, username, password) =>
       if (enable) Some(DBConfig(host, port, username, password)) else None
     }
