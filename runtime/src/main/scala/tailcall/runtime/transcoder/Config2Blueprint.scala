@@ -137,7 +137,7 @@ object Config2Blueprint {
 
             var endpoint = Endpoint.make(host).withPort(port).withPath(basePath ++ http.path).withScheme(scheme)
               .withQuery(http.query.getOrElse(Map.empty)).withMethod(http.method.getOrElse(Method.GET))
-              .withInput(http.input).withOutput(http.output)
+              .withInput(http.input).withOutput(http.output).withHeaders(http.headers.getOrElse(Map.empty))
 
             http.body.flatMap(MustacheExpression.syntax.parseString(_).toOption) match {
               case Some(value) => endpoint = endpoint.withBody(value)
