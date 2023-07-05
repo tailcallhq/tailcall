@@ -68,7 +68,7 @@ final case class DataLoader[R, E, A, B](
 object DataLoader {
   type HttpDataLoader = DataLoader[Any, Throwable, Request, Response]
   // TODO: make this configurable
-  private val allowedHeaders: Set[String] = Set("authorization", "cookie")
+  private val allowedHeaders: Set[String] = Set("authorization", "cookie", "apikey")
 
   def dispatch: ZIO[HttpContext, Throwable, Unit] = ZIO.serviceWithZIO[HttpContext](_.dataLoader.dispatch)
 
