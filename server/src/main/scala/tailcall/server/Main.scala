@@ -21,7 +21,7 @@ object Main extends ZIOAppDefault {
         config.database
           .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password)),
         GraphQLGenerator.default,
-        HttpClient.cachedDefault(config.httpCacheSize),
+        HttpClient.cachedDefault(config.httpCacheSize, config.allowedHeaders),
         ApolloPersistedQueries.live,
         Server.live,
         BlueprintDataLoader.live(config),

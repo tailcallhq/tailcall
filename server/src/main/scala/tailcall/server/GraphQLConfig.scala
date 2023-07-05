@@ -14,6 +14,7 @@ case class GraphQLConfig(
   slowQueryDuration: Option[Duration] = None,
   database: Option[GraphQLConfig.DBConfig] = None,
   persistedQueries: Boolean = false,
+  allowedHeaders: Set[String] = Set("cookie", "authorization"),
 )
 
 object GraphQLConfig {
@@ -25,8 +26,16 @@ object GraphQLConfig {
 
   private def command: Command[GraphQLConfig] =
     Command("server", options).withHelp(s"starts the server on port: ${default.port}").map {
-      case (port, globalResponseTimeout, httpCacheSize, enableTracing, slowQueryDuration, database, persistedQueries) =>
-        GraphQLConfig(
+      case (
+            port,
+            globalResponseTimeout,
+            httpCacheSize,
+            enableTracing,
+            slowQueryDuration,
+            database,
+            persistedQueries,
+            allowedHeaders,
+          ) => GraphQLConfig(
           port,
           globalResponseTimeout,
           httpCacheSize,
@@ -34,6 +43,7 @@ object GraphQLConfig {
           slowQueryDuration,
           database,
           persistedQueries,
+          allowedHeaders,
         )
     }
 
@@ -44,7 +54,9 @@ object GraphQLConfig {
       Options.boolean("tracing").withDefault(default.enableTracing) ++
       CustomOptions.duration("slow-query").optional.withDefault(default.slowQueryDuration) ++
       DBConfig.options ++
-      Options.boolean("persisted-queries").withDefault(default.persistedQueries)
+      Options.boolean("persisted-queries").withDefault(default.persistedQueries) ++
+      Options.text("allowed-headers").alias("H").map(_.split(",").map(_.trim().toLowerCase()).toSet)
+        .withDefault(default.allowedHeaders) ?? "comma separated list of headers"
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {

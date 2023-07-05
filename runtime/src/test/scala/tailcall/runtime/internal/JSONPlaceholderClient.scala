@@ -9,6 +9,9 @@ import zio.{ZIO, ZLayer}
 import java.io.{File, FileNotFoundException}
 
 class JSONPlaceholderClient(fileIO: FileIO) extends HttpClient {
+
+  override def allowedHeaders: Set[String] = Set.empty
+
   private def readFile(name: String)                   =
     for {
       path    <- ZIO.attempt(getClass.getResource(name).toURI.getPath).refineOrDie { case _: NullPointerException =>
