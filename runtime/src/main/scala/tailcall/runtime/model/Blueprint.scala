@@ -51,13 +51,17 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
     copy(definitions = definitions.sortBy {
       case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
       case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
-      case Blueprint.InterfaceTypeDefinition(name, _, _)   => "c" + name
-      case Blueprint.InputObjectTypeDefinition(name, _, _) => "d" + name
-      case Blueprint.ObjectTypeDefinition(name, _, _, _)   => "e" + name
+      case Blueprint.EnumTypeDefinition(name, _, _, _)     => "c" + name
+      case Blueprint.InterfaceTypeDefinition(name, _, _)   => "d" + name
+      case Blueprint.InputObjectTypeDefinition(name, _, _) => "e" + name
+      case Blueprint.ObjectTypeDefinition(name, _, _, _)   => "f" + name
     }.map {
       case self @ Blueprint.ObjectTypeDefinition(_, fields, _, implements) => self
           .copy(fields = fields.sortBy(_.name), implements = implements.sortBy(_.defaultName))
       case self @ Blueprint.InputObjectTypeDefinition(_, fields, _)        => self.copy(fields = fields.sortBy(_.name))
+      case self @ Blueprint.InterfaceTypeDefinition(_, fields, _)          => self.copy(fields = fields.sortBy(_.name))
+      case self @ Blueprint.EnumTypeDefinition(_, _, _, values)            => self
+          .copy(enumValueDefinition = values.sortBy(_.enumValue))
       case self                                                            => self
     })
 
@@ -161,6 +165,15 @@ object Blueprint {
     directive: List[Directive] = Nil,
     description: Option[String] = None,
   ) extends Definition
+
+  final case class EnumTypeDefinition(
+    name: String,
+    directives: List[Directive] = Nil,
+    description: Option[String] = None,
+    enumValueDefinition: List[EnumValueDefinition],
+  ) extends Definition
+
+  final case class EnumValueDefinition(description: Option[String], enumValue: String, directives: List[Directive])
 
   final case class NamedType(name: String, nonNull: Boolean) extends Type
 

@@ -33,7 +33,8 @@ trait Config2Document {
     val inputTypes = config.inputTypes.toSet
     config.graphQL.types.toList.map { case (typeName, typeInfo) =>
       val definition = toObjectTypeDefinition(typeName, typeInfo)
-      if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
+      if (typeInfo.variants.exists(_.nonEmpty)) toEnumTypeDefinition(typeName, typeInfo)
+      else if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
       else if (typeInfo.isInterface) toInterfaceTypeDefinition(definition)
       else definition
     }
@@ -62,6 +63,17 @@ trait Config2Document {
     if (field.inline.exists(_.path.nonEmpty))
       directives = directives ++ field.inline.flatMap(_.toDirective.toOption).toList
     directives
+  }
+
+  private def toEnumTypeDefinition(typeName: String, typeInfo: Config.Type): EnumTypeDefinition = {
+    EnumTypeDefinition(
+      description = typeInfo.doc,
+      name = typeName,
+      directives = Nil,
+      enumValuesDefinition = typeInfo.variants.toList.flatten.map { enumValue =>
+        EnumValueDefinition(description = None, enumValue = enumValue, directives = Nil)
+      },
+    )
   }
 
   final private def toFieldDefinition(typeInfo: Config.Type): List[FieldDefinition] = {

@@ -1,0 +1,27 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+}

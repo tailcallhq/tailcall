@@ -140,6 +140,8 @@ object TValid {
 
   def none: TValid[Nothing, Option[Nothing]] = succeed(None)
 
+  def parWith[E, A](seq: TValid[E, A]*)(f: (A, A) => A): TValid[E, A] = seq.reduce(_.zipPar(_)(f))
+
   def some[A](a: A): TValid[Nothing, Option[A]] = succeed(Some(a))
 
   def succeed[A](value: A): TValid[Nothing, A] = Succeed(value)
