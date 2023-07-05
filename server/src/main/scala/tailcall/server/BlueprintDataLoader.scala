@@ -29,14 +29,14 @@ object BlueprintDataLoader {
               var _gql: GraphQL[HttpContext with ApolloPersistence] = gql
               if (config.enableTracing) _gql = _gql @@ apolloTracing
               config.slowQueryDuration match {
-                case Some(duration) => _gql = _gql @@ printSlowQueries(duration)
+                case Some(duration) => _gql = _gql @@ printSlowQueries(Duration.fromSeconds(duration))
                 case None           => ()
               }
               if (config.persistedQueries) _gql = _gql @@ apolloPersistedQueries
               _gql
             }
             interpreter    <- gql.interpreter
-          } yield BlueprintData(blueprint, config.globalResponseTimeout.toSeconds, interpreter)
+          } yield BlueprintData(blueprint, config.globalResponseTimeout, interpreter)
         }
       } yield dl
     }
