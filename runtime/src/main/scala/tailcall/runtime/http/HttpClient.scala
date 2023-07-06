@@ -56,7 +56,8 @@ object HttpClient {
     private def redirect(req: Request, res: Response): ZIO[Any, Throwable, Response] =
       for {
         location <- ZIO.fromOption(res.headers.get("Location")) <> ZIO.fail(new RuntimeException("No Location header"))
-        res      <- request(req.copy(url = String.valueOf(location)))
+        req      <- ZIO.attempt(req.unsafeRedirect(String.valueOf(location)))
+        res      <- request(req)
       } yield res
   }
 }
