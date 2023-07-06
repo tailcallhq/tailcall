@@ -102,7 +102,12 @@ object Endpoint {
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
-    val headers = endpoint.headers.map { case (k, v) => k -> MustacheExpression.evaluate(v, input).getOrElse(v) }.toMap
+    val headers = endpoint.headers.map { case (k, v) =>
+      MustacheExpression.syntax.parseString(v) match {
+        case Left(_)  => Some((k, v))
+        case Right(v) => MustacheExpression.evaluate(v, input).map((k, _)).toOption
+      }
+    }.collect { case Some(kv) => kv }.toMap
 
     val bodyDynamic = endpoint.body match {
       case Some(value) => DynamicValueUtil.getPath(input, value.path.toList)

@@ -49,13 +49,15 @@ object EndpointSpec extends TailcallSpec {
       test("headers") {
         val root   = Endpoint.make("abc.com")
         val inputs = List(
-          DynamicValue(Map("a" -> "1"))             -> root.withHeader("X-Server" -> "{{a}}"),
-          DynamicValue(Map("a" -> Map("b" -> "1"))) -> root.withHeader("X-Server" -> "{{a.b}}"),
+          DynamicValue(Map("a" -> "Tailcall"))             -> root.withHeader("X-Server" -> "{{a}}"),
+          DynamicValue(Map("a" -> Map("b" -> "Tailcall"))) -> root.withHeader("X-Server" -> "{{a.b}}"),
+          DynamicValue(Map("a" -> "Tailcall")) -> root.withHeader("X-Server" -> "{{a}}", "X-Ignore" -> "{{b}}"),
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (input, endpoint) =>
-          val request = endpoint.evaluate(input)
-          assertTrue(request.headers.get("X-Server").contains("1"))
+          val actual   = endpoint.evaluate(input).headers
+          val expected = Map("X-Server" -> "Tailcall", "content-length" -> "0", "content-type" -> "application/json")
+          assertTrue(actual == expected)
         }
       },
       test("query params") {
