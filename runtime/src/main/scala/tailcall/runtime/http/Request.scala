@@ -2,7 +2,7 @@ package tailcall.runtime.http
 
 import zio.Chunk
 import zio.http.model.Headers
-import zio.http.{Body, URL, Request => ZRequest}
+import zio.http.{Body, Request => ZRequest, URL}
 
 import java.net.URI
 final case class Request(
