@@ -2,7 +2,9 @@ package tailcall.runtime.http
 
 import zio.Chunk
 import zio.http.model.Headers
-import zio.http.{Body, Request => ZRequest, URL}
+import zio.http.{Body, URL, Request => ZRequest}
+
+import java.net.URI
 final case class Request(
   url: String = "",
   method: Method = Method.GET,
@@ -20,4 +22,12 @@ final case class Request(
     )
 
   def withBody(body: Chunk[Byte]): Request = copy(body = body)
+
+  def unsafeRedirect(nurl: String): Request = {
+    try {
+      val originalURI  = new URI(url)
+      val redirectPath = if (nurl.startsWith("/")) originalURI.resolve(nurl).toString else nurl
+      copy(url = redirectPath)
+    } catch { case _: Exception => throw new IllegalArgumentException(s"Invalid path: $nurl") }
+  }
 }
