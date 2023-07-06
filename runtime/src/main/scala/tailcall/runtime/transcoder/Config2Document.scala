@@ -31,13 +31,16 @@ trait Config2Document {
 
   private def getDefinitions(config: Config): List[Definition] = {
     val inputTypes = config.inputTypes.toSet
-    config.graphQL.types.toList.map { case (typeName, typeInfo) =>
+    val types      = config.graphQL.types.toList.map { case (typeName, typeInfo) =>
       val definition = toObjectTypeDefinition(typeName, typeInfo)
       if (typeInfo.variants.exists(_.nonEmpty)) toEnumTypeDefinition(typeName, typeInfo)
       else if (inputTypes.contains(typeName)) toInputObjectTypeDefinition(definition)
       else if (typeInfo.isInterface) toInterfaceTypeDefinition(definition)
       else definition
     }
+    val unions     = config.graphQL.unions.toList.flatten.map { case (union) => toCalibanUnion(union) }
+
+    types ++ unions
   }
 
   final private def getName(typeOf: Type): String = {
@@ -52,6 +55,10 @@ trait Config2Document {
       case NamedType(_, isRequired)  => NamedType(name, isRequired)
       case ListType(ofType, nonNull) => ListType(setName(ofType, name), nonNull)
     }
+  }
+
+  final private def toCalibanUnion(union: Config.Union): UnionTypeDefinition = {
+    UnionTypeDefinition(name = union.name, directives = Nil, memberTypes = union.types, description = union.doc)
   }
 
   final private def toDirective(field: Config.Field): List[Directive] = {

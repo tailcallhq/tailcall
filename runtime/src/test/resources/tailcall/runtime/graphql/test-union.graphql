@@ -3,6 +3,10 @@ schema {
   query: Query
 }
 
+scalar Bar
+
+scalar Foo
+
 union FooBar = Foo | Bar
 
 type Query {
@@ -13,6 +17,10 @@ type Query {
 schema {
   query: Query
 }
+
+scalar Bar
+
+scalar Foo
 
 union FooBar = Foo | Bar
 

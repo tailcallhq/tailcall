@@ -4,8 +4,8 @@ import caliban.Value
 import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.TypeSystemDefinition.TypeDefinition.{FieldDefinition, InputValueDefinition}
 import caliban.parsing.adt.{
-  Definition => CalibanDefinition,
   Directive,
+  Definition => CalibanDefinition,
   Document => CalibanDocument,
   Type => CalibanType,
 }
@@ -43,6 +43,9 @@ trait Blueprint2Document {
                 directives.map(toCalibanDirective(_)),
                 values.map(toCalibanEnumValue(_)),
               )
+          case Blueprint.UnionTypeDefinition(name, directives, description, types) => CalibanDefinition
+              .TypeSystemDefinition.TypeDefinition
+              .UnionTypeDefinition(description, name, directives.map(toCalibanDirective(_)), types)
           case Blueprint.InterfaceTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
               .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
         },
@@ -60,11 +63,8 @@ trait Blueprint2Document {
   final private def toCalibanEnumValue(
     definition: Blueprint.EnumValueDefinition
   ): CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition =
-    CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition(
-      definition.description,
-      definition.enumValue,
-      definition.directives.map(toCalibanDirective(_)),
-    )
+    CalibanDefinition.TypeSystemDefinition.TypeDefinition
+      .EnumValueDefinition(definition.description, definition.name, definition.directives.map(toCalibanDirective(_)))
 
   final private def toCalibanField(field: Blueprint.FieldDefinition): FieldDefinition = {
     val directives = field.directives.map(toCalibanDirective(_))

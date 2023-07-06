@@ -362,7 +362,7 @@ object Config {
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
   }
 
-  final case class Union(name: String, variants: List[String])
+  final case class Union(name: String, types: List[String], doc: Option[String] = None)
 
   final case class GraphQL(
     schema: RootSchema = RootSchema(),
@@ -370,8 +370,11 @@ object Config {
     unions: Option[List[Union]] = None,
   ) {
     self =>
-    def compress: GraphQL =
-      self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
+    def compress: GraphQL = {
+      val types  = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap
+      val unions = if (self.unions.exists(_.isEmpty)) None else self.unions
+      self.copy(types = types, unions = unions)
+    }
 
     def mergeRight(other: GraphQL): GraphQL =
       GraphQL(schema = self.schema.mergeRight(other.schema), types = mergeTypeMap(self.types, other.types))
