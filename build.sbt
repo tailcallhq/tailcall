@@ -264,6 +264,12 @@ Docker / mappings := {
 }
 
 maintainer         := "tushar@tailcall.run"
-dockerCmd          := Seq("-Xmx200M", "-main", "tailcall.server.Main", "--http-cache=1024")
+dockerCmd          := Seq(
+  "-Xmx200M",
+  "-main",
+  "tailcall.server.Main",
+  "--http-cache=1024",
+  "--allowed-headers=cookie,authorization,apikey",
+)
 dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
