@@ -1,0 +1,21 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+union FooBar = Foo | Bar
+
+type Query {
+  foo: FooBar
+}
+
+#> client-sdl
+schema {
+  query: Query
+}
+
+union FooBar = Foo | Bar
+
+type Query {
+  foo: FooBar
+}
