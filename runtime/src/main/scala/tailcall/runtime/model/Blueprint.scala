@@ -51,17 +51,19 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
     copy(definitions = definitions.sortBy {
       case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
       case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
-      case Blueprint.EnumTypeDefinition(name, _, _, _)     => "c" + name
-      case Blueprint.InterfaceTypeDefinition(name, _, _)   => "d" + name
-      case Blueprint.InputObjectTypeDefinition(name, _, _) => "e" + name
-      case Blueprint.ObjectTypeDefinition(name, _, _, _)   => "f" + name
+      case Blueprint.UnionTypeDefinition(name, _, _, _)    => "c" + name
+      case Blueprint.EnumTypeDefinition(name, _, _, _)     => "d" + name
+      case Blueprint.InterfaceTypeDefinition(name, _, _)   => "e" + name
+      case Blueprint.InputObjectTypeDefinition(name, _, _) => "f" + name
+      case Blueprint.ObjectTypeDefinition(name, _, _, _)   => "g" + name
     }.map {
       case self @ Blueprint.ObjectTypeDefinition(_, fields, _, implements) => self
           .copy(fields = fields.sortBy(_.name), implements = implements.sortBy(_.defaultName))
       case self @ Blueprint.InputObjectTypeDefinition(_, fields, _)        => self.copy(fields = fields.sortBy(_.name))
       case self @ Blueprint.InterfaceTypeDefinition(_, fields, _)          => self.copy(fields = fields.sortBy(_.name))
       case self @ Blueprint.EnumTypeDefinition(_, _, _, values)            => self
-          .copy(enumValueDefinition = values.sortBy(_.enumValue))
+          .copy(enumValueDefinition = values.sortBy(_.name))
+      case self @ Blueprint.UnionTypeDefinition(_, _, _, types)            => self.copy(types = types.sorted)
       case self                                                            => self
     })
 
@@ -173,7 +175,14 @@ object Blueprint {
     enumValueDefinition: List[EnumValueDefinition],
   ) extends Definition
 
-  final case class EnumValueDefinition(description: Option[String], enumValue: String, directives: List[Directive])
+  final case class EnumValueDefinition(description: Option[String], name: String, directives: List[Directive])
+
+  final case class UnionTypeDefinition(
+    name: String,
+    directives: List[Directive] = Nil,
+    description: Option[String] = None,
+    types: List[String],
+  ) extends Definition
 
   final case class NamedType(name: String, nonNull: Boolean) extends Type
 

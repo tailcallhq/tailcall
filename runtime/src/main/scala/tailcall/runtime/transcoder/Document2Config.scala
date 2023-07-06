@@ -18,8 +18,9 @@ trait Document2Config {
     for {
       schema <- toSchemaDefinition(document)
       types  <- toTypes(document)
+      unions <- toUnions(document)
       server <- toServer(document)
-    } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types))
+    } yield Config(server = server, graphQL = Config.GraphQL(schema = schema, types = types, unions = Option(unions)))
   }
 
   final private def toField(field: FieldDefinition): TValid[Nothing, Config.Field] = {
@@ -140,6 +141,12 @@ trait Document2Config {
     }.map(_.toMap)
 
     TValid.parWith(outputTypes, inputTypes, interfaceTypes, enums)(_ ++ _)
+  }
+
+  final private def toUnions(document: Document): TValid[Nothing, List[Config.Union]] = {
+    TValid.foreach(document.unionTypeDefinitions) { definition =>
+      TValid.succeed(Config.Union(name = definition.name, doc = definition.description, types = definition.memberTypes))
+    }
   }
 
 }

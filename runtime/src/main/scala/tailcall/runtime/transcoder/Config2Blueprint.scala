@@ -68,7 +68,7 @@ object Config2Blueprint {
     }
 
     private def toDefinitions: TValid[String, List[Blueprint.Definition]] = {
-      TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
+      val types = TValid.foreach(config.graphQL.types.toList) { case (typeName, typeInfo) =>
         val dblUsage    = inputTypes.contains(typeName) && outputTypes.contains(typeName)
         val enumeration = typeInfo.variants.getOrElse(List.empty)
         if (enumeration.nonEmpty) TValid.succeed(toEnumDefinition(typeName, enumeration))
@@ -87,6 +87,12 @@ object Config2Blueprint {
           else definition
         }
       }
+
+      val unions = TValid.foreach(config.graphQL.unions.toList.flatten) { union =>
+        TValid.succeed(Blueprint.UnionTypeDefinition(name = union.name, types = union.types, description = union.doc))
+      }
+
+      TValid.parWith(types, unions)(_ ++ _)
     }
 
     private def toEnumDefinition(name: String, variants: List[String]): Blueprint.EnumTypeDefinition =
