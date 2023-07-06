@@ -289,6 +289,7 @@ final case class Config(version: Int = 0, server: Server = Server(), graphQL: Gr
 }
 
 object Config {
+  implicit lazy val unionCodec: JsonCodec[Union]                 = DeriveJsonCodec.gen[Union]
   implicit lazy val typeInfoCodec: JsonCodec[Type]               = DeriveJsonCodec.gen[Type]
   implicit lazy val inputTypeCodec: JsonCodec[Arg]               = DeriveJsonCodec.gen[Arg]
   implicit lazy val fieldAnnotationCodec: JsonCodec[ModifyField] = DeriveJsonCodec.gen[ModifyField]
@@ -361,7 +362,13 @@ object Config {
       input.foldLeft(self) { case (self, (name, field)) => self.withField(name, field) }
   }
 
-  final case class GraphQL(schema: RootSchema = RootSchema(), types: Map[String, Type] = Map.empty) {
+  final case class Union(name: String, variants: List[String])
+
+  final case class GraphQL(
+    schema: RootSchema = RootSchema(),
+    types: Map[String, Type] = Map.empty,
+    unions: Option[List[Union]] = None,
+  ) {
     self =>
     def compress: GraphQL =
       self.copy(types = self.types.toSeq.sortBy(_._1).map { case (k, t) => (k, t.compress) }.toMap)
