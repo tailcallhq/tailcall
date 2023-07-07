@@ -15,22 +15,26 @@ import zio.test._
 import zio.{Scope, ZIO}
 
 object ConfigExecutionGraphQLSpec extends TailcallSpec with GraphQLTestSpec {
+
   override def spec: Spec[TestEnvironment with Scope, Any] = {
-    suite("ExecutionSpec")(test("config to output") {
-      checkAll(graphQLSpecGen[GraphQLExecutionSpec]("graphql")) { spec =>
-        println(spec.name)
-        val content  = spec.serverSDL
-        val expected = removeCommentPrefix(spec.response)
-        for {
-          config  <- ConfigFormat.GRAPHQL.decode(content)
-          program <- resolve(config)(spec.query)
-        } yield assert(program)(equalTo(expected))
-      }
-    }).provide(
+    suite("ExecutionSpec")(makeTests("graphql")).provide(
       GraphQLGenerator.default,
       JSONPlaceholderClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ before(TestSystem.putEnv("foo", "bar"))
+  }
+
+  private def makeTests(dir: String) = { loadTests[GraphQLExecutionSpec](dir).map(_.map(spec => makeTest(spec))) }
+
+  private def makeTest(spec: GraphQLExecutionSpec) = {
+    test(spec.name) {
+      val content  = spec.serverSDL
+      val expected = removeCommentPrefix(spec.response)
+      for {
+        config  <- ConfigFormat.GRAPHQL.decode(content)
+        program <- resolve(config)(spec.query)
+      } yield assert(program)(equalTo(expected))
+    }
   }
 
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(

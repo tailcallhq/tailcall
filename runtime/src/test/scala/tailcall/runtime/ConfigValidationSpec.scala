@@ -7,26 +7,27 @@ import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
 import zio.json._
 import zio.json.yaml._
-import zio.test.{Spec, TestEnvironment, assertTrue, checkAll}
+import zio.test.{Spec, TestEnvironment, assertTrue}
 import zio.{Scope, ZIO}
 
 object ConfigValidationSpec extends TailcallSpec with GraphQLTestSpec {
-  override def spec: Spec[TestEnvironment with Scope, Any] = {
-    suite("GraphQLValidationSpec")(test("config validation") {
-      checkAll(graphQLSpecGen[GraphQLValidationSpec]("graphql")) { spec =>
-        println(spec.name)
-        val content    = spec.serverSDL
-        val yamlString = removeCommentPrefix(spec.validationMessage)
-        for {
-          specValidationError <- ZIO.fromEither(yamlString.fromYaml[SpecValidationError])
-          config              <- ConfigFormat.GRAPHQL.decode(content)
-          sdl                 <- ZIO.attempt(Transcoder.toSDL(config, false))
-        } yield {
-          val expected = toExpectedError(specValidationError)
-          assertTrue(sdl == expected)
-        }
+  override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLValidationSpec")(makeTests("graphql")) }
+
+  def makeTests(dir: String) = { loadTests[GraphQLValidationSpec](dir).map(_.map(spec => makeTest(spec))) }
+
+  def makeTest(spec: GraphQLValidationSpec) = {
+    test(spec.name) {
+      val content    = spec.serverSDL
+      val yamlString = removeCommentPrefix(spec.validationMessage)
+      for {
+        specValidationError <- ZIO.fromEither(yamlString.fromYaml[SpecValidationError])
+        config              <- ConfigFormat.GRAPHQL.decode(content)
+        sdl                 <- ZIO.attempt(Transcoder.toSDL(config, false))
+      } yield {
+        val expected = toExpectedError(specValidationError)
+        assertTrue(sdl == expected)
       }
-    })
+    }
   }
 
   def toExpectedError(specValidationError: SpecValidationError): TValid[String, String] = {

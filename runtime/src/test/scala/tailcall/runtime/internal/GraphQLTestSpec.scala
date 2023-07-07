@@ -16,6 +16,9 @@ trait GraphQLTestSpec {
     input.split(Properties.lineSeparator).map(_.replace("# ", "")).mkString(Properties.lineSeparator)
   }
 
+  def loadTests[A](dir: String)(implicit specCreator: SpecCreator[A]): ZIO[Any, Nothing, List[A]] =
+    load[A](dir, specCreator)
+
   private def load[A](dir: String, specCreator: SpecCreator[A]): ZIO[Any, Nothing, List[A]] = {
     for {
       files       <- ZIO
