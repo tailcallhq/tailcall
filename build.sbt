@@ -184,6 +184,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           name = Option("Universal Stage"),
           env = Map(appVersionEnv -> tagName),
         ),
+        WorkflowStep.Sbt(commands = List("Docker/publish"), name = Option("Docker Publish")),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
@@ -273,3 +274,4 @@ dockerCmd          := Seq(
 )
 dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
+dockerRepository   := Option("629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr")
