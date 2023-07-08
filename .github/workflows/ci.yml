@@ -120,6 +120,9 @@ jobs:
           APP_VERSION: ${{steps.create_release.outputs.name}}
         run: sbt Universal/stage
 
+      - name: Docker Publish
+        run: sbt Docker/publish
+
       - uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
