@@ -149,7 +149,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "Deploy",
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Sbt(List("Docker/stage")),
+        WorkflowStep.Sbt(commands = List("Docker/publish"), name = Option("Docker Publish")),
         WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
@@ -184,7 +184,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           name = Option("Universal Stage"),
           env = Map(appVersionEnv -> tagName),
         ),
-        WorkflowStep.Sbt(commands = List("Docker/publish"), name = Option("Docker Publish")),
         WorkflowStep.Use(
           ref = UseRef.Public("TheDoctor0", "zip-release", "0.7.1"),
           params = Map(
