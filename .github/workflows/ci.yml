@@ -136,13 +136,11 @@ jobs:
         uses: kciter/aws-ecr-action@master
         with:
           tags: ${{ github.sha }}
-          set_repo_policy: true
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           region: ${{ vars.AWS_REGION }}
           repo: ${{ vars.AWS_ECR_REPOSITORY }}
           access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          create_repo: true
 
   release:
     name: Release

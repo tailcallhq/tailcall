@@ -204,8 +204,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "repo"              -> "${{ vars.AWS_ECR_REPOSITORY }}",
             "region"            -> "${{ vars.AWS_REGION }}",
             "tags"              -> "${{ github.sha }}",
-            "create_repo"       -> "true",
-            "set_repo_policy"   -> "true",
           ),
         ),
       ),
