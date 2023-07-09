@@ -121,10 +121,16 @@ jobs:
       - id: aws-ecr-action
         uses: kciter/aws-ecr-action@v4
         with:
-          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          image_scanning_configuration: true
+          tags: latest,${{ github.sha }}
+          set_repo_policy: true
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: us-east-1
           repo: '629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest'
+          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          repo_policy_file: repo-policy.json
+          create_repo: true
 
   release:
     name: Release
