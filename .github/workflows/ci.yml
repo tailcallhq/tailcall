@@ -121,7 +121,7 @@ jobs:
       - id: aws-ecr-action
         uses: kciter/aws-ecr-action@v4
         with:
-          tags: latest,${{ github.sha }}
+          tags: ${{ github.sha }}
           set_repo_policy: true
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -190,7 +190,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "account_id"        -> "${{ secrets.AWS_ACCOUNT_ID }}",
             "repo"              -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest",
             "region"            -> "us-east-1",
-            "tags"              -> "latest,${{ github.sha }}",
+            "tags"              -> "${{ github.sha }}",
             "create_repo"       -> "true",
             "set_repo_policy"   -> "true",
           ),
