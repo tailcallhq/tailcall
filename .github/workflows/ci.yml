@@ -126,18 +126,16 @@ jobs:
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout current branch (fast)
-        uses: actions/checkout@v3
-
       - uses: actions/download-artifact@v2
         with:
           name: docker_context
-          path: ./target/docker/stage
 
-      - run: cd ./target/docker/stage
+      - run: |
+          ls -R
+          cd ./target/docker/stage
 
       - id: aws-ecr-action
-        uses: kciter/aws-ecr-action@v4
+        uses: kciter/aws-ecr-action@master
         with:
           tags: ${{ github.sha }}
           set_repo_policy: true
