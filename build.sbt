@@ -141,26 +141,70 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
+  val dockerContext           = "./target/docker/stage/"
 
   Seq(
+    // Docker Stage
+    WorkflowJob(
+      "dockerStage",
+      "Docker Stage",
+      steps = List(WorkflowStep.Checkout, WorkflowStep.Sbt(List("Docker/stage"))),
+      scalas = scalaVersions,
+      javas = javaVersions,
+      cond = githubWorkflowIsMain,
+      needs = List("build"),
+    ),
+
     // Deploy to fly.io
     WorkflowJob(
       "deploy",
       "Deploy",
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Sbt(List("Docker/stage")),
-        WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
+        WorkflowStep.Run(commands = List(s"cp ./fly.toml ${dockerContext}")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
-          commands = List("flyctl deploy --remote-only ./target/docker/stage --wait-timeout 300"),
+          commands = List(s"flyctl deploy --remote-only ${dockerContext} --wait-timeout 300"),
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
-      needs = List("build"),
+      needs = List("dockerStage"),
       scalas = scalaVersions,
       javas = javaVersions,
       cond = githubWorkflowIsMain,
+    ),
+
+    // Publish to ECR
+    WorkflowJob(
+      "dockerPublish",
+      "Docker Publish",
+      steps = List(
+        // Checkout the repo
+        WorkflowStep.Checkout,
+        // Configure aws credentials
+        WorkflowStep.Use(
+          UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
+          Map(
+            "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
+            "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
+            "aws-region"            -> "us-east-1",
+          ),
+        ),
+
+        // Login to Amazon ECR
+        WorkflowStep.Use(UseRef.Public("aws-actions", "amazon-ecr-login", "v1"), Map("aws-region" -> "us-east-1")),
+
+        // Build and push the image
+
+        WorkflowStep.Use(
+          UseRef.Public("docker", "build-push-action", "v2"),
+          Map(
+            "context" -> s"${dockerContext}",
+            "push"    -> "true",
+            "tags"    -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest",
+          ),
+        ),
+      ),
     ),
 
     // Release to Github
