@@ -141,14 +141,21 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
-  val dockerContext           = "./target/docker/stage/"
-
+  val dockerContextPath       = "./target/docker/stage"
+  val dockerContext           = "docker_context"
   Seq(
     // Docker Stage
     WorkflowJob(
       "dockerStage",
       "Docker Stage",
-      steps = List(WorkflowStep.Checkout, WorkflowStep.Sbt(List("Docker/stage"))),
+      steps = List(
+        WorkflowStep.Checkout,
+        WorkflowStep.Sbt(List("Docker/stage")),
+        WorkflowStep.Use(
+          UseRef.Public("actions", "upload-artifact", "v2"),
+          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
+        ),
+      ),
       scalas = scalaVersions,
       javas = javaVersions,
       // FIXME: revert this change
@@ -162,10 +169,14 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "Deploy",
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Run(commands = List(s"cp ./fly.toml ${dockerContext}")),
+        WorkflowStep.Use(
+          UseRef.Public("actions", "download-artifact", "v2"),
+          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
+        ),
+        WorkflowStep.Run(commands = List(s"cp ./fly.toml ${dockerContextPath}/")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
-          commands = List(s"flyctl deploy --remote-only ${dockerContext} --wait-timeout 300"),
+          commands = List(s"flyctl deploy --remote-only ${dockerContextPath} --wait-timeout 300"),
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
@@ -183,6 +194,10 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Use(
+          UseRef.Public("actions", "download-artifact", "v2"),
+          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
+        ),
+        WorkflowStep.Use(
           id = Option("aws-ecr-action"),
           ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
           params = Map(
@@ -194,7 +209,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "tags"              -> "${{ github.sha }}",
             "create_repo"       -> "true",
             "set_repo_policy"   -> "true",
-            "path"              -> dockerContext,
+            "path"              -> dockerContextPath,
           ),
         ),
       ),
