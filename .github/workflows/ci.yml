@@ -118,22 +118,10 @@ jobs:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v3
 
-      - uses: aws-actions/configure-aws-credentials@v2
+      - id: aws-ecr-action
+        uses: kciter/aws-ecr-action@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - uses: aws-actions/amazon-ecr-login@v1
-        with:
-          aws-region: us-east-1
-
-      - uses: docker/build-push-action@v2
-        with:
-          context: ./target/docker/stage/
-          push: true
-          tags: '629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest'
+          repo: '629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest'
 
   release:
     name: Release

@@ -180,34 +180,15 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "dockerPublish",
       "Docker Publish",
       steps = List(
-        // Checkout the repo
         WorkflowStep.Checkout,
-        // Configure aws credentials
         WorkflowStep.Use(
-          UseRef.Public("aws-actions", "configure-aws-credentials", "v2"),
-          Map(
-            "role-to-assume" -> "${{ secrets.AWS_ROLE_TO_ASSUME }}",
-            "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
-            "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
-            "aws-region"            -> "us-east-1",
-          ),
+          id = Option("aws-ecr-action"),
+          ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
+          params = Map("repo" -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest"),
         ),
-
-        // Login to Amazon ECR
-        WorkflowStep.Use(UseRef.Public("aws-actions", "amazon-ecr-login", "v1"), Map("aws-region" -> "us-east-1")),
-
-        // Build and push the image
-
-        WorkflowStep.Use(
-          UseRef.Public("docker", "build-push-action", "v2"),
-          Map(
-            "context" -> s"${dockerContext}",
-            "push"    -> "true",
-            "tags"    -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest",
-          ),
-        ),
+        // FIXME: revert this change
+        // needs = List("dockerStage"),
       ),
-      // needs = List("dockerStage"),
     ),
 
     // Release to Github
