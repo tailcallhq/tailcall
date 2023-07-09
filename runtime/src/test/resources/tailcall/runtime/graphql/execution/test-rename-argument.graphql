@@ -8,15 +8,12 @@ type Query {
 }
 
 type Bar {
-  bar: Int @constant(value: "1")
+  bar: Int @http(path: "/renameArgument", baseURL: "https://foo.com")
 }
 
 #> client-query
-query {
+query @expect(output: """{"foo":{"bar":1}}""") {
   foo(data: 1) {
     bar
   }
 }
-
-#> query-response
-# {"foo":{"bar":1}}

@@ -31,7 +31,7 @@ trait GraphQLTestSpec {
 object GraphQLTestSpec {
   final case class GraphQLSDLSpec(name: String, serverSDL: String, clientSDL: String)
   final case class GraphQLValidationSpec(name: String, serverSDL: String, validationMessage: String)
-  final case class GraphQLExecutionSpec(name: String, serverSDL: String, query: String, response: String)
+  final case class GraphQLExecutionSpec(name: String, serverSDL: String, query: String)
 }
 
 trait SpecCreator[A] {
@@ -81,7 +81,6 @@ object SpecCreator {
             file.name,
             extractComponent(file, components.toList, "server-sdl"),
             extractComponent(file, components.toList, "client-query"),
-            extractComponent(file, components.toList, "query-response"),
           )
       }
     }

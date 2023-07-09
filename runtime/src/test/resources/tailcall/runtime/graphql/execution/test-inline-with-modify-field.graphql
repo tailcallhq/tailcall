@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  foo: Foo @inline(path: ["a","b"]) @modify(name: "bar") @constant(value: """{"a":{"b":{"c":"Hello"}}}""")
+  foo: Foo @inline(path: ["a","b"]) @modify(name: "bar") @http(path: "/inlineWithModifyField", baseURL: "https://foo.com")
 }
 
 type Foo {
@@ -20,7 +20,7 @@ type B {
 }
 
 #> client-query
-query {
+query @expect(output: """{"bar":{"c":"Hello"}}"""){
   bar {
     c
   }

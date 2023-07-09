@@ -4,13 +4,10 @@ schema {
 }
 
 type Query {
-  foo: String @constant(value: "\"Hello World\"")
+  foo: String @http(path: "/simpleQuery", baseURL: "https://foo.com")
 }
 
 #> client-query
-query {
+query @expect(output: """{"foo":"Hello World"}""") {
   foo
 }
-
-#> query-response
-# {"foo":"Hello World"}

@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  a: A @constant(value: "{\"b\":[{\"c\":1},{\"c\":2},{\"c\":3}]}")
+  a: A @http(path: "/nestedType", baseURL: "https://foo.com")
 }
 
 type A {
@@ -16,13 +16,10 @@ type B {
 }
 
 #> client-query
-query {
+query @expect(output: """{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}""") {
   a {
     b {
       c
     }
   }
 }
-
-#> query-response
-# {"a":{"b":[{"c":1},{"c":2},{"c":3}]}}

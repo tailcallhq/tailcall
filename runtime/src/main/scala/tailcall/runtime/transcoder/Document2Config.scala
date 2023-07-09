@@ -8,8 +8,6 @@ import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
-import zio.json._
-import zio.json.ast.Json
 
 /**
  * Used to read a .graphQL file that contains the
@@ -32,24 +30,17 @@ trait Document2Config {
       typeof     = innerType(field.ofType)
       isList     = field.ofType.isInstanceOf[Type.ListType]
       isRequired = field.ofType.nonNull
-    } yield {
-      val configField = Config.Field(
-        typeOf = typeof,
-        list = Option(isList),
-        required = Option(isRequired),
-        unsafeSteps = Option(steps),
-        args = Option(args),
-        doc = field.description,
-        modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
-        http = field.directives.flatMap(_.fromDirective[Http].toOption).headOption,
-        inline = field.directives.flatMap(_.fromDirective[InlineType].toList).headOption,
-      )
-      field.directives.flatMap(_.fromDirective[ConstantType].toOption).headOption match {
-        case Some(constantValue) => configField
-            .resolveWithJson((constantValue.value.fromJson[Json]).getOrElse(Json.Null))
-        case None                => configField
-      }
-    }
+    } yield Config.Field(
+      typeOf = typeof,
+      list = Option(isList),
+      required = Option(isRequired),
+      unsafeSteps = Option(steps),
+      args = Option(args),
+      doc = field.description,
+      modify = field.directives.flatMap(_.fromDirective[ModifyField].toList).headOption,
+      http = field.directives.flatMap(_.fromDirective[Http].toOption).headOption,
+      inline = field.directives.flatMap(_.fromDirective[InlineType].toList).headOption,
+    )
   }
 
   final private def toField(field: InputValueDefinition): TValid[Nothing, Config.Field] =

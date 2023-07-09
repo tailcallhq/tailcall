@@ -4,13 +4,10 @@ schema {
 }
 
 type Query {
-  foo: String @modify(name: "bar") @constant(value: "\"Hello World\"")
+  foo: String @modify(name: "bar") @http(path: "/renameField", baseURL: "https://foo.com")
 }
 
 #> client-query
-query {
+query @expect(output: """{"bar":"Hello World"}"""){
   bar
 }
-
-#> query-response
-# {"bar":"Hello World"}

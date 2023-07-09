@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  user: User @constant(value: """{"address":{"street": "James Street"}}""")
+  user: User @http(path: "/resolvedByParent", baseURL: "https://foo.com")
 }
 
 type User {
@@ -16,11 +16,9 @@ type Address {
 }
 
 #> client-query
-query {
+query @expect(output: """{"user":{"address":"James Street"}}"""){
   user {
     address
   }
 }
 
-#> query-response
-# {"user":{"address":"James Street"}}
