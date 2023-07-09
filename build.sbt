@@ -184,7 +184,9 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Use(
           id = Option("aws-ecr-action"),
           ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
-          params = Map("repo" -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest"),
+          params = Map(
+            "access_key_id" -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
+            "repo" -> "629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest"),
         ),
         // FIXME: revert this change
         // needs = List("dockerStage"),
