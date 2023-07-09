@@ -192,15 +192,11 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "Docker Publish",
       needs = List("dockerStage"),
       steps = List(
-        WorkflowStep.Checkout,
-        WorkflowStep.Use(
-          UseRef.Public("actions", "download-artifact", "v2"),
-          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
-        ),
-        WorkflowStep.Run(commands = List(s"cd ${dockerContextPath}")),
+        WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
+        WorkflowStep.Run(commands = List("ls -R", s"cd ${dockerContextPath}")),
         WorkflowStep.Use(
           id = Option("aws-ecr-action"),
-          ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
+          ref = UseRef.Public("kciter", "aws-ecr-action", "master"),
           params = Map(
             "access_key_id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
             "secret_access_key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
