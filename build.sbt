@@ -179,6 +179,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     WorkflowJob(
       "dockerPublish",
       "Docker Publish",
+      needs = List("dockerStage"),
       steps = List(
         WorkflowStep.Checkout,
         WorkflowStep.Use(
@@ -196,8 +197,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "path"              -> dockerContext,
           ),
         ),
-        // FIXME: revert this change
-        // needs = List("dockerStage"),
       ),
     ),
 

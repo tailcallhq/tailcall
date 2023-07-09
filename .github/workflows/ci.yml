@@ -108,6 +108,7 @@ jobs:
 
   dockerPublish:
     name: Docker Publish
+    needs: [dockerStage]
     strategy:
       matrix:
         os: [ubuntu-latest]
