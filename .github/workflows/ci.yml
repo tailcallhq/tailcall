@@ -134,12 +134,11 @@ jobs:
           name: docker_context
           path: ./target/docker/stage
 
-      - run: ls -R
+      - run: cd ./target/docker/stage
 
       - id: aws-ecr-action
         uses: kciter/aws-ecr-action@v4
         with:
-          path: ./target/docker/stage
           tags: ${{ github.sha }}
           set_repo_policy: true
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}

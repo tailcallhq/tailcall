@@ -197,7 +197,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           UseRef.Public("actions", "download-artifact", "v2"),
           params = Map("name" -> dockerContext, "path" -> dockerContextPath),
         ),
-        WorkflowStep.Run(commands = List("ls -R")),
+        WorkflowStep.Run(commands = List(s"cd ${dockerContextPath}")),
         WorkflowStep.Use(
           id = Option("aws-ecr-action"),
           ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
@@ -210,7 +210,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
             "tags"              -> "${{ github.sha }}",
             "create_repo"       -> "true",
             "set_repo_policy"   -> "true",
-            "path"              -> dockerContextPath,
           ),
         ),
       ),
