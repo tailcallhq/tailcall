@@ -197,6 +197,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           UseRef.Public("actions", "download-artifact", "v2"),
           params = Map("name" -> dockerContext, "path" -> dockerContextPath),
         ),
+        WorkflowStep.Run(commands = List("ls -R")),
         WorkflowStep.Use(
           id = Option("aws-ecr-action"),
           ref = UseRef.Public("kciter", "aws-ecr-action", "v4"),
