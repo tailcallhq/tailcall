@@ -130,9 +130,7 @@ jobs:
         with:
           name: docker_context
 
-      - run: |
-          ls -R
-          cd ./target/docker/stage
+      - run: ls -R
 
       - id: aws-ecr-action
         uses: kciter/aws-ecr-action@master
