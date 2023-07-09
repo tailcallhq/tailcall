@@ -183,7 +183,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
         WorkflowStep.Checkout,
         // Configure aws credentials
         WorkflowStep.Use(
-          UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
+          UseRef.Public("aws-actions", "configure-aws-credentials", "v2"),
           Map(
             "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
             "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
@@ -205,6 +205,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ),
         ),
       ),
+      needs = List("dockerStage"),
     ),
 
     // Release to Github
