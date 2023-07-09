@@ -121,6 +121,7 @@ jobs:
       - id: aws-ecr-action
         uses: kciter/aws-ecr-action@v4
         with:
+          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           repo: '629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest'
 
   release:
