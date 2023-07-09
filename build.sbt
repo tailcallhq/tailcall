@@ -151,7 +151,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       steps = List(WorkflowStep.Checkout, WorkflowStep.Sbt(List("Docker/stage"))),
       scalas = scalaVersions,
       javas = javaVersions,
-      cond = githubWorkflowIsMain,
+      // FIXME: revert this change
+      // cond = githubWorkflowIsMain,
       needs = List("build"),
     ),
 
