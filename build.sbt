@@ -149,7 +149,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "Deploy",
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Sbt(commands = List("Docker/publish"), name = Option("Docker Publish")),
+        WorkflowStep.Sbt(List("Docker/stage")),
         WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
@@ -276,4 +276,3 @@ dockerCmd          := Seq(
 )
 dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
-dockerRepository   := Option("629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr")
