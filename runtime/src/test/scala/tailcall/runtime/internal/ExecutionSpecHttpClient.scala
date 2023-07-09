@@ -6,6 +6,8 @@ import zio.{ZIO, ZLayer}
 
 class ExecutionSpecHttpClient() extends HttpClient {
 
+  override def allowedHeaders: Set[String] = Set.empty
+
   def simpleQuery: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("\"Hello World\""))
 
   def inlineField: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("""{"a":{"b":{"c":"Hello"}}}"""))
