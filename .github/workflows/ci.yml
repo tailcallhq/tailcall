@@ -126,7 +126,7 @@ jobs:
           account_id: ${{ secrets.AWS_ACCOUNT_ID }}
           secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           region: us-east-1
-          repo: '629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr:latest'
+          repo: 629064393226.dkr.ecr.us-east-1.amazonaws.com/tc-eks-ecr
           access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           create_repo: true
 
