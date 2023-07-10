@@ -1,0 +1,25 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo
+}
+
+type Foo {
+	bar: [Bar] @http(path: "/withNestingArrayBar", baseURL: "https://foo.com")
+}
+
+type Bar {
+  value: Int @http(path: "/withNestingArrayValue", baseURL: "https://foo.com")
+}
+
+#> client-query
+query @expect(output: """{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}""") {
+  foo {
+    bar {
+			value
+		}
+  }
+}

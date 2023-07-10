@@ -1,0 +1,19 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo @http(path: "/nestedObjects", baseURL: "https://foo.com")
+}
+
+type Foo {
+  bar: String
+}
+
+#> client-query
+query @expect(output: """{"foo":{"bar":"Hello World"}}""") {
+  foo {
+    bar
+  }
+}

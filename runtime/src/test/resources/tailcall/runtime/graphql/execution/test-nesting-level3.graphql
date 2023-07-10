@@ -1,0 +1,31 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo 
+}
+
+type Foo {
+  bar: [Bar] @http(path: "/withNestingLevel3Bar", baseURL: "https://foo.com")
+}
+
+type Bar {
+  baz: Baz @http(path: "/withNestingLevel3Baz", query: {data: "{{value}}"} baseURL: "https://foo.com")
+}
+
+type Baz {
+  value: Int @http(path: "/withNestingLevel3Value", query: {data: "{{value}}"} baseURL: "https://foo.com")
+}
+
+#> client-query
+query @expect(output: """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}""") {
+  foo {
+    bar {
+      baz {
+        value
+      }
+    }
+  }
+}

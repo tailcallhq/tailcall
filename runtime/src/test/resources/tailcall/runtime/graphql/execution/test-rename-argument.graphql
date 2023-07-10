@@ -4,11 +4,11 @@ schema {
 }
 
 type Query {
-  foo(input: Int @modify(name: "data")): Bar
+  foo(input: Int @modify(name: "data")): Bar @http(path: "/renameArgument", query: {data: "{{args.data}}"} baseURL: "https://foo.com")
 }
 
 type Bar {
-  bar: Int @http(path: "/renameArgument", baseURL: "https://foo.com")
+  bar: Int 
 }
 
 #> client-query

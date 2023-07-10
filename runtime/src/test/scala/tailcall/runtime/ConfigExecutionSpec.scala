@@ -3,8 +3,7 @@ package tailcall.runtime
 import caliban.InputValue
 import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
 import tailcall.runtime.lambda.Syntax._
-import tailcall.runtime.lambda._
-import tailcall.runtime.model.Config.{Arg, Field, Type}
+import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
@@ -29,43 +28,6 @@ import java.net.URI
 object ConfigExecutionSpec extends TailcallSpec {
   override def spec =
     suite("Config to GraphQL Step")(
-      test("rename a field") {
-        val config  = {
-          Config.default
-            .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWithJson("Hello World!").withName("bar")))
-        }
-        val program = resolve(config)(""" query { bar } """)
-
-        assertZIO(program)(equalTo("""{"bar":"Hello World!"}"""))
-      },
-      test("rename an argument") {
-        val config  = {
-          Config.default.withTypes(
-            "Query" -> Type(
-              "foo" -> Field.ofType("Bar").withArguments("input" -> Arg.ofType("Int").withName("data"))
-                .withSteps(Operation.objPath("bar" -> List("args", "data")))
-            ),
-            "Bar"   -> Type("bar" -> Field.ofType("Int")),
-          )
-        }
-        val program = resolve(config)(""" query { foo(data: 1) {bar} } """)
-
-        assertZIO(program)(equalTo("""{"foo":{"bar":1}}"""))
-      },
-      test("nested type") {
-        val value = Json.Obj(
-          "b" -> Json.Arr(Json.Obj("c" -> Json.Num(1)), Json.Obj("c" -> Json.Num(2)), Json.Obj("c" -> Json.Num(3)))
-        )
-
-        val config = Config.default.withTypes(
-          "Query" -> Type("a" -> Field.ofType("A").withSteps(Operation.constant(value))),
-          "A"     -> Type("b" -> Field.ofType("B").asList),
-          "B"     -> Type("c" -> Field.int),
-        )
-
-        val program = resolve(config)("""{a {b {c}}}""")
-        assertZIO(program)(equalTo("""{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}"""))
-      },
       test("dictionary") {
         val value: Json = Json
           .Obj("a" -> Json.Num(1), "b" -> Json.Obj("k1" -> Json.Num(1), "k2" -> Json.Num(2), "k3" -> Json.Num(3)))
@@ -83,94 +45,6 @@ object ConfigExecutionSpec extends TailcallSpec {
         val program = resolve(config)("""{z {a b {key value}}}""")
         assertZIO(program)(equalTo(
           """{"z":{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}}"""
-        ))
-      },
-      test("simple query") {
-        val config  = Config.default
-          .withTypes("Query" -> Type("foo" -> Field.ofType("String").resolveWithJson("Hello World!")))
-        val program = resolve(config)(" {foo} ")
-        assertZIO(program)(equalTo("""{"foo":"Hello World!"}"""))
-      },
-      test("nested objects") {
-        val config = Config.default.withTypes(
-          "Query" -> Type("foo" -> Field.ofType("Foo").resolveWithJson(Map("bar" -> "Hello World!"))),
-          "Foo"   -> Type("bar" -> Field.ofType("String")),
-        )
-
-        val program = resolve(config)(" {foo {bar}} ")
-        assertZIO(program)(equalTo("""{"foo":{"bar":"Hello World!"}}"""))
-      },
-      test("static value") {
-        val config  = Config.default
-          .withTypes("Query" -> Config.Type("id" -> Config.Field.ofType("String").resolveWith(100)))
-        val program = resolve(config)("query {id}")
-        assertZIO(program)(equalTo("""{"id":100}"""))
-      },
-      test("with args") {
-        val config  = Config.default.withTypes(
-          "Query" -> Config.Type(
-            "sum" -> Config.Field.ofType("Int")
-              .withArguments("a" -> Config.Arg.ofType("Int"), "b" -> Config.Arg.ofType("Int"))
-              .resolveWithFunction { ctx =>
-                {
-                  (for {
-                    a <- ctx.toTypedPath[Int]("args", "a")
-                    b <- ctx.toTypedPath[Int]("args", "b")
-                  } yield a + b).toDynamic
-                }
-              }
-          )
-        )
-        val program = resolve(config)("query {sum(a: 1, b: 2)}")
-        assertZIO(program)(equalTo("""{"sum":3}"""))
-      },
-      test("with nesting") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar")),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
-        )
-
-        val program = resolve(config)("query {foo { bar { value }}}")
-        assertZIO(program)(equalTo("{\"foo\":{\"bar\":{\"value\":100}}}"))
-      },
-      test("with nesting array") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWith(100)),
-        )
-
-        val program = resolve(config)("query {foo { bar { value }}}")
-        assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":100},{"value":100},{"value":100}]}}"""))
-      },
-      test("with nesting array ctx") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
-            _.toTypedPath[Int]("value").map(_ + Lambda(1)).toDynamic
-          }),
-        )
-
-        val program = resolve(config)("query {foo { bar { value }}}")
-        assertZIO(program)(equalTo("""{"foo":{"bar":[{"value":101},{"value":201},{"value":301}]}}"""))
-      },
-      test("with nesting level 3") {
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo")),
-          "Foo"   -> Config.Type("bar" -> Config.Field.ofType("Bar").asList.resolveWith(List(100, 200, 300))),
-          "Bar"   -> Config.Type("baz" -> Config.Field.ofType("Baz").resolveWithFunction {
-            _.toTypedPath[Int]("value").map(_ + Lambda(1)).toDynamic
-          }),
-          "Baz"   -> Config.Type("value" -> Config.Field.ofType("Int").resolveWithFunction {
-            _.toTypedPath[Option[Int]]("value").flatten.map(_ + Lambda(1)).toDynamic
-          }),
-        )
-
-        val program = resolve(config)("query {foo { bar { baz {value} }}}")
-        assertZIO(program)(equalTo(
-          """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}"""
         ))
       },
       test("partial resolver") {
@@ -310,101 +184,17 @@ object ConfigExecutionSpec extends TailcallSpec {
 
         assertTrue(errors == TValid.fail("can not be used with @unsafe").trace("Query", "foo", "@http"))
       }),
-      suite("inline")(
-        test("http directive") {
-          val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
-            "Query" -> Config
-              .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
-            "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
-          )
+      suite("inline")(test("http directive") {
+        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
+          "Query" -> Config
+            .Type("user" -> Config.Field.ofType("User").withHttp(Operation.Http(Path.unsafe.fromString("/users/1")))),
+          "User"  -> Config.Type("id" -> Config.Field.ofType("Int"), "name" -> Config.Field.ofType("String")),
+        )
 
-          for {
-            json <- resolve(config, Map.empty)("""query {user {id name}}""")
-          } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
-        },
-        test("inline field") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
-                .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
-            ),
-            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
-            "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
-            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("""query {foo {c}}""")
-          } yield assertTrue(json == """{"foo":{"c":"Hello!"}}""")
-        },
-        test("inline field scalar type") {
-          val config = Config.default.withTypes(
-            "Query" -> Config
-              .Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> "Hello!")).withInline("a")),
-            "Foo"   -> Config.Type("a" -> Config.Field.ofType("String")),
-          )
-
-          for { json <- resolve(config, Map.empty)("""query {foo}""") } yield assertTrue(json == """{"foo":"Hello!"}""")
-        },
-        test("inline with modify field") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "foo" -> Config.Field.ofType("Foo").withInline("a", "b").withName("bar")
-                .resolveWith(Map("a" -> Map("b" -> Map("c" -> "Hello!"))))
-            ),
-            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A")),
-            "A"     -> Config.Type("b" -> Config.Field.ofType("B")),
-            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("""query {bar {c}}""")
-          } yield assertTrue(json == """{"bar":{"c":"Hello!"}}""")
-        },
-        test("inline with list") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "foo" -> Config.Field.ofType("Foo").withInline("a", "b")
-                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-            ),
-            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("""query {foo {c}}""")
-          } yield assertTrue(json == """{"foo":[[{"c":"Hello!"}]]}""")
-        },
-        test("inline on index with list") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "foo" -> Config.Field.ofType("Foo").withInline("a", "0", "b")
-                .resolveWith(Map("a" -> List(Map("b" -> List(Map("c" -> "Hello!"))))))
-            ),
-            "Foo"   -> Config.Type("a" -> Config.Field.ofType("A").asList),
-            "A"     -> Config.Type("b" -> Config.Field.ofType("B").asList),
-            "B"     -> Config.Type("c" -> Config.Field.ofType("String")),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("""query {foo {c}}""")
-          } yield assertTrue(json == """{"foo":[{"c":"Hello!"}]}""")
-        },
-        test("resolved by parent") {
-          val config = Config.default.withTypes(
-            "Query"   -> Config.Type(
-              "user" -> Config.Field.ofType("User").resolveWith(Map("address" -> Map("street" -> "James Street")))
-            ),
-            "User"    -> Config.Type("address" -> Config.Field.ofType("Address").withInline("street")),
-            "Address" -> Config.Type("street" -> Config.Field.str),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("""query {user {address}}""")
-          } yield assertTrue(json == """{"user":{"address":"James Street"}}""")
-        },
-      ),
+        for {
+          json <- resolve(config, Map.empty)("""query {user {id name}}""")
+        } yield assertTrue(json == """{"user":{"id":1,"name":"Leanne Graham"}}""")
+      }),
       suite("context")(
         test("one level") {
           val program = collect { ref =>

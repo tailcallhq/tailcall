@@ -1,0 +1,13 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  id: String @http(path: "/staticValue", baseURL: "https://foo.com")
+}
+
+#> client-query
+query @expect(output: """{"id":100}""") {
+  id
+}
