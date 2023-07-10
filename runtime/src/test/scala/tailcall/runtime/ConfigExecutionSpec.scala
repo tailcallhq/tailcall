@@ -47,28 +47,6 @@ object ConfigExecutionSpec extends TailcallSpec {
           """{"z":{"a":1,"b":[{"key":"k1","value":1},{"key":"k2","value":2},{"key":"k3","value":3}]}}"""
         ))
       },
-      test("partial resolver") {
-        val config  = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1, "b" -> 2))),
-          "Foo"   -> Config.Type(
-            "a" -> Config.Field.ofType("Int"),
-            "b" -> Config.Field.ofType("Int"),
-            "c" -> Config.Field.ofType("Int").resolveWith(3),
-          ),
-        )
-        val program = resolve(config)("query {foo { a b c }}")
-        assertZIO(program)(equalTo("""{"foo":{"a":1,"b":2,"c":3}}"""))
-
-      },
-      test("default property resolver") {
-        val config  = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWith(Map("a" -> 1))),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int")),
-        )
-        val program = resolve(config)("query {foo { a }}")
-        assertZIO(program)(equalTo("""{"foo":{"a":1}}"""))
-
-      },
       test("mutation with input type") {
         val config = Config.default.withMutation("Mutation").withTypes(
           "Query"    -> Config.Type("foo" -> Config.Field.ofType("Foo")),
@@ -87,51 +65,7 @@ object ConfigExecutionSpec extends TailcallSpec {
         val program = resolve(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       },
-      test("Query with list fields") {
-        val json   = Json.Obj("a" -> Json.Num(1))
-        val config = Config.default.withTypes(
-          "Query" -> Config.Type("foo" -> Config.Field.ofType("Foo").resolveWithJson(json)),
-          "Foo"   -> Config.Type("a" -> Config.Field.ofType("Int"), "b" -> Config.Field.ofType("Int").asList),
-        )
-
-        val program = resolve(config)("query {foo {a b}}")
-        assertZIO(program)(equalTo("""{"foo":{"a":1,"b":null}}"""))
-      },
       suite("modified")(
-        test("modified field") {
-          val config = Config.default.withTypes(
-            "Query"    -> Config.Type("identity" -> Config.Field.ofType("Identity").resolveWith(Map("a" -> 1))),
-            "Identity" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
-          )
-
-          for {
-            json <- resolve(config, Map.empty)("query {identity {b}}")
-          } yield assertTrue(json == """{"identity":{"b":1}}""")
-        },
-        test("modified argument name") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type(
-              "identity" -> Config.Field.int.withArguments("input" -> Config.Arg.int.withName("data"))
-                .resolveWithFunction(_.path("args", "data").toDynamic)
-            )
-          )
-          for {
-            json <- resolve(config, Map.empty)("""query {identity(data: 1000)}""")
-          } yield assertTrue(json == """{"identity":1000}""")
-        },
-        test("modified input field should not be allowed") {
-          val config = Config.default.withTypes(
-            "Query"         -> Config.Type(
-              "identity" -> Config.Field.ofType("Identity").withArguments("input" -> Config.Arg.ofType("IdentityInput"))
-                .resolveWithFunction(_.path("args", "input").toDynamic)
-            ),
-            "Identity"      -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
-            "IdentityInput" -> Config.Type("a" -> Config.Field.ofType("Int").withName("b")),
-          )
-          for {
-            json <- resolve(config, Map.empty)("query {identity(input: {a: 1}){b}}")
-          } yield assertTrue(json == """{"identity":{"b":1}}""")
-        },
         test("resolve using env variables") {
           val config = Config.default.withTypes(
             "Query" -> Config.Type("identity" -> Config.Field.int.resolveWithFunction(_.path("env", "foo").toDynamic))

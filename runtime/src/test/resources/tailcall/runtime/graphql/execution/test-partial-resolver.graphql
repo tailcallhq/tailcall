@@ -1,0 +1,23 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: Foo @http(path: "/partialResolverFoo", baseURL: "https://foo.com")
+}
+
+type Foo {
+  a: Int
+	b: Int
+	c: Int @http(path: "/partialResolverC", baseURL: "https://foo.com")
+}
+
+#> client-query
+query @expect(output: """{"foo":{"a":1,"b":2,"c":3}}""") {
+  foo {
+    a
+		b
+		c
+  }
+}

@@ -70,7 +70,20 @@ class ExecutionSpecHttpClient() extends HttpClient {
     ZIO.succeed(Response.json(s"${data.toInt + 1}"))
   }
 
-  override def request(req: Request): ZIO[Any, Throwable, Response] =
+  def partialResolverFoo: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("""{"a":1,"b":2}"""))
+  def partialResolverC: ZIO[Any, Throwable, Response]   = ZIO.succeed(Response.json("""3"""))
+
+  def defaultPropertyResolver: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("""{"a":1}"""))
+
+  def modifiedField: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("""{"a":1}"""))
+
+  def listFields: ZIO[Any, Throwable, Response] = ZIO.succeed(Response.json("""{"a":1}"""))
+
+  def noModifiedInputField(req: Request): ZIO[Any, Throwable, Response] = {
+    val data = new URI(req.url).getQuery().split("=")(1)
+    ZIO.succeed(Response.json(s"{\"a\":${data}}"))
+  }
+  override def request(req: Request): ZIO[Any, Throwable, Response]     =
     (req.url, req.method) match {
       case (url, Method.GET) if url == "https://foo.com/simpleQuery"                       => simpleQuery
       case (url, Method.GET) if url == "https://foo.com/dictionary"                        => dictionary
@@ -104,6 +117,12 @@ class ExecutionSpecHttpClient() extends HttpClient {
       case (url, Method.GET) if url == "https://foo.com/withNestingLevel3Value?data=101" => withNestingLevel3Value(req)
       case (url, Method.GET) if url == "https://foo.com/withNestingLevel3Value?data=201" => withNestingLevel3Value(req)
       case (url, Method.GET) if url == "https://foo.com/withNestingLevel3Value?data=301" => withNestingLevel3Value(req)
+      case (url, Method.GET) if url == "https://foo.com/partialResolverFoo"              => partialResolverFoo
+      case (url, Method.GET) if url == "https://foo.com/partialResolverC"                => partialResolverC
+      case (url, Method.GET) if url == "https://foo.com/defaultPropertyResolver"         => defaultPropertyResolver
+      case (url, Method.GET) if url == "https://foo.com/modifiedField"                   => modifiedField
+      case (url, Method.GET) if url == "https://foo.com/listFields"                      => listFields
+      case (url, Method.GET) if url == "https://foo.com/noModifiedInputField?data=1"     => noModifiedInputField(req)
 
       case _ => ZIO.fail(new IllegalArgumentException(s"Invalid request: $req"))
     }

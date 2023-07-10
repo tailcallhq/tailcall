@@ -1,0 +1,23 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  identity(input: IdentityInput): Identity @http(path: "/noModifiedInputField", query: {data: "{{args.input.a}}"} baseURL: "https://foo.com")
+}
+
+type Identity {
+  a: Int @modify(name: "b")
+}
+
+type IdentityInput {
+  a: Int @modify(name: "b")
+}
+
+#> client-query
+query @expect(output: """{"identity":{"b":1}}""") {
+  identity(input: {a:1}) {
+    b
+  }
+}
