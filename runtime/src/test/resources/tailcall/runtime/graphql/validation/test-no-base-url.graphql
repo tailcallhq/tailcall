@@ -1,0 +1,15 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+	foo: Int @http(path: "/users")
+}
+
+#> validation-messages
+# message: No base URL defined in the server configuration
+# location:
+#   - Query
+#   - foo
+#   - "@http"

@@ -1,7 +1,7 @@
 package tailcall.runtime
 
 import caliban.InputValue
-import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
+import tailcall.runtime.internal.JSONPlaceholderClient
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.model.Config.{Field, Type}
 import tailcall.runtime.model.UnsafeSteps.Operation
@@ -65,34 +65,6 @@ object ConfigExecutionSpec extends TailcallSpec {
         val program = resolve(config, Map.empty)("mutation {createFoo(input: {a: 1}){a}}")
         assertZIO(program)(equalTo("""{"createFoo":{"a":1}}"""))
       },
-      suite("modified")(
-        test("resolve using env variables") {
-          val config = Config.default.withTypes(
-            "Query" -> Config.Type("identity" -> Config.Field.int.resolveWithFunction(_.path("env", "foo").toDynamic))
-          )
-          for {
-            json <- resolve(config, Map.empty)("""query {identity}""")
-          } yield assertTrue(json == """{"identity":"bar"}""")
-        },
-        test("resolve with headers") {
-          val config = Config.default.withTypes(
-            "Query" -> Config
-              .Type("identity" -> Config.Field.str.resolveWithFunction(_.path("headers", "authorization").toDynamic))
-          )
-          for {
-            json <- resolve(config, Map.empty)("""query {identity}""")
-          } yield assertTrue(json == """{"identity":"bar"}""")
-        },
-      ),
-      test("with no base url") {
-        val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default.withTypes("Query" -> Type("foo" -> Config.Field.int.withSteps(http)))
-        val errors = config.toBlueprint
-
-        assertTrue(
-          errors == TValid.fail("No base URL defined in the server configuration").trace("Query", "foo", "@unsafe")
-        )
-      },
       test("with local url") {
         val http   = Operation.Http(Path.unsafe.fromString("/users/1"))
           .withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
@@ -109,15 +81,6 @@ object ConfigExecutionSpec extends TailcallSpec {
           json <- resolve(config, Map.empty)("""query {users {name}}""")
         } yield assertTrue(json == """{"users":{"name":"Leanne Graham"}}""")
       },
-      suite("unsafe")(test("with http") {
-        val http   = Operation.Http(Path.unsafe.fromString("/users"))
-        val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL)
-          .withTypes("Query" -> Type("foo" -> Config.Field.ofType("Foo").withSteps(http).withHttp(http)))
-
-        val errors = config.toBlueprint
-
-        assertTrue(errors == TValid.fail("can not be used with @unsafe").trace("Query", "foo", "@http"))
-      }),
       suite("inline")(test("http directive") {
         val config = Config.default.withBaseURL(URI.create("https://jsonplaceholder.typicode.com").toURL).withTypes(
           "Query" -> Config

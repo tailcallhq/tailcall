@@ -83,7 +83,18 @@ class ExecutionSpecHttpClient() extends HttpClient {
     val data = new URI(req.url).getQuery().split("=")(1)
     ZIO.succeed(Response.json(s"{\"a\":${data}}"))
   }
-  override def request(req: Request): ZIO[Any, Throwable, Response]     =
+
+  def resolveWithHeaders(req: Request): ZIO[Any, Throwable, Response] = {
+    val data = new URI(req.url).getQuery().split("=")(1)
+    ZIO.succeed(Response.json(s"\"${data}\""))
+  }
+
+  def resolveWithEnv(req: Request): ZIO[Any, Throwable, Response] = {
+    val data = new URI(req.url).getQuery().split("=")(1)
+    ZIO.succeed(Response.json(s"\"${data}\""))
+  }
+
+  override def request(req: Request): ZIO[Any, Throwable, Response] =
     (req.url, req.method) match {
       case (url, Method.GET) if url == "https://foo.com/simpleQuery"                       => simpleQuery
       case (url, Method.GET) if url == "https://foo.com/dictionary"                        => dictionary
@@ -123,6 +134,8 @@ class ExecutionSpecHttpClient() extends HttpClient {
       case (url, Method.GET) if url == "https://foo.com/modifiedField"                   => modifiedField
       case (url, Method.GET) if url == "https://foo.com/listFields"                      => listFields
       case (url, Method.GET) if url == "https://foo.com/noModifiedInputField?data=1"     => noModifiedInputField(req)
+      case (url, Method.GET) if url == "https://foo.com/resolveWithHeaders?data=bar"     => resolveWithHeaders(req)
+      case (url, Method.GET) if url == "https://foo.com/resolveWithEnv?data=bar"         => resolveWithEnv(req)
 
       case _ => ZIO.fail(new IllegalArgumentException(s"Invalid request: $req"))
     }

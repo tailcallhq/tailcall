@@ -1,0 +1,15 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  identity: String @http(path: "/resolveWithEnv", query: {data: "{{env.foo}}"}  baseURL: "https://foo.com")
+}
+
+#> client-query
+query @expect(output: """{"identity":"bar"}""") {
+  identity
+}
+
+

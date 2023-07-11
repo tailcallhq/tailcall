@@ -107,7 +107,7 @@ trait Document2Config {
     }
 
   private def toSteps(directives: List[Directive]): List[Operation] = {
-    TValid.foreach(directives)(_.fromDirective[UnsafeSteps]).toOption.flatMap(_.headOption).toList.flatMap(_.steps)
+    directives.flatMap(_.fromDirective[UnsafeSteps].toOption).headOption.map(_.steps).getOrElse(Nil)
   }
 
   final private def toTypes(document: Document): TValid[Nothing, Map[String, Config.Type]] = {

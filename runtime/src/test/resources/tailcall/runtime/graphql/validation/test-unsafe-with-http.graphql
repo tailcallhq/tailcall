@@ -1,0 +1,15 @@
+#> server-sdl
+schema @server(baseURL: "http://abc.com") {
+  query: Query
+}
+
+type Query {
+  foo: [Foo] @http(path: "/users") @unsafe(steps: [{http: {path: "/users"}}, {transform: {path: ["data","users"]}}])
+}
+
+#> validation-messages
+# message: can not be used with @unsafe
+# location:
+#   - Query
+#   - foo
+#   - "@http"
