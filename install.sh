@@ -20,8 +20,8 @@ INSTALL_DIR="$HOME/.tailcall/lib/$VERSION"
 mkdir -p "$INSTALL_DIR"
 
 # Download and extract the zip file into versioned directory
-curl -sSL "$URL" -o "$INSTALL_DIR/tailcall.zip"
-unzip "$INSTALL_DIR/tailcall.zip" -d "$INSTALL_DIR"
+curl -#L "$URL" -o "$INSTALL_DIR/tailcall.zip"
+unzip -o "$INSTALL_DIR/tailcall.zip" -d "$INSTALL_DIR"
 rm "$INSTALL_DIR/tailcall.zip"
 
 # Create symlinks in ~/.tailcall/bin
@@ -44,8 +44,14 @@ fi
 if ! grep -q "$HOME/.tailcall/bin" "$SHELL_PROFILE"; then
    echo '# Add tailcall binaries to PATH' >>"$SHELL_PROFILE"
    echo 'export PATH="$HOME/.tailcall/bin:$PATH"' >>"$SHELL_PROFILE"
-   echo "Installation complete. Please run the following command to update your PATH:"
-   echo "source $SHELL_PROFILE"
+
+   if [ "$0" = "$BASH_SOURCE" ]; then
+      echo "Installation complete. Please run the following command to update your PATH:"
+      echo "source $SHELL_PROFILE"
+   else
+      echo "Installation complete. PATH has been updated in the current shell."
+      source $SHELL_PROFILE
+   fi
 else
    echo "Installation complete. No need to update PATH as it's already updated."
 fi
