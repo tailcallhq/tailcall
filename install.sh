@@ -40,18 +40,6 @@ elif [[ "$SHELL" == *"bash"* ]]; then
    fi
 fi
 
-# Add ~/.tailcall/bin to PATH in shell profile, but only if it's not already in the PATH
-if ! grep -q "$HOME/.tailcall/bin" "$SHELL_PROFILE"; then
-   echo '# Add tailcall binaries to PATH' >>"$SHELL_PROFILE"
-   echo 'export PATH="$HOME/.tailcall/bin:$PATH"' >>"$SHELL_PROFILE"
-
-   if [ "$0" = "$BASH_SOURCE" ]; then
-      echo "Installation complete. Please run the following command to update your PATH:"
-      echo "source $SHELL_PROFILE"
-   else
-      echo "Installation complete. PATH has been updated in the current shell."
-      source $SHELL_PROFILE
-   fi
-else
-   echo "Installation complete. No need to update PATH as it's already updated."
-fi
+# Provide instructions to add ~/.tailcall/bin to PATH in shell profile
+echo "Installation complete. Please add the following line to your $SHELL_PROFILE:"
+echo 'export PATH="$HOME/.tailcall/bin:$PATH"'
