@@ -6,6 +6,7 @@ import caliban.parsing.{Parser, SourceMapper}
 import caliban.wrappers.Wrapper.ParsingWrapper
 import caliban.{CalibanError, InputValue}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
+import tailcall.runtime.JsonT
 import tailcall.runtime.internal.GraphQLTestSpec.GraphQLExecutionSpec
 import tailcall.runtime.internal.{ExecutionSpecHttpClient, GraphQLTestSpec}
 import tailcall.runtime.model.{Config, ConfigFormat, ExpectType}
@@ -14,6 +15,7 @@ import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
+import zio.json.ast.Json
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.before
 import zio.test._
@@ -51,7 +53,7 @@ object ConfigExecutionGraphQLSpec extends TailcallSpec with GraphQLTestSpec {
     Parser.parseQuery(query).map(document =>
       document.definitions.collect { case op: OperationDefinition => op }.flatMap { definition =>
         definition.directives.flatMap(_.fromDirective[ExpectType].toOption).headOption
-      }.headOption.map(expect => expect.output).getOrElse("")
+      }.headOption.map(expect => expect.output).getOrElse(JsonT.Constant(Json.Obj()))
     )
 
   private def makeTest(spec: GraphQLExecutionSpec) = {
@@ -61,7 +63,7 @@ object ConfigExecutionGraphQLSpec extends TailcallSpec with GraphQLTestSpec {
         expected <- getExpectedOutput(spec.query)
         config   <- ConfigFormat.GRAPHQL.decode(content)
         program  <- resolve(config)(spec.query)
-      } yield assert(program)(equalTo(expected))
+      } yield assert(program)(equalTo(expected.json.toString))
     }
   }
 

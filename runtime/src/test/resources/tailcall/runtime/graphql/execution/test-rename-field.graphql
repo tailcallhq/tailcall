@@ -8,6 +8,6 @@ type Query {
 }
 
 #> client-query
-query @expect(output: """{"bar":"Hello World"}"""){
+query @expect(output: {bar:"Hello World"}){
   bar
 }

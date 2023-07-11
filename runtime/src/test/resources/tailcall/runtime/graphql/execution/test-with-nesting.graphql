@@ -16,7 +16,7 @@ type Bar {
 }
 
 #> client-query
-query @expect(output: """{"foo":{"bar":{"value":100}}}""") {
+query @expect(output: {foo:{bar:{value:100}}}) {
   foo {
     bar {
 			value

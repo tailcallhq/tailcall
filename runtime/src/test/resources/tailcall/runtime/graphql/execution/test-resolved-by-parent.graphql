@@ -16,7 +16,7 @@ type Address {
 }
 
 #> client-query
-query @expect(output: """{"user":{"address":"James Street"}}"""){
+query @expect(output: {user:{address:"James Street"}}){
   user {
     address
   }

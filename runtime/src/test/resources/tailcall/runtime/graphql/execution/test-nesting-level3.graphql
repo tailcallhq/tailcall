@@ -20,7 +20,7 @@ type Baz {
 }
 
 #> client-query
-query @expect(output: """{"foo":{"bar":[{"baz":{"value":102}},{"baz":{"value":202}},{"baz":{"value":302}}]}}""") {
+query @expect(output: {foo:{bar:[{baz:{value:102}},{baz:{value:202}},{baz:{value:302}}]}}) {
   foo {
     bar {
       baz {

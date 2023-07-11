@@ -12,7 +12,7 @@ type Foo {
 }
 
 #> client-query
-query @expect(output: """{"foo":{"bar":"Hello World"}}""") {
+query @expect(output: {foo:{bar:"Hello World"}}) {
   foo {
     bar
   }

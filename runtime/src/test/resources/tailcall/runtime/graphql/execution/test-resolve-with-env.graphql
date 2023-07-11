@@ -8,7 +8,7 @@ type Query {
 }
 
 #> client-query
-query @expect(output: """{"identity":"bar"}""") {
+query @expect(output: {identity:"bar"}) {
   identity
 }
 

@@ -16,7 +16,7 @@ type B {
 }
 
 #> client-query
-query @expect(output: """{"a":{"b":[{"c":1},{"c":2},{"c":3}]}}""") {
+query @expect(output: {a:{b:[{c:1},{c:2},{c:3}]}}) {
   a {
     b {
       c

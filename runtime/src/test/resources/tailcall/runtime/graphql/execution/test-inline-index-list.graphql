@@ -20,7 +20,7 @@ type B {
 }
 
 #> client-query
-query @expect(output: """{"foo":[{"c":"Hello"}]}""") {
+query @expect(output: {foo:[{c:"Hello"}]}) {
   foo {
     c
   }

@@ -8,6 +8,6 @@ type Query {
 }
 
 #> client-query
-query @expect(output: """{"sum":3}""") {
+query @expect(output: {sum:3}) {
   sum(a: 1, b: 2) 
 }

@@ -12,7 +12,7 @@ type Identity {
 }
 
 #> client-query
-query @expect(output: """{"identity":{"b":1}}""") {
+query @expect(output: {identity:{b:1}}) {
   identity {
     b
   }
