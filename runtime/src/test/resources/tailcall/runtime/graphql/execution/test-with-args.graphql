@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  sum(a: Int, b: Int): Int @http(path: "/withArgs", query: {a: "{{args.a}}", b: "{{args.b}}"}, baseURL: "https://foo.com")
+  sum(a: Int, b: Int): Int @http(path: "/withArgs",query: {a: "{{args.a}}",b: "{{args.b}}"},baseURL: "https://foo.com")
 }
 
 #> client-query

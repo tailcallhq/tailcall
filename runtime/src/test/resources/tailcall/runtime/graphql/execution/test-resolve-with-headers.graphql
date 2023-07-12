@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  identity: String @http(path: "/resolveWithHeaders", query: {data: "{{headers.authorization}}"}  baseURL: "https://foo.com")
+  identity: String @http(path: "/resolveWithHeaders",query: {data: "{{headers.authorization}}"},baseURL: "https://foo.com")
 }
 
 #> client-query

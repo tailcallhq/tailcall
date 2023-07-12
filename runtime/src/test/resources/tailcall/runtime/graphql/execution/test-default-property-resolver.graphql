@@ -3,12 +3,12 @@ schema {
   query: Query
 }
 
-type Query {
-  foo: Foo @http(path: "/defaultPropertyResolver", baseURL: "https://foo.com")
-}
-
 type Foo {
   a: Int
+}
+
+type Query {
+  foo: Foo @http(path: "/defaultPropertyResolver",baseURL: "https://foo.com")
 }
 
 #> client-query

@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  foo: String @modify(name: "bar") @http(path: "/renameField", baseURL: "https://foo.com")
+  foo: String @http(path: "/renameField",baseURL: "https://foo.com") @modify(name: "bar")
 }
 
 #> client-query

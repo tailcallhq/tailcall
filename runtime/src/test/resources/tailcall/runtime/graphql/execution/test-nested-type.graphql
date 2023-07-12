@@ -3,16 +3,16 @@ schema {
   query: Query
 }
 
-type Query {
-  a: A @http(path: "/nestedType", baseURL: "https://foo.com")
-}
-
 type A {
   b: [B]
 }
 
 type B {
   c: Int
+}
+
+type Query {
+  a: A @http(path: "/nestedType",baseURL: "https://foo.com")
 }
 
 #> client-query

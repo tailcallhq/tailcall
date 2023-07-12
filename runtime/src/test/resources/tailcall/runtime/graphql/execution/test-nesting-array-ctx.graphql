@@ -3,16 +3,16 @@ schema {
   query: Query
 }
 
-type Query {
-  foo: Foo 
+type Bar {
+  value: Int @http(path: "/withNestingArrayCtxValue",query: {data: "{{value}}"},baseURL: "https://foo.com")
 }
 
 type Foo {
-	bar: [Bar] @http(path: "/withNestingArrayCtxBar", baseURL: "https://foo.com")
+  bar: [Bar] @http(path: "/withNestingArrayCtxBar",baseURL: "https://foo.com")
 }
 
-type Bar {
-  value: Int @http(path: "/withNestingArrayCtxValue", query: {data: "{{value}}"} baseURL: "https://foo.com") 
+type Query {
+  foo: Foo
 }
 
 #> client-query

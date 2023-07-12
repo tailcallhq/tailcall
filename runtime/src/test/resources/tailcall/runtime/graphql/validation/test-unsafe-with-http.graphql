@@ -3,8 +3,12 @@ schema @server(baseURL: "http://abc.com") {
   query: Query
 }
 
+type Foo {
+  a: String
+}
+
 type Query {
-  foo: [Foo] @http(path: "/users") @unsafe(steps: [{http: {path: "/users"}}, {transform: {path: ["data","users"]}}])
+  foo: [Foo] @http(path: "/users") @unsafe(steps: [{http: {path: "/users"}},{transform: {path: ["data","users"]}}])
 }
 
 #> validation-messages

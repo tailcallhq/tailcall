@@ -3,13 +3,13 @@ schema {
   query: Query
 }
 
-type Query {
-  foo: Foo @http(path: "/listFields", baseURL: "https://foo.com")
-}
-
 type Foo {
   a: Int
-	b: [Int]
+  b: [Int]
+}
+
+type Query {
+  foo: Foo @http(path: "/listFields",baseURL: "https://foo.com")
 }
 
 #> client-query

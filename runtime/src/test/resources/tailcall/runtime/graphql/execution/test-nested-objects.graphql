@@ -3,12 +3,12 @@ schema {
   query: Query
 }
 
-type Query {
-  foo: Foo @http(path: "/nestedObjects", baseURL: "https://foo.com")
-}
-
 type Foo {
   bar: String
+}
+
+type Query {
+  foo: Foo @http(path: "/nestedObjects",baseURL: "https://foo.com")
 }
 
 #> client-query

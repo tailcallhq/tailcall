@@ -3,10 +3,6 @@ schema {
   query: Query
 }
 
-type Query {
-  z: A @http(path: "/dictionary", baseURL: "https://foo.com")
-}
-
 type A {
   a: Int
   b: [B]
@@ -15,6 +11,10 @@ type A {
 type B {
   key: String
   value: Int
+}
+
+type Query {
+  z: A @http(path: "/dictionary",baseURL: "https://foo.com")
 }
 
 #> client-query

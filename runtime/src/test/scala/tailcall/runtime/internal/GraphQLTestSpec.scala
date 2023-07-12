@@ -1,90 +1,55 @@
 package tailcall.runtime.internal
 
 import better.files.File
-import tailcall.runtime.internal.GraphQLTestSpec.{GraphQLExecutionSpec, GraphQLSDLSpec, GraphQLValidationSpec}
-import zio.ZIO
-import zio.test.Gen
 
 import java.io.{File => JFile}
 import scala.util.Properties
 
 trait GraphQLTestSpec {
-  def graphQLSpecGen[A](dir: String)(implicit specCreator: SpecCreator[A]): Gen[Any, A] =
-    Gen.fromZIO(load[A](dir, specCreator).map(Gen.fromIterable(_))).flatten
 
   def removeCommentPrefix(input: String): String = {
     input.split(Properties.lineSeparator).map(_.replace("# ", "")).mkString(Properties.lineSeparator)
   }
 
-  def loadTests[A](dir: String)(implicit specCreator: SpecCreator[A]): ZIO[Any, Nothing, List[A]] =
-    load[A](dir, specCreator)
+  private def load(dir: String): List[File] = { File(getClass.getResource(dir)).glob("*.graphql").toList }
 
-  private def load[A](dir: String, specCreator: SpecCreator[A]): ZIO[Any, Nothing, List[A]] = {
-    for {
-      files       <- ZIO
-        .succeedBlocking(File(getClass.getResource(dir + JFile.separator + specCreator.dir)).glob("*.graphql").toList)
-      contentList <- ZIO.foreach(files)(file => ZIO.succeedBlocking(file -> file.contentAsString))
-    } yield contentList.map { case (file, content) => specCreator.construct((file, content.split("#>").map(_.trim))) }
-  }
-}
+  def loadTests(dir: String): List[(File, List[GraphQLSpec])] = {
+    val sdlSpecFiles        = load(dir + JFile.separator + "sdl")
+    val validationSpecFiles = load(dir + JFile.separator + "validation")
+    val executionSpecFiles  = load(dir + JFile.separator + "execution")
+    val files               = sdlSpecFiles ++ validationSpecFiles ++ executionSpecFiles
+    files.map(file => {
+      val components         = file.contentAsString.split("#>").map(_.trim).toList
+      val serverSDL          = extractComponent(components, "server-sdl")
+      val clientSDL          = extractComponent(components, "client-sdl")
+      val validationMessages = extractComponent(components, "validation-messages")
+      val query              = extractComponent(components, "client-query")
 
-object GraphQLTestSpec {
-  final case class GraphQLSDLSpec(name: String, serverSDL: String, clientSDL: String)
-  final case class GraphQLValidationSpec(name: String, serverSDL: String, validationMessage: String)
-  final case class GraphQLExecutionSpec(name: String, serverSDL: String, query: String)
-}
+      validateSpecFileContents(serverSDL, clientSDL, validationMessages, file)
 
-trait SpecCreator[A] {
-  def construct(fileComponents: (File, Array[String])): A
-  def dir = ""
-
-  def extractComponent(file: File, components: List[String], token: String): String = {
-    components.find(_.contains(token)).map(_.replace(token, "")).map(_.trim)
-      .getOrElse(throw new Exception(s"${token} not found: ${file.path}")).trim
-  }
-}
-
-object SpecCreator {
-  def apply[A](implicit instance: SpecCreator[A]): SpecCreator[A] = instance
-
-  implicit val sdlSpecCreator: SpecCreator[GraphQLSDLSpec] = new SpecCreator[GraphQLSDLSpec] {
-    override def dir                                     = "sdl"
-    def construct(fileComponents: (File, Array[String])) = {
-      fileComponents match {
-        case (file, components) => GraphQLSDLSpec(
-            file.name,
-            extractComponent(file, components.toList, "server-sdl"),
-            extractComponent(file, components.toList, "client-sdl"),
-          )
-      }
-    }
+      var specs: List[GraphQLSpec] = List.empty
+      specs = GraphQLConfig2DocumentSpec(serverSDL) :: specs
+      if (clientSDL.nonEmpty) specs = GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL) :: specs
+      if (validationMessages.nonEmpty) specs = GraphQLValidationSpec(serverSDL, validationMessages) :: specs
+      if (query.nonEmpty) specs = GraphQLExecutionSpec(serverSDL, query) :: specs
+      (file, specs)
+    })
   }
 
-  implicit val validationSpecCreator: SpecCreator[GraphQLValidationSpec] = new SpecCreator[GraphQLValidationSpec] {
-    override def dir                                     = "validation"
-    def construct(fileComponents: (File, Array[String])) = {
-      fileComponents match {
-        case (file, components) => GraphQLValidationSpec(
-            file.name,
-            extractComponent(file, components.toList, "server-sdl"),
-            extractComponent(file, components.toList, "validation-messages"),
-          )
-      }
-    }
+  def extractComponent(components: List[String], token: String): String = {
+    components.find(_.contains(token)).map(_.replace(token, "")).map(_.trim).getOrElse("").trim
   }
 
-  implicit val executionSpecCreator: SpecCreator[GraphQLExecutionSpec] = new SpecCreator[GraphQLExecutionSpec] {
-    override def dir                                     = "execution"
-    def construct(fileComponents: (File, Array[String])) = {
-      fileComponents match {
-        case (file, components) => GraphQLExecutionSpec(
-            file.name,
-            extractComponent(file, components.toList, "server-sdl"),
-            extractComponent(file, components.toList, "client-query"),
-          )
-      }
-    }
-
+  def validateSpecFileContents(serverSDL: String, clientSDL: String, validationMessages: String, file: File) = {
+    if (serverSDL.isBlank()) throw new Exception(s"server-sdl not found: ${file.path}")
+    if (!clientSDL.isBlank() && !validationMessages.isBlank())
+      throw new Exception(s"Only one of client-SDL or validation-messages must be present: ${file.path}")
   }
 
 }
+
+sealed trait GraphQLSpec
+case class GraphQLConfig2DocumentSpec(serverSDL: String)                        extends GraphQLSpec
+case class GraphQLConfig2ClientSDLSpec(serverSDL: String, clientSDL: String)    extends GraphQLSpec
+case class GraphQLValidationSpec(serverSDL: String, validationMessages: String) extends GraphQLSpec
+case class GraphQLExecutionSpec(serverSDL: String, query: String)               extends GraphQLSpec

@@ -4,7 +4,7 @@ schema {
 }
 
 type Query {
-  foo: String @http(path: "/simpleQuery", baseURL: "https://foo.com")
+  foo: String @http(path: "/simpleQuery",baseURL: "https://foo.com")
 }
 
 #> client-query
