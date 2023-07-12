@@ -1,13 +1,12 @@
 package tailcall.runtime
 
-// import better.files.File
 import caliban.parsing.adt.Definition.ExecutableDefinition.OperationDefinition
 import caliban.parsing.adt.{Document, OperationType}
 import caliban.parsing.{Parser, SourceMapper}
 import caliban.wrappers.Wrapper.ParsingWrapper
 import caliban.{CalibanError, InputValue}
 import tailcall.runtime.DirectiveCodec.DecoderSyntax
-import tailcall.runtime.internal.{ExecutionSpecHttpClient, GraphQLTestSpec, TValid}
+import tailcall.runtime.internal._
 import tailcall.runtime.model.{Config, ConfigFormat, ExpectType}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
@@ -21,10 +20,6 @@ import zio.test.Assertion.equalTo
 import zio.test.TestAspect.before
 import zio.test.{Spec, TestEnvironment, assertTrue, _}
 import zio.{Scope, ZIO}
-import tailcall.runtime.internal.GraphQLConfig2DocumentSpec
-import tailcall.runtime.internal.GraphQLConfig2ClientSDLSpec
-import tailcall.runtime.internal.GraphQLValidationSpec
-import tailcall.runtime.internal.GraphQLExecutionSpec
 
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphQL")) }
