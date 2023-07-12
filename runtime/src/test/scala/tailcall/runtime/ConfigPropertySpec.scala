@@ -19,7 +19,7 @@ import zio.json.yaml._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.before
 import zio.test.{Spec, TestEnvironment, assertTrue, _}
-import zio.{Scope, ZIO}
+import zio.{NonEmptyChunk, Scope, ZIO}
 
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphQL")) }
@@ -62,10 +62,7 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
         specValidationError <- ZIO.fromEither(yamlString.fromYaml[SpecValidationError])
         config              <- ConfigFormat.GRAPHQL.decode(serverSDL)
         sdl                 <- ZIO.attempt(Transcoder.toSDL(config, false))
-      } yield {
-        val expected = toExpectedError(specValidationError)
-        assertTrue(sdl == expected)
-      }
+      } yield assertTrue(sdl == TValid.Errors(specValidationError.error))
     }
   }
 
@@ -81,10 +78,6 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
       ExecutionSpecHttpClient.default,
       HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
     ) @@ before(TestSystem.putEnv("foo", "bar"))
-  }
-
-  def toExpectedError(specValidationError: SpecValidationError): TValid[String, String] = {
-    TValid.fail(specValidationError.message).trace(specValidationError.location: _*)
   }
 
   def removeDirectivesFromQuery(): ParsingWrapper[Any] =
@@ -125,8 +118,9 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
     } yield result.data.toString
   }
 
-  implicit val decoder: JsonDecoder[SpecValidationError] = DeriveJsonDecoder.gen[SpecValidationError]
+  implicit val causeCodec: JsonCodec[TValid.Cause[String]] = DeriveJsonCodec.gen[TValid.Cause[String]]
+  implicit val jsonCodec: JsonCodec[SpecValidationError]   = DeriveJsonCodec.gen[SpecValidationError]
 
 }
 
-final case class SpecValidationError(message: String, location: List[String])
+final case class SpecValidationError(error: NonEmptyChunk[TValid.Cause[String]])

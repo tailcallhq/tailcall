@@ -8,8 +8,9 @@ type Query {
 }
 
 #> validation-messages
-# message: No base URL defined in the server configuration
-# location:
-#   - Query
-#   - foo
-#   - "@http"
+# error:
+# - message: No base URL defined in the server configuration
+#   trace:
+#     - Query
+#     - foo
+#     - "@http"

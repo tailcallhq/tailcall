@@ -17,8 +17,9 @@ type Query {
 }
 
 #> validation-messages
-# message: Implemented field from interface IA is unmodifiable
-# location:
-#   - B
-#   - a
-#   - "@modify"
+# error:
+# - message: Implemented field from interface IA is unmodifiable
+#   trace:
+#     - B
+#     - a
+#     - "@modify"

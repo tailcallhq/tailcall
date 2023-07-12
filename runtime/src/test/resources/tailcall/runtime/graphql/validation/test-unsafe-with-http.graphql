@@ -12,8 +12,9 @@ type Query {
 }
 
 #> validation-messages
-# message: can not be used with @unsafe
-# location:
-#   - Query
-#   - foo
-#   - "@http"
+# error:
+# - message: can not be used with @unsafe
+#   trace:
+#     - Query
+#     - foo
+#     - "@http"
