@@ -1,6 +1,7 @@
 package tailcall.runtime.internal
 
 import better.files.File
+import zio.ZIO
 
 import java.io.{File => JFile}
 import scala.util.Properties
@@ -11,14 +12,17 @@ trait GraphQLTestSpec {
     input.split(Properties.lineSeparator).map(_.replace("# ", "")).mkString(Properties.lineSeparator)
   }
 
-  private def load(dir: String): List[File] = { File(getClass.getResource(dir)).glob("*.graphql").toList }
+  private def load(dir: String): ZIO[Any, Nothing, List[File]] = {
+    for { files <- ZIO.succeedBlocking(File(getClass.getResource(dir)).glob("*.graphql").toList) } yield files
+  }
 
-  def loadTests(dir: String): List[(File, List[GraphQLSpec])] = {
-    val sdlSpecFiles        = load(dir + JFile.separator + "sdl")
-    val validationSpecFiles = load(dir + JFile.separator + "validation")
-    val executionSpecFiles  = load(dir + JFile.separator + "execution")
-    val files               = sdlSpecFiles ++ validationSpecFiles ++ executionSpecFiles
-    files.map(file => {
+  def loadTests(dir: String): ZIO[Any, Nothing, List[(File, List[GraphQLSpec])]] = {
+    for {
+      sdlSpecFiles        <- load(dir + JFile.separator + "sdl")
+      validationSpecFiles <- load(dir + JFile.separator + "validation")
+      executionSpecFiles  <- load(dir + JFile.separator + "execution")
+      files               <- ZIO.succeed(sdlSpecFiles ++ validationSpecFiles ++ executionSpecFiles)
+    } yield files.map(file => {
       val components         = file.contentAsString.split("#>").map(_.trim).toList
       val serverSDL          = extractComponent(components, "server-sdl")
       val clientSDL          = extractComponent(components, "client-sdl")
@@ -27,11 +31,12 @@ trait GraphQLTestSpec {
 
       validateSpecFileContents(serverSDL, clientSDL, validationMessages, file)
 
-      var specs: List[GraphQLSpec] = List.empty
-      specs = GraphQLConfig2DocumentSpec(serverSDL) :: specs
-      if (clientSDL.nonEmpty) specs = GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL) :: specs
-      if (validationMessages.nonEmpty) specs = GraphQLValidationSpec(serverSDL, validationMessages) :: specs
-      if (query.nonEmpty) specs = GraphQLExecutionSpec(serverSDL, query) :: specs
+      val specs = (List(GraphQLConfig2DocumentSpec(serverSDL)) :+
+        (if (clientSDL.nonEmpty) GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL) else None) :+
+        (if (validationMessages.nonEmpty) GraphQLValidationSpec(serverSDL, validationMessages) else None) :+
+        (if (query.nonEmpty) GraphQLExecutionSpec(serverSDL, query) else None)).collect { case spec: GraphQLSpec =>
+        spec
+      }
       (file, specs)
     })
   }

@@ -24,19 +24,18 @@ import zio.{NonEmptyChunk, Scope, ZIO}
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphQL")) }
 
-  def makeTests(dir: String)                     = {
-    loadTests(dir).map { case ((file, specList)) =>
+  def makeTests(dir: String) = {
+    loadTests(dir).map(_.map { case ((file, specList)) =>
       val tests = specList.map {
         case GraphQLConfig2DocumentSpec(serverSDL)                => makeConfig2DocumentTest(serverSDL)
         case GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL)    => makeConfig2ClientSDLTest(serverSDL, clientSDL)
         case GraphQLValidationSpec(serverSDL, validationMessages) => makeValidationTest(serverSDL, validationMessages)
         case GraphQLExecutionSpec(serverSDL, query)               => makeExecutionTest(serverSDL, query)
-
       }
       suite(file.name)(tests)
-
-    }
+    })
   }
+
   def makeConfig2DocumentTest(serverSDL: String) = {
     test("config2Document") {
       for {
