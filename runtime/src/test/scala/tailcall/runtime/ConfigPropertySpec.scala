@@ -26,10 +26,11 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
 
   def makeTests(dir: String) = {
     loadTests(dir).map(_.map { case ((file, specList)) =>
-      val tests = specList.map {
-        case GraphQLConfig2DocumentSpec(serverSDL)                => makeConfig2DocumentTest(serverSDL)
-        case GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL)    => makeConfig2ClientSDLTest(serverSDL, clientSDL)
-        case GraphQLValidationSpec(serverSDL, validationMessages) => makeValidationTest(serverSDL, validationMessages)
+      val tests = specList.flatMap {
+        case GraphQLConfig2DocumentSpec(serverSDL)             => List(makeConfig2DocumentTest(serverSDL))
+        case GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL) => List(makeConfig2ClientSDLTest(serverSDL, clientSDL))
+        case GraphQLValidationSpec(serverSDL, validationMessages) =>
+          List(makeValidationTest(serverSDL, validationMessages))
         case GraphQLExecutionSpec(serverSDL, query)               => makeExecutionTest(serverSDL, query)
       }
       suite(file.name)(tests)
@@ -66,17 +67,21 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
   }
 
   private def makeExecutionTest(serverSDL: String, query: String) = {
-    test("execution") {
-      for {
-        expected <- getExpectedOutput(query)
-        config   <- ConfigFormat.GRAPHQL.decode(serverSDL)
-        program  <- resolve(config)(query)
-      } yield assert(program)(equalTo(expected.json.toString))
-    }.provide(
-      GraphQLGenerator.default,
-      ExecutionSpecHttpClient.default,
-      HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
-    ) @@ before(TestSystem.putEnv("foo", "bar"))
+    val queries = query.split("(?=query)").map(_.trim).toList
+    queries.map(q =>
+      test("execution") {
+        for {
+          expected <- getExpectedOutput(q)
+          config   <- ConfigFormat.GRAPHQL.decode(serverSDL)
+          program  <- resolve(config)(q)
+        } yield assert(program)(equalTo(expected.json.toString))
+
+      }.provide(
+        GraphQLGenerator.default,
+        ExecutionSpecHttpClient.default,
+        HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
+      ) @@ before(TestSystem.putEnv("foo", "bar"))
+    )
   }
 
   def removeDirectivesFromQuery(): ParsingWrapper[Any] =

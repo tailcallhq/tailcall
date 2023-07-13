@@ -27,3 +27,9 @@ query @expect(output: {z:{a:1,b:[{key:"k1",value:1},{key:"k2",value:2},{key:"k3"
     }
   }
 }
+
+query @expect(output: {z:{a:1}}) {
+  z {
+    a
+  }
+}
