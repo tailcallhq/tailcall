@@ -22,7 +22,7 @@ import zio.test.{Spec, TestEnvironment, assertTrue, _}
 import zio.{NonEmptyChunk, Scope, ZIO}
 
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
-  override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphQL")) }
+  override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphql")) }
 
   def makeTests(dir: String) = {
     loadTests(dir).map(_.map { case ((file, specList)) =>
