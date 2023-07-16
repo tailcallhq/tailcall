@@ -11,6 +11,15 @@ type Query {
   foo: Foo @http(path: "/inlineFieldScalarType",baseURL: "https://foo.com") @inline(path: ["a"])
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: String
+}
+
 #> client-query
 query @expect(output: {foo:"Hello"}) {
   foo

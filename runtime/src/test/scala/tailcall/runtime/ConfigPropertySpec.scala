@@ -1,40 +1,46 @@
 package tailcall.runtime
 
+import caliban.parsing.SourceMapper
 import caliban.parsing.adt.Definition.ExecutableDefinition.OperationDefinition
 import caliban.parsing.adt.{Document, OperationType}
-import caliban.parsing.{Parser, SourceMapper}
 import caliban.wrappers.Wrapper.ParsingWrapper
 import caliban.{CalibanError, InputValue}
-import tailcall.runtime.DirectiveCodec.DecoderSyntax
+import tailcall.runtime.internal.GraphQLSpec._
 import tailcall.runtime.internal._
-import tailcall.runtime.model.{Config, ConfigFormat, ExpectType}
+import tailcall.runtime.model.{Config, ConfigFormat}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
 import tailcall.test.TailcallSpec
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
-import zio.json._
-import zio.json.ast.Json
-import zio.json.yaml._
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.before
 import zio.test.{Spec, TestEnvironment, assertTrue, _}
 import zio.{NonEmptyChunk, Scope, ZIO}
 
 object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
-  override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(makeTests("graphql")) }
+  override def spec: Spec[TestEnvironment with Scope, Any] = { suite("GraphQLSpec")(ZIO.flatten(makeTests("graphql"))) }
 
   def makeTests(dir: String) = {
-    loadTests(dir).map(_.map { case ((file, specList)) =>
-      val tests = specList.flatMap {
-        case GraphQLConfig2DocumentSpec(serverSDL)             => List(makeConfig2DocumentTest(serverSDL))
-        case GraphQLConfig2ClientSDLSpec(serverSDL, clientSDL) => List(makeConfig2ClientSDLTest(serverSDL, clientSDL))
-        case GraphQLValidationSpec(serverSDL, validationMessages) =>
-          List(makeValidationTest(serverSDL, validationMessages))
-        case GraphQLExecutionSpec(serverSDL, query)               => makeExecutionTest(serverSDL, query)
+    loadTests(dir).map(_.map { case ((file, graphQLSpecZio)) =>
+      for {
+        graphQLSpec <- graphQLSpecZio
+      } yield {
+        val serverSDL      = graphQLSpec.serverSDL.sdl
+        val config2DocTest = List(makeConfig2DocumentTest(graphQLSpec.serverSDL.sdl))
+        val clientTests    = graphQLSpec.client match {
+          case Some(client) => client match {
+              case sdl: Client.SDL               => List(makeConfig2ClientSDLTest(serverSDL, sdl.clientSDL.sdl)) ++
+                  sdl.queries.map(query => makeExecutionTest(serverSDL, query.query, query.expectedOutput))
+              case Client.ValidationError(error) => List(makeValidationTest(serverSDL, error))
+            }
+          case None         => Nil
+        }
+        val tests          = config2DocTest ::: clientTests
+        suite(file.name)(tests)
       }
-      suite(file.name)(tests)
-    })
+    }).map(s => ZIO.collectAll(s))
+
   }
 
   def makeConfig2DocumentTest(serverSDL: String) = {
@@ -55,33 +61,26 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
     }
   }
 
-  def makeValidationTest(serverSDL: String, validationMessages: String) = {
+  def makeValidationTest(serverSDL: String, error: NonEmptyChunk[TValid.Cause[String]]) = {
     test("validation") {
-      val yamlString = removeCommentPrefix(validationMessages)
       for {
-        specValidationError <- ZIO.fromEither(yamlString.fromYaml[SpecValidationError])
-        config              <- ConfigFormat.GRAPHQL.decode(serverSDL)
-        sdl                 <- ZIO.attempt(Transcoder.toSDL(config, false))
-      } yield assertTrue(sdl == TValid.Errors(specValidationError.error))
+        config <- ConfigFormat.GRAPHQL.decode(serverSDL)
+        sdl    <- ZIO.attempt(Transcoder.toSDL(config, false))
+      } yield assertTrue(sdl == TValid.Errors(error))
     }
   }
 
-  private def makeExecutionTest(serverSDL: String, query: String) = {
-    val queries = query.split("(?=query)").map(_.trim).toList
-    queries.map(q =>
-      test("execution") {
-        for {
-          expected <- getExpectedOutput(q)
-          config   <- ConfigFormat.GRAPHQL.decode(serverSDL)
-          program  <- resolve(config)(q)
-        } yield assert(program)(equalTo(expected.json.toString))
-
-      }.provide(
-        GraphQLGenerator.default,
-        ExecutionSpecHttpClient.default,
-        HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
-      ) @@ before(TestSystem.putEnv("foo", "bar"))
-    )
+  private def makeExecutionTest(serverSDL: String, query: String, expectedOutput: JsonT.Constant) = {
+    test("execution") {
+      for {
+        config  <- ConfigFormat.GRAPHQL.decode(serverSDL)
+        program <- resolve(config)(query)
+      } yield assert(program)(equalTo(expectedOutput.json.toString))
+    }.provide(
+      GraphQLGenerator.default,
+      ExecutionSpecHttpClient.default,
+      HttpContext.live(Some(Request.get(ZURL.empty).addHeaders(Headers("authorization", "bar")))),
+    ) @@ before(TestSystem.putEnv("foo", "bar"))
   }
 
   def removeDirectivesFromQuery(): ParsingWrapper[Any] =
@@ -100,13 +99,6 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
           })
     }
 
-  def getExpectedOutput(query: String) =
-    Parser.parseQuery(query).map(document =>
-      document.definitions.collect { case op: OperationDefinition => op }.flatMap { definition =>
-        definition.directives.flatMap(_.fromDirective[ExpectType].toOption).headOption
-      }.headOption.map(expect => expect.output).getOrElse(JsonT.Constant(Json.Obj()))
-    )
-
   private def resolve(config: Config, variables: Map[String, InputValue] = Map.empty)(
     query: String
   ): ZIO[HttpContext with GraphQLGenerator, Throwable, String] = {
@@ -122,9 +114,4 @@ object ConfigPropertySpec extends TailcallSpec with GraphQLTestSpec {
     } yield result.data.toString
   }
 
-  implicit val causeCodec: JsonCodec[TValid.Cause[String]] = DeriveJsonCodec.gen[TValid.Cause[String]]
-  implicit val jsonCodec: JsonCodec[SpecValidationError]   = DeriveJsonCodec.gen[SpecValidationError]
-
 }
-
-final case class SpecValidationError(error: NonEmptyChunk[TValid.Cause[String]])

@@ -7,6 +7,15 @@ type Query {
   foo: String @http(path: "/simpleQuery",baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  foo: String
+}
+
 #> client-query
 query @expect(output: {foo:"Hello World"}) {
   foo

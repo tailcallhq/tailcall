@@ -7,6 +7,15 @@ type Query {
   foo: String @http(path: "/renameField",baseURL: "https://foo.com") @modify(name: "bar")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  bar: String
+}
+
 #> client-query
 query @expect(output: {bar:"Hello World"}){
   bar

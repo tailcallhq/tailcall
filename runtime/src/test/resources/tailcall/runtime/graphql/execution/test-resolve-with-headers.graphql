@@ -7,6 +7,15 @@ type Query {
   identity: String @http(path: "/resolveWithHeaders",query: {data: "{{headers.authorization}}"},baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  identity: String
+}
+
 #> client-query
 query @expect(output: {identity:"bar"}) {
   identity

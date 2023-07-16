@@ -7,6 +7,15 @@ type Query {
   sum(a: Int, b: Int): Int @http(path: "/withArgs",query: {a: "{{args.a}}",b: "{{args.b}}"},baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  sum(a: Int, b: Int): Int
+}
+
 #> client-query
 query @expect(output: {sum:3}) {
   sum(a: 1, b: 2) 

@@ -11,6 +11,19 @@ type Query {
   identity: Identity @http(path: "/modifiedField",baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Identity {
+  b: Int
+}
+
+type Query {
+  identity: Identity
+}
+
 #> client-query
 query @expect(output: {identity:{b:1}}) {
   identity {

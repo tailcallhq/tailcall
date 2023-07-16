@@ -15,6 +15,23 @@ type Query {
   a: A @http(path: "/nestedType",baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type A {
+  b: [B]
+}
+
+type B {
+  c: Int
+}
+
+type Query {
+  a: A
+}
+
 #> client-query
 query @expect(output: {a:{b:[{c:1},{c:2},{c:3}]}}) {
   a {

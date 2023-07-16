@@ -19,6 +19,19 @@ type Query {
   foo: Foo @http(path: "/inlineIndexList",baseURL: "https://foo.com") @inline(path: ["a","0","b"])
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type B {
+  c: String
+}
+
+type Query {
+  foo: [B]
+}
+
 #> client-query
 query @expect(output: {foo:[{c:"Hello"}]}) {
   foo {

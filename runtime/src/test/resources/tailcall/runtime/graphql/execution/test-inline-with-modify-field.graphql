@@ -19,12 +19,22 @@ type Query {
   foo: Foo @http(path: "/inlineWithModifyField",baseURL: "https://foo.com") @inline(path: ["a","b"]) @modify(name: "bar")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type B {
+  c: String
+}
+
+type Query {
+  bar: B
+}
+
 #> client-query
 query @expect(output: {bar:{c:"Hello"}}){
   bar {
     c
   }
 }
-
-#> query-response 
-# {"bar":{"c":"Hello"}}

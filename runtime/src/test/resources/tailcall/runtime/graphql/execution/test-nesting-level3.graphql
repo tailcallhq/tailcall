@@ -19,6 +19,27 @@ type Query {
   foo: Foo
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type Bar {
+  baz: Baz
+}
+
+type Baz {
+  value: Int
+}
+
+type Foo {
+  bar: [Bar]
+}
+
+type Query {
+  foo: Foo
+}
+
 #> client-query
 query @expect(output: {foo:{bar:[{baz:{value:102}},{baz:{value:202}},{baz:{value:302}}]}}) {
   foo {

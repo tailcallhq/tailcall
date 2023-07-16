@@ -17,6 +17,25 @@ type Query {
   z: A @http(path: "/dictionary",baseURL: "https://foo.com")
 }
 
+#> client-sdl
+schema {
+  query: Query
+}
+
+type A {
+  a: Int
+  b: [B]
+}
+
+type B {
+  key: String
+  value: Int
+}
+
+type Query {
+  z: A
+}
+
 #> client-query
 query @expect(output: {z:{a:1,b:[{key:"k1",value:1},{key:"k2",value:2},{key:"k3",value:3}]}} ) {
   z {
