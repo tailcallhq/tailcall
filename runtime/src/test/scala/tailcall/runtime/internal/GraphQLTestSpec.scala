@@ -77,8 +77,8 @@ object GraphQLSpec {
       }
 
       def fromValidationMessages(validationMessages: String) = {
-        val yamlString = removeCommentPrefix(validationMessages)
-        ZIO.fromEither(yamlString.fromYaml[ValidationError])
+        val yaml = removeCommentPrefix(validationMessages)
+        yaml.fromYaml[ValidationError]
       }
     }
 
@@ -137,12 +137,15 @@ object GraphQLSpec {
       qs <- queriesZio
     } yield Client.SDL(c, qs)
 
-    val validationErrorZio = Client.ValidationError.fromValidationMessages(validationMessages)
+    val validationError       = Client.ValidationError.fromValidationMessages(validationMessages)
+    val validationErrorOption = validationError match {
+      case Left(error)  => if (!validationMessages.isBlank()) throw new Exception(s"${error}: ${file.name}") else None
+      case Right(value) => Some(value)
+    }
 
     for {
-      serverSDL             <- serverSDLZio
-      sdlOption             <- sdlZio.option
-      validationErrorOption <- validationErrorZio.option
+      serverSDL <- serverSDLZio
+      sdlOption <- sdlZio.option
     } yield {
       val clientOption =
         if (!clientSDLStr.isBlank()) sdlOption else if (!validationMessages.isBlank()) validationErrorOption else None
