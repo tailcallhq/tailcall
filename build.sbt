@@ -221,7 +221,10 @@ enablePlugins(JavaAppPackaging)
 val zioTestDependencies = Seq(zioTest % Test, zioTestSBT % Test)
 
 // The assembly merge settings
-ThisBuild / assemblyMergeStrategy := { _ => MergeStrategy.first }
+ThisBuild / assemblyMergeStrategy := {
+  case PathList("META-INF", "services", _*) => MergeStrategy.concat
+  case _                                    => MergeStrategy.first
+}
 
 // Disable the main class discovery such that only the CLI is used as it's main class
 // That way the executable script is only created for the CLI
