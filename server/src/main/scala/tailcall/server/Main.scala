@@ -13,34 +13,50 @@ import zio.json.EncoderOps
 object Main extends ZIOAppDefault {
 
   override val run = GraphQLConfig.bootstrap { config =>
-    Server.install(server(Duration.fromMillis(config.globalResponseTimeout)))
-      .flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
-        ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
+    // Use in-memory schema registry if no database is configured
+    val registry = config.database
+      .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password))
 
-        // Use in-memory schema registry if no database is configured
-        config.database
-          .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password)),
+    val publicServer = Server.install(publicGraphQLHttp(Duration.fromMillis(config.globalResponseTimeout)))
+      .flatMap(port => ZIO.log(s"GraphQL server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
+        ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
+        registry,
         GraphQLGenerator.default,
         HttpClient.cachedDefault(config.httpCacheSize, config.allowedHeaders),
         ApolloPersistedQueries.live,
         Server.live,
         InterpreterRegistry.live,
       )
-  }
 
-  private def server(timeout: Duration) =
-    (AdminServer.rest ++ Http.collectRoute[Request] {
-      case Method.POST -> !! / "graphql"                                          => AdminServer.graphQL
-      case Method.POST -> !! / "graphql" / _                                      => GenericServer.graphQL(timeout)
-      case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL(timeout)
-      case Method.GET -> _                                                        => Http.fromResource("graphiql.html")
-    }).tapErrorZIO(error => ZIO.logErrorCause(s"HttpError", Cause.fail(error))).mapError {
-      case error: HttpError => jsonError(error.message, error.status)
-      case error            => jsonError(error.getMessage)
-    }
+    val privateServer = Server.install(toApp(AdminServer.rest))
+      .flatMap(port => ZIO.log(s"Admin server started: http://localhost:${port}") *> ZIO.never).provide(
+        registry,
+        ServerConfig.live.update(_.port(config.port + 100)).update(_.objectAggregator(Int.MaxValue)),
+        Server.live,
+      )
+
+    privateServer.zipPar(publicServer)
+
+  }
 
   private def jsonError(message: String, status: Status = Status.InternalServerError): Response = {
     val response = GraphQLResponse(data = Value.NullValue, errors = List(Value.StringValue(message)))
     Response.json(response.toJson).setStatus(status)
   }
+
+  private def publicGraphQLHttp(timeout: Duration) =
+    toApp {
+      Http.collectRoute[Request] {
+        case Method.POST -> !! / "graphql"                                          => AdminServer.graphQL
+        case Method.POST -> !! / "graphql" / _                                      => GenericServer.graphQL(timeout)
+        case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL(timeout)
+        case Method.GET -> _ => Http.fromResource("graphiql.html")
+      }
+    }
+
+  private def toApp[R](app: HttpApp[R, Throwable]): Http[R, Response, Request, Response] =
+    app.tapErrorZIO(error => ZIO.logErrorCause(s"HttpError", Cause.fail(error))).mapError {
+      case error: HttpError => jsonError(error.message, error.status)
+      case error            => jsonError(error.getMessage)
+    }
 }
