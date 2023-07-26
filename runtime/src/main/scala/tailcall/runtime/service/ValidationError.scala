@@ -22,8 +22,8 @@ object ValidationError {
   /**
    * Unexpected status code from a downstream service
    */
-  final case class StatusCodeError(code: Int, url: String) extends ValidationError {
-    override def message: String = s"Unexpected status code: $code url: ${url}"
+  final case class UnexpectedStatusCode(code: Int, method: String, url: String) extends ValidationError {
+    override def message: String = s"Unexpected Status Code: ${code}. Upstream Request: ${method} ${url}."
   }
 
   /**

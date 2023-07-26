@@ -79,7 +79,8 @@ object DataLoader {
           val finalHeaders = request.headers ++ getForwardedHeaders(req, client.allowedHeaders)
           for {
             response <- client.request(request.copy(headers = finalHeaders))
-            _ <- ValidationError.StatusCodeError(response.status.code, request.url).when(response.status.code >= 400)
+            _        <- ValidationError.UnexpectedStatusCode(response.status.code, request.method.name, request.url)
+              .when(response.status.code >= 400)
 
           } yield response
         }
