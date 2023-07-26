@@ -162,7 +162,7 @@ jobs:
           export ECR_REPOSITORY=${{ secrets.REPO_NAME }}
           export IMAGE_TAG=${{ github.sha }}
           sbt docker:publishLocal
-          docker tag your-image:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag tailcall:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
