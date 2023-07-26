@@ -212,8 +212,8 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
           name = Some("Configure AWS credentials"),
           params = Map(
-            "aws-access-key-id"     -> "${{ secrets.ACCESS_KEY }}",
-            "aws-secret-access-key" -> "${{ secrets.SECRET_KEY }}",
+            "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
+            "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
             "aws-region"            -> "us-west-2",
           ),
         ),
