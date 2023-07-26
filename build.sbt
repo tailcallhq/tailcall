@@ -185,27 +185,39 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       javas = javaVersions,
       cond = githubWorkflowIsMain,
     ),
-
     // Publish to ECR
     WorkflowJob(
       "dockerPublish",
       "Docker Publish",
       needs = List("dockerStage"),
       steps = List(
-        WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
-        WorkflowStep.Run(commands = List("ls -R")),
+        WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
         WorkflowStep.Use(
-          id = Option("aws-ecr-action"),
-          ref = UseRef.Public("kciter", "aws-ecr-action", "master"),
+          UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
+          name = Some("Configure AWS credentials"),
           params = Map(
-            "access_key_id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
-            "secret_access_key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
-            "account_id"        -> "${{ secrets.AWS_ACCOUNT_ID }}",
-            "repo"              -> "${{ vars.AWS_ECR_REPOSITORY }}",
-            "region"            -> "${{ vars.AWS_REGION }}",
-            "tags"              -> "${{ github.sha }}",
+            "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
+            "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
+            "aws-region"            -> "us-west-2",
           ),
         ),
+        WorkflowStep.Use(
+          UseRef.Public("aws-actions", "amazon-ecr-login", "v1"),
+          name = Some("Login to Amazon ECR"),
+          id = Some("login-ecr"),
+        ),
+        WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
+        WorkflowStep.Run(List("docker images"), name = Some("List Docker images")),
+        WorkflowStep.Run(List(
+          "docker images",
+          "export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}",
+          "export ECR_REPOSITORY=${{ secrets.REPO_NAME }}",
+          "export IMAGE_TAG=${{ github.sha }}",
+          "docker tag tailcall:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+          "echo \"Pushing image to ECR...\"",
+          "docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+          "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
+        )),
       ),
     ),
 
