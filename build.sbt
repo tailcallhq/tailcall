@@ -158,7 +158,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       ),
       scalas = scalaVersions,
       javas = javaVersions,
-      cond = githubWorkflowIsMain,
+      // cond = githubWorkflowIsMain,
       needs = List("build"),
     ),
 
@@ -189,35 +189,23 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "dockerPublish",
       "Docker Publish",
       needs = List("dockerStage"),
-      cond = githubWorkflowIsRelease,
+//      cond = githubWorkflowIsRelease,
       steps = List(
         WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
-        WorkflowStep.Use(
-          UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
-          name = Some("Configure AWS credentials"),
-          params = Map(
-            "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
-            "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
-            "aws-region"            -> "us-east-1",
-          ),
-        ),
-        WorkflowStep.Use(
-          UseRef.Public("aws-actions", "amazon-ecr-login", "v1"),
-          name = Some("Login to Amazon ECR"),
-          id = Some("login-ecr"),
-        ),
         WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
         WorkflowStep.Run(List("docker build --tag tailcall:${{ github.sha }} ."), name = Some("Build Docker image")),
-        WorkflowStep.Run(List(
-          "export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}",
-          "export ECR_REPOSITORY=${{ secrets.REPO_NAME }}",
-          "export IMAGE_TAG=${{ github.sha }}",
-          "docker tag tailcall:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
-          "echo \"Pushing image to ECR...\"",
-          "docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
-          "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
-          "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
-        )),
+        WorkflowStep.Run(
+          List("echo ${{ secrets.GITHUBTOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin"),
+          name = Some("Login to GitHub Container Registry"),
+        ),
+        WorkflowStep.Run(
+          List("docker tag tailcall:${{ github.sha }} ghcr.io/${{ github.repository }}/tailcall:latest"),
+          name = Some("Tag Docker image"),
+        ),
+        WorkflowStep.Run(
+          List("docker push ghcr.io/${{ github.repository }}/tailcall:latest"),
+          name = Some("Push Docker image to GitHub Container Registry"),
+        ),
       ),
     ),
 
