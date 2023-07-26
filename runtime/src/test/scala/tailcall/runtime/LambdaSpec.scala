@@ -455,7 +455,8 @@ object LambdaSpec extends TailcallSpec {
           val program = Lambda.unsafe.fromEndpoint(endpoint).evaluateWith(DynamicValue(Map("id" -> 100))).flip
             .map(_.getMessage)
 
-          val expected = "Unexpected status code: 404 url: http://jsonplaceholder.typicode.com/users/100"
+          val expected =
+            "Unexpected Status Code: 404. Upstream Request: GET http://jsonplaceholder.typicode.com/users/100."
           assertZIO(program)(equalTo(expected))
         },
         test("tap") {

@@ -4,7 +4,7 @@ import caliban.CalibanError
 import caliban.wrappers.ApolloPersistedQueries.ApolloPersistence
 import tailcall.registry.InterpreterRegistry
 import tailcall.runtime.http.HttpClient
-import tailcall.runtime.service.{GraphQLGenerator, HttpContext}
+import tailcall.runtime.service.{GraphQLGenerator, HttpContext, ValidationError}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._
@@ -14,7 +14,10 @@ import zio.json.EncoderOps
 object GenericServer {
   private def toBetterError(error: CalibanError): CalibanError = {
     error match {
-      case error: CalibanError.ExecutionError  => error.copy(msg = "Orchestration Failure")
+      case error: CalibanError.ExecutionError  => error.innerThrowable match {
+          case Some(inner: ValidationError) => error.copy(msg = inner.message)
+          case _                            => error.copy(msg = "Unknown orchestration failure")
+        }
       case error: CalibanError.ParsingError    => error
       case error: CalibanError.ValidationError => error
     }
