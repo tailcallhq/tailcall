@@ -1,7 +1,5 @@
 name: Docker Publish
 on:
-  push:
-    branches: [ '**' ]
   release:
     types:
       - published
@@ -9,6 +7,24 @@ permissions:
   contents: write
   pull-requests: write
 jobs:
+  dockerStage:
+    name: Docker Stage
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        scala: [ 2.13.11 ]
+        java: [ temurin@20 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (fast)
+        uses: actions/checkout@v3
+
+      - run: sbt Docker/stage
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: docker_context
+          path: ./target/docker/stage
   release:
     name: Docker Publish
     needs: [ dockerStage ]
@@ -28,7 +44,7 @@ jobs:
         run: echo ${{ secrets.GITHUBTOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Tag Docker image
-        run: 'docker tag tc-server:${{ github.sha }} ghcr.io/${{ github.repository }}/tc-server:latest'
+        run: 'docker tag tc-server:${{ github.sha }} ghcr.io/${{ github.repository }}/tc-server:${{ github.event.release.tag_name }}'
 
       - name: Push Docker image to GitHub Container Registry
         run: 'docker push ghcr.io/${{ github.repository }}/tc-server:${{ github.event.release.tag_name }}'
