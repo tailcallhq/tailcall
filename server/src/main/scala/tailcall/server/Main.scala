@@ -25,9 +25,9 @@ object Main extends ZIOAppDefault {
       .flatMap(port => ZIO.log(s"GraphQL server started: http://localhost:${port}/graphql") *> ZIO.never)
       .provideSome(Server.live, ServerConfig.live.update(_.port(config.port)))
 
-    val privateServer: ZIO[Any, Throwable, Nothing] = Server.install(toApp(AdminServer.rest))
+    val privateServer: ZIO[SchemaRegistry, Throwable, Nothing] = Server.install(toApp(AdminServer.rest))
       .flatMap(port => ZIO.log(s"Admin server started on port: ${port}") *> ZIO.never)
-      .provide(Server.live, ServerConfig.live.update(_.port(config.adminPort)), registry)
+      .provideSome(Server.live, ServerConfig.live.update(_.port(config.adminPort)))
 
     privateServer.zipPar(publicServer).provide(
       registry,
