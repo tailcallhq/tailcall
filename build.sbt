@@ -158,8 +158,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       ),
       scalas = scalaVersions,
       javas = javaVersions,
-      // FIXME: revert this change
-      // cond = githubWorkflowIsMain,
+      cond = githubWorkflowIsMain,
       needs = List("build"),
     ),
 
@@ -190,6 +189,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "dockerPublish",
       "Docker Publish",
       needs = List("dockerStage"),
+      cond = githubWorkflowIsRelease,
       steps = List(
         WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
         WorkflowStep.Use(
@@ -198,7 +198,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           params = Map(
             "aws-access-key-id"     -> "${{ secrets.AWS_ACCESS_KEY_ID }}",
             "aws-secret-access-key" -> "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
-            "aws-region"            -> "us-west-2",
+            "aws-region"            -> "us-east-1",
           ),
         ),
         WorkflowStep.Use(
@@ -207,15 +207,15 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           id = Some("login-ecr"),
         ),
         WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
-        WorkflowStep.Run(List("docker images"), name = Some("List Docker images")),
+        WorkflowStep.Run(List("docker build --tag tailcall:${{ github.sha }} ."), name = Some("Build Docker image")),
         WorkflowStep.Run(List(
-          "docker images",
           "export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}",
           "export ECR_REPOSITORY=${{ secrets.REPO_NAME }}",
           "export IMAGE_TAG=${{ github.sha }}",
           "docker tag tailcall:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
           "echo \"Pushing image to ECR...\"",
           "docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+          "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
           "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
         )),
       ),
