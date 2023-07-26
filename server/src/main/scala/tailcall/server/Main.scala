@@ -1,6 +1,7 @@
 package tailcall.server
 
 import caliban.wrappers.ApolloPersistedQueries
+import caliban.wrappers.ApolloPersistedQueries.ApolloPersistence
 import caliban.{GraphQLResponse, Value}
 import tailcall.registry.{InterpreterRegistry, SchemaRegistry}
 import tailcall.runtime.http.HttpClient
@@ -11,32 +12,30 @@ import zio.http.model.{HttpError, Method, Status}
 import zio.json.EncoderOps
 
 object Main extends ZIOAppDefault {
+  private type ServerEnv = SchemaRegistry
+    with GraphQLGenerator with HttpClient with ApolloPersistence with InterpreterRegistry
 
   override val run = GraphQLConfig.bootstrap { config =>
     // Use in-memory schema registry if no database is configured
     val registry = config.database
       .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password))
 
-    val publicServer = Server.install(publicGraphQLHttp(Duration.fromMillis(config.globalResponseTimeout)))
-      .flatMap(port => ZIO.log(s"GraphQL server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
-        ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
-        registry,
-        GraphQLGenerator.default,
-        HttpClient.cachedDefault(config.httpCacheSize, config.allowedHeaders),
-        ApolloPersistedQueries.live,
-        Server.live,
-        InterpreterRegistry.live,
-      )
+    val publicServer: ZIO[ServerEnv, Throwable, Nothing] = Server
+      .install(publicGraphQLHttp(Duration.fromMillis(config.globalResponseTimeout)))
+      .flatMap(port => ZIO.log(s"GraphQL server started: http://localhost:${port}/graphql") *> ZIO.never)
+      .provideSome(Server.live, ServerConfig.live.update(_.port(config.port)))
 
-    val privateServer = Server.install(toApp(AdminServer.rest))
-      .flatMap(port => ZIO.log(s"Admin server started: http://localhost:${port}") *> ZIO.never).provide(
-        registry,
-        ServerConfig.live.update(_.port(config.port + 100)).update(_.objectAggregator(Int.MaxValue)),
-        Server.live,
-      )
+    val privateServer: ZIO[Any, Throwable, Nothing] = Server.install(toApp(AdminServer.rest))
+      .flatMap(port => ZIO.log(s"Admin server started on port: ${port}") *> ZIO.never)
+      .provide(Server.live, ServerConfig.live.update(_.port(config.adminPort)), registry)
 
-    privateServer.zipPar(publicServer)
-
+    privateServer.zipPar(publicServer).provide(
+      registry,
+      GraphQLGenerator.default,
+      HttpClient.cachedDefault(config.httpCacheSize, config.allowedHeaders),
+      ApolloPersistedQueries.live,
+      InterpreterRegistry.live,
+    )
   }
 
   private def jsonError(message: String, status: Status = Status.InternalServerError): Response = {
