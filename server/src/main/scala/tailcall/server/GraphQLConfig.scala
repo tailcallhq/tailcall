@@ -5,6 +5,7 @@ import zio.cli.{CliApp, Command, Options}
 import zio.{Duration, ZIO, ZIOAppArgs}
 
 case class GraphQLConfig(
+  adminPort: Int = SchemaRegistry.PORT + 1,
   port: Int = SchemaRegistry.PORT,
   globalResponseTimeout: Int = 10000,
   httpCacheSize: Option[Int] = None,
@@ -25,6 +26,7 @@ object GraphQLConfig {
   private def command: Command[GraphQLConfig] =
     Command("server", options).withHelp(s"starts the server on port: ${default.port}").map {
       case (
+            adminPort,
             port,
             globalResponseTimeout,
             httpCacheSize,
@@ -34,6 +36,7 @@ object GraphQLConfig {
             persistedQueries,
             allowedHeaders,
           ) => GraphQLConfig(
+          adminPort,
           port,
           globalResponseTimeout,
           httpCacheSize,
@@ -46,7 +49,8 @@ object GraphQLConfig {
     }
 
   private def options =
-    CustomOptions.int("port").withDefault(default.port) ?? "port on which the server starts" ++
+    CustomOptions.int("admin-port").withDefault(default.adminPort) ?? "port on which the admin APIs are exposed" ++
+      CustomOptions.int("port").withDefault(default.port) ?? "port on which the public APIs are exposed" ++
       CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in millis" ++
       CustomOptions.int("http-cache").optional
         .withDefault(default.httpCacheSize) ?? "size of the in-memory http cache" ++
