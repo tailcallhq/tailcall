@@ -1,0 +1,34 @@
+name: Docker Publish
+on:
+  push:
+    branches: [ '**' ]
+  release:
+    types:
+      - published
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release:
+    name: Docker Publish
+    needs: [ dockerStage ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: docker_context
+
+      - name: Build Docker image
+        run: 'docker build --tag tc-server:${{ github.sha }} .'
+
+      - name: Login to GitHub Container Registry
+        run: echo ${{ secrets.GITHUBTOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Tag Docker image
+        run: 'docker tag tc-server:${{ github.sha }} ghcr.io/${{ github.repository }}/tc-server:latest'
+
+      - name: Push Docker image to GitHub Container Registry
+        run: 'docker push ghcr.io/${{ github.repository }}/tc-server:${{ github.event.release.tag_name }}'

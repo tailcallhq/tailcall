@@ -158,7 +158,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       ),
       scalas = scalaVersions,
       javas = javaVersions,
-      cond = githubWorkflowIsMain,
+      // cond = githubWorkflowIsMain,
       needs = List("build"),
     ),
 
@@ -185,29 +185,29 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       cond = githubWorkflowIsMain,
     ),
     // Publish to ECR
-    WorkflowJob(
-      "dockerPublish",
-      "Docker Publish",
-      needs = List("dockerStage"),
-      cond = githubWorkflowIsRelease,
-      steps = List(
-        WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
-        WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
-        WorkflowStep.Run(List("docker build --tag tailcall:${{ github.sha }} ."), name = Some("Build Docker image")),
-        WorkflowStep.Run(
-          List("echo ${{ secrets.GITHUBTOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin"),
-          name = Some("Login to GitHub Container Registry"),
-        ),
-        WorkflowStep.Run(
-          List("docker tag tailcall:${{ github.sha }} ghcr.io/${{ github.repository }}/tailcall:latest"),
-          name = Some("Tag Docker image"),
-        ),
-        WorkflowStep.Run(
-          List("docker push ghcr.io/${{ github.repository }}/tailcall:latest"),
-          name = Some("Push Docker image to GitHub Container Registry"),
-        ),
-      ),
-    ),
+//    WorkflowJob(
+//      "dockerPublish",
+//      "Docker Publish",
+//      needs = List("dockerStage"),
+//      cond = githubWorkflowIsRelease,
+//      steps = List(
+//        WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
+//        WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
+//        WorkflowStep.Run(List("docker build --tag tailcall:${{ github.sha }} ."), name = Some("Build Docker image")),
+//        WorkflowStep.Run(
+//          List("echo ${{ secrets.GITHUBTOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin"),
+//          name = Some("Login to GitHub Container Registry"),
+//        ),
+//        WorkflowStep.Run(
+//          List("docker tag tailcall:${{ github.sha }} ghcr.io/${{ github.repository }}/tailcall:latest"),
+//          name = Some("Tag Docker image"),
+//        ),
+//        WorkflowStep.Run(
+//          List("docker push ghcr.io/${{ github.repository }}/tailcall:latest"),
+//          name = Some("Push Docker image to GitHub Container Registry"),
+//        ),
+//      ),
+//    ),
 
     // Release to Github
     WorkflowJob(
