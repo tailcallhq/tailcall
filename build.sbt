@@ -141,7 +141,6 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
-
   Seq(
     // Deploy to fly.io
     WorkflowJob(
@@ -202,6 +201,42 @@ ThisBuild / githubWorkflowAddedJobs ++= {
           ),
         ),
       ),
+    ),
+    // Release to aws ecr
+    WorkflowJob(
+      "ecr",
+      "publish to aws ecr",
+      List(
+        WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
+        WorkflowStep.Use(
+          UseRef.Public("aws-actions", "configure-aws-credentials", "v1"),
+          name = Some("Configure AWS credentials"),
+          params = Map(
+            "aws-access-key-id"     -> "${{ secrets.ACCESS_KEY }}",
+            "aws-secret-access-key" -> "${{ secrets.SECRET_KEY }}",
+            "aws-region"            -> "us-west-2",
+          ),
+        ),
+        WorkflowStep.Use(
+          UseRef.Public("aws-actions", "amazon-ecr-login", "v1"),
+          name = Some("Login to Amazon ECR"),
+          id = Some("login-ecr"),
+        ),
+        WorkflowStep.Run(
+          List(
+            "export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}",
+            "export ECR_REPOSITORY=${{ secrets.REPO_NAME }}",
+            "export IMAGE_TAG=${{ github.sha }}",
+            "sbt docker:publishLocal",
+            "docker tag your-image:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+            "echo \"Pushing image to ECR...\"",
+            "docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+            "echo \"name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\" >> $GITHUB_ENV",
+          ),
+          name = Some("Build, tag, and push the image to Amazon ECR"),
+        ),
+      ),
+//      cond = githubWorkflowIsRelease,
     ),
   )
 }
@@ -276,3 +311,9 @@ dockerCmd          := Seq(
 )
 dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
+
+// --- -
+// docker push
+// --- -
+
+enablePlugins(GitHubActionsPlugin)
