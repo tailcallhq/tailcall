@@ -158,7 +158,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       ),
       scalas = scalaVersions,
       javas = javaVersions,
-      // cond = githubWorkflowIsMain,
+      cond = githubWorkflowIsMain,
       needs = List("build"),
     ),
 
@@ -189,7 +189,7 @@ ThisBuild / githubWorkflowAddedJobs ++= {
       "dockerPublish",
       "Docker Publish",
       needs = List("dockerStage"),
-//      cond = githubWorkflowIsRelease,
+      cond = githubWorkflowIsRelease,
       steps = List(
         WorkflowStep.Use(UseRef.Public("actions", "checkout", "v2"), name = Some("Checkout")),
         WorkflowStep.Use(UseRef.Public("actions", "download-artifact", "v2"), params = Map("name" -> dockerContext)),
