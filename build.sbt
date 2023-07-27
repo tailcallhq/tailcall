@@ -141,45 +141,23 @@ ThisBuild / githubWorkflowAddedJobs ++= {
     sbtghactions.PermissionScope.Contents     -> sbtghactions.PermissionValue.Write,
     sbtghactions.PermissionScope.PullRequests -> sbtghactions.PermissionValue.Write,
   ))
-  val dockerContextPath       = "./target/docker/stage"
-  val dockerContext           = "docker_context"
-  Seq(
-    // Docker Stage
-    WorkflowJob(
-      "dockerStage",
-      "Docker Stage",
-      steps = List(
-        WorkflowStep.Checkout,
-        WorkflowStep.Sbt(List("Docker/stage")),
-        WorkflowStep.Use(
-          UseRef.Public("actions", "upload-artifact", "v2"),
-          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
-        ),
-      ),
-      scalas = scalaVersions,
-      javas = javaVersions,
-      cond = githubWorkflowIsMain,
-      needs = List("build"),
-    ),
 
+  Seq(
     // Deploy to fly.io
     WorkflowJob(
       "deploy",
       "Deploy",
       steps = List(
         WorkflowStep.Checkout,
-        WorkflowStep.Use(
-          UseRef.Public("actions", "download-artifact", "v2"),
-          params = Map("name" -> dockerContext, "path" -> dockerContextPath),
-        ),
-        WorkflowStep.Run(commands = List(s"cp ./fly.toml ${dockerContextPath}/")),
+        WorkflowStep.Sbt(List("Docker/stage")),
+        WorkflowStep.Run(commands = List("cp ./fly.toml target/docker/stage/")),
         WorkflowStep.Use(UseRef.Public("superfly", "flyctl-actions/setup-flyctl", "master")),
         WorkflowStep.Run(
-          commands = List(s"flyctl deploy --remote-only ${dockerContextPath} --wait-timeout 300"),
+          commands = List("flyctl deploy --remote-only ./target/docker/stage --wait-timeout 300"),
           env = Map("FLY_API_TOKEN" -> "${{ secrets.FLY_API_TOKEN }}"),
         ),
       ),
-      needs = List("dockerStage"),
+      needs = List("build"),
       scalas = scalaVersions,
       javas = javaVersions,
       cond = githubWorkflowIsMain,

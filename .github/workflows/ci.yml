@@ -69,8 +69,8 @@ jobs:
           name: target-${{ matrix.os }}-${{ matrix.scala }}-${{ matrix.java }}
           path: targets.tar
 
-  dockerStage:
-    name: Docker Stage
+  deploy:
+    name: Deploy
     needs: [build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
@@ -85,31 +85,7 @@ jobs:
 
       - run: sbt Docker/stage
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: docker_context
-          path: ./target/docker/stage
-
-  deploy:
-    name: Deploy
-    needs: [dockerStage]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.13.11]
-        java: [temurin@20]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout current branch (fast)
-        uses: actions/checkout@v3
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: docker_context
-          path: ./target/docker/stage
-
-      - run: cp ./fly.toml ./target/docker/stage/
+      - run: cp ./fly.toml target/docker/stage/
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
