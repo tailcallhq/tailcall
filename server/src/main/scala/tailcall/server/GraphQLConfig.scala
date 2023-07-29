@@ -7,7 +7,6 @@ import zio.{Duration, ZIO, ZIOAppArgs}
 case class GraphQLConfig(
   port: Int = SchemaRegistry.PORT,
   globalResponseTimeout: Int = 10000,
-  httpCacheSize: Option[Int] = None,
   enableTracing: Boolean = false,
   slowQueryDuration: Option[Int] = None,
   database: Option[GraphQLConfig.DBConfig] = None,
@@ -27,7 +26,6 @@ object GraphQLConfig {
       case (
             port,
             globalResponseTimeout,
-            httpCacheSize,
             enableTracing,
             slowQueryDuration,
             database,
@@ -36,7 +34,6 @@ object GraphQLConfig {
           ) => GraphQLConfig(
           port,
           globalResponseTimeout,
-          httpCacheSize,
           enableTracing,
           slowQueryDuration,
           database,
@@ -48,8 +45,6 @@ object GraphQLConfig {
   private def options =
     CustomOptions.int("port").withDefault(default.port) ?? "port on which the server starts" ++
       CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in millis" ++
-      CustomOptions.int("http-cache").optional
-        .withDefault(default.httpCacheSize) ?? "size of the in-memory http cache" ++
       Options.boolean("tracing")
         .withDefault(default.enableTracing) ?? "enables low-level tracing (affects performance)" ++
       CustomOptions.int("slow-query").optional
