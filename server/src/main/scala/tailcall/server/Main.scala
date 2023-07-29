@@ -16,15 +16,14 @@ object Main extends ZIOAppDefault {
     Server.install(server(Duration.fromMillis(config.globalResponseTimeout)))
       .flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
         ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
-
         // Use in-memory schema registry if no database is configured
         config.database
           .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password)),
         GraphQLGenerator.default,
-        HttpClient.cachedDefault(config.httpCacheSize, config.allowedHeaders),
         ApolloPersistedQueries.live,
         Server.live,
         InterpreterRegistry.live,
+        HttpClient.default(config.allowedHeaders),
       )
   }
 

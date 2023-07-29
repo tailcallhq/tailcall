@@ -1,7 +1,6 @@
 package tailcall.runtime
 
 import tailcall.runtime.service.HttpCache
-import tailcall.runtime.service.HttpCache.dateFormat
 import tailcall.test.TailcallSpec
 import zio._
 import zio.http.Response
@@ -45,7 +44,7 @@ object HttpCacheSpec extends TailcallSpec {
       },
       test("expires after 1000 second") {
         val now        = Instant.parse("2021-01-01T00:00:00Z")
-        val headerTime = dateFormat.format(now.toEpochMilli + 1000000L)
+        val headerTime = HttpCache.dateFormat.format(now.toEpochMilli + 1000000L)
         val p          = HttpCache.ttl(Response.ok.addHeaders(headers = Header("expires", headerTime)), now)
         val expected   = Some(Duration.fromSeconds(1000))
         assert(p)(equalTo(expected))
