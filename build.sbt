@@ -195,7 +195,7 @@ addCommandAlias("sFix", "scalafixAll; Test / scalafixAll")
 addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
-addCommandAlias("tc", "cli/run")
+addCommandAlias("tc", "tailcall/run")
 addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
 
