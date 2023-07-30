@@ -7,19 +7,11 @@ import zio.{Ref, Task, ZIO, ZLayer}
 
 trait InterpreterRegistry {
   def get(id: String): Task[Option[InterpreterRegistry.Interpreter]]
+  def getDefault: Task[Option[InterpreterRegistry.Interpreter]]
 }
 
 object InterpreterRegistry {
   private type Interpreter = GraphQLInterpreter[HttpContext, CalibanError]
-
-  def get(hex: String): ZIO[InterpreterRegistry, Throwable, Option[Interpreter]] = ZIO.serviceWithZIO(_.get(hex))
-
-  def live: ZLayer[SchemaRegistry with GraphQLGenerator, Nothing, InterpreterRegistry] =
-    ZLayer.fromZIO(for {
-      reg   <- ZIO.service[SchemaRegistry]
-      gql   <- ZIO.service[GraphQLGenerator]
-      cache <- Ref.make(Map.empty[String, Interpreter])
-    } yield new Live(reg, gql, cache))
 
   /**
    * Ignores the requests hash and returns the interpreter
@@ -31,6 +23,17 @@ object InterpreterRegistry {
       cache <- Ref.make(Option.empty[Interpreter])
       io    <- ZIO.service[ConfigFileIO]
     } yield new Static(file, cache, io, gql))
+
+  def get(hex: String): ZIO[InterpreterRegistry, Throwable, Option[Interpreter]] = ZIO.serviceWithZIO(_.get(hex))
+
+  def getDefault: ZIO[InterpreterRegistry, Throwable, Option[Interpreter]] = ZIO.serviceWithZIO(_.getDefault)
+
+  def live: ZLayer[SchemaRegistry with GraphQLGenerator, Nothing, InterpreterRegistry] =
+    ZLayer.fromZIO(for {
+      reg   <- ZIO.service[SchemaRegistry]
+      gql   <- ZIO.service[GraphQLGenerator]
+      cache <- Ref.make(Map.empty[String, Interpreter])
+    } yield new Live(reg, gql, cache))
 
   final private class Live(reg: SchemaRegistry, gql: GraphQLGenerator, cache: Ref[Map[String, Interpreter]])
       extends InterpreterRegistry {
@@ -51,18 +54,13 @@ object InterpreterRegistry {
           case int  => ZIO.succeed(int)
         }
       } yield int
+
+    override def getDefault: Task[Option[Interpreter]] = ZIO.succeed(None)
   }
 
   final private class Static(file: File, cache: Ref[Option[Interpreter]], io: ConfigFileIO, gql: GraphQLGenerator)
       extends InterpreterRegistry {
-    def get(hex: String): Task[Option[Interpreter]] =
-      for {
-        option <- cache.get
-        int    <- option match {
-          case None => load.flatMap(int => cache.set(Option(int)).as(Option(int)))
-          case int  => ZIO.succeed(int)
-        }
-      } yield int
+    def get(hex: String): Task[Option[Interpreter]] = ZIO.succeed(None)
 
     private def load: ZIO[Any, Throwable, GraphQLInterpreter[HttpContext, CalibanError]] =
       for {
@@ -70,5 +68,14 @@ object InterpreterRegistry {
         blueprint   <- config.toBlueprint.toTask
         interpreter <- gql.toGraphQL(blueprint).interpreter
       } yield interpreter
+
+    override def getDefault: Task[Option[Interpreter]] =
+      for {
+        option <- cache.get
+        int    <- option match {
+          case None => load.flatMap(int => cache.set(Option(int)).as(Option(int)))
+          case int  => ZIO.succeed(int)
+        }
+      } yield int
   }
 }
