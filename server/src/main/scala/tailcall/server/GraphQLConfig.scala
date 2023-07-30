@@ -2,8 +2,10 @@ package tailcall.server
 
 import tailcall.BuildInfo
 import tailcall.registry.SchemaRegistry
-import zio.cli.{CliApp, Command, Options}
+import zio.cli._
 import zio.{Duration, ZIO, ZIOAppArgs}
+
+import java.nio.file.Path
 
 case class GraphQLConfig(
   port: Int = SchemaRegistry.PORT,
@@ -13,6 +15,7 @@ case class GraphQLConfig(
   database: Option[GraphQLConfig.DBConfig] = None,
   persistedQueries: Boolean = false,
   allowedHeaders: Set[String] = Set("cookie", "authorization"),
+  file: Option[Path] = None,
 )
 
 object GraphQLConfig {
@@ -33,6 +36,7 @@ object GraphQLConfig {
             database,
             persistedQueries,
             allowedHeaders,
+            file,
           ) => GraphQLConfig(
           port,
           globalResponseTimeout,
@@ -41,10 +45,12 @@ object GraphQLConfig {
           database,
           persistedQueries,
           allowedHeaders,
+          file,
         )
     }
 
-  private def options =
+  private def options = {
+
     CustomOptions.int("port").withDefault(default.port) ?? "port on which the server starts" ++
       CustomOptions.int("timeout").withDefault(default.globalResponseTimeout) ?? "global timeout in millis" ++
       Options.boolean("tracing")
@@ -54,7 +60,9 @@ object GraphQLConfig {
       DBConfig.options ++
       Options.boolean("persisted-queries").withDefault(default.persistedQueries) ?? "enable persisted-queries" ++
       Options.text("allowed-headers").map(_.split(",").map(_.trim().toLowerCase()).toSet)
-        .withDefault(default.allowedHeaders) ?? "comma separated list of headers"
+        .withDefault(default.allowedHeaders) ?? "comma separated list of headers" ++
+      Options.file("config", Exists.Yes).optional ?? "tailcall configuration file in .yml, .json or .graphql format"
+  }
 
   final case class DBConfig(host: String, port: Int, username: Option[String], password: Option[String])
   object DBConfig {

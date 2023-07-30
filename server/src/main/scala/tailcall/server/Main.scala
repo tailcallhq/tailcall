@@ -13,18 +13,32 @@ import zio.json.EncoderOps
 object Main extends ZIOAppDefault {
 
   override val run = GraphQLConfig.bootstrap { config =>
+    // Use in-memory schema registry if no database is configured
+    val registryService = config.database
+      .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password))
+
+    // Use file-based interpreter registry if a file is configured
+    val interpreterService = config.file match {
+      case Some(path) => InterpreterRegistry.file(path)
+      case None       => InterpreterRegistry.live
+    }
+
     Server.install(server(Duration.fromMillis(config.globalResponseTimeout)))
       .flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
         ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
-        // Use in-memory schema registry if no database is configured
-        config.database
-          .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password)),
+        registryService,
         GraphQLGenerator.default,
         ApolloPersistedQueries.live,
         Server.live,
-        InterpreterRegistry.live,
+        interpreterService,
+        ConfigFileIO.default,
         HttpClient.default(config.allowedHeaders),
       )
+  }
+
+  private def jsonError(message: String, status: Status = Status.InternalServerError): Response = {
+    val response = GraphQLResponse(data = Value.NullValue, errors = List(Value.StringValue(message)))
+    Response.json(response.toJson).setStatus(status)
   }
 
   private def server(timeout: Duration) =
@@ -37,9 +51,4 @@ object Main extends ZIOAppDefault {
       case error: HttpError => jsonError(error.message, error.status)
       case error            => jsonError(error.getMessage)
     }
-
-  private def jsonError(message: String, status: Status = Status.InternalServerError): Response = {
-    val response = GraphQLResponse(data = Value.NullValue, errors = List(Value.StringValue(message)))
-    Response.json(response.toJson).setStatus(status)
-  }
 }
