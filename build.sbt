@@ -30,8 +30,7 @@ val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % z
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
-lazy val root = (project in file(".")).aggregate(runtime, server, cli, registry, registryClient, testUtils)
-  .settings(name := "tailcall")
+lazy val tailcall = (project in file(".")).aggregate(runtime).settings(name := "tailcall")
 
 lazy val runtime = (project in file("runtime")).settings(
   resolvers +=
@@ -53,6 +52,14 @@ lazy val runtime = (project in file("runtime")).settings(
     zioHttp,
     zioCache,
     betterFiles,
+    zioCLI,
+    fansi,
+    slf4j,
+    zioQuill,
+    zioQuillJDBCZIO,
+    mySQL,
+    flyway,
+    flywayMySQL,
   ),
   libraryDependencies ++= zioTestDependencies,
   buildInfoKeys    := Seq(name, version, scalaVersion, sbtVersion),
@@ -60,33 +67,7 @@ lazy val runtime = (project in file("runtime")).settings(
   buildInfoOptions += BuildInfoOption.PackagePrivate,
   buildInfoOptions += BuildInfoOption.BuildTime,
   buildInfoOptions += BuildInfoOption.ToJson,
-).dependsOn(testUtils % Test).enablePlugins(BuildInfoPlugin)
-
-lazy val cli = (project in file("cli"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioCLI, fansi, slf4j))
-  .dependsOn(runtime, registryClient, testUtils % Test)
-
-lazy val server = (project in file("server"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp, zioCLI, slf4j))
-  .dependsOn(runtime, registry, testUtils % Test)
-
-lazy val registry = (project in file("registry")).settings(
-  libraryDependencies ++= zioTestDependencies ++ Seq(
-    zio,
-    zioHttp,
-    zioQuill,
-    zioQuillJDBCZIO,
-    mySQL,
-    flyway,
-    flywayMySQL,
-    zioCLI,
-  )
-).dependsOn(runtime, testUtils % Test)
-
-lazy val registryClient = (project in file("registry-client"))
-  .settings(libraryDependencies ++= zioTestDependencies ++ Seq(zio, zioHttp)).dependsOn(runtime, testUtils % Test)
-
-lazy val testUtils = (project in file("test-utils")).settings(libraryDependencies ++= Seq(zioTest, zioTestSBT))
+).enablePlugins(BuildInfoPlugin)
 
 val scala2Version      = "2.13.11"
 val scala3Version      = "3.2.2"
@@ -228,12 +209,12 @@ ThisBuild / assemblyMergeStrategy := {
 
 // Disable the main class discovery such that only the CLI is used as it's main class
 // That way the executable script is only created for the CLI
-Compile / discoveredMainClasses := (cli / Compile / mainClass).value.toSeq ++ (server / Compile / mainClass).value.toSeq
+Compile / discoveredMainClasses := (runtime / Compile / mainClass).value.toSeq
 
 // The bash scripts classpath only needs the fat jar
 // Script class path is used in stage command and not not docker stage
 // So we add only the CLI application because only that's needed for the bash script
-scriptClasspath := Seq((cli / assembly / assemblyJarName).value, (server / assembly / assemblyJarName).value)
+scriptClasspath := Seq((runtime / assembly / assemblyJarName).value)
 
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 // UNIVERSAL PACKAGE SETTINGS
@@ -242,14 +223,13 @@ scriptClasspath := Seq((cli / assembly / assemblyJarName).value, (server / assem
 // This is where we can add or remove files from the final package
 Universal / mappings := {
   // The fat jar of the CLI
-  val cliJar    = (cli / Compile / assembly).value
-  val serverJar = (server / Compile / assembly).value
+  val cliJar = (runtime / Compile / assembly).value
 
   // removing all the jars from the universal package
   val filtered = (Universal / mappings).value filter { case (file, name) => !name.endsWith(".jar") }
 
   // add only the cli fat jar
-  filtered ++: Seq(cliJar -> ("lib/" + cliJar.getName), serverJar -> ("lib/" + serverJar.getName))
+  filtered ++: Seq(cliJar -> ("lib/" + cliJar.getName))
 }
 
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -258,7 +238,7 @@ Universal / mappings := {
 
 // This is where we can add or remove files from the final package
 Docker / mappings := {
-  val serverJar = (server / Compile / assembly).value
+  val serverJar = (runtime / Compile / assembly).value
   // removing means filtering
   val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
 
