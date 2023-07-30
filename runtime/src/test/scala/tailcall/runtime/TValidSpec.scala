@@ -1,7 +1,7 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.TValid
-import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.{Spec, TestEnvironment, assertTrue}
 

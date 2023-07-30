@@ -1,8 +1,8 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.model.Mustache
 import tailcall.runtime.model.Mustache.{MustacheExpression, prm, txt}
-import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
 import zio.test.Assertion._
 import zio.test._

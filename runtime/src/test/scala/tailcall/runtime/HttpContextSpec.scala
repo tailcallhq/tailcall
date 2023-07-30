@@ -1,7 +1,7 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.service.HttpContext
-import tailcall.test.TailcallSpec
 import zio.durationInt
 import zio.test.Assertion._
 import zio.test._

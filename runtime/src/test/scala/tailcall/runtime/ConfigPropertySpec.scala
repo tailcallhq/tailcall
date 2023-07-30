@@ -1,9 +1,9 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.GraphQLTestSpec
 import tailcall.runtime.model.ConfigFormat
 import tailcall.runtime.transcoder.Transcoder
-import tailcall.test.TailcallSpec
 import zio.test.{Spec, TestEnvironment, assertTrue, checkAll}
 import zio.{Scope, ZIO}
 

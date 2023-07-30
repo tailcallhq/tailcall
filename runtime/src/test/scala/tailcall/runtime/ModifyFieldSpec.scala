@@ -2,9 +2,9 @@ package tailcall.runtime
 
 import caliban.Value.StringValue
 import caliban.parsing.adt.Directive
+import tailcall.TailcallSpec
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.model.ModifyField
-import tailcall.test.TailcallSpec
 import zio.test.Assertion.equalTo
 import zio.test.assertZIO
 

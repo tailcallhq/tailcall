@@ -1,12 +1,12 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.{DynamicValueUtil, JSONPlaceholderClient}
 import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
 import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
-import tailcall.test.TailcallSpec
 import zio.Console
 import zio.schema.DynamicValue
 import zio.test.Assertion._

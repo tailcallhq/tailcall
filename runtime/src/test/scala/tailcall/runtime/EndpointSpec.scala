@@ -1,7 +1,7 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.model.{Endpoint, Method}
-import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
 import zio.test._
 

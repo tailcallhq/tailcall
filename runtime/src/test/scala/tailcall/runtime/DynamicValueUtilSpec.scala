@@ -1,9 +1,9 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.DynamicValueUtil._
 import tailcall.runtime.internal.{CalibanGen, JsonGen, PrimitiveGen, TValid}
 import tailcall.runtime.transcoder.Transcoder
-import tailcall.test.TailcallSpec
 import zio.schema.DynamicValue
 import zio.test._
 

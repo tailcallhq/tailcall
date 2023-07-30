@@ -3,11 +3,11 @@ package tailcall.runtime
 import caliban.InputValue.{ListValue, ObjectValue}
 import caliban.Value
 import caliban.parsing.adt.Directive
+import tailcall.TailcallSpec
 import tailcall.runtime.DirectiveCodec._
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model.{Method, Path, UnsafeSteps}
-import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, assertZIO}

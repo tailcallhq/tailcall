@@ -1,9 +1,9 @@
 package tailcall.runtime.transcoder
 
+import tailcall.TailcallSpec
 import tailcall.runtime.model.Config
 import tailcall.runtime.model.Config.{Arg, Field, Type}
 import tailcall.runtime.service._
-import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.test.{TestResult, assertTrue}
 

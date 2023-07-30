@@ -1,10 +1,10 @@
 package tailcall.runtime.transcoder
 
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.Field
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
 import tailcall.runtime.model._
-import tailcall.test.TailcallSpec
 import zio.Chunk
 import zio.test.Assertion.equalTo
 import zio.test._

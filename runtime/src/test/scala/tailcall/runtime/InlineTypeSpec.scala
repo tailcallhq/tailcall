@@ -3,10 +3,10 @@ package tailcall.runtime
 import caliban.InputValue
 import caliban.Value.StringValue
 import caliban.parsing.adt.Directive
+import tailcall.TailcallSpec
 import tailcall.runtime.DirectiveCodec.{DecoderSyntax, EncoderSyntax}
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.InlineType
-import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.{Spec, TestEnvironment, assertTrue}
 

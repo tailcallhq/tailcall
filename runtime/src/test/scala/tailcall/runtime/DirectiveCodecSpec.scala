@@ -3,8 +3,8 @@ package tailcall.runtime
 import caliban.InputValue.ObjectValue
 import caliban.Value
 import caliban.parsing.adt.Directive
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.TValid
-import tailcall.test.TailcallSpec
 import zio.schema.DeriveSchema
 import zio.schema.annotation.{caseName, fieldName}
 import zio.test.Assertion.equalTo

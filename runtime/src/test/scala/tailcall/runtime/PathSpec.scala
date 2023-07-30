@@ -1,8 +1,8 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.model.Path
 import tailcall.runtime.model.Path.Segment.{Literal, Param}
-import tailcall.test.TailcallSpec
 import zio.ZIO
 import zio.schema.DynamicValue
 import zio.test.Assertion.equalTo

@@ -1,7 +1,7 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.service.HttpCache
-import tailcall.test.TailcallSpec
 import zio._
 import zio.http.Response
 import zio.http.model.Headers

@@ -1,7 +1,7 @@
 package tailcall.runtime
 
+import tailcall.TailcallSpec
 import tailcall.runtime.service.DataLoader
-import tailcall.test.TailcallSpec
 import zio._
 import zio.test.TestAspect.nonFlaky
 import zio.test._

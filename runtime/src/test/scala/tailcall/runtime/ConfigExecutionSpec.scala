@@ -1,6 +1,7 @@
 package tailcall.runtime
 
 import caliban.InputValue
+import tailcall.TailcallSpec
 import tailcall.runtime.internal.{JSONPlaceholderClient, TValid}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
@@ -9,7 +10,6 @@ import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.{Config, Context, Path}
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Transcoder
-import tailcall.test.TailcallSpec
 import zio.http.model.Headers
 import zio.http.{Request, URL => ZURL}
 import zio.json.ast.Json

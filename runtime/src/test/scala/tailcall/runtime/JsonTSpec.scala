@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.test.TailcallSpec
+import tailcall.TailcallSpec
 import zio.Scope
 import zio.json.EncoderOps
 import zio.json.ast.Json
