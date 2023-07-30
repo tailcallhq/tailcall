@@ -1,6 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.{HttpClient, Request}
+import tailcall.runtime.model.Request
 import tailcall.runtime.service.HttpContext.State
 import zio._
 import zio.http.model.Headers

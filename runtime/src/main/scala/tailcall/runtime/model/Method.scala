@@ -1,4 +1,4 @@
-package tailcall.runtime.http
+package tailcall.runtime.model
 
 import zio.http.model.{Method => ZMethod}
 import zio.json.JsonCodec

@@ -3,8 +3,7 @@ package tailcall.server
 import caliban.CalibanError
 import caliban.wrappers.ApolloPersistedQueries.ApolloPersistence
 import tailcall.registry.InterpreterRegistry
-import tailcall.runtime.http.HttpClient
-import tailcall.runtime.service.{GraphQLGenerator, HttpContext, ValidationError}
+import tailcall.runtime.service.{GraphQLGenerator, HttpClient, HttpContext, ValidationError}
 import tailcall.server.internal.GraphQLUtils
 import zio._
 import zio.http._

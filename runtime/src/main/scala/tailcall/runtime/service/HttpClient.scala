@@ -1,5 +1,6 @@
-package tailcall.runtime.http
+package tailcall.runtime.service
 
+import tailcall.runtime.model.Request
 import zio.http.model.Status
 import zio.http.{Client, Response}
 import zio.{ZIO, ZLayer}

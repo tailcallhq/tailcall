@@ -1,7 +1,6 @@
 package tailcall.runtime.model
 
 import tailcall.runtime.JsonT
-import tailcall.runtime.http.Method
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.lambda.{Lambda, ~>>}
 import tailcall.runtime.model.Config._
