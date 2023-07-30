@@ -98,7 +98,7 @@ object Endpoint {
       }
     }.collect { case Some(a) => a }.mkString("?", "&", ""))
 
-    val pathString: String = endpoint.path.unsafeEvaluate(input)
+    val pathString: String = endpoint.path.unsafeEval(input)
 
     val url = List(endpoint.scheme.name, "://", endpoint.address.host, portString, pathString, queryString).mkString
 
