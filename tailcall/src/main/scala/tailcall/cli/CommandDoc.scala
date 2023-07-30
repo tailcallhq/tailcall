@@ -56,6 +56,8 @@ object CommandDoc {
     ).withHelp("Generate a composition spec from a source file.").map {
       case (sourceFormat, targetFormat, write) -> files => CommandADT.Generate(files, sourceFormat, targetFormat, write)
     },
+
+    // server
     Command(
       "server",
       CustomOptions.int("port").withDefault(SchemaRegistry.PORT) ?? "port on which the server starts" ++
@@ -66,8 +68,8 @@ object CommandDoc {
           Options.boolean("db").withDefault(false) ?? "enable database for persistence" ++
             Options.text("db-host").withDefault("localhost") ?? "database hostname" ++
             CustomOptions.int("db-port").withDefault(3306) ?? "database port" ++
-            Options.text("db-username").withDefault("tailcall_main_user").optional ?? "database username" ++
-            Options.text("db-password").withDefault("tailcall").optional ?? "database password"
+            Options.text("db-username").optional.withDefault(Option("tailcall_main_user")) ?? "database username" ++
+            Options.text("db-password").optional.withDefault(Option("tailcall")) ?? "database password"
         }.map { case (enable, host, port, username, password) =>
           if (enable) Some(CommandADT.DBConfig(host, port, username, password)) else None
         } ++

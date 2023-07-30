@@ -11,7 +11,7 @@ object Main extends ZIOAppDefault {
     ZIOAppArgs.getArgs.flatMap { args =>
       CommandDoc.app.run(args.toList).catchSome { case ValidationError(_, _) =>
         for {
-          _ <- print(CommandDoc.command.helpDoc.toPlaintext(Int.MaxValue))
+          _ <- print(CommandDoc.command.helpDoc.toPlaintext())
           _ <- exit(ExitCode.failure)
         } yield ()
       }.provide(CommandExecutor.default)
