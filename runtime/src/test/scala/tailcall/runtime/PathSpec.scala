@@ -38,7 +38,7 @@ object PathSpec extends TailcallSpec {
         )
 
         checkAll(Gen.fromIterable(inputs)) { case (path, input) =>
-          val string = ZIO.fromEither(syntax.parseString(path)).map(_.unsafeEvaluate(input))
+          val string = ZIO.fromEither(syntax.parseString(path)).map(_.unsafeEval(input))
           assertZIO(string)(equalTo("/a/b/c"))
         }
       },
@@ -51,7 +51,7 @@ object PathSpec extends TailcallSpec {
 
         checkAll(Gen.fromIterable(inputs)) { case path -> input -> output =>
           for {
-            actual   <- ZIO.fromEither(syntax.parseString(path)).map(_.evaluate(input))
+            actual   <- ZIO.fromEither(syntax.parseString(path)).map(_.reduce(input))
             expected <- ZIO.fromEither(syntax.parseString(output))
           } yield assertTrue(actual == expected)
         }
