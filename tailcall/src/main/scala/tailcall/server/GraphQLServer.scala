@@ -2,6 +2,7 @@ package tailcall.server
 
 import caliban.wrappers.ApolloPersistedQueries
 import caliban.{GraphQLResponse, Value}
+import tailcall.cli.CommandADT.ServerStart
 import tailcall.registry.{InterpreterRegistry, SchemaRegistry}
 import tailcall.runtime.service._
 import zio._
@@ -9,9 +10,9 @@ import zio.http._
 import zio.http.model.{HttpError, Method, Status}
 import zio.json.EncoderOps
 
-object Main extends ZIOAppDefault {
+object GraphQLServer {
 
-  override val run = GraphQLConfig.bootstrap { config =>
+  def start(config: ServerStart) = {
     // Use in-memory schema registry if no database is configured
     val registryService = config.database
       .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password))

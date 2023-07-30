@@ -9,6 +9,7 @@ import tailcall.runtime.model._
 import tailcall.runtime.service._
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
+import tailcall.server.GraphQLServer
 import zio.http.URL
 import zio.json.EncoderOps
 import zio.{Console, Duration, ExitCode, ZIO, ZLayer}
@@ -46,6 +47,7 @@ object CommandExecutor {
     registry: SchemaRegistryClient,
     endpointGen: EndpointGenerator,
   ) extends CommandExecutor {
+
     override def dispatch(command: CommandADT): ZIO[Any, Nothing, ExitCode] =
       timed {
         command match {
@@ -58,6 +60,7 @@ object CommandExecutor {
               case Remote.ListAll(index, offset) => runRemoteList(base, index, offset)
               case Remote.Show(digest, options)  => runRemoteShow(base, digest, options)
             }
+          case start: CommandADT.ServerStart                      => GraphQLServer.start(start)
         }
       }.foldZIO(
         error => Console.printLine(Fmt.error(error)).as(ExitCode.failure).exitCode,
@@ -221,7 +224,6 @@ object CommandExecutor {
         }
       } yield ()
     }
-
   }
 
   object Env {

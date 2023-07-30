@@ -2,11 +2,14 @@ package tailcall.cli
 
 import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
 import tailcall.runtime.model.ConfigFormat
+import zio.Duration
 import zio.cli._
 import zio.http.URL
 
 object CustomOptions {
-  val remoteOption: Options[URL]        = CustomOptions.urlOption("remote").alias("r")
+
+  val remoteOption: Options[URL] = CustomOptions.urlOption("remote").alias("r")
+
   val remoteDefaultOption: Options[URL] = remoteOption.withDefault(CLIConfig.remote)
 
   val blueprintOptions: Options[BlueprintOptions] = {
@@ -24,6 +27,10 @@ object CustomOptions {
     TargetFormat.Config(ConfigFormat.GRAPHQL).named,
     TargetFormat.JsonLines.named,
   )
+
+  def duration(name: String): Options[Duration] = Options.integer(name).map(b => Duration.fromMillis(b.toLong))
+
+  def int(name: String): Options[Int] = Options.integer(name).map(_.toInt)
 
   def integerOption(name: String): Options[Int] =
     Options.text(name).mapOrFail { int =>

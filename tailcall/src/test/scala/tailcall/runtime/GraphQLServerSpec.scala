@@ -12,7 +12,7 @@ import zio.test.assertZIO
 
 import java.net.URI
 
-object ServerSpec extends TailcallSpec {
+object GraphQLServerSpec extends TailcallSpec {
   def spec =
     suite("ServerSpec")(suite("directive")(
       test("baseURL") {
