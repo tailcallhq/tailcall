@@ -1,5 +1,6 @@
-package tailcall.cli
+package tailcall
 
+import tailcall.cli.CommandDoc
 import tailcall.cli.service.CommandExecutor
 import zio.cli.ValidationError
 import zio.{ExitCode, Scope, ZIO, ZIOAppArgs, ZIOAppDefault}

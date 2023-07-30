@@ -196,6 +196,7 @@ addCommandAlias("sFixCheck", "scalafixAll --check; Test / scalafixAll --check")
 addCommandAlias("lint", "fmt; sFix")
 addCommandAlias("lintCheck", "fmtCheck; sFixCheck")
 addCommandAlias("tc", "tailcall/run")
+addCommandAlias("tc-server", "tailcall/reStart server")
 addCommandAlias("db", "registry/run")
 enablePlugins(JavaAppPackaging)
 
@@ -250,7 +251,7 @@ maintainer         := "tushar@tailcall.run"
 dockerCmd          := Seq(
   "-Xmx200M",
   "-main",
-  "tailcall.server.Main",
+  "tailcall.Main",
   "--http-cache=1024",
   "--allowed-headers=cookie,authorization,apikey",
 )

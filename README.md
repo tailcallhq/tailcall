@@ -20,7 +20,7 @@ To use tailcall, you'll need to have Scala, SBT, and Java 11 or above installed 
 1. Clone the repository: `git clone https://github.com/tailcallhq/tailcall.git`
 2. Navigate to the project directory: `cd tailcall`
 3. Open the SBT console: `sbt`
-4. To start the server, run the following command inside the SBT console: `~server/reStart`
+4. To start the server, run the following command inside the SBT console: `~ tc-server`
 5. Open a browser and go to `http://localhost:8080/`
 6. To communicate with the server use the `tc` command from the SBT console.
 
