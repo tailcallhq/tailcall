@@ -1,5 +1,6 @@
 package tailcall.server
 
+import tailcall.BuildInfo
 import tailcall.registry.SchemaRegistry
 import zio.cli.{CliApp, Command, Options}
 import zio.{Duration, ZIO, ZIOAppArgs}
@@ -18,8 +19,9 @@ object GraphQLConfig {
   val default: GraphQLConfig = GraphQLConfig()
 
   def bootstrap[R, E, A](run: GraphQLConfig => ZIO[R, E, A]): ZIO[R with ZIOAppArgs, Any, Any] =
-    ZIOAppArgs.getArgs
-      .flatMap(args => CliApp.make("tailcall", "0.0.1", command.helpDoc.getSpan, command)(run(_)).run(args.toList))
+    ZIOAppArgs.getArgs.flatMap(args =>
+      CliApp.make("tailcall", BuildInfo.version, command.helpDoc.getSpan, command)(run(_)).run(args.toList)
+    )
 
   private def command: Command[GraphQLConfig] =
     Command("server", options).withHelp(s"starts the server on port: ${default.port}").map {
