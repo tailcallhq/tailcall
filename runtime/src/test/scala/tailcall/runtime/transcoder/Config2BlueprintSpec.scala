@@ -1,6 +1,5 @@
 package tailcall.runtime.transcoder
 
-import tailcall.runtime.http.Scheme
 import tailcall.runtime.internal.TValid
 import tailcall.runtime.model.Config.Field
 import tailcall.runtime.model.UnsafeSteps.Operation.Http

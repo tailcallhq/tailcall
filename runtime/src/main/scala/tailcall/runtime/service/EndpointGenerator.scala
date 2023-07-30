@@ -1,7 +1,6 @@
 package tailcall.runtime.service
 
-import tailcall.runtime.http.{HttpClient, Request}
-import tailcall.runtime.model.{Endpoint, Postman}
+import tailcall.runtime.model.{Endpoint, Postman, Request}
 import tailcall.runtime.transcoder.Endpoint2Config.NameGenerator
 import tailcall.runtime.transcoder.Transcoder
 import zio.{Chunk, Task, ZIO, ZLayer}

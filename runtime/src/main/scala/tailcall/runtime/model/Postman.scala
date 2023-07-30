@@ -1,6 +1,5 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.http.{Method, Scheme}
 import tailcall.runtime.model.Postman.Collection
 import zio.json.ast.Json
 import zio.json.{DecoderOps, DeriveJsonCodec, JsonCodec, jsonHint}

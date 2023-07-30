@@ -1,6 +1,5 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.http.Method
 import tailcall.runtime.internal.JsonCodecImplicits._
 import tailcall.runtime.lambda.~>>
 import tailcall.runtime.model.Mustache.MustacheExpression

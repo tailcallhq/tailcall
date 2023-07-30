@@ -3,7 +3,6 @@ package tailcall.server
 import caliban.wrappers.ApolloPersistedQueries
 import caliban.{GraphQLResponse, Value}
 import tailcall.registry.{InterpreterRegistry, SchemaRegistry}
-import tailcall.runtime.http.HttpClient
 import tailcall.runtime.service._
 import zio._
 import zio.http._

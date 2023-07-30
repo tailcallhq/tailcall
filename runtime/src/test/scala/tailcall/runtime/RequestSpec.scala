@@ -1,6 +1,6 @@
 package tailcall.runtime
 
-import tailcall.runtime.http.Request
+import tailcall.runtime.model.Request
 import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.{Spec, TestEnvironment, assertTrue}

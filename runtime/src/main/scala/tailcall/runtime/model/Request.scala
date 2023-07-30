@@ -1,4 +1,4 @@
-package tailcall.runtime.http
+package tailcall.runtime.model
 
 import zio.Chunk
 import zio.http.model.Headers

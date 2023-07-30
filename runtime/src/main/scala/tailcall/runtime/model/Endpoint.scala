@@ -1,6 +1,5 @@
 package tailcall.runtime.model
 
-import tailcall.runtime.http.{Method, Request, Scheme}
 import tailcall.runtime.internal.DynamicValueUtil
 import tailcall.runtime.model.Mustache.MustacheExpression
 import tailcall.runtime.transcoder.Transcoder

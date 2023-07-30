@@ -1,7 +1,7 @@
 package tailcall.runtime.internal
 
-import tailcall.runtime.http.{HttpClient, Method, Request}
-import tailcall.runtime.service.FileIO
+import tailcall.runtime.model.{Method, Request}
+import tailcall.runtime.service.{FileIO, HttpClient}
 import zio.http.Response
 import zio.http.model.HttpError
 import zio.{ZIO, ZLayer}

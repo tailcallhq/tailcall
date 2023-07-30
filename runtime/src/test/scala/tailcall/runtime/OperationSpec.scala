@@ -4,10 +4,9 @@ import caliban.InputValue.{ListValue, ObjectValue}
 import caliban.Value
 import caliban.parsing.adt.Directive
 import tailcall.runtime.DirectiveCodec._
-import tailcall.runtime.http.Method
 import tailcall.runtime.model.UnsafeSteps.Operation
 import tailcall.runtime.model.UnsafeSteps.Operation.Http
-import tailcall.runtime.model.{Path, UnsafeSteps}
+import tailcall.runtime.model.{Method, Path, UnsafeSteps}
 import tailcall.test.TailcallSpec
 import zio.Scope
 import zio.test.Assertion.equalTo
