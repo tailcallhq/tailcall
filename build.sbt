@@ -30,9 +30,9 @@ val zioSchemaJson       = "dev.zio"               %% "zio-schema-json"       % z
 val zioTest             = "dev.zio"               %% "zio-test"              % zioVersion
 val zioTestSBT          = "dev.zio"               %% "zio-test-sbt"          % zioVersion
 
-lazy val tailcall = (project in file(".")).aggregate(runtime).settings(name := "tailcall")
+lazy val root = (project in file(".")).aggregate(tailcall).settings(name := "tailcall")
 
-lazy val runtime = (project in file("runtime")).settings(
+lazy val tailcall = (project in file("tailcall")).settings(
   resolvers +=
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
   libraryDependencies ++= Seq(
@@ -209,12 +209,12 @@ ThisBuild / assemblyMergeStrategy := {
 
 // Disable the main class discovery such that only the CLI is used as it's main class
 // That way the executable script is only created for the CLI
-Compile / discoveredMainClasses := (runtime / Compile / mainClass).value.toSeq
+Compile / discoveredMainClasses := (tailcall / Compile / mainClass).value.toSeq
 
 // The bash scripts classpath only needs the fat jar
 // Script class path is used in stage command and not not docker stage
 // So we add only the CLI application because only that's needed for the bash script
-scriptClasspath := Seq((runtime / assembly / assemblyJarName).value)
+scriptClasspath := Seq((tailcall / assembly / assemblyJarName).value)
 
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 // UNIVERSAL PACKAGE SETTINGS
@@ -223,7 +223,7 @@ scriptClasspath := Seq((runtime / assembly / assemblyJarName).value)
 // This is where we can add or remove files from the final package
 Universal / mappings := {
   // The fat jar of the CLI
-  val cliJar = (runtime / Compile / assembly).value
+  val cliJar = (tailcall / Compile / assembly).value
 
   // removing all the jars from the universal package
   val filtered = (Universal / mappings).value filter { case (file, name) => !name.endsWith(".jar") }
@@ -238,7 +238,7 @@ Universal / mappings := {
 
 // This is where we can add or remove files from the final package
 Docker / mappings := {
-  val serverJar = (runtime / Compile / assembly).value
+  val serverJar = (tailcall / Compile / assembly).value
   // removing means filtering
   val filtered  = (Docker / mappings).value.filter { case (file, name) => !name.endsWith(".jar") }
 
