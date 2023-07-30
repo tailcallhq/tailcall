@@ -62,10 +62,10 @@ object CommandDoc {
       "server",
       CustomOptions.int("port").withDefault(SchemaRegistry.PORT) ?? "port on which the server starts" ++
         CustomOptions.int("timeout").withDefault(10000) ?? "global timeout in millis" ++
-        Options.boolean("tracing").withDefault(true) ?? "enables low-level tracing (affects performance)" ++
+        Options.boolean("tracing") ?? "enables low-level tracing (affects performance)" ++
         CustomOptions.int("slow-query").optional.withDefault(None) ?? "slow-query identifier in millis" ++ {
           // DB configs
-          Options.boolean("db").withDefault(false) ?? "enable database for persistence" ++
+          Options.boolean("db") ?? "enable database for persistence" ++
             Options.text("db-host").withDefault("localhost") ?? "database hostname" ++
             CustomOptions.int("db-port").withDefault(3306) ?? "database port" ++
             Options.text("db-username").optional.withDefault(Option("tailcall_main_user")) ?? "database username" ++
@@ -73,11 +73,10 @@ object CommandDoc {
         }.map { case (enable, host, port, username, password) =>
           if (enable) Some(CommandADT.DBConfig(host, port, username, password)) else None
         } ++
-        Options.boolean("persisted-queries").withDefault(false) ?? "enable persisted-queries" ++
+        Options.boolean("persisted-queries") ?? "enable persisted-queries" ++
         Options.text("allowed-headers").map(_.split(",").map(_.trim().toLowerCase()).toSet)
           .withDefault(Set("cookie", "authorization")) ?? "comma separated list of headers" ++
-        Options.file("config", Exists.Yes).optional
-          .withDefault(None) ?? "tailcall configuration file in .yml, .json or .graphql format",
+        Options.file("config", Exists.Yes).optional ?? "tailcall configuration file in .yml, .json or .graphql format",
     ).withHelp(s"starts the server on the provided port").map {
       case (
             port,
