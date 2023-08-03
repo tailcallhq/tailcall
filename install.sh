@@ -8,8 +8,8 @@ VERSION=${1:-"latest"}
 BASE_URL="https://github.com/tailcallhq/tailcall/releases/download"
 
 if [ "$VERSION" = "latest" ]; then
-   # Fetch latest version from local JSON file
-   VERSION=$(jq -r '.version' version.json)
+  # Fetch latest version from local JSON file
+  VERSION=$(jq -r '.version' version.json)
 fi
 
 # Derive download URL
@@ -27,17 +27,16 @@ rm "$INSTALL_DIR/tailcall.zip"
 # Create symlinks in ~/.tailcall/bin
 mkdir -p "$HOME/.tailcall/bin"
 ln -sf "$INSTALL_DIR/bin/tailcall_cli_main" "$HOME/.tailcall/bin/tc"
-ln -sf "$INSTALL_DIR/bin/tailcall_server_main" "$HOME/.tailcall/bin/tc-server"
 
 # Determine which shell the user is running and which profile file to update
 if [[ "$SHELL" == *"zsh"* ]]; then
-   SHELL_PROFILE="$HOME/.zshrc"
+  SHELL_PROFILE="$HOME/.zshrc"
 elif [[ "$SHELL" == *"bash"* ]]; then
-   if [ -f "$HOME/.bash_profile" ]; then
-      SHELL_PROFILE="$HOME/.bash_profile"
-   else
-      SHELL_PROFILE="$HOME/.bashrc"
-   fi
+  if [ -f "$HOME/.bash_profile" ]; then
+    SHELL_PROFILE="$HOME/.bash_profile"
+  else
+    SHELL_PROFILE="$HOME/.bashrc"
+  fi
 fi
 
 # Provide instructions to add ~/.tailcall/bin to PATH in shell profile
