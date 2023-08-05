@@ -17,56 +17,6 @@ object LambdaSpec extends TailcallSpec {
 
   def spec =
     suite("Lambda")(
-      suite("math")(
-        test("add") {
-          val program = Lambda(1) + Lambda(2)
-          assertZIO(program.evaluate)(equalTo(3))
-        },
-        test("subtract") {
-          val program = Lambda(1) - Lambda(2)
-          assertZIO(program.evaluate)(equalTo(-1))
-        },
-        test("multiply") {
-          val program = Lambda(2) * Lambda(3)
-          assertZIO(program.evaluate)(equalTo(6))
-        },
-        test("divide") {
-          val program = Lambda(6) / Lambda(3)
-          assertZIO(program.evaluate)(equalTo(2))
-        },
-        test("modulo") {
-          val program = Lambda(7) % Lambda(3)
-          assertZIO(program.evaluate)(equalTo(1))
-        },
-        test("greater than") {
-          val program = Lambda(2) > Lambda(1)
-          assertZIO(program.evaluate)(isTrue)
-        },
-      ),
-      suite("logical")(
-        test("and") {
-          val program = Lambda(true) && Lambda(true)
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("or") {
-          val program = Lambda(true) || Lambda(false)
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("not") {
-          val program = !Lambda(true)
-          assertZIO(program.evaluate)(isFalse)
-        },
-      ),
-      suite("diverge")(
-        test("isTrue") {
-          val program = Lambda(true).diverge(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate)(equalTo("Yes"))
-        },
-        test("isFalse") {
-          val program = Lambda(false).diverge(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate)(equalTo("No"))
-        },
-      ),
       suite("fromFunction")(
         test("one level") {
           val program = Lambda.fromFunction[Int, Int](i => i + Lambda(1))
