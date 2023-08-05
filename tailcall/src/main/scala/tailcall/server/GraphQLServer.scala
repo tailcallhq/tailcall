@@ -12,7 +12,7 @@ import zio.json.EncoderOps
 
 object GraphQLServer {
 
-  def start(config: ServerStart) = {
+  def start(config: ServerStart): ZIO[Any, Throwable, Nothing] = {
     // Use in-memory schema registry if no database is configured
     val registryService = config.database
       .fold(SchemaRegistry.memory)(db => SchemaRegistry.mysql(db.host, db.port, db.username, db.password))

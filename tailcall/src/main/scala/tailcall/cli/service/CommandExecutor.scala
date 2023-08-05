@@ -12,6 +12,7 @@ import tailcall.runtime.transcoder.Transcoder
 import tailcall.server.GraphQLServer
 import zio.http.URL
 import zio.json.EncoderOps
+import zio.prelude.NonEmptyList
 import zio.{Console, Duration, ExitCode, ZIO, ZLayer}
 
 import java.io.IOException
@@ -60,7 +61,13 @@ object CommandExecutor {
               case Remote.ListAll(index, offset) => runRemoteList(base, index, offset)
               case Remote.Show(digest, options)  => runRemoteShow(base, digest, options)
             }
-          case start: CommandADT.ServerStart                      => GraphQLServer.start(start)
+          case start: CommandADT.ServerStart                      => for {
+              _ <- start.file match {
+                case Some(path) => runCheck(NonEmptyList(path), None, false, BlueprintOptions(false, false, false))
+                case None       => ZIO.unit
+              }
+              _ <- GraphQLServer.start(start)
+            } yield ()
         }
       }.foldZIO(
         error => Console.printLine(Fmt.error(error)).as(ExitCode.failure).exitCode,
