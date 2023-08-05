@@ -57,9 +57,9 @@ object CommandDoc {
       case (sourceFormat, targetFormat, write) -> files => CommandADT.Generate(files, sourceFormat, targetFormat, write)
     },
 
-    // server
+    // start
     Command(
-      "server",
+      "start",
       CustomOptions.int("port").withDefault(SchemaRegistry.PORT) ?? "port on which the server starts" ++
         CustomOptions.int("timeout").withDefault(10000) ?? "global timeout in millis" ++
         Options.boolean("tracing") ?? "enables low-level tracing (affects performance)" ++
@@ -75,17 +75,13 @@ object CommandDoc {
         } ++
         Options.boolean("persisted-queries") ?? "enable persisted-queries" ++
         Options.text("allowed-headers").map(_.split(",").map(_.trim().toLowerCase()).toSet)
-          .withDefault(Set("cookie", "authorization")) ?? "comma separated list of headers" ++
-        Options.file("config", Exists.Yes).optional ?? "tailcall configuration file in .yml, .json or .graphql format",
-    ).withHelp(s"starts the server on the provided port").map {
+          .withDefault(Set("cookie", "authorization")) ?? "comma separated list of headers",
+      Args.file(Exists.Yes).atMost(1),
+    ).withHelp(
+      s"starts the server on the provided port and optionally expects a tailcall configuration file in .yml, .json or .graphql format"
+    ).map {
       case (
-            port,
-            globalResponseTimeout,
-            enableTracing,
-            slowQueryDuration,
-            database,
-            persistedQueries,
-            allowedHeaders,
+            (port, globalResponseTimeout, enableTracing, slowQueryDuration, database, persistedQueries, allowedHeaders),
             file,
           ) => CommandADT.ServerStart(
           port,
@@ -95,13 +91,13 @@ object CommandDoc {
           database,
           persistedQueries,
           allowedHeaders,
-          file,
+          file.headOption,
         )
     },
   )
 
   val app: CliApp[CommandExecutor, Nothing, CommandADT] = CliApp
     .make("tailcall", tailcall.BuildInfo.version.replace("v", ""), command.helpDoc.getSpan, command)(
-      CommandExecutor.execute(_)
+      CommandExecutor.execute
     ).summary(HelpDoc.Span.Text("Tailcall CLI"))
 }
