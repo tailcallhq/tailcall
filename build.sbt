@@ -247,7 +247,7 @@ Docker / mappings := {
   filtered ++: Seq(serverJar -> ("/opt/docker/lib/" + serverJar.getName))
 }
 
-maintainer      := "tushar@tailcall.run"
-dockerCmd       := Seq("-Xmx200M", "-main", "tailcall.Main", "server", "--allowed-headers=cookie,authorization,apikey")
-dockerBaseImage := s"eclipse-temurin:${defaultJavaVersion.version}"
+maintainer         := "tushar@tailcall.run"
+dockerCmd          := Seq("server", "--allowed-headers=cookie,authorization,apikey")
+dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
