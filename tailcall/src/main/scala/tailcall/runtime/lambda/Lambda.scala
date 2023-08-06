@@ -4,10 +4,11 @@ import tailcall.runtime.JsonT
 import tailcall.runtime.lambda.Expression._
 import tailcall.runtime.model.Endpoint
 import tailcall.runtime.service.EvaluationContext.Binding
-import zio.UIO
+import tailcall.runtime.service.{EvaluationRuntime, HttpContext}
 import zio.json.JsonCodec
 import zio.schema.codec.JsonCodec.jsonCodec
 import zio.schema.{DynamicValue, Schema}
+import zio.{UIO, ZIO}
 
 sealed trait Lambda[-A, +B] {
   self =>
@@ -18,6 +19,15 @@ sealed trait Lambda[-A, +B] {
   def compile(context: CompilationContext): Expression
 
   final def compile: Expression = compile(CompilationContext.initial)
+
+
+  final def evaluate[R1 <: A](implicit ev: Any <:< R1): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
+    (self: R1 ~> B).evaluateWith {}
+
+  final def evaluateWith(r: A): ZIO[EvaluationRuntime with HttpContext, Throwable, B] =
+    EvaluationRuntime.evaluate(self)(r)
+
+  final def pipe[C](other: B ~> C): A ~> C = self >>> other
 
   final def toDynamic[B1 >: B](implicit ev: Schema[B1]): A ~> DynamicValue = self >>> Lambda.dynamic.toDynamic[B1]
 

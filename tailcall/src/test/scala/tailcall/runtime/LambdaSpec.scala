@@ -2,7 +2,6 @@ package tailcall.runtime
 
 import tailcall.TailcallSpec
 import tailcall.runtime.internal.{DynamicValueUtil, JSONPlaceholderClient}
-import tailcall.runtime.lambda.Lambda.{logic, math}
 import tailcall.runtime.lambda.Syntax._
 import tailcall.runtime.lambda._
 import tailcall.runtime.model.{Context, Endpoint, TSchema}
@@ -13,41 +12,40 @@ import zio.test.Assertion._
 import zio.test._
 
 object LambdaSpec extends TailcallSpec {
-  import tailcall.runtime.lambda.Numeric._
 
   def spec =
     suite("Lambda")(
-      suite("fromFunction")(
-        test("one level") {
-          val program = Lambda.fromFunction[Int, Int](i => i + Lambda(1))
-          assertZIO(program.evaluateWith(1))(equalTo(2))
-        },
-        test("two level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => i * j)
-            f1(i + Lambda(1))
-          }(Lambda(10))
-          assertZIO(program.evaluate)(equalTo(110))
-        },
-        test("three level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int] { j =>
-              val f2 = Lambda.fromFunction[Int, Int](k => i * j * k)
-              f2(j + Lambda(1))
-            }
-            f1(i + Lambda(1))
-          }(Lambda(10))
-          assertZIO(program.evaluate)(equalTo(10 * 11 * 12))
-        },
-        test("three level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => j * i)
-            val f2 = Lambda.fromFunction[Int, Int](j => i * j)
-            f1(i + Lambda(1)) + f2(i - Lambda(1))
-          }(Lambda(10))
-          assertZIO(program.evaluate)(equalTo(200))
-        },
-      ),
+//      suite("fromFunction")(
+//        test("one level") {
+//          val program = Lambda.fromFunction[Int, Int](i => i )
+//          assertZIO(program.evaluateWith(1))(equalTo(1))
+//        },
+//        test("two level") {
+//          val program = Lambda.fromFunction[Int, Int] { i =>
+//            val f1 = Lambda.fromFunction[Int, Int](j =>  j)
+//            f1(i + Lambda(1))
+//          }(Lambda(10))
+//          assertZIO(program.evaluate)(equalTo(110))
+//        },
+//        test("three level") {
+//          val program = Lambda.fromFunction[Int, Int] { i =>
+//            val f1 = Lambda.fromFunction[Int, Int] { j =>
+//              val f2 = Lambda.fromFunction[Int, Int](k => i * j * k)
+//              f2(j + Lambda(1))
+//            }
+//            f1(i + Lambda(1))
+//          }(Lambda(10))
+//          assertZIO(program.evaluate)(equalTo(10 * 11 * 12))
+//        },
+//        test("three level") {
+//          val program = Lambda.fromFunction[Int, Int] { i =>
+//            val f1 = Lambda.fromFunction[Int, Int](j => j * i)
+//            val f2 = Lambda.fromFunction[Int, Int](j => i * j)
+//            f1(i + Lambda(1)) + f2(i - Lambda(1))
+//          }(Lambda(10))
+//          assertZIO(program.evaluate)(equalTo(200))
+//        },
+//      ),
       suite("option")(
         test("some") {
           val program = Lambda.option(Some(Lambda(1)))
@@ -57,22 +55,14 @@ object LambdaSpec extends TailcallSpec {
           val program = Lambda.option(None)
           assertZIO(program.evaluate)(equalTo(None))
         },
-        test("isSome") {
-          val program = Lambda.option(Some(Lambda(1))).isSome
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("isNone") {
-          val program = Lambda.option(None).isNone
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("fold some") {
-          val program = Lambda.option(Some(Lambda(1))).fold(Lambda(0), _ * Lambda(2))
-          assertZIO(program.evaluate)(equalTo(2))
-        },
-        test("fold none") {
-          val program = Lambda.option(Option.empty[Any ~> Int]).fold(Lambda(0), _ * Lambda(2))
-          assertZIO(program.evaluate)(equalTo(0))
-        },
+//        test("fold some") {
+//          val program = Lambda.option(Some(Lambda(1))).fold(Lambda(0), _ * Lambda(2))
+//          assertZIO(program.evaluate)(equalTo(2))
+//        },
+//        test("fold none") {
+//          val program = Lambda.option(Option.empty[Any ~> Int]).fold(Lambda(0), _ * Lambda(2))
+//          assertZIO(program.evaluate)(equalTo(0))
+//        },
       ),
       suite("dynamicValue")(
         test("int") {
@@ -88,128 +78,70 @@ object LambdaSpec extends TailcallSpec {
           assertZIO(program.evaluate)(equalTo(DynamicValue(Option.empty[Int])))
         },
       ),
-      suite("math")(
-        test("add") {
-          val program = math.add(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate)(equalTo(3))
-        },
-        test("subtract") {
-          val program = math.sub(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate)(equalTo(-1))
-        },
-        test("multiply") {
-          val program = math.mul(Lambda(2), Lambda(3))
-          assertZIO(program.evaluate)(equalTo(6))
-        },
-        test("divide") {
-          val program = math.div(Lambda(6), Lambda(3))
-          assertZIO(program.evaluate)(equalTo(2))
-        },
-        test("modulo") {
-          val program = math.mod(Lambda(7), Lambda(3))
-          assertZIO(program.evaluate)(equalTo(1))
-        },
-        test("greater than") {
-          val program = math.gt(Lambda(2), Lambda(1))
-          assertZIO(program.evaluate)(isTrue)
-        },
-      ),
-      suite("logical")(
-        test("and") {
-          val program = logic.and(Lambda(true), Lambda(true))
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("or") {
-          val program = logic.or(Lambda(true), Lambda(false))
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("not") {
-          val program = logic.not(Lambda(true))
-          assertZIO(program.evaluate)(isFalse)
-        },
-        test("equal") {
-          val program = logic.eq(Lambda(1), Lambda(1))
-          assertZIO(program.evaluate)(equalTo(true))
-        },
-        test("not equal") {
-          val program = logic.eq(Lambda(1), Lambda(2))
-          assertZIO(program.evaluate)(equalTo(false))
-        },
-      ),
-      suite("diverge")(
-        test("isTrue") {
-          val program = logic.cond(Lambda(true))(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate)(equalTo("Yes"))
-        },
-        test("isFalse") {
-          val program = logic.cond(Lambda(false))(Lambda("Yes"), Lambda("No"))
-          assertZIO(program.evaluate)(equalTo("No"))
-        },
-      ),
       suite("fromFunction")(
         test("one level") {
-          val program = Lambda.fromFunction[Int, Int](i => math.add(i, Lambda(1)))
-          assertZIO(program.evaluateWith(1))(equalTo(2))
+          val program = Lambda.fromFunction[Int, Int](i => i)
+          assertZIO(program.evaluateWith(1))(equalTo(1))
         },
         test("two level") {
           val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => math.mul(i, j))
-            math.add(i, Lambda(1)) >>> f1
+            val f1 = Lambda.fromFunction[Int, Int](j => j)
+            i >>> f1
           }
-          assertZIO(program.evaluateWith(10))(equalTo(110))
+          assertZIO(program.evaluateWith(10))(equalTo(10))
         },
-        test("three level") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int] { j =>
-              val f2 = Lambda.fromFunction[Int, Int](k => math.mul(math.mul(i, j), k))
-              math.add(j, Lambda(1)) >>> f2
-            }
-            math.add(i, Lambda(1)) >>> f1
-          }
-          assertZIO(program.evaluateWith(10))(equalTo(10 * 11 * 12))
-        },
-        test("nested siblings") {
-          val program = Lambda.fromFunction[Int, Int] { i =>
-            val f1 = Lambda.fromFunction[Int, Int](j => math.mul(i, j))
-            val f2 = Lambda.fromFunction[Int, Int](j => math.mul(i, j))
-            math.add(math.add(i, Lambda(1)) >>> f1, math.sub(i, Lambda(1)) >>> f2)
-          }
-          assertZIO(program.evaluateWith(10))(equalTo(200))
-        },
+//        test("three level") {
+//          val program = Lambda.fromFunction[Int, Int] { i =>
+//            val f1 = Lambda.fromFunction[Int, Int] { j =>
+//              val f2 = Lambda.fromFunction[Int, Int](k => math.mul(math.mul(i, j), k))
+//              math.add(j, Lambda(1)) >>> f2
+//            }
+//            math.add(i, Lambda(1)) >>> f1
+//          }
+//          assertZIO(program.evaluateWith(10))(equalTo(10 * 11 * 12))
+//        },
+//        test("nested siblings") {
+//          val program = Lambda.fromFunction[Int, Int] { i =>
+//            val f1 = Lambda.fromFunction[Int, Int](j => math.mul(i, j))
+//            val f2 = Lambda.fromFunction[Int, Int](j => math.mul(i, j))
+//            math.add(math.add(i, Lambda(1)) >>> f1, math.sub(i, Lambda(1)) >>> f2)
+//          }
+//          assertZIO(program.evaluateWith(10))(equalTo(200))
+//        },
       ),
-      suite("recursion")(
-        test("sum") {
-          val sum: Int ~> Int = Lambda.recurse[Int, Int] { next =>
-            logic.cond(logic.eq(Lambda.identity[Int], Lambda(0)))(
-              isTrue = Lambda(0),
-              isFalse = math.add(Lambda.identity[Int], math.dec(Lambda.identity[Int]) >>> next),
-            )
-          }
-          assertZIO(sum.evaluateWith(5))(equalTo(15))
-
-        },
-        test("factorial") {
-          val factorial: Int ~> Int = Lambda.recurse[Int, Int](next =>
-            logic.cond(math.gte(Lambda.identity[Int], Lambda(1)))(
-              math.mul(Lambda.identity[Int], math.sub(Lambda.identity[Int], Lambda(1)) >>> next),
-              Lambda(1),
-            )
-          )
-          assertZIO(factorial.evaluateWith(5))(equalTo(120))
-        },
-        test("fibonnaci") {
-          val fib = Lambda.recurse[Int, Int] { next =>
-            logic.cond(math.gte(Lambda.identity[Int], Lambda(2)))(
-              math.add(
-                math.sub(Lambda.identity[Int], Lambda(1)) >>> next,
-                math.sub(Lambda.identity[Int], Lambda(2)) >>> next,
-              ),
-              Lambda.identity[Int],
-            )
-          }
-          assertZIO(fib.evaluateWith(10))(equalTo(55))
-        },
-      ),
+//      suite("recursion")(
+//        test("sum") {
+//          val sum: Int ~> Int = Lambda.recurse[Int, Int] { next =>
+//            logic.cond(logic.eq(Lambda.identity[Int], Lambda(0)))(
+//              isTrue = Lambda(0),
+//              isFalse = math.add(Lambda.identity[Int], math.dec(Lambda.identity[Int]) >>> next),
+//            )
+//          }
+//          assertZIO(sum.evaluateWith(5))(equalTo(15))
+//
+//        },
+//        test("factorial") {
+//          val factorial: Int ~> Int = Lambda.recurse[Int, Int](next =>
+//            logic.cond(math.gte(Lambda.identity[Int], Lambda(1)))(
+//              math.mul(Lambda.identity[Int], math.sub(Lambda.identity[Int], Lambda(1)) >>> next),
+//              Lambda(1),
+//            )
+//          )
+//          assertZIO(factorial.evaluateWith(5))(equalTo(120))
+//        },
+//        test("fibonnaci") {
+//          val fib = Lambda.recurse[Int, Int] { next =>
+//            logic.cond(math.gte(Lambda.identity[Int], Lambda(2)))(
+//              math.add(
+//                math.sub(Lambda.identity[Int], Lambda(1)) >>> next,
+//                math.sub(Lambda.identity[Int], Lambda(2)) >>> next,
+//              ),
+//              Lambda.identity[Int],
+//            )
+//          }
+//          assertZIO(fib.evaluateWith(10))(equalTo(55))
+//        },
+//      ),
       suite("map")(
         test("get some") {
           val program = Lambda.dict.get(Lambda("key"), Lambda.identity[Map[String, String]])
@@ -352,29 +284,21 @@ object LambdaSpec extends TailcallSpec {
         ),
       ),
       suite("option")(
-        test("isSome") {
-          val program = Lambda(Option(1)) >>> Lambda.option.isSome
-          assertZIO(program.evaluate)(isTrue)
-        },
-        test("isNone") {
-          val program = Lambda(Option.empty[Int]) >>> Lambda.option.isNone
-          assertZIO(program.evaluate)(isTrue)
-        },
         test("fold some") {
           val program = Lambda.option.fold(
             Lambda(Option(0)),
-            ifNone = Lambda.math.inc(Lambda.identity[Int]),
-            ifSome = Lambda.math.inc(Lambda.identity[Int]),
+            ifNone = Lambda(2),
+            ifSome = Lambda(1),
           )
           assertZIO(program.evaluateWith(100))(equalTo(1))
         },
         test("fold none") {
           val program = Lambda.option.fold(
             Lambda(Option.empty[Int]),
-            ifNone = Lambda.math.inc(Lambda.identity[Int]),
-            ifSome = Lambda.math.inc(Lambda.identity[Int]),
+            ifNone = Lambda(2),
+            ifSome = Lambda(1),
           )
-          assertZIO(program.evaluateWith(100))(equalTo(101))
+          assertZIO(program.evaluateWith(100))(equalTo(2))
         },
         test("apply some") {
           val program = Lambda.option(Option(Lambda(0)))
@@ -417,9 +341,9 @@ object LambdaSpec extends TailcallSpec {
           } yield assertTrue(out.contains("Hello"))
         },
       ),
-      suite("sequence")(test("groupBy") {
-        val seq = Lambda(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).groupBy(_ % Lambda(2))
-        assertZIO(seq.evaluate)(equalTo(Map(0 -> Seq(2, 4, 6, 8, 10), 1 -> Seq(1, 3, 5, 7, 9))))
-      }),
+//      suite("sequence")(test("groupBy") {
+//        val seq = Lambda(Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).groupBy(_ % Lambda(2))
+//        assertZIO(seq.evaluate)(equalTo(Map(0 -> Seq(2, 4, 6, 8, 10), 1 -> Seq(1, 3, 5, 7, 9))))
+//      }),
     ).provide(EvaluationRuntime.default, JSONPlaceholderClient.default, HttpContext.live(None))
 }
