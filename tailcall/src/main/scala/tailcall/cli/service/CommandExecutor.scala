@@ -2,7 +2,7 @@ package tailcall.cli.service
 
 import caliban.GraphQL
 import tailcall.cli.CommandADT
-import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
+import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
 import tailcall.runtime.model._
@@ -55,12 +55,6 @@ object CommandExecutor {
           case CommandADT.Generate(files, sourceFormat, targetFormat, write) =>
             runGenerate(files, sourceFormat, targetFormat, write)
           case CommandADT.Check(files, remote, nPlusOne, options) => runCheck(files, remote, nPlusOne, options)
-          case CommandADT.Remote(base, command)                   => command match {
-              case Remote.Publish(path)          => runRemotePublish(base, path)
-              case Remote.Drop(digest)           => runRemoteDrop(base, digest)
-              case Remote.ListAll(index, offset) => runRemoteList(base, index, offset)
-              case Remote.Show(digest, options)  => runRemoteShow(base, digest, options)
-            }
           case start: CommandADT.ServerStart                      => for {
               _ <- start.file match {
                 case Some(path) => runCheck(NonEmptyList(path), None, false, BlueprintOptions(false, false, false))
@@ -183,53 +177,6 @@ object CommandExecutor {
             .fail(new RuntimeException(s"Unsupported format combination ${sourceFormat.name} to ${targetFormat.name}"))
       }
       writeGeneratedFile(output, write)
-    }
-
-    private def runRemoteDrop(base: URL, digest: Digest): ZIO[Any, Throwable, Unit] = {
-      for {
-        _ <- registry.drop(base, digest)
-        _ <- Console.printLine(Fmt.success(s"Blueprint dropped successfully."))
-        _ <- Console.printLine(Fmt.table(Seq("Digest" -> s"${digest.hex}")))
-      } yield ()
-    }
-
-    private def runRemoteList(base: URL, index: Int, offset: Int): ZIO[Any, Throwable, Unit] = {
-      for {
-        blueprints <- registry.list(base, index, offset)
-        _          <- Console.printLine(Fmt.blueprints(blueprints))
-        _ <- Console.printLine(Fmt.table(Seq("Server" -> base.encode, "Total Count" -> s"${blueprints.length}")))
-      } yield ()
-    }
-
-    private def runRemotePublish(base: URL, path: ::[Path]): ZIO[Any, Throwable, Unit] = {
-      for {
-        config    <- configFile.readAll(path.map(_.toFile))
-        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
-        digest    <- registry.add(base, blueprint)
-        _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
-        seq       <- ZIO.succeed(Seq(
-          "Digest"     -> s"${digest.hex}",
-          "Endpoints"  -> blueprint.endpoints.length.toString,
-          "Unsafe"     -> config.unsafeSteps.length.toString,
-          "Playground" -> Fmt.playground(base, digest),
-        ))
-        seq       <- nPlusOneData(false, config, seq)
-        _         <- Console.printLine(Fmt.table(seq))
-      } yield ()
-    }
-
-    private def runRemoteShow(base: URL, digest: Digest, options: BlueprintOptions): ZIO[Any, Throwable, Unit] = {
-      for {
-        maybe <- registry.get(base, digest)
-        _     <- Console.printLine(Fmt.table(Seq(
-          "Digest"     -> s"${digest.hex}",
-          "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.meta("Unavailable")),
-        )))
-        _     <- maybe match {
-          case Some(blueprint) => blueprintDetails(blueprint, options)
-          case _               => ZIO.unit
-        }
-      } yield ()
     }
   }
 

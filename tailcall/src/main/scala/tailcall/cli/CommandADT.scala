@@ -1,6 +1,6 @@
 package tailcall.cli
 
-import tailcall.runtime.model.{ConfigFormat, Digest}
+import tailcall.runtime.model.ConfigFormat
 import zio.http.URL
 
 import java.nio.file.Path
@@ -36,7 +36,7 @@ object CommandADT {
 
   final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)
 
-  final case class Check(config: ::[Path], url: Option[URL], nPlusOne: Boolean, options: BlueprintOptions)
+  final case class Check(config: ::[Path], url: Option[URL] = None, nPlusOne: Boolean, options: BlueprintOptions)
       extends CommandADT
 
   final case class ServerStart(
@@ -58,16 +58,6 @@ object CommandADT {
     targetFormat: TargetFormat,
     write: Option[Path],
   ) extends CommandADT
-
-  final case class Remote(server: URL, command: Remote.Command) extends CommandADT
-
-  object Remote {
-    sealed trait Command
-    final case class Publish(config: ::[Path])                       extends Command
-    final case class Drop(digest: Digest)                            extends Command
-    final case class ListAll(offset: Int, limit: Int)                extends Command
-    final case class Show(digest: Digest, options: BlueprintOptions) extends Command
-  }
 
   object SourceFormat {
     case object Postman                  extends SourceFormat
