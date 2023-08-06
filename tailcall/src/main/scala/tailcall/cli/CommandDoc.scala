@@ -9,13 +9,11 @@ object CommandDoc {
   val command: Command[CommandADT] = Command("tc", Options.none).subcommands(
     Command(
       "check",
-      CustomOptions.remoteOption.optional ++
-        Options.boolean("n-plus-one-queries").alias("npo") ++
+      Options.boolean("n-plus-one-queries").alias("npo") ++
         CustomOptions.blueprintOptions,
       Args.file.repeat1,
-    ).withHelp("Validate a composition spec, display its status when remote is passed.").map {
-      case (remote, nPlusOne, blueprintOptions) -> config => CommandADT
-          .Check(config, remote, nPlusOne, blueprintOptions)
+    ).withHelp("Validate a composition spec").map { case (nPlusOne, blueprintOptions) -> config =>
+      CommandADT.Check(config = config, nPlusOne = nPlusOne, options = blueprintOptions)
     },
 
     // generate

@@ -36,7 +36,7 @@ object CommandADT {
 
   final case class BlueprintOptions(blueprint: Boolean, endpoints: Boolean, schema: Boolean)
 
-  final case class Check(config: ::[Path], url: Option[URL], nPlusOne: Boolean, options: BlueprintOptions)
+  final case class Check(config: ::[Path], url: Option[URL] = None, nPlusOne: Boolean, options: BlueprintOptions)
       extends CommandADT
 
   final case class ServerStart(
