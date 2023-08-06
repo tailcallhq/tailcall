@@ -2,7 +2,7 @@ package tailcall.cli.service
 
 import caliban.GraphQL
 import tailcall.cli.CommandADT
-import tailcall.cli.CommandADT.{BlueprintOptions, Remote, SourceFormat, TargetFormat}
+import tailcall.cli.CommandADT.{BlueprintOptions, SourceFormat, TargetFormat}
 import tailcall.registry.SchemaRegistryClient
 import tailcall.runtime.EndpointUnifier
 import tailcall.runtime.model._
@@ -55,19 +55,13 @@ object CommandExecutor {
           case CommandADT.Generate(files, sourceFormat, targetFormat, write) =>
             runGenerate(files, sourceFormat, targetFormat, write)
           case CommandADT.Check(files, remote, nPlusOne, options) => runCheck(files, remote, nPlusOne, options)
-          case CommandADT.Remote(base, command)                   => command match {
-              case Remote.Publish(path)          => runRemotePublish(base, path)
-              case Remote.Drop(digest)           => runRemoteDrop(base, digest)
-              case Remote.ListAll(index, offset) => runRemoteList(base, index, offset)
-              case Remote.Show(digest, options)  => runRemoteShow(base, digest, options)
+          case start: CommandADT.ServerStart => for {
+            _ <- start.file match {
+              case Some(path) => runCheck(NonEmptyList(path), None, false, BlueprintOptions(false, false, false))
+              case None => ZIO.unit
             }
-          case start: CommandADT.ServerStart                      => for {
-              _ <- start.file match {
-                case Some(path) => runCheck(NonEmptyList(path), None, false, BlueprintOptions(false, false, false))
-                case None       => ZIO.unit
-              }
-              _ <- GraphQLServer.start(start)
-            } yield ()
+            _ <- GraphQLServer.start(start)
+          } yield ()
         }
       }.foldZIO(
         error => Console.printLine(Fmt.error(error)).as(ExitCode.failure).exitCode,
@@ -77,9 +71,9 @@ object CommandExecutor {
     def timed[R, E >: IOException, A](program: ZIO[R, E, A]): ZIO[R, E, A] =
       for {
         start <- zio.Clock.nanoTime
-        a     <- program
-        end   <- zio.Clock.nanoTime
-        _     <- Console.printLine {
+        a <- program
+        end <- zio.Clock.nanoTime
+        _ <- Console.printLine {
           val duration = Duration.fromNanos(end - start)
           s"\n\uD83D\uDC4D Completed in ${duration.toMillis} ms."
         }
@@ -88,15 +82,15 @@ object CommandExecutor {
     def writeGeneratedFile[R, E >: Throwable](content: ZIO[R, E, String], write: Option[Path]): ZIO[R, E, Unit] =
       for {
         out <- content
-        _   <- write match {
+        _ <- write match {
           case Some(path) => for {
-              _ <- Console.printLine(Fmt.heading(s"Generated File: ${path.toString}"))
-              _ <- fileIO.write(path.toFile, out)
-            } yield ()
-          case None       => for {
-              _ <- Console.printLine(Fmt.heading("Generated Output:"))
-              _ <- Console.printLine(out)
-            } yield ()
+            _ <- Console.printLine(Fmt.heading(s"Generated File: ${path.toString}"))
+            _ <- fileIO.write(path.toFile, out)
+          } yield ()
+          case None => for {
+            _ <- Console.printLine(Fmt.heading("Generated Output:"))
+            _ <- Console.printLine(out)
+          } yield ()
         }
       } yield ()
 
@@ -126,38 +120,38 @@ object CommandExecutor {
       val nameGen = NameGenerator.incremental
       for {
         postmanCollection <- ZIO.foreachPar(files.toList)(path => fileIO.readJson[Postman](path.toFile))
-        endpoints         <- ZIO.foreachPar(postmanCollection)(endpointGen.generate(_)).map(_.flatten)
-        mergedEndpoints   <- EndpointUnifier.unify(endpoints).toZIO
+        endpoints <- ZIO.foreachPar(postmanCollection)(endpointGen.generate(_)).map(_.flatten)
+        mergedEndpoints <- EndpointUnifier.unify(endpoints).toZIO
           .mapError(errors => new RuntimeException(errors.mkString(", ")))
-        configs           <- ZIO.foreach(mergedEndpoints)(endpoint =>
+        configs <- ZIO.foreach(mergedEndpoints)(endpoint =>
           Transcoder.toConfig(endpoint, nameGen).toZIO.mapError(errors => new RuntimeException(errors.mkString(", ")))
         )
-        out               <- dSLFormat.encode(configs.reduce(_ mergeRight _).compress)
+        out <- dSLFormat.encode(configs.reduce(_ mergeRight _).compress)
           .catchAll(err => ZIO.fail(new RuntimeException(err)))
       } yield out
     }
 
     private def runCheck(
-      files: ::[Path],
-      remote: Option[URL],
-      nPlusOne: Boolean,
-      options: BlueprintOptions,
-    ): ZIO[Any, Throwable, Unit] = {
+                          files: ::[Path],
+                          remote: Option[URL],
+                          nPlusOne: Boolean,
+                          options: BlueprintOptions,
+                        ): ZIO[Any, Throwable, Unit] = {
       for {
-        config    <- configFile.readAll(files.map(_.toFile))
+        config <- configFile.readAll(files.map(_.toFile))
         blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
         digest = blueprint.digest
-        seq    = Seq(
-          "Digest"    -> s"${digest.hex}",
+        seq = Seq(
+          "Digest" -> s"${digest.hex}",
           "Endpoints" -> blueprint.endpoints.length.toString,
-          "Unsafe"    -> config.unsafeSteps.length.toString,
+          "Unsafe" -> config.unsafeSteps.length.toString,
         )
         seq <- remote match {
           case Some(remote) => registry.get(remote, digest).map {
-              case Some(_) => seq :+ ("Playground", Fmt.playground(remote, digest))
-              case None    => seq :+ ("Playground" -> "Unavailable")
-            }
-          case None         => ZIO.succeed(seq)
+            case Some(_) => seq :+ ("Playground", Fmt.playground(remote, digest))
+            case None => seq :+ ("Playground" -> "Unavailable")
+          }
+          case None => ZIO.succeed(seq)
         }
         seq <- nPlusOneData(nPlusOne, config, seq)
         _ <- Console.printLine(Fmt.success("No errors found."))
@@ -167,69 +161,22 @@ object CommandExecutor {
     }
 
     private def runGenerate(
-      files: ::[Path],
-      sourceFormat: SourceFormat,
-      targetFormat: TargetFormat,
-      write: Option[Path],
-    ): ZIO[Any, Throwable, Unit] = {
+                             files: ::[Path],
+                             sourceFormat: SourceFormat,
+                             targetFormat: TargetFormat,
+                             write: Option[Path],
+                           ): ZIO[Any, Throwable, Unit] = {
       val output: ZIO[Any, Throwable, String] = (sourceFormat, targetFormat) match {
-        case (SourceFormat.Postman, TargetFormat.Config(dSLFormat))          => postman2GraphQL(files, dSLFormat)
+        case (SourceFormat.Postman, TargetFormat.Config(dSLFormat)) => postman2GraphQL(files, dSLFormat)
         case (SourceFormat.SchemaDefinitionLanguage, TargetFormat.JsonLines) => for {
-            content   <- ZIO.foreachPar(files.toList)(path => fileIO.read(path.toFile))
-            jsonLines <- ZIO.foreachPar(content)(Transcoder.toJsonLines(_))
-          } yield jsonLines.mkString("\n")
+          content <- ZIO.foreachPar(files.toList)(path => fileIO.read(path.toFile))
+          jsonLines <- ZIO.foreachPar(content)(Transcoder.toJsonLines(_))
+        } yield jsonLines.mkString("\n")
 
         case _ => ZIO
-            .fail(new RuntimeException(s"Unsupported format combination ${sourceFormat.name} to ${targetFormat.name}"))
+          .fail(new RuntimeException(s"Unsupported format combination ${sourceFormat.name} to ${targetFormat.name}"))
       }
       writeGeneratedFile(output, write)
-    }
-
-    private def runRemoteDrop(base: URL, digest: Digest): ZIO[Any, Throwable, Unit] = {
-      for {
-        _ <- registry.drop(base, digest)
-        _ <- Console.printLine(Fmt.success(s"Blueprint dropped successfully."))
-        _ <- Console.printLine(Fmt.table(Seq("Digest" -> s"${digest.hex}")))
-      } yield ()
-    }
-
-    private def runRemoteList(base: URL, index: Int, offset: Int): ZIO[Any, Throwable, Unit] = {
-      for {
-        blueprints <- registry.list(base, index, offset)
-        _          <- Console.printLine(Fmt.blueprints(blueprints))
-        _ <- Console.printLine(Fmt.table(Seq("Server" -> base.encode, "Total Count" -> s"${blueprints.length}")))
-      } yield ()
-    }
-
-    private def runRemotePublish(base: URL, path: ::[Path]): ZIO[Any, Throwable, Unit] = {
-      for {
-        config    <- configFile.readAll(path.map(_.toFile))
-        blueprint <- config.toBlueprint.toZIO.mapError(ValidationError.BlueprintGenerationError)
-        digest    <- registry.add(base, blueprint)
-        _         <- Console.printLine(Fmt.success("Deployment was completed successfully."))
-        seq       <- ZIO.succeed(Seq(
-          "Digest"     -> s"${digest.hex}",
-          "Endpoints"  -> blueprint.endpoints.length.toString,
-          "Unsafe"     -> config.unsafeSteps.length.toString,
-          "Playground" -> Fmt.playground(base, digest),
-        ))
-        seq       <- nPlusOneData(false, config, seq)
-        _         <- Console.printLine(Fmt.table(seq))
-      } yield ()
-    }
-
-    private def runRemoteShow(base: URL, digest: Digest, options: BlueprintOptions): ZIO[Any, Throwable, Unit] = {
-      for {
-        maybe <- registry.get(base, digest)
-        _     <- Console.printLine(Fmt.table(Seq(
-          "Digest"     -> s"${digest.hex}",
-          "Playground" -> maybe.map(_ => Fmt.playground(base, digest)).getOrElse(Fmt.meta("Unavailable")),
-        )))
-        _     <- maybe match {
-          case Some(blueprint) => blueprintDetails(blueprint, options)
-          case _               => ZIO.unit
-        }
-      } yield ()
     }
   }
 
