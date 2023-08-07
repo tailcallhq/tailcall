@@ -82,7 +82,7 @@ object Blueprint {
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
-  def empty: Blueprint = Blueprint(Nil, SchemaDefinition(None, None, None, Nil))
+  def empty: Blueprint = Blueprint(Nil, SchemaDefinition())
 
   def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
