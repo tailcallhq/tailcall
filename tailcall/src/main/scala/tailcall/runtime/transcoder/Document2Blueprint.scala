@@ -55,21 +55,26 @@ trait Document2Blueprint {
       case _: Definition.TypeSystemExtension           => TValid.fail("Type system extensions are not supported yet")
     }
   }
-  final private def toSchemaDefinition(definition: Definition):  Option[Blueprint.SchemaDefinition] = definition match {
-    case definition: TypeSystemDefinition => definition match {
-      case TypeSystemDefinition.SchemaDefinition(_, query, mutation, subscription) => Option(Blueprint.SchemaDefinition(query, mutation, subscription))
-      case _ => None
+  final private def toSchemaDefinition(definition: Definition): Option[Blueprint.SchemaDefinition]      =
+    definition match {
+      case definition: TypeSystemDefinition => definition match {
+          case TypeSystemDefinition.SchemaDefinition(_, query, mutation, subscription) =>
+            Option(Blueprint.SchemaDefinition(query, mutation, subscription))
+          case _                                                                       => None
+        }
+      case _                                => None
     }
-    case _ => None
-  }
 
   final def toBlueprint(document: Document): TValid[String, Blueprint] = {
-    val schemaDefinition = (document.definitions.collectFirst({ case d: TypeSystemDefinition => d }).flatMap(toSchemaDefinition(_))) match {
-      case Some(value) => TValid.succeed(value)
-      case None => TValid.fail("Schema definition is missing")
-    }
-    schemaDefinition.flatMap(sd => TValid.foreach(document.definitions)(toBlueprintDefinition(_))
-      .map(defs => Blueprint(defs.collect { case Some(d) => d }, sd)))
+    val schemaDefinition =
+      document.definitions.collectFirst { case d: TypeSystemDefinition => d }.flatMap(toSchemaDefinition(_)) match {
+        case Some(value) => TValid.succeed(value)
+        case None        => TValid.fail("Schema definition is missing")
+      }
+    schemaDefinition.flatMap(sd =>
+      TValid.foreach(document.definitions)(toBlueprintDefinition(_))
+        .map(defs => Blueprint(defs.collect { case Some(d) => d }, sd))
+    )
 
   }
 }
