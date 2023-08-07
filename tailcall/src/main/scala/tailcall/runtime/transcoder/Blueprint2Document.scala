@@ -20,35 +20,39 @@ trait Blueprint2Document {
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
       CalibanDocument(
-        blueprint.definitions.map {
-          case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
-              .TypeSystemDefinition
-              .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
-          case Blueprint.ObjectTypeDefinition(name, fields, description, implements) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition(
-                description,
-                name,
-                implements.map(tpe => CalibanType.NamedType(tpe.name, true)),
-                Nil,
-                fields.map(toCalibanField),
-              )
-          case Blueprint.InputObjectTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
-          case Blueprint.ScalarTypeDefinition(name, directives, description)  => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
-          case Blueprint.EnumTypeDefinition(name, directives, description, values) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition.EnumTypeDefinition(
-                description,
-                name,
-                directives.map(toCalibanDirective(_)),
-                values.map(toCalibanEnumValue(_)),
-              )
-          case Blueprint.UnionTypeDefinition(name, directives, description, types) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition
-              .UnionTypeDefinition(description, name, directives.map(toCalibanDirective(_)), types)
-          case Blueprint.InterfaceTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
-        },
+        List(CalibanDefinition.TypeSystemDefinition.SchemaDefinition(
+          blueprint.schema.directives.map(toCalibanDirective(_)),
+          blueprint.schema.query,
+          blueprint.schema.mutation,
+          blueprint.schema.subscription,
+        )) ++
+          blueprint.definitions.map {
+            case Blueprint.ObjectTypeDefinition(name, fields, description, implements) => CalibanDefinition
+                .TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition(
+                  description,
+                  name,
+                  implements.map(tpe => CalibanType.NamedType(tpe.name, true)),
+                  Nil,
+                  fields.map(toCalibanField),
+                )
+            case Blueprint.InputObjectTypeDefinition(name, fields, description)        => CalibanDefinition
+                .TypeSystemDefinition.TypeDefinition
+                .InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
+            case Blueprint.ScalarTypeDefinition(name, directives, description) => CalibanDefinition.TypeSystemDefinition
+                .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
+            case Blueprint.EnumTypeDefinition(name, directives, description, values) => CalibanDefinition
+                .TypeSystemDefinition.TypeDefinition.EnumTypeDefinition(
+                  description,
+                  name,
+                  directives.map(toCalibanDirective(_)),
+                  values.map(toCalibanEnumValue(_)),
+                )
+            case Blueprint.UnionTypeDefinition(name, directives, description, types) => CalibanDefinition
+                .TypeSystemDefinition.TypeDefinition
+                .UnionTypeDefinition(description, name, directives.map(toCalibanDirective(_)), types)
+            case Blueprint.InterfaceTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
+                .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
+          },
         SourceMapper.empty,
       )
     }

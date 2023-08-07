@@ -32,12 +32,12 @@ trait Document2Blueprint {
     )
   }
 
-  final private def toBlueprintDefinition(definition: Definition): TValid[String, Option[Blueprint.Definition]] = {
+  final def toBlueprintDefinition(definition: Definition): TValid[String, Option[Blueprint.Definition]] = {
     definition match {
       case _: Definition.ExecutableDefinition          => TValid.fail("Executable definitions are not supported yet")
       case definition: Definition.TypeSystemDefinition => definition match {
-          case TypeSystemDefinition.SchemaDefinition(_, query, mutation, subscription) => TValid
-              .succeed(Option(Blueprint.SchemaDefinition(query, mutation, subscription)))
+          case TypeSystemDefinition.SchemaDefinition(_, _, _, _) => TValid
+              .fail("Schema definitions are not supported yet")
           case _: TypeSystemDefinition.DirectiveDefinition => TValid.fail("Directive definitions are not supported yet")
           case definition: TypeSystemDefinition.TypeDefinition => definition match {
               case TypeDefinition.ObjectTypeDefinition(_, name, _, _, fields) => TValid
@@ -57,7 +57,5 @@ trait Document2Blueprint {
     }
   }
 
-  final def toBlueprint(document: Document): TValid[String, Blueprint] =
-    TValid.foreach(document.definitions)(toBlueprintDefinition(_))
-      .map(defs => Blueprint(defs.collect { case Some(d) => d }))
+  final def toBlueprint(document: Document): TValid[String, Blueprint] = ???
 }

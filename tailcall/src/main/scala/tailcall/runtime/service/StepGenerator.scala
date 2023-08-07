@@ -49,12 +49,12 @@ object StepGenerator {
           )
         ))
       val queryStep                                                                                     = for {
-        query <- blueprint.schema.flatMap(_.query)
+        query <- blueprint.schema.query
         qStep <- objectStepRef.get(query)
       } yield Step.QueryStep(withHeaders(qStep))
 
       val mutationStep = for {
-        mutation <- blueprint.schema.flatMap(_.mutation)
+        mutation <- blueprint.schema.mutation
         mStep    <- objectStepRef.get(mutation)
       } yield Step.QueryStep(withHeaders(mStep))
 
