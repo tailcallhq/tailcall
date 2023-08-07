@@ -19,35 +19,35 @@ trait Blueprint2Document {
 
   final def toDocument(blueprint: Blueprint): TValid[Nothing, CalibanDocument] =
     TValid.succeed {
-      CalibanDocument(
+      CalibanDocument(List(CalibanDefinition
+        .TypeSystemDefinition
+        .SchemaDefinition(blueprint.schema.directives.map(toCalibanDirective(_)), blueprint.schema.query, blueprint.schema.mutation, blueprint.schema.subscription),
+      ) ++
         blueprint.definitions.map {
-          case Blueprint.SchemaDefinition(query, mutation, subscription, directives) => CalibanDefinition
-              .TypeSystemDefinition
-              .SchemaDefinition(directives.map(toCalibanDirective(_)), query, mutation, subscription)
           case Blueprint.ObjectTypeDefinition(name, fields, description, implements) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition(
-                description,
-                name,
-                implements.map(tpe => CalibanType.NamedType(tpe.name, true)),
-                Nil,
-                fields.map(toCalibanField),
-              )
+            .TypeSystemDefinition.TypeDefinition.ObjectTypeDefinition(
+              description,
+              name,
+              implements.map(tpe => CalibanType.NamedType(tpe.name, true)),
+              Nil,
+              fields.map(toCalibanField),
+            )
           case Blueprint.InputObjectTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
-          case Blueprint.ScalarTypeDefinition(name, directives, description)  => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
+            .TypeDefinition.InputObjectTypeDefinition(description, name, Nil, fields.map(toCalibanInputValue))
+          case Blueprint.ScalarTypeDefinition(name, directives, description) => CalibanDefinition.TypeSystemDefinition
+            .TypeDefinition.ScalarTypeDefinition(description, name, directives.map(toCalibanDirective(_)))
           case Blueprint.EnumTypeDefinition(name, directives, description, values) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition.EnumTypeDefinition(
-                description,
-                name,
-                directives.map(toCalibanDirective(_)),
-                values.map(toCalibanEnumValue(_)),
-              )
+            .TypeSystemDefinition.TypeDefinition.EnumTypeDefinition(
+              description,
+              name,
+              directives.map(toCalibanDirective(_)),
+              values.map(toCalibanEnumValue(_)),
+            )
           case Blueprint.UnionTypeDefinition(name, directives, description, types) => CalibanDefinition
-              .TypeSystemDefinition.TypeDefinition
-              .UnionTypeDefinition(description, name, directives.map(toCalibanDirective(_)), types)
+            .TypeSystemDefinition.TypeDefinition
+            .UnionTypeDefinition(description, name, directives.map(toCalibanDirective(_)), types)
           case Blueprint.InterfaceTypeDefinition(name, fields, description) => CalibanDefinition.TypeSystemDefinition
-              .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
+            .TypeDefinition.InterfaceTypeDefinition(description, name, Nil, fields.map(toCalibanField))
         },
         SourceMapper.empty,
       )
@@ -61,8 +61,8 @@ trait Blueprint2Document {
   }
 
   final private def toCalibanEnumValue(
-    definition: Blueprint.EnumValueDefinition
-  ): CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition =
+                                        definition: Blueprint.EnumValueDefinition
+                                      ): CalibanDefinition.TypeSystemDefinition.TypeDefinition.EnumValueDefinition =
     CalibanDefinition.TypeSystemDefinition.TypeDefinition
       .EnumValueDefinition(definition.description, definition.name, definition.directives.map(toCalibanDirective(_)))
 
@@ -88,7 +88,7 @@ trait Blueprint2Document {
 
   final private def toCalibanType(tpe: Blueprint.Type): CalibanType =
     tpe match {
-      case Blueprint.NamedType(name, nonNull)  => CalibanType.NamedType(name, nonNull)
+      case Blueprint.NamedType(name, nonNull) => CalibanType.NamedType(name, nonNull)
       case Blueprint.ListType(ofType, nonNull) => CalibanType.ListType(toCalibanType(ofType), nonNull)
     }
 }

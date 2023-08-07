@@ -28,7 +28,7 @@ import scala.annotation.tailrec
  * is clearly defined. Once the IR is ready we will directly
  * compile IR to Caliban's Step ADT.
  */
-final case class Blueprint(definitions: List[Blueprint.Definition]) {
+final case class Blueprint(definitions: List[Blueprint.Definition], schema: Blueprint.SchemaDefinition) {
   self =>
   lazy val digest: Digest = Digest.fromBlueprint(self.sorted)
 
@@ -45,11 +45,10 @@ final case class Blueprint(definitions: List[Blueprint.Definition]) {
       (r.name, r.fields.map(field => (field.name, field.resolver.map(_.compile))).toMap)
     }.toMap
 
-  def schema: Option[Blueprint.SchemaDefinition] = definitions.collectFirst { case s: Blueprint.SchemaDefinition => s }
+//  def schema: Option[Blueprint.SchemaDefinition] = Option(schema)
 
   def sorted: Blueprint =
     copy(definitions = definitions.sortBy {
-      case Blueprint.SchemaDefinition(_, _, _, _)          => "a"
       case Blueprint.ScalarTypeDefinition(name, _, _)      => "b" + name
       case Blueprint.UnionTypeDefinition(name, _, _, _)    => "c" + name
       case Blueprint.EnumTypeDefinition(name, _, _, _)     => "d" + name
@@ -85,7 +84,7 @@ object Blueprint {
 
   def decode(bytes: CharSequence): Either[String, Blueprint] = codec.decodeJson(bytes)
 
-  def empty: Blueprint = Blueprint(Nil)
+  def empty: Blueprint = Blueprint(Nil, SchemaDefinition(None, None, None, Nil))
 
   def encode(value: Blueprint): CharSequence = codec.encodeJson(value, None)
 
@@ -142,7 +141,7 @@ object Blueprint {
     mutation: Option[String] = None,
     subscription: Option[String] = None,
     directives: List[Directive] = Nil,
-  ) extends Definition
+  )
 
   final case class InputFieldDefinition(
     name: String,
