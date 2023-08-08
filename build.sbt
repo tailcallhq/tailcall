@@ -248,6 +248,6 @@ Docker / mappings := {
 }
 
 maintainer         := "tushar@tailcall.run"
-dockerCmd          := Seq("server", "--allowed-headers=cookie,authorization,apikey")
+dockerCmd          := Seq("start", "--allowed-headers=cookie,authorization,apikey")
 dockerBaseImage    := s"eclipse-temurin:${defaultJavaVersion.version}"
 dockerExposedPorts := Seq(8080)
