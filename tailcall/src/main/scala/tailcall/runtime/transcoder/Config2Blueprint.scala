@@ -28,7 +28,7 @@ object Config2Blueprint {
       val rootSchema = Blueprint
         .SchemaDefinition(query = config.graphQL.schema.query, mutation = config.graphQL.schema.mutation)
 
-      for { definitions <- toDefinitions } yield Blueprint(rootSchema :: definitions)
+      for { definitions <- toDefinitions } yield Blueprint(definitions, rootSchema)
     }
 
     private def appendResolver(
