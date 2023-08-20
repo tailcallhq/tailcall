@@ -23,7 +23,7 @@ object GraphQLServer {
       case None       => InterpreterRegistry.live
     }
 
-    Server.install(server(Duration.fromMillis(config.globalResponseTimeout)))
+    Server.install(server(Duration.fromMillis(config.globalResponseTimeout), config))
       .flatMap(port => ZIO.log(s"Server started: http://localhost:${port}/graphql") *> ZIO.never).provide(
         ServerConfig.live.update(_.port(config.port)).update(_.objectAggregator(Int.MaxValue)),
         registryService,
@@ -41,9 +41,9 @@ object GraphQLServer {
     Response.json(response.toJson).setStatus(status)
   }
 
-  private def server(timeout: Duration) =
+  private def server(timeout: Duration, config: ServerStart) =
     (AdminServer.rest ++ Http.collectRoute[Request] {
-      case Method.POST -> !! / "graphql"                                          => AdminServer.graphQL
+      case Method.POST -> !! / "graphql"                                          => if (config.file.isEmpty) AdminServer.graphQL else GenericServer.graphQL(timeout)
       case Method.POST -> !! / "graphql" / _                                      => GenericServer.graphQL(timeout)
       case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL(timeout)
       case Method.GET -> _                                                        => Http.fromResource("graphiql.html")
