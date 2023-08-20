@@ -15,23 +15,22 @@ object GenericServer {
     timeout: Duration
   ): HttpApp[HttpClient with GraphQLGenerator with ApolloPersistence with InterpreterRegistry, Throwable] =
     Http.collectZIO[Request] {
-      case req @ method -> !! /"graphql" => genericServer(timeout, req, method, "0")
-      case req @ method -> !! / "graphql" / hex =>
-      genericServer(timeout, req, method, hex)
+      case req @ method -> !! / "graphql"       => genericServer(timeout, req, method, "0")
+      case req @ method -> !! / "graphql" / hex => genericServer(timeout, req, method, hex)
     }
 
   private def genericServer(timeout: zio.Duration, req: Request, method: Method, hex: String) = {
     for {
-      option <- InterpreterRegistry.get(hex)
-      int <- ZIO.fromOption(option).orElseFail(HttpError.BadRequest(s"Blueprint ${hex} was not found."))
-      gReq <-
+      option      <- InterpreterRegistry.get(hex)
+      int         <- ZIO.fromOption(option).orElseFail(HttpError.BadRequest(s"Blueprint ${hex} was not found."))
+      gReq        <-
         if (req.url.queryParams != QueryParams.empty) GraphQLUtils.decodeRequest(req.url.queryParams)
         else GraphQLUtils.decodeRequest(req.body)
       persistence <- ZIO.service[ApolloPersistence]
-      res <- (for {
+      res         <- (for {
         res <- int.executeRequest(gReq).map(res => res.copy(errors = res.errors.map(toBetterError)))
           .timeoutFail(HttpError.RequestTimeout(s"Request timed out after ${timeout.toMillis()}ms"))(timeout)
-        _ <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
+        _   <- ZIO.foreachDiscard(res.errors)(error => ZIO.logWarningCause("GraphQLExecutionError", Cause.fail(error)))
         maxAge <- HttpContext.getState.map(_.cacheMaxAge)
         jsonResponse = Response.json(res.toJson)
       } yield

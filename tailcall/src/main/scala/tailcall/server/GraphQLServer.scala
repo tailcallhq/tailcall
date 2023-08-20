@@ -43,7 +43,8 @@ object GraphQLServer {
 
   private def server(timeout: Duration, config: ServerStart) =
     (AdminServer.rest ++ Http.collectRoute[Request] {
-      case Method.POST -> !! / "graphql"                                          => if (config.file.isEmpty) AdminServer.graphQL else GenericServer.graphQL(timeout)
+      case Method.POST -> !! / "graphql"                                          =>
+        if (config.file.isEmpty) AdminServer.graphQL else GenericServer.graphQL(timeout)
       case Method.POST -> !! / "graphql" / _                                      => GenericServer.graphQL(timeout)
       case req @ Method.GET -> !! / "graphql" / _ if req.url.queryParams.nonEmpty => GenericServer.graphQL(timeout)
       case Method.GET -> _                                                        => Http.fromResource("graphiql.html")
