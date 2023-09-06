@@ -69,7 +69,7 @@ lazy val tailcall = (project in file("tailcall")).settings(
   buildInfoOptions += BuildInfoOption.ToJson,
 ).enablePlugins(BuildInfoPlugin)
 
-val scala2Version      = "2.13.11"
+val scala2Version      = "2.13.12"
 val scala3Version      = "3.2.2"
 val scalaVersions      = List(scala2Version)
 val defaultJavaVersion = JavaSpec.temurin("20")
