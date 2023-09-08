@@ -1,4 +1,4 @@
-![[Tailcall]](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.png)
+[![Tailcall](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.png)](https://tailcall.run)
 
 
 Tailcall is an open-source edge and service proxy designed for building high-performance GraphQL applications.
