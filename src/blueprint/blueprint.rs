@@ -5,7 +5,6 @@ use derive_setters::Setters;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
-use thiserror::Error;
 
 use crate::config;
 
@@ -232,7 +231,3 @@ impl Blueprint {
         endpoints
     }
 }
-
-#[derive(Error, Debug)]
-#[error("BlueprintGenerationError: {0:?}")]
-pub struct BlueprintGenerationError(pub Vec<crate::cause::Cause<String>>);

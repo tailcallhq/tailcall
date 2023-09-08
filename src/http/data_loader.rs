@@ -87,7 +87,7 @@ impl HttpDataLoader {
         keys.iter()
             .filter(|endpoint_key| endpoint_key.batching_enabled)
             .fold(HashMap::new(), |mut acc, key| {
-                let group = acc.entry(key.url.clone()).or_insert_with(Vec::new);
+                let group = acc.entry(key.url.clone()).or_default();
                 group.push(key.clone());
                 acc
             })
