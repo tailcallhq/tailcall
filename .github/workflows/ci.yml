@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -57,3 +57,31 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  release:
+    name: Release
+    needs: [check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout current branch (fast)
+        uses: actions/checkout@v3
+
+      - id: create_release
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: release-drafter.yml
+
+      - name: Cargo Build
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
+        run: cargo build --release
+
+      - uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{steps.create_release.outputs.id}}
+          file: target/release/tailcall
+          overwrite: true
