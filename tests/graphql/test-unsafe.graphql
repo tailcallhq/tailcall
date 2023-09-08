@@ -1,0 +1,27 @@
+#> server-sdl
+schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  foo: [User] @unsafe(script: "return [{id: 1, name: 'foo'}]")
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+#> client-sdl
+type Query {
+  foo: [User]
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}

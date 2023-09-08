@@ -1,0 +1,27 @@
+#> server-sdl
+schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+}
+
+#> client-sdl
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+}
+
+schema {
+  query: Query
+}

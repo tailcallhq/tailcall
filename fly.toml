@@ -1,47 +1,33 @@
-# fly.toml file generated for monotail on 2023-03-14T14:09:46+05:30
-app = "monotail"
+app = "tailcall"
+primary_region = "sin"
 kill_signal = "SIGINT"
-kill_timeout = 5
-primary_region = "bom"
-processes = []
-
-[env]
+kill_timeout = "5s"
 
 [experimental]
 auto_rollback = true
 
+[build]
+
 [[services]]
-internal_port = 8080
-processes = ["app"]
 protocol = "tcp"
-script_checks = []
+internal_port = 8000
+processes = ["app"]
+
+[[services.ports]]
+port = 80
+handlers = ["http"]
+force_https = true
+
+[[services.ports]]
+port = 443
+handlers = ["tls", "http"]
+
 [services.concurrency]
+type = "connections"
 hard_limit = 25
 soft_limit = 20
-type = "connections"
-
-[[services.ports]]
-force_https = true
-handlers = ["http"]
-port = 80
-
-[[services.ports]]
-handlers = ["tls", "http"]
-port = 443
 
 [[services.tcp_checks]]
-grace_period = "1s"
 interval = "15s"
-restart_limit = 0
 timeout = "2s"
-
-[[services.http_checks]]
-interval = 10000
-grace_period = "5s"
-method = "get"
-path = "/health"
-protocol = "http"
-restart_limit = 0
-timeout = 2000
-tls_skip_verify = false
-
+grace_period = "1s"

@@ -1,0 +1,12 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  user: User @http(path: "/user/1")
+}
+
+#> client-sdl
+type Failure
+  @error(message: "No base URL defined", trace: ["Query", "user", "@http"])
