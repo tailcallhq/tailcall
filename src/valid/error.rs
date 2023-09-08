@@ -62,19 +62,7 @@ impl<E> ValidationError<E> {
     }
 }
 
-impl<E: Display + Debug> std::error::Error for ValidationError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn description(&self) -> &str {
-        "description() is deprecated; use Display"
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-}
+impl<E: Display + Debug> std::error::Error for ValidationError<E> {}
 
 impl From<Cause<String>> for ValidationError<String> {
     fn from(value: Cause<String>) -> Self {
