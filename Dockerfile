@@ -3,7 +3,7 @@ FROM rust:slim-buster AS builder
 
 WORKDIR /prod
 # Copy manifests and the graphql file
-COPY Cargo.lock Cargo.toml jsonplaceholder.graphql ./
+COPY Cargo.lock Cargo.toml assets/jsonplaceholder.graphql ./
 
 # This is the trick to speed up the building process.
 RUN mkdir .cargo \
