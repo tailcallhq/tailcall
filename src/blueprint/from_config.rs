@@ -378,7 +378,7 @@ fn update_inline_field(
     base_field: FieldDefinition,
     config: &Config,
 ) -> Valid<FieldDefinition> {
-    let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_else(Vec::new);
+    let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
     let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> { todo!() };
     let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
@@ -494,10 +494,9 @@ pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool
 }
 
 impl TryFrom<&Config> for Blueprint {
-    type Error = BlueprintGenerationError;
+    type Error = blueprint::BlueprintGenerationError;
 
     fn try_from(config: &Config) -> Result<Self, Self::Error> {
-        config_blueprint(config)
-            .map_err(|e| BlueprintGenerationError(e.iter().map(|e| e.to_owned().map(|e| e.to_string())).collect()))
+        config_blueprint(config).map_err(|e| BlueprintGenerationError(e.map(|e| e.to_string())))
     }
 }

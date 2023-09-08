@@ -13,9 +13,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use tailcall::blueprint::{Blueprint, BlueprintGenerationError};
-use tailcall::cause::Cause;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
+use tailcall::valid::Cause;
 use tailcall::{config, print_schema};
 
 use tailcall::http::HttpDataLoader;
@@ -220,7 +220,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let actual = Blueprint::try_from(&config);
         match actual {
             Err(BlueprintGenerationError(cause)) => {
-                let actual: Vec<SDLError> = cause.iter().map(|e| e.to_owned().into()).collect();
+                let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
                 assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
             }
             _ => panic!("Expected error not found: {}", spec.path.display()),

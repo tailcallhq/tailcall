@@ -19,9 +19,10 @@ fn write_err(f: &mut std::fmt::Formatter<'_>, err: String) -> std::fmt::Result {
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CLIError::BlueprintGenerationError(BlueprintGenerationError(errors)) => {
+            CLIError::BlueprintGenerationError(BlueprintGenerationError(error)) => {
                 f.write_str("Invalid Configuration\n")?;
-                for error in errors {
+
+                for error in error.as_vec() {
                     let trace = format!(" [{}]", error.trace.iter().cloned().collect::<Vec<String>>().join(", "))
                         .dimmed()
                         .to_string();

@@ -214,7 +214,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             kind,
         })));
     }
-    for union in config.graphql.unions.clone().unwrap_or(Vec::new()) {
+    for union in config.graphql.unions.clone().unwrap_or_default() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: None,

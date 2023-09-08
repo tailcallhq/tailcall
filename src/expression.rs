@@ -48,6 +48,12 @@ pub enum EvaluationError {
     APIValidationError(Vec<String>),
 }
 
+impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
+    fn from(_value: crate::valid::ValidationError<&'a str>) -> Self {
+        EvaluationError::APIValidationError(_value.as_vec().iter().map(|e| e.message.to_owned()).collect())
+    }
+}
+
 impl Expression {
     pub fn eval<'a>(
         &'a self,
@@ -109,11 +115,7 @@ impl Expression {
                                     .map_err(|e| EvaluationError::IOException(e.to_string()))?
                                     .unwrap_or_default();
                                 if ctx.server.enable_http_validation() {
-                                    endpoint.output.validate(&value.body).map_err(|e| {
-                                        EvaluationError::APIValidationError(
-                                            e.iter().map(|cause| cause.to_string()).collect(),
-                                        )
-                                    })?;
+                                    endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
                                 }
                                 Ok(value.body)
                             } else {
@@ -129,11 +131,7 @@ impl Expression {
                                     .await
                                     .map_err(|e| EvaluationError::IOException(e.to_string()))?;
                                 if ctx.server.enable_http_validation() {
-                                    endpoint.output.validate(&value.body).map_err(|e| {
-                                        EvaluationError::APIValidationError(
-                                            e.iter().map(|cause| cause.to_string()).collect(),
-                                        )
-                                    })?;
+                                    endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
                                 }
                                 Ok(value.body)
                             }

@@ -205,7 +205,6 @@ fn to_common_field(
     let list = Some(matches!(&base, BaseType::List(_)));
     let required = if nullable { None } else { Some(false) };
     let list_type_required = Some(matches!(&base, BaseType::List(ty) if !ty.nullable));
-    let args = args;
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let modify = to_modify(directives);
     let inline = to_inline(directives);
