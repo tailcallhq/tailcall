@@ -229,3 +229,23 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_failures_in_server_sdl() -> std::io::Result<()> {
+    let specs = GraphQLSpec::cargo_read("tests/graphql/server_sdl_errors");
+
+    for spec in specs? {
+        let expected = spec.sdl_errors;
+        let content = spec.server_sdl;
+        let config = Config::from_sdl(content.as_str());
+        match config {
+            Err(cause) => {
+                let actual = vec![SDLError { message: cause.to_string(), trace: vec![] }];
+                assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+            }
+            _ => panic!("Expected error not found: {}", spec.path.display()),
+        }
+    }
+
+    Ok(())
+}

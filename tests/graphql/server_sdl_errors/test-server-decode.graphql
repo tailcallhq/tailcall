@@ -1,0 +1,15 @@
+#> server-sdl
+schema @server(
+    baseURL: "http://jsonplaceholder.typicode.com"
+    enableGraphiql: true
+) {
+    query: Query
+}
+
+type Query {
+    user: User @http(path: "/user/1")
+}
+
+#> client-sdl
+type Failure
+@error(message: "enableGraphiql: invalid type: boolean `true`, expected a string", trace: [])

@@ -19,7 +19,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_path, n_plus_one_queries, schema } => {
             let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
-            let config = Config::from_sdl(&server_sdl).unwrap();
+            let config = Config::from_sdl(&server_sdl)?;
             let blueprint = blueprint_from_sdl(&server_sdl);
             match blueprint {
                 Ok(blueprint) => {

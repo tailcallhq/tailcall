@@ -31,3 +31,9 @@ impl<E> Cause<E> {
         Cause { message: f(self.message), trace: self.trace }
     }
 }
+
+impl From<anyhow::Error> for Cause<String> {
+    fn from(e: anyhow::Error) -> Self {
+        Cause { message: e.to_string(), trace: VecDeque::new() }
+    }
+}
