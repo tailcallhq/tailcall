@@ -1,15 +1,9 @@
-# Tailcall
+![[Tailcall]](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.png)
+
+
+Tailcall is an open-source edge and service proxy designed for building high-performance GraphQL applications.
 
 [![Continuous Integration](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml/badge.svg)](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml)
-
-If referring to the old implementation in Scala, check out the `main-scala` branch.
-
-### Installation
-
-1. Clone the repository: `git clone https://github.com/tailcallhq/tailcall.git`
-2. Transition to the project directory: `cd tailcall`
-3. To compile and run the project: `cargo run`
-4. Launch a browser and visit `http://localhost:8000`
 
 ### Contributing
 
