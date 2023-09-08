@@ -12,6 +12,7 @@ Your contributions are invaluable! Kindly fork the repository and propose a pull
 ### Support Us
 
 ⭐️ If you like what you see, give us a star.
+
 👀 Watch us for updates.
 
 ### License
