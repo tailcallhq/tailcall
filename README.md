@@ -1,4 +1,4 @@
-# tailcall
+# Tailcall
 
 [![Continuous Integration](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml/badge.svg)](https://github.com/tailcallhq/tailcall/actions/workflows/ci.yml)
 
