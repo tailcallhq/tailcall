@@ -1,0 +1,20 @@
+name: Homebrew
+on:
+  release:
+    types:
+      - published
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: tailcallhq/homebrew-tailcall
+          ref: main
+          token: ${{ secrets.HOMEBREW_ACCESS }}
+
+      - name: Update homebrew formula
+        run: ./update-formula.sh ${{ github.event.release.tag_name }}
