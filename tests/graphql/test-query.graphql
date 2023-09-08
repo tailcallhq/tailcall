@@ -1,0 +1,17 @@
+#> server-sdl
+schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  foo: String
+}
+
+#> client-sdl
+type Query {
+  foo: String
+}
+
+schema {
+  query: Query
+}

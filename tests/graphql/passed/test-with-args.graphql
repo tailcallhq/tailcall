@@ -1,0 +1,24 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+}
+
+type Query {
+  user(id: Int): [User]
+    @http(
+      path: "/users"
+      query: { id: "{{args.id}}" }
+      baseURL: "http://jsonplaceholder.typicode.com"
+    )
+}
+
+#> client-query
+query @expect(json: {data:{user:[{name:"Leanne Graham"}]}}) {
+  user(id: 1){
+    name
+  }
+}

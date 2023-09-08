@@ -1,0 +1,55 @@
+use std::fs;
+
+use anyhow::Result;
+use clap::Parser;
+
+use crate::cli::fmt::Fmt;
+use crate::print_schema;
+use crate::server::start_server;
+use crate::{blueprint::Blueprint, config::Config};
+
+use super::command::{Cli, Command};
+
+pub async fn run() -> Result<()> {
+    let cli = Cli::parse();
+    match cli.command {
+        Command::Start { file_path } => {
+            start_server(&file_path).await?;
+            Ok(())
+        }
+        Command::Check { file_path, n_plus_one_queries, schema } => {
+            let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
+            let config = Config::from_sdl(&server_sdl).unwrap();
+            let blueprint = blueprint_from_sdl(&server_sdl);
+            match blueprint {
+                Ok(blueprint) => {
+                    display_details(&config, blueprint, &n_plus_one_queries, &schema);
+                    Ok(())
+                }
+                Err(e) => {
+                    let err_str = format!("{:?}", e);
+                    let formatted_err = Fmt::error(&err_str);
+                    Fmt::display(formatted_err);
+                    Ok(())
+                }
+            }
+        }
+    }
+}
+
+pub fn blueprint_from_sdl(sdl: &str) -> Result<Blueprint> {
+    let config = Config::from_sdl(sdl)?;
+    Ok(Blueprint::try_from(&config)?)
+}
+
+pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) {
+    Fmt::display(Fmt::success(&"No errors found".to_string()));
+    let seq = vec![Fmt::n_plus_one_data(*n_plus_one_queries, config)];
+    Fmt::display(Fmt::table(seq));
+
+    if *schema {
+        Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
+        let sdl = blueprint.to_schema(&config.server).unwrap();
+        Fmt::display(print_schema::print_schema(sdl));
+    }
+}
