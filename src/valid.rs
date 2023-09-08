@@ -37,6 +37,16 @@ pub trait ValidExtensions<A, E>: Sized + From<Result<A, Vec<Cause<E>>>> + Into<R
     }
 }
 
+pub trait ValidConstructor<A, E> {
+    fn validate(&self) -> Valid<A, E>;
+}
+
+impl<A, E> ValidConstructor<A, E> for Result<A, E> {
+    fn validate(&self) -> Valid<A, E> {
+        self.map_err(|e| vec![Cause::new(e)])
+    }
+}
+
 impl<A, E> ValidExtensions<A, E> for Result<A, Vec<Cause<E>>> {}
 
 pub trait OptionExtension<A> {
@@ -48,8 +58,8 @@ pub trait VectorExtension<A, E> {
 }
 
 impl<A, E, I> VectorExtension<A, E> for I
-where
-    I: IntoIterator<Item = A>,
+    where
+        I: IntoIterator<Item=A>,
 {
     fn validate_all<B>(self, f: impl Fn(A) -> Valid<B, E>) -> Valid<Vec<B>, E> {
         let mut values: Vec<B> = Vec::new();
@@ -128,7 +138,7 @@ mod tests {
             result,
             Err(vec![Cause {
                 message: 1,
-                trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into()
+                trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
             }])
         );
     }
