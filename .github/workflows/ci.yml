@@ -68,7 +68,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout current branch (fast)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - id: create_release
         uses: release-drafter/release-drafter@v5
