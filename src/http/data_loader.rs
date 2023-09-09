@@ -16,6 +16,7 @@ use crate::http::Response;
 use crate::evaluation_context::get_path_value;
 use crate::http::HttpClient;
 use std::hash::{Hash, Hasher};
+use std::time::Duration;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EndpointKey {
@@ -48,6 +49,12 @@ impl HttpDataLoader {
 
     pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader, HashMapCache> {
         DataLoader::with_cache(self, tokio::spawn, HashMapCache::new())
+    }
+
+    pub fn to_async_data_loader_without_delay(self) -> DataLoader<HttpDataLoader, HashMapCache> {
+        DataLoader::with_cache(self, tokio::spawn, HashMapCache::new())
+            .delay(Duration::from_secs(0))
+            .max_batch_size(0)
     }
 
     pub fn get_headers(self) -> BTreeMap<String, String> {

@@ -47,7 +47,7 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
     let loader = Arc::new(
         HttpDataLoader::new(client.clone())
             .headers(forwarded_headers)
-            .to_async_data_loader(),
+            .to_async_data_loader_without_delay(),
     );
 
     let mut executed_response = request

@@ -15,10 +15,9 @@ use serde_json::Value;
 use tailcall::blueprint::{Blueprint, BlueprintGenerationError};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
+use tailcall::http::{HttpClient, HttpDataLoader};
+use tailcall::print_schema;
 use tailcall::valid::Cause;
-use tailcall::{config, print_schema};
-
-use tailcall::http::HttpDataLoader;
 
 mod graphql_mock;
 
@@ -189,15 +188,19 @@ async fn test_execution() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
     for spec in specs? {
-        let blueprint = Blueprint::try_from(&Config::from_sdl(&spec.server_sdl).unwrap()).unwrap();
-        let schema = blueprint.to_schema(&config::Server::default()).unwrap();
+        let config = Config::from_sdl(&spec.server_sdl).unwrap();
+        let blueprint = Blueprint::try_from(&config).unwrap();
+        let schema = blueprint.to_schema(&config.server).unwrap();
 
         for q in spec.test_queries {
             let mut headers = BTreeMap::new();
             headers.insert("authorization".to_string(), "1".to_string());
-            let req = Request::from(q.query.as_str()).data(Arc::new(
-                HttpDataLoader::default().headers(headers).to_async_data_loader(),
-            ));
+            let req = Request::from(q.query.as_str())
+                .data(Arc::new(
+                    HttpDataLoader::default().headers(headers).to_async_data_loader(),
+                ))
+                .data(HttpClient::default())
+                .data(config.server.clone());
             let res = schema.execute(req).await;
             let json = serde_json::to_string(&res).unwrap();
             let expected = serde_json::to_string(&q.expected).unwrap();
