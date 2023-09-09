@@ -9,7 +9,7 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use crate::config::Server;
-use crate::http::HttpDataLoader;
+use crate::http::{HttpClient, HttpDataLoader};
 
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
@@ -20,7 +20,8 @@ pub struct EvaluationContext<'a> {
     pub env: HashMap<String, Value>,
     pub headers: BTreeMap<String, String>,
     pub timeout: Duration,
-    pub server: Server,
+    pub server: &'a Server,
+    pub client: &'a HttpClient,
 }
 
 impl<'a> EvaluationContext<'a> {
@@ -33,7 +34,11 @@ impl<'a> EvaluationContext<'a> {
         self.variables.get(id)
     }
 
-    pub fn new(data_loader: &'a DataLoader<HttpDataLoader, HashMapCache>) -> EvaluationContext<'a> {
+    pub fn new(
+        data_loader: &'a DataLoader<HttpDataLoader, HashMapCache>,
+        client: &'a HttpClient,
+        server: &'a Server,
+    ) -> EvaluationContext<'a> {
         Self {
             variables: HashMap::new(),
             data_loader,
@@ -41,7 +46,8 @@ impl<'a> EvaluationContext<'a> {
             timeout: Duration::from_millis(5),
             env: HashMap::new(),
             headers: data_loader.loader().clone().get_headers().clone(),
-            server: Server::default(),
+            server,
+            client,
         }
     }
 

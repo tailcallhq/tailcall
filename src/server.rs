@@ -14,7 +14,7 @@ use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cache_control::{min, set_cache_control};
 use crate::cli::CLIError;
-use crate::config::Config;
+use crate::config::{Config, Server};
 use crate::http::{HttpClient, HttpDataLoader};
 
 fn graphiql() -> Result<Response<Body>> {
@@ -29,6 +29,7 @@ struct AppState {
     client: Arc<HttpClient>,
     allowed_headers: Arc<AllowedHeaders>,
     enable_graphiql: Option<String>,
+    server: Server,
 }
 
 async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Response<Body>> {
@@ -42,14 +43,19 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
 
-    let client = state.client.as_ref().to_owned(); // Avoid multiple to_owned() calls
+    let client = state.client.as_ref().to_owned();
     let loader = Arc::new(
         HttpDataLoader::new(client.clone())
             .headers(forwarded_headers)
             .to_async_data_loader(),
     );
 
-    let mut executed_response = request.data(loader.clone()).execute(state.schema.as_ref()).await;
+    let mut executed_response = request
+        .data(loader.clone())
+        .data(client.clone())
+        .data(state.server.clone())
+        .execute(state.schema.as_ref())
+        .await;
 
     if client.enable_cache_control {
         let ttls: &Vec<Option<u64>> = &loader.get_cached_values().values().map(|x| x.ttl).collect();
@@ -67,6 +73,7 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
 fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
+
 async fn handle_request(req: Request<Body>, state: Arc<AppState>) -> Result<Response<Body>> {
     match *req.method() {
         hyper::Method::GET if state.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => graphiql(),
@@ -78,6 +85,7 @@ async fn handle_request(req: Request<Body>, state: Arc<AppState>) -> Result<Resp
 pub async fn start_server(file_path: &String) -> Result<()> {
     let server_sdl = fs::read_to_string(file_path)?;
     let config = Config::from_sdl(&server_sdl)?;
+    println!("{}", serde_json::to_string_pretty(&config.server).unwrap());
     let port = config.port();
     let enable_http_cache = config.server.enable_http_cache();
     let enable_cache_control = config.server.enable_cache_control();
@@ -89,7 +97,8 @@ pub async fn start_server(file_path: &String) -> Result<()> {
         schema: Arc::new(blueprint.to_schema(&server)?),
         client: Arc::new(HttpClient::new(enable_http_cache, proxy, enable_cache_control)),
         allowed_headers: Arc::new(AllowedHeaders::new(&server.allowed_headers.clone())),
-        enable_graphiql: config.server.enable_graphiql,
+        enable_graphiql: config.server.enable_graphiql.clone(),
+        server: config.server.clone(),
     });
 
     let make_svc = make_service_fn(move |_conn| {
@@ -99,7 +108,6 @@ pub async fn start_server(file_path: &String) -> Result<()> {
 
     let addr = ([0, 0, 0, 0], port).into();
     let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
-
     Ok(server.await.map_err(CLIError::from)?)
 }
 

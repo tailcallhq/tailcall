@@ -127,6 +127,7 @@ pub struct Server {
     pub enable_cache_control_header: Option<bool>,
     pub enable_graphiql: Option<String>,
     pub enable_http_cache: Option<bool>,
+    pub enable_join_cache: Option<bool>,
     pub enable_introspection: Option<bool>,
     pub enable_query_validation: Option<bool>,
     pub enable_response_validation: Option<bool>,
@@ -151,6 +152,10 @@ impl Server {
     }
     pub fn enable_query_validation(&self) -> bool {
         !self.enable_query_validation.unwrap_or(true)
+    }
+
+    pub fn enable_join_cache(&self) -> bool {
+        self.enable_join_cache.unwrap_or(false)
     }
 }
 

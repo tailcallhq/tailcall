@@ -63,7 +63,6 @@ where
 
 #[cfg(test)]
 mod tests {
-
     use httpmock::Method::GET;
     use httpmock::MockServer;
     use serde::de::DeserializeOwned;
@@ -71,8 +70,9 @@ mod tests {
 
     use crate::endpoint::Endpoint;
 
+    use crate::config::Server;
     use crate::evaluation_context::EvaluationContext;
-    use crate::http::HttpDataLoader;
+    use crate::http::{HttpClient, HttpDataLoader};
     use crate::inet_address::InetAddress;
     use crate::lambda::Lambda;
     use crate::path::{Path, Segment};
@@ -83,8 +83,10 @@ mod tests {
         B: DeserializeOwned,
     {
         async fn eval(self) -> Result<B> {
-            let dl = HttpDataLoader::default().to_async_data_loader();
-            let ctx = EvaluationContext::new(&dl);
+            let data_loader = &HttpDataLoader::default().to_async_data_loader();
+            let client = &HttpClient::default();
+            let server = &Server::default();
+            let ctx = EvaluationContext::new(data_loader, client, server);
             let result = self.expression.eval(&ctx).await?;
             let json = serde_json::to_value(result)?;
             Ok(serde_json::from_value(json)?)

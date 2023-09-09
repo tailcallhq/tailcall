@@ -40,6 +40,8 @@ fn to_type(def: &Definition, schema0: SchemaDefinition) -> dynamic::Type {
                 let schema = schema0.clone();
                 let mut dyn_schema_field =
                     dynamic::Field::new(field.name.clone(), to_type_ref(&field.of_type), move |ctx| {
+                        let client = ctx.ctx.data::<crate::http::HttpClient>().unwrap();
+                        let server = ctx.ctx.data::<crate::config::Server>().unwrap();
                         let loader = ctx.ctx.data::<Arc<DataLoader<HttpDataLoader, HashMapCache>>>().unwrap();
                         let field_name = cloned_field.name.clone();
                         let resolver = cloned_field.clone().resolver;
@@ -53,7 +55,7 @@ fn to_type(def: &Definition, schema0: SchemaDefinition) -> dynamic::Type {
                                     _ => None,
                                 })),
                                 Some(expr) => {
-                                    let mut ctx = EvaluationContext::new(loader).context(&ctx);
+                                    let mut ctx = EvaluationContext::new(loader, client, server).context(&ctx);
                                     if let Some(vars) = schema.clone().directives.first().cloned().map(|x| x.arguments)
                                     {
                                         ctx = ctx.env(vars);

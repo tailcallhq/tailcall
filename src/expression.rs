@@ -18,7 +18,8 @@ use crate::json::JsonLike;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Expression {
     Context(Context),
-    Literal(Value), // TODO: this should async_graphql::Value
+    Literal(Value),
+    // TODO: this should async_graphql::Value
     EqualTo(Box<Expression>, Box<Expression>),
     Unsafe(Box<Expression>, Operation),
     Input(Box<Expression>, Vec<String>),
@@ -90,7 +91,7 @@ impl Expression {
                                 &headers.to_owned(),
                             )?;
 
-                            if endpoint.method == Method::GET {
+                            if endpoint.method == Method::GET && ctx.server.enable_join_cache() {
                                 let match_key_value = endpoint
                                     .batch_key()
                                     .map(|key| {
@@ -125,8 +126,8 @@ impl Expression {
                                     ctx.args().as_ref(),
                                     &headers.to_owned(),
                                 );
-                                let client = crate::http::HttpClient::default();
-                                let value = client
+                                let value = ctx
+                                    .client
                                     .execute(req)
                                     .await
                                     .map_err(|e| EvaluationError::IOException(e.to_string()))?;
