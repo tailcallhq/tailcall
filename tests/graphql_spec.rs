@@ -12,7 +12,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use tailcall::blueprint::{Blueprint, BlueprintGenerationError};
+use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::valid::Cause;
@@ -37,9 +37,9 @@ struct SDLError {
     trace: Vec<String>,
 }
 
-impl From<Cause<String>> for SDLError {
-    fn from(value: Cause<String>) -> Self {
-        SDLError { message: value.message, trace: value.trace.iter().map(|e| e.to_string()).collect() }
+impl<'a> From<Cause<&'a str>> for SDLError {
+    fn from(value: Cause<&'a str>) -> Self {
+        SDLError { message: value.message.to_string(), trace: value.trace.iter().map(|e| e.to_string()).collect() }
     }
 }
 
@@ -219,7 +219,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let config = Config::from_sdl(content.as_str()).unwrap();
         let actual = Blueprint::try_from(&config);
         match actual {
-            Err(BlueprintGenerationError(cause)) => {
+            Err(cause) => {
                 let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
                 assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
             }

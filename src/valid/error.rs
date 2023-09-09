@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
 
+use crate::cli::CLIError;
+
 use super::Cause;
 
 #[derive(Debug, PartialEq, Default)]
@@ -18,6 +20,18 @@ impl<E: Display> Display for ValidationError<E> {
         }
 
         Ok(())
+    }
+}
+
+impl<'a> From<ValidationError<&'a str>> for CLIError {
+    fn from(error: ValidationError<&'a str>) -> Self {
+        CLIError::new("Configuration Error").caused_by(
+            error
+                .as_vec()
+                .iter()
+                .map(|cause| CLIError::new(cause.message).trace(Vec::from(cause.trace.clone())))
+                .collect(),
+        )
     }
 }
 

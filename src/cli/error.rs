@@ -3,10 +3,7 @@ use std::fmt::{Debug, Display};
 use derive_setters::Setters;
 use thiserror::Error;
 
-use crate::blueprint::BlueprintGenerationError;
-use crate::valid::ValidationError;
-
-#[derive(Error, Setters)]
+#[derive(Debug, Error, Setters)]
 pub struct CLIError {
     is_root: bool,
     message: String,
@@ -15,7 +12,7 @@ pub struct CLIError {
     trace: Vec<String>,
 
     #[setters(skip)]
-    caused_by: Box<Vec<CLIError>>,
+    caused_by: Vec<CLIError>,
 }
 
 impl CLIError {
@@ -30,7 +27,7 @@ impl CLIError {
     }
 
     pub fn caused_by(mut self, error: Vec<CLIError>) -> Self {
-        self.caused_by = Box::new(error);
+        self.caused_by = error;
 
         for error in self.caused_by.iter_mut() {
             error.is_root = false;
@@ -68,7 +65,7 @@ impl Display for CLIError {
             f.write_str(error_prefix)?;
         }
 
-        f.write_str(&format!("{}", &self.message))?;
+        f.write_str(&self.message.to_string())?;
 
         if let Some(description) = &self.description {
             f.write_str("\n")?;
@@ -79,7 +76,7 @@ impl Display for CLIError {
             f.write_str(" [at ")?;
             let len = self.trace.len();
             for (i, trace) in self.trace.iter().enumerate() {
-                f.write_str(&format!("{}", trace))?;
+                f.write_str(&trace.to_string())?;
                 if i < len - 1 {
                     f.write_str(".")?;
                 }
@@ -103,27 +100,9 @@ impl Display for CLIError {
     }
 }
 
-impl Debug for CLIError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self, f)
-    }
-}
-
-impl From<BlueprintGenerationError> for CLIError {
-    fn from(_error: BlueprintGenerationError) -> Self {
-        todo!()
-    }
-}
-
 impl From<hyper::Error> for CLIError {
-    fn from(_error: hyper::Error) -> Self {
-        todo!()
-    }
-}
-
-impl From<ValidationError<String>> for CLIError {
-    fn from(_error: ValidationError<String>) -> Self {
-        todo!()
+    fn from(error: hyper::Error) -> Self {
+        CLIError::new("Server Error").description(error.to_string())
     }
 }
 
