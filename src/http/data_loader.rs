@@ -16,6 +16,7 @@ use crate::http::Response;
 use crate::evaluation_context::get_path_value;
 use crate::http::HttpClient;
 use std::hash::{Hash, Hasher};
+use crate::json::JsonLike;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EndpointKey {
@@ -31,7 +32,7 @@ pub struct EndpointKey {
 impl Hash for EndpointKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.url.hash(state);
-        self.match_key_value.to_string().hash(state);
+        self.match_key_value.as_str_ok().unwrap_or("").hash(state);
     }
 }
 #[derive(Default, Setters, Clone)]
@@ -61,6 +62,16 @@ impl HttpDataLoader {
         HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
         <HttpDataLoader as Loader<EndpointKey>>::Error,
     > {
+        // let key = &keys[0];
+        // let res = self
+        //     .client
+        //     .get(key.url.clone(), self.headers.clone().unwrap_or_default())
+        //     .await
+        //     .map_err(|e| anyhow::Error::from(Arc::new(e)));
+        // let mut map = HashMap::new();
+        // map.insert(key.clone(), res?);
+        // Ok(map)
+
         let unbatched_keys = keys
             .iter()
             .filter(|key| !key.batching_enabled)
@@ -123,49 +134,55 @@ impl HttpDataLoader {
             .client
             .get(url, self.headers.clone().unwrap_or_default())
             .await
-            .map_err(|e| anyhow::Error::from(Arc::new(e)));
+            .map_err(|e| Arc::new(anyhow::Error::from(e)));
 
         match result {
+            Err(e) => Err(e),
             Ok(response) => {
-                match &response.body {
-                    async_graphql::Value::List(list) => {
-                        #[allow(clippy::mutable_key_type)]
-                        let mut map: HashMap<
-                            EndpointKey,
-                            <HttpDataLoader as Loader<EndpointKey>>::Value,
-                        > = HashMap::new();
-                        let mut body: ConstValue;
-                        for key in keys.iter() {
-                            let match_fn = |item: &&ConstValue| -> bool {
-                                if let Some(value) = get_path_value(item, &key.match_path) {
-                                    value == &key.match_key_value
-                                } else {
-                                    false
-                                }
-                            };
+                if let async_graphql::Value::List(list) = &response.body {
+                    let mut map: HashMap<
+                        EndpointKey,
+                        <HttpDataLoader as Loader<EndpointKey>>::Value,
+                    > = HashMap::with_capacity(keys.len());
 
-                            if key.list {
-                                let items = list.iter().filter(match_fn).cloned().collect();
-                                body = async_graphql::Value::List(items);
-                            } else {
-                                body = list.iter().find(match_fn).cloned().unwrap_or(ConstValue::Null);
-                            }
-                            let response_for_key = Response {
-                                status: response.status,
-                                headers: response.headers.clone(),
-                                body,
-                                ttl: response.ttl,
-                            };
-                            map.insert(key.clone(), response_for_key);
-                        }
-                        Ok(map)
+                    for key in keys.iter() {
+                        let body = if key.list {
+                            async_graphql::Value::List(
+                                list.iter()
+                                    .filter(|&item| {
+                                        get_path_value(item, &key.match_path)
+                                            .map_or(false, |value| value == &key.match_key_value)
+                                    })
+                                    .cloned()
+                                    .collect(),
+                            )
+                        } else {
+                            list.iter()
+                                .find(|&item| {
+                                    get_path_value(item, &key.match_path)
+                                        .map_or(false, |value| value == &key.match_key_value)
+                                })
+                                .cloned()
+                                .unwrap_or(ConstValue::Null)
+                        };
+
+                        let response_for_key = Response {
+                            status: response.status,
+                            headers: response.headers.clone(),
+                            body,
+                            ttl: response.ttl,
+                        };
+                        map.insert(key.clone(), response_for_key);
                     }
-                    _ => Ok(HashMap::new()), // TODO throw error
+                    Ok(map)
+                } else {
+                    // TODO: Consider handling the error case instead of returning an empty map
+                    Ok(HashMap::new())
                 }
             }
-            Err(e) => Err(Arc::new(e)),
         }
     }
+
 }
 
 #[async_trait::async_trait]
@@ -178,13 +195,13 @@ impl Loader<EndpointKey> for HttpDataLoader {
         keys: &[EndpointKey],
     ) -> async_graphql::Result<HashMap<EndpointKey, Self::Value>, Self::Error> {
         let batched_results = self.get_batched_results(keys).await;
-        let unbatched_results = self.get_unbatched_results(keys).await;
-        #[allow(clippy::mutable_key_type)]
-        let mut all_results = HashMap::new();
+        let mut unbatched_results = self.get_unbatched_results(keys).await?;
+
         for result in batched_results {
-            all_results.extend(result?);
+            for (key, value) in result? {
+                unbatched_results.insert(key, value);
+            }
         }
-        all_results.extend(unbatched_results?);
-        Ok(all_results)
+        Ok(unbatched_results)
     }
 }
