@@ -98,7 +98,18 @@ impl Display for CLIError {
 
         if let Some(description) = &self.description {
             f.write_str("\n")?;
-            f.write_str(margin(description, root_padding_size).as_str())?;
+            let color = if self.is_root {
+                colored::Color::Yellow
+            } else {
+                colored::Color::White
+            };
+            f.write_str(
+                margin(
+                    &self.colored(format!("❯ {}", description).as_str(), color),
+                    root_padding_size,
+                )
+                .as_str(),
+            )?;
         }
 
         if !self.trace.is_empty() {
@@ -108,11 +119,10 @@ impl Display for CLIError {
             for (i, trace) in self.trace.iter().enumerate() {
                 buf.push_str(&trace.to_string());
                 if i < len - 1 {
-                    buf.push_str(".");
+                    buf.push('.');
                 }
             }
-            buf.push_str("]");
-
+            buf.push(']');
             f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
         }
 
@@ -134,7 +144,16 @@ impl Display for CLIError {
 
 impl From<hyper::Error> for CLIError {
     fn from(error: hyper::Error) -> Self {
-        CLIError::new("Server Error").description(error.to_string())
+        // TODO: add type-safety to CLIError conversion
+        let cli_error = CLIError::new("Server Failed");
+        let message = error.to_string();
+        if message.to_lowercase().contains("os error 48") {
+            cli_error
+                .description("The port is already in use".to_string())
+                .caused_by(vec![CLIError::new(message.as_str())])
+        } else {
+            cli_error.description(message)
+        }
     }
 }
 
@@ -190,7 +209,7 @@ mod tests {
     fn test_title_description() {
         let error = CLIError::new("Server could not be started").description("The port is already in use".to_string());
         let expected = r#"|Error: Server could not be started
-                          |       The port is already in use"#
+                          |       ❯ The port is already in use"#
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
@@ -203,7 +222,7 @@ mod tests {
             .trace(vec!["@server".into(), "port".into()]);
 
         let expected = r#"|Error: Server could not be started
-                          |       The port is already in use [at @server.port]"#
+                          |       ❯ The port is already in use [at @server.port]"#
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
@@ -254,7 +273,7 @@ mod tests {
                           |  • Base URL needs to be specified [at User.posts.@http.baseURL]
                           |  • Base URL needs to be specified [at Post.users.@http.baseURL]
                           |  • Base URL needs to be specified
-                          |      Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
+                          |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                           |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"#
             .strip_margin();
 
