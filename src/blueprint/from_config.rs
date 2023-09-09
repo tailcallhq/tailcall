@@ -20,7 +20,7 @@ use crate::json::JsonSchema;
 use crate::lambda::Lambda;
 use crate::valid::OptionExtension;
 use crate::valid::Valid as ValidDefault;
-use crate::valid::{ValidExtensions, VectorExtension};
+use crate::valid::{ValidExtensions, ValidationError, VectorExtension};
 
 use super::UnionTypeDefinition;
 
@@ -494,9 +494,9 @@ pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool
 }
 
 impl TryFrom<&Config> for Blueprint {
-    type Error = blueprint::BlueprintGenerationError;
+    type Error = ValidationError<&'static str>;
 
     fn try_from(config: &Config) -> Result<Self, Self::Error> {
-        config_blueprint(config).map_err(|e| BlueprintGenerationError(e.map(|e| e.to_string())))
+        config_blueprint(config)
     }
 }

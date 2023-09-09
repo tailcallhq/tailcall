@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display};
 
+use regex::Regex;
+
 use super::Cause;
 
 #[derive(Debug, PartialEq, Default)]
@@ -73,5 +75,57 @@ impl From<Cause<String>> for ValidationError<String> {
 impl<E> From<Vec<Cause<E>>> for ValidationError<E> {
     fn from(value: Vec<Cause<E>>) -> Self {
         ValidationError(value)
+    }
+}
+
+impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<String> {
+    fn from(error: serde_path_to_error::Error<serde_json::Error>) -> Self {
+        let mut trace = Vec::new();
+        let segments = error.path().iter();
+        let len = segments.len();
+        for (i, segment) in segments.enumerate() {
+            match segment {
+                serde_path_to_error::Segment::Seq { index } => {
+                    trace.push(format!("[{}]", index));
+                }
+                serde_path_to_error::Segment::Map { key } => {
+                    trace.push(key.to_string());
+                }
+                serde_path_to_error::Segment::Enum { variant } => {
+                    trace.push(variant.to_string());
+                }
+                serde_path_to_error::Segment::Unknown => {
+                    trace.push("?".to_owned());
+                }
+            }
+            if i < len - 1 {
+                trace.push(".".to_owned());
+            }
+        }
+
+        let re = Regex::new(r" at line \d+ column \d+$").unwrap();
+        let message = re.replace(error.inner().to_string().as_str(), "").into_owned();
+
+        ValidationError(vec![Cause::new(message).trace(trace.into())])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::valid::ValidationError;
+
+    use pretty_assertions::assert_eq;
+
+    #[derive(Debug, PartialEq, serde::Deserialize)]
+    struct Foo {
+        a: i32,
+    }
+
+    #[test]
+    fn test_from_serde_error() {
+        let foo = &mut serde_json::Deserializer::from_str("{ \"a\": true }");
+        let actual = ValidationError::from(serde_path_to_error::deserialize::<_, Foo>(foo).unwrap_err());
+        let expected = ValidationError::new("invalid type: boolean `true`, expected i32".to_string()).trace("a");
+        assert_eq!(actual, expected);
     }
 }

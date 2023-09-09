@@ -6,6 +6,8 @@ use serde_path_to_error::deserialize;
 
 use anyhow::Result;
 
+use crate::valid::ValidationError;
+
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
@@ -16,7 +18,7 @@ fn from_directive<'a, A: Deserialize<'a>>(directive: &'a ConstDirective) -> Resu
         map.insert(k.node.as_str().to_string(), serde_json::to_value(&v.node)?);
     }
 
-    Ok(deserialize(Value::Object(map))?)
+    Ok(deserialize(Value::Object(map)).map_err(|e| ValidationError::from(e).trace(directive.name.node.as_str()))?)
 }
 
 fn to_directive<A: Serialize>(a: &A, name: String) -> Result<ConstDirective> {
