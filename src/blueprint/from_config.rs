@@ -20,8 +20,7 @@ use crate::json::JsonSchema;
 use crate::lambda::Lambda;
 use crate::valid::OptionExtension;
 use crate::valid::Valid as ValidDefault;
-use crate::valid::ValidationError;
-use crate::valid::{ValidExtensions, VectorExtension};
+use crate::valid::{ValidExtensions, ValidationError, VectorExtension};
 
 use super::UnionTypeDefinition;
 
