@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
 use async_graphql::dynamic;
@@ -46,8 +47,12 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
     let loader = Arc::new(
         HttpDataLoader::new(client.clone())
             .headers(forwarded_headers)
-            .to_async_data_loader(),
+            .to_async_data_loader()
+            .delay(Duration::from_secs(0))
+            .max_batch_size(0),
     );
+
+    loader.enable_all_cache(false);
 
     let mut executed_response = request.data(loader.clone()).execute(state.schema.as_ref()).await;
 
