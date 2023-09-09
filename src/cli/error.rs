@@ -1,11 +1,14 @@
 use std::fmt::{Debug, Display};
 
+use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {
     is_root: bool,
+    #[setters(skip)]
+    color: bool,
     message: String,
     #[setters(strip_option)]
     description: Option<String>,
@@ -19,6 +22,7 @@ impl CLIError {
     pub fn new(message: &str) -> Self {
         CLIError {
             is_root: true,
+            color: false,
             message: message.to_string(),
             description: Default::default(),
             trace: Default::default(),
@@ -33,6 +37,30 @@ impl CLIError {
             error.is_root = false;
         }
 
+        self
+    }
+
+    fn colored<'a>(&'a self, str: &'a str, color: colored::Color) -> String {
+        if self.color {
+            str.color(color).to_string()
+        } else {
+            str.to_string()
+        }
+    }
+
+    fn dimmed<'a>(&'a self, str: &'a str) -> String {
+        if self.color {
+            str.dimmed().to_string()
+        } else {
+            str.to_string()
+        }
+    }
+
+    pub fn color(mut self, color: bool) -> Self {
+        self.color = color;
+        for inner in self.caused_by.iter_mut() {
+            inner.color = color;
+        }
         self
     }
 }
@@ -54,15 +82,16 @@ fn bullet(str: &str) -> String {
 
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let error_prefix = "error: ";
-        let default_padding = 4;
+        let error_prefix = "Error: ";
+        let default_padding = 2;
         let root_padding_size = if self.is_root {
             error_prefix.len()
         } else {
             default_padding
         };
+
         if self.is_root {
-            f.write_str(error_prefix)?;
+            f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
         }
 
         f.write_str(&self.message.to_string())?;
@@ -73,19 +102,22 @@ impl Display for CLIError {
         }
 
         if !self.trace.is_empty() {
-            f.write_str(" [at ")?;
+            let mut buf = String::new();
+            buf.push_str(" [at ");
             let len = self.trace.len();
             for (i, trace) in self.trace.iter().enumerate() {
-                f.write_str(&trace.to_string())?;
+                buf.push_str(&trace.to_string());
                 if i < len - 1 {
-                    f.write_str(".")?;
+                    buf.push_str(".");
                 }
             }
-            f.write_str("]")?;
+            buf.push_str("]");
+
+            f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
         }
 
         if !self.caused_by.is_empty() {
-            f.write_str("\nCaused by:\n")?;
+            f.write_str(self.dimmed("\nCaused by:\n").as_str())?;
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
                 f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
@@ -150,14 +182,14 @@ mod tests {
     #[test]
     fn test_title() {
         let error = CLIError::new("Server could not be started");
-        let expected = r#"error: Server could not be started"#.strip_margin();
+        let expected = r#"Error: Server could not be started"#.strip_margin();
         assert_eq!(error.to_string(), expected);
     }
 
     #[test]
     fn test_title_description() {
         let error = CLIError::new("Server could not be started").description("The port is already in use".to_string());
-        let expected = r#"|error: Server could not be started
+        let expected = r#"|Error: Server could not be started
                           |       The port is already in use"#
             .strip_margin();
 
@@ -170,7 +202,7 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected = r#"|error: Server could not be started
+        let expected = r#"|Error: Server could not be started
                           |       The port is already in use [at @server.port]"#
             .strip_margin();
 
@@ -183,9 +215,9 @@ mod tests {
             CLIError::new("Configuration Error").caused_by(vec![CLIError::new("Base URL needs to be specified")
                 .trace(vec!["User".into(), "posts".into(), "@http".into(), "baseURL".into()])]);
 
-        let expected = r#"|error: Configuration Error
+        let expected = r#"|Error: Configuration Error
                           |Caused by:
-                          |    • Base URL needs to be specified [at User.posts.@http.baseURL]"#
+                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]"#
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
@@ -217,13 +249,13 @@ mod tests {
             ]),
         ]);
 
-        let expected = r#"|error: Configuration Error
+        let expected = r#"|Error: Configuration Error
                           |Caused by:
-                          |    • Base URL needs to be specified [at User.posts.@http.baseURL]
-                          |    • Base URL needs to be specified [at Post.users.@http.baseURL]
-                          |    • Base URL needs to be specified
-                          |          Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
-                          |    • Base URL needs to be specified [at Query.posts.@http.baseURL]"#
+                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]
+                          |  • Base URL needs to be specified [at Post.users.@http.baseURL]
+                          |  • Base URL needs to be specified
+                          |      Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
+                          |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"#
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);

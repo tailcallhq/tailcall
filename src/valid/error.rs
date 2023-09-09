@@ -25,7 +25,7 @@ impl<E: Display> Display for ValidationError<E> {
 
 impl<'a> From<ValidationError<&'a str>> for CLIError {
     fn from(error: ValidationError<&'a str>) -> Self {
-        CLIError::new("Configuration Error").caused_by(
+        CLIError::new("Invalid Configuration").caused_by(
             error
                 .as_vec()
                 .iter()
