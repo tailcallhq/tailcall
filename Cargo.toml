@@ -11,7 +11,6 @@ path = "src/main.rs"
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
 thiserror = "1.0.48"
-
 http-cache-semantics = "1.0.1"
 mimalloc = { version = "0.1.38", default-features = false }
 serde_json = "1.0"
@@ -41,9 +40,12 @@ http-cache-reqwest = { version = "0.11.1", features = ["manager-moka"] }
 reqwest-middleware = "0.2.3"
 async-trait = "0.1.73"
 serde_path_to_error = "0.1.14"
+
 [dev-dependencies]
 httpmock = "0.6"
-mockito="1.1.0"
+mockito = "1.1.0"
+pretty_assertions = "1.4.0"
+stripmargin = "0.1.1"
 
 [profile.release]
 opt-level = 3
