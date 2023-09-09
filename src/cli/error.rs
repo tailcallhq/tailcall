@@ -4,6 +4,8 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
+use crate::valid::ValidationError;
+
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {
     is_root: bool,
@@ -154,6 +156,18 @@ impl From<hyper::Error> for CLIError {
         } else {
             cli_error.description(message)
         }
+    }
+}
+
+impl<'a> From<ValidationError<&'a str>> for CLIError {
+    fn from(error: ValidationError<&'a str>) -> Self {
+        CLIError::new("Invalid Configuration").caused_by(
+            error
+                .as_vec()
+                .iter()
+                .map(|cause| CLIError::new(cause.message).trace(Vec::from(cause.trace.clone())))
+                .collect(),
+        )
     }
 }
 
