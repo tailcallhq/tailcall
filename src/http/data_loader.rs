@@ -62,36 +62,36 @@ impl HttpDataLoader {
         HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
         <HttpDataLoader as Loader<EndpointKey>>::Error,
     > {
-        // let key = &keys[0];
-        // let res = self
-        //     .client
-        //     .get(key.url.clone(), self.headers.clone().unwrap_or_default())
-        //     .await
-        //     .map_err(|e| anyhow::Error::from(Arc::new(e)));
-        // let mut map = HashMap::new();
-        // map.insert(key.clone(), res?);
-        // Ok(map)
+        let key = &keys[0];
+        let res = self
+            .client
+            .get(key.url.clone(), self.headers.clone().unwrap_or_default())
+            .await
+            .map_err(|e| anyhow::Error::from(Arc::new(e)));
+        let mut map = HashMap::new();
+        map.insert(key.clone(), res?);
+        Ok(map)
 
-        let unbatched_keys = keys
-            .iter()
-            .filter(|key| !key.batching_enabled)
-            .map(|key| (*key).clone())
-            .collect::<Vec<_>>();
-        let futures: Vec<_> = unbatched_keys
-            .iter()
-            .map(|key| async {
-                let result = self
-                    .client
-                    .get(key.url.clone(), self.headers.clone().unwrap_or_default())
-                    .await
-                    .map_err(|e| anyhow::Error::from(Arc::new(e)));
-                (key.clone(), result)
-            })
-            .collect();
-
-        let results = join_all(futures).await;
-
-        results.into_iter().map(|(key, result)| Ok((key, result?))).collect()
+        // let unbatched_keys = keys
+        //     .iter()
+        //     .filter(|key| !key.batching_enabled)
+        //     .map(|key| (*key).clone())
+        //     .collect::<Vec<_>>();
+        // let futures: Vec<_> = unbatched_keys
+        //     .iter()
+        //     .map(|key| async {
+        //         let result = self
+        //             .client
+        //             .get(key.url.clone(), self.headers.clone().unwrap_or_default())
+        //             .await
+        //             .map_err(|e| anyhow::Error::from(Arc::new(e)));
+        //         (key.clone(), result)
+        //     })
+        //     .collect();
+        //
+        // let results = join_all(futures).await;
+        //
+        // results.into_iter().map(|(key, result)| Ok((key, result?))).collect()
     }
 
     pub fn group_by_url_and_type(&self, keys: &[EndpointKey]) -> HashMap<Url, Vec<EndpointKey>> {
@@ -194,14 +194,14 @@ impl Loader<EndpointKey> for HttpDataLoader {
         &self,
         keys: &[EndpointKey],
     ) -> async_graphql::Result<HashMap<EndpointKey, Self::Value>, Self::Error> {
-        let batched_results = self.get_batched_results(keys).await;
+        //let batched_results = self.get_batched_results(keys).await;
         let mut unbatched_results = self.get_unbatched_results(keys).await?;
 
-        for result in batched_results {
-            for (key, value) in result? {
-                unbatched_results.insert(key, value);
-            }
-        }
+        // for result in batched_results {
+        //     for (key, value) in result? {
+        //         unbatched_results.insert(key, value);
+        //     }
+        // }
         Ok(unbatched_results)
     }
 }
