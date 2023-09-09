@@ -66,6 +66,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
+
     steps:
       - name: Checkout current branch (fast)
         uses: actions/checkout@v4
