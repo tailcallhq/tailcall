@@ -44,6 +44,11 @@ serde_path_to_error = "0.1.14"
 [dev-dependencies]
 httpmock = "0.6"
 mockito="1.1.0"
+criterion = "0.5.1"
+
+[[bench]]
+name = "async_benchmarks"
+harness = false
 
 [profile.release]
 opt-level = 3

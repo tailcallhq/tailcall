@@ -2,9 +2,8 @@ use std::marker::PhantomData;
 
 use crate::endpoint::Endpoint;
 use crate::expression;
-use crate::expression::Operation;
-
 use crate::expression::{Context, Expression};
+use crate::expression::Operation;
 
 #[derive(Clone, Debug)]
 pub struct Lambda<A> {
@@ -61,6 +60,8 @@ where
     }
 }
 
+
+
 #[cfg(test)]
 mod tests {
     use httpmock::Method::GET;
@@ -76,13 +77,12 @@ mod tests {
     use crate::inet_address::InetAddress;
     use crate::lambda::Lambda;
     use crate::path::{Path, Segment};
-    use anyhow::Result;
 
-    impl<B> Lambda<B>
+impl<B> Lambda<B>
     where
         B: DeserializeOwned,
     {
-        async fn eval(self) -> Result<B> {
+        pub async fn eval(self) -> anyhow::Result<B> {
             let data_loader = &HttpDataLoader::default().to_async_data_loader();
             let client = &HttpClient::default();
             let server = &Server::default();
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_endpoint() {
+    pub async fn test_endpoint() {
         let server = MockServer::start();
 
         server.mock(|when, then| {
