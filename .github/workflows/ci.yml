@@ -67,11 +67,11 @@ jobs:
       matrix:
         build: [ arm, arm-v7, macos ]
         include:
-          - build: linux
-            os: ubuntu-latest
-            rust: stable
-            target: x86_64-unknown-linux-musl
-            cross: false
+#          - build: linux
+#            os: ubuntu-latest
+#            rust: stable
+#            target: x86_64-unknown-linux-musl
+#            cross: false
           - build: arm
             os: ubuntu-latest
             rust: stable
