@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [ arm, arm-v7, macos ]
+        build: [ arm, arm-v7 ]
         include:
 #          - build: linux
 #            os: ubuntu-latest
