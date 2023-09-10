@@ -51,12 +51,6 @@ impl HttpDataLoader {
         DataLoader::with_cache(self, tokio::spawn, HashMapCache::new())
     }
 
-    pub fn to_async_data_loader_without_delay(self) -> DataLoader<HttpDataLoader, HashMapCache> {
-        DataLoader::with_cache(self, tokio::spawn, HashMapCache::new())
-            .delay(Duration::from_secs(0))
-            .max_batch_size(0)
-    }
-
     pub fn get_headers(self) -> BTreeMap<String, String> {
         self.headers.unwrap_or_default()
     }
