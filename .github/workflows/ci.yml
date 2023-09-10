@@ -60,9 +60,9 @@ jobs:
 
   release:
     name: Release
-    needs: [check]
+#    needs: [check]
 #    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ${{matrix.os}}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         build: [ arm, arm-v7, macos ]
