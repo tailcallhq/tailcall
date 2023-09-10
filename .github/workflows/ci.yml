@@ -63,6 +63,30 @@ jobs:
     needs: [check]
 #    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build: [ linux, arm, arm-v7, macos ]
+        include:
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            cross: false
+          - build: arm
+            os: ubuntu-latest
+            rust: stable
+            target: arm-unknown-linux-gnueabihf
+            cross: true
+          - build: arm-v7
+            os: ubuntu-latest
+            rust: stable
+            target: armv7-unknown-linux-gnueabihf
+            cross: true
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            cross: false
     permissions:
       contents: write
       pull-requests: write
@@ -78,56 +102,22 @@ jobs:
         with:
           config-name: release-drafter.yml
 
-      - name: Setup Cross
-        run: cargo install cross
-      - name: Install OpenSSL development libraries
-        run: sudo apt-get install -y libssl-dev pkg-config
-
-      - name: Build for x86_64-unknown-linux-gnu
-        env:
-          APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cross build --release --target x86_64-unknown-linux-gnu
-
-      - name: Build for x86_64-pc-windows-msvc
-        env:
-          APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cross build --release --target x86_64-pc-windows-msvc
-
-      - name: Build for x86_64-apple-darwin
-        env:
-          APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cross build --release --target x86_64-apple-darwin
-
-      - name: Build for aarch64-apple-darwin (Apple M1)
-        env:
-          APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cross build --release --target aarch64-apple-darwin
-
-
-      - name: Upload Linux Binary
+      - name: Install correct toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          use-cross: ${{ matrix.cross }}
+          override: true
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{steps.create_release.outputs.id}}
-          file: target/x86_64-unknown-linux-gnu/release/tailcall
-          overwrite: true
-
-      - name: Upload Windows Binary
-        uses: xresloader/upload-to-github-release@v1
-        with:
-          release_id: ${{steps.create_release.outputs.id}}
-          file: target/x86_64-pc-windows-msvc/release/tailcall.exe
-          overwrite: true
-
-      - name: Upload macOS Binary
-        uses: xresloader/upload-to-github-release@v1
-        with:
-          release_id: ${{steps.create_release.outputs.id}}
-          file: target/x86_64-apple-darwin/release/tailcall
-          overwrite: true
-
-      - name: Upload Apple M1 Binary
-        uses: xresloader/upload-to-github-release@v1
-        with:
-          release_id: ${{steps.create_release.outputs.id}}
-          file: target/aarch64-apple-darwin/release/tailcall
+          file: target/${{ matrix.target }}/release/tailcall
           overwrite: true
