@@ -32,7 +32,7 @@ pub struct EndpointKey {
 impl Hash for EndpointKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.url.hash(state);
-        self.match_key_value.to_string().hash(state);
+        // self.match_key_value.to_string().hash(state);
     }
 }
 #[derive(Default, Setters, Clone)]
@@ -178,14 +178,14 @@ impl Loader<EndpointKey> for HttpDataLoader {
         &self,
         keys: &[EndpointKey],
     ) -> async_graphql::Result<HashMap<EndpointKey, Self::Value>, Self::Error> {
-        let batched_results = self.get_batched_results(keys).await;
-        let unbatched_results = self.get_unbatched_results(keys).await;
-        #[allow(clippy::mutable_key_type)]
-        let mut all_results = HashMap::new();
-        for result in batched_results {
-            all_results.extend(result?);
-        }
-        all_results.extend(unbatched_results?);
-        Ok(all_results)
+        let key = &keys[0];
+        let res = self
+            .client
+            .get(key.url.clone(), self.headers.clone().unwrap_or_default())
+            .await
+            .map_err(|e| anyhow::Error::from(Arc::new(e)));
+        let mut map = HashMap::new();
+        map.insert(key.clone(), res?);
+        Ok(map)
     }
 }

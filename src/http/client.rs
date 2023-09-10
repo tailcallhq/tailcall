@@ -72,23 +72,11 @@ impl HttpClient {
     where
         T: IntoUrl,
     {
-        let mut headers = reqwest::header::HeaderMap::new();
-        for (key, value) in forwarded_headers.iter() {
-            headers.insert(key.parse::<HeaderName>().unwrap(), value.parse().unwrap());
-        }
-
-        let request = self.client.get(url).headers(headers).build()?;
-        let cached_req = Request::from(&request);
-        let response = self.client.execute(request).await?;
-        let mut cached_response = Response::from(&response);
-        cached_response.body = response.json().await?;
-        if self.enable_cache_control {
-            let cache_ttl = CachePolicy::new(&cached_req, &cached_response)
-                .time_to_live(SystemTime::now())
-                .as_secs();
-            Ok(cached_response.ttl(Option::from(cache_ttl)))
-        } else {
-            Ok(cached_response)
-        }
+        // let headers = reqwest::header::HeaderMap::new();
+        // for (key, value) in forwarded_headers.iter() {
+        //     headers.insert(key.parse::<HeaderName>().unwrap(), value.parse().unwrap());
+        // }
+        let request = self.client.get(url).build()?;
+        self.execute(request).await
     }
 }

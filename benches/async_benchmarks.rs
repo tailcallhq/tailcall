@@ -14,6 +14,7 @@ pub async fn test_endpoint<'a>(expression: Expression, ctx: &'a EvaluationContex
 }
 
 fn endpoint_benchmark(c: &mut Criterion) {
+    // console_subscriber::init();
     let mut group = c.benchmark_group("lambda-benchmark-group");
     let rt = tokio::runtime::Runtime::new().unwrap();
     let server = Server { enable_join_cache: Some(true), enable_http_cache: Some(true), ..Server::default() };
