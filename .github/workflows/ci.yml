@@ -82,11 +82,11 @@ jobs:
             rust: stable
             target: armv7-unknown-linux-gnueabihf
             cross: true
-          - build: macos
-            os: macos-latest
-            rust: stable
-            target: x86_64-apple-darwin
-            cross: false
+#          - build: macos
+#            os: macos-latest
+#            rust: stable
+#            target: x86_64-apple-darwin
+#            cross: false
     permissions:
       contents: write
       pull-requests: write
