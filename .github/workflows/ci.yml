@@ -46,22 +46,22 @@ jobs:
           command: test
           args: --all-features
 
-  deploy:
-    name: Deploy app
-    runs-on: ubuntu-latest
-    needs: check
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+#  deploy:
+#    name: Deploy app
+#    runs-on: ubuntu-latest
+#    needs: check
+#    if: github.ref == 'refs/heads/main'
+#    steps:
+#      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+#      - uses: superfly/flyctl-actions/setup-flyctl@master
+#      - run: flyctl deploy --remote-only
+#        env:
+#          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   release:
     name: Release
     needs: [check]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -78,13 +78,54 @@ jobs:
         with:
           config-name: release-drafter.yml
 
-      - name: Cargo Build
+      - name: Setup Cross
+        run: cargo install cross
+
+      - name: Build for x86_64-unknown-linux-gnu
         env:
           APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cargo build --release
+        run: cross build --release --target x86_64-unknown-linux-gnu
 
-      - uses: xresloader/upload-to-github-release@v1
+      - name: Build for x86_64-pc-windows-msvc
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
+        run: cross build --release --target x86_64-pc-windows-msvc
+
+      - name: Build for x86_64-apple-darwin
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
+        run: cross build --release --target x86_64-apple-darwin
+
+      - name: Build for aarch64-apple-darwin (Apple M1)
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
+        run: cross build --release --target aarch64-apple-darwin
+
+
+      - name: Upload Linux Binary
+        uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{steps.create_release.outputs.id}}
-          file: target/release/tailcall
+          file: target/x86_64-unknown-linux-gnu/release/tailcall
+          overwrite: true
+
+      - name: Upload Windows Binary
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{steps.create_release.outputs.id}}
+          file: target/x86_64-pc-windows-msvc/release/tailcall.exe
+          overwrite: true
+
+      - name: Upload macOS Binary
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{steps.create_release.outputs.id}}
+          file: target/x86_64-apple-darwin/release/tailcall
+          overwrite: true
+
+      - name: Upload Apple M1 Binary
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{steps.create_release.outputs.id}}
+          file: target/aarch64-apple-darwin/release/tailcall
           overwrite: true
