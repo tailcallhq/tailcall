@@ -107,7 +107,7 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
       - name: Rename binary with target name
-        run: mv target/release/tailcall target/release/tailcall-${{ matrix.target }}
+        run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
       - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
         with:
