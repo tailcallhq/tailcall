@@ -2,7 +2,7 @@ name: benchmark
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, edited, synchronize, reopened, labeled]
     branches: 
       - main
   
@@ -16,6 +16,7 @@ on:
 jobs:
   benchmark:
     name: Rust project
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -78,7 +79,7 @@ jobs:
         name: Run wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 1 -t 1 -c 1 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
