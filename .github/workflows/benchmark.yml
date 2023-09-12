@@ -56,7 +56,7 @@ jobs:
 
       - name: Copy Nginx Configuration
         run: |
-          sudo cp .github/benchmark/nginx.conf /etc/nginx/
+          sudo cp ci_benchmark/nginx.conf /etc/nginx/
 
       - name: Test Nginx Configuration
         run: |
@@ -73,12 +73,12 @@ jobs:
       - id: run_wrk
         name: Run wrk
         run: |
-          wrk -d 1 -t 1 -c 1 -s wrk.lua https://tailcall.fly.dev/graphql > wrk-output.txt
+          wrk -d 1 -t 1 -c 1 -s ci-benchmark/wrk.lua https://tailcall.fly.dev/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
         run: |
-          node ./wrk-output-to-md.js > wrk-output.md
+          node ci-benchmark/wrk-output-to-md.js ci-benchmark/sample-wrk-output.txt > wrk-output.md
 
       # - id: add_pr_comment
       #   uses: mshick/add-pr-comment@v2
@@ -86,7 +86,3 @@ jobs:
       #     message-path: |
       #         wrk-output.md
   
-      - id: cat_wrk_output
-        name: Cat output
-        run: |
-          cat wrk-output.md

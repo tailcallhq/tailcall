@@ -32,7 +32,7 @@ function getRow(line) {
 
 }
 
-const lines = fs.readFileSync('./sample-wrk-output.txt', 'utf8');
+const lines = fs.readFileSync(process.argv[2], 'utf8');
 lines.split('\n').forEach((line) => {
   if (isTableHeader(line)) {
     markdown = markdown + getHeader();
@@ -44,7 +44,6 @@ lines.split('\n').forEach((line) => {
     }
     markdown = markdown + line.trim() + '\n\n';
   }
-
 });
 
 console.log(markdown);
