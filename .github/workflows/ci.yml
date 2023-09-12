@@ -65,23 +65,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [ arm, arm-v7 ]
+        build: [ linux ] #arm, arm-v7, macos
         include:
-#          - build: linux
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            cross: false
+#          - build: arm
 #            os: ubuntu-latest
 #            rust: stable
-#            target: x86_64-unknown-linux-musl
-#            cross: false
-          - build: arm
-            os: ubuntu-latest
-            rust: stable
-            target: arm-unknown-linux-gnueabihf
-            cross: true
-          - build: arm-v7
-            os: ubuntu-latest
-            rust: stable
-            target: armv7-unknown-linux-gnueabihf
-            cross: true
+#            target: arm-unknown-linux-gnueabihf
+#            linker: gcc-arm-linux-gnueabihf
+#            cross: true
+#          - build: aarch64
+#            os: ubuntu-latest
+#            rust: stable
+#            target: aarch64-unknown-linux-gnu
+#            linker: gcc-aarch64-linux-gnu
+#            cross: true
 #          - build: macos
 #            os: macos-latest
 #            rust: stable
