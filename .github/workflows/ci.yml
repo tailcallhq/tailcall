@@ -84,6 +84,10 @@ jobs:
 #            target: aarch64-unknown-linux-gnu
 #            linker: gcc-aarch64-linux-gnu
 #            cross: true
+          - build: apple-silicon
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
           - build: macos
             os: macos-latest
             rust: stable
@@ -112,6 +116,8 @@ jobs:
           use-cross: ${{ matrix.cross }}
           override: true
       - name: build
+        env:
+          APP_VERSION: ${{steps.create_release.outputs.name}}
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
