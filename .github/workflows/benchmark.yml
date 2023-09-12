@@ -19,31 +19,31 @@ jobs:
     steps:
       - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
 
-      # - name: Install stable toolchain
-      #   uses: actions-rs/toolchain@v1
-      #   with:
-      #     toolchain: stable
-      #     override: true
-      #     components: rustfmt, clippy
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
 
-      # - name: Cache Rust dependencies
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: |
-      #       ~/.cargo/registry
-      #       ~/.cargo/git
-      #       target
-      #     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      # - name: Run cargo build
-      #   uses: actions-rs/cargo@v1
-      #   with:
-      #     command: build
-      #     args: --release
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
       
-      #- name: Run tailcall
-      #  run: |
-      #    ./target/release/tailcall start benchmark/benchmark.graphql&
+      - name: Run tailcall
+        run: |
+          ./target/release/tailcall start benchmark/benchmark.graphql&
 
       - name: Install Nginx
         run: |
@@ -75,13 +75,13 @@ jobs:
         name: Run wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 1 -t 1 -c 1 -s wrk.lua https://tailcall.fly.dev/graphql > wrk-output.txt
+          wrk -d 1 -t 1 -c 1 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
         working-directory: ci-benchmark
         run: |
-          node wrk-output-to-md.js sample-wrk-output.txt > wrk-output.md
+          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
 
       - id: cat_md
         name: cat md
