@@ -1,10 +1,6 @@
 name: benchmark
 
-on: 
-  push:
-    branches: 
-      - ci_benchmark
-
+on:
   pull_request:
     types: [opened, edited]
     branches: 
@@ -89,9 +85,8 @@ jobs:
         run: |
           cat wrk-output.md
                     
-      # - id: add_pr_comment
-      #   uses: mshick/add-pr-comment@v2
-      #   with:
-      #     message-path: |
-      #         wrk-output.md
+      - id: add_pr_comment
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: ./ci-benchmark/wrk-output.md
   
