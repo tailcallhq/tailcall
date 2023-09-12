@@ -43,7 +43,7 @@ jobs:
       
       - name: Run tailcall
         run: |
-          ./target/release/tailcall start benchmark/benchmark.graphql&
+          ./target/release/tailcall start ci-benchmark/benchmark.graphql&
 
       - name: Install Nginx
         run: |
