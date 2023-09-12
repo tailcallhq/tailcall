@@ -2,28 +2,29 @@ use derive_setters::Setters;
 
 use http_cache_semantics::ResponseLike;
 
-#[derive(Clone, Debug, Default, Setters)]
-pub struct Response {
-    pub status: reqwest::StatusCode,
-    pub headers: reqwest::header::HeaderMap,
-    pub body: async_graphql::Value,
-    pub ttl: Option<u64>,
+#[derive(Debug, Setters)]
+pub struct Response<'a> {
+    pub inner: &'a reqwest::Response,
+    pub stats: Stats,
 }
-impl From<&reqwest::Response> for Response {
-    fn from(resp: &reqwest::Response) -> Self {
-        let status = resp.status();
-        let headers = resp.headers().clone();
-        let body = async_graphql::Value::Null;
-        let ttl = None;
-        Response { status, headers, body, ttl }
+
+#[derive(Debug, Default)]
+struct Stats {
+    ttl: Option<u64>,
+}
+
+impl<'a> From<&'a reqwest::Response> for Response<'a> {
+    fn from(inner: &reqwest::Response) -> Self {
+        Response { inner, stats: Stats::default() }
     }
 }
-impl ResponseLike for Response {
+
+impl<'a> ResponseLike for Response<'a> {
     fn status(&self) -> reqwest::StatusCode {
-        self.status
+        self.inner.status()
     }
 
     fn headers(&self) -> &reqwest::header::HeaderMap {
-        &self.headers
+        self.inner.headers()
     }
 }
