@@ -2,8 +2,9 @@ name: benchmark
 
 on:
   pull_request:
+    types: [opened, edited, synchronize, reopened]
     branches: 
-      - ci_benchmark
+      - main
   
   workflow_dispatch:
     inputs:
