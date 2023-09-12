@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub enum Format {
+pub enum Source {
     Json,
     Yml,
     GraphQL,
@@ -9,18 +9,18 @@ pub enum Format {
 const JSON_EXT: &str = "json";
 const YML_EXT: &str = "yml";
 const GRAPHQL_EXT: &str = "graphql";
-const ALL: [Format; 3] = [Format::Json, Format::Yml, Format::GraphQL];
+const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
 #[derive(Debug, Error)]
 #[error("Unsupported file extension: {0}")]
 pub struct UnsupportedFileFormat(String);
 
-impl Format {
+impl Source {
     pub fn ext(&self) -> &'static str {
         match self {
-            Format::Json => JSON_EXT,
-            Format::Yml => YML_EXT,
-            Format::GraphQL => GRAPHQL_EXT,
+            Source::Json => JSON_EXT,
+            Source::Yml => YML_EXT,
+            Source::GraphQL => GRAPHQL_EXT,
         }
     }
 
@@ -28,7 +28,7 @@ impl Format {
         file.ends_with(&format!(".{}", self.ext()))
     }
 
-    pub fn detect(name: &str) -> Result<Format, UnsupportedFileFormat> {
+    pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
         ALL.into_iter()
             .find(|format| format.ends_with(name))
             .ok_or_else(|| UnsupportedFileFormat(name.to_string()))
