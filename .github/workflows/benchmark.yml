@@ -1,10 +1,8 @@
 name: benchmark
 
-on:
-  push:
-    branches: [main]
-  
+on:  
   pull_request:
+    types: [opened, edited]
 
 jobs:
   benchmark:
@@ -64,7 +62,7 @@ jobs:
 
       - name: Run tailcall
         run: |
-          ./target/release/tailcall start benchmark/benchmark.graphql
+          ./target/release/tailcall start benchmark/benchmark.graphql&
 
       - id: run_wrk
         name: Run wrk
