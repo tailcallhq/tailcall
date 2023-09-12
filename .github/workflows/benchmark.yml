@@ -10,10 +10,6 @@ on:
     branches: 
       - ci_benchmark
 
-defaults:
-  run:
-    working-directory: ci-benchmark
-
 jobs:
   benchmark:
     name: Rust project
@@ -21,7 +17,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      # - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
 
       # - name: Install stable toolchain
       #   uses: actions-rs/toolchain@v1
@@ -59,6 +55,7 @@ jobs:
           sudo rm -rf /etc/nginx/sites-enabled/default
 
       - name: Copy Nginx Configuration
+        working-directory: ci-benchmark
         run: |
           sudo cp nginx.conf /etc/nginx/
 
@@ -76,11 +73,13 @@ jobs:
 
       - id: run_wrk
         name: Run wrk
+        working-directory: ci-benchmark
         run: |
           wrk -d 1 -t 1 -c 1 -s wrk.lua https://tailcall.fly.dev/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
+        working-directory: ci-benchmark
         run: |
           node wrk-output-to-md.js sample-wrk-output.txt > wrk-output.md
 
