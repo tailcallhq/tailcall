@@ -47,4 +47,3 @@ lines.split('\n').forEach((line) => {
 });
 
 console.log(markdown);
-fs.writeFileSync('./wrk-output.md', markdown);

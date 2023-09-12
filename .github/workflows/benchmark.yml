@@ -83,6 +83,12 @@ jobs:
         run: |
           node wrk-output-to-md.js sample-wrk-output.txt > wrk-output.md
 
+      - id: cat_md
+        name: cat md
+        working-directory: ci-benchmark
+        run: |
+          cat wrk-output.md
+                    
       # - id: add_pr_comment
       #   uses: mshick/add-pr-comment@v2
       #   with:
