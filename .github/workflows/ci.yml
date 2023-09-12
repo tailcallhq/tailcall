@@ -81,7 +81,10 @@ jobs:
         run: |
           echo "::set-output name=create_release_name::${{ steps.create_release.outputs.name }}"
           echo "::set-output name=create_release_id::${{ steps.create_release.outputs.id }}"
-  
+    outputs:
+      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
+      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
+
 
   release:
     name: Release
