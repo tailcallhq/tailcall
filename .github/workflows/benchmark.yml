@@ -1,6 +1,10 @@
 name: benchmark
 
 on:
+  push:
+    branches: 
+      - ci_benchmark
+
   pull_request:
     types: [opened, edited, synchronize, reopened]
     branches: 
