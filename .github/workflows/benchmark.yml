@@ -2,9 +2,16 @@ name: benchmark
 
 on:
   pull_request:
-    types: [opened, edited]
+    types: [opened, edited, synchronize, reopened]
     branches: 
       - ci_benchmark
+  
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run benchmark on'
+        required: true
+        default: 'ci_benchmark'
 
 jobs:
   benchmark:
