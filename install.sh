@@ -15,12 +15,18 @@ fi
 # Determine OS and architecture to get the correct URL
 if [[ "$OSTYPE" == "darwin"* ]]; then
   OS="apple-darwin"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  OS="unknown-linux-gnu"
+elif [[ "$OSTYPE" == "linux-musl"* ]]; then
+  OS="unknown-linux-musl"
 else
   OS="unknown"
 fi
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
   ARCH="x86_64"
+elif [[ "$(uname -m)" == "i686" ]]; then
+  ARCH="i686"
 elif [[ "$(uname -m)" == "aarch64" ]] || [[ "$(uname -m)" == "arm64" ]]; then
   ARCH="aarch64"
 else
