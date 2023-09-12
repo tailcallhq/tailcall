@@ -56,7 +56,7 @@ jobs:
 
       - name: Copy Nginx Configuration
         run: |
-          sudo cp ci_benchmark/nginx.conf /etc/nginx/
+          sudo cp ci-benchmark/nginx.conf /etc/nginx/
 
       - name: Test Nginx Configuration
         run: |
