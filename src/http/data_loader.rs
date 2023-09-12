@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
@@ -47,7 +48,7 @@ impl HttpDataLoader {
     }
 
     pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader, HashMapCache> {
-        DataLoader::with_cache(self, tokio::spawn, HashMapCache::new())
+        DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
     }
 
     pub fn get_headers(self) -> BTreeMap<String, String> {
