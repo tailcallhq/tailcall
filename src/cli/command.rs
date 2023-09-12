@@ -1,5 +1,9 @@
 use clap::{Parser, Subcommand};
 
+const VERSION: &str = match option_env!("APP_VERSION") {
+    Some(version) => version,
+    _ => "0.1.0",
+};
 const ABOUT: &str = r"
    __        _ __           ____
   / /_____ _(_) /________ _/ / /
@@ -8,7 +12,7 @@ const ABOUT: &str = r"
 \__/\__,_/_/_/\___/\__,_/_/_/";
 
 #[derive(Parser)]
-#[command(name ="tc",author, version, about, long_about = Some(ABOUT))]
+#[command(name ="tc",author, version = VERSION, about, long_about = Some(ABOUT))]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
