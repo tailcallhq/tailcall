@@ -65,13 +65,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build: [ linux, macos ] #arm, arm-v7, macos
+        build: [ macos ] #arm, arm-v7, macos
         include:
-          - build: linux
-            os: ubuntu-latest
-            rust: stable
-            target: x86_64-unknown-linux-musl
-            cross: true
+#          - build: linux
+#            os: ubuntu-latest
+#            rust: stable
+#            target: x86_64-unknown-linux-musl
+#            cross: true
 #          - build: arm
 #            os: ubuntu-latest
 #            rust: stable
@@ -88,7 +88,7 @@ jobs:
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
-            cross: true
+            cross: false
     permissions:
       contents: write
       pull-requests: write
