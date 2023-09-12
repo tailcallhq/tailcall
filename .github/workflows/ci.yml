@@ -93,13 +93,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [ linux ] #, apple-silicon, macos ]
+        build: [ linux-gnu ] #, apple-silicon, macos ]
         include:
-          - build: linux
+          - build: linux-gnu
             os: ubuntu-latest
             rust: stable
-            target: x86_64-unknown-linux-musl
-            cross: true
+            target: x86_64-unknown-linux-gnu
+            cross: false
+#          - build: linux
+#            os: ubuntu-latest
+#            rust: stable
+#            target: x86_64-unknown-linux-musl
+#            cross: true
 #          - build: apple-silicon
 #            os: macos-latest
 #            rust: stable
