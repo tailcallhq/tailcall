@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::batch::Batch;
@@ -11,6 +11,8 @@ use crate::json::JsonSchema;
 use crate::mustache::Mustache;
 use crate::path::{path_deserialize, path_serialize, Path};
 use anyhow::Result;
+
+use super::{Proxy, Server};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -99,64 +101,6 @@ impl Config {
         self.graphql.types = graphql_types;
         self
     }
-}
-
-fn serialize_url_without_trailing_slash<S>(url: &Option<url::Url>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    match url {
-        Some(url) => {
-            let mut url_str = url.to_string();
-            if url_str.ends_with('/') {
-                url_str.pop();
-            }
-            serializer.serialize_str(&url_str)
-        }
-        None => serializer.serialize_none(),
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct Server {
-    pub allowed_headers: Option<Vec<String>>,
-    #[serde(rename = "baseURL", serialize_with = "serialize_url_without_trailing_slash")]
-    pub base_url: Option<url::Url>,
-    pub enable_apollo_tracing: Option<bool>,
-    pub enable_cache_control_header: Option<bool>,
-    pub enable_graphiql: Option<String>,
-    pub enable_http_cache: Option<bool>,
-    pub enable_introspection: Option<bool>,
-    pub enable_query_validation: Option<bool>,
-    pub enable_response_validation: Option<bool>,
-    pub global_response_timeout: Option<i64>,
-    pub port: Option<u16>,
-    pub proxy: Option<Proxy>,
-    pub vars: Option<BTreeMap<String, String>>,
-}
-
-impl Server {
-    pub fn enable_http_cache(&self) -> bool {
-        self.enable_http_cache.unwrap_or(false)
-    }
-    pub fn enable_http_validation(&self) -> bool {
-        self.enable_response_validation.unwrap_or(false)
-    }
-    pub fn enable_cache_control(&self) -> bool {
-        self.enable_cache_control_header.unwrap_or(false)
-    }
-    pub fn enable_introspection(&self) -> bool {
-        self.enable_introspection.unwrap_or(true)
-    }
-    pub fn enable_query_validation(&self) -> bool {
-        !self.enable_query_validation.unwrap_or(true)
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Proxy {
-    pub url: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -277,7 +221,7 @@ pub struct Http {
     pub body: Option<Mustache>,
     pub match_path: Option<Vec<String>>,
     pub match_key: Option<String>,
-    #[serde(rename = "baseURL", serialize_with = "serialize_url_without_trailing_slash")]
+    #[serde(rename = "baseURL", serialize_with = "super::url::serialize")]
     pub base_url: Option<url::Url>,
     pub headers: Option<BTreeMap<String, String>>,
 }
