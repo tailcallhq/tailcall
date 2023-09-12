@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
-    _ => "0.1.0",
+    _ => "0.1.0-dev",
 };
 const ABOUT: &str = r"
    __        _ __           ____
