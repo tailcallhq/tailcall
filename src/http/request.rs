@@ -2,32 +2,30 @@ use http_cache_semantics::RequestLike;
 use hyper::Uri;
 use reqwest::header::HeaderMap;
 
-// TODO: why do we need clone?
 #[derive(Debug)]
-pub struct Request<'a>(&'a reqwest::Request);
+pub struct Request<'a> {
+    inner: &'a reqwest::Request,
+}
 
-impl <'a> Request<'a> {
-    pub fn to_reqwest(self) -> &'a reqwest::Request {
-        self.0
-    }
+impl<'a> Request<'a> {
     pub fn url(&self) -> &reqwest::Url {
-        self.0.url()
+        self.inner.url()
     }
     pub fn method(&self) -> &reqwest::Method {
-        self.0.method()
+        self.inner.method()
     }
     pub fn headers(&self) -> &HeaderMap {
-        self.0.headers()
+        self.inner.headers()
     }
 }
 
 impl<'a> From<&'a reqwest::Request> for Request<'a> {
-    fn from(req: &'a reqwest::Request) -> Self {
-        Request(req)
+    fn from(inner: &'a reqwest::Request) -> Self {
+        Request { inner }
     }
 }
 
-impl <'a>RequestLike for Request<'a> {
+impl<'a> RequestLike for Request<'a> {
     fn uri(&self) -> Uri {
         self.url().as_str().parse().unwrap()
     }
