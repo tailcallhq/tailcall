@@ -62,7 +62,20 @@ jobs:
     name: Release
     needs: [check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [ macos ]
+        include:
+          - build: apple-silicon
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            cross: false
     permissions:
       contents: write
       pull-requests: write
@@ -78,13 +91,26 @@ jobs:
         with:
           config-name: release-drafter.yml
 
-      - name: Cargo Build
+      - name: Install correct toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          use-cross: ${{ matrix.cross }}
+          override: true
+      - name: build
         env:
           APP_VERSION: ${{steps.create_release.outputs.name}}
-        run: cargo build --release
-
-      - uses: xresloader/upload-to-github-release@v1
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: Rename binary with target name
+        run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+      - name: Upload ${{ matrix.target }} Binary
+        uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{steps.create_release.outputs.id}}
-          file: target/release/tailcall
+          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
           overwrite: true
