@@ -124,7 +124,7 @@ impl Expression {
                                     Some(&ctx.env.to_value()),
                                     ctx.args().as_ref(),
                                     &headers.to_owned(),
-                                );
+                                )?;
                                 let client = crate::http::HttpClient::default();
                                 let value = client
                                     .execute(req)

@@ -73,8 +73,7 @@ impl HttpDataLoader {
                 let result = self
                     .client
                     .get(key.url.clone(), self.headers.clone().unwrap_or_default())
-                    .await
-                    .map_err(|e| anyhow::Error::from(Arc::new(e)));
+                    .await;
                 (key.clone(), result)
             })
             .collect();
@@ -120,11 +119,7 @@ impl HttpDataLoader {
         HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
         <HttpDataLoader as Loader<EndpointKey>>::Error,
     > {
-        let result = self
-            .client
-            .get(url, self.headers.clone().unwrap_or_default())
-            .await
-            .map_err(|e| anyhow::Error::from(Arc::new(e)));
+        let result = self.client.get(url, self.headers.clone().unwrap_or_default()).await;
 
         match result {
             Ok(response) => {

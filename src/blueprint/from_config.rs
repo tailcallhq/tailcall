@@ -26,7 +26,7 @@ use crate::valid::{ValidExtensions, ValidationError, VectorExtension};
 
 use super::UnionTypeDefinition;
 
-type Valid<A> = ValidDefault<A, &'static str>;
+type Valid<A> = ValidDefault<A, String>;
 
 pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
     let output_types = config.output_types();
@@ -35,16 +35,21 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
     let definitions = to_definitions(config, output_types, input_types)?;
     Ok(super::compress::compress(Blueprint { schema, definitions }))
 }
-fn to_directive(const_directive: ConstDirective) -> Directive {
-    Directive {
-        name: const_directive.name.node.clone().to_string(),
-        arguments: const_directive
-            .arguments
-            .into_iter()
-            .map(|(k, v)| (k.node.to_string(), v.node.into_json().unwrap()))
-            .collect(),
-        index: 0,
-    }
+fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
+    let arguments = const_directive
+        .arguments
+        .into_iter()
+        .map(|(k, v)| {
+            let value = v.node.into_json();
+            if let Ok(value) = value {
+                return Ok((k.node.to_string(), value));
+            }
+            Err(value.unwrap_err())
+        })
+        .collect::<Result<HashMap<String, serde_json::Value>, _>>()
+        .map_err(|e| ValidationError::new(e.to_string()))?;
+
+    Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     let query = config
@@ -52,12 +57,17 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
         .schema
         .query
         .as_ref()
-        .validate_some("Query type is not defined")?;
+        .validate_some("Query type is not defined".to_string())?;
 
     Ok(SchemaDefinition {
         query: query.clone(),
         mutation: config.graphql.schema.mutation.clone(),
-        directives: vec![to_directive(config.server.to_directive("server".to_string()).unwrap())],
+        directives: vec![to_directive(
+            config
+                .server
+                .to_directive("server".to_string())
+                .map_err(|e| ValidationError::new(e.to_string()))?,
+        )?],
     })
 }
 fn to_definitions<'a>(
@@ -67,12 +77,16 @@ fn to_definitions<'a>(
 ) -> Valid<Vec<Definition>> {
     let mut types: Vec<Definition> = config.graphql.types.iter().validate_all(|(name, type_)| {
         let dbl_usage = input_types.contains(name) && output_types.contains(name);
-        if type_.variants.is_some() && !type_.variants.as_ref().unwrap().is_empty() {
-            to_enum_type_definition(name, type_, config, type_.variants.clone().unwrap()).trace(name)
+        if let Some(variants) = &type_.variants {
+            if !variants.is_empty() {
+                to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+            } else {
+                Valid::fail("No variants found for enum".to_string())
+            }
         } else if type_.scalar.is_some() {
             to_scalar_type_definition(name).trace(name)
         } else if dbl_usage {
-            Valid::fail("type is used in input and output").trace(name)
+            Valid::fail("type is used in input and output".to_string()).trace(name)
         } else {
             let definition = to_object_type_definition(name, type_, config).trace(name)?;
             match definition.clone() {
@@ -199,7 +213,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
 }
 fn to_type(name: &str, list: &Option<bool>, required: &Option<bool>, list_type_required: &Option<bool>) -> Type {
     let non_null = required.unwrap_or(false);
-    if list.is_some() && list.unwrap() {
+    if list.unwrap_or(false) {
         Type::ListType {
             of_type: Box::new(Type::NamedType {
                 name: name.to_string(),
@@ -266,7 +280,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
 
                     Valid::Ok(b_field)
                 }
-                None => Valid::fail("No base URL defined"),
+                None => Valid::fail("No base URL defined".to_string()),
             }
         }
         None => Valid::Ok(b_field),
@@ -288,7 +302,7 @@ fn update_modify(
                         let interface = config.find_type(name);
                         if let Some(interface) = interface {
                             if interface.fields.iter().any(|(name, _)| name == new_name) {
-                                return Valid::fail("Field is already implemented from interface");
+                                return Valid::fail("Field is already implemented from interface".to_string());
                             }
                         }
                     }
@@ -385,7 +399,7 @@ fn update_inline_field(
 ) -> Valid<FieldDefinition> {
     let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
     let handle_invalid_path =
-        |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> { Valid::fail("Field not found at given path") };
+        |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> { Valid::fail("Field not found at given path".to_string()) };
     let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
@@ -466,7 +480,7 @@ pub fn to_json_schema_for_args(args: &Option<BTreeMap<String, Arg>>, config: &Co
 }
 pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool>, config: &Config) -> JsonSchema {
     let type_ = config.find_type(type_of.to_owned());
-    let list = list.is_some() && list.unwrap();
+    let list = list.unwrap_or(false);
     let schema = match type_ {
         Some(type_) => {
             let mut schema_fields = HashMap::new();
@@ -500,7 +514,7 @@ pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool
 }
 
 impl TryFrom<&Config> for Blueprint {
-    type Error = ValidationError<&'static str>;
+    type Error = ValidationError<String>;
 
     fn try_from(config: &Config) -> Result<Self, Self::Error> {
         config_blueprint(config)

@@ -2,9 +2,10 @@ use std::collections::BTreeMap;
 
 use std::time::{Duration, SystemTime};
 
+use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use http_cache_semantics::CachePolicy;
-use reqwest::header::HeaderName;
+use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::Client;
 use reqwest::IntoUrl;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -36,7 +37,7 @@ impl HttpClient {
             .user_agent("Tailcall/1.0");
 
         if let Some(proxy) = proxy {
-            builder = builder.proxy(reqwest::Proxy::http(proxy.url).unwrap());
+            builder = builder.proxy(reqwest::Proxy::http(proxy.url).expect("Failed to set proxy in http client"));
         }
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
@@ -75,17 +76,13 @@ impl HttpClient {
         }
     }
 
-    pub async fn get<T>(
-        &self,
-        url: T,
-        forwarded_headers: BTreeMap<String, String>,
-    ) -> reqwest_middleware::Result<Response>
+    pub async fn get<T>(&self, url: T, forwarded_headers: BTreeMap<String, String>) -> Result<Response>
     where
         T: IntoUrl,
     {
         let mut headers = reqwest::header::HeaderMap::new();
         for (key, value) in forwarded_headers.iter() {
-            headers.insert(key.parse::<HeaderName>().unwrap(), value.parse().unwrap());
+            headers.insert(key.parse::<HeaderName>()?, value.parse::<HeaderValue>()?);
         }
 
         let request = self.client.get(url).headers(headers).build()?;
