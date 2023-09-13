@@ -99,6 +99,8 @@ jobs:
           cat wrk-output.md
 
       - id: get_comment_body
+        name: Get comment body
+        working-directory: ci-benchmark
         run: |
           body="$(cat wrk-output.md)"
           delimiter="$(openssl rand -hex 8)"
