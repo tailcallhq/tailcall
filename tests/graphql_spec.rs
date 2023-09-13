@@ -190,7 +190,9 @@ async fn test_execution() -> std::io::Result<()> {
 
     for spec in specs? {
         let blueprint = Blueprint::try_from(&Config::from_sdl(&spec.server_sdl).unwrap()).unwrap();
-        let schema = blueprint.to_schema(&config::Server::default()).unwrap();
+        let mut server = config::Server::default();
+        server.enable_query_validation = Some(false);
+        let schema = blueprint.to_schema(&server).unwrap();
 
         for q in spec.test_queries {
             let mut headers = BTreeMap::new();
