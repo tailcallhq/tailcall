@@ -83,7 +83,7 @@ jobs:
         name: Run wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 30 -t 2 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          wrk -d 30 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
