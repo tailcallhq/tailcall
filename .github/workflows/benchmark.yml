@@ -75,11 +75,15 @@ jobs:
         run: |
           sudo apt-get install -y wrk
 
+      - name: Run test query
+        run: |
+          curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
+
       - id: run_wrk
         name: Run wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          wrk -d 30 -t 2 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
       
       - id: convert_wrk_output_markdown
         name: Convert output to markdown
