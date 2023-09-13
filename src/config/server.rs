@@ -35,7 +35,7 @@ impl Server {
         self.enable_introspection.unwrap_or(true)
     }
     pub fn enable_query_validation(&self) -> bool {
-        !self.enable_query_validation.unwrap_or(true)
+        self.enable_query_validation.unwrap_or(true)
     }
 }
 
