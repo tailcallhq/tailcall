@@ -89,16 +89,18 @@ jobs:
         name: Convert output to markdown
         working-directory: ci-benchmark
         run: |
-          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
+          echo "wrk_output=`node wrk-output-to-md.js wrk-output.txt`"
 
       - id: cat_md
         name: cat md
         working-directory: ci-benchmark
         run: |
-          cat wrk-output.md
+          cat ${{steps.convert_wrk_output_markdown.outputs.wrk_output}}
                     
-      - id: add_pr_comment
-        uses: thollander/actions-comment-pull-request@v2
+      - name: Create commit comment
+        uses: peter-evans/commit-comment@v2
         with:
-          filePath: ./ci-benchmark/wrk-output.md
+          sha: ${{github.event.pull_request.head.sha}}
+          body: |
+            ${{steps.convert_wrk_output_markdown.outputs.wrk_output}}
   
