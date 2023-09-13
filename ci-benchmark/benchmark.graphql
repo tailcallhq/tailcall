@@ -2,9 +2,8 @@ schema
   @server(
     port: 8000
     baseURL: "http://jsonplaceholder.typicode.com"
-    enableHttpCache: false
+    enableHttpCache: true
     enableGraphiql: "/graphiql"
-    proxy: {url: "http://localhost:8080"}
   ) {
   query: Query
 }
