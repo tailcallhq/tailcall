@@ -4,6 +4,7 @@ mod method;
 mod request;
 mod response;
 mod scheme;
+mod memoize;
 
 pub use self::client::*;
 pub use self::data_loader::*;
