@@ -4,8 +4,7 @@ schema
     baseURL: "http://jsonplaceholder.typicode.com"
     enableHttpCache: true
     enableGraphiql: "/graphiql"
-    enableQueryValidation: false,
-    proxy: {url: "http://localhost:3000"}
+    enableQueryValidation: false
   ) {
   query: Query
 }
