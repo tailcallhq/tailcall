@@ -42,11 +42,7 @@ impl Config {
         }
 
         for (_, type_of) in self.graphql.types.iter() {
-            if type_of.interface.unwrap_or(false) {
-                for (_, field) in type_of.fields.iter() {
-                    types.insert(&field.type_of);
-                }
-            } else if !type_of.fields.is_empty() {
+            if type_of.interface.unwrap_or(false) || !type_of.fields.is_empty() {
                 for (_, field) in type_of.fields.iter() {
                     types.insert(&field.type_of);
                 }
