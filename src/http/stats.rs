@@ -1,6 +1,4 @@
-use derive_setters::Setters;
-
-#[derive(Default, Clone, Debug, Setters)]
+#[derive(Default, Clone, Debug)]
 pub struct Stats {
     pub min_ttl: Option<u64>,
 }
