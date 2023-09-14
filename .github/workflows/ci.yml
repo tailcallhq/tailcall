@@ -3,9 +3,6 @@ name: build
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    types: [opened, reopened, synchronize]
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize]
