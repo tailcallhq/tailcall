@@ -2,7 +2,8 @@ name: build
 
 on:
   push:
-    branches: [*]
+    branches:
+      - '**'
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize]
