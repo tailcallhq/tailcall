@@ -70,7 +70,7 @@ fn to_definitions<'a>(
         } else if type_.scalar.is_some() {
             to_scalar_type_definition(name).trace(name)
         } else if dbl_usage {
-            Valid::fail("type is used in input and output")
+            Valid::fail("type is used in input and output").trace(name)
         } else {
             let definition = to_object_type_definition(name, type_, config).trace(name)?;
             match definition.clone() {

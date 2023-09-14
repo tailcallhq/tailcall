@@ -46,6 +46,10 @@ impl Config {
                 for (_, field) in type_of.fields.iter() {
                     types.insert(&field.type_of);
                 }
+            } else if !type_of.fields.is_empty() {
+                for (_, field) in type_of.fields.iter() {
+                    types.insert(&field.type_of);
+                }
             }
         }
         types
