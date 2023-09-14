@@ -4,7 +4,7 @@ use http_cache_semantics::RequestLike;
 use hyper::Uri;
 use reqwest::header::HeaderMap;
 
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Setters)]
 pub struct Request {
     pub url: String,
     pub method: reqwest::Method,
