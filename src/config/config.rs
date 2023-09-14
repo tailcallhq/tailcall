@@ -245,7 +245,7 @@ impl Config {
     pub fn from_sdl(sdl: &str) -> Result<Self> {
         let doc = async_graphql::parser::parse_schema(sdl)?;
 
-        Config::try_from(doc)
+        Ok(Config::from(doc))
     }
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
