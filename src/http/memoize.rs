@@ -8,5 +8,5 @@ pub struct Memoize {
 impl Memoize {
     pub fn new(client: HttpClient) -> Self {
         Self { client, cache: moka::sync::Cache::new(u64::MAX) }
-    }    
+    }
 }

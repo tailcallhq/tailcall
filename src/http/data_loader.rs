@@ -155,7 +155,7 @@ impl HttpDataLoader {
                                 status: response.status,
                                 headers: response.headers.clone(),
                                 body,
-                                ttl: response.ttl,
+                                stats: response.stats.clone(),
                             };
                             map.insert(key.clone(), response_for_key);
                         }

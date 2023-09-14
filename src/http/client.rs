@@ -58,7 +58,7 @@ impl HttpClient {
             let cache_ttl = CachePolicy::new(&cached_req, &cached_response)
                 .time_to_live(SystemTime::now())
                 .as_secs();
-            Ok(cached_response.ttl(Option::from(cache_ttl)))
+            Ok(cached_response.min_ttl(cache_ttl))
         } else {
             Ok(cached_response)
         }
@@ -86,7 +86,7 @@ impl HttpClient {
             let cache_ttl = CachePolicy::new(&cached_req, &cached_response)
                 .time_to_live(SystemTime::now())
                 .as_secs();
-            Ok(cached_response.ttl(Option::from(cache_ttl)))
+            Ok(cached_response.min_ttl(cache_ttl))
         } else {
             Ok(cached_response)
         }

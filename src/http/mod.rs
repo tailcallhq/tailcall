@@ -1,10 +1,11 @@
 mod client;
 mod data_loader;
+mod memoize;
 mod method;
 mod request;
 mod response;
 mod scheme;
-mod memoize;
+mod stats;
 
 pub use self::client::*;
 pub use self::data_loader::*;

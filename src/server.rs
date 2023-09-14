@@ -52,7 +52,7 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
     let mut executed_response = request.data(loader.clone()).execute(state.schema.as_ref()).await;
 
     if client.enable_cache_control {
-        let ttls: &Vec<Option<u64>> = &loader.get_cached_values().values().map(|x| x.ttl).collect();
+        let ttls: &Vec<Option<u64>> = &loader.get_cached_values().values().map(|x| x.stats.min_ttl).collect();
         executed_response = set_cache_control(executed_response, min(ttls).unwrap_or(0) as i32);
         executed_response.into_hyper_response()
     } else {
