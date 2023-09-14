@@ -52,15 +52,14 @@ impl HttpClient {
     pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
         let cached_req: Request = Request::from(&request);
         let response = self.client.execute(request).await?;
-        let mut cached_response = Response::from(&response);
-        cached_response.body = response.json().await?;
+        let response = Response::from_response(response).await?;
         if self.enable_cache_control {
-            let cache_ttl = CachePolicy::new(&cached_req, &cached_response)
+            let cache_ttl = CachePolicy::new(&cached_req, &response)
                 .time_to_live(SystemTime::now())
                 .as_secs();
-            Ok(cached_response.min_ttl(cache_ttl))
+            Ok(response.min_ttl(cache_ttl))
         } else {
-            Ok(cached_response)
+            Ok(response)
         }
     }
 
@@ -80,15 +79,14 @@ impl HttpClient {
         let request = self.client.get(url).headers(headers).build()?;
         let cached_req = Request::from(&request);
         let response = self.client.execute(request).await?;
-        let mut cached_response = Response::from(&response);
-        cached_response.body = response.json().await?;
+        let response = Response::from_response(response).await?;
         if self.enable_cache_control {
-            let cache_ttl = CachePolicy::new(&cached_req, &cached_response)
+            let cache_ttl = CachePolicy::new(&cached_req, &response)
                 .time_to_live(SystemTime::now())
                 .as_secs();
-            Ok(cached_response.min_ttl(cache_ttl))
+            Ok(response.min_ttl(cache_ttl))
         } else {
-            Ok(cached_response)
+            Ok(response)
         }
     }
 }

@@ -4,6 +4,8 @@ use http_cache_semantics::ResponseLike;
 
 use super::stats::Stats;
 
+use anyhow::Result;
+
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response {
     pub status: reqwest::StatusCode,
@@ -17,15 +19,13 @@ impl Response {
         self.stats.min_ttl = Some(value);
         self
     }
-}
 
-// FIXME: embed body in Response
-impl From<&reqwest::Response> for Response {
-    fn from(resp: &reqwest::Response) -> Self {
+    pub async fn from_response(resp: reqwest::Response) -> Result<Self> {
         let status = resp.status();
-        let headers = resp.headers().clone();
-        let body = async_graphql::Value::Null;
-        Response { status, headers, body, stats: Stats::default() }
+        let headers = resp.headers().to_owned();
+        let body = resp.bytes().await?;
+        let json = serde_json::from_slice(&body)?;
+        Ok(Response { status, headers, body: json, stats: Stats::default() })
     }
 }
 
