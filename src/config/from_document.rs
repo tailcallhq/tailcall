@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{

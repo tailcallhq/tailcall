@@ -16,6 +16,7 @@ impl Memoize {
         Self { client, cache: moka::sync::Cache::new(u64::MAX) }
     }
 
+    #[allow(dead_code)]
     pub async fn execute(&self, req: reqwest::Request) -> Result<super::Response> {
         if req.method() == Method::GET {
             let key = req.uri();

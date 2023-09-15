@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::fs;
 
 use anyhow::Result;
