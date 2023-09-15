@@ -19,7 +19,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-          components: rustfmt, clippy
+          components: rustfmt, clippy, llvm-cov
 
       - name: Cache Rust dependencies
         uses: actions/cache@v3
@@ -45,8 +45,8 @@ jobs:
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-features
+          command: llvm-cov
+          args: --all-features --output-path lcov.info
 
   deploy:
     name: Deploy app
