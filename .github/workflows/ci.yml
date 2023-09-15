@@ -3,7 +3,7 @@ name: build
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize]
@@ -49,11 +49,11 @@ jobs:
           args: --all-features --output-path lcov.info
 
       - name: Upload coverage to Codecov
-          uses: codecov/codecov-action@v3
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-            files: lcov.info
-            fail_ci_if_error: true
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
 
   deploy:
     name: Deploy app
@@ -94,7 +94,6 @@ jobs:
       create_release_name: ${{ steps.set_output.outputs.create_release_name }}
       create_release_id: ${{ steps.set_output.outputs.create_release_id }}
 
-
   release:
     name: Release
     needs: [check, draft_release]
@@ -102,15 +101,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [
-          linux-x86_64-gnu,
-          linux-x86_64-musl,
-          linux-aarch64-gnu,
-          linux-aarch64-musl,
-          linux-i686-gnu,
-          apple-arm64,
-          apple-x86_64,
-        ]
+        build:
+          [
+            linux-x86_64-gnu,
+            linux-x86_64-musl,
+            linux-aarch64-gnu,
+            linux-aarch64-musl,
+            linux-i686-gnu,
+            apple-arm64,
+            apple-x86_64,
+          ]
         include:
           - build: linux-x86_64-gnu
             os: ubuntu-latest
