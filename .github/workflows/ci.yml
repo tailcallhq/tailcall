@@ -3,7 +3,7 @@ name: build
 on:
   push:
     branches:
-      - '**'
+      - "**"
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize]
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
-
+      - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -45,8 +45,15 @@ jobs:
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --all-features
+          command: llvm-cov
+          args: --all-features --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
 
   deploy:
     name: Deploy app
@@ -87,7 +94,6 @@ jobs:
       create_release_name: ${{ steps.set_output.outputs.create_release_name }}
       create_release_id: ${{ steps.set_output.outputs.create_release_id }}
 
-
   release:
     name: Release
     needs: [check, draft_release]
@@ -95,15 +101,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [
-          linux-x86_64-gnu,
-          linux-x86_64-musl,
-          linux-aarch64-gnu,
-          linux-aarch64-musl,
-          linux-i686-gnu,
-          apple-arm64,
-          apple-x86_64,
-        ]
+        build:
+          [
+            linux-x86_64-gnu,
+            linux-x86_64-musl,
+            linux-aarch64-gnu,
+            linux-aarch64-musl,
+            linux-i686-gnu,
+            apple-arm64,
+            apple-x86_64,
+          ]
         include:
           - build: linux-x86_64-gnu
             os: ubuntu-latest
