@@ -109,7 +109,7 @@ jobs:
           echo "$delimiter" >> $GITHUB_OUTPUT
                     
       - name: Create commit comment
-        uses: peter-evans/commit-comment@v2
+        uses: peter-evans/commit-comment@v3
         with:
           sha: ${{github.event.pull_request.head.sha}}
           body: ${{steps.get_comment_body.outputs.body}}
