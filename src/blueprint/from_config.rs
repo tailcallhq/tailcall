@@ -379,7 +379,10 @@ fn update_inline_field(
     config: &Config,
 ) -> Valid<FieldDefinition> {
     let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
-    let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> { todo!() };
+    let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
+        // TODO! add better error message
+        Valid::fail("Field not found at given path")
+    };
     let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
