@@ -285,7 +285,7 @@ fn update_modify(
                     for name in interface_names {
                         let interface = config.find_type(name);
                         if let Some(interface) = interface {
-                            if interface.fields.iter().any(|(name, _)| name == &b_field.name) {
+                            if interface.fields.iter().any(|(name, _)| name == new_name) {
                                 return Valid::fail("Field is already implemented from interface");
                             }
                         }
