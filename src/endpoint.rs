@@ -14,6 +14,7 @@ use crate::json::JsonLike;
 use crate::json::JsonSchema;
 use crate::mustache::Mustache;
 use crate::path::{Path, Segment};
+use anyhow::Result;
 
 use derive_setters::Setters;
 
@@ -83,16 +84,16 @@ impl Endpoint {
         env: Option<&async_graphql::Value>,
         args: Option<&async_graphql::Value>,
         headers: &[(String, String)],
-    ) -> reqwest::Request {
-        let url = self.get_url(input, env, args, headers).unwrap();
+    ) -> Result<reqwest::Request> {
+        let url = self.get_url(input, env, args, headers)?;
         let method: reqwest::Method = self.method.clone().into();
         let mut request = reqwest::Request::new(method, url);
         let headers = self.eval_headers(input, env, args, headers);
         let body = self.body_str(input, env, args, headers.to_owned());
         for (key, value) in headers {
             request.headers_mut().insert(
-                reqwest::header::HeaderName::from_bytes(key.as_bytes()).unwrap(),
-                reqwest::header::HeaderValue::from_str(&value).unwrap(),
+                reqwest::header::HeaderName::from_bytes(key.as_bytes())?,
+                reqwest::header::HeaderValue::from_str(&value)?,
             );
         }
         request.headers_mut().insert(
@@ -100,7 +101,7 @@ impl Endpoint {
             reqwest::header::HeaderValue::from_static("application/json"),
         );
         request.body_mut().replace(reqwest::Body::from(body));
-        request
+        Ok(request)
     }
 
     const VALUE_STR: &'static str = "value";
@@ -211,7 +212,7 @@ impl Endpoint {
         env: Option<&async_graphql::Value>,
         args: Option<&async_graphql::Value>,
         headers: &[(String, String)],
-    ) -> Result<Url, url::ParseError> {
+    ) -> Result<Url> {
         let mut url = Url::parse(&format!("{}://{}", self.scheme, self.address))?;
 
         let env = env.unwrap_or(&async_graphql::Value::Null);
@@ -235,7 +236,7 @@ impl Endpoint {
                     }
                 }
             }
-            url.set_query(Some(&serde_urlencoded::to_string(&query_params).unwrap()));
+            url.set_query(Some(&serde_urlencoded::to_string(&query_params)?));
         }
         Ok(url)
     }

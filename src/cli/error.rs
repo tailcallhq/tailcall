@@ -171,6 +171,18 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
     }
 }
 
+impl From<ValidationError<String>> for CLIError {
+    fn from(error: ValidationError<String>) -> Self {
+        CLIError::new("Invalid Configuration").caused_by(
+            error
+                .as_vec()
+                .iter()
+                .map(|cause| CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone())))
+                .collect(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
