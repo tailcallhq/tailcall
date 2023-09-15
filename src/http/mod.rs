@@ -1,7 +1,7 @@
 mod client;
 mod data_loader;
 mod get_request;
-mod memoize;
+mod memo_client;
 mod method;
 mod response;
 mod scheme;
