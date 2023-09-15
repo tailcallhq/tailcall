@@ -19,7 +19,7 @@ jobs:
         with:
           toolchain: stable
           override: true
-          components: rustfmt, clippy, llvm-cov
+          components: rustfmt, clippy, cargo-llvm-cov
 
       - name: Cache Rust dependencies
         uses: actions/cache@v3
