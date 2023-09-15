@@ -17,4 +17,4 @@ user: User @http(path: "/user/1", baseURL: "http://localhost:8000") @inline(path
 
 #> client-sdl
 type Failure
-@error(message: "Field not found at given path", trace: ["Query", "user", "@inline"])
+@error(message: "Field not found at given path", trace: ["Query", "user", "@inline", "user", "address", "street"])

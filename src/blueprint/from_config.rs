@@ -329,7 +329,8 @@ fn process_path(
                 false,
                 config,
                 invalid_path_handler,
-            );
+            )
+            .trace(field_name);
         }
         if let Some(next_field) = type_info.fields.get(field_name) {
             let next_is_required = is_required && next_field.required.unwrap_or(false);
@@ -341,7 +342,8 @@ fn process_path(
                     next_is_required,
                     config,
                     invalid_path_handler,
-                );
+                )
+                .trace(field_name);
             }
             if let Some(next_type_info) = config.find_type(next_field.type_of.clone()) {
                 let of_type = process_path(
@@ -351,7 +353,8 @@ fn process_path(
                     next_is_required,
                     config,
                     invalid_path_handler,
-                )?;
+                )
+                .trace(field_name)?;
 
                 return if field.list.unwrap_or(false) {
                     Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
@@ -360,7 +363,7 @@ fn process_path(
                 };
             }
         }
-        return invalid_path_handler(field_name, path);
+        return invalid_path_handler(field_name, path).trace(field_name);
     }
     Valid::Ok(to_type(
         &field.type_of,
@@ -379,10 +382,8 @@ fn update_inline_field(
     config: &Config,
 ) -> Valid<FieldDefinition> {
     let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
-    let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
-        // TODO! add better error message
-        Valid::fail("Field not found at given path")
-    };
+    let handle_invalid_path =
+        |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> { Valid::fail("Field not found at given path") };
     let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
