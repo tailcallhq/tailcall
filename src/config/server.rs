@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
-    pub allowed_headers: Option<Vec<String>>,
+    pub allowed_headers: Option<HashSet<String>>,
     #[serde(rename = "baseURL", serialize_with = "super::url::serialize")]
     pub base_url: Option<url::Url>,
     pub enable_apollo_tracing: Option<bool>,
@@ -37,8 +37,9 @@ impl Server {
     pub fn enable_query_validation(&self) -> bool {
         self.enable_query_validation.unwrap_or(true)
     }
-    pub fn allowed_headers(&self) -> Vec<String> {
-        self.allowed_headers.unwrap_or_default()
+    pub fn allowed_headers(&self) -> HashSet<String> {
+        // TODO: cloning isn't required we can return a ref here
+        self.allowed_headers.clone().unwrap_or(HashSet::new())
     }
 }
 

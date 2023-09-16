@@ -18,7 +18,6 @@ use async_graphql::extensions::ApolloTracing;
 use async_graphql::*;
 
 use super::GlobalTimeout;
-use anyhow::Result;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -192,7 +191,7 @@ impl Blueprint {
         self.schema.mutation.clone()
     }
 
-    pub fn to_schema(self, server: &config::Server) -> Result<Schema> {
+    pub fn to_schema(self, server: &config::Server) -> Schema {
         let mut schema = SchemaBuilder::from(self);
 
         if server.enable_apollo_tracing.unwrap_or(false) {
@@ -214,7 +213,10 @@ impl Blueprint {
         if !server.enable_introspection() {
             schema = schema.disable_introspection();
         }
-        Ok(schema.finish()?)
+
+        // We should safely assume the blueprint is correct and,
+        // generation of schema cannot fail.
+        schema.finish().unwrap()
     }
 
     pub fn endpoints(&self) -> Vec<&Endpoint> {

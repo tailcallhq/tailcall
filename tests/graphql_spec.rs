@@ -43,7 +43,7 @@ impl<'a> From<Cause<&'a str>> for SDLError {
     }
 }
 
-impl<'a> From<Cause<String>> for SDLError {
+impl From<Cause<String>> for SDLError {
     fn from(value: Cause<String>) -> Self {
         SDLError { message: value.message.to_string(), trace: value.trace.iter().map(|e| e.to_string()).collect() }
     }
@@ -170,11 +170,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
         let expected = spec.client_sdl;
         let content = spec.server_sdl;
         let config = Config::from_sdl(content.as_str()).unwrap();
-        let actual = print_schema::print_schema(
-            (Blueprint::try_from(&config).unwrap())
-                .to_schema(&config.server)
-                .unwrap(),
-        );
+        let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema(&config.server));
         assert_eq!(
             actual,
             expected,
@@ -197,7 +193,7 @@ async fn test_execution() -> std::io::Result<()> {
     for spec in specs? {
         let blueprint = Blueprint::try_from(&Config::from_sdl(&spec.server_sdl).unwrap()).unwrap();
         let server = config::Server { enable_query_validation: Some(false), ..Default::default() };
-        let schema = blueprint.to_schema(&server).unwrap();
+        let schema = blueprint.to_schema(&server);
 
         for q in spec.test_queries {
             let mut headers = BTreeMap::new();
