@@ -38,21 +38,17 @@ impl Hash for EndpointKey {
 #[derive(Default, Setters, Clone)]
 #[setters(strip_option)]
 pub struct HttpDataLoader {
-    client: HttpClient,
-    headers: Option<BTreeMap<String, String>>,
+    pub client: HttpClient,
+    pub headers: BTreeMap<String, String>,
 }
 
 impl HttpDataLoader {
     pub fn new(client: HttpClient) -> Self {
-        HttpDataLoader { client, headers: None }
+        HttpDataLoader { client, headers: BTreeMap::new() }
     }
 
     pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader, HashMapCache> {
         DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
-    }
-
-    pub fn get_headers(self) -> BTreeMap<String, String> {
-        self.headers.unwrap_or_default()
     }
 
     pub async fn get_unbatched_results(
@@ -72,7 +68,9 @@ impl HttpDataLoader {
             .map(|key| async {
                 let result = self
                     .client
-                    .get(key.url.clone(), self.headers.clone().unwrap_or_default())
+                    .clone()
+                    .forwarded_headers(self.headers.clone())
+                    .get(key.url.clone())
                     .await;
                 (key.clone(), result)
             })
@@ -119,7 +117,12 @@ impl HttpDataLoader {
         HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
         <HttpDataLoader as Loader<EndpointKey>>::Error,
     > {
-        let result = self.client.get(url, self.headers.clone().unwrap_or_default()).await;
+        let result = self
+            .client
+            .clone()
+            .forwarded_headers(self.headers.clone())
+            .get(url)
+            .await;
 
         match result {
             Ok(response) => {

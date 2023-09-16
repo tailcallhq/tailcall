@@ -40,7 +40,7 @@ impl<'a> EvaluationContext<'a> {
             context: None,
             timeout: Duration::from_millis(5),
             env: HashMap::new(),
-            headers: data_loader.loader().clone().get_headers().clone(),
+            headers: data_loader.loader().headers.clone(),
             server: Server::default(),
         }
     }

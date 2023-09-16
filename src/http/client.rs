@@ -3,9 +3,10 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use anyhow::Result;
+use derive_setters::Setters;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use http_cache_semantics::CachePolicy;
-use reqwest::header::{HeaderName, HeaderValue};
+
 use reqwest::Client;
 use reqwest::IntoUrl;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -14,11 +15,14 @@ use crate::config::Proxy;
 
 use super::{GetRequest, Response};
 
-#[derive(Clone)]
+#[derive(Clone, Setters)]
 pub struct HttpClient {
     client: ClientWithMiddleware,
     // TODO: may be we can save `server` here instead of enable-cache-control
     pub enable_cache_control: bool,
+
+    // TODO: forwarded headers isn't the client's responsibility
+    pub forwarded_headers: BTreeMap<String, String>,
 }
 
 impl Default for HttpClient {
@@ -50,7 +54,7 @@ impl HttpClient {
             }))
         }
 
-        HttpClient { client: client.build(), enable_cache_control }
+        HttpClient { client: client.build(), enable_cache_control, forwarded_headers: BTreeMap::new() }
     }
 
     pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
@@ -76,26 +80,11 @@ impl HttpClient {
         }
     }
 
-    pub async fn get<T>(&self, url: T, forwarded_headers: BTreeMap<String, String>) -> Result<Response>
+    // TODO: drop this method
+    pub async fn get<T>(&self, url: T) -> Result<Response>
     where
         T: IntoUrl,
     {
-        let mut headers = reqwest::header::HeaderMap::new();
-        for (key, value) in forwarded_headers.iter() {
-            headers.insert(key.parse::<HeaderName>()?, value.parse::<HeaderValue>()?);
-        }
-
-        let request = self.client.get(url).headers(headers).build()?;
-        let cached_req = GetRequest::from(&request);
-        let response = self.client.execute(request).await?;
-        let response = Response::from_response(response).await?;
-        if self.enable_cache_control {
-            let cache_ttl = CachePolicy::new(&cached_req, &response)
-                .time_to_live(SystemTime::now())
-                .as_secs();
-            Ok(response.min_ttl(cache_ttl))
-        } else {
-            Ok(response)
-        }
+        Ok(self.execute(self.client.get(url).build()?).await?)
     }
 }
