@@ -10,13 +10,13 @@ use hyper::http::HeaderValue;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
+use super::RequestContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cache_control::{min, set_cache_control};
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::HttpDataLoader;
-use crate::request_context::RequestContext;
 
 fn graphiql() -> Result<Response<Body>> {
     Ok(Response::new(Body::from(
