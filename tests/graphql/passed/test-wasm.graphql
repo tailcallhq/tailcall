@@ -1,0 +1,21 @@
+#> server-sdl
+schema @server(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type User {
+  name: String
+  id: Int
+	idPlusOne: Int @wasmPlugin(name: "increment")
+}
+
+type Query {
+	firstUser: User @http(path: "/users/1")
+}
+
+#> client-query
+query @expect(json: {data: {firstUser:{idPlusOne: 2}}}) {
+	firstUser {
+		idPlusOne
+	}
+}

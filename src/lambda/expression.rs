@@ -12,6 +12,9 @@ use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
+use async_graphql_value::ConstValue;
+use std::path::PathBuf;
+use wasmer::{imports, Instance, Module, Store};
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -32,6 +35,7 @@ pub enum Context {
 pub enum Operation {
   Endpoint(RequestTemplate),
   JS(Box<Expression>, String),
+  WasmPlugin(Box<Expression>, String),
 }
 
 #[derive(Debug, Error, Serialize)]
@@ -44,6 +48,9 @@ pub enum EvaluationError {
 
   #[error("APIValidationError: {0:?}")]
   APIValidationError(Vec<String>),
+
+  #[error("WasmPluginException: {0}")]
+  WasmPluginException(String),
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
@@ -122,7 +129,37 @@ impl Expression {
               }
               result
             }
-          }
+            Operation::WasmPlugin(input, name) => {
+                    println!("WasmPlugin: {}", name);
+                    let mut dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+                    let file_path = format!("wasmplugins/{}.wat", name);
+                    dir_path.push(file_path);
+                    println!("file_path: {:?}", dir_path);
+                    let file = std::fs::read_to_string(dir_path.clone())?;
+                    let module_wat = file.as_str();
+
+                    let mut store = Store::default();
+                    let module = Module::new(&store, module_wat)?;
+                    // The module doesn't import anything, so we create an empty import object.
+                    let import_object = imports! {};
+                    let instance = Instance::new(&mut store, &module, &import_object)?;
+
+                    let add_one = instance.exports.get_function("add_one")?;
+                    let inp = &input.eval(ctx).await?;
+                    let id = inp.get_path(&["id".to_string()]).unwrap();
+                    match id {
+                        ConstValue::Number(n) => {
+                            let result =
+                                add_one.call(&mut store, &[wasmer::Value::I32(n.as_i64().unwrap() as i32)])?;
+                            match *result {
+                                [wasmer::Value::I32(x)] => Ok(async_graphql::Value::from(x)),
+                                _ => panic!("unexpected type returned from add_one"),
+                            }
+                        }
+                        _ => panic!("unexpected type returned from input"),
+                    }
+                }
+            }
         }
       }
     })

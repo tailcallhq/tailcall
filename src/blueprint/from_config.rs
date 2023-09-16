@@ -200,6 +200,7 @@ fn to_field(
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
+  let field_definition = update_wasm_plugin(field, field_definition);
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   let maybe_field_definition = match maybe_field_definition {
     Some(field_definition) => {
@@ -322,6 +323,12 @@ fn update_modify(
     }
     None => Valid::Ok(Some(b_field)),
   }
+}
+fn update_wasm_plugin(field: &config::Field, mut b_field: FieldDefinition) -> FieldDefinition {
+    if let Some(plugin) = field.wasm_plugin.as_ref() {
+        b_field.resolver = Some(Lambda::context().to_unsafe_wasm_plugin(plugin.name.clone()).expression);
+    }
+    b_field
 }
 fn needs_resolving(field: &config::Field) -> bool {
   field.unsafe_operation.is_some() || field.http.is_some()

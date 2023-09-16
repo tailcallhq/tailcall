@@ -151,18 +151,19 @@ pub struct RootSchema {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[setters(strip_option)]
 pub struct Field {
-  pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
-  pub list_type_required: Option<bool>,
-  pub args: Option<BTreeMap<String, Arg>>,
-  pub doc: Option<String>,
-  pub modify: Option<ModifyField>,
-  pub inline: Option<InlineType>,
-  pub http: Option<Http>,
-  #[serde(rename = "unsafe")]
-  pub unsafe_operation: Option<Unsafe>,
-  pub batch: Option<Batch>,
+    pub type_of: String,
+    pub list: Option<bool>,
+    pub required: Option<bool>,
+    pub list_type_required: Option<bool>,
+    pub args: Option<BTreeMap<String, Arg>>,
+    pub doc: Option<String>,
+    pub modify: Option<ModifyField>,
+    pub inline: Option<InlineType>,
+    pub http: Option<Http>,
+    #[serde(rename = "unsafe")]
+    pub unsafe_operation: Option<Unsafe>,
+    pub batch: Option<Batch>,
+    pub wasm_plugin: Option<WasmPlugin>,
 }
 
 impl Field {
@@ -254,4 +255,9 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct WasmPlugin {
+    pub name: String,
 }

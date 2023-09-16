@@ -200,6 +200,7 @@ fn to_common_field(
   let http = to_http(directives);
   let unsafe_operation = to_unsafe_operation(directives);
   let batch = to_batch(directives);
+  let wasm_plugin = to_wasm_plugin(directives);
   config::Field {
     type_of,
     list,
@@ -212,6 +213,7 @@ fn to_common_field(
     http,
     unsafe_operation,
     batch,
+    wasm_plugin,
   }
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -293,13 +295,22 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   Union { types, doc: doc.clone() }
 }
 fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == "batch" {
-      Batch::from_directive(&directive.node).ok()
-    } else {
-      None
-    }
-  })
+    directives.iter().find_map(|directive| {
+        if directive.node.name.node == "batch" {
+            Batch::from_directive(&directive.node).ok()
+        } else {
+            None
+        }
+    })
+}
+fn to_wasm_plugin(directives: &[Positioned<ConstDirective>]) -> Option<config::WasmPlugin> {
+    directives.iter().find_map(|directive| {
+        if directive.node.name.node == "wasmPlugin" {
+            config::WasmPlugin::from_directive(&directive.node).ok()
+        } else {
+            None
+        }
+    })
 }
 
 trait HasName {
