@@ -71,6 +71,16 @@ async fn handle_request(req: Request<Body>, state: Arc<RequestContext>) -> Resul
         _ => not_found(),
     }
 }
+fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
+    let mut new_headers = HeaderMap::new();
+    for (k, v) in headers.iter() {
+        if allowed.contains(k.as_str()) {
+            new_headers.insert(k, v.clone());
+        }
+    }
+
+    new_headers
+}
 pub async fn start_server(file_path: &String) -> Result<()> {
     let server_sdl = fs::read_to_string(file_path)?;
     let config = Config::from_sdl(&server_sdl)?;
@@ -87,14 +97,4 @@ pub async fn start_server(file_path: &String) -> Result<()> {
     let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
 
     Ok(server.await.map_err(CLIError::from)?)
-}
-pub fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
-    let mut new_headers = HeaderMap::new();
-    for (k, v) in headers.iter() {
-        if allowed.contains(k.as_str()) {
-            new_headers.insert(k, v.clone());
-        }
-    }
-
-    new_headers
 }

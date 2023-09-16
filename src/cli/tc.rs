@@ -6,8 +6,8 @@ use anyhow::Result;
 use clap::Parser;
 
 use crate::cli::fmt::Fmt;
+use crate::http::start_server;
 use crate::print_schema;
-use crate::server::start_server;
 use crate::{blueprint::Blueprint, config::Config};
 
 use super::command::{Cli, Command};
