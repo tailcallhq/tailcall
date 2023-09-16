@@ -10,7 +10,7 @@ use hyper::http::HeaderValue;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
-use super::RequestContext;
+use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cache_control::{min, set_cache_control};
@@ -31,7 +31,7 @@ fn to_btree(headers: HeaderMap) -> BTreeMap<String, String> {
     }
     map
 }
-async fn graphql_request(req: Request<Body>, state: &RequestContext) -> Result<Response<Body>> {
+async fn graphql_request(req: Request<Body>, state: &ServerContext) -> Result<Response<Body>> {
     let server = state.server.clone();
     let allowed = server.allowed_headers.unwrap_or_default();
     let headers = create_allowed_headers(req.headers(), &allowed);
@@ -62,7 +62,7 @@ async fn graphql_request(req: Request<Body>, state: &RequestContext) -> Result<R
 fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
-async fn handle_request(req: Request<Body>, state: Arc<RequestContext>) -> Result<Response<Body>> {
+async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
     match *req.method() {
         hyper::Method::GET if state.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => {
             graphiql()
@@ -87,7 +87,7 @@ pub async fn start_server(file_path: &String) -> Result<()> {
     let port = config.port();
     let server = config.server.clone();
     let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-    let state = Arc::new(RequestContext::new(blueprint, server));
+    let state = Arc::new(ServerContext::new(blueprint, server));
     let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
