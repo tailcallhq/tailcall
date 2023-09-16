@@ -19,5 +19,8 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+pub mod request_context;
+
+// TODO: move server to `http` module
 pub mod server;
 pub mod valid;
