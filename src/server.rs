@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::sync::Arc;
 
@@ -15,7 +15,8 @@ use crate::blueprint::Blueprint;
 use crate::cache_control::{min, set_cache_control};
 use crate::cli::CLIError;
 use crate::config::Config;
-use crate::http::{HttpClient, HttpDataLoader};
+use crate::http::HttpDataLoader;
+use crate::request_context::RequestContext;
 
 fn graphiql() -> Result<Response<Body>> {
     Ok(Response::new(Body::from(
@@ -23,18 +24,11 @@ fn graphiql() -> Result<Response<Body>> {
     )))
 }
 
-#[derive(Clone)]
-struct AppState {
-    schema: Arc<dynamic::Schema>,
-    client: Arc<HttpClient>,
-    allowed_headers: Arc<AllowedHeaders>,
-    enable_graphiql: Option<String>,
-}
-
-async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Response<Body>> {
-    let forwarded_headers = if state.allowed_headers.header_names.is_some() {
-        let all_headers = AllHeaders::try_from(&req)?;
-        AllowedHeaders::filter_allowed_headers(&all_headers, &state.allowed_headers)
+async fn graphql_request(req: Request<Body>, state: &RequestContext) -> Result<Response<Body>> {
+    let server = state.server.clone();
+    let headers = if server.allowed_headers.is_some() {
+        let all_headers = req.headers().clone();
+        AllowedHeaders::filter_allowed_headers(&all_headers, server.allowed_headers)
     } else {
         BTreeMap::new()
     };
@@ -42,21 +36,21 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
 
-    let client = state.client.as_ref().to_owned(); // Avoid multiple to_owned() calls
+    let client = state.client.clone();
     let loader = Arc::new(
         HttpDataLoader::new(client.clone())
-            .headers(forwarded_headers)
+            .headers(headers)
             .to_async_data_loader(),
     );
 
-    let mut executed_response = request.data(loader.clone()).execute(state.schema.as_ref()).await;
+    let mut response = request.data(loader.clone()).execute(&state.schema).await;
 
     if client.enable_cache_control {
         let ttls: &Vec<Option<u64>> = &loader.get_cached_values().values().map(|x| x.stats.min_ttl).collect();
-        executed_response = set_cache_control(executed_response, min(ttls).unwrap_or(0) as i32);
-        executed_response.into_hyper_response()
+        response = set_cache_control(response, min(ttls).unwrap_or(0) as i32);
+        response.into_hyper_response()
     } else {
-        let body = serde_json::to_string(&executed_response)?;
+        let body = serde_json::to_string(&response)?;
         Ok(Response::builder()
             .status(StatusCode::OK)
             .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
@@ -67,9 +61,11 @@ async fn graphql_request(req: Request<Body>, state: &AppState) -> Result<Respons
 fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
-async fn handle_request(req: Request<Body>, state: Arc<AppState>) -> Result<Response<Body>> {
+async fn handle_request(req: Request<Body>, state: Arc<RequestContext>) -> Result<Response<Body>> {
     match *req.method() {
-        hyper::Method::GET if state.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => graphiql(),
+        hyper::Method::GET if state.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => {
+            graphiql()
+        }
         hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
         _ => not_found(),
     }
@@ -84,14 +80,7 @@ pub async fn start_server(file_path: &String) -> Result<()> {
     let proxy = config.proxy();
     let server = config.server.clone();
     let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-
-    let state = Arc::new(AppState {
-        schema: Arc::new(blueprint.to_schema(&server)?),
-        client: Arc::new(HttpClient::new(enable_http_cache, proxy, enable_cache_control)),
-        allowed_headers: Arc::new(AllowedHeaders::new(&server.allowed_headers.clone())),
-        enable_graphiql: config.server.enable_graphiql,
-    });
-
+    let state = Arc::new(RequestContext::new(blueprint, server));
     let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
@@ -101,35 +90,6 @@ pub async fn start_server(file_path: &String) -> Result<()> {
     let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
 
     Ok(server.await.map_err(CLIError::from)?)
-}
-
-pub struct AllowedHeaders {
-    pub header_names: Option<Vec<String>>,
-}
-
-impl AllowedHeaders {
-    pub fn new(allowed_headers: &Option<Vec<String>>) -> Self {
-        Self { header_names: allowed_headers.clone() }
-    }
-
-    pub fn filter_allowed_headers(
-        all_headers: &AllHeaders,
-        allowed_headers: &Arc<AllowedHeaders>,
-    ) -> BTreeMap<String, String> {
-        let mut forwarded_headers = BTreeMap::new();
-        if let Some(allowed_names) = &allowed_headers.header_names {
-            for (k, v) in all_headers.header_map.iter() {
-                if allowed_names.contains(k) {
-                    forwarded_headers.insert(k.clone(), v.clone());
-                }
-            }
-        }
-        forwarded_headers
-    }
-}
-
-pub struct AllHeaders {
-    pub header_map: BTreeMap<String, String>,
 }
 
 impl TryFrom<&Request<Body>> for AllHeaders {
@@ -144,4 +104,18 @@ impl TryFrom<&Request<Body>> for AllHeaders {
         }
         Ok(Self { header_map })
     }
+}
+
+pub fn update_allowed_headers(
+    mut headers: BTreeMap<String, String>,
+    allowed: &Vec<String>,
+) -> BTreeMap<String, String> {
+    let hash_set: HashSet<&String, _> = HashSet::from_iter(allowed.iter());
+    for (k, v) in headers.iter() {
+        if !hash_set.contains(k) {
+            headers.remove(k);
+        }
+    }
+
+    headers
 }
