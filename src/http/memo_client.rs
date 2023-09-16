@@ -5,12 +5,12 @@ use hyper::Uri;
 use reqwest::Method;
 
 #[allow(dead_code)]
-pub struct Memoize {
+pub struct MemoClient {
     client: HttpClient,
     cache: moka::sync::Cache<Uri, super::Response>,
 }
 
-impl Memoize {
+impl MemoClient {
     #[allow(dead_code)]
     pub fn new(client: HttpClient) -> Self {
         Self { client, cache: moka::sync::Cache::new(u64::MAX) }
