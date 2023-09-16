@@ -3,18 +3,17 @@ use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
 use crate::directive::DirectiveCodec;
-use anyhow::Result;
 
 use super::Config;
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
-fn config_document(config: &Config) -> Result<ServiceDocument> {
+fn config_document(config: &Config) -> ServiceDocument {
     let mut definitions = Vec::new();
     let schema_definition = SchemaDefinition {
         extend: false,
-        directives: vec![pos(config.server.to_directive("server".to_string())?)],
+        directives: vec![pos(config.server.to_directive("server".to_string()))],
         query: config.graphql.schema.query.clone().map(|name| pos(Name::new(name))),
         mutation: config.graphql.schema.mutation.clone().map(|name| pos(Name::new(name))),
         subscription: config
@@ -42,11 +41,11 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                     .map(|(name, field)| {
                         let mut directives = Vec::new();
                         if let Some(http) = field.clone().http {
-                            let http_dir = http.to_directive("http".to_string())?;
+                            let http_dir = http.to_directive("http".to_string());
                             directives.push(pos(http_dir));
                         }
                         if let Some(us) = field.clone().unsafe_operation {
-                            let us_dir = us.to_directive("unsafe".to_string())?;
+                            let us_dir = us.to_directive("unsafe".to_string());
                             directives.push(pos(us_dir));
                         }
                         let base_type = if field.list.unwrap_or(false) {
@@ -57,16 +56,16 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                         } else {
                             BaseType::Named(Name::new(field.type_of.clone()))
                         };
-                        Ok(pos(FieldDefinition {
+                        pos(FieldDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
                             arguments: vec![],
                             ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
 
                             directives,
-                        }))
+                        })
                     })
-                    .collect::<Result<Vec<Positioned<FieldDefinition>>>>()?,
+                    .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
         } else if let Some(variants) = &type_def.variants {
             TypeKind::Enum(EnumType {
@@ -90,19 +89,19 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                     .map(|(name, field)| {
                         let mut directives = Vec::new();
                         if let Some(http) = field.clone().http {
-                            let http_dir = http.to_directive("http".to_string())?;
+                            let http_dir = http.to_directive("http".to_string());
                             directives.push(pos(http_dir));
                         }
                         if let Some(us) = field.clone().unsafe_operation {
-                            let us_dir = us.to_directive("unsafe".to_string())?;
+                            let us_dir = us.to_directive("unsafe".to_string());
                             directives.push(pos(us_dir));
                         }
                         if let Some(inline) = field.clone().inline {
-                            let inline_dir = inline.to_directive("inline".to_string())?;
+                            let inline_dir = inline.to_directive("inline".to_string());
                             directives.push(pos(inline_dir));
                         }
                         if let Some(modify) = field.clone().modify {
-                            let modify_dir = modify.to_directive("modify".to_string())?;
+                            let modify_dir = modify.to_directive("modify".to_string());
                             directives.push(pos(modify_dir));
                         }
                         let base_type = if field.list.unwrap_or(false) {
@@ -114,16 +113,16 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                             async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone()))
                         };
 
-                        Ok(pos(async_graphql::parser::types::InputValueDefinition {
+                        pos(async_graphql::parser::types::InputValueDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
                             ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
 
                             default_value: None,
                             directives,
-                        }))
+                        })
                     })
-                    .collect::<Result<Vec<Positioned<InputValueDefinition>>>>()?,
+                    .collect::<Vec<Positioned<InputValueDefinition>>>(),
             })
         } else if type_def.fields.is_empty() {
             TypeKind::Scalar
@@ -143,19 +142,19 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                     .map(|(name, field)| {
                         let mut directives = Vec::new();
                         if let Some(http) = field.clone().http {
-                            let http_dir = http.to_directive("http".to_string())?;
+                            let http_dir = http.to_directive("http".to_string());
                             directives.push(pos(http_dir));
                         }
                         if let Some(us) = field.clone().unsafe_operation {
-                            let us_dir = us.to_directive("unsafe".to_string())?;
+                            let us_dir = us.to_directive("unsafe".to_string());
                             directives.push(pos(us_dir));
                         }
                         if let Some(inline) = field.clone().inline {
-                            let inline_dir = inline.to_directive("inline".to_string())?;
+                            let inline_dir = inline.to_directive("inline".to_string());
                             directives.push(pos(inline_dir));
                         }
                         if let Some(modify) = field.clone().modify {
-                            let modify_dir = modify.to_directive("modify".to_string())?;
+                            let modify_dir = modify.to_directive("modify".to_string());
                             directives.push(pos(modify_dir));
                         }
                         let base_type = if field.list.unwrap_or(false) {
@@ -195,16 +194,16 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
                             })
                             .collect::<Vec<Positioned<InputValueDefinition>>>();
 
-                        Ok(pos(async_graphql::parser::types::FieldDefinition {
+                        pos(async_graphql::parser::types::FieldDefinition {
                             description: field.doc.clone().map(pos),
                             name: pos(Name::new(name.clone())),
                             arguments: args,
                             ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
 
                             directives,
-                        }))
+                        })
                     })
-                    .collect::<Result<Vec<Positioned<FieldDefinition>>>>()?,
+                    .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
         };
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
@@ -227,11 +226,11 @@ fn config_document(config: &Config) -> Result<ServiceDocument> {
         })));
     }
 
-    Ok(ServiceDocument { definitions })
+    ServiceDocument { definitions }
 }
 
 impl From<Config> for ServiceDocument {
     fn from(value: Config) -> Self {
-        config_document(&value).unwrap_or(ServiceDocument { definitions: Vec::new() })
+        config_document(&value)
     }
 }

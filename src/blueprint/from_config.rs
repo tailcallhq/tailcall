@@ -62,12 +62,7 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     Ok(SchemaDefinition {
         query: query.clone(),
         mutation: config.graphql.schema.mutation.clone(),
-        directives: vec![to_directive(
-            config
-                .server
-                .to_directive("server".to_string())
-                .map_err(|e| ValidationError::new(e.to_string()))?,
-        )?],
+        directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
     })
 }
 fn to_definitions<'a>(
