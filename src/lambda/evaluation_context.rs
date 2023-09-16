@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 use std::time::Duration;
 
-use async_graphql::dataloader::{DataLoader, HashMapCache};
 use async_graphql::dynamic::ResolverContext;
 #[allow(unused_imports)]
 use async_graphql::InputType;
@@ -9,16 +8,16 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use crate::config::Server;
-use crate::http::HttpDataLoader;
+use crate::http::RequestContext;
 
+// TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
 pub struct EvaluationContext<'a> {
     pub variables: HashMap<usize, Value>,
-    pub data_loader: &'a DataLoader<HttpDataLoader, HashMapCache>,
+    pub req_ctx: &'a RequestContext,
     pub context: Option<&'a ResolverContext<'a>>,
     pub env: HashMap<String, Value>,
-    pub headers: BTreeMap<String, String>,
     pub timeout: Duration,
     pub server: Server,
 }
@@ -33,15 +32,14 @@ impl<'a> EvaluationContext<'a> {
         self.variables.get(id)
     }
 
-    pub fn new(data_loader: &'a DataLoader<HttpDataLoader, HashMapCache>) -> EvaluationContext<'a> {
+    pub fn new(req_ctx: &'a RequestContext) -> EvaluationContext<'a> {
         Self {
             variables: HashMap::new(),
-            data_loader,
             context: None,
             timeout: Duration::from_millis(5),
             env: HashMap::new(),
-            headers: data_loader.loader().headers.clone(),
             server: Server::default(),
+            req_ctx,
         }
     }
 
@@ -60,8 +58,8 @@ impl<'a> EvaluationContext<'a> {
         ctx.parent_value.as_value()
     }
 
-    pub fn get_headers(&self) -> BTreeMap<String, String> {
-        self.headers.clone()
+    pub fn headers(&self) -> BTreeMap<String, String> {
+        self.req_ctx.data_loader.loader().headers.clone()
     }
 }
 

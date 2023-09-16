@@ -71,7 +71,7 @@ mod tests {
 
     use crate::endpoint::Endpoint;
 
-    use crate::http::HttpDataLoader;
+    use crate::http::RequestContext;
     use crate::inet_address::InetAddress;
     use crate::lambda::EvaluationContext;
     use crate::lambda::Lambda;
@@ -83,8 +83,8 @@ mod tests {
         B: DeserializeOwned,
     {
         async fn eval(self) -> Result<B> {
-            let dl = HttpDataLoader::default().to_async_data_loader();
-            let ctx = EvaluationContext::new(&dl);
+            let req_ctx = RequestContext::default();
+            let ctx = EvaluationContext::new(&req_ctx);
             let result = self.expression.eval(&ctx).await?;
             let json = serde_json::to_value(result)?;
             Ok(serde_json::from_value(json)?)

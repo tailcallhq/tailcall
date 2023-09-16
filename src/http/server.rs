@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
 use std::sync::Arc;
 
@@ -10,45 +10,30 @@ use hyper::http::HeaderValue;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
+use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cache_control::{min, set_cache_control};
 use crate::cli::CLIError;
 use crate::config::Config;
-use crate::http::HttpDataLoader;
 
 fn graphiql() -> Result<Response<Body>> {
     Ok(Response::new(Body::from(
         GraphiQLSource::build().endpoint("/graphql").finish(),
     )))
 }
-fn to_btree(headers: HeaderMap) -> BTreeMap<String, String> {
-    let mut map = BTreeMap::new();
-    for (k, v) in headers.iter() {
-        // Unwrap is safe here because we know the header is valid utf8
-        map.insert(k.to_string(), v.to_str().unwrap().to_string());
-    }
-    map
-}
-async fn graphql_request(req: Request<Body>, state: &ServerContext) -> Result<Response<Body>> {
-    let server = state.server.clone();
+
+async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
+    let server = server_ctx.server.clone();
     let allowed = server.allowed_headers.unwrap_or_default();
     let headers = create_allowed_headers(req.headers(), &allowed);
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
-
-    let client = state.client.clone();
-    let loader = Arc::new(
-        HttpDataLoader::new(client.clone())
-            .headers(to_btree(headers))
-            .to_async_data_loader(),
-    );
-
-    let mut response = request.data(loader.clone()).execute(&state.schema).await;
-
-    if client.enable_cache_control {
-        let ttls: &Vec<Option<u64>> = &loader.get_cached_values().values().map(|x| x.stats.min_ttl).collect();
+    let req_ctx = Arc::new(RequestContext::new(server_ctx.client.clone(), &headers));
+    let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
+    if server_ctx.server.enable_cache_control() {
+        let ttls: &Vec<Option<u64>> = &req_ctx.get_cached_values().values().map(|x| x.stats.min_ttl).collect();
         response = set_cache_control(response, min(ttls).unwrap_or(0) as i32);
         response.into_hyper_response()
     } else {

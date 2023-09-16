@@ -76,8 +76,7 @@ impl Expression {
                 Expression::Unsafe(input, operation) => {
                     let input = input.eval(ctx).await?;
                     let headers: Vec<(String, String)> = ctx
-                        .get_headers()
-                        .clone()
+                        .headers()
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v.to_string()))
                         .collect();
@@ -110,6 +109,7 @@ impl Expression {
                                     list: endpoint.list.unwrap_or(false),
                                 };
                                 let value = ctx
+                                    .req_ctx
                                     .data_loader
                                     .load_one(key)
                                     .await

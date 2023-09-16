@@ -2,13 +2,12 @@ use std::borrow::Cow;
 
 use std::sync::Arc;
 
-use async_graphql::dataloader::{DataLoader, HashMapCache};
 use async_graphql::dynamic::{self, FieldFuture, SchemaBuilder};
 
 use crate::blueprint::{Blueprint, Type};
 use crate::blueprint::{Definition, SchemaDefinition};
 
-use crate::http::HttpDataLoader;
+use crate::http::RequestContext;
 use crate::lambda::EvaluationContext;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -31,18 +30,20 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn to_type(def: &Definition, schema0: SchemaDefinition) -> dynamic::Type {
+fn to_type(def: &Definition, schema: SchemaDefinition) -> dynamic::Type {
     match def {
         Definition::ObjectTypeDefinition(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
+            let schema = Arc::new(schema);
             for field in def.fields.iter() {
-                let cloned_field = field.clone();
-                let schema = schema0.clone();
+                let field = field.clone();
+                let schema = schema.clone();
+
                 let mut dyn_schema_field =
                     dynamic::Field::new(field.name.clone(), to_type_ref(&field.of_type), move |ctx| {
-                        let loader = ctx.ctx.data::<Arc<DataLoader<HttpDataLoader, HashMapCache>>>().unwrap();
-                        let field_name = cloned_field.name.clone();
-                        let resolver = cloned_field.clone().resolver;
+                        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+                        let field_name = field.name.clone();
+                        let resolver = field.resolver.clone();
                         let schema = schema.clone();
                         FieldFuture::new(async move {
                             match resolver {
@@ -53,9 +54,9 @@ fn to_type(def: &Definition, schema0: SchemaDefinition) -> dynamic::Type {
                                     _ => None,
                                 })),
                                 Some(expr) => {
-                                    let mut ctx = EvaluationContext::new(loader).context(&ctx);
-                                    if let Some(vars) = schema.clone().directives.first().cloned().map(|x| x.arguments)
-                                    {
+                                    let mut ctx = EvaluationContext::new(req_ctx).context(&ctx);
+                                    let args = schema.clone().directives.first().cloned().map(|x| x.arguments);
+                                    if let Some(vars) = args {
                                         ctx = ctx.env(vars);
                                     }
                                     let async_value = expr.eval(&ctx).await?;

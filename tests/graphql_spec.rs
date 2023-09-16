@@ -18,7 +18,7 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::valid::Cause;
 use tailcall::{config, print_schema};
 
-use tailcall::http::HttpDataLoader;
+use tailcall::http::{HttpDataLoader, RequestContext};
 
 mod graphql_mock;
 
@@ -198,9 +198,9 @@ async fn test_execution() -> std::io::Result<()> {
         for q in spec.test_queries {
             let mut headers = BTreeMap::new();
             headers.insert("authorization".to_string(), "1".to_string());
-            let req = Request::from(q.query.as_str()).data(Arc::new(
-                HttpDataLoader::default().headers(headers).to_async_data_loader(),
-            ));
+            let data_loader = HttpDataLoader::default().headers(headers).to_async_data_loader();
+            let req_ctx = RequestContext::default().data_loader(data_loader);
+            let req = Request::from(q.query.as_str()).data(Arc::new(req_ctx));
             let res = schema.execute(req).await;
             let json = serde_json::to_string(&res).unwrap();
             let expected = serde_json::to_string(&q.expected).unwrap();
