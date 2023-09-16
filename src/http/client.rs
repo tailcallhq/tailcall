@@ -79,12 +79,4 @@ impl HttpClient {
             Ok(response)
         }
     }
-
-    // TODO: drop this method
-    pub async fn get<T>(&self, url: T) -> Result<Response>
-    where
-        T: IntoUrl,
-    {
-        Ok(self.execute(self.client.get(url).build()?).await?)
-    }
 }

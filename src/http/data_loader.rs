@@ -18,6 +18,7 @@ use crate::evaluation_context::get_path_value;
 use crate::http::HttpClient;
 use std::hash::{Hash, Hasher};
 
+use anyhow::Result;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EndpointKey {
     pub url: Url,
@@ -54,10 +55,7 @@ impl HttpDataLoader {
     pub async fn get_unbatched_results(
         &self,
         keys: &[EndpointKey],
-    ) -> async_graphql::Result<
-        HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
-        <HttpDataLoader as Loader<EndpointKey>>::Error,
-    > {
+    ) -> Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>> {
         let unbatched_keys = keys
             .iter()
             .filter(|key| !key.batching_enabled)
@@ -66,18 +64,20 @@ impl HttpDataLoader {
         let futures: Vec<_> = unbatched_keys
             .iter()
             .map(|key| async {
+                let url = key.url.clone();
+                let req = reqwest::Request::new(key.method.clone().into(), url);
                 let result = self
                     .client
                     .clone()
                     .forwarded_headers(self.headers.clone())
-                    .get(key.url.clone())
+                    .execute(req)
                     .await;
+
                 (key.clone(), result)
             })
             .collect();
 
         let results = join_all(futures).await;
-
         results.into_iter().map(|(key, result)| Ok((key, result?))).collect()
     }
 
@@ -94,12 +94,7 @@ impl HttpDataLoader {
     async fn get_batched_results(
         &self,
         keys: &[EndpointKey],
-    ) -> Vec<
-        async_graphql::Result<
-            HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
-            <HttpDataLoader as Loader<EndpointKey>>::Error,
-        >,
-    > {
+    ) -> Vec<anyhow::Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>>> {
         let batched_key_groups = self.group_by_url_and_type(keys);
         join_all(
             batched_key_groups
@@ -113,56 +108,46 @@ impl HttpDataLoader {
         &self,
         url: Url,
         keys: &[EndpointKey],
-    ) -> async_graphql::Result<
-        HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>,
-        <HttpDataLoader as Loader<EndpointKey>>::Error,
-    > {
-        let result = self
+    ) -> anyhow::Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>> {
+        let req = reqwest::Request::new(Method::GET.into(), url);
+        let response = self
             .client
             .clone()
             .forwarded_headers(self.headers.clone())
-            .get(url)
-            .await;
+            .execute(req)
+            .await?;
 
-        match result {
-            Ok(response) => {
-                match &response.body {
-                    async_graphql::Value::List(list) => {
-                        #[allow(clippy::mutable_key_type)]
-                        let mut map: HashMap<
-                            EndpointKey,
-                            <HttpDataLoader as Loader<EndpointKey>>::Value,
-                        > = HashMap::new();
-                        let mut body: ConstValue;
-                        for key in keys.iter() {
-                            let match_fn = |item: &&ConstValue| -> bool {
-                                if let Some(value) = get_path_value(item, &key.match_path) {
-                                    value == &key.match_key_value
-                                } else {
-                                    false
-                                }
-                            };
-
-                            if key.list {
-                                let items = list.iter().filter(match_fn).cloned().collect();
-                                body = async_graphql::Value::List(items);
-                            } else {
-                                body = list.iter().find(match_fn).cloned().unwrap_or(ConstValue::Null);
-                            }
-                            let response_for_key = Response {
-                                status: response.status,
-                                headers: response.headers.clone(),
-                                body,
-                                stats: response.stats.clone(),
-                            };
-                            map.insert(key.clone(), response_for_key);
+        match &response.body {
+            async_graphql::Value::List(list) => {
+                #[allow(clippy::mutable_key_type)]
+                let mut map: HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value> = HashMap::new();
+                let mut body: ConstValue;
+                for key in keys.iter() {
+                    let match_fn = |item: &&ConstValue| -> bool {
+                        if let Some(value) = get_path_value(item, &key.match_path) {
+                            value == &key.match_key_value
+                        } else {
+                            false
                         }
-                        Ok(map)
+                    };
+
+                    if key.list {
+                        let items = list.iter().filter(match_fn).cloned().collect();
+                        body = async_graphql::Value::List(items);
+                    } else {
+                        body = list.iter().find(match_fn).cloned().unwrap_or(ConstValue::Null);
                     }
-                    _ => Ok(HashMap::new()), // TODO throw error
+                    let response_for_key = Response {
+                        status: response.status,
+                        headers: response.headers.clone(),
+                        body,
+                        stats: response.stats.clone(),
+                    };
+                    map.insert(key.clone(), response_for_key);
                 }
+                Ok(map)
             }
-            Err(e) => Err(Arc::new(e)),
+            _ => Ok(HashMap::new()), // TODO throw error
         }
     }
 }

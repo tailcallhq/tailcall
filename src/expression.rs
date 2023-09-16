@@ -83,6 +83,7 @@ impl Expression {
                         .collect();
                     match operation {
                         Operation::Endpoint(endpoint) => {
+                            // TODO: header forwarding should happen here
                             let url = endpoint.get_url(
                                 &input,
                                 Some(&ctx.env.to_value()),
