@@ -30,10 +30,8 @@ impl Response {
         Ok(Response { status, headers, body: json, stats: Stats::default() })
     }
 
-    pub fn set_min_ttl<R: RequestLike>(self, get_request: R) -> Self {
-        let value = CachePolicy::new(&get_request, &self)
-            .time_to_live(SystemTime::now())
-            .as_secs();
+    pub fn set_min_ttl<R: RequestLike>(self, req: R) -> Self {
+        let value = CachePolicy::new(&req, &self).time_to_live(SystemTime::now()).as_secs();
         self.min_ttl(value)
     }
 }
