@@ -8,16 +8,11 @@ use serde_json::Value;
 
 use crate::config;
 
-
-
-use crate::expression::Expression;
-
+use super::GlobalTimeout;
+use crate::lambda::Expression;
 use crate::lambda::Lambda;
-
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::*;
-
-use super::GlobalTimeout;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.

@@ -8,8 +8,8 @@ use async_graphql::dynamic::{self, FieldFuture, SchemaBuilder};
 use crate::blueprint::{Blueprint, Type};
 use crate::blueprint::{Definition, SchemaDefinition};
 
-use crate::evaluation_context::EvaluationContext;
 use crate::http::HttpDataLoader;
+use crate::lambda::EvaluationContext;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {

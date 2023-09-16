@@ -14,8 +14,8 @@ use url::Url;
 use crate::http::Method;
 use crate::http::Response;
 
-use crate::evaluation_context::get_path_value;
 use crate::http::HttpClient;
+use crate::json::JsonLike;
 use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
@@ -124,7 +124,7 @@ impl HttpDataLoader {
                 let mut body: ConstValue;
                 for key in keys.iter() {
                     let match_fn = |item: &&ConstValue| -> bool {
-                        if let Some(value) = get_path_value(item, &key.match_path) {
+                        if let Some(value) = item.get_path(&key.match_path) {
                             value == &key.match_key_value
                         } else {
                             false

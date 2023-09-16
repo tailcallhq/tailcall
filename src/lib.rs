@@ -8,8 +8,6 @@ pub mod config;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
-pub mod evaluation_context;
-pub mod expression;
 pub mod http;
 pub mod inet_address;
 #[cfg(feature = "unsafe-js")]

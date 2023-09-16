@@ -65,7 +65,7 @@ impl<'a> EvaluationContext<'a> {
     }
 }
 
-pub fn get_path_value<'a>(input: &'a async_graphql::Value, path: &'a Vec<String>) -> Option<&'a async_graphql::Value> {
+fn get_path_value<'a>(input: &'a async_graphql::Value, path: &'a Vec<String>) -> Option<&'a async_graphql::Value> {
     let mut value = Some(input);
     for name in path {
         match value {
@@ -87,7 +87,7 @@ pub fn get_path_value<'a>(input: &'a async_graphql::Value, path: &'a Vec<String>
 mod tests {
     use serde_json::json;
 
-    use crate::evaluation_context::get_path_value;
+    use crate::lambda::evaluation_context::get_path_value;
 
     #[test]
     fn test_path_value() {

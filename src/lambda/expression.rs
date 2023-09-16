@@ -8,12 +8,12 @@ use serde_json::Value;
 use thiserror::Error;
 
 use crate::endpoint::Endpoint;
-use crate::evaluation_context::EvaluationContext;
 use crate::http::EndpointKey;
 use crate::http::Method;
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
+use crate::lambda::EvaluationContext;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Expression {

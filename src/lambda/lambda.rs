@@ -1,10 +1,10 @@
 use std::marker::PhantomData;
 
+use super::expression;
+use super::expression::Operation;
 use crate::endpoint::Endpoint;
-use crate::expression;
-use crate::expression::Operation;
 
-use crate::expression::{Context, Expression};
+use super::expression::{Context, Expression};
 
 #[derive(Clone, Debug)]
 pub struct Lambda<A> {
@@ -71,9 +71,9 @@ mod tests {
 
     use crate::endpoint::Endpoint;
 
-    use crate::evaluation_context::EvaluationContext;
     use crate::http::HttpDataLoader;
     use crate::inet_address::InetAddress;
+    use crate::lambda::EvaluationContext;
     use crate::lambda::Lambda;
     use crate::path::{Path, Segment};
     use anyhow::Result;
