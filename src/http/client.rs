@@ -1,11 +1,9 @@
 use std::collections::BTreeMap;
 
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
-use anyhow::Result;
 use derive_setters::Setters;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use http_cache_semantics::CachePolicy;
 
 use reqwest::Client;
 
@@ -62,21 +60,16 @@ impl HttpClient {
             let get_request = GetRequest::from(&request);
             let response = self.client.execute(request).await?;
             let response = Response::from_response(response).await?;
-            self.update_stats(get_request, response)
+
+            // TTL inference should happen for GET requests only
+            if self.enable_cache_control {
+                Ok(response.set_min_ttl(get_request))
+            } else {
+                Ok(response)
+            }
         } else {
             let response = self.client.execute(request).await?;
             Ok(Response::from_response(response).await?)
-        }
-    }
-
-    fn update_stats(&self, get_request: GetRequest, response: Response) -> Result<Response, reqwest_middleware::Error> {
-        if self.enable_cache_control {
-            let cache_ttl = CachePolicy::new(&get_request, &response)
-                .time_to_live(SystemTime::now())
-                .as_secs();
-            Ok(response.min_ttl(cache_ttl))
-        } else {
-            Ok(response)
         }
     }
 }
