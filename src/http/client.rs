@@ -8,7 +8,7 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use http_cache_semantics::CachePolicy;
 
 use reqwest::Client;
-use reqwest::IntoUrl;
+
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use crate::config::Proxy;
