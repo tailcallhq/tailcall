@@ -37,6 +37,9 @@ impl Server {
     pub fn enable_query_validation(&self) -> bool {
         self.enable_query_validation.unwrap_or(true)
     }
+    pub fn allowed_headers(&self) -> Vec<String> {
+        self.allowed_headers.unwrap_or_default()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
