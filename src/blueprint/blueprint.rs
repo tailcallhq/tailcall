@@ -8,10 +8,10 @@ use serde_json::Value;
 
 use crate::config;
 
-use crate::endpoint::Endpoint;
+
 
 use crate::expression::Expression;
-use crate::expression::Operation;
+
 use crate::lambda::Lambda;
 
 use async_graphql::extensions::ApolloTracing;
@@ -217,19 +217,5 @@ impl Blueprint {
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.
         schema.finish().unwrap()
-    }
-
-    pub fn endpoints(&self) -> Vec<&Endpoint> {
-        let mut endpoints = Vec::new();
-        for definition in &self.definitions[..] {
-            if let Definition::ObjectTypeDefinition(ObjectTypeDefinition { fields, .. }) = definition {
-                for field in fields {
-                    if let Some(Expression::Unsafe(_, Operation::Endpoint(endpoint), ..)) = &field.resolver {
-                        endpoints.push(endpoint);
-                    }
-                }
-            }
-        }
-        endpoints
     }
 }
