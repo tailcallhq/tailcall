@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_graphql_value::ConstValue;
 
 pub trait JsonLike {
@@ -141,5 +143,119 @@ impl JsonLike for async_graphql::Value {
 
     fn new(value: Self::Output) -> Self {
         value
+    }
+}
+
+// Highly micro-optimized and benchmarked version of get_path_all
+// Any further changes should be verified with benchmarks
+pub fn get_path_all<'a>(
+    root: &'a serde_json::Value,
+    path: &'a [std::string::String],
+    mut vector: Vec<(&'a serde_json::Value, &'a serde_json::Value)>,
+) -> Vec<(&'a serde_json::Value, &'a serde_json::Value)> {
+    match root {
+        serde_json::Value::Array(list) => {
+            for value in list {
+                vector = get_path_all(value, path, vector);
+            }
+        }
+        serde_json::Value::Object(map) => {
+            if let Some((key, tail)) = path.split_first() {
+                if let Some(value) = map.get(key) {
+                    if tail.is_empty() {
+                        vector.push((value, root));
+                    } else {
+                        vector = get_path_all(value, tail, vector);
+                    }
+                }
+            }
+        }
+        _ => (),
+    }
+
+    vector
+}
+
+pub fn make_hash_map<'a>(
+    src: Vec<(&'a serde_json::Value, &'a serde_json::Value)>,
+) -> HashMap<&'a String, Vec<&'a serde_json::Value>> {
+    let mut map: HashMap<&'a String, Vec<&'a serde_json::Value>> = HashMap::new();
+    for (key, value) in src {
+        if let serde_json::Value::String(key) = key {
+            if let Some(values) = map.get_mut(key) {
+                values.push(value);
+            } else {
+                map.insert(key, vec![value]);
+            }
+        }
+    }
+    map
+}
+
+#[cfg(test)]
+mod tests {
+
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
+
+    use crate::json::{json_like::get_path_all, make_hash_map};
+
+    #[test]
+    fn test_get_path_all() {
+        let input = json!({
+            "data": [
+                {"user": {"id": "1"}},
+                {"user": {"id": "2"}},
+                {"user": {"id": "3"}},
+                {"user": [
+                    {"id": "4"},
+                    {"id": "5"}
+                    ]
+                },
+            ]
+        });
+
+        let actual = serde_json::to_value(get_path_all(
+            &input,
+            &["data".into(), "user".into(), "id".into()],
+            vec![],
+        ))
+        .unwrap();
+
+        let expected = json!(
+            [
+                ["1", {"id": "1"}],
+                ["2", {"id": "2"}],
+                ["3", {"id": "3"}],
+                ["4", {"id": "4"}],
+                ["5", {"id": "5"}],
+
+            ]
+        );
+
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn test_make_hash_map() {
+        let arr = vec![
+            (json!("1"), json!({"id": "1"})),
+            (json!("2"), json!({"id": "2"})),
+            (json!("2"), json!({"id": "2"})),
+            (json!("3"), json!({"id": "3"})),
+        ];
+        let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|(k, v)| (k, v)).collect();
+
+        let actual = serde_json::to_value(make_hash_map(input)).unwrap();
+
+        let expected = json!(
+            {
+                "1": [{"id": "1"}],
+                "2": [{"id": "2"}, {"id": "2"}],
+                "3": [{"id": "3"}],
+            }
+        );
+
+        assert_eq!(actual, expected)
     }
 }

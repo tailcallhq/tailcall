@@ -11,7 +11,9 @@ path = "src/main.rs"
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
 thiserror = "1.0.48"
-http-cache-semantics = {version = "1.0.1", default-features = false, features = ["reqwest"]}
+http-cache-semantics = { version = "1.0.1", default-features = false, features = [
+   "reqwest"
+] }
 mimalloc = { version = "0.1.39", default-features = false }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -21,7 +23,7 @@ url = { version = "2", features = ["serde"] }
 sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"], default-features = false }
-hyper = { version = "0.14", features = ["full"] , default-features = false}
+hyper = { version = "0.14", features = ["full"], default-features = false }
 async-graphql = { version = "6.0", features = [
    "dynamic-schema",
    "apollo_persisted_queries",
@@ -36,13 +38,16 @@ mini-v8 = { version = "0.4.1", optional = true }
 clap = { version = "4.4.3", features = ["derive"] }
 colored = "2"
 regex = "1.9.5"
-http-cache-reqwest = { version = "0.11.1", features = ["manager-moka"], default-features = false }
+http-cache-reqwest = { version = "0.11.1", features = [
+   "manager-moka"
+], default-features = false }
 reqwest-middleware = "0.2.3"
 async-trait = "0.1.73"
 serde_path_to_error = "0.1.14"
 moka = "0.11.3"
 
 [dev-dependencies]
+criterion = "0.5.1"
 httpmock = "0.6"
 mockito = "1.1.1"
 pretty_assertions = "1.4.0"
@@ -59,3 +64,7 @@ overflow-checks = false
 
 [features]
 unsafe-js = ["dep:mini-v8"]
+
+[[bench]]
+name = "json_like_bench"
+harness = false
