@@ -83,12 +83,8 @@ impl Expression {
                     match operation {
                         Operation::Endpoint(endpoint) => {
                             // TODO: header forwarding should happen here
-                            let url = endpoint.get_url(
-                                &input,
-                                Some(&ctx.env.to_value()),
-                                ctx.args().as_ref(),
-                                &headers.to_owned(),
-                            )?;
+                            let env = &ctx.req_ctx.server.vars.to_value();
+                            let url = endpoint.get_url(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
 
                             if endpoint.method == Method::GET {
                                 let match_key_value = endpoint
@@ -115,14 +111,14 @@ impl Expression {
                                     .await
                                     .map_err(|e| EvaluationError::IOException(e.to_string()))?
                                     .unwrap_or_default();
-                                if ctx.server.enable_http_validation() {
+                                if ctx.req_ctx.server.enable_http_validation() {
                                     endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
                                 }
                                 Ok(value.body)
                             } else {
                                 let req = endpoint.into_request(
                                     &input,
-                                    Some(&ctx.env.to_value()),
+                                    Some(env),
                                     ctx.args().as_ref(),
                                     &headers.to_owned(),
                                 )?;
@@ -131,7 +127,7 @@ impl Expression {
                                     .execute(req)
                                     .await
                                     .map_err(|e| EvaluationError::IOException(e.to_string()))?;
-                                if ctx.server.enable_http_validation() {
+                                if ctx.req_ctx.server.enable_http_validation() {
                                     endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
                                 }
                                 Ok(value.body)

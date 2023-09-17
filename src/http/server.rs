@@ -30,7 +30,7 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
     let headers = create_allowed_headers(req.headers(), &allowed);
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
-    let req_ctx = Arc::new(RequestContext::new(server_ctx.client.clone(), &headers));
+    let req_ctx = Arc::new(RequestContext::from(server_ctx).req_headers(headers));
     let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
     if server_ctx.server.enable_cache_control() {
         let ttls: &Vec<Option<u64>> = &req_ctx.get_cached_values().values().map(|x| x.stats.min_ttl).collect();

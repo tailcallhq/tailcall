@@ -6,12 +6,12 @@ use crate::{blueprint::Blueprint, config::Server, http::HttpClient};
 #[derive(Clone, Setters)]
 pub struct ServerContext {
     pub schema: dynamic::Schema,
-    pub client: HttpClient,
+    pub http_client: HttpClient,
     pub server: Server,
 }
 
 impl ServerContext {
     pub fn new(blueprint: Blueprint, server: Server) -> Self {
-        ServerContext { schema: blueprint.to_schema(&server), client: HttpClient::new(server.clone()), server }
+        ServerContext { schema: blueprint.to_schema(&server), http_client: HttpClient::new(server.clone()), server }
     }
 }

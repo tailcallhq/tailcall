@@ -1,46 +1,25 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use async_graphql::dynamic::ResolverContext;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use derive_setters::Setters;
-use serde_json::Value;
 
-use crate::config::Server;
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
 pub struct EvaluationContext<'a> {
-    pub variables: HashMap<usize, Value>,
     pub req_ctx: &'a RequestContext,
     pub context: Option<&'a ResolverContext<'a>>,
-    pub env: HashMap<String, Value>,
     pub timeout: Duration,
-    pub server: Server,
 }
 
 impl<'a> EvaluationContext<'a> {
-    pub fn set(mut self, id: usize, value: Value) -> Self {
-        self.variables.insert(id, value);
-        self
-    }
-
-    pub fn get(&self, id: &usize) -> Option<&Value> {
-        self.variables.get(id)
-    }
-
     pub fn new(req_ctx: &'a RequestContext) -> EvaluationContext<'a> {
-        Self {
-            variables: HashMap::new(),
-            context: None,
-            timeout: Duration::from_millis(5),
-            env: HashMap::new(),
-            server: Server::default(),
-            req_ctx,
-        }
+        Self { context: None, timeout: Duration::from_millis(5), req_ctx }
     }
 
     pub fn args(&self) -> Option<async_graphql::Value> {

@@ -129,7 +129,7 @@ impl Endpoint {
         let header;
         match part {
             Self::VALUE_STR => input.get_path(&parts[1..]),
-            Self::VARS_STR => env.get_path(parts),
+            Self::VARS_STR => env.get_path(&parts[1..]),
             Self::ARGS_STR => args.get_path(&parts[1..]),
             Self::HEADERS_STR => {
                 header = Self::get_header(&parts[1], headers);
@@ -332,9 +332,7 @@ mod tests {
         let result = endpoint
             .get_url(
                 &async_graphql::Value::Null,
-                async_graphql::Value::from_json(json!({"vars": {"name": 3}}))
-                    .ok()
-                    .as_ref(),
+                async_graphql::Value::from_json(json!( {"name": 3})).ok().as_ref(),
                 None,
                 &[],
             )
