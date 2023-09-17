@@ -6,6 +6,7 @@ pub trait JsonLike {
     type Output;
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
+    fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
     fn as_u64_ok(&self) -> Result<u64, &str>;
     fn as_f64_ok(&self) -> Result<f64, &str>;
@@ -13,7 +14,9 @@ pub trait JsonLike {
     fn as_null_ok(&self) -> Result<(), &str>;
     fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str>;
     fn get_path(&self, path: &[String]) -> Option<&Self::Output>;
-    fn new(value: Self::Output) -> Self;
+    fn get_key(&self, path: &str) -> Option<&Self::Output>;
+    fn new(value: &Self::Output) -> &Self;
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>>;
 }
 
 impl JsonLike for serde_json::Value {
@@ -62,8 +65,27 @@ impl JsonLike for serde_json::Value {
         Some(val)
     }
 
-    fn new(value: Self::Output) -> Self {
+    fn new(value: &Self::Output) -> &Self {
         value
+    }
+
+    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+        match self {
+            serde_json::Value::Object(map) => map.get(path),
+            _ => None,
+        }
+    }
+
+    fn as_string_ok(&self) -> Result<&String, &str> {
+        match self {
+            serde_json::Value::String(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>> {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
     }
 }
 
@@ -141,47 +163,57 @@ impl JsonLike for async_graphql::Value {
         Some(val)
     }
 
-    fn new(value: Self::Output) -> Self {
+    fn new(value: &Self::Output) -> &Self {
         value
+    }
+
+    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+        match self {
+            ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
+            _ => None,
+        }
+    }
+    fn as_string_ok(&self) -> Result<&String, &str> {
+        match self {
+            ConstValue::String(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>> {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
     }
 }
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-pub fn get_path_all<'a>(
-    root: &'a serde_json::Value,
-    path: &'a [std::string::String],
-    mut vector: Vec<(&'a serde_json::Value, &'a serde_json::Value)>,
-) -> Vec<(&'a serde_json::Value, &'a serde_json::Value)> {
-    match root {
-        serde_json::Value::Array(list) => {
-            for value in list {
-                vector = get_path_all(value, path, vector);
+pub fn gather_path_matches<'a, J: JsonLike>(
+    root: &'a J,
+    path: &'a [String],
+    mut vector: Vec<(&'a J, &'a J)>,
+) -> Vec<(&'a J, &'a J)> {
+    if let Ok(root) = root.as_array_ok() {
+        for value in root {
+            vector = gather_path_matches(J::new(value), path, vector);
+        }
+    } else if let Some((key, tail)) = path.split_first() {
+        if let Some(value) = root.get_key(key) {
+            if tail.is_empty() {
+                vector.push((J::new(value), root));
+            } else {
+                vector = gather_path_matches(J::new(value), tail, vector);
             }
         }
-        serde_json::Value::Object(map) => {
-            if let Some((key, tail)) = path.split_first() {
-                if let Some(value) = map.get(key) {
-                    if tail.is_empty() {
-                        vector.push((value, root));
-                    } else {
-                        vector = get_path_all(value, tail, vector);
-                    }
-                }
-            }
-        }
-        _ => (),
     }
 
     vector
 }
 
-pub fn make_hash_map<'a>(
-    src: Vec<(&'a serde_json::Value, &'a serde_json::Value)>,
-) -> HashMap<&'a String, Vec<&'a serde_json::Value>> {
-    let mut map: HashMap<&'a String, Vec<&'a serde_json::Value>> = HashMap::new();
+pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<&'a String, Vec<&'a J>> {
+    let mut map: HashMap<&'a String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
-        if let serde_json::Value::String(key) = key {
+        if let Ok(key) = key.as_string_ok() {
             if let Some(values) = map.get_mut(key) {
                 values.push(value);
             } else {
@@ -198,10 +230,10 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use crate::json::{json_like::get_path_all, make_hash_map};
+    use crate::json::{group_by_key, json_like::gather_path_matches};
 
     #[test]
-    fn test_get_path_all() {
+    fn test_gather_path_matches() {
         let input = json!({
             "data": [
                 {"user": {"id": "1"}},
@@ -215,7 +247,7 @@ mod tests {
             ]
         });
 
-        let actual = serde_json::to_value(get_path_all(
+        let actual = serde_json::to_value(gather_path_matches(
             &input,
             &["data".into(), "user".into(), "id".into()],
             vec![],
@@ -237,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn test_make_hash_map() {
+    fn test_group_by_key() {
         let arr = vec![
             (json!("1"), json!({"id": "1"})),
             (json!("2"), json!({"id": "2"})),
@@ -246,7 +278,7 @@ mod tests {
         ];
         let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|(k, v)| (k, v)).collect();
 
-        let actual = serde_json::to_value(make_hash_map(input)).unwrap();
+        let actual = serde_json::to_value(group_by_key(input)).unwrap();
 
         let expected = json!(
             {
