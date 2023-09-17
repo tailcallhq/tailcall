@@ -36,7 +36,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
                 let field = field.clone();
-
                 let mut dyn_schema_field =
                     dynamic::Field::new(field.name.clone(), to_type_ref(&field.of_type), move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();

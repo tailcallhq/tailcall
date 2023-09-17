@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use derive_setters::Setters;
-use serde::Deserialize;
-use serde::Serialize;
 use serde_json::Value;
 
 use crate::config;
@@ -18,25 +16,16 @@ use async_graphql::*;
 /// It can only be generated from a valid Config.
 /// It allows us to choose a different GraphQL Backend, without re-writing all orchestration logic.
 /// It's not optimized for REST APIs (yet).
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
     pub schema: SchemaDefinition,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Type {
-    NamedType {
-        name: String,
-        #[serde(rename = "nonNull")]
-        non_null: bool,
-    },
-    ListType {
-        #[serde(rename = "ofType")]
-        of_type: Box<Type>,
-        #[serde(rename = "nonNull")]
-        non_null: bool,
-    },
+    NamedType { name: String, non_null: bool },
+    ListType { of_type: Box<Type>, non_null: bool },
 }
 
 impl Type {
@@ -48,7 +37,7 @@ impl Type {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Definition {
     InterfaceTypeDefinition(InterfaceTypeDefinition),
     ObjectTypeDefinition(ObjectTypeDefinition),
@@ -70,14 +59,14 @@ impl Definition {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct InterfaceTypeDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>,
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ObjectTypeDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>,
@@ -85,14 +74,14 @@ pub struct ObjectTypeDefinition {
     pub implements: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct InputObjectTypeDefinition {
     pub name: String,
     pub fields: Vec<InputFieldDefinition>,
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct EnumTypeDefinition {
     pub name: String,
     pub directives: Vec<Directive>,
@@ -100,34 +89,32 @@ pub struct EnumTypeDefinition {
     pub enum_values: Vec<EnumValueDefinition>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct EnumValueDefinition {
     pub description: Option<String>,
     pub name: String,
     pub directives: Vec<Directive>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SchemaDefinition {
     pub query: String,
     pub mutation: Option<String>,
     pub directives: Vec<Directive>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct InputFieldDefinition {
     pub name: String,
-    #[serde(rename = "ofType")]
     pub of_type: Type,
     pub default_value: Option<serde_json::Value>,
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters)]
 pub struct FieldDefinition {
     pub name: String,
     pub args: Vec<InputFieldDefinition>,
-    #[serde(rename = "ofType")]
     pub of_type: Type,
     pub resolver: Option<Expression>,
     pub directives: Vec<Directive>,
@@ -152,21 +139,21 @@ impl FieldDefinition {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Directive {
     pub name: String,
     pub arguments: HashMap<String, Value>,
     pub index: usize,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct UnionTypeDefinition {
     pub name: String,
     pub directives: Vec<Directive>,

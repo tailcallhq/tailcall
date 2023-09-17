@@ -1,9 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::BTreeMap;
-
-use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 use url::Url;
 
 use crate::batch::Batch;
@@ -20,7 +19,7 @@ use derive_setters::Setters;
 
 const EMPTY_VEC: &Vec<String> = &vec![];
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Setters)]
+#[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
     pub method: Method,
     pub path: Path,
@@ -34,6 +33,9 @@ pub struct Endpoint {
     pub description: Option<String>,
     pub batch: Option<Batch>,
     pub list: Option<bool>,
+
+    // TODO: endpoint can be compiled to request in static cases
+    pub request: Option<Arc<reqwest::Request>>,
 }
 
 impl Endpoint {
@@ -51,6 +53,7 @@ impl Endpoint {
             description: None,
             batch: None,
             list: None,
+            request: None,
         }
     }
 

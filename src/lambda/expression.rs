@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql::InputType;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -15,7 +15,7 @@ use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
     Literal(Value), // TODO: this should async_graphql::Value
@@ -24,13 +24,13 @@ pub enum Expression {
     Input(Box<Expression>, Vec<String>),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Context {
     Value,
     Path(Vec<String>),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Operation {
     Endpoint(Endpoint),
     JS(String),
@@ -82,7 +82,7 @@ impl Expression {
                         .collect();
                     match operation {
                         Operation::Endpoint(endpoint) => {
-                            // TODO: header forwarding should happen here
+                            // TODO: header forwarding should happen inside of endpoint
                             let env = &ctx.req_ctx.server.vars.to_value();
                             let url = endpoint.get_url(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
 
