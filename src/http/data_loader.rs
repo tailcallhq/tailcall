@@ -66,12 +66,7 @@ impl HttpDataLoader {
             .map(|key| async {
                 let url = key.url.clone();
                 let req = reqwest::Request::new(key.method.clone().into(), url);
-                let result = self
-                    .client
-                    .clone()
-                    .forwarded_headers(self.headers.clone())
-                    .execute(req)
-                    .await;
+                let result = self.client.clone().execute(req).await;
 
                 (key.clone(), result)
             })
@@ -110,12 +105,7 @@ impl HttpDataLoader {
         keys: &[EndpointKey],
     ) -> anyhow::Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>> {
         let req = reqwest::Request::new(Method::GET.into(), url);
-        let response = self
-            .client
-            .clone()
-            .forwarded_headers(self.headers.clone())
-            .execute(req)
-            .await?;
+        let response = self.client.clone().execute(req).await?;
 
         match &response.body {
             async_graphql::Value::List(list) => {
