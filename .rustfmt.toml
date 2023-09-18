@@ -1,2 +1,3 @@
 max_width = 120
 struct_lit_width = 120
+tab_spaces = 2

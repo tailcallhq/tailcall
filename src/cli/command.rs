@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
 
 const VERSION: &str = match option_env!("APP_VERSION") {
-    Some(version) => version,
-    _ => "0.1.0-dev",
+  Some(version) => version,
+  _ => "0.1.0-dev",
 };
 const ABOUT: &str = r"
    __        _ __           ____
@@ -14,29 +14,29 @@ const ABOUT: &str = r"
 #[derive(Parser)]
 #[command(name ="tc",author, version = VERSION, about, long_about = Some(ABOUT))]
 pub struct Cli {
-    #[command(subcommand)]
-    pub command: Command,
+  #[command(subcommand)]
+  pub command: Command,
 }
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Starts the GraphQL server on the configured port
-    Start {
-        /// Path for the configuration file
-        file_path: String,
-    },
+  /// Starts the GraphQL server on the configured port
+  Start {
+    /// Path for the configuration file
+    file_path: String,
+  },
 
-    /// Validate a composition spec
-    Check {
-        /// Path for the configuration file
-        file_path: String,
+  /// Validate a composition spec
+  Check {
+    /// Path for the configuration file
+    file_path: String,
 
-        /// N plus one queries
-        #[arg(short, long)]
-        n_plus_one_queries: bool,
+    /// N plus one queries
+    #[arg(short, long)]
+    n_plus_one_queries: bool,
 
-        /// Display schema
-        #[arg(short, long)]
-        schema: bool,
-    },
+    /// Display schema
+    #[arg(short, long)]
+    schema: bool,
+  },
 }
