@@ -16,7 +16,7 @@ pub trait JsonLike {
   fn get_path(&self, path: &[String]) -> Option<&Self::Output>;
   fn get_key(&self, path: &str) -> Option<&Self::Output>;
   fn new(value: &Self::Output) -> &Self;
-  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>>;
+  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
 }
 
 impl JsonLike for serde_json::Value {
@@ -83,7 +83,7 @@ impl JsonLike for serde_json::Value {
     }
   }
 
-  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>> {
+  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
     let src = gather_path_matches(self, path, vec![]);
     group_by_key(src)
   }
@@ -180,7 +180,7 @@ impl JsonLike for async_graphql::Value {
     }
   }
 
-  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<&'a String, Vec<&'a Self::Output>> {
+  fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
     let src = gather_path_matches(self, path, vec![]);
     group_by_key(src)
   }
@@ -210,11 +210,17 @@ pub fn gather_path_matches<'a, J: JsonLike>(
   vector
 }
 
-pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<&'a String, Vec<&'a J>> {
-  let mut map: HashMap<&'a String, Vec<&'a J>> = HashMap::new();
+pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+  let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
   for (key, value) in src {
-    if let Ok(key) = key.as_string_ok() {
-      if let Some(values) = map.get_mut(key) {
+    // Need to handle number and string keys
+    let key_str = key
+      .as_string_ok()
+      .cloned()
+      .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
+
+    if let Ok(key) = key_str {
+      if let Some(values) = map.get_mut(&key) {
         values.push(value);
       } else {
         map.insert(key, vec![value]);
@@ -234,6 +240,27 @@ mod tests {
 
   #[test]
   fn test_gather_path_matches() {
+    let input = json!([
+        {"id": "1"},
+        {"id": "2"},
+        {"id": "3"}
+    ]);
+
+    let actual = serde_json::to_value(gather_path_matches(&input, &["id".into()], vec![])).unwrap();
+
+    let expected = json!(
+        [
+          ["1", {"id": "1"}],
+          ["2", {"id": "2"}],
+          ["3", {"id": "3"}],
+        ]
+    );
+
+    assert_eq!(actual, expected)
+  }
+
+  #[test]
+  fn test_gather_path_matches_nested() {
     let input = json!({
         "data": [
             {"user": {"id": "1"}},
@@ -285,6 +312,29 @@ mod tests {
             "1": [{"id": "1"}],
             "2": [{"id": "2"}, {"id": "2"}],
             "3": [{"id": "3"}],
+        }
+    );
+
+    assert_eq!(actual, expected)
+  }
+
+  #[test]
+  fn test_group_by_numeric_key() {
+    let arr = vec![
+      (json!(1), json!({"id": 1})),
+      (json!(2), json!({"id": 2})),
+      (json!(2), json!({"id": 2})),
+      (json!(3), json!({"id": 3})),
+    ];
+    let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|(k, v)| (k, v)).collect();
+
+    let actual = serde_json::to_value(group_by_key(input)).unwrap();
+
+    let expected = json!(
+        {
+            "1": [{"id": 1}],
+            "2": [{"id": 2}, {"id": 2}],
+            "3": [{"id": 3}],
         }
     );
 
