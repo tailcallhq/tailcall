@@ -5,8 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use async_graphql::http::GraphiQLSource;
-use hyper::header::CONTENT_TYPE;
-use hyper::http::HeaderValue;
+
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
@@ -14,7 +13,7 @@ use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
-use crate::cache_control::{min, set_cache_control};
+
 use crate::cli::CLIError;
 use crate::config::Config;
 
@@ -32,19 +31,13 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
   let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
   let req_ctx = Arc::new(RequestContext::from(server_ctx).req_headers(headers));
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
+
   if server_ctx.server.enable_cache_control() {
-    let ttls: &Vec<Option<u64>> = &req_ctx.get_cached_values().values().map(|x| x.stats.min_ttl).collect();
-    response = set_cache_control(response, min(ttls).unwrap_or(0) as i32);
-    response.into_hyper_response()
-  } else {
-    let body = serde_json::to_string(&response)?;
-    Ok(
-      Response::builder()
-        .status(StatusCode::OK)
-        .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-        .body(Body::from(body))?,
-    )
+    let ttl = crate::http::min_ttl(req_ctx.get_cached_values().values());
+    response = response.set_cache_control(ttl);
   }
+
+  response.into_hyper_response()
 }
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)

@@ -1,9 +1,9 @@
 use std::any::Any;
 
 use anyhow::Result;
-use async_graphql::Executor;
-use hyper::header::{HeaderValue, CONTENT_TYPE};
-use hyper::{Body, Response};
+use async_graphql::{BatchResponse, Executor};
+use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
+use hyper::{Body, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -85,23 +85,52 @@ impl GraphQLQuery {
   }
 }
 
+lazy_static::lazy_static! {
+  static ref APPLICATION_JSON:HeaderValue = HeaderValue::from_static("application/json");
+}
+
 impl GraphQLResponse {
   pub fn into_hyper_response(self) -> Result<Response<hyper::Body>> {
-    let body = serde_json::to_string(&self.0)?;
-    let mut response = Response::builder().header(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    let mut response = Response::builder()
+      .status(StatusCode::OK)
+      .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+      .body(Body::from(serde_json::to_string(&self.0)?))?;
 
     if self.0.is_ok() {
       if let Some(cache_control) = self.0.cache_control().value() {
-        response = response.header("cache-control", cache_control);
+        response
+          .headers_mut()
+          .insert(CACHE_CONTROL, HeaderValue::from_str(cache_control.as_str())?);
       }
     }
 
-    for (name, value) in self.0.http_headers_iter() {
-      if let Ok(value) = value.to_str() {
-        response = response.header(name.as_str(), value);
-      }
-    }
+    Ok(response)
+  }
 
-    Ok(response.body(Body::from(body))?)
+  /// Sets the `cache_control` max_age for a given `GraphQLResponse`.
+  ///
+  /// The function modifies the `GraphQLResponse` to set the `cache_control` `max_age`
+  /// to the specified `min_cache` value.
+  ///
+  /// # Arguments
+  ///
+  /// * `res` - The GraphQL response whose `cache_control` is to be set.
+  /// * `min_cache` - The `max_age` value to be set for `cache_control`.
+  ///
+  /// # Returns
+  ///
+  /// * A modified `GraphQLResponse` with updated `cache_control` `max_age`.
+  pub fn set_cache_control(mut self, min_cache: i32) -> GraphQLResponse {
+    match self.0 {
+      BatchResponse::Single(ref mut res) => {
+        res.cache_control.max_age = min_cache;
+      }
+      BatchResponse::Batch(ref mut list) => {
+        for res in list {
+          res.cache_control.max_age = min_cache;
+        }
+      }
+    };
+    self
   }
 }

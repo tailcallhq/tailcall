@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use derive_setters::Setters;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 
 use reqwest::Client;
@@ -9,12 +8,11 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use crate::config::Server;
 
-use super::{GetRequest, Response};
+use super::Response;
 
-#[derive(Clone, Setters)]
+#[derive(Clone)]
 pub struct HttpClient {
   client: ClientWithMiddleware,
-  server: Server,
 }
 
 impl Default for HttpClient {
@@ -46,25 +44,12 @@ impl HttpClient {
       }))
     }
 
-    HttpClient { client: client.build(), server }
+    HttpClient { client: client.build() }
   }
 
   pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
-    if request.method() == reqwest::Method::GET {
-      // TTL inference should happen for GET requests only
-      if self.server.enable_cache_control() {
-        let get_request = GetRequest::from(&request);
-        let response = self.client.execute(request).await?;
-        let response = Response::from_response(response).await?;
-        Ok(response.set_min_ttl(get_request))
-      } else {
-        let response = self.client.execute(request).await?;
-        let response = Response::from_response(response).await?;
-        Ok(response)
-      }
-    } else {
-      let response = self.client.execute(request).await?;
-      Ok(Response::from_response(response).await?)
-    }
+    let response = self.client.execute(request).await?;
+    let response = Response::from_response(response).await?;
+    Ok(response)
   }
 }

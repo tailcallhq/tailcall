@@ -128,12 +128,7 @@ impl HttpDataLoader {
           } else {
             body = list.iter().find(match_fn).cloned().unwrap_or(ConstValue::Null);
           }
-          let response_for_key = Response {
-            status: response.status,
-            headers: response.headers.clone(),
-            body,
-            stats: response.stats.clone(),
-          };
+          let response_for_key = Response { status: response.status, headers: response.headers.clone(), body };
           map.insert(key.clone(), response_for_key);
         }
         Ok(map)
