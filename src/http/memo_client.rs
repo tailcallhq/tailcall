@@ -6,6 +6,7 @@ use http_cache_semantics::RequestLike;
 use hyper::Uri;
 use reqwest::Method;
 
+// TODO: drop MemoClient
 #[allow(dead_code)]
 pub struct MemoClient {
   client: HttpClient,
