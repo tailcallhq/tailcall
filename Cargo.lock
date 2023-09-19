@@ -520,6 +520,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cache_control"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bf2a5fb3207c12b5d208ebc145f967fea5cac41a021c37417ccc31ba40f39ee"
+
+[[package]]
 name = "camino"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1295,7 +1301,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "http",
- "http-cache-semantics 1.0.1",
+ "http-cache-semantics",
  "httpdate",
  "moka",
  "serde",
@@ -1312,7 +1318,7 @@ dependencies = [
  "async-trait",
  "http",
  "http-cache",
- "http-cache-semantics 1.0.1",
+ "http-cache-semantics",
  "reqwest",
  "reqwest-middleware",
  "serde",
@@ -1328,17 +1334,8 @@ checksum = "14246388577086faaaa56fb59f0b94e288800fecfff75918a237813297cdda17"
 dependencies = [
  "http",
  "http-serde",
- "serde",
- "time",
-]
-
-[[package]]
-name = "http-cache-semantics"
-version = "1.0.2"
-source = "git+https://github.com/tusharmath/rusty-http-cache-semantics.git?branch=patch-1#e1b8112e6c046c1bea9e1124e7aec827938f44b7"
-dependencies = [
- "http",
  "reqwest",
+ "serde",
  "time",
 ]
 
@@ -2692,12 +2689,13 @@ dependencies = [
  "async-graphql-value",
  "async-trait",
  "base64 0.21.4",
+ "cache_control",
  "clap",
  "colored",
  "criterion",
  "derive_setters",
  "http-cache-reqwest",
- "http-cache-semantics 1.0.2",
+ "http-cache-semantics",
  "httpmock",
  "hyper",
  "indexmap 2.0.0",
