@@ -15,6 +15,12 @@ pub enum Method {
 
 impl From<Method> for reqwest::Method {
   fn from(method: Method) -> Self {
+    (&method).into()
+  }
+}
+
+impl From<&Method> for reqwest::Method {
+  fn from(method: &Method) -> Self {
     match method {
       Method::GET => reqwest::Method::GET,
       Method::POST => reqwest::Method::POST,

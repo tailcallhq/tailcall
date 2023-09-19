@@ -59,7 +59,7 @@ impl HttpDataLoader {
       .iter()
       .map(|key| async {
         let url = key.url.clone();
-        let req = reqwest::Request::new(key.method.clone().into(), url);
+        let req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
         let result = self.client.clone().execute(req).await;
 
         (key.clone(), result)
