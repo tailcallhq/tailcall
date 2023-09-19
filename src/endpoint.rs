@@ -79,7 +79,7 @@ impl Endpoint {
     self.batch.is_some()
   }
 
-  pub fn into_request(
+  pub fn to_request(
     &self,
     input: &async_graphql::Value,
     env: Option<&async_graphql::Value>,

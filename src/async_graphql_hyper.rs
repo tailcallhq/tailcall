@@ -90,7 +90,7 @@ lazy_static::lazy_static! {
 }
 
 impl GraphQLResponse {
-  pub fn into_hyper_response(self) -> Result<Response<hyper::Body>> {
+  pub fn to_response(self) -> Result<Response<hyper::Body>> {
     let mut response = Response::builder()
       .status(StatusCode::OK)
       .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())

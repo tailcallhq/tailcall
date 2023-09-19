@@ -115,7 +115,7 @@ impl Expression {
                 }
                 Ok(value.body)
               } else {
-                let req = endpoint.into_request(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
+                let req = endpoint.to_request(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
                 let client = crate::http::HttpClient::default();
                 let value = client
                   .execute(req)

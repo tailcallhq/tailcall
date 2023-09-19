@@ -34,7 +34,7 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
     response = response.set_cache_control(ttl);
   }
 
-  response.into_hyper_response()
+  response.to_response()
 }
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)

@@ -78,12 +78,12 @@ impl Config {
     Ok(serde_json::to_string(self)?)
   }
 
-  pub fn into_service_document(&self) -> ServiceDocument {
+  pub fn to_document(&self) -> ServiceDocument {
     (self.clone()).into()
   }
 
   pub fn to_sdl(&self) -> String {
-    let doc = self.into_service_document();
+    let doc = self.to_document();
     crate::document::print(doc)
   }
 
