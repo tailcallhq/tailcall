@@ -1303,7 +1303,7 @@ dependencies = [
  "http",
  "http-cache-semantics",
  "httpdate",
- "moka",
+ "moka 0.11.3",
  "serde",
  "url",
 ]
@@ -1820,6 +1820,29 @@ dependencies = [
  "quanta",
  "rustc_version",
  "scheduled-thread-pool",
+ "skeptic",
+ "smallvec",
+ "tagptr",
+ "thiserror",
+ "triomphe",
+ "uuid",
+]
+
+[[package]]
+name = "moka"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8dc65d4615c08c8a13d91fd404b5a2a4485ba35b4091e3315cf8798d280c2f29"
+dependencies = [
+ "async-lock",
+ "async-trait",
+ "crossbeam-channel",
+ "crossbeam-epoch",
+ "crossbeam-utils",
+ "futures-util",
+ "once_cell",
+ "parking_lot",
+ "rustc_version",
  "skeptic",
  "smallvec",
  "tagptr",
@@ -2784,7 +2807,7 @@ dependencies = [
  "mimalloc",
  "mini-v8",
  "mockito",
- "moka",
+ "moka 0.12.0",
  "pretty_assertions",
  "regex",
  "reqwest",
