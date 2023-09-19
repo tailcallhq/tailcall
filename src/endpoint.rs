@@ -158,13 +158,13 @@ impl Endpoint {
     if !self.headers.is_empty() {
       for (key, value) in &self.query {
         match value {
-          Mustache::Simple(s) => {
+          Mustache::Literal(s) => {
             finalheaders.insert(
               key.clone().as_str().parse::<HeaderName>()?,
               s.clone().parse::<HeaderValue>()?,
             );
           }
-          Mustache::Template(parts) => {
+          Mustache::Expression(parts) => {
             if let Some(part) = parts.first() {
               if let Some(result) =
                 self.extract_value_from_path(part, parts, input, env, args, &finalheaders.to_owned())
@@ -196,8 +196,8 @@ impl Endpoint {
 
     if let Some(body) = body {
       match body {
-        Mustache::Simple(str) => s.push_str(str),
-        Mustache::Template(parts) => {
+        Mustache::Literal(str) => s.push_str(str),
+        Mustache::Expression(parts) => {
           if let Some(part) = parts.first() {
             if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, headers) {
               s.push_str(&result);
@@ -227,10 +227,10 @@ impl Endpoint {
       let mut query_params = BTreeMap::new();
       for (key, value) in &self.query {
         match value {
-          Mustache::Simple(s) => {
+          Mustache::Literal(s) => {
             query_params.insert(key.clone(), s.clone());
           }
-          Mustache::Template(parts) => {
+          Mustache::Expression(parts) => {
             if let Some(part) = parts.first() {
               if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, headers) {
                 query_params.insert(key.clone(), result);
@@ -304,9 +304,9 @@ mod tests {
       ]))
       .query(
         [
-          ("a".to_string(), Mustache::Simple("1".to_string())),
-          ("b".to_string(), Mustache::Simple("2".to_string())),
-          ("c".to_string(), Mustache::Simple("3".to_string())),
+          ("a".to_string(), Mustache::Literal("1".to_string())),
+          ("b".to_string(), Mustache::Literal("2".to_string())),
+          ("c".to_string(), Mustache::Literal("3".to_string())),
         ]
         .to_vec(),
       );
@@ -325,11 +325,11 @@ mod tests {
       ]))
       .query(
         [
-          ("a".to_string(), Mustache::Simple("1".to_string())),
-          ("b".to_string(), Mustache::Simple("2".to_string())),
+          ("a".to_string(), Mustache::Literal("1".to_string())),
+          ("b".to_string(), Mustache::Literal("2".to_string())),
           (
             "c".to_string(),
-            Mustache::Template(vec!["vars".to_string(), "name".to_string()]),
+            Mustache::Expression(vec!["vars".to_string(), "name".to_string()]),
           ),
         ]
         .to_vec(),
