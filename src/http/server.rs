@@ -3,9 +3,7 @@ use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
-
 use async_graphql::http::GraphiQLSource;
-
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
@@ -13,7 +11,6 @@ use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
-
 use crate::cli::CLIError;
 use crate::config::Config;
 

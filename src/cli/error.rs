@@ -185,9 +185,10 @@ impl From<ValidationError<String>> for CLIError {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
+
+  use super::*;
 
   #[test]
   fn test_no_newline() {

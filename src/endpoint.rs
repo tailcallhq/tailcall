@@ -1,21 +1,19 @@
 #![allow(clippy::too_many_arguments)]
 
-use serde_json::json;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+
+use anyhow::Result;
+use derive_setters::Setters;
+use serde_json::json;
 use url::Url;
 
 use crate::batch::Batch;
-use crate::http::Method;
-use crate::http::Scheme;
+use crate::http::{Method, Scheme};
 use crate::inet_address::InetAddress;
-use crate::json::JsonLike;
-use crate::json::JsonSchema;
+use crate::json::{JsonLike, JsonSchema};
 use crate::mustache::Mustache;
 use crate::path::{Path, Segment};
-use anyhow::Result;
-
-use derive_setters::Setters;
 
 const EMPTY_VEC: &Vec<String> = &vec![];
 

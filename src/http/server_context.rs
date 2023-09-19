@@ -1,7 +1,9 @@
 use async_graphql::dynamic;
 use derive_setters::Setters;
 
-use crate::{blueprint::Blueprint, config::Server, http::HttpClient};
+use crate::blueprint::Blueprint;
+use crate::config::Server;
+use crate::http::HttpClient;
 
 #[derive(Clone, Setters)]
 pub struct ServerContext {

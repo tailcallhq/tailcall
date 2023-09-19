@@ -1,18 +1,17 @@
 use std::collections::{BTreeMap, HashSet};
 
+use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::{Proxy, Server};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::mustache::Mustache;
 use crate::path::{path_deserialize, path_serialize, Path};
-use anyhow::Result;
-
-use super::{Proxy, Server};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]

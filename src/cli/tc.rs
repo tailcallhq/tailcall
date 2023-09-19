@@ -5,12 +5,12 @@ use std::fs;
 use anyhow::Result;
 use clap::Parser;
 
+use super::command::{Cli, Command};
+use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
-use crate::{blueprint::Blueprint, config::Config};
-
-use super::command::{Cli, Command};
 
 pub async fn run() -> Result<()> {
   let cli = Cli::parse();

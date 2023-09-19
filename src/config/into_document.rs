@@ -2,9 +2,8 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use crate::directive::DirectiveCodec;
-
 use super::Config;
+use crate::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
   Positioned::new(a, Pos::default())

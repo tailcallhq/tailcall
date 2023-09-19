@@ -1,7 +1,8 @@
+use std::fmt::{Display, Formatter};
+
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{Display, Formatter};
 
 lazy_static! {
   pub static ref RE: Regex = Regex::new(r"\{\{(?P<words>[\w\.]+)\}\}").unwrap();

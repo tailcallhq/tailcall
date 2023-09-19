@@ -1,10 +1,8 @@
 use std::marker::PhantomData;
 
 use super::expression;
-use super::expression::Operation;
+use super::expression::{Context, Expression, Operation};
 use crate::endpoint::Endpoint;
-
-use super::expression::{Context, Expression};
 
 #[derive(Clone, Debug)]
 pub struct Lambda<A> {
@@ -64,19 +62,17 @@ where
 #[cfg(test)]
 mod tests {
 
+  use anyhow::Result;
   use httpmock::Method::GET;
   use httpmock::MockServer;
   use serde::de::DeserializeOwned;
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
-
   use crate::http::RequestContext;
   use crate::inet_address::InetAddress;
-  use crate::lambda::EvaluationContext;
-  use crate::lambda::Lambda;
+  use crate::lambda::{EvaluationContext, Lambda};
   use crate::path::{Path, Segment};
-  use anyhow::Result;
 
   impl<B> Lambda<B>
   where

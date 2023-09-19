@@ -1,24 +1,18 @@
-use std::collections::BTreeMap;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
-
 use url::Url;
 
-use crate::http::Method;
-use crate::http::Response;
-
-use crate::http::HttpClient;
+use crate::http::{HttpClient, Method, Response};
 use crate::json::JsonLike;
-use std::hash::{Hash, Hasher};
-
-use anyhow::Result;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EndpointKey {
   pub url: Url,

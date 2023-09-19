@@ -236,7 +236,8 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::json::{group_by_key, json_like::gather_path_matches};
+  use crate::json::group_by_key;
+  use crate::json::json_like::gather_path_matches;
 
   #[test]
   fn test_gather_path_matches() {

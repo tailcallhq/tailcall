@@ -1,6 +1,7 @@
+use std::fs;
+
 use regex::Regex;
 use serde_json::Value;
-use std::fs;
 
 pub fn start_mock_server() -> mockito::Server {
   mockito::Server::new_with_port(3000)

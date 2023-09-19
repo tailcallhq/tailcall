@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
+use async_graphql::extensions::ApolloTracing;
+use async_graphql::*;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use crate::config;
-
 use super::GlobalTimeout;
-use crate::lambda::Expression;
-use crate::lambda::Lambda;
-use async_graphql::extensions::ApolloTracing;
-use async_graphql::*;
+use crate::config;
+use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.

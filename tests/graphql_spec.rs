@@ -8,19 +8,16 @@ use std::sync::Arc;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
+use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
+use tailcall::http::{HttpDataLoader, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::Cause;
-
-use tailcall::http::{HttpDataLoader, RequestContext};
-
-use pretty_assertions::assert_eq;
 
 mod graphql_mock;
 

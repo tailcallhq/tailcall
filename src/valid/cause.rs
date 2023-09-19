@@ -1,4 +1,5 @@
-use std::{collections::VecDeque, fmt::Display};
+use std::collections::VecDeque;
+use std::fmt::Display;
 
 use derive_setters::Setters;
 use thiserror::Error;

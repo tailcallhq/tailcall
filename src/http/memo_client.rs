@@ -1,10 +1,12 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::collections::HashMap;
+use std::sync::Mutex;
 
-use super::HttpClient;
 use anyhow::Result;
 use http_cache_semantics::RequestLike;
 use hyper::Uri;
 use reqwest::Method;
+
+use super::HttpClient;
 
 // TODO: drop MemoClient
 #[allow(dead_code)]

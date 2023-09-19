@@ -1,6 +1,5 @@
-use async_graphql::SDLExportOptions;
-
 use async_graphql::dynamic::Schema;
+use async_graphql::SDLExportOptions;
 
 /// SDL returned from AsyncSchemaInner isn't standard
 /// We clean it up before returning.

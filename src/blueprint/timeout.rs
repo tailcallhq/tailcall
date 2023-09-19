@@ -1,11 +1,9 @@
-use async_graphql::ServerError;
-use async_graphql::{
-  extensions::{Extension, ExtensionContext, ExtensionFactory, NextExecute},
-  Response,
-};
-use async_graphql_value::ConstValue;
 use std::sync::Arc;
 use std::time::Duration;
+
+use async_graphql::extensions::{Extension, ExtensionContext, ExtensionFactory, NextExecute};
+use async_graphql::{Response, ServerError};
+use async_graphql_value::ConstValue;
 use tokio::time::timeout;
 
 pub struct GlobalTimeout;

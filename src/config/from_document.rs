@@ -11,8 +11,7 @@ use async_graphql::Name;
 
 use crate::batch::Batch;
 use crate::config;
-use crate::config::Config;
-use crate::config::{GraphQL, RootSchema, Server, Union};
+use crate::config::{Config, GraphQL, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
 
 fn from_document(doc: ServiceDocument) -> Config {

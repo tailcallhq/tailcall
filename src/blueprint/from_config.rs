@@ -7,24 +7,18 @@ use async_graphql::parser::types::ConstDirective;
 use async_graphql::InputType;
 use regex::Regex;
 
-use crate::blueprint;
+use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config;
-use crate::config::{Arg, Field};
-use crate::config::{Config, InlineType};
+use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
-use crate::http::Method;
-use crate::http::Scheme;
+use crate::http::{Method, Scheme};
 use crate::inet_address::InetAddress;
 use crate::json::JsonSchema;
 use crate::lambda::Lambda;
-use crate::valid::OptionExtension;
-use crate::valid::Valid as ValidDefault;
-use crate::valid::{ValidExtensions, ValidationError, VectorExtension};
-
-use super::UnionTypeDefinition;
+use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
+use crate::{blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
 

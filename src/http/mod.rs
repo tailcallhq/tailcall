@@ -14,7 +14,6 @@ use std::time::Duration;
 use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
-
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;

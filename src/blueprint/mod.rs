@@ -5,5 +5,4 @@ mod into_schema;
 mod timeout;
 
 pub use blueprint::*;
-
 pub use timeout::GlobalTimeout;

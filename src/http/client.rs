@@ -1,14 +1,11 @@
 use std::time::Duration;
 
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-
 use reqwest::Client;
-
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
-use crate::config::Server;
-
 use super::Response;
+use crate::config::Server;
 
 #[derive(Clone)]
 pub struct HttpClient {

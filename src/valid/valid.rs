@@ -1,6 +1,5 @@
-use crate::valid::Cause;
-
 use super::ValidationError;
+use crate::valid::Cause;
 
 pub type Valid<A, E> = Result<A, super::error::ValidationError<E>>;
 
@@ -96,10 +95,7 @@ impl<A> OptionExtension<A> for Option<A> {
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    valid::Cause,
-    valid::{OptionExtension, Valid, ValidExtensions, VectorExtension},
-  };
+  use crate::valid::{Cause, OptionExtension, Valid, ValidExtensions, VectorExtension};
 
   #[test]
   fn test_ok() {

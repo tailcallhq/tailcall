@@ -112,9 +112,9 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
 
 #[cfg(test)]
 mod tests {
-  use crate::valid::ValidationError;
-
   use pretty_assertions::assert_eq;
+
+  use crate::valid::ValidationError;
 
   #[derive(Debug, PartialEq, serde::Deserialize)]
   struct Foo {

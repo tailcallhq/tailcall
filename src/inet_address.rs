@@ -1,6 +1,7 @@
+use std::fmt::Display;
+
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Setters)]
 pub struct InetAddress {
   pub host: String,

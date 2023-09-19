@@ -1,7 +1,9 @@
-use crate::valid::{Valid, ValidExtensions, VectorExtension};
+use std::collections::HashMap;
+
 use async_graphql::Name;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use crate::valid::{Valid, ValidExtensions, VectorExtension};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "schema")]
@@ -86,10 +88,11 @@ impl JsonSchema {
 
 #[cfg(test)]
 mod tests {
-  use crate::valid::Valid;
-  use crate::{json::JsonSchema, valid::ValidExtensions};
   use async_graphql::Name;
   use indexmap::IndexMap;
+
+  use crate::json::JsonSchema;
+  use crate::valid::{Valid, ValidExtensions};
 
   #[test]
   fn test_validate_string() {

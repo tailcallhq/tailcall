@@ -1,12 +1,13 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 use async_graphql::dataloader::{DataLoader, HashMapCache};
 use derive_setters::Setters;
 use hyper::{HeaderMap, Uri};
 
+use super::memo_client::MemoClient;
+use super::{EndpointKey, HttpClient, HttpDataLoader, Response, ServerContext};
 use crate::config::Server;
-
-use super::{memo_client::MemoClient, EndpointKey, HttpClient, HttpDataLoader, Response, ServerContext};
 
 #[derive(Setters)]
 pub struct RequestContext {

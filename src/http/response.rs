@@ -1,8 +1,6 @@
-use derive_setters::Setters;
-
-use http_cache_semantics::ResponseLike;
-
 use anyhow::Result;
+use derive_setters::Setters;
+use http_cache_semantics::ResponseLike;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response {

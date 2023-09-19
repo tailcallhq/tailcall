@@ -1,10 +1,9 @@
+use anyhow::Result;
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
-
-use anyhow::Result;
 
 use crate::valid::ValidationError;
 

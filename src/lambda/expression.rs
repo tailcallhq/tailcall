@@ -8,8 +8,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use crate::endpoint::Endpoint;
-use crate::http::EndpointKey;
-use crate::http::Method;
+use crate::http::{EndpointKey, Method};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
