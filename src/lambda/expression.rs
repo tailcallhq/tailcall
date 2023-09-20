@@ -92,7 +92,7 @@ impl Expression {
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
               if is_get {
-                if let Some(cached) = ctx.req_ctx.get(&url) {
+                if let Some(cached) = ctx.req_ctx.cache.get(&url) {
                   if let Some(key) = endpoint.batch_key() {
                     return Ok(cached.body.get_key(key).cloned().unwrap_or(async_graphql::Value::Null));
                   }
@@ -120,7 +120,7 @@ impl Expression {
 
               // Insert into cache for future requests
               if is_get {
-                ctx.req_ctx.insert(url, res.clone());
+                ctx.req_ctx.cache.insert(url, res.clone());
               }
 
               // If batching is enabled pick the batch key
