@@ -2,27 +2,23 @@
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
+
 use reqwest::Request;
 
-use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::EvaluationContext;
-use crate::mustache::Mustache;
 
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
   pub path: String,
   pub query: Vec<(String, String)>,
-
   pub method: Method,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub headers: HeaderMap,
-  pub body: Option<Mustache>,
+  pub body: Option<String>,
   pub description: Option<String>,
-  pub batch: Option<Batch>,
-  pub list: Option<bool>,
 }
 
 impl Endpoint {
@@ -36,8 +32,6 @@ impl Endpoint {
       headers: Default::default(),
       body: Default::default(),
       description: Default::default(),
-      batch: Default::default(),
-      list: Default::default(),
     }
   }
 
@@ -45,6 +39,9 @@ impl Endpoint {
     let mut request = Request::new(reqwest::Method::from(&self.method), self.path.parse()?);
     request.headers_mut().extend(self.headers.clone());
     request.headers_mut().extend(ctx.req_ctx.req_headers.clone());
+
+    // TODO: support for mustache
+    // TODO: support to read body
 
     Ok(request)
   }

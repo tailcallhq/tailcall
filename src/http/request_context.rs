@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use async_graphql::dataloader::{DataLoader, HashMapCache};
 use derive_setters::Setters;
