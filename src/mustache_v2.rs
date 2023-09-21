@@ -21,7 +21,14 @@ pub enum Mustache {
 
 impl Mustache {
   pub fn new(str: &str) -> anyhow::Result<Mustache> {
-    Ok(serde_json::from_str(str)?)
+    // Try to deserialize the string directly
+    if let Ok(mustache) = serde_json::from_str(str) {
+      return Ok(mustache);
+    }
+
+    // If direct deserialization failed, wrap it with quotes and try again
+    let json_string = format!(r#""{}""#, str);
+    Ok(serde_json::from_str(&json_string)?)
   }
 
   pub fn render(&self, value: &impl AnyPath) -> String {
@@ -114,6 +121,8 @@ impl<'de> Deserialize<'de> for Mustache {
 
 #[cfg(test)]
 mod tests {
+  use std::borrow::Cow;
+
   use super::*;
 
   #[test]
@@ -229,11 +238,11 @@ mod tests {
     struct DummyPath;
 
     impl AnyPath for DummyPath {
-      fn any_path(&self, parts: &[String]) -> Option<&str> {
+      fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
         if parts == ["foo", "bar"] {
-          Some("FOOBAR")
+          Some(Cow::Borrowed("FOOBAR"))
         } else if parts == ["baz", "qux"] {
-          Some("BAZQUX")
+          Some(Cow::Borrowed("BAZQUX"))
         } else {
           None
         }
@@ -256,7 +265,7 @@ mod tests {
     struct DummyPath;
 
     impl AnyPath for DummyPath {
-      fn any_path(&self, _: &[String]) -> Option<&str> {
+      fn any_path(&self, _: &[String]) -> Option<Cow<'_, str>> {
         None
       }
     }
@@ -274,9 +283,9 @@ mod tests {
     struct DummyPath;
 
     impl AnyPath for DummyPath {
-      fn any_path(&self, parts: &[String]) -> Option<&str> {
+      fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
         if parts == ["foo"] {
-          Some("bar")
+          Some(Cow::Borrowed("bar"))
         } else {
           None
         }
@@ -311,5 +320,13 @@ mod tests {
     let s = r#""{{hello.{{world}}.foo}}"#;
     let mustache: Result<Mustache, _> = serde_json::from_str(s);
     assert!(mustache.is_err());
+  }
+  #[test]
+  fn test_new_number() {
+    let mustache = Mustache::new("123").unwrap();
+    assert_eq!(
+      mustache,
+      Mustache::Segments(vec![MustacheSegment::Literal("123".to_string())])
+    );
   }
 }
