@@ -47,7 +47,7 @@ impl Endpoint {
     Ok(Endpoint::from(url))
   }
 
-  fn to_request(&self, ctx: &EvaluationContext) -> anyhow::Result<Request> {
+  pub fn to_request(&self, ctx: &EvaluationContext) -> anyhow::Result<Request> {
     let mut request = Request::new(reqwest::Method::from(&self.method), self.url.clone());
     request.headers_mut().extend(self.headers.clone());
     request.headers_mut().extend(ctx.req_ctx.req_headers.clone());

@@ -39,7 +39,7 @@ impl Server {
   }
   pub fn allowed_headers(&self) -> HashSet<String> {
     // TODO: cloning isn't required we can return a ref here
-    self.allowed_headers.clone().unwrap_or(HashSet::new())
+    self.allowed_headers.clone().unwrap_or_default()
   }
 }
 
