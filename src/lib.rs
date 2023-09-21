@@ -16,6 +16,7 @@ pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
+pub mod mustache_v2;
 pub mod path;
 pub mod print_schema;
 pub mod request_template;
