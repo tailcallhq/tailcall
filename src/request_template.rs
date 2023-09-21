@@ -2,7 +2,9 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use url::Url;
 
-use crate::{endpoint_v2::Endpoint, json::JsonLike, mustache::Mustache};
+use crate::endpoint_v2::Endpoint;
+use crate::json::JsonLike;
+use crate::mustache::Mustache;
 
 pub trait AnyPath {
   fn any_path(&self, path: &[String]) -> Option<&str>;
@@ -92,38 +94,146 @@ impl TryFrom<Endpoint> for RequestTemplate {
 #[cfg(test)]
 mod tests {
 
-  mod url {
-    use pretty_assertions::assert_eq;
-    use serde_json::json;
+  use pretty_assertions::assert_eq;
+  use serde_json::json;
 
-    use crate::request_template::RequestTemplate;
+  use crate::mustache::Mustache::{Expression, Literal};
+  use crate::request_template::RequestTemplate;
 
-    #[test]
-    fn test_url() {
-      let tmpl = RequestTemplate::new("http://localhost:3000").unwrap();
-      let ctx = serde_json::Value::Null;
-      let url = tmpl.eval_url(&ctx);
-      assert_eq!(url.to_string(), "http://localhost:3000/");
-    }
+  #[test]
+  fn test_url() {
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap();
+    let ctx = serde_json::Value::Null;
+    let url = tmpl.eval_url(&ctx);
+    assert_eq!(url.to_string(), "http://localhost:3000/");
+  }
 
-    #[test]
-    fn test_url_path() {
-      let tmpl = RequestTemplate::new("foo/bar").unwrap();
-      let ctx = serde_json::Value::Null;
-      let url = tmpl.eval_url(&ctx);
-      assert_eq!(url.to_string(), "foo/bar");
-    }
+  #[test]
+  fn test_url_path() {
+    let tmpl = RequestTemplate::new("foo/bar").unwrap();
+    let ctx = serde_json::Value::Null;
+    let url = tmpl.eval_url(&ctx);
+    assert_eq!(url.to_string(), "foo/bar");
+  }
 
-    #[test]
-    fn test_url_path_template() {
-      let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
-      let cnt = json!({
-        "bar": {
-          "baz": "bar"
-        }
-      });
-      let url = tmpl.eval_url(&cnt);
-      assert_eq!(url.to_string(), "http://localhost:3000/foo/bar");
-    }
+  #[test]
+  fn test_url_path_template() {
+    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
+    let cnt = json!({
+      "bar": {
+        "baz": "bar"
+      }
+    });
+    let req = tmpl.to_request(&cnt);
+    assert_eq!(req.url(), "http://localhost:3000/foo/bar");
+  }
+  #[test]
+  fn test_url_path_template_multi() {
+    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}").unwrap();
+    let cnt = json!({
+      "bar": {
+        "baz": "bar"
+        "booz": 1
+      }
+    });
+    let req = tmpl.to_request(&cnt);
+    assert_eq!(req.url(), "http://localhost:3000/foo/bar/boozes/1");
+  }
+  #[test]
+  fn test_url_query_params() {
+    let query = vec![
+      ("foo".to_string(), Literal("0".to_string())),
+      ("bar".to_string(), Literal("1".to_string())),
+      ("baz".to_string(), Literal("2".to_string())),
+    ];
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
+    let ctx = serde_json::Value::Null;
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.url(), "http://localhost:3000?foo=0&bar=1&baz=2");
+  }
+  #[test]
+  fn test_url_query_params_template() {
+    let query = vec![
+      ("foo".to_string(), Literal("0".to_string())),
+      ("bar".to_string(), Expression(vec!["bar".to_string(), "id".to_string()])),
+      ("baz".to_string(), Expression(vec!["baz".to_string(), "id".to_string()])),
+    ];
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
+    let ctx = json!({
+      "bar": {
+        "id": 1
+      },
+      "baz": {
+        "id": 2
+      }
+    });
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.url(), "http://localhost:3000?foo=0&bar=1&baz=2");
+  }
+  #[test]
+  fn test_headers() {
+    let headers = vec![
+      ("foo".to_string(), Literal("foo".to_string())),
+      ("bar".to_string(), Literal("bar".to_string())),
+      ("baz".to_string(), Literal("baz".to_string())),
+    ];
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
+    let ctx = serde_json::Value::Null;
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.headers().get("foo").unwrap(), "foo");
+    assert_eq!(req.headers().get("bar").unwrap(), "bar");
+    assert_eq!(req.headers().get("baz").unwrap(), "baz");
+  }
+  #[test]
+  fn test_header_template() {
+    let headers = vec![
+      ("foo".to_string(), Literal("0".to_string())),
+      ("bar".to_string(), Expression(vec!["bar".to_string(), "id".to_string()])),
+      ("baz".to_string(), Expression(vec!["baz".to_string(), "id".to_string()])),
+    ];
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
+    let ctx = json!({
+      "bar": {
+        "id": 1
+      },
+      "baz": {
+        "id": 2
+      }
+    });
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.headers().get("foo").unwrap(), "foo");
+    assert_eq!(req.headers().get("bar").unwrap(), "1");
+    assert_eq!(req.headers().get("baz").unwrap(), "2");
+  }
+  #[test]
+  fn test_method() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .method(reqwest::Method::POST);
+    let ctx = serde_json::Value::Null;
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.method(), reqwest::Method::POST);
+  }
+  #[test]
+  fn test_body() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .body(Some(Literal("foo".to_string())));
+    let ctx = serde_json::Value::Null;
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.body().unwrap().to_string(), "foo");
+  }
+  #[test]
+  fn test_body_template() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .body(Some(Expression(vec!["foo".to_string(), "bar".to_string()])));
+    let ctx = json!({
+      "foo": {
+        "bar": "baz"
+      }
+    });
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.body().unwrap().to_string(), "baz");
   }
 }
