@@ -62,6 +62,13 @@ fn parse_expression(input: &str) -> IResult<&str, MustacheSegment> {
 
 fn parse_literal(input: &str) -> IResult<&str, MustacheSegment> {
   let (input, literal) = take_till(|c: char| c == '{')(input)?;
+
+  if input.starts_with('{') {
+    let (rest, unmatched_literal) = take_till(|c: char| c == '{' || c.is_whitespace())(input)?;
+    let combined_literal = format!("{}{}", literal, unmatched_literal);
+    return Ok((rest, MustacheSegment::Literal(combined_literal)));
+  }
+
   Ok((input, MustacheSegment::Literal(literal.to_string())))
 }
 
@@ -73,6 +80,11 @@ fn parse_parts(input: &str) -> anyhow::Result<(&str, Vec<MustacheSegment>)> {
     let segment = alt((parse_expression, parse_literal))(remaining).finish();
     match segment {
       Ok((rem, part)) => {
+        // Check if remaining input hasn't changed to avoid infinite loop
+        if rem == remaining {
+          segments.push(MustacheSegment::Literal(remaining.to_string()));
+          break;
+        }
         segments.push(part);
         remaining = rem;
       }
@@ -256,5 +268,48 @@ mod tests {
     ]);
 
     assert_eq!(mustache.render(&DummyPath), "prefix  suffix");
+  }
+  #[test]
+  fn test_render_preserves_spaces() {
+    struct DummyPath;
+
+    impl AnyPath for DummyPath {
+      fn any_path(&self, parts: &[String]) -> Option<&str> {
+        if parts == ["foo"] {
+          Some("bar")
+        } else {
+          None
+        }
+      }
+    }
+
+    let mustache = Mustache::Segments(vec![
+      MustacheSegment::Literal("    ".to_string()),
+      MustacheSegment::Expression(vec!["foo".to_string()]),
+      MustacheSegment::Literal("    ".to_string()),
+    ]);
+
+    assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+  }
+  #[test]
+  fn test_deserialize_unfinished_expression() {
+    let s = r#""{{hello.world""#;
+    let mustache: Mustache = serde_json::from_str(s).unwrap();
+    assert_eq!(
+      mustache,
+      Mustache::Segments(vec![MustacheSegment::Literal("{{hello.world".to_string())])
+    );
+  }
+  #[test]
+  fn test_deserialize_invalid_json() {
+    let s = "hello.world}}";
+    let mustache: Result<Mustache, _> = serde_json::from_str(s);
+    assert!(mustache.is_err());
+  }
+  #[test]
+  fn test_deserialize_nested_expression() {
+    let s = r#""{{hello.{{world}}.foo}}"#;
+    let mustache: Result<Mustache, _> = serde_json::from_str(s);
+    assert!(mustache.is_err());
   }
 }
