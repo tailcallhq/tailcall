@@ -2,7 +2,7 @@
 
 Tailcall is an open-source edge and service proxy designed for building high-performance GraphQL applications.
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tailcallhq/tailcall/ci.yml?style=for-the-badge)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tailcallhq/tailcall/ci.yml?style=for-the-badge)](https://github.com/tailcallhq/tailcall/actions)
 ![GitHub release (by tag)](https://img.shields.io/github/downloads/tailcallhq/tailcall/total?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=60)](https://discord.gg/7fseDEXUNU)
 [![Codecov](https://img.shields.io/codecov/c/github/tailcallhq/tailcall?style=for-the-badge)](https://app.codecov.io/gh/tailcallhq/tailcall)
