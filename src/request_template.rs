@@ -35,6 +35,7 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
+  #[allow(dead_code)]
   fn eval_url<C: AnyPath>(&self, ctx: &C) -> Url {
     let root_url = self.root_url.render(ctx);
     let mut url = url::Url::parse(root_url.as_str()).unwrap();
@@ -48,9 +49,11 @@ impl RequestTemplate {
     }
     url
   }
+  #[allow(dead_code)]
   fn eval_headers<C: AnyPath>(&self, _ctx: &C) -> HeaderMap {
     todo!()
   }
+  #[allow(dead_code)]
   fn eval_body<C: AnyPath>(&self, _ctx: &C) -> reqwest::Body {
     todo!()
   }
