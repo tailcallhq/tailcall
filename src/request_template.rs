@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
+use reqwest::header::{HeaderName, HeaderValue};
 use serde_json::Value;
 use url::Url;
 
@@ -49,26 +50,37 @@ impl RequestTemplate {
     }
     url
   }
-  #[allow(dead_code)]
-  fn eval_headers<C: AnyPath>(&self, _ctx: &C) -> HeaderMap {
-    todo!()
+  fn eval_headers<C: AnyPath>(&self, ctx: &C) -> HeaderMap {
+    let mut header_map = HeaderMap::new();
+
+    for (k, v) in &self.headers {
+      if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
+        if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+          header_map.insert(header_name, header_value);
+        }
+      }
+    }
+
+    header_map
   }
-  #[allow(dead_code)]
-  fn eval_body<C: AnyPath>(&self, _ctx: &C) -> reqwest::Body {
-    todo!()
+
+  fn eval_body<C: AnyPath>(&self, ctx: &C) -> reqwest::Body {
+    self
+      .body
+      .as_ref()
+      .map(|b| b.render(ctx).into())
+      .unwrap_or(reqwest::Body::from("".to_string()))
   }
 
   /// A high-performance way to reliably create a request
   pub fn to_request<C: AnyPath>(self, ctx: &C) -> reqwest::Request {
     let url = self.eval_url(ctx);
-    // let headers = self.eval_headers(ctx);
-    // let body = self.eval_body(ctx);
-    let method = self.method;
-
-    // request.headers_mut().extend(headers);
-    // request.body_mut().replace(body);
-
-    reqwest::Request::new(method, url)
+    let header_map = self.eval_headers(ctx);
+    let body = self.eval_body(ctx);
+    let mut req = reqwest::Request::new(self.method, url);
+    req.headers_mut().extend(header_map);
+    req.body_mut().replace(body);
+    req
   }
 
   pub fn new(root_url: &str) -> anyhow::Result<Self> {
@@ -119,7 +131,7 @@ mod tests {
 
   #[test]
   fn test_url() {
-    let tmpl = RequestTemplate::new(r#""http://localhost:3000""#).unwrap();
+    let tmpl = RequestTemplate::new(r#""http://localhost:3000/""#).unwrap();
     let ctx = serde_json::Value::Null;
     let req = tmpl.to_request(&ctx);
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
@@ -136,28 +148,27 @@ mod tests {
   #[test]
   fn test_url_path_template() {
     let tmpl = RequestTemplate::new(r#""http://localhost:3000/foo/{{bar.baz}}""#).unwrap();
-    let cnt = json!({
+    let ctx = json!({
       "bar": {
         "baz": "bar"
       }
     });
-    let req = tmpl.to_request(&cnt);
+    let req = tmpl.to_request(&ctx);
     assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
   }
   #[test]
   fn test_url_path_template_multi() {
     let tmpl = RequestTemplate::new(r#""http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}""#).unwrap();
-    let cnt = json!({
+    let ctx = json!({
       "bar": {
         "baz": "bar",
         "booz": 1
       }
     });
-    let req = tmpl.to_request(&cnt);
+    let req = tmpl.to_request(&ctx);
     assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar/boozes/1");
   }
   #[test]
-  #[ignore]
   fn test_url_query_params() {
     let query = vec![
       ("foo".to_string(), Mustache::new("0").unwrap()),
@@ -167,17 +178,16 @@ mod tests {
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
     let ctx = serde_json::Value::Null;
     let req = tmpl.to_request(&ctx);
-    assert_eq!(req.url().to_string(), "http://localhost:3000?foo=0&bar=1&baz=2");
+    assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
   }
   #[test]
-  #[ignore]
   fn test_url_query_params_template() {
     let query = vec![
       ("foo".to_string(), Mustache::new("0").unwrap()),
       ("bar".to_string(), Mustache::new("{{bar.id}}").unwrap()),
       ("baz".to_string(), Mustache::new("{{baz.id}}").unwrap()),
     ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
+    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap().query(query);
     let ctx = json!({
       "bar": {
         "id": 1
@@ -187,10 +197,9 @@ mod tests {
       }
     });
     let req = tmpl.to_request(&ctx);
-    assert_eq!(req.url().to_string(), "http://localhost:3000?foo=0&bar=1&baz=2");
+    assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
   }
   #[test]
-  #[ignore]
   fn test_headers() {
     let headers = vec![
       ("foo".to_string(), Mustache::new("foo").unwrap()),
@@ -205,7 +214,6 @@ mod tests {
     assert_eq!(req.headers().get("baz").unwrap(), "baz");
   }
   #[test]
-  #[ignore]
   fn test_header_template() {
     let headers = vec![
       ("foo".to_string(), Mustache::new("0").unwrap()),
@@ -222,12 +230,11 @@ mod tests {
       }
     });
     let req = tmpl.to_request(&ctx);
-    assert_eq!(req.headers().get("foo").unwrap(), "foo");
+    assert_eq!(req.headers().get("foo").unwrap(), "0");
     assert_eq!(req.headers().get("bar").unwrap(), "1");
     assert_eq!(req.headers().get("baz").unwrap(), "2");
   }
   #[test]
-  #[ignore]
   fn test_method() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
@@ -237,27 +244,25 @@ mod tests {
     assert_eq!(req.method(), reqwest::Method::POST);
   }
   #[test]
-  #[ignore]
   fn test_body() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
       .body(Some(Mustache::new("foo").unwrap()));
     let ctx = serde_json::Value::Null;
-    let _req = tmpl.to_request(&ctx);
-    // assert_eq!(req.body(), "foo");
+    let body = tmpl.to_request(&ctx).body().unwrap().as_bytes().unwrap().to_owned();
+    assert_eq!(body, "foo".as_bytes());
   }
   #[test]
-  #[ignore]
   fn test_body_template() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
-      .body(Some(Mustache::new("foo.{{bar.baz}}").unwrap()));
+      .body(Some(Mustache::new("{{foo.bar}}").unwrap()));
     let ctx = json!({
       "foo": {
         "bar": "baz"
       }
     });
-    let _req = tmpl.to_request(&ctx);
-    // assert_eq!(req.body().unwrap().to_string(), "baz");
+    let body = tmpl.to_request(&ctx).body().unwrap().as_bytes().unwrap().to_owned();
+    assert_eq!(body, "baz".as_bytes());
   }
 }
