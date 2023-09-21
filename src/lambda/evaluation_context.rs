@@ -14,7 +14,19 @@ use crate::http::RequestContext;
 pub struct EvaluationContext<'a> {
   pub req_ctx: &'a RequestContext,
   pub context: Option<&'a ResolverContext<'a>>,
+
+  // TODO: JS timeout should be read from server settings
   pub timeout: Duration,
+}
+
+lazy_static::lazy_static! {
+  static ref REQUEST_CTX: RequestContext = RequestContext::default();
+}
+
+impl Default for EvaluationContext<'static> {
+  fn default() -> Self {
+    Self::new(&REQUEST_CTX)
+  }
 }
 
 impl<'a> EvaluationContext<'a> {

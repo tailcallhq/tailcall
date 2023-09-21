@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::InputType;
 use derive_setters::Setters;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
@@ -14,6 +15,7 @@ use crate::batch::Batch;
 use crate::http::{Method, Scheme};
 use crate::inet_address::InetAddress;
 use crate::json::{JsonLike, JsonSchema};
+use crate::lambda::EvaluationContext;
 use crate::mustache::Mustache;
 use crate::path::{Path, Segment};
 
@@ -81,18 +83,23 @@ impl Endpoint {
     self.batch.is_some()
   }
 
-  pub fn to_request(
-    &self,
+  pub fn to_request<'a>(
+    &'a self,
     input: &async_graphql::Value,
-    env: Option<&async_graphql::Value>,
-    args: Option<&async_graphql::Value>,
-    headers: &HeaderMap,
+    ctx: &'a EvaluationContext<'a>,
   ) -> Result<reqwest::Request> {
-    let url = self.get_url(input, env, args, headers)?;
+    let headers: Vec<(String, String)> = ctx
+      .headers()
+      .into_iter()
+      .map(|(k, v)| (k.to_string(), v.to_string()))
+      .collect();
+    let vars = ctx.req_ctx.server.vars.to_value();
+    let args = ctx.args();
+    let url = self.get_url(input, Some(&vars), args.as_ref(), &headers)?;
     let method: reqwest::Method = self.method.clone().into();
     let mut request = reqwest::Request::new(method, url);
-    let headers = self.eval_headers(input, env, args, headers)?;
-    let body = self.body_str(input, env, args, &headers);
+    let headers = self.eval_headers(input, Some(&vars), args.as_ref(), &headers)?;
+    let body = self.body_str(input, Some(&vars), args.as_ref(), &headers);
     request.headers_mut().extend(headers);
     request.headers_mut().insert(
       reqwest::header::CONTENT_TYPE,

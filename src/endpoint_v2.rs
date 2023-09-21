@@ -2,7 +2,6 @@
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-
 use reqwest::Request;
 
 use crate::http::Method;

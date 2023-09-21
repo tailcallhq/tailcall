@@ -2,11 +2,24 @@ use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
 
 use crate::path;
+use crate::request_template::AnyPath;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mustache {
   Literal(String),
   Expression(Vec<String>),
+}
+
+impl Mustache {
+  pub fn new(str: &str) -> anyhow::Result<Mustache> {
+    Ok(serde_json::from_str(str)?)
+  }
+  pub fn render(&self, value: &impl AnyPath) -> String {
+    match self {
+      Mustache::Literal(text) => text.clone(),
+      Mustache::Expression(parts) => value.any_path(parts).map(|a| a.to_string()).unwrap_or_default(),
+    }
+  }
 }
 
 impl<'de> Deserialize<'de> for Mustache {
@@ -61,9 +74,9 @@ impl std::fmt::Display for Mustache {
 mod tests {
   #[test]
   fn test_deserialize_simple() {
-    let s = r#""hello""#;
+    let s = r#""hello/bar""#;
     let mustache: super::Mustache = serde_json::from_str(s).unwrap();
-    assert_eq!(mustache, super::Mustache::Literal("hello".to_string()));
+    assert_eq!(mustache, super::Mustache::Literal("hello/bar".to_string()));
   }
 
   #[test]
