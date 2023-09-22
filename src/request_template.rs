@@ -287,6 +287,7 @@ mod tests {
     headers.insert("foo", "{{foo.header}}".parse().unwrap());
     let endpoint = crate::endpoint_v2::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
       .method(crate::http::Method::POST)
+      .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
       .headers(headers)
       .body(Some("{{foo.bar}}".into()));
     let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -301,6 +302,6 @@ mod tests {
     assert_eq!(req.headers().get("foo").unwrap(), "abc");
     let body = req.body().unwrap().as_bytes().unwrap().to_owned();
     assert_eq!(body, "baz".as_bytes());
-    assert_eq!(req.url().to_string(), "http://localhost:3000/baz");
+    assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
   }
 }

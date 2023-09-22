@@ -88,12 +88,11 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_url_query_param() {
       let context = EvaluationContext::new(&REQ_CTX);
       let endpoint = Endpoint::new("http://abc.com?a=1&b=2".into());
       let request = endpoint.to_request(&context).unwrap();
-      assert_eq!(request.url().as_str(), "http://abc.com/");
+      assert_eq!(request.url().as_str(), "http://abc.com/?a=1&b=2");
     }
   }
 
