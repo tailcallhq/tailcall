@@ -36,7 +36,6 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
-  #[allow(dead_code)]
   fn eval_url<C: AnyPath>(&self, ctx: &C) -> Url {
     let root_url = self.root_url.render(ctx);
     let mut url = url::Url::parse(root_url.as_str()).unwrap();
@@ -122,7 +121,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 
 #[cfg(test)]
 mod tests {
-
+  use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
@@ -264,5 +263,44 @@ mod tests {
     });
     let body = tmpl.to_request(&ctx).body().unwrap().as_bytes().unwrap().to_owned();
     assert_eq!(body, "baz".as_bytes());
+  }
+  #[test]
+  fn test_from_endpoint() {
+    let mut headers = HeaderMap::new();
+    headers.insert("foo", "bar".parse().unwrap());
+    let endpoint = crate::endpoint_v2::Endpoint::new("http://localhost:3000/".to_string())
+      .method(crate::http::Method::POST)
+      .headers(headers)
+      .body(Some("foo".into()));
+    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let ctx = serde_json::Value::Null;
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.method(), reqwest::Method::POST);
+    assert_eq!(req.headers().get("foo").unwrap(), "bar");
+    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+    assert_eq!(body, "foo".as_bytes());
+    assert_eq!(req.url().to_string(), "http://localhost:3000/");
+  }
+  #[test]
+  fn test_from_endpoint_template() {
+    let mut headers = HeaderMap::new();
+    headers.insert("foo", "{{foo.header}}".parse().unwrap());
+    let endpoint = crate::endpoint_v2::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
+      .method(crate::http::Method::POST)
+      .headers(headers)
+      .body(Some("{{foo.bar}}".into()));
+    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let ctx = json!({
+      "foo": {
+        "bar": "baz",
+        "header": "abc"
+      }
+    });
+    let req = tmpl.to_request(&ctx);
+    assert_eq!(req.method(), reqwest::Method::POST);
+    assert_eq!(req.headers().get("foo").unwrap(), "abc");
+    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+    assert_eq!(body, "baz".as_bytes());
+    assert_eq!(req.url().to_string(), "http://localhost:3000/baz");
   }
 }

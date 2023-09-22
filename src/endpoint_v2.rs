@@ -7,6 +7,7 @@ use reqwest::Request;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::EvaluationContext;
+use crate::request_template::RequestTemplate;
 
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
@@ -35,14 +36,9 @@ impl Endpoint {
   }
 
   pub fn to_request(&self, ctx: &EvaluationContext) -> anyhow::Result<Request> {
-    let mut request = Request::new(reqwest::Method::from(&self.method), self.path.parse()?);
-    request.headers_mut().extend(self.headers.clone());
-    request.headers_mut().extend(ctx.req_ctx.req_headers.clone());
-
-    // TODO: support for mustache
-    // TODO: support to read body
-
-    Ok(request)
+    let mut req = RequestTemplate::try_from(self.clone())?.to_request(ctx);
+    req.headers_mut().extend(ctx.req_ctx.req_headers.clone());
+    Ok(req)
   }
 }
 
