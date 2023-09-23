@@ -38,7 +38,15 @@ impl<'a> EvaluationContext<'a> {
   }
 
   pub fn headers(&self) -> BTreeMap<String, String> {
-    self.req_ctx.data_loader.loader().headers.clone()
+    let mut headers = self.req_ctx.data_loader.loader().headers.clone();
+    headers.extend(
+      self
+        .req_ctx
+        .req_headers
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_str().unwrap().to_string())),
+    );
+    headers
   }
 }
 

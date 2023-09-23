@@ -9,6 +9,8 @@ use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
+use hyper::http::{HeaderName, HeaderValue};
+use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::http::{HttpClient, Method, Response};
@@ -59,7 +61,16 @@ impl HttpDataLoader {
       .iter()
       .map(|key| async {
         let url = key.url.clone();
-        let req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
+        let mut headers = HeaderMap::new();
+        for (k, v) in key.headers.iter() {
+          //TODO: remove expects and handle errors
+          headers.insert(
+            HeaderName::try_from(k.as_str()).expect("invalid header name"),
+            HeaderValue::from_str(v.as_str()).expect("invalid header value"),
+          );
+        }
+        let mut req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
+        req.headers_mut().extend(headers);
         let result = self.client.clone().execute(req).await;
 
         (key.clone(), result)
