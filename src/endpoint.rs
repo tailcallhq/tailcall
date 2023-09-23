@@ -88,17 +88,12 @@ impl Endpoint {
     input: &async_graphql::Value,
     ctx: &'a EvaluationContext<'a>,
   ) -> Result<reqwest::Request> {
-    let headers: Vec<(String, String)> = ctx
-      .headers()
-      .into_iter()
-      .map(|(k, v)| (k.to_string(), v.to_string()))
-      .collect();
     let vars = ctx.req_ctx.server.vars.to_value();
     let args = ctx.args();
-    let url = self.get_url(input, Some(&vars), args.as_ref(), &headers)?;
+    let url = self.get_url(input, Some(&vars), args.as_ref(), ctx.headers())?;
     let method: reqwest::Method = self.method.clone().into();
     let mut request = reqwest::Request::new(method, url);
-    let headers = self.eval_headers(input, Some(&vars), args.as_ref(), &headers)?;
+    let headers = self.eval_headers(input, Some(&vars), args.as_ref(), ctx.headers())?;
     let body = self.body_str(input, Some(&vars), args.as_ref(), &headers);
     request.headers_mut().extend(headers);
     request.headers_mut().insert(

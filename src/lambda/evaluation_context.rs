@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use async_graphql::dynamic::ResolverContext;
@@ -45,7 +44,7 @@ impl AnyPath for EvaluationContext<'_> {
       result = match head.as_str() {
         "value" => value.get_path(tail).cloned(),
         "args" => ctx.args()?.get_path(tail).cloned(),
-        "headers" => Some(ConstValue::String(ctx.headers().get(&tail[0]).cloned()?)),
+        "headers" => ctx.get_header_as_value(&tail[0]),
         "vars" => Some(ConstValue::String(
           ctx.req_ctx.server.vars.clone()?.get(&tail[0]).cloned()?,
         )),
@@ -86,6 +85,10 @@ impl<'a> EvaluationContext<'a> {
 
   pub fn headers(&self) -> &HeaderMap {
     &self.req_ctx.req_headers
+  }
+  pub fn get_header_as_value(&self, key: &str) -> Option<async_graphql::Value> {
+    let value = self.headers().get(key)?;
+    Some(async_graphql::Value::String(value.to_str().ok()?.to_string()))
   }
 }
 
