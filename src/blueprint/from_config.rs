@@ -234,12 +234,15 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
             Some(h) => h.to_string(),
             None => "".to_string(),
           };
-          let port = base_url.port().unwrap_or(80);
           let scheme = match base_url.scheme() {
             "http" => Scheme::Http,
             "https" => Scheme::Https,
             _ => Scheme::Http,
           };
+          let port = base_url.port().unwrap_or(match scheme {
+            Scheme::Http => 80,
+            Scheme::Https => 443,
+          });
           let method = http.method.as_ref().unwrap_or(&Method::GET);
           let query = match http.query.as_ref() {
             Some(q) => q.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
