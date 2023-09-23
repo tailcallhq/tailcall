@@ -74,16 +74,11 @@ impl Expression {
         )),
         Expression::Unsafe(input, operation) => {
           let input = input.eval(ctx).await?;
-          let headers: Vec<(String, String)> = ctx
-            .headers()
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
           match operation {
             Operation::Endpoint(endpoint) => {
               // TODO: header forwarding should happen inside of endpoint
               let env = &ctx.req_ctx.server.vars.to_value();
-              let url = endpoint.get_url(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
+              let url = endpoint.get_url(&input, Some(env), ctx.args().as_ref(), &ctx.req_ctx.req_headers)?;
 
               if endpoint.method == Method::GET {
                 let match_key_value = endpoint
@@ -96,7 +91,7 @@ impl Expression {
                   .unwrap_or(&async_graphql::Value::Null);
                 let key = EndpointKey {
                   url: url.clone(),
-                  headers,
+                  headers: ctx.req_ctx.req_headers.clone(),
                   method: endpoint.method.clone(),
                   match_key_value: match_key_value.clone(),
                   match_path: endpoint.batch_path().to_vec(),
@@ -115,7 +110,7 @@ impl Expression {
                 }
                 Ok(value.body)
               } else {
-                let req = endpoint.to_request(&input, Some(env), ctx.args().as_ref(), &headers.to_owned())?;
+                let req = endpoint.to_request(&input, Some(env), ctx.args().as_ref(), ctx.headers())?;
                 let client = crate::http::HttpClient::default();
                 let value = client
                   .execute(req)
