@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::Duration;
@@ -8,7 +8,7 @@ use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use derive_setters::Setters;
+use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::http::{HttpClient, Method, Response};
@@ -16,7 +16,7 @@ use crate::json::JsonLike;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EndpointKey {
   pub url: Url,
-  pub headers: Vec<(String, String)>,
+  pub headers: HeaderMap,
   pub method: Method,
   pub match_key_value: ConstValue,
   pub match_path: Vec<String>,
@@ -30,16 +30,14 @@ impl Hash for EndpointKey {
     self.match_key_value.to_string().hash(state);
   }
 }
-#[derive(Default, Setters, Clone)]
-#[setters(strip_option)]
+#[derive(Default, Clone)]
 pub struct HttpDataLoader {
   pub client: HttpClient,
-  pub headers: BTreeMap<String, String>,
 }
 
 impl HttpDataLoader {
   pub fn new(client: HttpClient) -> Self {
-    HttpDataLoader { client, headers: BTreeMap::new() }
+    HttpDataLoader { client }
   }
 
   pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader, HashMapCache> {
@@ -59,7 +57,8 @@ impl HttpDataLoader {
       .iter()
       .map(|key| async {
         let url = key.url.clone();
-        let req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
+        let mut req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
+        req.headers_mut().extend(key.headers.clone());
         let result = self.client.clone().execute(req).await;
 
         (key.clone(), result)

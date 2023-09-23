@@ -260,8 +260,17 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
             .input(input_schema)
             .body(http.body.clone())
             .batch(field.batch.clone())
+            .headers(
+              http
+                .headers
+                .clone()
+                .unwrap_or_default()
+                .clone()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
+            )
             .list(field.list);
-          // TODO! add headers
 
           b_field = b_field.resolver_or_default(Lambda::context().to_endpoint(endpoint.clone()), |r| {
             r.to_endpoint(endpoint.clone())

@@ -1,10 +1,10 @@
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use async_graphql::dynamic::ResolverContext;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use derive_setters::Setters;
+use reqwest::header::HeaderMap;
 
 use crate::http::RequestContext;
 
@@ -37,8 +37,8 @@ impl<'a> EvaluationContext<'a> {
     ctx.parent_value.as_value()
   }
 
-  pub fn headers(&self) -> BTreeMap<String, String> {
-    self.req_ctx.data_loader.loader().headers.clone()
+  pub fn headers(&self) -> &HeaderMap {
+    &self.req_ctx.req_headers
   }
 }
 

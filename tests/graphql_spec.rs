@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
@@ -8,6 +7,8 @@ use std::sync::Arc;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
+use hyper::http::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -197,10 +198,12 @@ async fn test_execution() -> std::io::Result<()> {
     let schema = blueprint.to_schema(&config.server);
 
     for q in spec.test_queries {
-      let mut headers = BTreeMap::new();
-      headers.insert("authorization".to_string(), "1".to_string());
-      let data_loader = HttpDataLoader::default().headers(headers).to_async_data_loader();
+      let mut headers = HeaderMap::new();
+      headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
+
+      let data_loader = HttpDataLoader::default().to_async_data_loader();
       let req_ctx = RequestContext::default()
+        .req_headers(headers)
         .server(config.server.clone())
         .data_loader(data_loader);
       let req = Request::from(q.query.as_str()).data(Arc::new(req_ctx));

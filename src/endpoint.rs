@@ -5,6 +5,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use derive_setters::Setters;
+use hyper::http::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use serde_json::json;
 use url::Url;
 
@@ -84,19 +86,14 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: Option<&async_graphql::Value>,
     args: Option<&async_graphql::Value>,
-    headers: &[(String, String)],
+    headers: &HeaderMap,
   ) -> Result<reqwest::Request> {
     let url = self.get_url(input, env, args, headers)?;
     let method: reqwest::Method = self.method.clone().into();
     let mut request = reqwest::Request::new(method, url);
-    let headers = self.eval_headers(input, env, args, headers);
-    let body = self.body_str(input, env, args, headers.to_owned());
-    for (key, value) in headers {
-      request.headers_mut().insert(
-        reqwest::header::HeaderName::from_bytes(key.as_bytes())?,
-        reqwest::header::HeaderValue::from_str(&value)?,
-      );
-    }
+    let headers = self.eval_headers(input, env, args, headers)?;
+    let body = self.body_str(input, env, args, &headers);
+    request.headers_mut().extend(headers);
     request.headers_mut().insert(
       reqwest::header::CONTENT_TYPE,
       reqwest::header::HeaderValue::from_static("application/json"),
@@ -109,13 +106,12 @@ impl Endpoint {
   const VARS_STR: &'static str = "vars";
   const ARGS_STR: &'static str = "args";
   const HEADERS_STR: &'static str = "headers";
-  fn get_header(key: &str, headers: &[(String, String)]) -> Option<async_graphql::Value> {
-    headers.iter().find_map(|(k, v)| {
-      if k.clone() == *key {
-        Some(async_graphql::Value::String(v.clone()))
-      } else {
-        None
-      }
+  fn get_header(key: &str, headers: &HeaderMap) -> Option<async_graphql::Value> {
+    headers.get(key).and_then(|value| {
+      value
+        .to_str()
+        .ok()
+        .and_then(|str_val| async_graphql::Value::from_json(json!(str_val)).ok())
     })
   }
   fn extract_value_from_path(
@@ -125,7 +121,7 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: &async_graphql::Value,
     args: &async_graphql::Value,
-    headers: &[(String, String)],
+    headers: &HeaderMap,
   ) -> Option<String> {
     let header;
     match part {
@@ -153,9 +149,9 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: Option<&async_graphql::Value>,
     args: Option<&async_graphql::Value>,
-    headers: &[(String, String)],
-  ) -> Vec<(String, String)> {
-    let mut finalheaders: Vec<_> = Vec::new();
+    headers: &HeaderMap,
+  ) -> Result<HeaderMap> {
+    let mut finalheaders: HeaderMap = HeaderMap::new();
     finalheaders.extend(headers.to_owned());
     let env = env.unwrap_or(&async_graphql::Value::Null);
     let args = args.unwrap_or(&async_graphql::Value::Null);
@@ -163,21 +159,27 @@ impl Endpoint {
       for (key, value) in &self.query {
         match value {
           Mustache::Simple(s) => {
-            finalheaders.push((key.clone(), s.clone()));
+            finalheaders.insert(
+              key.clone().as_str().parse::<HeaderName>()?,
+              s.clone().parse::<HeaderValue>()?,
+            );
           }
           Mustache::Template(parts) => {
             if let Some(part) = parts.first() {
               if let Some(result) =
                 self.extract_value_from_path(part, parts, input, env, args, &finalheaders.to_owned())
               {
-                finalheaders.push((key.clone(), result));
+                finalheaders.insert(
+                  key.clone().as_str().parse::<HeaderName>()?,
+                  result.as_str().parse::<HeaderValue>()?,
+                );
               }
             }
           }
         }
       }
     }
-    finalheaders
+    Ok(finalheaders)
   }
 
   pub fn body_str(
@@ -185,7 +187,7 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: Option<&async_graphql::Value>,
     args: Option<&async_graphql::Value>,
-    headers: Vec<(String, String)>,
+    headers: &HeaderMap,
   ) -> String {
     let body = self.body.as_ref();
     let env = env.unwrap_or(&async_graphql::Value::Null);
@@ -197,7 +199,7 @@ impl Endpoint {
         Mustache::Simple(str) => s.push_str(str),
         Mustache::Template(parts) => {
           if let Some(part) = parts.first() {
-            if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, &headers) {
+            if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, headers) {
               s.push_str(&result);
             }
           }
@@ -212,7 +214,7 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: Option<&async_graphql::Value>,
     args: Option<&async_graphql::Value>,
-    headers: &[(String, String)],
+    headers: &HeaderMap,
   ) -> Result<Url> {
     let mut url = Url::parse(&format!("{}://{}", self.scheme, self.address))?;
 
@@ -247,7 +249,7 @@ impl Endpoint {
     input: &async_graphql::Value,
     env: &async_graphql::Value,
     args: &async_graphql::Value,
-    headers: &[(String, String)],
+    headers: &HeaderMap,
   ) -> String {
     let mut s = String::new();
     for (i, segment) in self.path.segments.iter().enumerate() {
@@ -271,6 +273,8 @@ impl Endpoint {
 }
 #[cfg(test)]
 mod tests {
+  use hyper::header::{HeaderName, HeaderValue};
+  use hyper::HeaderMap;
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
@@ -286,7 +290,7 @@ mod tests {
       Segment::literal("users".to_string()),
     ]));
     let result = endpoint
-      .get_url(&async_graphql::Value::Null, None, None, &[])
+      .get_url(&async_graphql::Value::Null, None, None, &HeaderMap::new())
       .unwrap()
       .to_string();
     assert_eq!(result, "http://localhost:8080/api/v1/users");
@@ -307,7 +311,7 @@ mod tests {
         .to_vec(),
       );
     let result = endpoint
-      .get_url(&async_graphql::Value::Null, None, None, &[])
+      .get_url(&async_graphql::Value::Null, None, None, &HeaderMap::new())
       .unwrap()
       .to_string();
     assert_eq!(result, "http://localhost:8080/api/v1?a=1&b=2&c=3");
@@ -335,7 +339,7 @@ mod tests {
         &async_graphql::Value::Null,
         async_graphql::Value::from_json(json!( {"name": 3})).ok().as_ref(),
         None,
-        &[],
+        &HeaderMap::new(),
       )
       .unwrap()
       .to_string();
@@ -353,7 +357,7 @@ mod tests {
         &async_graphql::Value::from_json(json!({"id": 123})).unwrap(),
         None,
         None,
-        &[],
+        &HeaderMap::new(),
       )
       .unwrap()
       .to_string();
@@ -371,7 +375,7 @@ mod tests {
         &async_graphql::Value::Null,
         None,
         Some(&async_graphql::Value::from_json(json!({"id": 123})).unwrap()),
-        &[],
+        &HeaderMap::new(),
       )
       .unwrap()
       .to_string();
@@ -384,13 +388,13 @@ mod tests {
       Segment::literal("v1".to_string()),
       Segment::param(vec!["headers".to_string(), "id".to_string()]),
     ]));
+    let headers = {
+      let mut headers = HeaderMap::new();
+      headers.insert(HeaderName::from_static("id"), HeaderValue::from_static("123"));
+      headers
+    };
     let result = endpoint
-      .get_url(
-        &async_graphql::Value::Null,
-        None,
-        None,
-        &[("id".to_string(), "123".to_string())],
-      )
+      .get_url(&async_graphql::Value::Null, None, None, &headers)
       .unwrap()
       .to_string();
     assert_eq!(result, "http://localhost:8080/api/v1/123");
