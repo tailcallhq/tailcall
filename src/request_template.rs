@@ -112,7 +112,7 @@ mod tests {
 
   #[test]
   fn test_url() {
-    let tmpl = RequestTemplate::new(r#""http://localhost:3000/""#).unwrap();
+    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
     let ctx = serde_json::Value::Null;
     let req = tmpl.to_request(&ctx);
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
@@ -120,7 +120,7 @@ mod tests {
 
   #[test]
   fn test_url_path() {
-    let tmpl = RequestTemplate::new(r#""http://localhost:3000/foo/bar""#).unwrap();
+    let tmpl = RequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
     let ctx = serde_json::Value::Null;
     let req = tmpl.to_request(&ctx);
     assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
@@ -128,7 +128,7 @@ mod tests {
 
   #[test]
   fn test_url_path_template() {
-    let tmpl = RequestTemplate::new(r#""http://localhost:3000/foo/{{bar.baz}}""#).unwrap();
+    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
     let ctx = json!({
       "bar": {
         "baz": "bar"
@@ -139,7 +139,7 @@ mod tests {
   }
   #[test]
   fn test_url_path_template_multi() {
-    let tmpl = RequestTemplate::new(r#""http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}""#).unwrap();
+    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}").unwrap();
     let ctx = json!({
       "bar": {
         "baz": "bar",
