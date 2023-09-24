@@ -10,6 +10,7 @@ use crate::endpoint_v2::Endpoint;
 use crate::json::JsonLike;
 use crate::mustache_v2::Mustache;
 
+// TODO: move to it's own file
 pub trait AnyPath {
   fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>>;
 }
@@ -84,7 +85,7 @@ impl RequestTemplate {
 
   pub fn new(root_url: &str) -> anyhow::Result<Self> {
     Ok(Self {
-      root_url: Mustache::new(root_url)?,
+      root_url: Mustache::parse(root_url)?,
       query: Default::default(),
       method: reqwest::Method::GET,
       headers: Default::default(),
@@ -96,21 +97,21 @@ impl RequestTemplate {
 impl TryFrom<Endpoint> for RequestTemplate {
   type Error = anyhow::Error;
   fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
-    let path = Mustache::new(endpoint.path.as_str())?;
+    let path = Mustache::parse(endpoint.path.as_str())?;
     let query = endpoint
       .query
       .iter()
-      .map(|(k, v)| Ok((k.to_owned(), Mustache::new(v.as_str())?)))
+      .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
     let method = endpoint.method.clone().into();
     let headers = endpoint
       .headers
       .iter()
-      .map(|(k, v)| Ok((k.as_str().into(), Mustache::new(v.to_str()?)?)))
+      .map(|(k, v)| Ok((k.as_str().into(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
 
     let body = if let Some(body) = &endpoint.body {
-      Some(Mustache::new(body.as_str())?)
+      Some(Mustache::parse(body.as_str())?)
     } else {
       None
     };
@@ -170,9 +171,9 @@ mod tests {
   #[test]
   fn test_url_query_params() {
     let query = vec![
-      ("foo".to_string(), Mustache::new("0").unwrap()),
-      ("bar".to_string(), Mustache::new("1").unwrap()),
-      ("baz".to_string(), Mustache::new("2").unwrap()),
+      ("foo".to_string(), Mustache::parse("0").unwrap()),
+      ("bar".to_string(), Mustache::parse("1").unwrap()),
+      ("baz".to_string(), Mustache::parse("2").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
     let ctx = serde_json::Value::Null;
@@ -182,9 +183,9 @@ mod tests {
   #[test]
   fn test_url_query_params_template() {
     let query = vec![
-      ("foo".to_string(), Mustache::new("0").unwrap()),
-      ("bar".to_string(), Mustache::new("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::new("{{baz.id}}").unwrap()),
+      ("foo".to_string(), Mustache::parse("0").unwrap()),
+      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
+      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap().query(query);
     let ctx = json!({
@@ -201,9 +202,9 @@ mod tests {
   #[test]
   fn test_headers() {
     let headers = vec![
-      ("foo".to_string(), Mustache::new("foo").unwrap()),
-      ("bar".to_string(), Mustache::new("bar").unwrap()),
-      ("baz".to_string(), Mustache::new("baz").unwrap()),
+      ("foo".to_string(), Mustache::parse("foo").unwrap()),
+      ("bar".to_string(), Mustache::parse("bar").unwrap()),
+      ("baz".to_string(), Mustache::parse("baz").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = serde_json::Value::Null;
@@ -215,9 +216,9 @@ mod tests {
   #[test]
   fn test_header_template() {
     let headers = vec![
-      ("foo".to_string(), Mustache::new("0").unwrap()),
-      ("bar".to_string(), Mustache::new("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::new("{{baz.id}}").unwrap()),
+      ("foo".to_string(), Mustache::parse("0").unwrap()),
+      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
+      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = json!({
@@ -246,7 +247,7 @@ mod tests {
   fn test_body() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
-      .body(Some(Mustache::new("foo").unwrap()));
+      .body(Some(Mustache::parse("foo").unwrap()));
     let ctx = serde_json::Value::Null;
     let body = tmpl.to_request(&ctx).body().unwrap().as_bytes().unwrap().to_owned();
     assert_eq!(body, "foo".as_bytes());
@@ -255,7 +256,7 @@ mod tests {
   fn test_body_template() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
-      .body(Some(Mustache::new("{{foo.bar}}").unwrap()));
+      .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
     let ctx = json!({
       "foo": {
         "bar": "baz"
