@@ -14,7 +14,19 @@ use crate::http::RequestContext;
 pub struct EvaluationContext<'a> {
   pub req_ctx: &'a RequestContext,
   pub context: Option<&'a ResolverContext<'a>>,
+
+  // TODO: JS timeout should be read from server settings
   pub timeout: Duration,
+}
+
+lazy_static::lazy_static! {
+  static ref REQUEST_CTX: RequestContext = RequestContext::default();
+}
+
+impl Default for EvaluationContext<'static> {
+  fn default() -> Self {
+    Self::new(&REQUEST_CTX)
+  }
 }
 
 impl<'a> EvaluationContext<'a> {
@@ -39,6 +51,10 @@ impl<'a> EvaluationContext<'a> {
 
   pub fn headers(&self) -> &HeaderMap {
     &self.req_ctx.req_headers
+  }
+  pub fn get_header_as_value(&self, key: &str) -> Option<async_graphql::Value> {
+    let value = self.headers().get(key)?;
+    Some(async_graphql::Value::String(value.to_str().ok()?.to_string()))
   }
 }
 

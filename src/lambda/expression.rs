@@ -1,14 +1,16 @@
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
-use async_graphql::InputType;
+use async_graphql_value::Name;
+use http_cache_semantics::RequestLike;
+use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
 use crate::endpoint::Endpoint;
-use crate::http::{EndpointKey, Method};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -53,6 +55,15 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
   }
 }
 
+fn to_body(value: HashMap<String, Vec<&async_graphql::Value>>) -> async_graphql::Value {
+  let mut map = IndexMap::new();
+  for (k, v) in value {
+    let list = Vec::from_iter(v.iter().map(|v| v.to_owned().to_owned()));
+    map.insert(Name::new(k), async_graphql::Value::List(list));
+  }
+  async_graphql::Value::Object(map)
+}
+
 impl Expression {
   pub fn eval<'a>(
     &'a self,
@@ -76,50 +87,53 @@ impl Expression {
           let input = input.eval(ctx).await?;
           match operation {
             Operation::Endpoint(endpoint) => {
-              // TODO: header forwarding should happen inside of endpoint
-              let env = &ctx.req_ctx.server.vars.to_value();
-              let url = endpoint.get_url(&input, Some(env), ctx.args().as_ref(), &ctx.req_ctx.req_headers)?;
+              let req = endpoint.to_request(&input, ctx)?;
+              let url = req.uri().clone();
+              let is_get = req.method() == reqwest::Method::GET;
+              // Attempt to short circuit GET request
+              if is_get {
+                if let Some(cached) = ctx.req_ctx.cache.get(&url) {
+                  if let Some(key) = endpoint.batch_key() {
+                    return Ok(cached.body.get_key(key).cloned().unwrap_or(async_graphql::Value::Null));
+                  }
+                  return Ok(cached.body);
+                }
+              }
 
-              if endpoint.method == Method::GET {
-                let match_key_value = endpoint
-                  .batch_key()
-                  .map(|key| {
-                    input
-                      .get_path(&[key.to_string()])
-                      .unwrap_or(&async_graphql::Value::Null)
-                  })
-                  .unwrap_or(&async_graphql::Value::Null);
-                let key = EndpointKey {
-                  url: url.clone(),
-                  headers: ctx.req_ctx.req_headers.clone(),
-                  method: endpoint.method.clone(),
-                  match_key_value: match_key_value.clone(),
-                  match_path: endpoint.batch_path().to_vec(),
-                  batching_enabled: endpoint.is_batched(),
-                  list: endpoint.list.unwrap_or(false),
-                };
-                let value = ctx
-                  .req_ctx
-                  .data_loader
-                  .load_one(key)
-                  .await
-                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
-                  .unwrap_or_default();
-                if ctx.req_ctx.server.enable_http_validation() {
-                  endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
-                }
-                Ok(value.body)
+              // Prepare for HTTP calls
+              let mut res = ctx
+                .req_ctx
+                .execute(req)
+                .await
+                .map_err(|e| EvaluationError::IOException(e.to_string()))?;
+
+              // Handle N + 1 batching
+              if let Some(batch) = endpoint.batch.as_ref() {
+                let path = batch.path();
+                res.body = to_body(res.body.group_by(path));
               } else {
-                let req = endpoint.to_request(&input, Some(env), ctx.args().as_ref(), ctx.headers())?;
-                let client = crate::http::HttpClient::default();
-                let value = client
-                  .execute(req)
-                  .await
-                  .map_err(|e| EvaluationError::IOException(e.to_string()))?;
+                // Enable HTTP validation if batching is disabled
                 if ctx.req_ctx.server.enable_http_validation() {
-                  endpoint.output.validate(&value.body).map_err(EvaluationError::from)?;
+                  endpoint.output.validate(&res.body).map_err(EvaluationError::from)?;
                 }
-                Ok(value.body)
+              }
+
+              // Insert into cache for future requests
+              if is_get {
+                ctx.req_ctx.cache.insert(url, res.clone());
+              }
+
+              // If batching is enabled pick the batch key
+              if let Some(batch) = endpoint.batch.as_ref() {
+                Ok(
+                  res
+                    .body
+                    .get_key(batch.key())
+                    .cloned()
+                    .unwrap_or(async_graphql::Value::Null),
+                )
+              } else {
+                Ok(res.body)
               }
             }
             Operation::JS(script) => {

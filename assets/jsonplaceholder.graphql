@@ -27,7 +27,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User
-    @http(path: "/users", query: {id: "{{parent.value.userId}}"})
-    @batch(key: "userId", path: ["id"])
+  user: User @http(path: "/users/{{value.userId}}")
 }

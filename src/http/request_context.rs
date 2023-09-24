@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use async_graphql::dataloader::{DataLoader, HashMapCache};
 use derive_setters::Setters;
@@ -7,6 +6,7 @@ use hyper::{HeaderMap, Uri};
 
 use super::memo_client::MemoClient;
 use super::{EndpointKey, HttpClient, HttpDataLoader, Response, ServerContext};
+use crate::cache::Cache;
 use crate::config::Server;
 
 #[derive(Setters)]
@@ -16,7 +16,7 @@ pub struct RequestContext {
   pub http_client: HttpClient,
   pub server: Server,
   pub req_headers: HeaderMap,
-  cache: Mutex<HashMap<Uri, super::Response>>,
+  pub cache: Cache<Uri, super::Response>,
 }
 
 impl Default for RequestContext {
@@ -33,16 +33,8 @@ impl RequestContext {
       req_headers: headers,
       http_client,
       server,
-      cache: Mutex::new(HashMap::new()),
+      cache: Cache::empty(),
     }
-  }
-
-  pub fn get(&self, key: &Uri) -> Option<super::Response> {
-    self.cache.lock().unwrap().get(key).cloned()
-  }
-
-  pub fn insert(&self, key: Uri, value: super::Response) {
-    self.cache.lock().unwrap().insert(key, value);
   }
 
   #[allow(clippy::mutable_key_type)]

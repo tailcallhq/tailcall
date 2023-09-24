@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::InputType;
 use derive_setters::Setters;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
@@ -14,6 +15,7 @@ use crate::batch::Batch;
 use crate::http::{Method, Scheme};
 use crate::inet_address::InetAddress;
 use crate::json::{JsonLike, JsonSchema};
+use crate::lambda::EvaluationContext;
 use crate::mustache::Mustache;
 use crate::path::{Path, Segment};
 
@@ -81,18 +83,18 @@ impl Endpoint {
     self.batch.is_some()
   }
 
-  pub fn to_request(
-    &self,
+  pub fn to_request<'a>(
+    &'a self,
     input: &async_graphql::Value,
-    env: Option<&async_graphql::Value>,
-    args: Option<&async_graphql::Value>,
-    headers: &HeaderMap,
+    ctx: &'a EvaluationContext<'a>,
   ) -> Result<reqwest::Request> {
-    let url = self.get_url(input, env, args, headers)?;
+    let vars = ctx.req_ctx.server.vars.to_value();
+    let args = ctx.args();
+    let url = self.get_url(input, Some(&vars), args.as_ref(), ctx.headers())?;
     let method: reqwest::Method = self.method.clone().into();
     let mut request = reqwest::Request::new(method, url);
-    let headers = self.eval_headers(input, env, args, headers)?;
-    let body = self.body_str(input, env, args, &headers);
+    let headers = self.eval_headers(input, Some(&vars), args.as_ref(), ctx.headers())?;
+    let body = self.body_str(input, Some(&vars), args.as_ref(), &headers);
     request.headers_mut().extend(headers);
     request.headers_mut().insert(
       reqwest::header::CONTENT_TYPE,
@@ -158,13 +160,13 @@ impl Endpoint {
     if !self.headers.is_empty() {
       for (key, value) in &self.query {
         match value {
-          Mustache::Simple(s) => {
+          Mustache::Literal(s) => {
             finalheaders.insert(
               key.clone().as_str().parse::<HeaderName>()?,
               s.clone().parse::<HeaderValue>()?,
             );
           }
-          Mustache::Template(parts) => {
+          Mustache::Expression(parts) => {
             if let Some(part) = parts.first() {
               if let Some(result) =
                 self.extract_value_from_path(part, parts, input, env, args, &finalheaders.to_owned())
@@ -196,8 +198,8 @@ impl Endpoint {
 
     if let Some(body) = body {
       match body {
-        Mustache::Simple(str) => s.push_str(str),
-        Mustache::Template(parts) => {
+        Mustache::Literal(str) => s.push_str(str),
+        Mustache::Expression(parts) => {
           if let Some(part) = parts.first() {
             if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, headers) {
               s.push_str(&result);
@@ -227,10 +229,10 @@ impl Endpoint {
       let mut query_params = BTreeMap::new();
       for (key, value) in &self.query {
         match value {
-          Mustache::Simple(s) => {
+          Mustache::Literal(s) => {
             query_params.insert(key.clone(), s.clone());
           }
-          Mustache::Template(parts) => {
+          Mustache::Expression(parts) => {
             if let Some(part) = parts.first() {
               if let Some(result) = self.extract_value_from_path(part, parts, input, env, args, headers) {
                 query_params.insert(key.clone(), result);
@@ -304,9 +306,9 @@ mod tests {
       ]))
       .query(
         [
-          ("a".to_string(), Mustache::Simple("1".to_string())),
-          ("b".to_string(), Mustache::Simple("2".to_string())),
-          ("c".to_string(), Mustache::Simple("3".to_string())),
+          ("a".to_string(), Mustache::Literal("1".to_string())),
+          ("b".to_string(), Mustache::Literal("2".to_string())),
+          ("c".to_string(), Mustache::Literal("3".to_string())),
         ]
         .to_vec(),
       );
@@ -325,11 +327,11 @@ mod tests {
       ]))
       .query(
         [
-          ("a".to_string(), Mustache::Simple("1".to_string())),
-          ("b".to_string(), Mustache::Simple("2".to_string())),
+          ("a".to_string(), Mustache::Literal("1".to_string())),
+          ("b".to_string(), Mustache::Literal("2".to_string())),
           (
             "c".to_string(),
-            Mustache::Template(vec!["vars".to_string(), "name".to_string()]),
+            Mustache::Expression(vec!["vars".to_string(), "name".to_string()]),
           ),
         ]
         .to_vec(),
