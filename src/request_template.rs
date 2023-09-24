@@ -1,30 +1,11 @@
-use std::borrow::Cow;
-
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde_json::Value;
 use url::Url;
 
 use crate::endpoint_v2::Endpoint;
-use crate::json::JsonLike;
 use crate::mustache_v2::Mustache;
-
-// TODO: move to it's own file
-pub trait AnyPath {
-  fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>>;
-}
-
-impl AnyPath for serde_json::Value {
-  fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>> {
-    self.get_path(path).and_then(|a| match a {
-      Value::String(s) => Some(Cow::Borrowed(s.as_str())),
-      Value::Number(n) => Some(Cow::Owned(n.to_string())),
-      Value::Bool(b) => Some(Cow::Owned(b.to_string())),
-      _ => None,
-    })
-  }
-}
+use crate::path_string::PathString;
 
 /// A template to quickly create a request
 #[derive(Setters)]
@@ -37,7 +18,7 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
-  fn eval_url<C: AnyPath>(&self, ctx: &C) -> Url {
+  fn eval_url<C: PathString>(&self, ctx: &C) -> Url {
     let root_url = self.root_url.render(ctx);
     let mut url = url::Url::parse(root_url.as_str()).unwrap();
     if !self.query.is_empty() {
@@ -50,7 +31,7 @@ impl RequestTemplate {
     }
     url
   }
-  fn eval_headers<C: AnyPath>(&self, ctx: &C) -> HeaderMap {
+  fn eval_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
@@ -64,7 +45,7 @@ impl RequestTemplate {
     header_map
   }
 
-  fn eval_body<C: AnyPath>(&self, ctx: &C) -> reqwest::Body {
+  fn eval_body<C: PathString>(&self, ctx: &C) -> reqwest::Body {
     self
       .body
       .as_ref()
@@ -73,7 +54,7 @@ impl RequestTemplate {
   }
 
   /// A high-performance way to reliably create a request
-  pub fn to_request<C: AnyPath>(self, ctx: &C) -> reqwest::Request {
+  pub fn to_request<C: PathString>(self, ctx: &C) -> reqwest::Request {
     let url = self.eval_url(ctx);
     let header_map = self.eval_headers(ctx);
     let body = self.eval_body(ctx);

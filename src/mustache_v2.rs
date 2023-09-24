@@ -1,6 +1,6 @@
 use nom::{Finish, IResult};
 
-use crate::request_template::AnyPath;
+use crate::path_string::PathString;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mustache(Vec<Segment>);
@@ -26,7 +26,7 @@ impl Mustache {
     }
   }
 
-  pub fn render(&self, value: &impl AnyPath) -> String {
+  pub fn render(&self, value: &impl PathString) -> String {
     match self {
       Mustache(segments) => segments
         .iter()
@@ -195,13 +195,13 @@ mod tests {
     use std::borrow::Cow;
 
     use crate::mustache_v2::{Mustache, Segment};
-    use crate::request_template::AnyPath;
+    use crate::path_string::PathString;
 
     #[test]
     fn test_render_mixed() {
       struct DummyPath;
 
-      impl AnyPath for DummyPath {
+      impl PathString for DummyPath {
         fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
           if parts == ["foo", "bar"] {
             Some(Cow::Borrowed("FOOBAR"))
@@ -228,7 +228,7 @@ mod tests {
     fn test_render_with_missing_path() {
       struct DummyPath;
 
-      impl AnyPath for DummyPath {
+      impl PathString for DummyPath {
         fn any_path(&self, _: &[String]) -> Option<Cow<'_, str>> {
           None
         }
@@ -247,7 +247,7 @@ mod tests {
     fn test_render_preserves_spaces() {
       struct DummyPath;
 
-      impl AnyPath for DummyPath {
+      impl PathString for DummyPath {
         fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
           if parts == ["foo"] {
             Some(Cow::Borrowed("bar"))

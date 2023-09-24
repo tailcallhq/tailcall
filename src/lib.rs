@@ -18,6 +18,7 @@ pub mod lambda;
 pub mod mustache;
 pub mod mustache_v2;
 pub mod path;
+pub mod path_string;
 pub mod print_schema;
 pub mod request_template;
 pub mod valid;

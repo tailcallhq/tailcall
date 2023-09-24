@@ -2,7 +2,7 @@ use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
 
 use crate::path;
-use crate::request_template::AnyPath;
+use crate::path_string::PathString;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Mustache {
@@ -14,7 +14,7 @@ impl Mustache {
   pub fn new(str: &str) -> anyhow::Result<Mustache> {
     Ok(serde_json::from_str(str)?)
   }
-  pub fn render(&self, value: &impl AnyPath) -> String {
+  pub fn render(&self, value: &impl PathString) -> String {
     match self {
       Mustache::Literal(text) => text.clone(),
       Mustache::Expression(parts) => value.any_path(parts).map(|a| a.to_string()).unwrap_or_default(),
