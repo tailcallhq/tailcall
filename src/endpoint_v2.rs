@@ -36,7 +36,7 @@ impl Endpoint {
   }
 
   pub fn to_request(&self, ctx: &EvaluationContext) -> anyhow::Result<Request> {
-    let mut req = RequestTemplate::try_from(self.clone())?.to_request(ctx);
+    let mut req = RequestTemplate::try_from(self.clone())?.to_request(ctx)?;
     req.headers_mut().extend(ctx.req_ctx.req_headers.clone());
     Ok(req)
   }
