@@ -4,7 +4,7 @@ use regex::Regex;
 use serde_json::Value;
 
 pub fn start_mock_server() -> mockito::Server {
-  mockito::Server::new_with_port(3000)
+  mockito::Server::new_with_port(3080)
 }
 
 pub fn setup_mocks(mock_server: &mut mockito::Server) {

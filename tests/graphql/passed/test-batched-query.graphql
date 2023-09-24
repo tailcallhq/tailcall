@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(baseURL: "http://127.0.0.1:3000") {
+schema @server(baseURL: "http://127.0.0.1:3080") {
   query: Query
 }
 
