@@ -6,11 +6,11 @@ use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
 pub trait PathString {
-  fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>>;
+  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>>;
 }
 
 impl PathString for serde_json::Value {
-  fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>> {
+  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
     self.get_path(path).and_then(|a| match a {
       serde_json::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
       serde_json::Value::Number(n) => Some(Cow::Owned(n.to_string())),
@@ -22,7 +22,7 @@ impl PathString for serde_json::Value {
 
 // TODO: improve performance
 impl PathString for EvaluationContext<'_> {
-  fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>> {
+  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
     let ctx = self;
     let resolver_ctx = ctx.context?;
     let value = resolver_ctx.parent_value.as_value()?;

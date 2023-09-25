@@ -17,7 +17,7 @@ impl Mustache {
   pub fn render(&self, value: &impl PathString) -> String {
     match self {
       Mustache::Literal(text) => text.clone(),
-      Mustache::Expression(parts) => value.any_path(parts).map(|a| a.to_string()).unwrap_or_default(),
+      Mustache::Expression(parts) => value.path_string(parts).map(|a| a.to_string()).unwrap_or_default(),
     }
   }
 }

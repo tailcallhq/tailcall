@@ -32,7 +32,7 @@ impl Mustache {
         .iter()
         .map(|segment| match segment {
           Segment::Literal(text) => text.clone(),
-          Segment::Expression(parts) => value.any_path(parts).map(|a| a.to_string()).unwrap_or_default(),
+          Segment::Expression(parts) => value.path_string(parts).map(|a| a.to_string()).unwrap_or_default(),
         })
         .collect(),
     }
@@ -202,7 +202,7 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
           if parts == ["foo", "bar"] {
             Some(Cow::Borrowed("FOOBAR"))
           } else if parts == ["baz", "qux"] {
@@ -229,7 +229,7 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn any_path(&self, _: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string(&self, _: &[String]) -> Option<Cow<'_, str>> {
           None
         }
       }
@@ -248,7 +248,7 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn any_path(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
           if parts == ["foo"] {
             Some(Cow::Borrowed("bar"))
           } else {
