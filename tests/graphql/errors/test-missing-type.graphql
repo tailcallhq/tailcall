@@ -1,0 +1,12 @@
+#> server-sdl
+schema {
+    query: Query
+}
+
+type Query {
+    user: User @http(path: "/user/1", baseURL: "https://api.example.com")
+}
+
+#> client-sdl
+type Failure
+@error(message: "Type User is not defined", trace: [])

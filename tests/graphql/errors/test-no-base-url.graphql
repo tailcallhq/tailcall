@@ -7,6 +7,11 @@ type Query {
   user: User @http(path: "/user/1")
 }
 
+type User {
+  id: ID!
+  name: String!
+}
+
 #> client-sdl
 type Failure
   @error(message: "No base URL defined", trace: ["Query", "user", "@http"])

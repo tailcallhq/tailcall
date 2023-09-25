@@ -59,11 +59,33 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
   })
 }
+fn unused_type_check(input_types: &HashSet<&String>, output_types: &HashSet<&String>, config: &Config) -> Vec<String> {
+  let config_types_set: HashSet<String> = config.graphql.types.keys().cloned().map(|s| s.to_string()).collect();
+
+  let union_types_set: HashSet<String> = config
+    .graphql
+    .unions
+    .as_ref()
+    .map_or(HashSet::new(), |unions| unions.iter().map(|u| u.name.clone()).collect());
+
+  let all_types_set: HashSet<String> = config_types_set.union(&union_types_set).cloned().collect();
+
+  input_types
+    .union(output_types)
+    .filter(|&&t| !is_scalar(t.as_str()) && !all_types_set.contains(t.as_str()))
+    .map(|s| s.to_string())
+    .collect()
+}
+
 fn to_definitions<'a>(
   config: &Config,
   output_types: HashSet<&'a String>,
   input_types: HashSet<&'a String>,
 ) -> Valid<Vec<Definition>> {
+  let unused_types = unused_type_check(&input_types, &output_types, config);
+  if !unused_types.is_empty() {
+    return unused_types.validate_all(|t| Valid::fail(format!("Type {} is not defined", t)));
+  }
   let mut types: Vec<Definition> = config.graphql.types.iter().validate_all(|(name, type_)| {
     let dbl_usage = input_types.contains(name) && output_types.contains(name);
     if let Some(variants) = &type_.variants {
@@ -321,7 +343,7 @@ fn needs_resolving(field: &config::Field) -> bool {
   field.unsafe_operation.is_some() || field.http.is_some()
 }
 fn is_scalar(type_name: &str) -> bool {
-  ["String", "Int", "Boolean", "JSON"].contains(&type_name)
+  ["String", "Int", "Boolean", "JSON", "ID"].contains(&type_name)
 }
 // Helper function to recursively process the path and return the corresponding type
 fn process_path(
