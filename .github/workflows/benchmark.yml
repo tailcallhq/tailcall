@@ -3,6 +3,8 @@ name: benchmark
 on:
   pull_request:
     types: [opened, labeled]
+    branches:
+      - main
 
   workflow_dispatch:
     inputs:
