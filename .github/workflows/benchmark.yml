@@ -17,7 +17,7 @@ jobs:
   benchmark:
     name: Rust project
     if: contains(github.event.pull_request.labels.*.name, 'benchmark')
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     permissions:
       pull-requests: write
       contents: write
