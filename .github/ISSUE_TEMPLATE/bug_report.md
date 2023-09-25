@@ -4,35 +4,44 @@ about: Create a report to help us improve
 title: ''
 labels: ''
 assignees: ''
-
 ---
+### Prerequisites
 
-**Describe the bug**
+- [ ] I have checked the existing issues to ensure this is not a duplicate.
+- [ ] I am running the latest version of Tailcall.
+
+### Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+### Steps to reproduce
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+1. 
+2. 
+3. 
+... (add as many steps as needed)
 
-**Screenshots**
+### Expected behavior
+A description of what you expected to happen.
+
+### Actual behavior
+A description of what actually happened.
+
+### Screenshots
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+### Environment information:
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+- **Operating System**: (e.g., Ubuntu 20.04, macOS Big Sur, Windows 10)
+- **Tailcall Version**: (e.g., v1.0.2)
+- **Rust Version**: (e.g., `rustc 1.58.0`)
+- **GraphQL Client/version** (e.g., `curl/8.1.2`)
 
-**Additional context**
-Add any other context about the problem here.
+### Additional context
+
+Add any other context about the problem here, such as relevant logs, error messages, or stack traces.
+
+### Logs
+
+```
+Paste any relevant logs here.
+```
