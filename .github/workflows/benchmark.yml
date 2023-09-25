@@ -2,7 +2,7 @@ name: benchmark
 
 on:
   pull_request:
-    types: [opened, labeled]
+    types: [opened, edited, labeled]
     branches:
       - main
 
