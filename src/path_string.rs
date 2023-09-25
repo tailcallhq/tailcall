@@ -5,7 +5,6 @@ use serde_json::json;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
-// TODO: move to it's own file
 pub trait PathString {
   fn any_path(&self, path: &[String]) -> Option<Cow<'_, str>>;
 }
