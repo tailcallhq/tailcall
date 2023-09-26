@@ -74,7 +74,8 @@ impl From<Cause<String>> for ValidationError<String> {
 
 impl<E> From<Vec<Cause<E>>> for ValidationError<E> {
   fn from(value: Vec<Cause<E>>) -> Self {
-    ValidationError(value)
+    ValidationError(value);
+    std::process::exit(exitcode::CONFIG);
   }
 }
 

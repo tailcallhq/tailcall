@@ -278,7 +278,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
 
           Valid::Ok(b_field)
         }
-        None => std::process::exit(exitcode::CONFIG),
+        None => Valid::fail("No base URL defined".to_string()),
       }
     }
     None => Valid::Ok(b_field),
