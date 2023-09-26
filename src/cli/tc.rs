@@ -32,7 +32,7 @@ pub async fn run() -> Result<()> {
           let err_str = format!("{:?}", e);
           let formatted_err = Fmt::error(&err_str);
           Fmt::display(formatted_err);
-          Ok(())
+          std::process::exit(exitcode::CONFIG);
         }
       }
     }
