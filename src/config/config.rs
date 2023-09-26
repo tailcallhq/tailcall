@@ -66,8 +66,12 @@ impl Config {
     types
   }
 
-  pub fn find_type(&self, name: String) -> Option<&Type> {
-    self.graphql.types.get(&name)
+  pub fn find_type(&self, name: &str) -> Option<&Type> {
+    self.graphql.types.get(name)
+  }
+
+  pub fn find_union(&self, name: &str) -> Option<&Union> {
+    self.graphql.unions.get(name)
   }
 
   pub fn to_yaml(&self) -> Result<String> {
@@ -131,7 +135,7 @@ impl Type {
 pub struct GraphQL {
   pub schema: RootSchema,
   pub types: BTreeMap<String, Type>,
-  pub unions: Option<Vec<Union>>,
+  pub unions: BTreeMap<String, Union>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]

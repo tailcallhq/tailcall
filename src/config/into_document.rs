@@ -207,7 +207,7 @@ fn config_document(config: &Config) -> ServiceDocument {
       kind,
     })));
   }
-  for union in config.graphql.unions.clone().unwrap_or_default() {
+  for union in config.graphql.unions.values() {
     definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
       extend: false,
       description: None,

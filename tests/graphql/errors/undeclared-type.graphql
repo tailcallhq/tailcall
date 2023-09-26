@@ -1,0 +1,12 @@
+#> server-sdl
+schema @schema {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Undeclared type 'User' was found", trace: ["Query", "users"])
