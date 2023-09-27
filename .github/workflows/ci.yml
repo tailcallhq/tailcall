@@ -20,7 +20,11 @@ jobs:
         with:
           toolchain: nightly
           components: rustfmt, clippy
-          override: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
 
       - name: Format code
         uses: actions-rs/cargo@v1
@@ -35,12 +39,6 @@ jobs:
           toolchain: nightly
           command: clippy
           args: -- -D warnings --all-targets --all-features
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
