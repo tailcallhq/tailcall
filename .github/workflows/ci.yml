@@ -15,15 +15,6 @@ jobs:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Restore Rust dependencies
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
