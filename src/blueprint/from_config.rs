@@ -251,7 +251,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
               HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
             );
           }
-          let endpoint = RequestTemplate::try_from(
+          let req_template = RequestTemplate::try_from(
             Endpoint::new(base_url.to_string())
               .method(method.clone())
               .query(query)
@@ -262,8 +262,8 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
           )
           .map_err(|e| ValidationError::new(e.to_string()))?;
 
-          b_field = b_field.resolver_or_default(Lambda::context().to_endpoint(endpoint.clone()), |r| {
-            r.to_endpoint(endpoint.clone())
+          b_field = b_field.resolver_or_default(Lambda::context().to_endpoint(req_template.clone()), |r| {
+            r.to_endpoint(req_template.clone())
           });
 
           Valid::Ok(b_field)

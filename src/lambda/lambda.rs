@@ -22,8 +22,8 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_endpoint(self, endpoint: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(self.box_expr(), Operation::Endpoint(endpoint)))
+  pub fn to_endpoint(self, req_template: RequestTemplate) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(self.box_expr(), Operation::Endpoint(req_template)))
   }
 
   pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {

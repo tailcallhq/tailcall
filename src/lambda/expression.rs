@@ -73,8 +73,8 @@ impl Expression {
         )),
         Expression::Unsafe(_input, operation) => {
           match operation {
-            Operation::Endpoint(endpoint) => {
-              let req = endpoint.to_request(ctx)?;
+            Operation::Endpoint(req_template) => {
+              let req = req_template.to_request(ctx)?;
               let url = req.uri().clone();
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
@@ -91,7 +91,7 @@ impl Expression {
                 .await
                 .map_err(|e| EvaluationError::IOException(e.to_string()))?;
               if ctx.req_ctx.server.enable_http_validation() {
-                endpoint
+                req_template
                   .endpoint
                   .output
                   .validate(&res.body)
