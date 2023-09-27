@@ -1,2 +1,2 @@
 cargo +nightly fmt
-cargo clippy --all-targets --all-features --fix --allow-staged --allow-dirty
+cargo +nightly clippy --all-targets --all-features --fix --allow-staged --allow-dirty -- -D warnings
