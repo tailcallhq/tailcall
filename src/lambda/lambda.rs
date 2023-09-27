@@ -68,7 +68,7 @@ mod tests {
   use serde::de::DeserializeOwned;
   use serde_json::json;
 
-  use crate::endpoint_v2::Endpoint;
+  use crate::endpoint::Endpoint;
   use crate::http::RequestContext;
   use crate::lambda::{EvaluationContext, Lambda};
   use crate::request_template::RequestTemplate;

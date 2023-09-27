@@ -80,7 +80,7 @@ mod tests {
   mod parse {
     use pretty_assertions::assert_eq;
 
-    use crate::mustache_v2::{Mustache, Segment};
+    use crate::mustache::{Mustache, Segment};
 
     #[test]
     fn test_single_literal() {
@@ -194,7 +194,7 @@ mod tests {
   mod render {
     use std::borrow::Cow;
 
-    use crate::mustache_v2::{Mustache, Segment};
+    use crate::mustache::{Mustache, Segment};
     use crate::path_string::PathString;
 
     #[test]

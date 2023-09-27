@@ -14,7 +14,7 @@ use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
-use crate::endpoint_v2::Endpoint;
+use crate::endpoint::Endpoint;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Lambda;
