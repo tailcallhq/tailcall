@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Server {
   pub allowed_headers: Option<HashSet<String>>,
-  #[serde(rename = "baseURL", serialize_with = "super::url::serialize")]
-  pub base_url: Option<url::Url>,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
   pub enable_apollo_tracing: Option<bool>,
   pub enable_cache_control_header: Option<bool>,
   pub enable_graphiql: Option<String>,

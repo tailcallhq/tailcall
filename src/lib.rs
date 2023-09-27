@@ -8,7 +8,6 @@ pub mod config;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
-pub mod endpoint_v2;
 pub mod http;
 pub mod inet_address;
 #[cfg(feature = "unsafe-js")]
@@ -16,7 +15,6 @@ pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
-pub mod mustache_v2;
 pub mod path;
 pub mod path_string;
 pub mod print_schema;

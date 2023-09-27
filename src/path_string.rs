@@ -24,12 +24,10 @@ impl PathString for serde_json::Value {
 impl PathString for EvaluationContext<'_> {
   fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
     let ctx = self;
-    let resolver_ctx = ctx.context?;
-    let value = resolver_ctx.parent_value.as_value()?;
     let mut result = None;
     if let Some((head, tail)) = path.split_first() {
       result = match head.as_str() {
-        "value" => value.get_path(tail).cloned(),
+        "value" => ctx.path_value(tail).map(|v| v.to_owned()),
         "args" => ctx.args()?.get_path(tail).cloned(),
         "headers" => ctx.get_header_as_value(&tail[0]),
         "vars" => Some(async_graphql::Value::String(

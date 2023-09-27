@@ -10,8 +10,6 @@ use super::{Proxy, Server};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
-use crate::mustache::Mustache;
-use crate::path::{path_deserialize, path_serialize, Path};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -211,17 +209,16 @@ pub struct Union {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
-  #[serde(deserialize_with = "path_deserialize", serialize_with = "path_serialize")]
-  pub path: Path,
+  pub path: String,
   pub method: Option<Method>,
-  pub query: Option<BTreeMap<String, Mustache>>,
+  pub query: Option<BTreeMap<String, String>>,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
-  pub body: Option<Mustache>,
+  pub body: Option<String>,
   pub match_path: Option<Vec<String>>,
   pub match_key: Option<String>,
-  #[serde(rename = "baseURL", serialize_with = "super::url::serialize")]
-  pub base_url: Option<url::Url>,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
   pub headers: Option<BTreeMap<String, String>>,
 }
 

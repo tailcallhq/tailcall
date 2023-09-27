@@ -3,18 +3,19 @@ use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
-use crate::endpoint_v2::Endpoint;
-use crate::mustache_v2::Mustache;
+use crate::endpoint::Endpoint;
+use crate::mustache::Mustache;
 use crate::path_string::PathString;
 
 /// A template to quickly create a request
-#[derive(Setters)]
+#[derive(Setters, Clone, Debug)]
 pub struct RequestTemplate {
   pub root_url: Mustache,
   pub query: Vec<(String, Mustache)>,
   pub method: reqwest::Method,
   pub headers: Vec<(String, Mustache)>,
   pub body: Option<Mustache>,
+  pub endpoint: Endpoint,
 }
 
 impl RequestTemplate {
@@ -54,12 +55,17 @@ impl RequestTemplate {
   }
 
   /// A high-performance way to reliably create a request
-  pub fn to_request<C: PathString>(self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+  pub fn to_request<C: PathString>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     let url = self.eval_url(ctx)?;
     let header_map = self.eval_headers(ctx);
     let body = self.eval_body(ctx);
-    let mut req = reqwest::Request::new(self.method, url);
+    let method = self.method.clone();
+    let mut req = reqwest::Request::new(method, url);
     req.headers_mut().extend(header_map);
+    req.headers_mut().insert(
+      reqwest::header::CONTENT_TYPE,
+      HeaderValue::from_static("application/json"),
+    );
     req.body_mut().replace(body);
     Ok(req)
   }
@@ -71,6 +77,7 @@ impl RequestTemplate {
       method: reqwest::Method::GET,
       headers: Default::default(),
       body: Default::default(),
+      endpoint: Endpoint::new(root_url.to_string()),
     })
   }
 }
@@ -97,7 +104,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
       None
     };
 
-    Ok(Self { root_url: path, query, method, headers, body })
+    Ok(Self { root_url: path, query, method, headers, body, endpoint })
   }
 }
 
@@ -107,7 +114,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::mustache_v2::Mustache;
+  use crate::mustache::Mustache;
   use crate::request_template::RequestTemplate;
 
   #[test]
@@ -264,7 +271,7 @@ mod tests {
   fn test_from_endpoint() {
     let mut headers = HeaderMap::new();
     headers.insert("foo", "bar".parse().unwrap());
-    let endpoint = crate::endpoint_v2::Endpoint::new("http://localhost:3000/".to_string())
+    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string())
       .method(crate::http::Method::POST)
       .headers(headers)
       .body(Some("foo".into()));
@@ -281,7 +288,7 @@ mod tests {
   fn test_from_endpoint_template() {
     let mut headers = HeaderMap::new();
     headers.insert("foo", "{{foo.header}}".parse().unwrap());
-    let endpoint = crate::endpoint_v2::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
+    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
       .method(crate::http::Method::POST)
       .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
       .headers(headers)
