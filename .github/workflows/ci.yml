@@ -15,12 +15,18 @@ jobs:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt
-          override: true
+          override: false
 
       - name: Format code
         uses: actions-rs/cargo@v1
@@ -28,12 +34,6 @@ jobs:
           toolchain: nightly
           command: fmt
           args: -- --check
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
 
       - name: Cache Rust dependencies
         uses: actions/cache@v3
