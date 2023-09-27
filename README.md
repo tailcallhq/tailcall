@@ -35,7 +35,9 @@ Head out to [docs] to learn about other powerful tailcall features.
 
 ### Contributing
 
-Your contributions are invaluable! Kindly fork the repository and propose a pull request.
+Your contributions are invaluable! Kindly go through our [contribution guidelines] if you are a first time contributor.
+
+[contribution guidelines]: ./CONTRIBUTING.md
 
 ### Support Us
 
