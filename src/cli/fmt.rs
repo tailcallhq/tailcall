@@ -72,7 +72,7 @@ impl Fmt {
       if s.is_empty() {
         query.to_string()
       } else {
-        format!("{} \n {}", query, s)
+        format!("{}\n{}", query, s)
       }
     }))
   }
