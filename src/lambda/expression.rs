@@ -71,7 +71,7 @@ impl Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
-        Expression::Unsafe(input, operation) => {
+        Expression::Unsafe(_input, operation) => {
           match operation {
             Operation::Endpoint(endpoint) => {
               let req = endpoint.to_request(ctx)?;
@@ -115,7 +115,7 @@ impl Expression {
 
               #[cfg(feature = "unsafe-js")]
               {
-                let input = input.eval(ctx).await?;
+                let input = _input.eval(ctx).await?;
                 result = javascript::execute_js(script, input, Some(ctx.timeout))
                   .map_err(|e| EvaluationError::JSException(e.to_string()).into());
               }
