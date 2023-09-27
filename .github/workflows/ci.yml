@@ -38,7 +38,7 @@ jobs:
         with:
           toolchain: nightly
           command: clippy
-          args: -- -D warnings --all-targets --all-features
+          args: -- -D warnings --all-features
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
