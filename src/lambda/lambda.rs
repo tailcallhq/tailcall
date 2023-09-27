@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Operation};
-use crate::endpoint::Endpoint;
+use crate::request_template::RequestTemplate;
 
 #[derive(Clone, Debug)]
 pub struct Lambda<A> {
@@ -22,7 +22,7 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_endpoint(self, endpoint: Endpoint) -> Lambda<serde_json::Value> {
+  pub fn to_endpoint(self, endpoint: RequestTemplate) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(self.box_expr(), Operation::Endpoint(endpoint)))
   }
 
@@ -68,11 +68,10 @@ mod tests {
   use serde::de::DeserializeOwned;
   use serde_json::json;
 
-  use crate::endpoint::Endpoint;
+  use crate::endpoint_v2::Endpoint;
   use crate::http::RequestContext;
-  use crate::inet_address::InetAddress;
   use crate::lambda::{EvaluationContext, Lambda};
-  use crate::path::{Path, Segment};
+  use crate::request_template::RequestTemplate;
 
   impl<B> Lambda<B>
   where
@@ -113,8 +112,7 @@ mod tests {
         .json_body(json!({ "name": "Hans" }));
     });
 
-    let endpoint = Endpoint::new(InetAddress::new(server.host(), server.port()))
-      .path(Path::new(vec![Segment::literal("users".to_string())]));
+    let endpoint = RequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
     let result = Lambda::from(()).to_endpoint(endpoint).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")

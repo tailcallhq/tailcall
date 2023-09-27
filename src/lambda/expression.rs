@@ -1,20 +1,17 @@
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
-use async_graphql_value::Name;
 use http_cache_semantics::RequestLike;
-use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::endpoint::Endpoint;
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
+use crate::request_template::RequestTemplate;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -33,7 +30,7 @@ pub enum Context {
 
 #[derive(Clone, Debug)]
 pub enum Operation {
-  Endpoint(Endpoint),
+  Endpoint(RequestTemplate),
   JS(String),
 }
 
@@ -53,15 +50,6 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
   fn from(_value: crate::valid::ValidationError<&'a str>) -> Self {
     EvaluationError::APIValidationError(_value.as_vec().iter().map(|e| e.message.to_owned()).collect())
   }
-}
-
-fn to_body(value: HashMap<String, Vec<&async_graphql::Value>>) -> async_graphql::Value {
-  let mut map = IndexMap::new();
-  for (k, v) in value {
-    let list = Vec::from_iter(v.iter().map(|v| v.to_owned().to_owned()));
-    map.insert(Name::new(k), async_graphql::Value::List(list));
-  }
-  async_graphql::Value::Object(map)
 }
 
 impl Expression {
@@ -84,38 +72,30 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(input, operation) => {
-          let input = input.eval(ctx).await?;
           match operation {
             Operation::Endpoint(endpoint) => {
-              let req = endpoint.to_request(&input, ctx)?;
+              let req = endpoint.to_request(ctx)?;
               let url = req.uri().clone();
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
               if is_get {
                 if let Some(cached) = ctx.req_ctx.cache.get(&url) {
-                  if let Some(key) = endpoint.batch_key() {
-                    return Ok(cached.body.get_key(key).cloned().unwrap_or(async_graphql::Value::Null));
-                  }
                   return Ok(cached.body);
                 }
               }
 
               // Prepare for HTTP calls
-              let mut res = ctx
+              let res = ctx
                 .req_ctx
                 .execute(req)
                 .await
                 .map_err(|e| EvaluationError::IOException(e.to_string()))?;
-
-              // Handle N + 1 batching
-              if let Some(batch) = endpoint.batch.as_ref() {
-                let path = batch.path();
-                res.body = to_body(res.body.group_by(path));
-              } else {
-                // Enable HTTP validation if batching is disabled
-                if ctx.req_ctx.server.enable_http_validation() {
-                  endpoint.output.validate(&res.body).map_err(EvaluationError::from)?;
-                }
+              if ctx.req_ctx.server.enable_http_validation() {
+                endpoint
+                  .endpoint
+                  .output
+                  .validate(&res.body)
+                  .map_err(EvaluationError::from)?;
               }
 
               // Insert into cache for future requests
@@ -123,18 +103,7 @@ impl Expression {
                 ctx.req_ctx.cache.insert(url, res.clone());
               }
 
-              // If batching is enabled pick the batch key
-              if let Some(batch) = endpoint.batch.as_ref() {
-                Ok(
-                  res
-                    .body
-                    .get_key(batch.key())
-                    .cloned()
-                    .unwrap_or(async_graphql::Value::Null),
-                )
-              } else {
-                Ok(res.body)
-              }
+              Ok(res.body)
             }
             Operation::JS(script) => {
               let result;
@@ -146,6 +115,7 @@ impl Expression {
 
               #[cfg(feature = "unsafe-js")]
               {
+                let input = input.eval(ctx).await?;
                 result = javascript::execute_js(script, input, Some(ctx.timeout))
                   .map_err(|e| EvaluationError::JSException(e.to_string()).into());
               }
