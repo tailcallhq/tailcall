@@ -483,7 +483,7 @@ pub fn to_json_schema_for_args(args: &Option<BTreeMap<String, Arg>>, config: &Co
   }
 }
 pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool>, config: &Config) -> JsonSchema {
-  let type_ = config.find_type(&type_of);
+  let type_ = config.find_type(type_of);
   let list = list.unwrap_or(false);
   let schema = match type_ {
     Some(type_) => {
