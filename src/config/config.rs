@@ -102,6 +102,10 @@ impl Config {
     self.graphql.types = graphql_types;
     self
   }
+
+  pub fn contains(&self, name: &str) -> bool {
+    self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
