@@ -228,15 +228,15 @@ mod tests {
   #[test]
   fn test_title() {
     let error = CLIError::new("Server could not be started");
-    let expected = r#"Error: Server could not be started"#.strip_margin();
+    let expected = r"Error: Server could not be started".strip_margin();
     assert_eq!(error.to_string(), expected);
   }
 
   #[test]
   fn test_title_description() {
     let error = CLIError::new("Server could not be started").description("The port is already in use".to_string());
-    let expected = r#"|Error: Server could not be started
-                          |       ❯ The port is already in use"#
+    let expected = r"|Error: Server could not be started
+                          |       ❯ The port is already in use"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -248,8 +248,8 @@ mod tests {
       .description("The port is already in use".to_string())
       .trace(vec!["@server".into(), "port".into()]);
 
-    let expected = r#"|Error: Server could not be started
-                          |       ❯ The port is already in use [at @server.port]"#
+    let expected = r"|Error: Server could not be started
+                          |       ❯ The port is already in use [at @server.port]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -260,9 +260,9 @@ mod tests {
     let error = CLIError::new("Configuration Error").caused_by(vec![CLIError::new("Base URL needs to be specified")
       .trace(vec!["User".into(), "posts".into(), "@http".into(), "baseURL".into()])]);
 
-    let expected = r#"|Error: Configuration Error
+    let expected = r"|Error: Configuration Error
                           |Caused by:
-                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]"#
+                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -294,13 +294,13 @@ mod tests {
       ]),
     ]);
 
-    let expected = r#"|Error: Configuration Error
+    let expected = r"|Error: Configuration Error
                           |Caused by:
                           |  • Base URL needs to be specified [at User.posts.@http.baseURL]
                           |  • Base URL needs to be specified [at Post.users.@http.baseURL]
                           |  • Base URL needs to be specified
                           |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
-                          |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"#
+                          |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
