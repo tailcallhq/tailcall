@@ -40,7 +40,7 @@ impl<'a> EvaluationContext<'a> {
     Some(async_graphql::Value::Object(ctx.args.as_index_map().clone()))
   }
 
-  pub fn path_value(&'a self, path: &'a Vec<String>) -> Option<&'a async_graphql::Value> {
+  pub fn path_value(&'a self, path: &[String]) -> Option<&'a async_graphql::Value> {
     get_path_value(self.value()?, path)
   }
 
@@ -58,7 +58,7 @@ impl<'a> EvaluationContext<'a> {
   }
 }
 
-fn get_path_value<'a>(input: &'a async_graphql::Value, path: &'a Vec<String>) -> Option<&'a async_graphql::Value> {
+fn get_path_value<'a>(input: &'a async_graphql::Value, path: &[String]) -> Option<&'a async_graphql::Value> {
   let mut value = Some(input);
   for name in path {
     match value {

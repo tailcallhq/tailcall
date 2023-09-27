@@ -17,10 +17,6 @@ impl Fmt {
     format!("{}", success.green())
   }
 
-  pub fn error(error: &String) -> String {
-    format!("{}", error.red())
-  }
-
   pub fn display(s: String) {
     println!("{}", s);
   }
@@ -76,7 +72,7 @@ impl Fmt {
       if s.is_empty() {
         query.to_string()
       } else {
-        format!("{} \n {}", query, s)
+        format!("{}\n{}", query, s)
       }
     }))
   }

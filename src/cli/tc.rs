@@ -28,12 +28,7 @@ pub async fn run() -> Result<()> {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
           Ok(())
         }
-        Err(e) => {
-          let err_str = format!("{:?}", e);
-          let formatted_err = Fmt::error(&err_str);
-          Fmt::display(formatted_err);
-          Ok(())
-        }
+        Err(e) => Err(e),
       }
     }
   }

@@ -1,88 +1,280 @@
-use serde::de::Deserializer;
-use serde::{Deserialize, Serialize};
+use nom::{Finish, IResult};
 
-use crate::path;
 use crate::path_string::PathString;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Mustache {
+pub struct Mustache(Vec<Segment>);
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Segment {
   Literal(String),
   Expression(Vec<String>),
 }
 
-impl Mustache {
-  pub fn new(str: &str) -> anyhow::Result<Mustache> {
-    Ok(serde_json::from_str(str)?)
+impl From<Vec<Segment>> for Mustache {
+  fn from(segments: Vec<Segment>) -> Self {
+    Mustache(segments)
   }
+}
+
+impl Mustache {
+  pub fn parse(str: &str) -> anyhow::Result<Mustache> {
+    let result = parse_mustache(str).finish();
+    match result {
+      Ok((_, mustache)) => Ok(mustache),
+      Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
+    }
+  }
+
   pub fn render(&self, value: &impl PathString) -> String {
     match self {
-      Mustache::Literal(text) => text.clone(),
-      Mustache::Expression(parts) => value.path_string(parts).map(|a| a.to_string()).unwrap_or_default(),
+      Mustache(segments) => segments
+        .iter()
+        .map(|segment| match segment {
+          Segment::Literal(text) => text.clone(),
+          Segment::Expression(parts) => value.path_string(parts).map(|a| a.to_string()).unwrap_or_default(),
+        })
+        .collect(),
     }
   }
 }
 
-impl<'de> Deserialize<'de> for Mustache {
-  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-  where
-    D: Deserializer<'de>,
-  {
-    let s = String::deserialize(deserializer)?;
-
-    if let Some(captures) = path::RE.captures(&s) {
-      if let Some(matched) = captures.get(1) {
-        let parts: Vec<String> = matched.as_str().split('.').map(String::from).collect();
-        return Ok(Mustache::Expression(parts));
-      }
-    }
-
-    Ok(Mustache::Literal(s))
-  }
+fn parse_name(input: &str) -> IResult<&str, String> {
+  nom::combinator::map(
+    nom::sequence::tuple((
+      nom::character::complete::multispace0,
+      nom::character::complete::alpha1,
+      nom::character::complete::alphanumeric0,
+      nom::character::complete::multispace0,
+    )),
+    |(_, a, b, _)| format!("{}{}", a, b),
+  )(input)
 }
 
-impl Serialize for Mustache {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::Serializer,
-  {
-    match self {
-      Mustache::Literal(s) => serializer.serialize_str(s),
-      Mustache::Expression(parts) => {
-        let combined = format!("{{{{{}}}}}", parts.join("."));
-        serializer.serialize_str(&combined)
-      }
-    }
-  }
+fn parse_expression(input: &str) -> IResult<&str, Vec<String>> {
+  nom::combinator::map(
+    nom::sequence::tuple((
+      nom::bytes::complete::tag("{{"),
+      nom::multi::separated_list1(nom::character::complete::char('.'), parse_name),
+      nom::bytes::complete::tag("}}"),
+    )),
+    |(_, vec, _)| vec,
+  )(input)
 }
 
-impl std::fmt::Display for Mustache {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Mustache::Literal(text) => write!(f, "{}", text),
-      Mustache::Expression(expressions) => {
-        let mut expression = String::new();
-        for e in expressions {
-          expression.push_str(e);
-        }
-        write!(f, "{{{}}}", expression)
-      }
-    }
-  }
+fn parse_segment(input: &str) -> IResult<&str, Segment> {
+  let expression = nom::combinator::map(parse_expression, Segment::Expression);
+  let literal = nom::combinator::map(nom::bytes::complete::take_while1(|c| c != '{'), |r: &str| {
+    Segment::Literal(r.to_string())
+  });
+
+  nom::branch::alt((expression, literal))(input)
+}
+
+fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
+  nom::combinator::map(nom::multi::many1(parse_segment), Mustache)(input)
 }
 
 #[cfg(test)]
 mod tests {
-  #[test]
-  fn test_deserialize_simple() {
-    let s = r#""hello/bar""#;
-    let mustache: super::Mustache = serde_json::from_str(s).unwrap();
-    assert_eq!(mustache, super::Mustache::Literal("hello/bar".to_string()));
-  }
+  mod parse {
+    use pretty_assertions::assert_eq;
 
-  #[test]
-  fn test_deserialize_template() {
-    let s = r#""{{hello}}""#;
-    let mustache: super::Mustache = serde_json::from_str(s).unwrap();
-    assert_eq!(mustache, super::Mustache::Expression(vec!["hello".to_string()]));
+    use crate::mustache::{Mustache, Segment};
+
+    #[test]
+    fn test_single_literal() {
+      let s = r#"hello/world"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![Segment::Literal("hello/world".to_string())])
+      );
+    }
+
+    #[test]
+    fn test_single_template() {
+      let s = r#"{{hello.world}}"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![Segment::Expression(vec![
+          "hello".to_string(),
+          "world".to_string()
+        ])])
+      );
+    }
+
+    #[test]
+    fn test_mixed() {
+      let s = r#"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![
+          Segment::Literal("http://localhost:8090/".to_string()),
+          Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+          Segment::Literal("/api/".to_string()),
+          Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
+          Segment::Literal("/end".to_string())
+        ])
+      );
+    }
+
+    #[test]
+    fn test_with_spaces() {
+      let s = "{{ foo . bar }}";
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![Segment::Expression(vec!["foo".to_string(), "bar".to_string()])])
+      );
+    }
+
+    #[test]
+    fn test_parse_expression_with_valid_input() {
+      let result = Mustache::parse("{{ foo.bar }} extra").unwrap();
+      let expected = Mustache::from(vec![
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" extra".to_string()),
+      ]);
+      assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_parse_expression_with_invalid_input() {
+      let result = Mustache::parse("foo.bar }}").unwrap();
+      let expected = Mustache::from(vec![Segment::Literal("foo.bar }}".to_string())]);
+      assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_parse_segments_mixed() {
+      let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix").unwrap();
+      let expected = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" middle ".to_string()),
+        Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+      assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_parse_segments_only_literal() {
+      let result = Mustache::parse("just a string").unwrap();
+      let expected = Mustache(vec![Segment::Literal("just a string".to_string())]);
+      assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_parse_segments_only_expression() {
+      let result = Mustache::parse("{{foo.bar}}").unwrap();
+      let expected = Mustache(vec![Segment::Expression(vec!["foo".to_string(), "bar".to_string()])]);
+      assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_unfinished_expression() {
+      let s = r#"{{hello.world"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![Segment::Literal("{{hello.world".to_string())])
+      );
+    }
+
+    #[test]
+    fn test_new_number() {
+      let mustache = Mustache::parse("123").unwrap();
+      assert_eq!(mustache, Mustache::from(vec![Segment::Literal("123".to_string())]));
+    }
+  }
+  mod render {
+    use std::borrow::Cow;
+
+    use serde_json::json;
+
+    use crate::mustache::{Mustache, Segment};
+    use crate::path_string::PathString;
+
+    #[test]
+    fn test_query_params_template() {
+      let s = r#"/v1/templates?project-id={{value.projectId}}"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      let ctx = json!(json!({"value": {"projectId": "123"}}));
+      let result = mustache.render(&ctx);
+      assert_eq!(result, "/v1/templates?project-id=123");
+    }
+
+    #[test]
+    fn test_render_mixed() {
+      struct DummyPath;
+
+      impl PathString for DummyPath {
+        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+          if parts == ["foo", "bar"] {
+            Some(Cow::Borrowed("FOOBAR"))
+          } else if parts == ["baz", "qux"] {
+            Some(Cow::Borrowed("BAZQUX"))
+          } else {
+            None
+          }
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" middle ".to_string()),
+        Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(mustache.render(&DummyPath), "prefix FOOBAR middle BAZQUX suffix");
+    }
+
+    #[test]
+    fn test_render_with_missing_path() {
+      struct DummyPath;
+
+      impl PathString for DummyPath {
+        fn path_string(&self, _: &[String]) -> Option<Cow<'_, str>> {
+          None
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(mustache.render(&DummyPath), "prefix  suffix");
+    }
+
+    #[test]
+    fn test_render_preserves_spaces() {
+      struct DummyPath;
+
+      impl PathString for DummyPath {
+        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+          if parts == ["foo"] {
+            Some(Cow::Borrowed("bar"))
+          } else {
+            None
+          }
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("    ".to_string()),
+        Segment::Expression(vec!["foo".to_string()]),
+        Segment::Literal("    ".to_string()),
+      ]);
+
+      assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+    }
   }
 }
