@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::sync::Arc;
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use async_graphql::http::GraphiQLSource;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
