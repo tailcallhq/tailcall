@@ -20,7 +20,11 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt
-
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -35,12 +39,6 @@ jobs:
         with:
           command: +nightly fmt
           args: -- --check
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
