@@ -3,7 +3,6 @@
 use anyhow::Result;
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
-
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
@@ -26,7 +25,7 @@ async fn main() -> Result<()> {
         }
       };
       eprintln!("{}", cli_error.color(true));
-      std::process::exit(1);
+      std::process::exit(exitcode::CONFIG);
     }
   }
   Ok(())

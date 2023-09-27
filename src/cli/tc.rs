@@ -29,10 +29,7 @@ pub async fn run() -> Result<()> {
           Ok(())
         }
         Err(e) => {
-          let err_str = format!("{:?}", e);
-          let formatted_err = Fmt::error(&err_str);
-          Fmt::display(formatted_err);
-          Ok(())
+          return Err(e)
         }
       }
     }
