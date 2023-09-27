@@ -14,10 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install stable toolchain
+      - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           override: true
           components: rustfmt, clippy
 
@@ -41,6 +41,12 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
