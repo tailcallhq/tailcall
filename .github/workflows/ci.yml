@@ -36,9 +36,8 @@ jobs:
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
-          toolchain: nightly
           command: clippy
-          args: -- -D warnings
+          args: -D warnings --all-targets --all-features
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
