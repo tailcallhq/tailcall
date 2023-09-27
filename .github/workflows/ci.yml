@@ -38,6 +38,7 @@ jobs:
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
+          toolchain: stable
           command: clippy
           args: -- -D warnings --all-targets --all-features
 
