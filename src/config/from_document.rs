@@ -102,7 +102,6 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
     let type_opt = match type_definition.node.kind.clone() {
       TypeKind::Union(union_type) => to_union(
         union_type,
-        &type_definition.node.name.node,
         &type_definition.node.description.as_ref().map(|pos| pos.node.clone()),
       ),
       _ => continue,
@@ -285,13 +284,13 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Option<config::Http> {
     }
   })
 }
-fn to_union(union_type: UnionType, name: &str, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members
     .iter()
     .map(|member| member.node.to_string())
     .collect();
-  Union { name: name.to_owned(), types, doc: doc.clone() }
+  Union { types, doc: doc.clone() }
 }
 fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
   directives.iter().find_map(|directive| {

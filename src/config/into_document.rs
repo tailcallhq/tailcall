@@ -207,11 +207,11 @@ fn config_document(config: &Config) -> ServiceDocument {
       kind,
     })));
   }
-  for union in config.graphql.unions.values() {
+  for (name, union) in config.graphql.unions.iter() {
     definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
       extend: false,
       description: None,
-      name: pos(Name::new(union.name.clone())),
+      name: pos(Name::new(name)),
       directives: Vec::new(),
       kind: TypeKind::Union(UnionType {
         members: union.types.iter().map(|name| pos(Name::new(name.clone()))).collect(),

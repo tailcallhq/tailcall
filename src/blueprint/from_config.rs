@@ -96,7 +96,7 @@ fn to_definitions<'a>(
   let unions = config
     .graphql
     .unions
-    .values()
+    .iter()
     .map(to_union_type_definition)
     .map(Definition::UnionTypeDefinition);
 
@@ -110,9 +110,9 @@ fn to_scalar_type_definition(name: &str) -> Valid<Definition> {
     description: None,
   }))
 }
-fn to_union_type_definition(u: &config::Union) -> UnionTypeDefinition {
+fn to_union_type_definition((name, u): (&String, &config::Union)) -> UnionTypeDefinition {
   UnionTypeDefinition {
-    name: u.name.clone(),
+    name: name.to_owned(),
     description: u.doc.clone(),
     directives: Vec::new(),
     types: u.types.clone(),

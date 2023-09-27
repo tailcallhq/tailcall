@@ -208,7 +208,6 @@ pub struct Arg {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Union {
-  pub name: String,
   pub types: Vec<String>,
   pub doc: Option<String>,
 }
