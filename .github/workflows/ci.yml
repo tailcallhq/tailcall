@@ -19,7 +19,7 @@ jobs:
         with:
           toolchain: nightly
           override: true
-          components: rustfmt, clippy
+          components: rustfmt
 
       - name: Cache Rust dependencies
         uses: actions/cache@v3
@@ -33,20 +33,20 @@ jobs:
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
-          command: fmt
+          command: +nightly fmt
           args: -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings --all-targets --all-features
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
