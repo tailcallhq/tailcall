@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_single_literal() {
-      let s = r#"hello/world"#;
+      let s = r"hello/world";
       let mustache: Mustache = Mustache::parse(s).unwrap();
       assert_eq!(
         mustache,
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_single_template() {
-      let s = r#"{{hello.world}}"#;
+      let s = r"{{hello.world}}";
       let mustache: Mustache = Mustache::parse(s).unwrap();
       assert_eq!(
         mustache,
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_mixed() {
-      let s = r#"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end"#;
+      let s = r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end";
       let mustache: Mustache = Mustache::parse(s).unwrap();
       assert_eq!(
         mustache,
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_unfinished_expression() {
-      let s = r#"{{hello.world"#;
+      let s = r"{{hello.world";
       let mustache: Mustache = Mustache::parse(s).unwrap();
       assert_eq!(
         mustache,
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_query_params_template() {
-      let s = r#"/v1/templates?project-id={{value.projectId}}"#;
+      let s = r"/v1/templates?project-id={{value.projectId}}";
       let mustache: Mustache = Mustache::parse(s).unwrap();
       let ctx = json!(json!({"value": {"projectId": "123"}}));
       let result = mustache.render(&ctx);

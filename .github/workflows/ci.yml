@@ -3,8 +3,8 @@ name: build
 on:
   push:
     branches:
-      - "**"
-  pull_request_target:
+      - "main"
+  pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
 jobs:
@@ -12,14 +12,19 @@ jobs:
     name: Rust project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
           components: rustfmt, clippy
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
 
       - name: Cache Rust dependencies
         uses: actions/cache@v3
@@ -33,20 +38,16 @@ jobs:
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
+          toolchain: nightly
           command: fmt
           args: -- --check
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
+          toolchain: nightly
           command: clippy
-          args: -- -D warnings
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+          args: --all-targets --all-features -- -D warnings
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
@@ -70,7 +71,7 @@ jobs:
       group: deploy-job
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only
         env:
