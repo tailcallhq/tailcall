@@ -262,9 +262,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
           )
           .map_err(|e| ValidationError::new(e.to_string()))?;
 
-          b_field = b_field.resolver_or_default(Lambda::context().to_endpoint(req_template.clone()), |r| {
-            r.to_endpoint(req_template.clone())
-          });
+          b_field.resolver = Some(Lambda::from_request_template(req_template.clone()).expression);
 
           Valid::Ok(b_field)
         }

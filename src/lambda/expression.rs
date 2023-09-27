@@ -18,7 +18,7 @@ pub enum Expression {
   Context(Context),
   Literal(Value), // TODO: this should async_graphql::Value
   EqualTo(Box<Expression>, Box<Expression>),
-  Unsafe(Box<Expression>, Operation),
+  Unsafe(Operation),
   Input(Box<Expression>, Vec<String>),
 }
 
@@ -31,7 +31,7 @@ pub enum Context {
 #[derive(Clone, Debug)]
 pub enum Operation {
   Endpoint(RequestTemplate),
-  JS(String),
+  JS(Box<Expression>, String),
 }
 
 #[derive(Debug, Error, Serialize)]
@@ -71,7 +71,7 @@ impl Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
-        Expression::Unsafe(_input, operation) => {
+        Expression::Unsafe(operation) => {
           match operation {
             Operation::Endpoint(req_template) => {
               let req = req_template.to_request(ctx)?;
@@ -105,7 +105,7 @@ impl Expression {
 
               Ok(res.body)
             }
-            Operation::JS(script) => {
+            Operation::JS(input, script) => {
               let result;
               #[cfg(not(feature = "unsafe-js"))]
               {
@@ -115,7 +115,7 @@ impl Expression {
 
               #[cfg(feature = "unsafe-js")]
               {
-                let input = _input.eval(ctx).await?;
+                let input = input.eval(ctx).await?;
                 result = javascript::execute_js(script, input, Some(ctx.timeout))
                   .map_err(|e| EvaluationError::JSException(e.to_string()).into());
               }

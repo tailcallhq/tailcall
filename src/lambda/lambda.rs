@@ -22,12 +22,8 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_endpoint(self, req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(self.box_expr(), Operation::Endpoint(req_template)))
-  }
-
   pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(self.box_expr(), Operation::JS(script)))
+    Lambda::new(Expression::Unsafe(Operation::JS(self.box_expr(), script)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
@@ -46,6 +42,10 @@ impl Lambda<serde_json::Value> {
 
   pub fn context_path(path: Vec<String>) -> Self {
     Lambda::new(Expression::Context(Context::Path(path)))
+  }
+
+  pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template)))
   }
 }
 
@@ -113,7 +113,7 @@ mod tests {
     });
 
     let endpoint = RequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
-    let result = Lambda::from(()).to_endpoint(endpoint).eval().await.unwrap();
+    let result = Lambda::from_request_template(endpoint).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
   }
