@@ -19,13 +19,12 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: clippy
           override: true
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          components: rustfmt
+          components: rustfmt, clippy
           override: false
 
       - name: Format code
@@ -38,7 +37,7 @@ jobs:
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           command: clippy
           args: -- -D warnings --all-targets --all-features
 
