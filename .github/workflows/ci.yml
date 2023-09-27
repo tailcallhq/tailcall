@@ -25,7 +25,8 @@ jobs:
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
-          command: +nightly fmt
+          toolchain: nightly
+          command: fmt
           args: -- --check
 
       - name: Install stable toolchain
