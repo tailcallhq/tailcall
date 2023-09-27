@@ -17,10 +17,6 @@ impl Fmt {
     format!("{}", success.green())
   }
 
-  pub fn error(error: &String) -> String {
-    format!("{}", error.red())
-  }
-
   pub fn display(s: String) {
     println!("{}", s);
   }

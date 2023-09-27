@@ -28,9 +28,7 @@ pub async fn run() -> Result<()> {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
           Ok(())
         }
-        Err(e) => {
-          return Err(e)
-        }
+        Err(e) => Err(e),
       }
     }
   }
