@@ -10,6 +10,7 @@ pub trait ValidExtensions<A, E>:
   fn succeed(a: A) -> Self;
   fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>>;
   fn trace(self, message: &str) -> Self;
+  fn fold<A1, E1>(self, ok: impl Fn(A) -> Valid<A1, E1>, err: Valid<A1, E1>) -> Valid<A1, E1>;
 }
 
 pub trait ValidConstructor<A, E> {
@@ -47,6 +48,13 @@ impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
     }
 
     self
+  }
+
+  fn fold<A1, E1>(self, ok: impl Fn(A) -> Valid<A1, E1>, err: Valid<A1, E1>) -> Valid<A1, E1> {
+    match self {
+      Ok(a) => f(a),
+      Err(e) => Err(e).validate_or(err),
+    }
   }
 }
 
