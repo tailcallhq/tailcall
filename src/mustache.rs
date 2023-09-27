@@ -194,8 +194,19 @@ mod tests {
   mod render {
     use std::borrow::Cow;
 
+    use serde_json::json;
+
     use crate::mustache::{Mustache, Segment};
     use crate::path_string::PathString;
+
+    #[test]
+    fn test_query_params_template() {
+      let s = r#"/v1/templates?project-id={{value.projectId}}"#;
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      let ctx = json!(json!({"value": {"projectId": "123"}}));
+      let result = mustache.render(&ctx);
+      assert_eq!(result, "/v1/templates?project-id=123");
+    }
 
     #[test]
     fn test_render_mixed() {
