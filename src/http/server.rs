@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use async_graphql::http::GraphiQLSource;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -56,20 +56,31 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
 
   new_headers
 }
+
 pub async fn start_server(file_path: &String) -> Result<()> {
-  let server_sdl = fs::read_to_string(file_path)?;
-  let config = Config::from_sdl(&server_sdl)?;
-  let port = config.port();
-  let server = config.server.clone();
-  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(blueprint, server));
-  let make_svc = make_service_fn(move |_conn| {
-    let state = Arc::clone(&state);
-    async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
-  });
-
-  let addr = ([0, 0, 0, 0], port).into();
-  let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
-
-  Ok(server.await.map_err(CLIError::from)?)
+    let server_sdl = fs::read_to_string(file_path)?;
+    let config = Config::from_sdl(&server_sdl)?;
+    let port = config.port();
+    let server = config.server.clone();
+    
+    // Check if the enableGraphiql route is one of the restricted routes
+    let restricted_routes = vec!["/", "/graphql"];
+    if let Some(graphiql_route) = &server.enable_graphiql {
+        if restricted_routes.contains(&graphiql_route.as_str()) {
+            return Err(anyhow!("Cannot use restricted routes '{}' for enabling graphiql", graphiql_route));
+        }
+    }
+    
+    let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+    let state = Arc::new(ServerContext::new(blueprint, server));
+    
+    let make_svc = make_service_fn(move |_conn| {
+        let state = Arc::clone(&state);
+        async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
+    });
+    
+    let addr = ([0, 0, 0, 0], port).into();
+    let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+    
+    Ok(server.await.map_err(CLIError::from)?)
 }
