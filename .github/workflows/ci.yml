@@ -25,7 +25,16 @@ jobs:
         with:
           toolchain: stable
           default: true
-
+      
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
@@ -37,7 +46,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all-targets --all-features
+          args: --all-targets --all-features -- -D warnings
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
