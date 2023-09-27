@@ -1,0 +1,12 @@
+#> server-sdl
+schema {
+    query: Query
+}
+
+type Query {
+    hello: String
+}
+
+#> client-sdl
+type Failure
+@error(message: "Cannot use restricted routes '/graphql' for enabling graphiql", trace: [])
