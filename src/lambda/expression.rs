@@ -110,6 +110,7 @@ impl Expression {
               #[cfg(not(feature = "unsafe-js"))]
               {
                 let _ = script;
+                let _ = input;
                 result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
               }
 
