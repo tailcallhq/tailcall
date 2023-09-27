@@ -217,8 +217,8 @@ pub struct Http {
   pub body: Option<String>,
   pub match_path: Option<Vec<String>>,
   pub match_key: Option<String>,
-  #[serde(rename = "baseURL", serialize_with = "super::url::serialize")]
-  pub base_url: Option<url::Url>,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
   pub headers: Option<BTreeMap<String, String>>,
 }
 
