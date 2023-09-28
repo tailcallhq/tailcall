@@ -48,18 +48,35 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
-  let query = config
-    .graphql
-    .schema
-    .query
-    .as_ref()
-    .validate_some("Query type is not defined".to_string())?;
+    let query = config
+        .graphql
+        .schema
+        .query
+        .as_ref()
+        .validate_some("Query type is not defined".to_string())?;
 
-  Ok(SchemaDefinition {
-    query: query.clone(),
-    mutation: config.graphql.schema.mutation.clone(),
-    directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
-  })
+    // Check for resolvers in the Query type
+    if let Some(query_type) = config.graphql.types.get(query) {
+        for (field_name, field) in &query_type.fields {
+            let has_resolver = 
+                field.http.is_some() || 
+                field.modify.is_some() || 
+                field.unsafe_operation.is_some() || 
+                field.inline.is_some();
+            
+            if !has_resolver {
+                return Err(ValidationError::new(format!("Missing resolver for field {} in Query type", field_name)));
+            }
+        }
+    } else {
+        return Err(ValidationError::new(format!("Query type {} not found in the schema", query)));
+    }
+
+    Ok(SchemaDefinition {
+        query: query.clone(),
+        mutation: config.graphql.schema.mutation.clone(),
+        directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
+    })
 }
 fn to_definitions<'a>(
   config: &Config,
