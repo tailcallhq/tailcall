@@ -29,7 +29,7 @@ fn graphql(doc: &ServiceDocument) -> GraphQL {
 
   let root_schema = schema_definition(doc).map_or_else(RootSchema::default, to_root_schema);
 
-  GraphQL { schema: root_schema, types: to_types(&type_definitions), unions: Some(to_union_types(&type_definitions)) }
+  GraphQL { schema: root_schema, types: to_types(&type_definitions), unions: to_union_types(&type_definitions) }
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Option<&SchemaDefinition> {
@@ -95,18 +95,18 @@ fn to_scalar_type() -> config::Type {
     scalar: Some(true),
   }
 }
-fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Vec<Union> {
-  let mut unions = Vec::new();
+fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<String, Union> {
+  let mut unions = BTreeMap::new();
   for type_definition in type_definitions {
+    let type_name = pos_name_to_string(&type_definition.node.name);
     let type_opt = match type_definition.node.kind.clone() {
       TypeKind::Union(union_type) => to_union(
         union_type,
-        &type_definition.node.name.node,
         &type_definition.node.description.as_ref().map(|pos| pos.node.clone()),
       ),
       _ => continue,
     };
-    unions.push(type_opt);
+    unions.insert(type_name, type_opt);
   }
   unions
 }
@@ -284,13 +284,13 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Option<config::Http> {
     }
   })
 }
-fn to_union(union_type: UnionType, name: &str, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members
     .iter()
     .map(|member| member.node.to_string())
     .collect();
-  Union { name: name.to_owned(), types, doc: doc.clone() }
+  Union { types, doc: doc.clone() }
 }
 fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
   directives.iter().find_map(|directive| {

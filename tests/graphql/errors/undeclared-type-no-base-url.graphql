@@ -1,0 +1,13 @@
+#> server-sdl
+schema @schema {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(path: "/users")
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Undeclared type 'User' was found", trace: ["Query", "users"])
+  @error(message: "No base URL defined", trace: ["Query", "users", "@http"])

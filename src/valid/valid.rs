@@ -1,14 +1,14 @@
 use super::ValidationError;
 use crate::valid::Cause;
 
-pub type Valid<A, E> = Result<A, super::error::ValidationError<E>>;
+pub type Valid<A, E> = Result<A, ValidationError<E>>;
 
 pub trait ValidExtensions<A, E>:
-  Sized + From<Result<A, super::error::ValidationError<E>>> + Into<Result<A, super::error::ValidationError<E>>>
+  Sized + From<Result<A, ValidationError<E>>> + Into<Result<A, ValidationError<E>>>
 {
   fn fail(e: E) -> Self;
   fn succeed(a: A) -> Self;
-  fn validate_or(self, other: Self) -> Self;
+  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>>;
   fn trace(self, message: &str) -> Self;
 }
 
@@ -22,7 +22,7 @@ impl<A, E> ValidConstructor<A, E> for Result<A, E> {
   }
 }
 
-impl<A, E> ValidExtensions<A, E> for Result<A, super::error::ValidationError<E>> {
+impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
   fn fail(e: E) -> Self {
     Err((vec![Cause::new(e)]).into())
   }
@@ -31,12 +31,12 @@ impl<A, E> ValidExtensions<A, E> for Result<A, super::error::ValidationError<E>>
     Ok(a)
   }
 
-  fn validate_or(self, other: Self) -> Self {
+  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>> {
     match self {
       Ok(_) => other,
       Err(e1) => match other {
         Err(e2) => Err(e1.combine(e2)),
-        ok => ok,
+        _ => Err(e1),
       },
     }
   }
@@ -107,6 +107,30 @@ mod tests {
   fn test_fail() {
     let result = Valid::<(), i32>::fail(1);
     assert_eq!(result, Valid::fail(1));
+  }
+
+  #[test]
+  fn test_validate_or_both_ok() {
+    let result1 = Valid::<bool, i32>::succeed(true);
+    let result2 = Valid::<u8, i32>::succeed(3);
+
+    assert_eq!(result1.validate_or(result2), Ok(3u8));
+  }
+
+  #[test]
+  fn test_validate_or_first_fail() {
+    let result1 = Valid::<bool, i32>::fail(-1);
+    let result2 = Valid::<u8, i32>::succeed(3);
+
+    assert_eq!(result1.validate_or(result2), Valid::fail(-1));
+  }
+
+  #[test]
+  fn test_validate_or_second_fail() {
+    let result1 = Valid::<bool, i32>::succeed(true);
+    let result2 = Valid::<u8, i32>::fail(-2);
+
+    assert_eq!(result1.validate_or(result2), Valid::fail(-2));
   }
 
   #[test]
