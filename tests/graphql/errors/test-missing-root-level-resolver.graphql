@@ -1,6 +1,8 @@
 #> server-sdl
 schema {
   query: Query
+  enableGraphiql: "/graphql"
+
 }
 
 type Query {
