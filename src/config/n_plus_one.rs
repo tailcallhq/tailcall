@@ -8,7 +8,7 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
     path: Vec<(String, String)>,
     is_list: bool,
   ) -> Vec<Vec<(String, String)>> {
-    match config.find_type(type_name.to_owned()) {
+    match config.find_type(type_name) {
       Some(type_) => type_
         .fields
         .iter()

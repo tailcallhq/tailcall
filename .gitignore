@@ -1,3 +1,9 @@
 /target
 /.idea
+.vscode
 *.svg
+
+# direnv
+.direnv
+.envrc
+.env
