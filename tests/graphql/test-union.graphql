@@ -16,7 +16,7 @@ type Foo {
 }
 
 type Query {
-  foo: FooBar
+  foo: FooBar @http(path: "/foo")
 }
 
 #> client-sdl

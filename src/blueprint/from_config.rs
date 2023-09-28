@@ -47,15 +47,47 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
-  let query = config
+  let query_type_name = config
     .graphql
     .schema
     .query
     .as_ref()
-    .validate_some("Query type is not defined".to_string())?;
+    .validate_some("Query root is missing".to_owned())?;
+
+  let Some(query) = config.find_type(&query_type_name) else {
+    return Valid::fail("Query type is not defined".to_owned()).trace(&query_type_name);
+  };
+
+  let mutation_type_name = config.graphql.schema.mutation.as_ref();
+
+  if let Some(mutation_type_name) = mutation_type_name {
+    let Some(mutation) = config.find_type(&mutation_type_name) else {
+      return Valid::fail("Mutation type is not defined".to_owned()).trace(&mutation_type_name);
+    };
+
+    mutation.fields.iter().validate_all(|(name, field)| {
+      if field.has_resolver() {
+        Ok(())
+      } else {
+        Valid::fail("No resolver has been found in the schema".to_owned())
+          .trace(&name)
+          .trace(&mutation_type_name)
+      }
+    })?;
+  }
+
+  query.fields.iter().validate_all(|(name, field)| {
+    if field.has_resolver() {
+      Ok(())
+    } else {
+      Valid::fail("No resolver has been found in the schema".to_owned())
+        .trace(&name)
+        .trace(&query_type_name)
+    }
+  })?;
 
   Ok(SchemaDefinition {
-    query: query.clone(),
+    query: query_type_name.clone(),
     mutation: config.graphql.schema.mutation.clone(),
     directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
   })

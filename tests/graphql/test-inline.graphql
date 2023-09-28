@@ -16,7 +16,7 @@ type Foo {
 }
 
 type Query {
-  foo: Foo @inline(path: ["a","b"])
+  foo: Foo @http(path: "/foo") @inline(path: ["a","b"])
 }
 
 #> client-sdl
