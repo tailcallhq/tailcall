@@ -3,8 +3,6 @@ use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
-use anyhow::Context;
-
 use async_graphql::http::GraphiQLSource;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -16,21 +14,11 @@ use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
 use crate::config::Config;
 
-fn validate_schema(schema: &str) -> Result<()> {
-    // Here, parse the schema and check for the presence of a root-level resolver.
-    // If no resolver is found, return an error.
-    if schema.contains("type Query") && !schema.contains("@http") {
-        anyhow::bail!("No root-level resolver found in the schema.");
-    }
-    Ok(())
-}
-
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
     GraphiQLSource::build().endpoint("/graphql").finish(),
   )))
 }
-
 
 async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
   let server = server_ctx.server.clone();
@@ -48,12 +36,9 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
 
   response.to_response()
 }
-
 fn not_found() -> Result<Response<Body>> {
-    Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
+  Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
-
-
 async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
   match *req.method() {
     hyper::Method::GET if state.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => graphiql(),
@@ -71,12 +56,8 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
 
   new_headers
 }
-
 pub async fn start_server(file_path: &String) -> Result<()> {
   let server_sdl = fs::read_to_string(file_path)?;
-    
-  validate_schema(&server_sdl).context("Schema validation failed")?;
-    
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
   let server = config.server.clone();
@@ -92,9 +73,3 @@ pub async fn start_server(file_path: &String) -> Result<()> {
 
   Ok(server.await.map_err(CLIError::from)?)
 }
-
-
-
-
-
-
