@@ -6,11 +6,36 @@ pub type Valid<A, E> = Result<A, ValidationError<E>>;
 pub trait ValidExtensions<A, E>:
   Sized + From<Result<A, ValidationError<E>>> + Into<Result<A, ValidationError<E>>>
 {
-  fn fail(e: E) -> Self;
-  fn succeed(a: A) -> Self;
-  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>>;
-  fn trace(self, message: &str) -> Self;
-  fn fold<A1, E1>(self, ok: impl Fn(A) -> Valid<A1, E1>, err: Valid<A1, E1>) -> Valid<A1, E1>;
+  fn to_valid(self) -> Valid<A, E>;
+  fn fail(e: E) -> Valid<A, E> {
+    Err((vec![Cause::new(e)]).into())
+  }
+  fn succeed(a: A) -> Valid<A, E> {
+    Ok(a)
+  }
+  fn validate_or<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<A1, E> {
+    match self.to_valid() {
+      Ok(_) => other,
+      Err(e1) => match other {
+        Err(e2) => Err(e1.combine(e2)),
+        _ => Err(e1),
+      },
+    }
+  }
+  fn trace(self, message: &str) -> Valid<A, E> {
+    let valid = self.to_valid();
+    if let Err(error) = valid {
+      return Err(error.trace(message));
+    }
+
+    valid
+  }
+  fn fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
+    match self.to_valid() {
+      Ok(a) => ok(a),
+      Err(e) => Err::<A1, ValidationError<E>>(e).validate_or(err),
+    }
+  }
 }
 
 pub trait ValidConstructor<A, E> {
@@ -24,37 +49,8 @@ impl<A, E> ValidConstructor<A, E> for Result<A, E> {
 }
 
 impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
-  fn fail(e: E) -> Self {
-    Err((vec![Cause::new(e)]).into())
-  }
-
-  fn succeed(a: A) -> Self {
-    Ok(a)
-  }
-
-  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>> {
-    match self {
-      Ok(_) => other,
-      Err(e1) => match other {
-        Err(e2) => Err(e1.combine(e2)),
-        _ => Err(e1),
-      },
-    }
-  }
-
-  fn trace(self, message: &str) -> Self {
-    if let Err(error) = self {
-      return Err(error.trace(message));
-    }
-
+  fn to_valid(self) -> Valid<A, E> {
     self
-  }
-
-  fn fold<A1, E1>(self, ok: impl Fn(A) -> Valid<A1, E1>, err: Valid<A1, E1>) -> Valid<A1, E1> {
-    match self {
-      Ok(a) => f(a),
-      Err(e) => Err(e).validate_or(err),
-    }
   }
 }
 
@@ -172,5 +168,11 @@ mod tests {
       result,
       Err(vec![Cause { message: 1, trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into() }].into())
     );
+  }
+
+  #[test]
+  fn test_fold() {
+    let result = Valid::<(), i32>::fail(1).fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+    assert_eq!(result, Valid::fail(1));
   }
 }
