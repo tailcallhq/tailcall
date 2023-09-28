@@ -1,7 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use reqwest::Url;
 
+use myapp::request_template::RequestTemplate; 
+
 fn bench_request(c: &mut Criterion) {
+
   let tmpl = RequestTemplate::new("http://localhost:3000/{{id}}").unwrap();
 
   let mut group = c.benchmark_group("request");
@@ -11,14 +14,17 @@ fn bench_request(c: &mut Criterion) {
     b.iter(|| tmpl.to_request(black_box(&ctx)).unwrap())
   });
 
-  // Optimize by re-using url between runs
-  group.bench_function("reuse url", |b| {
-    let url = Url::parse("http://localhost:3000/1").unwrap();
+  // Cache the template evaluation
+  group.bench_function("cache eval", |b| {
     let ctx = serde_json::json!({"id": 1});
+    let url = tmpl.eval_url(&ctx).unwrap();
+    let headers = tmpl.eval_headers(&ctx);
+    let body = tmpl.eval_body(&ctx);
+
     b.iter(|| {
       let mut req = reqwest::Request::new(reqwest::Method::GET, url.clone());
-      tmpl.eval_headers(black_box(&ctx)).extend(req.headers_mut());
-      req.body_mut().replace(tmpl.eval_body(black_box(&ctx)));
+      req.headers_mut().extend(headers.clone());
+      req.body_mut().replace(body.clone());
       req
     })
   });
