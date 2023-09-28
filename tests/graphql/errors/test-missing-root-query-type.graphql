@@ -1,0 +1,8 @@
+#> server-sdl
+schema {
+  query: QueryType
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Query type is not defined", trace: ["QueryType"])
