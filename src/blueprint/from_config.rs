@@ -23,7 +23,22 @@ use crate::{blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
 
+const RESTRICTED_ROUTES: [&str; 2] = ["/", "/graphql"];
+
+fn validate_route(config: &Config) -> Result<(), ValidationError<String>> {
+  if let Some(enable_graphiql) = &config.server.enable_graphiql {
+    if RESTRICTED_ROUTES.contains(&enable_graphiql.as_str()) {
+      return Err(ValidationError::new(format!(
+        "Cannot use restricted routes '{}' for enabling graphiql",
+        enable_graphiql
+      )));
+    }
+  }
+  Ok(())
+}
+
 pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
+  validate_route(config)?;
   let output_types = config.output_types();
   let input_types = config.input_types();
   let schema = to_schema(config)?;
