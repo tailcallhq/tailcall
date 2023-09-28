@@ -95,12 +95,14 @@ fn to_definitions<'a>(
     }
   })?;
 
-  let unions = match &config.graphql.unions {
-    Some(unions) => unions.iter().map(to_union_type_definition).collect(),
-    None => Vec::new(),
-  };
+  let unions = config
+    .graphql
+    .unions
+    .iter()
+    .map(to_union_type_definition)
+    .map(Definition::UnionTypeDefinition);
 
-  types.extend(unions.into_iter().map(Definition::UnionTypeDefinition));
+  types.extend(unions);
   Ok(types)
 }
 fn to_scalar_type_definition(name: &str) -> Valid<Definition> {
@@ -110,9 +112,9 @@ fn to_scalar_type_definition(name: &str) -> Valid<Definition> {
     description: None,
   }))
 }
-fn to_union_type_definition(u: &config::Union) -> UnionTypeDefinition {
+fn to_union_type_definition((name, u): (&String, &config::Union)) -> UnionTypeDefinition {
   UnionTypeDefinition {
-    name: u.name.clone(),
+    name: name.to_owned(),
     description: u.doc.clone(),
     directives: Vec::new(),
     types: u.types.clone(),
@@ -170,38 +172,45 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>> {
   let fields: Vec<Option<blueprint::FieldDefinition>> = type_of.fields.iter().validate_all(|(name, field)| {
-    let args = to_args(field)?;
-
-    let field_definition = FieldDefinition {
-      name: name.clone(),
-      description: field.doc.clone(),
-      args,
-      of_type: to_type(&field.type_of, &field.list, &field.required, &field.list_type_required),
-      directives: Vec::new(),
-      resolver: None,
-    };
-
-    let field_definition = update_http(field, field_definition, config)
-      .trace("@http")
-      .trace(name)?;
-    let field_definition = update_unsafe(field.clone(), field_definition);
-    let maybe_field_definition = update_modify(field, field_definition, type_of, config)
-      .trace("@modify")
-      .trace(name)?;
-    let maybe_field_definition = match maybe_field_definition {
-      Some(field_definition) => Some(
-        update_inline_field(type_of, name, field, field_definition, config)
-          .trace("@inline")
-          .trace(name)?,
-      ),
-      None => None,
-    };
-
-    Ok(maybe_field_definition)
+    validate_field_type_exist(config, field)
+      .validate_or(to_field(type_of, config, name, field))
+      .trace(name)
   })?;
 
   Ok(fields.into_iter().flatten().collect())
 }
+
+fn to_field(
+  type_of: &config::Type,
+  config: &Config,
+  name: &str,
+  field: &Field,
+) -> Valid<Option<blueprint::FieldDefinition>> {
+  let field_type = &field.type_of;
+  let args = to_args(field)?;
+
+  let field_definition = FieldDefinition {
+    name: name.to_owned(),
+    description: field.doc.clone(),
+    args,
+    of_type: to_type(field_type, &field.list, &field.required, &field.list_type_required),
+    directives: Vec::new(),
+    resolver: None,
+  };
+
+  let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_unsafe(field.clone(), field_definition);
+  let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
+  let maybe_field_definition = match maybe_field_definition {
+    Some(field_definition) => {
+      Some(update_inline_field(type_of, name, field, field_definition, config).trace("@inline")?)
+    }
+    None => None,
+  };
+
+  Ok(maybe_field_definition)
+}
+
 fn to_type(name: &str, list: &Option<bool>, required: &Option<bool>, list_type_required: &Option<bool>) -> Type {
   let non_null = required.unwrap_or(false);
   if list.unwrap_or(false) {
@@ -213,6 +222,17 @@ fn to_type(name: &str, list: &Option<bool>, required: &Option<bool>, list_type_r
     Type::NamedType { name: name.to_string(), non_null }
   }
 }
+
+fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<()> {
+  let field_type = &field.type_of;
+
+  if !is_scalar(field_type) && !config.contains(field_type) {
+    Valid::fail(format!("Undeclared type '{field_type}' was found"))
+  } else {
+    Valid::Ok(())
+  }
+}
+
 fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDefinition {
   if let Some(op) = field.unsafe_operation {
     b_field = b_field.resolver_or_default(Lambda::context().to_unsafe_js(op.script.clone()), |r| {
@@ -283,7 +303,7 @@ fn update_modify(
       } else if let Some(new_name) = &modify.name {
         if let Some(interface_names) = type_.implements.clone() {
           for name in interface_names {
-            let interface = config.find_type(name);
+            let interface = config.find_type(&name);
             if let Some(interface) = interface {
               if interface.fields.iter().any(|(name, _)| name == new_name) {
                 return Valid::fail("Field is already implemented from interface".to_string());
@@ -307,7 +327,7 @@ fn needs_resolving(field: &config::Field) -> bool {
   field.unsafe_operation.is_some() || field.http.is_some()
 }
 fn is_scalar(type_name: &str) -> bool {
-  ["String", "Int", "Boolean", "JSON"].contains(&type_name)
+  ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
 // Helper function to recursively process the path and return the corresponding type
 fn process_path(
@@ -345,7 +365,7 @@ fn process_path(
         )
         .trace(field_name);
       }
-      if let Some(next_type_info) = config.find_type(next_field.type_of.clone()) {
+      if let Some(next_type_info) = config.find_type(&next_field.type_of) {
         let of_type = process_path(
           remaining_path,
           next_field,
@@ -463,7 +483,7 @@ pub fn to_json_schema_for_args(args: &Option<BTreeMap<String, Arg>>, config: &Co
   }
 }
 pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool>, config: &Config) -> JsonSchema {
-  let type_ = config.find_type(type_of.to_owned());
+  let type_ = config.find_type(type_of);
   let list = list.unwrap_or(false);
   let schema = match type_ {
     Some(type_) => {
