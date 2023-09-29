@@ -86,10 +86,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<Str
   types
 }
 fn to_scalar_type() -> config::Type {
-  config::Type {
-    scalar: true,
-    ..Default::default()
-  }
+  config::Type { scalar: true, ..Default::default() }
 }
 fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<String, Union> {
   let mut unions = BTreeMap::new();
@@ -123,10 +120,7 @@ fn to_enum(enum_type: EnumType) -> config::Type {
     .iter()
     .map(|value| value.node.value.to_string())
     .collect();
-  config::Type {
-    variants: Some(variants),
-    ..Default::default()
-  }
+  config::Type { variants: Some(variants), ..Default::default() }
 }
 fn to_input_object(input_object_type: InputObjectType) -> config::Type {
   let fields = to_input_object_fields(&input_object_type.fields);
