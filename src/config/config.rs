@@ -112,11 +112,15 @@ impl Config {
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   pub doc: Option<String>,
-  pub interface: Option<bool>,
-  pub implements: Option<Vec<String>>,
+  #[serde(default)]
+  pub interface: bool,
+  #[serde(default)]
+  pub implements: Vec<String>,
   #[serde(rename = "enum")]
-  pub variants: Option<Vec<String>>,
-  pub scalar: Option<bool>,
+  #[serde(default)]
+  pub variants: Vec<String>,
+  #[serde(default)]
+  pub scalar: bool,
 }
 impl Type {
   pub fn is_interface(&self) -> bool {
@@ -152,9 +156,12 @@ pub struct RootSchema {
 #[setters(strip_option)]
 pub struct Field {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
-  pub list_type_required: Option<bool>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
+  #[serde(default)]
+  pub list_type_required: bool,
   pub args: Option<BTreeMap<String, Arg>>,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
@@ -190,7 +197,8 @@ pub struct Unsafe {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyField {
   pub name: Option<String>,
-  pub omit: Option<bool>,
+  #[serde(default)]
+  pub omit: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -201,8 +209,10 @@ pub struct InlineType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Arg {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
   pub default_value: Option<Value>,
@@ -222,7 +232,8 @@ pub struct Http {
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
-  pub match_path: Option<Vec<String>>,
+  #[serde(default)]
+  pub match_path: Vec<String>,
   pub match_key: Option<String>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
