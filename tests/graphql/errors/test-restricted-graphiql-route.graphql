@@ -10,4 +10,4 @@ type Query {
 
 #> client-sdl
 type Failure
-@error(message: "Cannot use restricted route '/graphql' for graphiql", trace: ["schema", "@server"])
+@error(message: "Cannot use restricted route '/graphql' for graphiql", trace: [schema, server, enableGraphiql])
