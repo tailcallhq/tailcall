@@ -41,10 +41,8 @@ where
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    blueprint::transform::Transform,
-    valid::{Valid, ValidExtensions, ValidationError},
-  };
+  use crate::blueprint::transform::Transform;
+  use crate::valid::{Valid, ValidExtensions, ValidationError};
 
   #[test]
   fn test_combine_ok() {
