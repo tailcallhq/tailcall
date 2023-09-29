@@ -46,11 +46,11 @@ pub trait ValidExtensions<A, E>:
 }
 
 pub trait ValidConstructor<A, E> {
-  fn validate(self) -> Valid<A, E>;
+  fn to_valid(self) -> Valid<A, E>;
 }
 
 impl<A, E> ValidConstructor<A, E> for Result<A, E> {
-  fn validate(self) -> Valid<A, E> {
+  fn to_valid(self) -> Valid<A, E> {
     self.map_err(|e| ValidationError::new(e))
   }
 }
@@ -106,7 +106,9 @@ impl<A> OptionExtension<A> for Option<A> {
 
 #[cfg(test)]
 mod tests {
-  use crate::valid::{Cause, OptionExtension, Valid, ValidExtensions, VectorExtension};
+  use crate::valid::{
+    Cause, OptionExtension, Valid, ValidConstructor, ValidExtensions, ValidationError, VectorExtension,
+  };
 
   #[test]
   fn test_ok() {
@@ -189,5 +191,11 @@ mod tests {
     let valid = Valid::<i32, i32>::succeed(1);
     let result = valid.validate_fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
     assert_eq!(result, Valid::fail(1));
+  }
+
+  #[test]
+  fn test_to_valid() {
+    let result = Err::<(), i32>(1).to_valid().unwrap_err();
+    assert_eq!(result, ValidationError::new(1));
   }
 }
