@@ -26,21 +26,15 @@ type Valid<A> = ValidDefault<A, String>;
 
 const RESTRICTED_ROUTES: [&str; 2] = ["/", "/graphql"];
 
-fn validate_route(config: &Config) -> Result<(), ValidationError<String>> {
-  if let Some(enable_graphiql) = &config.server.enable_graphiql {
-    if RESTRICTED_ROUTES.contains(&enable_graphiql.as_str()) {
-      CLIError::new(
-          &format!("Cannot use restricted routes '{}' for enabling graphiql", enable_graphiql)
-    ).trace(vec!["schema".into(), "server".into(), "enableGraphiql".into()]);
-
-    return Err(
-      ValidationError::new(
-        format!("Cannot use restricted routes '{}' for enabling graphiql", enable_graphiql)
-      )
-      );
+fn validate_route(config: &Config) -> Valid<()> {
+    match config.server.enable_graphiql.as_deref() {
+        Some(route) if RESTRICTED_ROUTES.contains(&route) => {
+            let error_message =
+                format!("Cannot use restricted routes '{}' for enabling graphiql", route);
+            Valid::fail(error_message).trace("[schema, server, enableGraphiql]")
+        }
+        _ => Valid::Ok(()),
     }
-  }
-  Ok(())
 }
 
 pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
