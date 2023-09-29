@@ -49,44 +49,68 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 }
 
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
-  // Validate Query Type
-  let query_type_name = config
-      .graphql
-      .schema
-      .query
-      .as_ref()
-      .validate_some("Query root is missing".to_owned())?;
+    let query_type_name = config.graphql.schema.query
+        .as_ref()
+        .validate_some("Query root is missing".to_owned())?;
 
-  let query = config.graphql.types.get(&query_type_name)
-      .ok_or_else(|| ValidationError::new(format!("Query type {} not found in the schema", query_type_name)))?;
+    // Validate query
+    {
+        let query_type_name = config.graphql.schema.query
+            .as_ref()
+            .validate_some("Query root is missing".to_owned())?;
 
-  // Validate resolvers in Query Type
-  for (field_name, field) in &query.fields {
-      if !field.has_resolver() {
-          return Err(ValidationError::new(format!("Missing resolver for field {} in Query type", field_name)));
-      }
-  }
+        let Some(query) = config.find_type(query_type_name) else {
+            return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+        };
 
-  // Validate Mutation Type
-  if let Some(mutation_type_name) = config.graphql.schema.mutation.as_ref() {
-      if let Some(mutation) = config.graphql.types.get(mutation_type_name) {
-          for (field_name, field) in &mutation.fields {
-              if !field.has_resolver() {
-                  return Err(ValidationError::new(format!("Missing resolver for field {} in Mutation type", field_name)));
-              }
-          }
-      } else {
-          return Err(ValidationError::new(format!("Mutation type {} not found in the schema", mutation_type_name)));
-      }
-  }
+        query.fields
+            .iter()
+            .filter(|(_, field)| field.required.is_some())
+            .try_for_each(|(name, field)| {
+                // Validate field has resolver
+                if field.has_resolver() {
+                    Ok(())
+                } else {
+                    Valid::fail("No resolver has been found in the schema".to_owned()).trace(name)
+                }
+            })
+            .trace(query_type_name)?;
+    }
 
-  // Construct Result
-  Ok(SchemaDefinition {
-      query: query_type_name.clone(),
-      mutation: config.graphql.schema.mutation.clone(),
-      directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
-  })
+    // Validate mutation
+    {
+        let mutation_type_name = config.graphql.schema.mutation.as_ref();
+
+        if let Some(mutation_type_name) = mutation_type_name {
+            let Some(mutation) = config.find_type(mutation_type_name) else {
+                return Valid::fail("Mutation type is not defined".to_owned()).trace(
+                    mutation_type_name
+                );
+            };
+
+            mutation.fields
+                .iter()
+                .try_for_each(|(name, field)| {
+                    // Validate field has resolver
+                    if field.has_resolver() {
+                        Ok(())
+                    } else {
+                        Valid::fail("No resolver has been found in the schema".to_owned()).trace(
+                            name
+                        )
+                    }
+                })
+                .trace(mutation_type_name)?;
+        }
+    }
+
+    Ok(SchemaDefinition {
+        query: query_type_name.clone(),
+        mutation: config.graphql.schema.mutation.clone(),
+        directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
+    })
 }
+
 
 fn to_definitions<'a>(
   config: &Config,
