@@ -34,10 +34,10 @@ base64 = "0.21"
 indexmap = "2.0"
 lazy_static = "1.4.0"
 mini-v8 = { version = "0.4.1", optional = true }
-clap = { version = "4.4.5", features = ["derive"] }
+clap = { version = "4.4.6", features = ["derive"] }
 colored = "2"
 regex = "1.9.5"
-http-cache-reqwest = { version = "0.11.2", features = [
+http-cache-reqwest = { version = "0.11.3", features = [
    "manager-moka"
 ], default-features = false }
 reqwest-middleware = "0.2.3"
@@ -69,4 +69,8 @@ unsafe-js = ["dep:mini-v8"]
 
 [[bench]]
 name = "json_like_bench"
+harness = false
+
+[[bench]]
+name = "request_template_bench"
 harness = false
