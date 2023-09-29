@@ -187,7 +187,7 @@ mod tests {
   #[test]
   fn test_validate_fold_ok() {
     let valid = Valid::<i32, i32>::succeed(1);
-    let result = valid.validate_fold(|a| Valid::<i32, i32>::fail(a), Valid::<i32, i32>::fail(2));
+    let result = valid.validate_fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
     assert_eq!(result, Valid::fail(1));
   }
 }
