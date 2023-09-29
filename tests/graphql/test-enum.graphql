@@ -9,7 +9,7 @@ enum Foo {
 }
 
 type Query {
-  foo: Foo @http(path: "/foo")
+  foo: Foo
 }
 
 #> client-sdl

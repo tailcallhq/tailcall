@@ -10,7 +10,7 @@ type Post {
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post]
 }
 
 type User {

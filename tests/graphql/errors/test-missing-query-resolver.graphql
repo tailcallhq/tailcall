@@ -4,8 +4,9 @@ schema {
 }
 
 type Query {
-  user: [User]
-  posts: [Post]
+  user: [User]!
+  posts: [Post]!
+  docs: [Doc]
 }
 
 type User {
@@ -14,6 +15,10 @@ type User {
 }
 
 type Post {
+  id: ID
+}
+
+type Doc {
   id: ID
 }
 

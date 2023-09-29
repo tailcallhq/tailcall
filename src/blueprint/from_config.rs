@@ -54,37 +54,7 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  let Some(query) = config.find_type(&query_type_name) else {
-    return Valid::fail("Query type is not defined".to_owned()).trace(&query_type_name);
-  };
-
-  let mutation_type_name = config.graphql.schema.mutation.as_ref();
-
-  if let Some(mutation_type_name) = mutation_type_name {
-    let Some(mutation) = config.find_type(&mutation_type_name) else {
-      return Valid::fail("Mutation type is not defined".to_owned()).trace(&mutation_type_name);
-    };
-
-    mutation.fields.iter().validate_all(|(name, field)| {
-      if field.has_resolver() {
-        Ok(())
-      } else {
-        Valid::fail("No resolver has been found in the schema".to_owned())
-          .trace(&name)
-          .trace(&mutation_type_name)
-      }
-    })?;
-  }
-
-  query.fields.iter().validate_all(|(name, field)| {
-    if field.has_resolver() {
-      Ok(())
-    } else {
-      Valid::fail("No resolver has been found in the schema".to_owned())
-        .trace(&name)
-        .trace(&query_type_name)
-    }
-  })?;
+  validate_query(config).validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),
@@ -244,6 +214,56 @@ fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> 
     }
   } else {
     Type::NamedType { name: name.to_string(), non_null }
+  }
+}
+
+fn validate_query(config: &Config) -> Valid<()> {
+  let query_type_name = config
+    .graphql
+    .schema
+    .query
+    .as_ref()
+    .validate_some("Query root is missing".to_owned())?;
+
+  let Some(query) = config.find_type(query_type_name) else {
+    return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+  };
+
+  query
+    .fields
+    .iter()
+    // validate only required fields
+    // TODO: somehow when field is required it has a value of Option<false> due to https://github.com/tailcallhq/tailcall/blob/49e39e12013cf837ce0cc78562c4207f4a9782ad/src/config/from_document.rs#L195
+    .filter(|(_, field)| field.required.is_some())
+    .validate_all(validate_field_has_resolver)
+    .trace(query_type_name)?;
+
+  Ok(())
+}
+
+fn validate_mutation(config: &Config) -> Valid<()> {
+  let mutation_type_name = config.graphql.schema.mutation.as_ref();
+
+  if let Some(mutation_type_name) = mutation_type_name {
+    let Some(mutation) = config.find_type(mutation_type_name) else {
+      return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
+    };
+
+    mutation
+      .fields
+      .iter()
+      .validate_all(validate_field_has_resolver)
+      .trace(mutation_type_name)?;
+  }
+
+  Ok(())
+}
+
+fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<()> {
+  if field.has_resolver() {
+    Ok(())
+  } else {
+    Valid::fail("No resolver has been found in the schema".to_owned()).trace(name)
   }
 }
 

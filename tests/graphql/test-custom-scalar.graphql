@@ -1,12 +1,12 @@
 #> server-sdl
-schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server {
   query: Query
 }
 
 scalar Json
 
 type Query {
-  foo: [Json] @http(path: "/foo")
+  foo: [Json]
 }
 
 
