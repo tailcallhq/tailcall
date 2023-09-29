@@ -112,10 +112,13 @@ impl Config {
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   pub doc: Option<String>,
+  #[serde(default)]
   pub interface: Option<bool>,
+  #[serde(default)]
   pub implements: Option<Vec<String>>,
   #[serde(rename = "enum")]
   pub variants: Option<Vec<String>>,
+  #[serde(default)]
   pub scalar: Option<bool>,
 }
 impl Type {
@@ -152,8 +155,11 @@ pub struct RootSchema {
 #[setters(strip_option)]
 pub struct Field {
   pub type_of: String,
+  #[serde(default)]
   pub list: Option<bool>,
+  #[serde(default)]
   pub required: Option<bool>,
+  #[serde(default)]
   pub list_type_required: Option<bool>,
   pub args: Option<BTreeMap<String, Arg>>,
   pub doc: Option<String>,
@@ -190,6 +196,7 @@ pub struct Unsafe {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyField {
   pub name: Option<String>,
+  #[serde(default)]
   pub omit: Option<bool>,
 }
 
@@ -222,6 +229,7 @@ pub struct Http {
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
+  #[serde(rename = "enum")]
   pub match_path: Option<Vec<String>>,
   pub match_key: Option<String>,
   #[serde(rename = "baseURL")]

@@ -53,11 +53,11 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .schema
     .query
     .as_ref()
-    .validate_some("Query type is not defined".to_string())?;
+    .ok_or_else(|| ValidationError::new("Query type is not defined".to_string()))?;
 
   Ok(SchemaDefinition {
-    query: query.clone(),
-    mutation: config.graphql.schema.mutation.clone(),
+    query: query.to_owned(),
+    mutation: Some(config.graphql.schema.mutation.clone().unwrap_or_else(|| "".to_string())),
     directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
   })
 }
