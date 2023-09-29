@@ -39,7 +39,7 @@ impl Config {
     }
 
     for (_, type_of) in self.graphql.types.iter() {
-      if type_of.interface.unwrap_or(false) || !type_of.fields.is_empty() {
+      if type_of.interface || !type_of.fields.is_empty() {
         for (_, field) in type_of.fields.iter() {
           types.insert(&field.type_of);
         }
@@ -51,7 +51,7 @@ impl Config {
   pub fn input_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
     for (_, type_of) in self.graphql.types.iter() {
-      if !type_of.interface.unwrap_or(false) {
+      if !type_of.interface {
         for (_, field) in type_of.fields.iter() {
           if let Some(ref args) = field.args {
             for (_, arg) in args.iter() {
@@ -112,17 +112,16 @@ impl Config {
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   pub doc: Option<String>,
-  pub interface: Option<bool>,
-  pub implements: Option<Vec<String>>,
-  #[serde(rename = "enum")]
+  #[serde(default)]
+  pub interface: bool,
+  #[serde(default)]
+  pub implements: Vec<String>,
+  #[serde(rename = "enum", default)]
   pub variants: Option<Vec<String>>,
-  pub scalar: Option<bool>,
+  #[serde(default)]
+  pub scalar: bool,
 }
 impl Type {
-  pub fn is_interface(&self) -> bool {
-    matches!(self.interface, Some(true))
-  }
-
   pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
     let mut graphql_fields = BTreeMap::new();
     for (name, field) in fields {
@@ -152,9 +151,12 @@ pub struct RootSchema {
 #[setters(strip_option)]
 pub struct Field {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
-  pub list_type_required: Option<bool>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
+  #[serde(default)]
+  pub list_type_required: bool,
   pub args: Option<BTreeMap<String, Arg>>,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
@@ -177,7 +179,7 @@ impl Field {
     }
   }
   pub fn to_list(mut self) -> Self {
-    self.list = Some(true);
+    self.list = true;
     self
   }
 }
@@ -190,7 +192,8 @@ pub struct Unsafe {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyField {
   pub name: Option<String>,
-  pub omit: Option<bool>,
+  #[serde(default)]
+  pub omit: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -201,8 +204,10 @@ pub struct InlineType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Arg {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
   pub default_value: Option<Value>,

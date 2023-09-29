@@ -65,13 +65,13 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<Str
       TypeKind::Object(object_type) => Some(to_object_type(
         &object_type.fields,
         &type_definition.node.description,
-        &false,
+        false,
         &object_type.implements,
       )),
       TypeKind::Interface(interface_type) => Some(to_object_type(
         &interface_type.fields,
         &type_definition.node.description,
-        &true,
+        true,
         &interface_type.implements,
       )),
       TypeKind::Enum(enum_type) => Some(to_enum(enum_type)),
@@ -87,12 +87,8 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<Str
 }
 fn to_scalar_type() -> config::Type {
   config::Type {
-    fields: BTreeMap::new(),
-    doc: None,
-    interface: None,
-    implements: None,
-    variants: None,
-    scalar: Some(true),
+    scalar: true,
+    ..Default::default()
   }
 }
 fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<String, Union> {
@@ -113,14 +109,13 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
 fn to_object_type(
   fields: &Vec<Positioned<FieldDefinition>>,
   description: &Option<Positioned<String>>,
-  is_interface: &bool,
+  interface: bool,
   implements: &[Positioned<Name>],
 ) -> config::Type {
   let fields = to_fields(fields);
   let doc = description.as_ref().map(|pos| pos.node.clone());
-  let interface = Some(*is_interface);
-  let implements = Some(implements.iter().map(|pos| pos.node.to_string()).collect());
-  config::Type { fields, doc, interface, implements, variants: None, scalar: None }
+  let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+  config::Type { fields, doc, interface, implements, ..Default::default() }
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -129,17 +124,13 @@ fn to_enum(enum_type: EnumType) -> config::Type {
     .map(|value| value.node.value.to_string())
     .collect();
   config::Type {
-    fields: BTreeMap::new(),
-    doc: None,
-    interface: None,
-    implements: None,
     variants: Some(variants),
-    scalar: None,
+    ..Default::default()
   }
 }
 fn to_input_object(input_object_type: InputObjectType) -> config::Type {
   let fields = to_input_object_fields(&input_object_type.fields);
-  config::Type { fields, doc: None, interface: None, implements: None, variants: None, scalar: None }
+  config::Type { fields, ..Default::default() }
 }
 fn to_fields_inner<T, F>(fields: &Vec<Positioned<T>>, transform: F) -> BTreeMap<String, config::Field>
 where
@@ -191,9 +182,8 @@ fn to_common_field(
   directives: &[Positioned<ConstDirective>],
 ) -> config::Field {
   let type_of = to_type_of(type_);
-  let list = Some(matches!(&base, BaseType::List(_)));
-  let required = if nullable { None } else { Some(false) };
-  let list_type_required = Some(matches!(&base, BaseType::List(ty) if !ty.nullable));
+  let list = matches!(&base, BaseType::List(_));
+  let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
   let inline = to_inline(directives);
@@ -203,7 +193,7 @@ fn to_common_field(
   config::Field {
     type_of,
     list,
-    required,
+    required: !nullable,
     list_type_required,
     args,
     doc,
@@ -245,8 +235,8 @@ fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> 
 }
 fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let type_of = to_type_of(&input_value_definition.ty.node);
-  let list = Some(matches!(&input_value_definition.ty.node.base, BaseType::List(_)));
-  let required = Some(!input_value_definition.ty.node.nullable);
+  let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
+  let required = !input_value_definition.ty.node.nullable;
   let doc = input_value_definition.description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(&input_value_definition.directives);
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
