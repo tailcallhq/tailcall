@@ -152,7 +152,7 @@ fn to_field(field_definition: &FieldDefinition) -> config::Field {
     &field_definition.ty.node,
     &field_definition.ty.node.base,
     field_definition.ty.node.nullable,
-    Some(to_args(field_definition)),
+    to_args(field_definition),
     &field_definition.description,
     &field_definition.directives,
   )
@@ -162,7 +162,7 @@ fn to_input_object_field(field_definition: &InputValueDefinition) -> config::Fie
     &field_definition.ty.node,
     &field_definition.ty.node.base,
     field_definition.ty.node.nullable,
-    None,
+    BTreeMap::new(),
     &field_definition.description,
     &field_definition.directives,
   )
@@ -171,7 +171,7 @@ fn to_common_field(
   type_: &Type,
   base: &BaseType,
   nullable: bool,
-  args: Option<BTreeMap<String, config::Arg>>,
+  args: BTreeMap<String, config::Arg>,
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
 ) -> config::Field {

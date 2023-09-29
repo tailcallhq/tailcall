@@ -53,10 +53,8 @@ impl Config {
     for (_, type_of) in self.graphql.types.iter() {
       if !type_of.interface {
         for (_, field) in type_of.fields.iter() {
-          if let Some(ref args) = field.args {
-            for (_, arg) in args.iter() {
-              types.insert(&arg.type_of);
-            }
+          for (_, arg) in field.args.iter() {
+            types.insert(&arg.type_of);
           }
         }
       }
@@ -157,7 +155,8 @@ pub struct Field {
   pub required: bool,
   #[serde(default)]
   pub list_type_required: bool,
-  pub args: Option<BTreeMap<String, Arg>>,
+  #[serde(default)]
+  pub args: BTreeMap<String, Arg>,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
   pub inline: Option<InlineType>,

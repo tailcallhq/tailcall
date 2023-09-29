@@ -471,38 +471,28 @@ fn update_inline_field(
   Valid::Ok(base_field)
 }
 fn to_args(field: &config::Field) -> Valid<Vec<InputFieldDefinition>> {
-  match field.args.as_ref() {
-    Some(args) => {
-      // TODO! assert type name
-      args.iter().validate_all(|(name, arg)| {
-        Valid::Ok(InputFieldDefinition {
-          name: name.clone(),
-          description: arg.doc.clone(),
-          of_type: to_type(&arg.type_of, arg.list, arg.required, false),
-          default_value: arg.default_value.clone(),
-        })
-      })
-    }
-    None => Valid::Ok(Vec::new()),
-  }
+  // TODO! assert type name
+  field.args.iter().validate_all(|(name, arg)| {
+    Valid::Ok(InputFieldDefinition {
+      name: name.clone(),
+      description: arg.doc.clone(),
+      of_type: to_type(&arg.type_of, arg.list, arg.required, false),
+      default_value: arg.default_value.clone(),
+    })
+  })
 }
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
   to_json_schema(&field.type_of, field.required, field.list, config)
 }
-pub fn to_json_schema_for_args(args: &Option<BTreeMap<String, Arg>>, config: &Config) -> JsonSchema {
-  match args {
-    Some(args) => {
-      let mut schema_fields = HashMap::new();
-      for (name, arg) in args.iter() {
-        schema_fields.insert(
-          name.clone(),
-          to_json_schema(&arg.type_of, arg.required, arg.list, config),
-        );
-      }
-      JsonSchema::Obj(schema_fields)
-    }
-    None => JsonSchema::Obj(HashMap::new()),
+pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
+  let mut schema_fields = HashMap::new();
+  for (name, arg) in args.iter() {
+    schema_fields.insert(
+      name.clone(),
+      to_json_schema(&arg.type_of, arg.required, arg.list, config),
+    );
   }
+  JsonSchema::Obj(schema_fields)
 }
 pub fn to_json_schema(type_of: &str, required: bool, list: bool, config: &Config) -> JsonSchema {
   let type_ = config.find_type(type_of);

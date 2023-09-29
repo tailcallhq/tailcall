@@ -157,7 +157,7 @@ fn config_document(config: &Config) -> ServiceDocument {
               async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone()))
             };
 
-            let args_map = field.args.clone().unwrap_or_default();
+            let args_map = field.args.clone();
             let args = args_map
               .iter()
               .map(|(name, arg)| {
