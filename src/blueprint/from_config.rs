@@ -44,12 +44,13 @@ fn validate_route(config: &Config) -> Result<(), ValidationError<String>> {
 }
 
 pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
-  validate_route(config)?;
-  let output_types = config.output_types();
-  let input_types = config.input_types();
-  let schema = to_schema(config)?;
-  let definitions = to_definitions(config, output_types, input_types)?;
-  Ok(super::compress::compress(Blueprint { schema, definitions }))
+  validate_route(config).validate_or({
+    let output_types = config.output_types();
+    let input_types = config.input_types();
+    let schema = to_schema(config)?;
+    let definitions = to_definitions(config, output_types, input_types)?;
+    Ok(super::compress::compress(Blueprint { schema, definitions }))
+  })
 }
 
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
