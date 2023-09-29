@@ -7,12 +7,19 @@ pub trait ValidExtensions<A, E>:
   Sized + From<Result<A, ValidationError<E>>> + Into<Result<A, ValidationError<E>>>
 {
   fn to_valid(self) -> Valid<A, E>;
+
   fn fail(e: E) -> Valid<A, E> {
     Err((vec![Cause::new(e)]).into())
   }
+
+  fn fail_cause(cause: Vec<Cause<E>>) -> Valid<A, E> {
+    Err(cause.into())
+  }
+
   fn succeed(a: A) -> Valid<A, E> {
     Ok(a)
   }
+
   fn validate_or<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<A1, E> {
     match self.to_valid() {
       Ok(_) => other,
@@ -30,7 +37,7 @@ pub trait ValidExtensions<A, E>:
 
     valid
   }
-  fn fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
+  fn validate_fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
     match self.to_valid() {
       Ok(a) => ok(a),
       Err(e) => Err::<A1, ValidationError<E>>(e).validate_or(err),
@@ -171,8 +178,16 @@ mod tests {
   }
 
   #[test]
-  fn test_fold() {
-    let result = Valid::<(), i32>::fail(1).fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+  fn test_validate_fold_err() {
+    let valid = Valid::<(), i32>::fail(1);
+    let result = valid.validate_fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+    assert_eq!(result, Valid::fail_cause(vec![Cause::new(1), Cause::new(3)]));
+  }
+
+  #[test]
+  fn test_validate_fold_ok() {
+    let valid = Valid::<i32, i32>::succeed(1);
+    let result = valid.validate_fold(|a| Valid::<i32, i32>::fail(a), Valid::<i32, i32>::fail(2));
     assert_eq!(result, Valid::fail(1));
   }
 }
