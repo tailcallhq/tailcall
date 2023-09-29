@@ -19,7 +19,7 @@ use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
-use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
+use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
