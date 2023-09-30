@@ -21,6 +21,7 @@ mod test {
 
     let res = res.send().await.unwrap();
     let headers = res.headers();
-    assert_eq!(headers.get("x_custom_header").unwrap(), "custom-value");
+    assert_eq!(headers.get("x-custom_header_1").unwrap(), "custom-value_1");
+    assert_eq!(headers.get("x-custom_header_3").unwrap(), "custom-value 3");
   }
 }

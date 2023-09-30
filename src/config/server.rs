@@ -19,7 +19,7 @@ pub struct Server {
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
-  pub set_headers: Option<BTreeMap<String, String>>,
+  pub add_response_headers: Option<Vec<(String, String)>>,
 }
 
 impl Server {
@@ -41,6 +41,12 @@ impl Server {
   pub fn allowed_headers(&self) -> HashSet<String> {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
+  }
+  pub fn get_response_headers(&self) -> Option<BTreeMap<String, String>> {
+    self
+      .add_response_headers
+      .clone()
+      .map(|headers| headers.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect())
   }
 }
 

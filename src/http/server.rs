@@ -1,9 +1,10 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
+use hyper::header::{HeaderName, HeaderValue};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
@@ -20,6 +21,19 @@ fn graphiql() -> Result<Response<Body>> {
   )))
 }
 
+pub fn add_headers(mut resp: Response<Body>, headers: Option<BTreeMap<String, String>>) -> Result<Response<Body>> {
+  if let Some(headers) = headers {
+    for (k, v) in headers {
+      resp.headers_mut().insert(
+        HeaderName::from_bytes(k.as_bytes())?,
+        HeaderValue::from_bytes(v.as_bytes())?,
+      );
+    }
+  }
+
+  Ok(resp)
+}
+
 async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
   let server = server_ctx.server.clone();
   let allowed = server.allowed_headers.unwrap_or_default();
@@ -34,7 +48,10 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
     response = response.set_cache_control(ttl);
   }
 
-  response.to_response(server_ctx.server.set_headers.clone())
+  let resp = response.to_response().unwrap_or_default();
+  let headers = server_ctx.server.get_response_headers();
+
+  add_headers(resp, headers)
 }
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
