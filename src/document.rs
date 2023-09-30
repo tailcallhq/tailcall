@@ -175,8 +175,11 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
   } else {
     String::new()
   };
-
-  format!("  {}{}: {}{}", field.name.node, args_str, field.ty.node, directives_str)
+  let doc = field.description.as_ref().map_or(String::new(), |d| {
+    format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
+  });
+  let node = &format!("  {}{}: {}{}", field.name.node, args_str, field.ty.node, directives_str);
+  doc + node
 }
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
   let directives: Vec<String> = field

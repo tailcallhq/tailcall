@@ -52,6 +52,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
             }
           })
         });
+        if let Some(description) = &field.description {
+          dyn_schema_field = dyn_schema_field.description(description);
+        }
         for arg in field.args.iter() {
           dyn_schema_field =
             dyn_schema_field.argument(dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)));

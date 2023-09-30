@@ -6,7 +6,7 @@ Fixes #... _(Replace "..." with the issue number)_
 
 **Build & Testing:**
 
-- [ ] The build is passing.
+- [ ] I ran `cargo test` successfully.
 - [ ] I have run `./lint.sh` to address and fix linting issues.
 
 **Checklist:**
