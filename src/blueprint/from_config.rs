@@ -362,7 +362,6 @@ fn process_path(
         invalid_path_handler,
       );
     }
-
     return invalid_path_handler(field_name, path).trace(field_name);
   }
 
