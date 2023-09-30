@@ -165,7 +165,13 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
       error
         .as_vec()
         .iter()
-        .map(|cause| CLIError::new(cause.message).trace(Vec::from(cause.trace.clone())))
+        .map(|cause| {
+          let mut err = CLIError::new(cause.message).trace(Vec::from(cause.trace.clone()));
+          if let Some(description) = cause.description {
+            err = err.description(description.to_owned());
+          }
+          err
+        })
         .collect(),
     )
   }
@@ -236,7 +242,7 @@ mod tests {
   fn test_title_description() {
     let error = CLIError::new("Server could not be started").description("The port is already in use".to_string());
     let expected = r"|Error: Server could not be started
-                          |       ❯ The port is already in use"
+                     |       ❯ The port is already in use"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -249,7 +255,7 @@ mod tests {
       .trace(vec!["@server".into(), "port".into()]);
 
     let expected = r"|Error: Server could not be started
-                          |       ❯ The port is already in use [at @server.port]"
+                     |       ❯ The port is already in use [at @server.port]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -261,8 +267,8 @@ mod tests {
       .trace(vec!["User".into(), "posts".into(), "@http".into(), "baseURL".into()])]);
 
     let expected = r"|Error: Configuration Error
-                          |Caused by:
-                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
+                     |Caused by:
+                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
@@ -295,12 +301,12 @@ mod tests {
     ]);
 
     let expected = r"|Error: Configuration Error
-                          |Caused by:
-                          |  • Base URL needs to be specified [at User.posts.@http.baseURL]
-                          |  • Base URL needs to be specified [at Post.users.@http.baseURL]
-                          |  • Base URL needs to be specified
-                          |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
-                          |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
+                     |Caused by:
+                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]
+                     |  • Base URL needs to be specified [at Post.users.@http.baseURL]
+                     |  • Base URL needs to be specified
+                     |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
+                     |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
