@@ -6,33 +6,22 @@ pub type Valid<A, E> = Result<A, ValidationError<E>>;
 pub trait ValidExtensions<A, E>:
   Sized + From<Result<A, ValidationError<E>>> + Into<Result<A, ValidationError<E>>>
 {
-  fn fail(e: E) -> Self;
-  fn succeed(a: A) -> Self;
-  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>>;
-  fn trace(self, message: &str) -> Self;
-}
+  fn to_valid(self) -> Valid<A, E>;
 
-pub trait ValidConstructor<A, E> {
-  fn validate(self) -> Valid<A, E>;
-}
-
-impl<A, E> ValidConstructor<A, E> for Result<A, E> {
-  fn validate(self) -> Valid<A, E> {
-    self.map_err(|e| ValidationError::new(e))
-  }
-}
-
-impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
-  fn fail(e: E) -> Self {
+  fn fail(e: E) -> Valid<A, E> {
     Err((vec![Cause::new(e)]).into())
   }
 
-  fn succeed(a: A) -> Self {
+  fn fail_cause(cause: Vec<Cause<E>>) -> Valid<A, E> {
+    Err(cause.into())
+  }
+
+  fn succeed(a: A) -> Valid<A, E> {
     Ok(a)
   }
 
-  fn validate_or<T>(self, other: Result<T, ValidationError<E>>) -> Result<T, ValidationError<E>> {
-    match self {
+  fn validate_or<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<A1, E> {
+    match self.to_valid() {
       Ok(_) => other,
       Err(e1) => match other {
         Err(e2) => Err(e1.combine(e2)),
@@ -40,12 +29,34 @@ impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
       },
     }
   }
-
-  fn trace(self, message: &str) -> Self {
-    if let Err(error) = self {
+  fn trace(self, message: &str) -> Valid<A, E> {
+    let valid = self.to_valid();
+    if let Err(error) = valid {
       return Err(error.trace(message));
     }
 
+    valid
+  }
+  fn validate_fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
+    match self.to_valid() {
+      Ok(a) => ok(a),
+      Err(e) => Err::<A1, ValidationError<E>>(e).validate_or(err),
+    }
+  }
+}
+
+pub trait ValidConstructor<A, E> {
+  fn to_valid(self) -> Valid<A, E>;
+}
+
+impl<A, E> ValidConstructor<A, E> for Result<A, E> {
+  fn to_valid(self) -> Valid<A, E> {
+    self.map_err(|e| ValidationError::new(e))
+  }
+}
+
+impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
+  fn to_valid(self) -> Valid<A, E> {
     self
   }
 }
@@ -95,7 +106,9 @@ impl<A> OptionExtension<A> for Option<A> {
 
 #[cfg(test)]
 mod tests {
-  use crate::valid::{Cause, OptionExtension, Valid, ValidExtensions, VectorExtension};
+  use crate::valid::{
+    Cause, OptionExtension, Valid, ValidConstructor, ValidExtensions, ValidationError, VectorExtension,
+  };
 
   #[test]
   fn test_ok() {
@@ -164,5 +177,25 @@ mod tests {
       result,
       Err(vec![Cause { message: 1, trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into() }].into())
     );
+  }
+
+  #[test]
+  fn test_validate_fold_err() {
+    let valid = Valid::<(), i32>::fail(1);
+    let result = valid.validate_fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+    assert_eq!(result, Valid::fail_cause(vec![Cause::new(1), Cause::new(3)]));
+  }
+
+  #[test]
+  fn test_validate_fold_ok() {
+    let valid = Valid::<i32, i32>::succeed(1);
+    let result = valid.validate_fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
+    assert_eq!(result, Valid::fail(1));
+  }
+
+  #[test]
+  fn test_to_valid() {
+    let result = Err::<(), i32>(1).to_valid().unwrap_err();
+    assert_eq!(result, ValidationError::new(1));
   }
 }
