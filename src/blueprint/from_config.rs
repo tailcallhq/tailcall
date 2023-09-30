@@ -352,11 +352,12 @@ fn process_path(
       .map(|_| type_info)
       .or_else(|| config.find_type(&field.type_of));
 
-    if let Some(ti) = target_type_info {
+    if let Some(type_info) = target_type_info {
       return process_field_within_type(
+        field,
         field_name,
         remaining_path,
-        ti,
+        type_info,
         is_required,
         config,
         invalid_path_handler,
@@ -374,6 +375,7 @@ fn process_path(
 }
 
 fn process_field_within_type(
+  field: &config::Field,
   field_name: &str,
   remaining_path: &[String],
   type_info: &config::Type,
@@ -384,7 +386,12 @@ fn process_field_within_type(
   if let Some(next_field) = type_info.fields.get(field_name) {
     if needs_resolving(next_field) {
       return Valid::<Type>::validate_or(
-        Valid::fail("Inline can be done on path with resolvers".to_string()).trace(field_name),
+        Valid::fail(format!(
+          "Inline can't be done because of {} resolver at [{}.{}]",
+          next_field.http.as_ref().map(|_| "http").unwrap_or_else(|| "unsafe"),
+          field.type_of,
+          field_name
+        )),
         process_path(
           remaining_path,
           next_field,
