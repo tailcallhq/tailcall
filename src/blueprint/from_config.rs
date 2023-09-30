@@ -270,6 +270,15 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
           );
         }
+
+        let server_headers = config.server.get_headers();
+        for (k, v) in server_headers {
+          header_map.insert(
+            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
+            HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
+          );
+        }
+
         let req_template = RequestTemplate::try_from(
           Endpoint::new(base_url.to_string())
             .method(method.clone())
@@ -278,6 +287,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
             .input(input_schema)
             .body(http.body.clone())
             .headers(header_map),
+
         )
         .map_err(|e| ValidationError::new(e.to_string()))?;
 

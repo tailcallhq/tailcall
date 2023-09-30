@@ -4,6 +4,7 @@ use async_graphql::dynamic::ResolverContext;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use derive_setters::Setters;
+use hyper::header::HeaderName;
 use reqwest::header::HeaderMap;
 
 use crate::http::RequestContext;
@@ -50,10 +51,18 @@ impl<'a> EvaluationContext<'a> {
   }
 
   pub fn headers(&self) -> &HeaderMap {
-    &self.req_ctx.req_headers
+    return &self.req_ctx.req_headers;
   }
   pub fn get_header_as_value(&self, key: &str) -> Option<async_graphql::Value> {
-    let value = self.headers().get(key)?;
+    let mut headers_map = self.headers().clone();
+    for (k, v) in self.req_ctx.server.get_headers(){
+      headers_map.insert(
+        HeaderName::from_bytes(k.as_bytes()).unwrap(),
+        v.parse().unwrap(),
+      );
+    }
+    let value = headers_map.get(key)?;
+
     Some(async_graphql::Value::String(value.to_str().ok()?.to_string()))
   }
 }

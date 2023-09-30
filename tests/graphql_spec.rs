@@ -188,7 +188,7 @@ async fn test_execution() -> std::io::Result<()> {
   let mut mock_server = graphql_mock::start_mock_server();
   graphql_mock::setup_mocks(&mut mock_server);
 
-  let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
+  let specs = GraphQLSpec::cargo_read("tests/graphql/temp");
 
   for spec in specs? {
     let mut config = Config::from_sdl(&spec.server_sdl).unwrap();
