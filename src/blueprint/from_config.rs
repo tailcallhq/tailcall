@@ -343,8 +343,7 @@ fn process_path(
         false,
         config,
         invalid_path_handler,
-      )
-      .trace(field_name);
+      );
     }
     let target_type_info = type_info
       .fields
@@ -363,7 +362,7 @@ fn process_path(
         invalid_path_handler,
       );
     }
-    return invalid_path_handler(field_name, path).trace(field_name);
+    return invalid_path_handler(field_name, path);
   }
 
   Valid::Ok(to_type(
@@ -412,8 +411,7 @@ fn process_field_within_type(
         next_is_required,
         config,
         invalid_path_handler,
-      )
-      .trace(field_name);
+      );
     }
 
     if let Some(next_type_info) = config.find_type(&next_field.type_of) {
@@ -424,8 +422,7 @@ fn process_field_within_type(
         next_is_required,
         config,
         invalid_path_handler,
-      )
-      .trace(field_name)?;
+      )?;
 
       return if next_field.list.unwrap_or(false) {
         Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
@@ -435,11 +432,11 @@ fn process_field_within_type(
     }
   } else if let Some((head, tail)) = remaining_path.split_first() {
     if let Some(field) = type_info.fields.get(head) {
-      return process_path(tail, field, type_info, is_required, config, invalid_path_handler).trace(head);
+      return process_path(tail, field, type_info, is_required, config, invalid_path_handler);
     }
   }
 
-  invalid_path_handler(field_name, &[]).trace(field_name)
+  invalid_path_handler(field_name, remaining_path)
 }
 
 // Main function to update an inline field
@@ -451,7 +448,7 @@ fn update_inline_field(
 ) -> Valid<FieldDefinition> {
   let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
   let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
-    Valid::fail("Field not found at given path".to_string())
+    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
   };
   let has_index = inlined_path.iter().any(|s| {
     let re = Regex::new(r"^\d+$").unwrap();
