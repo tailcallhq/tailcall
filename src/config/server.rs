@@ -19,6 +19,7 @@ pub struct Server {
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
+  pub set_headers: Option<BTreeMap<String, String>>,
 }
 
 impl Server {

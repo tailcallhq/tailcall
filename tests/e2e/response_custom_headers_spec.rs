@@ -5,7 +5,7 @@ mod test {
   async fn background_server(file_path: String) -> &'static str {
     tailcall::http::start_server(&file_path).await.unwrap();
 
-    return "Ok";
+    "Ok"
   }
 
   #[tokio::test]
@@ -16,8 +16,8 @@ mod test {
 
     let query = "{data {post1 { title}}}";
     let res = reqwest::Client::new()
-        .post("http://localhost:8000/graphql")
-        .json(&json!({ "query": query }));
+      .post("http://localhost:8000/graphql")
+      .json(&json!({ "query": query }));
 
     let res = res.send().await.unwrap();
     let headers = res.headers();

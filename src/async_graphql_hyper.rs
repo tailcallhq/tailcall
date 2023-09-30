@@ -1,8 +1,9 @@
 use std::any::Any;
+use std::collections::BTreeMap;
 
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
-use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
+use hyper::header::{HeaderName, HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -90,11 +91,20 @@ lazy_static::lazy_static! {
 }
 
 impl GraphQLResponse {
-  pub fn to_response(self) -> Result<Response<hyper::Body>> {
+  pub fn to_response(self, headers: Option<BTreeMap<String, String>>) -> Result<Response<hyper::Body>> {
     let mut response = Response::builder()
       .status(StatusCode::OK)
       .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
       .body(Body::from(serde_json::to_string(&self.0)?))?;
+
+    if let Some(headers) = headers {
+      for (k, v) in headers {
+        response.headers_mut().insert(
+          HeaderName::from_bytes(k.as_bytes())?,
+          HeaderValue::from_bytes(v.as_bytes())?,
+        );
+      }
+    }
 
     if self.0.is_ok() {
       if let Some(cache_control) = self.0.cache_control().value() {

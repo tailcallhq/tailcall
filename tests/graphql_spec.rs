@@ -20,8 +20,8 @@ use tailcall::http::{HttpDataLoader, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::Cause;
 
-mod graphql_mock;
 mod e2e;
+mod graphql_mock;
 
 #[derive(Debug, Default, Setters)]
 struct GraphQLSpec {
