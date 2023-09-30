@@ -3,7 +3,8 @@ mod compress;
 mod from_config;
 mod into_schema;
 mod timeout;
-mod transform;
-mod transform_unused_types;
+
+// TODO: make it private
+pub mod transform;
 pub use blueprint::*;
 pub use timeout::GlobalTimeout;
