@@ -73,6 +73,5 @@ mod tests {
 
     assert!(structs.len() > 0);
     assert!(structs.contains_key("Http"));
-    println!("{}", structs.get("Http").unwrap());
   }
 }
