@@ -62,8 +62,8 @@ impl<E> ValidationError<E> {
 
 impl<E: Display + Debug> std::error::Error for ValidationError<E> {}
 
-impl From<Cause<String>> for ValidationError<String> {
-  fn from(value: Cause<String>) -> Self {
+impl<E> From<Cause<E>> for ValidationError<E> {
+  fn from(value: Cause<E>) -> Self {
     ValidationError(vec![value])
   }
 }

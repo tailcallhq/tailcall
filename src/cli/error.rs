@@ -191,10 +191,13 @@ impl From<ValidationError<String>> for CLIError {
 
 #[cfg(test)]
 mod tests {
+  use std::collections::VecDeque;
+
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
 
   use super::*;
+  use crate::valid::Cause;
 
   #[test]
   fn test_no_newline() {
@@ -307,6 +310,27 @@ mod tests {
                      |  • Base URL needs to be specified
                      |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                      |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
+      .strip_margin();
+
+    assert_eq!(error.to_string(), expected);
+  }
+
+  #[test]
+  fn test_from_validation() {
+    let cause = Cause::new("Base URL needs to be specified")
+      .description("Set `baseURL` in @http or @server directives")
+      .trace(VecDeque::from(vec![
+        "Query".to_string(),
+        "users".to_string(),
+        "@http".to_string(),
+        "baseURL".to_string(),
+      ]));
+    let valid = ValidationError::from(cause);
+    let error = CLIError::from(valid);
+    let expected = r"|Error: Invalid Configuration
+                     |Caused by:
+                     |  • Base URL needs to be specified
+                     |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
       .strip_margin();
 
     assert_eq!(error.to_string(), expected);
