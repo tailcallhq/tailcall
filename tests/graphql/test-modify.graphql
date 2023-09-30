@@ -8,7 +8,7 @@ input Foo {
 }
 
 type Query {
-  foo(input: Foo): String @modify(name: "data", omit: false)
+  foo(input: Foo): String @modify(name: "data")
 }
 
 #> client-sdl

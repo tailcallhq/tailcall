@@ -11,6 +11,10 @@ use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
 
+fn skip_if_default<T: Default + Eq>(val: &T) -> bool {
+  *val == T::default()
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -192,6 +196,7 @@ pub struct Unsafe {
 pub struct ModifyField {
   pub name: Option<String>,
   #[serde(default)]
+  #[serde(skip_serializing_if = "skip_if_default")]
   pub omit: bool,
 }
 
@@ -221,7 +226,9 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
-  pub method: Option<Method>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "skip_if_default")]
+  pub method: Method,
   pub query: Option<BTreeMap<String, String>>,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,

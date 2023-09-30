@@ -15,7 +15,6 @@ use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
-use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
@@ -249,7 +248,6 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
           base_url.pop();
         }
         base_url.push_str(http.path.clone().as_str());
-        let method = http.method.as_ref().unwrap_or(&Method::GET);
         let query = match http.query.as_ref() {
           Some(q) => q.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
           None => Vec::new(),
@@ -265,7 +263,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
         }
         let req_template = RequestTemplate::try_from(
           Endpoint::new(base_url.to_string())
-            .method(method.clone())
+            .method(http.method.clone())
             .query(query)
             .output(output_schema)
             .input(input_schema)
