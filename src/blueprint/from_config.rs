@@ -264,15 +264,10 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
-        for (k, v) in http.headers.clone().unwrap_or_default().iter() {
-          header_map.insert(
-            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
-            HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
-          );
-        }
 
-        let server_headers = config.server.get_headers();
-        for (k, v) in server_headers {
+        let mut server_headers = config.server.set_headers.unwrap_or_default().extend(http.headers.clone().unwrap_or_default());
+
+        for (k, v) in server_headers.iter() {
           header_map.insert(
             HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,

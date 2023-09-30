@@ -42,13 +42,6 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn get_headers(&self) -> Vec<(String, String)> {
-    let headers = match &self.set_headers {
-      Some(set_headers) => set_headers.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
-      None => Vec::new(),
-    };
-    headers
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
