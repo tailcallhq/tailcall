@@ -19,6 +19,7 @@ pub struct Server {
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
+  pub http: Option<HttpSettings>,
 }
 
 impl Server {
@@ -46,4 +47,14 @@ impl Server {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Proxy {
   pub url: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct HttpSettings {
+  pub keep_alive_interval: u64,
+  pub keep_alive_timeout: u64,
+  pub keep_alive_while_idle: bool,
+  pub pool_idle_timeout: u64,
+  pub pool_max_idle_per_host: usize,
 }
