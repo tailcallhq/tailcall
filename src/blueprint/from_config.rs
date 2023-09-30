@@ -317,7 +317,9 @@ fn update_modify(
     None => Valid::Ok(Some(b_field)),
   }
 }
-
+fn needs_resolving(field: &config::Field) -> bool {
+  field.unsafe_operation.is_some() || field.http.is_some()
+}
 fn is_scalar(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
@@ -344,82 +346,94 @@ fn process_path(
       )
       .trace(field_name);
     }
-    if let Some(next_field) = type_info.fields.get(field_name) {
-      let next_is_required = is_required && next_field.required.unwrap_or(false);
-      if is_scalar(&next_field.type_of) {
-        return process_path(
-          remaining_path,
-          next_field,
-          type_info,
-          next_is_required,
-          config,
-          invalid_path_handler,
-        )
-        .trace(field_name);
-      }
-      if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-        let of_type = process_path(
-          remaining_path,
-          next_field,
-          next_type_info,
-          next_is_required,
-          config,
-          invalid_path_handler,
-        )
-        .trace(field_name)?;
+    let target_type_info = type_info
+      .fields
+      .get(field_name)
+      .map(|_| type_info)
+      .or_else(|| config.find_type(&field.type_of));
 
-        return if field.list.unwrap_or(false) {
-          Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
-        } else {
-          Ok(of_type)
-        };
-      }
-    } else if let Some(type_info) = config.find_type(&field.type_of) {
-      if let Some(next_field) = type_info.fields.get(field_name) {
-        let next_is_required = is_required && next_field.required.unwrap_or(false);
-        if is_scalar(&next_field.type_of) {
-          return process_path(
-            remaining_path,
-            next_field,
-            type_info,
-            next_is_required,
-            config,
-            invalid_path_handler,
-          )
-          .trace(field_name);
-        }
-        if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-          let of_type = process_path(
-            remaining_path,
-            next_field,
-            next_type_info,
-            next_is_required,
-            config,
-            invalid_path_handler,
-          )
-          .trace(field_name)?;
-
-          return if field.list.unwrap_or(false) {
-            Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
-          } else {
-            Ok(of_type)
-          };
-        }
-      } else if let Some((head, tail)) = remaining_path.split_first() {
-        if let Some(field) = type_info.fields.get(head) {
-          return process_path(tail, field, type_info, is_required, config, invalid_path_handler).trace(head);
-        }
-      }
+    if let Some(ti) = target_type_info {
+      return process_field_within_type(
+        field_name,
+        remaining_path,
+        ti,
+        is_required,
+        config,
+        invalid_path_handler,
+      );
     }
 
     return invalid_path_handler(field_name, path).trace(field_name);
   }
+
   Valid::Ok(to_type(
     &field.type_of,
     &field.list,
     &Some(is_required),
     &field.list_type_required,
   ))
+}
+
+fn process_field_within_type(
+  field_name: &str,
+  remaining_path: &[String],
+  type_info: &config::Type,
+  is_required: bool,
+  config: &Config,
+  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type>,
+) -> Valid<Type> {
+  if let Some(next_field) = type_info.fields.get(field_name) {
+    if needs_resolving(next_field) {
+      return Valid::<Type>::validate_or(
+        Valid::fail("Inline can be done on path with resolvers".to_string()).trace(field_name),
+        process_path(
+          remaining_path,
+          next_field,
+          type_info,
+          is_required,
+          config,
+          invalid_path_handler,
+        ),
+      );
+    }
+
+    let next_is_required = is_required && next_field.required.unwrap_or(false);
+    if is_scalar(&next_field.type_of) {
+      return process_path(
+        remaining_path,
+        next_field,
+        type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      )
+      .trace(field_name);
+    }
+
+    if let Some(next_type_info) = config.find_type(&next_field.type_of) {
+      let of_type = process_path(
+        remaining_path,
+        next_field,
+        next_type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      )
+      .trace(field_name)?;
+
+      return if next_field.list.unwrap_or(false) {
+        Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
+      } else {
+        Ok(of_type)
+      };
+    }
+  } else if let Some((head, tail)) = remaining_path.split_first() {
+    if let Some(field) = type_info.fields.get(head) {
+      return process_path(tail, field, type_info, is_required, config, invalid_path_handler).trace(head);
+    }
+  }
+
+  invalid_path_handler(field_name, &[]).trace(field_name)
 }
 
 // Main function to update an inline field
