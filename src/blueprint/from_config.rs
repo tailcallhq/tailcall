@@ -287,7 +287,6 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
             .input(input_schema)
             .body(http.body.clone())
             .headers(header_map),
-
         )
         .map_err(|e| ValidationError::new(e.to_string()))?;
 

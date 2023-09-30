@@ -51,15 +51,12 @@ impl<'a> EvaluationContext<'a> {
   }
 
   pub fn headers(&self) -> &HeaderMap {
-    return &self.req_ctx.req_headers;
+    &self.req_ctx.req_headers
   }
   pub fn get_header_as_value(&self, key: &str) -> Option<async_graphql::Value> {
     let mut headers_map = self.headers().clone();
-    for (k, v) in self.req_ctx.server.get_headers(){
-      headers_map.insert(
-        HeaderName::from_bytes(k.as_bytes()).unwrap(),
-        v.parse().unwrap(),
-      );
+    for (k, v) in self.req_ctx.server.get_headers() {
+      headers_map.insert(HeaderName::from_bytes(k.as_bytes()).unwrap(), v.parse().unwrap());
     }
     let value = headers_map.get(key)?;
 

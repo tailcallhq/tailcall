@@ -1,7 +1,7 @@
 #> server-sdl
 schema @server(
     baseURL: "http://127.0.0.1:3000",
-    setHeaders: {authorization: "1"}
+    setHeaders: {id: "1"}
 ) {
     query: Query
 }
@@ -16,7 +16,7 @@ type Post {
 type Query {
     post1: Post
     @http(
-        path: "/posts/{{headers.authorization}}"
+        path: "/posts/{{headers.id}}"
         baseURL: "http://jsonplaceholder.typicode.com"
     )
 }

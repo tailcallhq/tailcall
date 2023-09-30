@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use http_cache_semantics::RequestLike;
+
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
@@ -46,8 +46,6 @@ impl HttpClient {
   }
 
   pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
-    println!("request: {:?}", request.uri());
-    println!("request: {:?}", request.headers());
     let response = self.client.execute(request).await?;
     let response = Response::from_response(response).await?;
     Ok(response)

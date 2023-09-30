@@ -26,20 +26,10 @@ impl PathString for EvaluationContext<'_> {
     let ctx = self;
     let mut result = None;
     if let Some((head, tail)) = path.split_first() {
-      // println!("path_string 1->>>>>>>>>>>: {:?} {:?}", head, tail);
-      // println!("path_string req_ctx.req_headers->>>>>>>>>>>: {:?}", self.req_ctx.server.get_headers());
-      // println!("path_string 3->>>>>>>>>>>: {:?}", self.headers());
-      // println!("path_string 3->>>>>>>>>>>: {:?}", self.req_ctx.server.vars);
-      //
-      // Some(async_graphql::Value::String(
-      //   ctx.req_ctx.server.vars.clone()?.get(&tail[0]).cloned()?,
-      // ));
-
-
       result = match head.as_str() {
         "value" => ctx.path_value(tail).map(|v| v.to_owned()),
         "args" => ctx.args()?.get_path(tail).cloned(),
-        "headers" => ctx.get_header_as_value( &tail[0]),
+        "headers" => ctx.get_header_as_value(&tail[0]),
         "vars" => Some(async_graphql::Value::String(
           ctx.req_ctx.server.vars.clone()?.get(&tail[0]).cloned()?,
         )),
