@@ -173,10 +173,15 @@ mod tests {
   #[test]
   fn test_trace() {
     let result = Valid::<(), i32>::fail(1).trace("A").trace("B").trace("C");
-    assert_eq!(
-      result,
-      Err(vec![Cause { message: 1, trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into() }].into())
+    let expected = Err(
+      vec![Cause {
+        message: 1,
+        description: None,
+        trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
+      }]
+      .into(),
     );
+    assert_eq!(result, expected);
   }
 
   #[test]
