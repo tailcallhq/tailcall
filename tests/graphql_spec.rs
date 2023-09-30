@@ -21,6 +21,7 @@ use tailcall::print_schema;
 use tailcall::valid::Cause;
 
 mod graphql_mock;
+mod e2e;
 
 #[derive(Debug, Default, Setters)]
 struct GraphQLSpec {
