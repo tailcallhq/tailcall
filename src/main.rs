@@ -1,8 +1,10 @@
+#![allow(clippy::too_many_arguments)]
+
 use anyhow::Result;
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+  static GLOBAL: MiMalloc = MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {

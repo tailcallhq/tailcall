@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
@@ -62,18 +60,24 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<Str
   for type_definition in type_definitions {
     let type_name = pos_name_to_string(&type_definition.node.name);
     let type_opt = match type_definition.node.kind.clone() {
-      TypeKind::Object(object_type) => Some(to_object_type(
-        &object_type.fields,
-        &type_definition.node.description,
-        false,
-        &object_type.implements,
-      )),
-      TypeKind::Interface(interface_type) => Some(to_object_type(
-        &interface_type.fields,
-        &type_definition.node.description,
-        true,
-        &interface_type.implements,
-      )),
+      TypeKind::Object(object_type) => {
+        let args = ObjectTypeArgs {
+            fields: &object_type.fields,
+            description: &type_definition.node.description,
+            interface: false,
+            implements: &object_type.implements,
+        };
+        Some(to_object_type(args))
+    },
+    TypeKind::Interface(interface_type) => {
+        let args = ObjectTypeArgs {
+            fields: &interface_type.fields,
+            description: &type_definition.node.description,
+            interface: true,
+            implements: &interface_type.implements,
+        };
+        Some(to_object_type(args))
+    },
       TypeKind::Enum(enum_type) => Some(to_enum(enum_type)),
       TypeKind::InputObject(input_object_type) => Some(to_input_object(input_object_type)),
       TypeKind::Union(_) => None,
@@ -103,17 +107,21 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
-fn to_object_type(
-  fields: &Vec<Positioned<FieldDefinition>>,
-  description: &Option<Positioned<String>>,
+struct ObjectTypeArgs<'a> {
+  fields: &'a Vec<Positioned<FieldDefinition>>,
+  description: &'a Option<Positioned<String>>,
   interface: bool,
-  implements: &[Positioned<Name>],
-) -> config::Type {
-  let fields = to_fields(fields);
-  let doc = description.as_ref().map(|pos| pos.node.clone());
-  let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-  config::Type { fields, doc, interface, implements, ..Default::default() }
+  implements: &'a [Positioned<Name>],
 }
+
+fn to_object_type(args: ObjectTypeArgs) -> config::Type {
+  let fields = to_fields(args.fields);
+  let doc = args.description.as_ref().map(|pos| pos.node.clone());
+  let implements = args.implements.iter().map(|pos| pos.node.to_string()).collect();
+  
+  config::Type { fields, doc, interface: args.interface, implements, ..Default::default() }
+}
+
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
     .values
@@ -148,56 +156,64 @@ fn to_input_object_fields(
   to_fields_inner(input_object_fields, to_input_object_field)
 }
 fn to_field(field_definition: &FieldDefinition) -> config::Field {
-  to_common_field(
-    &field_definition.ty.node,
-    &field_definition.ty.node.base,
-    field_definition.ty.node.nullable,
-    to_args(field_definition),
-    &field_definition.description,
-    &field_definition.directives,
-  )
+  let args = CommonFieldArgs {
+      type_: &field_definition.ty.node,
+      base: &field_definition.ty.node.base,
+      nullable: field_definition.ty.node.nullable,
+      args: to_args(field_definition),
+      description: &field_definition.description,
+      directives: &field_definition.directives,
+  };
+  to_common_field(args)
 }
+
 fn to_input_object_field(field_definition: &InputValueDefinition) -> config::Field {
-  to_common_field(
-    &field_definition.ty.node,
-    &field_definition.ty.node.base,
-    field_definition.ty.node.nullable,
-    BTreeMap::new(),
-    &field_definition.description,
-    &field_definition.directives,
-  )
+  let args = CommonFieldArgs {
+      type_: &field_definition.ty.node,
+      base: &field_definition.ty.node.base,
+      nullable: field_definition.ty.node.nullable,
+      args: BTreeMap::new(),
+      description: &field_definition.description,
+      directives: &field_definition.directives,
+  };
+  to_common_field(args)
 }
-fn to_common_field(
-  type_: &Type,
-  base: &BaseType,
+
+struct CommonFieldArgs<'a> {
+  type_: &'a Type,
+  base: &'a BaseType,
   nullable: bool,
   args: BTreeMap<String, config::Arg>,
-  description: &Option<Positioned<String>>,
-  directives: &[Positioned<ConstDirective>],
-) -> config::Field {
-  let type_of = to_type_of(type_);
-  let list = matches!(&base, BaseType::List(_));
-  let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
-  let doc = description.as_ref().map(|pos| pos.node.clone());
-  let modify = to_modify(directives);
-  let inline = to_inline(directives);
-  let http = to_http(directives);
-  let unsafe_operation = to_unsafe_operation(directives);
-  let batch = to_batch(directives);
+  description: &'a Option<Positioned<String>>,
+  directives: &'a [Positioned<ConstDirective>],
+}
+
+fn to_common_field(args: CommonFieldArgs) -> config::Field {
+  let type_of = to_type_of(args.type_);
+  let list = matches!(&args.base, BaseType::List(_));
+  let list_type_required = matches!(&args.base, BaseType::List(ty) if !ty.nullable);
+  let doc = args.description.as_ref().map(|pos| pos.node.clone());
+  let modify = to_modify(args.directives);
+  let inline = to_inline(args.directives);
+  let http = to_http(args.directives);
+  let unsafe_operation = to_unsafe_operation(args.directives);
+  let batch = to_batch(args.directives);
+
   config::Field {
-    type_of,
-    list,
-    required: !nullable,
-    list_type_required,
-    args,
-    doc,
-    modify,
-    inline,
-    http,
-    unsafe_operation,
-    batch,
+      type_of,
+      list,
+      required: !args.nullable,
+      list_type_required,
+      args: args.args,
+      doc,
+      modify,
+      inline,
+      http,
+      unsafe_operation,
+      batch,
   }
 }
+
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "unsafe" {
