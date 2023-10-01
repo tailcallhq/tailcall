@@ -8,6 +8,33 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
 jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: target/debug/coverage/lcov.info
+          fail_ci_if_error: true
+
   check:
     name: Rust project
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
@@ -42,6 +69,12 @@ jobs:
           toolchain: nightly
           command: fmt
           args: -- --check
+      
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: llvm-cov
+          args: --all-features --lcov --output-path lcov.info
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
@@ -49,12 +82,6 @@ jobs:
           toolchain: nightly
           command: clippy
           args: --all-targets --all-features -- -D warnings
-
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: llvm-cov
-          args: --all-features --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
