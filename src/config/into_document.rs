@@ -24,12 +24,10 @@ fn config_document(config: &Config) -> ServiceDocument {
   };
   definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
   for (type_name, type_def) in config.graphql.types.iter() {
-    let kind = if type_def.is_interface() {
+    let kind = if type_def.interface {
       TypeKind::Interface(InterfaceType {
         implements: type_def
           .implements
-          .as_ref()
-          .unwrap_or(&Vec::new())
           .iter()
           .map(|name| pos(Name::new(name.clone())))
           .collect(),
@@ -47,9 +45,9 @@ fn config_document(config: &Config) -> ServiceDocument {
               let us_dir = us.to_directive("unsafe".to_string());
               directives.push(pos(us_dir));
             }
-            let base_type = if field.list.unwrap_or(false) {
+            let base_type = if field.list {
               BaseType::List(Box::new(Type {
-                nullable: !field.required.unwrap_or(false),
+                nullable: !field.required,
                 base: BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -59,7 +57,7 @@ fn config_document(config: &Config) -> ServiceDocument {
               description: field.doc.clone().map(pos),
               name: pos(Name::new(name.clone())),
               arguments: vec![],
-              ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
+              ty: pos(Type { nullable: !field.required, base: base_type }),
 
               directives,
             })
@@ -99,9 +97,9 @@ fn config_document(config: &Config) -> ServiceDocument {
               let modify_dir = modify.to_directive("modify".to_string());
               directives.push(pos(modify_dir));
             }
-            let base_type = if field.list.unwrap_or(false) {
+            let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required.unwrap_or(false),
+                nullable: !field.required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -111,7 +109,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             pos(async_graphql::parser::types::InputValueDefinition {
               description: field.doc.clone().map(pos),
               name: pos(Name::new(name.clone())),
-              ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
+              ty: pos(Type { nullable: !field.required, base: base_type }),
 
               default_value: None,
               directives,
@@ -125,8 +123,6 @@ fn config_document(config: &Config) -> ServiceDocument {
       TypeKind::Object(ObjectType {
         implements: type_def
           .implements
-          .as_ref()
-          .unwrap_or(&Vec::new())
           .iter()
           .map(|name| pos(Name::new(name.clone())))
           .collect(),
@@ -152,22 +148,22 @@ fn config_document(config: &Config) -> ServiceDocument {
               let modify_dir = modify.to_directive("modify".to_string());
               directives.push(pos(modify_dir));
             }
-            let base_type = if field.list.unwrap_or(false) {
+            let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required.unwrap_or(false),
+                nullable: !field.required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
               async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone()))
             };
 
-            let args_map = field.args.clone().unwrap_or_default();
+            let args_map = field.args.clone();
             let args = args_map
               .iter()
               .map(|(name, arg)| {
-                let base_type = if arg.list.unwrap_or(false) {
+                let base_type = if arg.list {
                   async_graphql::parser::types::BaseType::List(Box::new(Type {
-                    nullable: !arg.required.unwrap_or(false),
+                    nullable: !arg.required,
                     base: async_graphql::parser::types::BaseType::Named(Name::new(arg.type_of.clone())),
                   }))
                 } else {
@@ -176,7 +172,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                 pos(async_graphql::parser::types::InputValueDefinition {
                   description: arg.doc.clone().map(pos),
                   name: pos(Name::new(name.clone())),
-                  ty: pos(Type { nullable: !arg.required.unwrap_or(false), base: base_type }),
+                  ty: pos(Type { nullable: !arg.required, base: base_type }),
 
                   default_value: arg
                     .default_value
@@ -191,7 +187,7 @@ fn config_document(config: &Config) -> ServiceDocument {
               description: field.doc.clone().map(pos),
               name: pos(Name::new(name.clone())),
               arguments: args,
-              ty: pos(Type { nullable: !field.required.unwrap_or(false), base: base_type }),
+              ty: pos(Type { nullable: !field.required, base: base_type }),
 
               directives,
             })
