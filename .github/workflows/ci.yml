@@ -11,7 +11,7 @@ jobs:
   check:
     name: Rust project
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
@@ -71,7 +71,7 @@ jobs:
 
   deploy:
     name: Deploy app
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
@@ -87,7 +87,7 @@ jobs:
   draft_release:
     name: Draft Release
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
