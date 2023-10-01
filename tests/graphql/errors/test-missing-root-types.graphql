@@ -1,0 +1,10 @@
+#> server-sdl
+schema {
+  query: QueryType
+  mutation: MutationDef
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Query type is not defined", trace: ["QueryType"])
+  @error(message: "Mutation type is not defined", trace: ["MutationDef"])
