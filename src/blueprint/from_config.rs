@@ -232,9 +232,6 @@ fn validate_query(config: &Config) -> Valid<()> {
   query
     .fields
     .iter()
-    // validate only required fields
-    // TODO: somehow when field is required it has a value of Option<false> due to https://github.com/tailcallhq/tailcall/blob/49e39e12013cf837ce0cc78562c4207f4a9782ad/src/config/from_document.rs#L195
-    .filter(|(_, field)| field.required.is_some())
     .validate_all(validate_field_has_resolver)
     .trace(query_type_name)?;
 
