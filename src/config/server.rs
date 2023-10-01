@@ -48,7 +48,7 @@ pub struct Proxy {
   pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Upstream {
   pub pool_idle_timeout: u64,
@@ -57,4 +57,8 @@ pub struct Upstream {
   pub keep_alive_timeout: u64,
   pub keep_alive_while_idle: bool,
   pub proxy: Option<Proxy>,
+  pub connect_timeout: u64,
+  pub timeout: u64,
+  pub tcp_keep_alive: u64,
+  pub user_agent: String,
 }

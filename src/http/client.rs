@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::Server;
+use crate::config::{Server, Upstream};
 
 #[derive(Clone)]
 pub struct HttpClient {
@@ -20,26 +20,33 @@ impl Default for HttpClient {
 
 impl HttpClient {
   pub fn new(server: Server) -> Self {
-    let mut builder = Client::builder()
-      .pool_max_idle_per_host(200)
-      .tcp_keepalive(Some(Duration::from_secs(5)))
-      .timeout(Duration::from_secs(60))
-      .connect_timeout(Duration::from_secs(60))
-      .user_agent("Tailcall/1.0");
+    let upstream_settings = &server.upstream.clone().unwrap_or(Upstream {
+      pool_idle_timeout: 60,
+      pool_max_idle_per_host: 200,
+      keep_alive_interval: 60,
+      keep_alive_timeout: 60,
+      keep_alive_while_idle: false,
+      proxy: None,
+      connect_timeout: 60,
+      timeout: 60,
+      tcp_keep_alive: 5,
+      user_agent: "Tailcall/1.0".to_string(),
+    });
 
-    if let Some(ref upstream) = server.upstream {
-      builder = builder
-        .http2_keep_alive_interval(Some(Duration::from_millis(upstream.keep_alive_interval)))
-        .http2_keep_alive_timeout(Duration::from_millis(upstream.keep_alive_timeout))
-        .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
-        .pool_idle_timeout(Some(Duration::from_millis(upstream.pool_idle_timeout)))
-        .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-    }
+    let mut builder = Client::builder()
+      .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))
+      .timeout(Duration::from_secs(upstream_settings.timeout))
+      .connect_timeout(Duration::from_secs(upstream_settings.connect_timeout))
+      .http2_keep_alive_interval(Some(Duration::from_millis(upstream_settings.keep_alive_interval)))
+      .http2_keep_alive_timeout(Duration::from_millis(upstream_settings.keep_alive_timeout))
+      .http2_keep_alive_while_idle(upstream_settings.keep_alive_while_idle)
+      .pool_idle_timeout(Some(Duration::from_millis(upstream_settings.pool_idle_timeout)))
+      .pool_max_idle_per_host(upstream_settings.pool_max_idle_per_host)
+      .user_agent(upstream_settings.user_agent.clone());
 
     if let Some(ref upstream) = server.upstream {
       if let Some(ref proxy) = upstream.proxy {
-      builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
-
+        builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
       }
     }
 
