@@ -67,14 +67,9 @@ fn to_definitions<'a>(
     let dbl_usage = input_types.contains(name) && output_types.contains(name);
     if let Some(variants) = &type_.variants {
       if !variants.is_empty() {
-        let config = EnumTypeConfig {
-            etc_name: name,
-            etc_type_: type_,
-            etc_variants: variants.clone(),
-        };
+        let config = EnumTypeConfig { etc_name: name, etc_type_: type_, etc_variants: variants.clone() };
         to_enum_type_definition(config).trace(name)
-    }
-     else {
+      } else {
         Valid::fail("No variants found for enum".to_string())
       }
     } else if type_.scalar {
@@ -133,13 +128,13 @@ fn to_enum_type_definition(config: EnumTypeConfig) -> Valid<Definition> {
   let EnumTypeConfig { etc_name, etc_type_, etc_variants } = config;
 
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
-      name: etc_name.to_string(),
-      directives: Vec::new(),
-      description: etc_type_.doc.clone(),
-      enum_values: etc_variants
-          .iter()
-          .map(|variant| EnumValueDefinition { description: None, name: variant.clone(), directives: Vec::new() })
-          .collect(),
+    name: etc_name.to_string(),
+    directives: Vec::new(),
+    description: etc_type_.doc.clone(),
+    enum_values: etc_variants
+      .iter()
+      .map(|variant| EnumValueDefinition { description: None, name: variant.clone(), directives: Vec::new() })
+      .collect(),
   });
 
   Valid::Ok(enum_type_definition)
@@ -180,22 +175,16 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>> {
   let fields: Vec<Option<blueprint::FieldDefinition>> = type_of.fields.iter().validate_all(|(name, field)| {
-      validate_field_type_exist(config, field)
-          .validate_or({
-              let field_config = FieldConfig {
-                  fc_type_of: type_of,
-                  fc_config: config,
-                  fc_name: name,
-                  fc_field: field,
-              };
-              to_field(field_config)
-          })
-          .trace(name)
+    validate_field_type_exist(config, field)
+      .validate_or({
+        let field_config = FieldConfig { fc_type_of: type_of, fc_config: config, fc_name: name, fc_field: field };
+        to_field(field_config)
+      })
+      .trace(name)
   })?;
 
   Ok(fields.into_iter().flatten().collect())
 }
-
 
 struct FieldConfig<'a> {
   fc_type_of: &'a config::Type,
@@ -215,15 +204,14 @@ fn to_field(config: FieldConfig) -> Valid<Option<blueprint::FieldDefinition>> {
     description: fc_field.doc.clone(),
     args,
     of_type: to_type(TypeDetails {
-        td_name: field_type.to_string(),
-        td_list: fc_field.list,
-        td_non_null: fc_field.required,
-        td_list_type_required: fc_field.list_type_required,
+      td_name: field_type.to_string(),
+      td_list: fc_field.list,
+      td_non_null: fc_field.required,
+      td_list_type_required: fc_field.list_type_required,
     }),
     directives: Vec::new(),
     resolver: None,
-};
-
+  };
 
   let field_definition = update_http(fc_field, field_definition, fc_config).trace("@http")?;
   let field_definition = update_unsafe(fc_field.clone(), field_definition);
@@ -232,11 +220,11 @@ fn to_field(config: FieldConfig) -> Valid<Option<blueprint::FieldDefinition>> {
     uifa_field: fc_field,
     uifa_base_field: field_definition,
     uifa_config: fc_config,
-};
+  };
 
-let field_definition = update_inline_field(args).trace("@inline")?;
-let field_modifier = FieldModifier::new(fc_field, fc_type_of, fc_config);
-let maybe_field_definition = field_modifier.update_modify(field_definition).trace("@modify")?;
+  let field_definition = update_inline_field(args).trace("@inline")?;
+  let field_modifier = FieldModifier::new(fc_field, fc_type_of, fc_config);
+  let maybe_field_definition = field_modifier.update_modify(field_definition).trace("@modify")?;
   Ok(maybe_field_definition)
 }
 
@@ -249,21 +237,14 @@ struct TypeDetails {
 
 fn to_type(details: TypeDetails) -> Type {
   if details.td_list {
-      Type::ListType {
-          of_type: Box::new(Type::NamedType { 
-              name: details.td_name, 
-              non_null: details.td_list_type_required 
-          }),
-          non_null: details.td_non_null,
-      }
+    Type::ListType {
+      of_type: Box::new(Type::NamedType { name: details.td_name, non_null: details.td_list_type_required }),
+      non_null: details.td_non_null,
+    }
   } else {
-      Type::NamedType { 
-          name: details.td_name, 
-          non_null: details.td_non_null 
-      }
+    Type::NamedType { name: details.td_name, non_null: details.td_non_null }
   }
 }
-
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<()> {
   let field_type = &field.type_of;
@@ -336,34 +317,34 @@ struct FieldModifier<'a> {
 
 impl<'a> FieldModifier<'a> {
   fn new(fm_field: &'a config::Field, fm_type_: &'a config::Type, fm_config: &'a Config) -> Self {
-      Self { fm_field, fm_type_, fm_config }
+    Self { fm_field, fm_type_, fm_config }
   }
 
   fn update_modify(&self, mut b_field: FieldDefinition) -> Valid<Option<FieldDefinition>> {
-      match self.fm_field.modify.as_ref() {
-          Some(modify) => {
-              if modify.omit {
-                  Ok(None)
-              } else if let Some(new_name) = &modify.name {
-                  for name in self.fm_type_.implements.iter() {
-                      let interface = self.fm_config.find_type(name);
-                      if let Some(interface) = interface {
-                          if interface.fields.iter().any(|(name, _)| name == new_name) {
-                              return Valid::fail("Field is already implemented from interface".to_string());
-                          }
-                      }
-                  }
-
-                  let lambda = Lambda::context_field(b_field.name.clone());
-                  b_field = b_field.resolver_or_default(lambda, |r| r);
-                  b_field = b_field.name(new_name.clone());
-                  Valid::Ok(Some(b_field))
-              } else {
-                  Valid::Ok(Some(b_field))
+    match self.fm_field.modify.as_ref() {
+      Some(modify) => {
+        if modify.omit {
+          Ok(None)
+        } else if let Some(new_name) = &modify.name {
+          for name in self.fm_type_.implements.iter() {
+            let interface = self.fm_config.find_type(name);
+            if let Some(interface) = interface {
+              if interface.fields.iter().any(|(name, _)| name == new_name) {
+                return Valid::fail("Field is already implemented from interface".to_string());
               }
+            }
           }
-          None => Valid::Ok(Some(b_field)),
+
+          let lambda = Lambda::context_field(b_field.name.clone());
+          b_field = b_field.resolver_or_default(lambda, |r| r);
+          b_field = b_field.name(new_name.clone());
+          Valid::Ok(Some(b_field))
+        } else {
+          Valid::Ok(Some(b_field))
+        }
       }
+      None => Valid::Ok(Some(b_field)),
+    }
   }
 }
 
@@ -385,41 +366,37 @@ struct ProcessPathArgs<'a> {
 
 fn process_path(args: ProcessPathArgs) -> Valid<Type> {
   if let Some((field_name, remaining_path)) = args.ppa_path.split_first() {
-      if field_name.parse::<usize>().is_ok() {
-          let mut modified_field = args.ppa_field.clone();
-          modified_field.list = false;
-          return process_path(ProcessPathArgs {
-            ppa_path: remaining_path,
-            ppa_field: &modified_field,
-              ..args
-          });
-      }
-      let target_type_info = args.ppa_type_info
-          .fields
-          .get(field_name)
-          .map(|_| args.ppa_type_info)
-          .or_else(|| args.ppa_config.find_type(&args.ppa_field.type_of));
+    if field_name.parse::<usize>().is_ok() {
+      let mut modified_field = args.ppa_field.clone();
+      modified_field.list = false;
+      return process_path(ProcessPathArgs { ppa_path: remaining_path, ppa_field: &modified_field, ..args });
+    }
+    let target_type_info = args
+      .ppa_type_info
+      .fields
+      .get(field_name)
+      .map(|_| args.ppa_type_info)
+      .or_else(|| args.ppa_config.find_type(&args.ppa_field.type_of));
 
-      if let Some(type_info) = target_type_info {
-        return process_field_within_type(ProcessArgs {
-          pa_field: args.ppa_field,
-          pa_field_name: field_name,
-          pa_remaining_path: remaining_path,
-          pa_type_info: type_info,
-          pa_is_required: args.ppa_is_required,
-          pa_config: args.ppa_config,
-          pa_invalid_path_handler: args.ppa_invalid_path_handler,
+    if let Some(type_info) = target_type_info {
+      return process_field_within_type(ProcessArgs {
+        pa_field: args.ppa_field,
+        pa_field_name: field_name,
+        pa_remaining_path: remaining_path,
+        pa_type_info: type_info,
+        pa_is_required: args.ppa_is_required,
+        pa_config: args.ppa_config,
+        pa_invalid_path_handler: args.ppa_invalid_path_handler,
       });
-      
-      }
-      return (args.ppa_invalid_path_handler)(field_name, args.ppa_path);
+    }
+    return (args.ppa_invalid_path_handler)(field_name, args.ppa_path);
   }
 
   Valid::Ok(to_type(TypeDetails {
-      td_name: args.ppa_field.type_of.to_string(),
-      td_list: args.ppa_field.list,
-      td_non_null: args.ppa_is_required,
-      td_list_type_required: args.ppa_field.list_type_required,
+    td_name: args.ppa_field.type_of.to_string(),
+    td_list: args.ppa_field.list,
+    td_non_null: args.ppa_is_required,
+    td_list_type_required: args.ppa_field.list_type_required,
   }))
 }
 
@@ -435,70 +412,68 @@ struct ProcessArgs<'a> {
 
 fn process_field_within_type(args: ProcessArgs) -> Valid<Type> {
   if let Some(next_field) = args.pa_type_info.fields.get(args.pa_field_name) {
-      if needs_resolving(next_field) {
-          return Valid::<Type>::validate_or(
-              Valid::fail(format!(
-                  "Inline can't be done because of {} resolver at [{}.{}]",
-                  next_field.http.as_ref().map(|_| "http").unwrap_or_else(|| "unsafe"),
-                  args.pa_field.type_of,
-                  args.pa_field_name
-              )),
-              process_path(ProcessPathArgs {
-                  ppa_path: args.pa_remaining_path,
-                  ppa_field: next_field,
-                  ppa_type_info: args.pa_type_info,
-                  ppa_is_required: args.pa_is_required,
-                  ppa_config: args.pa_config,
-                  ppa_invalid_path_handler: args.pa_invalid_path_handler,
-              }),
-          );
-      }
+    if needs_resolving(next_field) {
+      return Valid::<Type>::validate_or(
+        Valid::fail(format!(
+          "Inline can't be done because of {} resolver at [{}.{}]",
+          next_field.http.as_ref().map(|_| "http").unwrap_or_else(|| "unsafe"),
+          args.pa_field.type_of,
+          args.pa_field_name
+        )),
+        process_path(ProcessPathArgs {
+          ppa_path: args.pa_remaining_path,
+          ppa_field: next_field,
+          ppa_type_info: args.pa_type_info,
+          ppa_is_required: args.pa_is_required,
+          ppa_config: args.pa_config,
+          ppa_invalid_path_handler: args.pa_invalid_path_handler,
+        }),
+      );
+    }
 
-      let _next_is_required = args.pa_is_required && next_field.required;
-      if is_scalar(&next_field.type_of) {
-          return process_path(ProcessPathArgs {
-              ppa_path: args.pa_remaining_path,
-              ppa_field: next_field,
-              ppa_type_info: args.pa_type_info,
-              ppa_is_required: args.pa_is_required,
-              ppa_config: args.pa_config,
-              ppa_invalid_path_handler: args.pa_invalid_path_handler,
-          });
-      }
+    let _next_is_required = args.pa_is_required && next_field.required;
+    if is_scalar(&next_field.type_of) {
+      return process_path(ProcessPathArgs {
+        ppa_path: args.pa_remaining_path,
+        ppa_field: next_field,
+        ppa_type_info: args.pa_type_info,
+        ppa_is_required: args.pa_is_required,
+        ppa_config: args.pa_config,
+        ppa_invalid_path_handler: args.pa_invalid_path_handler,
+      });
+    }
 
-      if let Some(_next_type_info) = args.pa_config.find_type(&next_field.type_of) {
+    if let Some(_next_type_info) = args.pa_config.find_type(&next_field.type_of) {
+      let of_type = process_path(ProcessPathArgs {
+        ppa_path: args.pa_remaining_path,
+        ppa_field: next_field,
+        ppa_type_info: args.pa_type_info,
+        ppa_is_required: args.pa_is_required,
+        ppa_config: args.pa_config,
+        ppa_invalid_path_handler: args.pa_invalid_path_handler,
+      })?;
 
-          let of_type = process_path(ProcessPathArgs {
-              ppa_path: args.pa_remaining_path,
-              ppa_field: next_field,
-              ppa_type_info: args.pa_type_info,
-              ppa_is_required: args.pa_is_required,
-              ppa_config: args.pa_config,
-              ppa_invalid_path_handler: args.pa_invalid_path_handler,
-          })?;
-
-          return if next_field.list {
-              Valid::Ok(ListType { of_type: Box::new(of_type), non_null: args.pa_is_required })
-          } else {
-              Ok(of_type)
-          };
-      }
+      return if next_field.list {
+        Valid::Ok(ListType { of_type: Box::new(of_type), non_null: args.pa_is_required })
+      } else {
+        Ok(of_type)
+      };
+    }
   } else if let Some((head, tail)) = args.pa_remaining_path.split_first() {
-      if let Some(field) = args.pa_type_info.fields.get(head) {
-          return process_path(ProcessPathArgs {
-              ppa_path: tail,
-              ppa_field: field,
-              ppa_type_info: args.pa_type_info,
-              ppa_is_required: args.pa_is_required,
-              ppa_config: args.pa_config,
-              ppa_invalid_path_handler: args.pa_invalid_path_handler,
-          });
-      }
+    if let Some(field) = args.pa_type_info.fields.get(head) {
+      return process_path(ProcessPathArgs {
+        ppa_path: tail,
+        ppa_field: field,
+        ppa_type_info: args.pa_type_info,
+        ppa_is_required: args.pa_is_required,
+        ppa_config: args.pa_config,
+        ppa_invalid_path_handler: args.pa_invalid_path_handler,
+      });
+    }
   }
 
   (args.pa_invalid_path_handler)(args.pa_field_name, args.pa_remaining_path)
 }
-
 
 // Main function to update an inline field
 struct UpdateInlineFieldArgs<'a> {
@@ -509,37 +484,42 @@ struct UpdateInlineFieldArgs<'a> {
 }
 
 fn update_inline_field(args: UpdateInlineFieldArgs) -> Valid<FieldDefinition> {
-  let inlined_path = args.uifa_field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
+  let inlined_path = args
+    .uifa_field
+    .inline
+    .as_ref()
+    .map(|x| x.path.clone())
+    .unwrap_or_default();
   let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
-      Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
+    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
   };
   let has_index = inlined_path.iter().any(|s| {
-      let re = Regex::new(r"^\d+$").unwrap();
-      re.is_match(s)
+    let re = Regex::new(r"^\d+$").unwrap();
+    re.is_match(s)
   });
   if let Some(InlineType { path }) = args.uifa_field.clone().inline {
-      return match process_path(ProcessPathArgs {
-          ppa_path: &inlined_path,
-          ppa_field: args.uifa_field,
-          ppa_type_info: args.uifa_type_info,
-          ppa_is_required: false,
-          ppa_config: args.uifa_config,
-          ppa_invalid_path_handler: &handle_invalid_path,
-      }) {
-          Valid::Ok(of_type) => {
-              let mut updated_base_field = args.uifa_base_field;
-              let resolver = Lambda::context_path(path.clone());
-              if has_index {
-                  updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-              } else {
-                  updated_base_field.of_type = of_type;
-              }
+    return match process_path(ProcessPathArgs {
+      ppa_path: &inlined_path,
+      ppa_field: args.uifa_field,
+      ppa_type_info: args.uifa_type_info,
+      ppa_is_required: false,
+      ppa_config: args.uifa_config,
+      ppa_invalid_path_handler: &handle_invalid_path,
+    }) {
+      Valid::Ok(of_type) => {
+        let mut updated_base_field = args.uifa_base_field;
+        let resolver = Lambda::context_path(path.clone());
+        if has_index {
+          updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+        } else {
+          updated_base_field.of_type = of_type;
+        }
 
-              updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-              Valid::Ok(updated_base_field)
-          }
-          Valid::Err(err) => Valid::Err(err),
-      };
+        updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
+        Valid::Ok(updated_base_field)
+      }
+      Valid::Err(err) => Valid::Err(err),
+    };
   }
   Valid::Ok(args.uifa_base_field)
 }
@@ -555,8 +535,8 @@ fn to_args(field: &config::Field) -> Valid<Vec<InputFieldDefinition>> {
         td_list: arg.list,
         td_non_null: arg.required,
         td_list_type_required: false,
-    }),
-    
+      }),
+
       default_value: arg.default_value.clone(),
     })
   })
@@ -569,25 +549,15 @@ pub struct SchemaParams<'a> {
 }
 
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-  let params = SchemaParams {
-      type_of: &field.type_of,
-      required: field.required,
-      list: field.list,
-      config,
-  };
+  let params = SchemaParams { type_of: &field.type_of, required: field.required, list: field.list, config };
   to_json_schema(params)
 }
 
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
   let mut schema_fields = HashMap::new();
   for (name, arg) in args.iter() {
-      let params = SchemaParams {
-          type_of: &arg.type_of,
-          required: arg.required,
-          list: arg.list,
-          config,
-      };
-      schema_fields.insert(name.clone(), to_json_schema(params));
+    let params = SchemaParams { type_of: &arg.type_of, required: arg.required, list: arg.list, config };
+    schema_fields.insert(name.clone(), to_json_schema(params));
   }
   JsonSchema::Obj(schema_fields)
 }
@@ -595,37 +565,36 @@ pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) ->
 pub fn to_json_schema(params: SchemaParams) -> JsonSchema {
   let type_ = params.config.find_type(params.type_of);
   let schema = match type_ {
-      Some(type_) => {
-          let mut schema_fields = HashMap::new();
-          for (name, field) in type_.fields.iter() {
-              if field.unsafe_operation.is_none() && field.http.is_none() {
-                  schema_fields.insert(name.clone(), to_json_schema_for_field(field, params.config));
-              }
-          }
-          JsonSchema::Obj(schema_fields)
+    Some(type_) => {
+      let mut schema_fields = HashMap::new();
+      for (name, field) in type_.fields.iter() {
+        if field.unsafe_operation.is_none() && field.http.is_none() {
+          schema_fields.insert(name.clone(), to_json_schema_for_field(field, params.config));
+        }
       }
-      None => match params.type_of {
-          "String" => JsonSchema::Str {},
-          "Int" => JsonSchema::Num {},
-          "Boolean" => JsonSchema::Bool {},
-          "JSON" => JsonSchema::Obj(HashMap::new()),
-          _ => JsonSchema::Str {},
-      },
+      JsonSchema::Obj(schema_fields)
+    }
+    None => match params.type_of {
+      "String" => JsonSchema::Str {},
+      "Int" => JsonSchema::Num {},
+      "Boolean" => JsonSchema::Bool {},
+      "JSON" => JsonSchema::Obj(HashMap::new()),
+      _ => JsonSchema::Str {},
+    },
   };
 
   if !params.required {
-      if params.list {
-          JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
-      } else {
-          JsonSchema::Opt(Box::new(schema))
-      }
+    if params.list {
+      JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
+    } else {
+      JsonSchema::Opt(Box::new(schema))
+    }
   } else if params.list {
-      JsonSchema::Arr(Box::new(schema))
+    JsonSchema::Arr(Box::new(schema))
   } else {
-      schema
+    schema
   }
 }
-
 
 impl TryFrom<&Config> for Blueprint {
   type Error = ValidationError<String>;

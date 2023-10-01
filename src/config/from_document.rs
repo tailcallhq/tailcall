@@ -62,22 +62,22 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<Str
     let type_opt = match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => {
         let args = ObjectTypeArgs {
-            fields: &object_type.fields,
-            description: &type_definition.node.description,
-            interface: false,
-            implements: &object_type.implements,
+          fields: &object_type.fields,
+          description: &type_definition.node.description,
+          interface: false,
+          implements: &object_type.implements,
         };
         Some(to_object_type(args))
-    },
-    TypeKind::Interface(interface_type) => {
+      }
+      TypeKind::Interface(interface_type) => {
         let args = ObjectTypeArgs {
-            fields: &interface_type.fields,
-            description: &type_definition.node.description,
-            interface: true,
-            implements: &interface_type.implements,
+          fields: &interface_type.fields,
+          description: &type_definition.node.description,
+          interface: true,
+          implements: &interface_type.implements,
         };
         Some(to_object_type(args))
-    },
+      }
       TypeKind::Enum(enum_type) => Some(to_enum(enum_type)),
       TypeKind::InputObject(input_object_type) => Some(to_input_object(input_object_type)),
       TypeKind::Union(_) => None,
@@ -118,7 +118,7 @@ fn to_object_type(args: ObjectTypeArgs) -> config::Type {
   let fields = to_fields(args.fields);
   let doc = args.description.as_ref().map(|pos| pos.node.clone());
   let implements = args.implements.iter().map(|pos| pos.node.to_string()).collect();
-  
+
   config::Type { fields, doc, interface: args.interface, implements, ..Default::default() }
 }
 
@@ -157,24 +157,24 @@ fn to_input_object_fields(
 }
 fn to_field(field_definition: &FieldDefinition) -> config::Field {
   let args = CommonFieldArgs {
-      type_: &field_definition.ty.node,
-      base: &field_definition.ty.node.base,
-      nullable: field_definition.ty.node.nullable,
-      args: to_args(field_definition),
-      description: &field_definition.description,
-      directives: &field_definition.directives,
+    type_: &field_definition.ty.node,
+    base: &field_definition.ty.node.base,
+    nullable: field_definition.ty.node.nullable,
+    args: to_args(field_definition),
+    description: &field_definition.description,
+    directives: &field_definition.directives,
   };
   to_common_field(args)
 }
 
 fn to_input_object_field(field_definition: &InputValueDefinition) -> config::Field {
   let args = CommonFieldArgs {
-      type_: &field_definition.ty.node,
-      base: &field_definition.ty.node.base,
-      nullable: field_definition.ty.node.nullable,
-      args: BTreeMap::new(),
-      description: &field_definition.description,
-      directives: &field_definition.directives,
+    type_: &field_definition.ty.node,
+    base: &field_definition.ty.node.base,
+    nullable: field_definition.ty.node.nullable,
+    args: BTreeMap::new(),
+    description: &field_definition.description,
+    directives: &field_definition.directives,
   };
   to_common_field(args)
 }
@@ -200,17 +200,17 @@ fn to_common_field(args: CommonFieldArgs) -> config::Field {
   let batch = to_batch(args.directives);
 
   config::Field {
-      type_of,
-      list,
-      required: !args.nullable,
-      list_type_required,
-      args: args.args,
-      doc,
-      modify,
-      inline,
-      http,
-      unsafe_operation,
-      batch,
+    type_of,
+    list,
+    required: !args.nullable,
+    list_type_required,
+    args: args.args,
+    doc,
+    modify,
+    inline,
+    http,
+    unsafe_operation,
+    batch,
   }
 }
 
