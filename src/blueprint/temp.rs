@@ -1,3 +1,5 @@
+// #![allow(clippy::too_many_arguments)]
+
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
@@ -454,7 +456,7 @@ fn process_field_within_type(args: ProcessArgs) -> Valid<Type> {
           );
       }
 
-      let _next_is_required = args.pa_is_required && next_field.required;
+      let next_is_required = args.pa_is_required && next_field.required;
       if is_scalar(&next_field.type_of) {
           return process_path(ProcessPathArgs {
               ppa_path: args.pa_remaining_path,
@@ -466,7 +468,7 @@ fn process_field_within_type(args: ProcessArgs) -> Valid<Type> {
           });
       }
 
-      if let Some(_next_type_info) = args.pa_config.find_type(&next_field.type_of) {
+      if let Some(next_type_info) = args.pa_config.find_type(&next_field.type_of) {
 
           let of_type = process_path(ProcessPathArgs {
               ppa_path: args.pa_remaining_path,
