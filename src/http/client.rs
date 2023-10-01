@@ -37,10 +37,10 @@ impl HttpClient {
       .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))
       .timeout(Duration::from_secs(upstream_settings.timeout))
       .connect_timeout(Duration::from_secs(upstream_settings.connect_timeout))
-      .http2_keep_alive_interval(Some(Duration::from_millis(upstream_settings.keep_alive_interval)))
-      .http2_keep_alive_timeout(Duration::from_millis(upstream_settings.keep_alive_timeout))
+      .http2_keep_alive_interval(Some(Duration::from_secs(upstream_settings.keep_alive_interval)))
+      .http2_keep_alive_timeout(Duration::from_secs(upstream_settings.keep_alive_timeout))
       .http2_keep_alive_while_idle(upstream_settings.keep_alive_while_idle)
-      .pool_idle_timeout(Some(Duration::from_millis(upstream_settings.pool_idle_timeout)))
+      .pool_idle_timeout(Some(Duration::from_secs(upstream_settings.pool_idle_timeout)))
       .pool_max_idle_per_host(upstream_settings.pool_max_idle_per_host)
       .user_agent(upstream_settings.user_agent.clone());
 
