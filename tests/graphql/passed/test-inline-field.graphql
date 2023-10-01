@@ -4,7 +4,7 @@ schema {
 }
 
 type User {
-  address: Address @inline(path: ["geo", "lat"])
+  address: Address @inline(path: ["address","geo", "lat"])
 }
 
 type Address {

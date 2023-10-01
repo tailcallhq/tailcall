@@ -12,7 +12,7 @@ type Query {
 }
 
 type User {
-  address: Address @inline(path: ["street"])
+  address: Address @inline(path: ["address","street"])
 }
 
 #> client-query

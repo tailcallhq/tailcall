@@ -24,10 +24,6 @@ impl<E: Display> Display for ValidationError<E> {
 }
 
 impl<E> ValidationError<E> {
-  pub fn map<E1, F: Fn(E) -> E1>(self, f: F) -> ValidationError<E1> {
-    ValidationError(self.0.into_iter().map(|e| e.map(&f)).collect())
-  }
-
   pub fn as_vec(&self) -> &Vec<Cause<E>> {
     &self.0
   }
@@ -66,8 +62,8 @@ impl<E> ValidationError<E> {
 
 impl<E: Display + Debug> std::error::Error for ValidationError<E> {}
 
-impl From<Cause<String>> for ValidationError<String> {
-  fn from(value: Cause<String>) -> Self {
+impl<E> From<Cause<E>> for ValidationError<E> {
+  fn from(value: Cause<E>) -> Self {
     ValidationError(vec![value])
   }
 }

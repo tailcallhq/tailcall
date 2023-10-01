@@ -220,14 +220,8 @@ fn to_field(
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
+  let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
-  let maybe_field_definition = match maybe_field_definition {
-    Some(field_definition) => {
-      Some(update_inline_field(type_of, name, field, field_definition, config).trace("@inline")?)
-    }
-    None => None,
-  };
-
   Ok(maybe_field_definition)
 }
 
@@ -369,42 +363,28 @@ fn process_path(
         false,
         config,
         invalid_path_handler,
-      )
-      .trace(field_name);
+      );
     }
-    if let Some(next_field) = type_info.fields.get(field_name) {
-      let next_is_required = is_required && next_field.required.unwrap_or(false);
-      if is_scalar(&next_field.type_of) {
-        return process_path(
-          remaining_path,
-          next_field,
-          type_info,
-          next_is_required,
-          config,
-          invalid_path_handler,
-        )
-        .trace(field_name);
-      }
-      if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-        let of_type = process_path(
-          remaining_path,
-          next_field,
-          next_type_info,
-          next_is_required,
-          config,
-          invalid_path_handler,
-        )
-        .trace(field_name)?;
+    let target_type_info = type_info
+      .fields
+      .get(field_name)
+      .map(|_| type_info)
+      .or_else(|| config.find_type(&field.type_of));
 
-        return if field.list.unwrap_or(false) {
-          Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
-        } else {
-          Ok(of_type)
-        };
-      }
+    if let Some(type_info) = target_type_info {
+      return process_field_within_type(
+        field,
+        field_name,
+        remaining_path,
+        type_info,
+        is_required,
+        config,
+        invalid_path_handler,
+      );
     }
-    return invalid_path_handler(field_name, path).trace(field_name);
+    return invalid_path_handler(field_name, path);
   }
+
   Valid::Ok(to_type(
     &field.type_of,
     &field.list,
@@ -413,54 +393,99 @@ fn process_path(
   ))
 }
 
+fn process_field_within_type(
+  field: &config::Field,
+  field_name: &str,
+  remaining_path: &[String],
+  type_info: &config::Type,
+  is_required: bool,
+  config: &Config,
+  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type>,
+) -> Valid<Type> {
+  if let Some(next_field) = type_info.fields.get(field_name) {
+    if needs_resolving(next_field) {
+      return Valid::<Type>::validate_or(
+        Valid::fail(format!(
+          "Inline can't be done because of {} resolver at [{}.{}]",
+          next_field.http.as_ref().map(|_| "http").unwrap_or_else(|| "unsafe"),
+          field.type_of,
+          field_name
+        )),
+        process_path(
+          remaining_path,
+          next_field,
+          type_info,
+          is_required,
+          config,
+          invalid_path_handler,
+        ),
+      );
+    }
+
+    let next_is_required = is_required && next_field.required.unwrap_or(false);
+    if is_scalar(&next_field.type_of) {
+      return process_path(
+        remaining_path,
+        next_field,
+        type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      );
+    }
+
+    if let Some(next_type_info) = config.find_type(&next_field.type_of) {
+      let of_type = process_path(
+        remaining_path,
+        next_field,
+        next_type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      )?;
+
+      return if next_field.list.unwrap_or(false) {
+        Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
+      } else {
+        Ok(of_type)
+      };
+    }
+  } else if let Some((head, tail)) = remaining_path.split_first() {
+    if let Some(field) = type_info.fields.get(head) {
+      return process_path(tail, field, type_info, is_required, config, invalid_path_handler);
+    }
+  }
+
+  invalid_path_handler(field_name, remaining_path)
+}
+
 // Main function to update an inline field
 fn update_inline_field(
   type_info: &config::Type,
-  field_name: &str,
   field: &config::Field,
   base_field: FieldDefinition,
   config: &Config,
 ) -> Valid<FieldDefinition> {
   let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
   let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
-    Valid::fail("Field not found at given path".to_string())
+    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
   };
   let has_index = inlined_path.iter().any(|s| {
     let re = Regex::new(r"^\d+$").unwrap();
     re.is_match(s)
   });
-  let build_path_strings = |name: String| -> Vec<String> {
-    let mut path: Vec<String> = inlined_path.iter().map(|s| s.to_string()).collect();
-    path.insert(0, name);
-    path
-  };
-
   if let Some(InlineType { path }) = field.clone().inline {
-    return match process_path(
-      &build_path_strings(field_name.to_string()),
-      field,
-      type_info,
-      false,
-      config,
-      &handle_invalid_path,
-    ) {
+    return match process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path) {
       Valid::Ok(of_type) => {
-        let new_path = if needs_resolving(field) {
-          path
-        } else {
-          let mut new_path = vec![field_name.to_string()];
-          new_path.extend(path.iter().cloned());
-          new_path
-        };
         let mut updated_base_field = base_field;
-        let resolver = Lambda::context_path(new_path.clone());
+        let resolver = Lambda::context_path(path.clone());
         if has_index {
           updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
         } else {
           updated_base_field.of_type = of_type;
         }
 
-        updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(new_path.clone()));
+        updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
         Valid::Ok(updated_base_field)
       }
       Valid::Err(err) => Valid::Err(err),
