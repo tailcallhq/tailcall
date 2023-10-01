@@ -36,19 +36,10 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Format code
+      - name: build
         uses: actions-rs/cargo@v1
         with:
-          toolchain: nightly
-          command: fmt
-          args: -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: clippy
-          args: --all-targets --all-features -- -D warnings
+          command: build
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
@@ -62,6 +53,20 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
           fail_ci_if_error: true
+
+      - name: Format code
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: nightly
+          command: fmt
+          args: -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: nightly
+          command: clippy
+          args: --all-targets --all-features -- -D warnings
 
   deploy:
     name: Deploy app
