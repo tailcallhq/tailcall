@@ -42,25 +42,25 @@ jobs:
           command: build
           args: --release
           
-      - name: Format code
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: fmt
-          args: -- --check
-      
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
-
+  
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
           toolchain: nightly
           command: clippy
           args: --all-targets --all-features -- -D warnings
+
+      - name: Format code
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: nightly
+          command: fmt
+          args: -- --check
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
