@@ -11,7 +11,7 @@ use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
 
-fn skip_if_default<T: Default + Eq>(val: &T) -> bool {
+fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
 }
 
@@ -176,7 +176,7 @@ impl Field {
   }
   pub fn has_batched_resolver(&self) -> bool {
     if let Some(http) = self.http.as_ref() {
-      http.match_key.is_some() || http.match_path.is_some()
+      http.match_key.is_some() || !http.match_path.is_empty()
     } else {
       false
     }
@@ -196,7 +196,7 @@ pub struct Unsafe {
 pub struct ModifyField {
   pub name: Option<String>,
   #[serde(default)]
-  #[serde(skip_serializing_if = "skip_if_default")]
+  #[serde(skip_serializing_if = "is_default")]
   pub omit: bool,
 }
 
@@ -227,17 +227,23 @@ pub struct Union {
 pub struct Http {
   pub path: String,
   #[serde(default)]
-  #[serde(skip_serializing_if = "skip_if_default")]
+  #[serde(skip_serializing_if = "is_default")]
   pub method: Method,
-  pub query: Option<BTreeMap<String, String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub query: BTreeMap<String, String>,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
-  pub match_path: Option<Vec<String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub match_path: Vec<String>,
   pub match_key: Option<String>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
-  pub headers: Option<BTreeMap<String, String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: BTreeMap<String, String>,
 }
 
 impl Http {
