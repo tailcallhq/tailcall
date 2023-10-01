@@ -17,9 +17,8 @@ pub struct Server {
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
-  pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
-  pub http: Option<HttpSettings>,
+  pub upstream: Option<Upstream>,
 }
 
 impl Server {
@@ -51,10 +50,11 @@ pub struct Proxy {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct HttpSettings {
+pub struct Upstream {
+  pub pool_idle_timeout: u64,
+  pub pool_max_idle_per_host: usize,
   pub keep_alive_interval: u64,
   pub keep_alive_timeout: u64,
   pub keep_alive_while_idle: bool,
-  pub pool_idle_timeout: u64,
-  pub pool_max_idle_per_host: usize,
+  pub proxy: Option<Proxy>,
 }

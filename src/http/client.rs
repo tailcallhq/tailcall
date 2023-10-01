@@ -27,17 +27,20 @@ impl HttpClient {
       .connect_timeout(Duration::from_secs(60))
       .user_agent("Tailcall/1.0");
 
-    if let Some(ref http_settings) = server.http {
+    if let Some(ref upstream) = server.upstream {
       builder = builder
-        .http2_keep_alive_interval(Some(Duration::from_millis(http_settings.keep_alive_interval)))
-        .http2_keep_alive_timeout(Duration::from_millis(http_settings.keep_alive_timeout))
-        .http2_keep_alive_while_idle(http_settings.keep_alive_while_idle)
-        .pool_idle_timeout(Some(Duration::from_millis(http_settings.pool_idle_timeout)))
-        .pool_max_idle_per_host(http_settings.pool_max_idle_per_host)
+        .http2_keep_alive_interval(Some(Duration::from_millis(upstream.keep_alive_interval)))
+        .http2_keep_alive_timeout(Duration::from_millis(upstream.keep_alive_timeout))
+        .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+        .pool_idle_timeout(Some(Duration::from_millis(upstream.pool_idle_timeout)))
+        .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
     }
 
-    if let Some(ref proxy) = server.proxy {
+    if let Some(ref upstream) = server.upstream {
+      if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
+
+      }
     }
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));

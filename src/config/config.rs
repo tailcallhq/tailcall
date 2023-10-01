@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Proxy, Server};
+use super::{Server, Upstream};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -23,8 +23,8 @@ impl Config {
     self.server.port.unwrap_or(8000)
   }
 
-  pub fn proxy(&self) -> Option<Proxy> {
-    self.server.proxy.clone()
+  pub fn upstream(&self) -> Option<Upstream> {
+    self.server.upstream.clone()
   }
 
   pub fn output_types(&self) -> HashSet<&String> {
