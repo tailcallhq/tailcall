@@ -1,5 +1,4 @@
 schema @server(
-    baseURL: "http://127.0.0.1:3000",
     addResponseHeaders: [["x-custom_header_1", "custom-value_1"],["x-custom_header_3", "custom-value 3"]]
     enableGraphiql: "/graphiql"
 ) {
@@ -16,6 +15,7 @@ type Post {
 type Query {
     post1: Post
     @http(
-        path: "/posts/{{headers.authorization}}"
+        path: "/posts/1"
+        baseURL: "http://jsonplaceholder.typicode.com"
     )
 }

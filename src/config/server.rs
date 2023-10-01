@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashSet};
 
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -42,11 +44,17 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn get_response_headers(&self) -> Option<BTreeMap<String, String>> {
-    self
-      .add_response_headers
-      .clone()
-      .map(|headers| headers.into_iter().map(|(k, v)| (k.to_lowercase(), v)).collect())
+  pub fn get_response_headers(&self) -> HeaderMap {
+    let mut header_map = HeaderMap::new();
+    if let Some(headers) = &self.add_response_headers {
+      for (k, v) in headers {
+        header_map.insert(
+          HeaderName::from_bytes(k.as_bytes()).unwrap(),
+          HeaderValue::from_bytes(v.as_bytes()).unwrap(),
+        );
+      }
+    }
+    header_map
   }
 }
 

@@ -3,7 +3,7 @@ use std::any::Any;
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Body, HeaderMap, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -97,6 +97,10 @@ impl GraphQLResponse {
       .body(Body::from(serde_json::to_string(&self.0)?))?;
 
     if self.0.is_ok() {
+      self.0.http_headers_iter().for_each(|(name, value)| {
+        response.headers_mut().insert(name, value);
+      });
+
       if let Some(cache_control) = self.0.cache_control().value() {
         response
           .headers_mut()
@@ -131,6 +135,32 @@ impl GraphQLResponse {
         }
       }
     };
+    self
+  }
+
+  /// Sets the `response_headers` for a given `GraphQLResponse`.
+  /// The function modifies the `GraphQLResponse` to set the `response_headers` to the specified `headers` value.
+  /// # Arguments
+  /// * `res` - The GraphQL response whose `response_headers` is to be set.
+  /// * `headers` - The `response_headers` value to be set for `response_headers`.
+  /// # Returns
+  /// * A modified `GraphQLResponse` with updated `response_headers`.
+
+  pub fn set_response_headers(mut self, headers: HeaderMap) -> GraphQLResponse {
+    match self.0 {
+      BatchResponse::Single(ref mut res) => {
+        for (key, value) in headers.iter() {
+          res.http_headers.insert(key, HeaderValue::from(value));
+        }
+      }
+      BatchResponse::Batch(ref mut list) => {
+        for res in list {
+          for (key, value) in headers.iter() {
+            res.http_headers.insert(key, HeaderValue::from(value));
+          }
+        }
+      }
+    }
     self
   }
 }
