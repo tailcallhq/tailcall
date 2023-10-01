@@ -8,7 +8,7 @@ input Foo {
 }
 
 type Query {
-  foo(input: Foo): String @modify(name: "data")
+  foo(input: Foo): String @http(path: "/foo") @modify(name: "data")
 }
 
 #> client-sdl
