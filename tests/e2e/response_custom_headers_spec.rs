@@ -15,7 +15,7 @@ mod test {
 
     let client = reqwest::Client::new();
 
-    let data = "{\"query\":\"query {\\n  post1{\\n    id\\n    title\\n  }\\n}\"}";
+    let data = "{\"query\":\"query {\\n  post{\\n    id\\n    title\\n  }\\n}\"}";
 
     let request = client
       .post("http://localhost:8000/graphql")

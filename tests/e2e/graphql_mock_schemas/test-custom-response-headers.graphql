@@ -13,7 +13,7 @@ type Post {
 }
 
 type Query {
-    post1: Post
+    post: Post
     @http(
         path: "/posts/1"
         baseURL: "http://jsonplaceholder.typicode.com"
