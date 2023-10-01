@@ -44,10 +44,8 @@ impl HttpClient {
       .pool_max_idle_per_host(upstream_settings.pool_max_idle_per_host)
       .user_agent(upstream_settings.user_agent.clone());
 
-    if let Some(ref upstream) = server.upstream {
-      if let Some(ref proxy) = upstream.proxy {
-        builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
-      }
+    if let Some(ref proxy) = upstream_settings.proxy {
+      builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
