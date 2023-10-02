@@ -39,4 +39,6 @@ pub enum Command {
     #[arg(short, long)]
     schema: bool,
   },
+  /// Initialize a new project
+  Init,
 }

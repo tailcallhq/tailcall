@@ -1,0 +1,3 @@
+schema:
+- "./test.graphql.graphql"
+- "./.tailcallrc.graphql
