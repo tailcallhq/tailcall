@@ -1,13 +1,16 @@
 #> server-sdl
+
 schema {
-    query: Query
-    enableGraphiql: "/graphql"
+    query: Query           
+    enableGraphiql: "/graphql" 
 }
 
 type Query {
-    hello: String
+    hello: String 
 }
 
 #> client-sdl
-type Failure
-@error(message: "Cannot use restricted route '/graphql' for enabling graphiql", trace: ["schema", "@server", "enableGraphiql"])
+@error(
+    message: "Cannot use restricted routes '/graphql' for enabling graphiql", 
+    trace: ["schema", "@server", "enableGraphiql"]
+)
