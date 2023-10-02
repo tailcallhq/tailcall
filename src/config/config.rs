@@ -263,57 +263,50 @@ impl Http {
   }
 
   fn get_arguments(self) -> Vec<Positioned<InputValueDefinition>> {
-    let mut args = vec![];
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("baseURL")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("path")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("method")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("query")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("body")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args.push(Http::pos(InputValueDefinition {
-      description: None,
-      name: Http::pos(Name::new("headers")),
-      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
-      default_value: None,
-      directives: vec![],
-    }));
-
-    args
+    vec![
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("baseURL")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("path")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("method")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("query")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("body")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+      Http::pos(InputValueDefinition {
+        description: None,
+        name: Http::pos(Name::new("headers")),
+        ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+        default_value: None,
+        directives: vec![],
+      }),
+    ]
   }
 
   pub fn directive_definition(self) -> DirectiveDefinition {
