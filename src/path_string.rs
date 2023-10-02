@@ -6,11 +6,11 @@ use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
 pub trait PathString {
-  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>>;
+  fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
 }
 
 impl PathString for serde_json::Value {
-  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
+  fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     self.get_path(path).and_then(|a| match a {
       serde_json::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
       serde_json::Value::Number(n) => Some(Cow::Owned(n.to_string())),
@@ -22,16 +22,16 @@ impl PathString for serde_json::Value {
 
 // TODO: improve performance
 impl PathString for EvaluationContext<'_> {
-  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
+  fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
     let mut result = None;
     if let Some((head, tail)) = path.split_first() {
-      result = match head.as_str() {
+      result = match head.as_ref() {
         "value" => ctx.path_value(tail).map(|v| v.to_owned()),
         "args" => ctx.args()?.get_path(tail).cloned(),
-        "headers" => ctx.get_header_as_value(&tail[0]),
+        "headers" => ctx.get_header_as_value(tail[0].as_ref()),
         "vars" => Some(async_graphql::Value::String(
-          ctx.req_ctx.server.vars.get(&tail[0]).cloned()?,
+          ctx.req_ctx.server.vars.get(tail[0].as_ref()).cloned()?,
         )),
         _ => None,
       }

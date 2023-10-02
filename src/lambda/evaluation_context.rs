@@ -40,7 +40,7 @@ impl<'a> EvaluationContext<'a> {
     Some(async_graphql::Value::Object(ctx.args.as_index_map().clone()))
   }
 
-  pub fn path_value(&'a self, path: &[String]) -> Option<&'a async_graphql::Value> {
+  pub fn path_value<T: AsRef<str>>(&'a self, path: &[T]) -> Option<&'a async_graphql::Value> {
     get_path_value(self.value()?, path)
   }
 
@@ -58,7 +58,7 @@ impl<'a> EvaluationContext<'a> {
   }
 }
 
-fn get_path_value<'a>(input: &'a async_graphql::Value, path: &[String]) -> Option<&'a async_graphql::Value> {
+fn get_path_value<'a, T: AsRef<str>>(input: &'a async_graphql::Value, path: &[T]) -> Option<&'a async_graphql::Value> {
   let mut value = Some(input);
   for name in path {
     match value {
@@ -67,7 +67,7 @@ fn get_path_value<'a>(input: &'a async_graphql::Value, path: &[String]) -> Optio
       }
 
       Some(async_graphql::Value::List(list)) => {
-        value = list.get(name.parse::<usize>().ok()?);
+        value = list.get(name.as_ref().parse::<usize>().ok()?);
       }
       _ => return None,
     }
