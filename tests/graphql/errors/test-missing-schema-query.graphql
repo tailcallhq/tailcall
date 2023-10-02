@@ -1,0 +1,12 @@
+#> server-sdl
+schema {
+  mutation: Mutation
+}
+
+type Mutation {
+  id: Int!
+}
+
+#> client-sdl
+type Failure
+  @error(message: "schema definition is missing query root", trace: [])

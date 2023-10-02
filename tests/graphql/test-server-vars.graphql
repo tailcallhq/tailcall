@@ -1,10 +1,10 @@
 #> server-sdl
-schema @server(vars: {foo: "bar"}) {
+schema @server(baseURL: "http://jsonplacheholder.typicode.com", vars: {foo: "bar"}) {
   query: Query
 }
 
 type Query {
-  foo: String
+  foo: String @http(path: "/foo")
 }
 
 #> client-sdl
