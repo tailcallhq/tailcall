@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, HashSet};
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
+use async_graphql::{Positioned, Pos};
+use async_graphql::parser::types::{ServiceDocument, DirectiveDefinition};
+use async_graphql_value::Name;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -251,6 +253,16 @@ impl Http {
     self.match_key = Some(key.to_string());
     self
   }
+
+  pub fn directive_definition(self) -> DirectiveDefinition {
+    let description: Option<Positioned<String>> = None;
+    let name = Positioned::new(Name::new("http"), Pos::default());
+    let arguments = vec![];
+    let is_repeatable = false;
+    let locations = vec![];
+
+    DirectiveDefinition { description, name, arguments, is_repeatable, locations }
+  }
 }
 
 impl Config {
@@ -270,5 +282,14 @@ impl Config {
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
+  }
+}
+
+// tests
+#[cfg(tests)]
+mod tests {
+  #[test]
+  fn it_has_http_directive_definition() {
+    // not sure how to test this yet
   }
 }
