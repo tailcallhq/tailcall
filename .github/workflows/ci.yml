@@ -36,6 +36,10 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+   format:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
@@ -43,6 +47,10 @@ jobs:
           command: fmt
           args: -- --check
 
+  clippy:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
@@ -50,12 +58,15 @@ jobs:
           command: clippy
           args: --all-targets --all-features -- -D warnings
 
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
