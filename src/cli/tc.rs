@@ -33,9 +33,7 @@ pub async fn run() -> Result<()> {
         Err(e) => Err(e),
       }
     }
-    Command::Init => {
-      init().await
-    }
+    Command::Init => init().await,
   }
 }
 
@@ -99,9 +97,12 @@ pub async fn init() -> Result<()> {
     file_name = file_name.trim().to_string();
     fs::write(format!("{}", file_name), "")?;
 
-    let graphqlrc = format!(r#"schema:
+    let graphqlrc = format!(
+      r#"schema:
 - "./{}.graphql"
-- "./.tailcallrc.graphql"#, file_name);
+- "./.tailcallrc.graphql"#,
+      file_name
+    );
     fs::write(".graphqlrc.yml", graphqlrc)?;
   }
 
@@ -125,4 +126,3 @@ pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries
   }
   Ok(())
 }
-
