@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, HashSet};
 
 use anyhow::Result;
-use async_graphql::{Positioned, Pos};
-use async_graphql::parser::types::{ServiceDocument, DirectiveDefinition};
+use async_graphql::parser::types::{BaseType, DirectiveDefinition, InputValueDefinition, ServiceDocument};
+use async_graphql::{Pos, Positioned};
 use async_graphql_value::Name;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
@@ -254,12 +254,74 @@ impl Http {
     self
   }
 
+  fn pos<A>(a: A) -> Positioned<A> {
+    Positioned::new(a, Pos::default())
+  }
+
+  fn get_type(base: BaseType) -> async_graphql::parser::types::Type {
+    async_graphql::parser::types::Type { base, nullable: false }
+  }
+
+  fn get_arguments(self) -> Vec<Positioned<InputValueDefinition>> {
+    let mut args = vec![];
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("baseURL")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("path")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("method")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("query")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("body")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args.push(Http::pos(InputValueDefinition {
+      description: None,
+      name: Http::pos(Name::new("headers")),
+      ty: Http::pos(Http::get_type(BaseType::Named(Name::new("String")))),
+      default_value: None,
+      directives: vec![],
+    }));
+
+    args
+  }
+
   pub fn directive_definition(self) -> DirectiveDefinition {
     let description: Option<Positioned<String>> = None;
     let name = Positioned::new(Name::new("http"), Pos::default());
-    let arguments = vec![];
     let is_repeatable = false;
     let locations = vec![];
+    let arguments = self.get_arguments();
 
     DirectiveDefinition { description, name, arguments, is_repeatable, locations }
   }
