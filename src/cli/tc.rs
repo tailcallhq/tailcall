@@ -1,8 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::fs;
-use std::io::{self, Write};
-use std::path::Path;
+use std::io::{self};
 
 use anyhow::Result;
 use clap::Parser;
@@ -38,7 +37,7 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn init() -> Result<()> {
-  let tailcallrc = r#"directive @server(
+  let tailcallrc = r"directive @server(
     allowedHeaders: [String]
     baseURL: String
     enableApolloTracing: Boolean
@@ -82,7 +81,7 @@ pub async fn init() -> Result<()> {
   input KeyValue {
     key: String!
     value: String!
-  }"#;
+  }";
 
   fs::write(".tailcallrc.graphql", tailcallrc)?;
 
@@ -95,7 +94,7 @@ pub async fn init() -> Result<()> {
     let mut file_name = String::new();
     io::stdin().read_line(&mut file_name)?;
     file_name = file_name.trim().to_string();
-    fs::write(format!("{}", file_name), "")?;
+    fs::write(&file_name, "")?;
 
     let graphqlrc = format!(
       r#"schema:
