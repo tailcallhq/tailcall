@@ -5,6 +5,7 @@ use std::io::{self};
 
 use anyhow::Result;
 use clap::Parser;
+use colored::Colorize;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -32,79 +33,57 @@ pub async fn run() -> Result<()> {
         Err(e) => Err(e),
       }
     }
-    Command::Init => init().await,
+    Command::Init { file_path } => Ok(init(&file_path).await?),
   }
 }
 
-pub async fn init() -> Result<()> {
-  let tailcallrc = r"directive @server(
-    allowedHeaders: [String]
-    baseURL: String
-    enableApolloTracing: Boolean
-    enableCacheControlHeader: Boolean
-    enableGraphiql: String
-    enableHttpCache: Boolean
-    enableIntrospection: Boolean
-    enableQueryValidation: Boolean
-    enableResponseValidation: Boolean
-    globalResponseTimeout: Int
-    port: Int
-    proxy: Proxy
-    vars: [KeyValue]
-  ) on SCHEMA
-  directive @http(
-    path: String!
-    method: Method = GET
-    query: [KeyValue]
-    body: String
-    baseURL: String
-    headers: [KeyValue]
-  ) on FIELD_DEFINITION
-  directive @inline(path: [String]!) on FIELD_DEFINITION
-  directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
-  directive @batch(path: [String]!, key: String!) on FIELD_DEFINITION
-  
-  enum Method {
-    GET
-    POST
-    PUT
-    DELETE
-    PATCH
-    HEAD
-    OPTIONS
-  }
-  
-  input Proxy {
-    url: String
-  }
-  
-  input KeyValue {
-    key: String!
-    value: String!
-  }";
+pub async fn init(file_path: &str) -> Result<()> {
+  let tailcallrc = fs::read_to_string("assets/.tailcallrc.graphql")?;
 
-  fs::write(".tailcallrc.graphql", tailcallrc)?;
+  loop {
+    println!("{}", "Do you want to add a file to the project? (yes/no/quit)".yellow());
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
 
-  println!("Do you want to add a file to the project? (yes/no)");
-  let mut input = String::new();
-  io::stdin().read_line(&mut input)?;
+    match input.trim() {
+      "yes" => {
+        println!("{}", "Enter the file name:".yellow());
+        let mut file_name = String::new();
+        io::stdin().read_line(&mut file_name)?;
+        file_name = format!("{}.graphql", file_name.trim());
 
-  if input.trim() == "yes" {
-    println!("Enter the file name:");
-    let mut file_name = String::new();
-    io::stdin().read_line(&mut file_name)?;
-    file_name = format!("{}.graphql", file_name.trim());
-    fs::write(&file_name, "")?;
+        println!(
+          "{}",
+          format!("Do you want to create the file {}? (yes/no/quit)", file_name).yellow()
+        );
+        let mut confirm = String::new();
+        io::stdin().read_line(&mut confirm)?;
 
-    let graphqlrc = format!(
-      r#"schema:
+        match confirm.trim() {
+          "yes" => {
+            fs::write(format!("{}/{}", file_path, &file_name), "")?;
+
+            let graphqlrc = format!(
+              r#"schema:
 - "./{}.graphql"
 - "./.tailcallrc.graphql"#,
-      file_name
-    );
-    fs::write(".graphqlrc.yml", graphqlrc)?;
+              file_name
+            );
+            fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
+            break;
+          }
+          "no" => continue,
+          "quit" => return Ok(()),
+          _ => println!("{}", "Invalid input. Please enter 'yes', 'no' or 'quit'.".red()),
+        }
+      }
+      "no" => break,
+      "quit" => return Ok(()),
+      _ => println!("{}", "Invalid input. Please enter 'yes', 'no' or 'quit'.".red()),
+    }
   }
 
+  fs::write(format!("{}/.tailcallrc.graphql", file_path), tailcallrc)?;
   Ok(())
 }
 

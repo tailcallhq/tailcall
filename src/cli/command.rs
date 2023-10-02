@@ -40,5 +40,5 @@ pub enum Command {
     schema: bool,
   },
   /// Initialize a new project
-  Init,
+  Init { file_path: String },
 }
