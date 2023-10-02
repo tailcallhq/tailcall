@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-// use serde_json::json;
+use serde_json::json;
 
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
@@ -20,63 +20,45 @@ impl PathString for serde_json::Value {
   }
 }
 
-
-
-// best perform 
-
+//optimised
 impl PathString for EvaluationContext<'_> {
-    fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
-        let (head, tail) = path.split_first()?;
-        Some(match head.as_str() {
-            "value" => self.path_value(tail)?.to_string().into(),
-            "args" => self.args()?.get_path(tail)?.to_string().into(),
-            "headers" => self.get_header_as_value(&tail[0])?.to_string().into(),
-            "vars" => self.req_ctx.server.vars.clone()?.get(tail[0].as_str())?.to_owned().into(),
-            _ => return None,
-        })
+  fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
+    if let Some((head, tail)) = path.split_first() {
+      let value = match head.as_str() {
+        "value" => self.path_value(tail)?.clone(),
+        "args" => self.args()?.get_path(tail).cloned()?,
+        "headers" => {
+          if let Some(header) = tail.get(0) {
+            self.get_header_as_value(header)?.clone()
+          } else {
+            return None;
+          }
+        }
+        "vars" => {
+          if let Some(var) = tail.get(0) {
+            async_graphql::Value::String(self.req_ctx.server.vars.clone()?.get(var)?.clone())
+          } else {
+            return None;
+          }
+        }
+        _ => return None,
+      };
+
+      return match value {
+        async_graphql::Value::String(s) => Some(Cow::Owned(s)),
+        async_graphql::Value::Number(n) => Some(Cow::Owned(n.to_string())),
+        async_graphql::Value::Boolean(b) => Some(Cow::Owned(b.to_string())),
+        async_graphql::Value::Object(map) => Some(json!(map).to_string().into()),
+        async_graphql::Value::List(list) => Some(json!(list).to_string().into()),
+        _ => None,
+      };
     }
+
+    None
+  }
 }
 
-
-
-
-// ---> some optimization and refactored version
-
-// impl PathString for EvaluationContext<'_> {
-//     fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
-//         let mut result = None;
-//         if let Some((head, tail)) = path.split_first() {
-//             result = match head.as_str() {
-//                 "value" => self.path_value(tail).cloned(),
-//                 "args" => self.args()?.get_path(tail).cloned(),
-//                 "headers" => self.get_header_as_value(&tail[0]),
-//                 "vars" => self
-//                     .req_ctx
-//                     .server
-//                     .vars
-//                     .as_ref()?
-//                     .get(&tail[0])
-//                     .cloned()
-//                     .map(async_graphql::Value::String),
-//                 _ => None,
-//             }
-//             .and_then(|v| match v {
-//                 async_graphql::Value::String(s) => Some(Cow::Owned(s)),
-//                 async_graphql::Value::Number(n) => Some(Cow::Owned(n.to_string())),
-//                 async_graphql::Value::Boolean(b) => Some(Cow::Owned(b.to_string())),
-//                 async_graphql::Value::Object(map) => Some(json!(map).to_string().into()),
-//                 async_graphql::Value::List(list) => Some(json!(list).to_string().into()),
-//                 _ => None,
-//             });
-//         }
-//         result
-//     }
-// }
-
-
-
 //  -----> original version
-// TODO: improve performance
 // impl PathString for EvaluationContext<'_> {
 //   fn path_string(&self, path: &[String]) -> Option<Cow<'_, str>> {
 //     let ctx = self;
