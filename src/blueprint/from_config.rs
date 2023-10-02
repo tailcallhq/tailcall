@@ -30,6 +30,8 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let definitions = to_definitions(config, output_types, input_types)?;
   Ok(super::compress::compress(Blueprint { schema, definitions }))
 }
+
+
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
     .arguments

@@ -1,0 +1,21 @@
+schema @server(
+    addResponseHeaders: [["Cöntent-Type", "custom-value_1"],["x-custom_header_3", "custom-value 3"]]
+    enableGraphiql: "/graphiql"
+) {
+    query: Query
+}
+
+type Post {
+    id: ID!
+    title: String!
+    body: String!
+    userId: ID!
+}
+
+type Query {
+    post: Post
+    @http(
+        path: "/posts/1"
+        baseURL: "http://jsonplaceholder.typicode.com"
+    )
+}

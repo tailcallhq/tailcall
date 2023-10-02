@@ -22,7 +22,10 @@ pub struct Server {
   pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
   pub add_response_headers: Option<Vec<(String, String)>>,
+  #[serde(skip)]
+  pub response_headers: HeaderMap,
 }
+
 
 impl Server {
   pub fn enable_http_cache(&self) -> bool {
@@ -44,7 +47,8 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn get_response_headers(&self) -> HeaderMap {
+  pub fn set_response_headers(&mut self) {
+    // Unwrap is safe as invalid headers are caught in validation
     let mut header_map = HeaderMap::new();
     if let Some(headers) = &self.add_response_headers {
       for (k, v) in headers {
@@ -54,7 +58,7 @@ impl Server {
         );
       }
     }
-    header_map
+    self.response_headers = header_map;
   }
 }
 
