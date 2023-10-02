@@ -262,7 +262,7 @@ impl Http {
     async_graphql::parser::types::Type { base, nullable: false }
   }
 
-  fn get_arguments(self) -> Vec<Positioned<InputValueDefinition>> {
+  fn get_arguments() -> Vec<Positioned<InputValueDefinition>> {
     vec![
       Http::pos(InputValueDefinition {
         description: None,
@@ -309,12 +309,12 @@ impl Http {
     ]
   }
 
-  pub fn directive_definition(self) -> DirectiveDefinition {
-    let description: Option<Positioned<String>> = None;
+  pub fn directive_definition() -> DirectiveDefinition {
+    let description = None;
     let name = Positioned::new(Name::new("http"), Pos::default());
     let is_repeatable = false;
     let locations = vec![];
-    let arguments = self.get_arguments();
+    let arguments = Http::get_arguments();
 
     DirectiveDefinition { description, name, arguments, is_repeatable, locations }
   }
