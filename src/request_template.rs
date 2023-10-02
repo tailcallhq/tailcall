@@ -20,13 +20,47 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
+  fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    let root_url = self.root_url.render(ctx);
+  
+    let mut url = url::Url::parse(root_url.as_str())?;
+
+    let q:Vec<(String, String)> = url
+         .query_pairs()
+         .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k.to_string(), v.to_string())) })
+          .collect();
+{
+
+    if !self.query.is_empty() || !q.is_empty(){
+
+      url.set_query(None);
+      let mut query_list = url.query_pairs_mut();
+
+      for (k, v) in q{
+        query_list.append_pair(&k, &v);
+      }
+
+      for (k, v) in &self.query{
+        let rendered_v = v.render(ctx);
+        if !rendered_v.is_empty(){
+          query_list.append_pair(&k, &rendered_v);
+        }
+      }
+    }else{
+      url.set_query(None);
+    }
+
+}
+    Ok(url)
+  }
+
   fn eval_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let root_url = self.root_url.render(ctx);
     let mut url = url::Url::parse(root_url.as_str())?;
     url
       .query_pairs_mut()
       .extend_pairs(self.query.iter().map(|(k, v)| (k.as_str(), v.render(ctx))));
-
+    
     let query_string = url
       .query_pairs()
       .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) })
@@ -68,6 +102,23 @@ impl RequestTemplate {
   /// A high-performance way to reliably create a request
   pub fn to_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     let url = self.eval_url(ctx)?;
+    let mut header_map = self.eval_headers(ctx);
+    header_map.extend(ctx.headers().to_owned());
+    header_map.insert(
+      reqwest::header::CONTENT_TYPE,
+      HeaderValue::from_static("application/json"),
+    );
+    let body = self.eval_body(ctx);
+    let method = self.method.clone();
+    let mut req = reqwest::Request::new(method, url);
+    req.headers_mut().extend(header_map);
+    req.body_mut().replace(body);
+    Ok(req)
+  }
+
+  // /// A high-performance way to reliably create a request
+  pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+    let url = self.eval_url2(ctx)?;
     let mut header_map = self.eval_headers(ctx);
     header_map.extend(ctx.headers().to_owned());
     header_map.insert(
@@ -314,10 +365,14 @@ mod tests {
     let tmpl = RequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
+    println!("{}", "testing post");
     assert_eq!(req.method(), reqwest::Method::POST);
+    println!("{}", "testing headers");
     assert_eq!(req.headers().get("foo").unwrap(), "bar");
     let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+    println!("{}", "testing body");
     assert_eq!(body, "foo".as_bytes());
+    println!("{}", "testing url");
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
   }
   #[test]
