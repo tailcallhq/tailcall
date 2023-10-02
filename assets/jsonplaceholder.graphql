@@ -2,10 +2,10 @@ schema
   @server(
     port: 8000
     baseURL: "http://jsonplaceholder.typicode.com"
-    enableHttpCache: false
+    enableHttpCache: true
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
-    batch: {maxSize: 1000, delay: 1, headers: []}
+    batch: {maxSize: 1000, delay: 0, headers: []}
     proxy: {url: "http://localhost:3000"}
   ) {
   query: Query

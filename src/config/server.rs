@@ -22,12 +22,17 @@ pub struct Server {
   pub batch: Option<Batch>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase", default)]
 pub struct Batch {
-  pub max_size: Option<usize>,
-  pub delay: Option<usize>,
+  pub max_size: usize,
+  pub delay: usize,
   pub headers: Vec<String>,
+}
+impl Default for Batch {
+  fn default() -> Self {
+    Batch { max_size: 1000, delay: 0, headers: Vec::new() }
+  }
 }
 
 impl Server {

@@ -2,6 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
+use async_graphql::QueryPathSegment;
 use http_cache_semantics::RequestLike;
 use serde::Serialize;
 use serde_json::Value;
@@ -75,29 +76,28 @@ impl Expression {
           match operation {
             Operation::Endpoint(req_template) => {
               let req = req_template.to_request(ctx)?;
-              let url = req.uri().clone();
+              let _url = req.uri().clone();
               let is_get = req.method() == reqwest::Method::GET;
-              // Attempt to short circuit GET request
-              if is_get {
-                if let Some(data_loader) = ctx.req_ctx.data_loader.as_ref() {
-                  let endpoint_key = crate::http::EndpointKey {
-                    request: req,
-                    match_key_value: Default::default(),
-                    match_path: vec![],
-                    batching_enabled: false,
-                    list: false,
-                  };
-                  let resp = data_loader
-                    .load_one(endpoint_key)
-                    .await
-                    .map_err(|e| EvaluationError::IOException(e.to_string()))?
-                    .unwrap_or_default();
-                  return Ok(resp.body);
-                }
+              let is_list = ctx
+                .context
+                .and_then(|c| c.ctx.path_node)
+                .and_then(|p| p.parent)
+                .map(|p| matches!(p.segment, QueryPathSegment::Index(_)))
+                .unwrap_or(false);
 
-                if let Some(cached) = ctx.req_ctx.cache.get(&url) {
-                  return Ok(cached.body);
-                }
+              // Attempt to short circuit GET request
+              if is_get && is_list {
+                let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or(vec![]);
+                let endpoint_key = crate::http::EndpointKey::new(req, headers);
+                let resp = ctx
+                  .req_ctx
+                  .data_loader
+                  .as_ref()
+                  .load_one(endpoint_key)
+                  .await
+                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                  .unwrap_or_default();
+                return Ok(resp.body);
               }
 
               // Prepare for HTTP calls
@@ -113,12 +113,6 @@ impl Expression {
                   .validate(&res.body)
                   .map_err(EvaluationError::from)?;
               }
-
-              // Insert into cache for future requests
-              if is_get {
-                ctx.req_ctx.cache.insert(url, res.clone());
-              }
-
               Ok(res.body)
             }
             Operation::JS(input, script) => {
