@@ -93,12 +93,12 @@ pub async fn init() -> Result<()> {
     println!("Enter the file name:");
     let mut file_name = String::new();
     io::stdin().read_line(&mut file_name)?;
-    file_name = file_name.trim().to_string();
+    file_name = format!("{}.graphql", file_name.trim());
     fs::write(&file_name, "")?;
 
     let graphqlrc = format!(
       r#"schema:
-- "./{}"
+- "./{}.graphql"
 - "./.tailcallrc.graphql"#,
       file_name
     );
