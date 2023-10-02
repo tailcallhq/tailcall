@@ -5,31 +5,48 @@ use std::time::Duration;
 
 use anyhow::Result;
 use async_graphql::async_trait;
-use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
+use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use reqwest::header::HeaderMap;
 use url::Url;
 
 use crate::http::{HttpClient, Method, Response};
 use crate::json::JsonLike;
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct EndpointKey {
-  pub url: Url,
-  pub headers: HeaderMap,
-  pub method: Method,
+  pub request: reqwest::Request,
   pub match_key_value: ConstValue,
   pub match_path: Vec<String>,
   pub batching_enabled: bool,
   pub list: bool,
 }
-
 impl Hash for EndpointKey {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.url.hash(state);
-    self.match_key_value.to_string().hash(state);
+    self.request.url().hash(state);
+    self.request.method().hash(state);
+    // self.request.headers().hash(state);
   }
 }
+
+impl PartialEq for EndpointKey {
+  fn eq(&self, other: &Self) -> bool {
+    self.request.url() == other.request.url() && self.request.method() == other.request.method()
+  }
+}
+
+impl Clone for EndpointKey {
+  fn clone(&self) -> Self {
+    EndpointKey {
+      request: self.request.try_clone().unwrap(),
+      match_key_value: self.match_key_value.clone(),
+      match_path: self.match_path.clone(),
+      batching_enabled: self.batching_enabled,
+      list: self.list,
+    }
+  }
+}
+
+impl Eq for EndpointKey {}
 #[derive(Default, Clone)]
 pub struct HttpDataLoader {
   pub client: HttpClient,
@@ -44,6 +61,12 @@ impl HttpDataLoader {
     DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
   }
 
+  pub fn to_async_data_loader_options(self, delay: usize, max_size: usize) -> DataLoader<HttpDataLoader, NoCache> {
+    DataLoader::new(self, tokio::spawn)
+      .delay(Duration::from_millis(delay as u64))
+      .max_batch_size(max_size)
+  }
+
   pub async fn get_unbatched_results(
     &self,
     keys: &[EndpointKey],
@@ -56,11 +79,7 @@ impl HttpDataLoader {
     let futures: Vec<_> = unbatched_keys
       .iter()
       .map(|key| async {
-        let url = key.url.clone();
-        let mut req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
-        req.headers_mut().extend(key.headers.clone());
-        let result = self.client.clone().execute(req).await;
-
+        let result = self.client.clone().execute(key.clone().request).await;
         (key.clone(), result)
       })
       .collect();
@@ -74,7 +93,7 @@ impl HttpDataLoader {
       .iter()
       .filter(|endpoint_key| endpoint_key.batching_enabled)
       .fold(HashMap::new(), |mut acc, key| {
-        let group = acc.entry(key.url.clone()).or_default();
+        let group = acc.entry(key.clone().request.url().clone()).or_default();
         group.push(key.clone());
         acc
       })

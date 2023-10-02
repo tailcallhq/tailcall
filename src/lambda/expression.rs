@@ -79,6 +79,22 @@ impl Expression {
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
               if is_get {
+                if let Some(data_loader) = ctx.req_ctx.data_loader.as_ref() {
+                  let endpoint_key = crate::http::EndpointKey {
+                    request: req,
+                    match_key_value: Default::default(),
+                    match_path: vec![],
+                    batching_enabled: false,
+                    list: false,
+                  };
+                  let resp = data_loader
+                    .load_one(endpoint_key)
+                    .await
+                    .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                    .unwrap_or_default();
+                  return Ok(resp.body);
+                }
+
                 if let Some(cached) = ctx.req_ctx.cache.get(&url) {
                   return Ok(cached.body);
                 }

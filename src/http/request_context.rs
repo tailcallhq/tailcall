@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use async_graphql::dataloader::{DataLoader, HashMapCache};
+use async_graphql::dataloader::{DataLoader, NoCache};
 use derive_setters::Setters;
 use hyper::{HeaderMap, Uri};
 
@@ -11,7 +12,7 @@ use crate::config::Server;
 
 #[derive(Setters)]
 pub struct RequestContext {
-  pub data_loader: DataLoader<HttpDataLoader, HashMapCache>,
+  pub data_loader: Arc<Option<DataLoader<HttpDataLoader, NoCache>>>,
   pub memo_client: MemoClient,
   pub http_client: HttpClient,
   pub server: Server,
@@ -28,7 +29,7 @@ impl Default for RequestContext {
 impl RequestContext {
   pub fn new(http_client: HttpClient, server: Server, headers: HeaderMap) -> Self {
     Self {
-      data_loader: HttpDataLoader::new(http_client.clone()).to_async_data_loader(),
+      data_loader: Arc::new(None),
       memo_client: MemoClient::new(http_client.clone()),
       req_headers: headers,
       http_client,
@@ -40,7 +41,11 @@ impl RequestContext {
   #[allow(clippy::mutable_key_type)]
   pub fn get_cached_values(&self) -> HashMap<EndpointKey, Response> {
     #[allow(clippy::mutable_key_type)]
-    self.data_loader.get_cached_values()
+    if let Some(data_loader) = &self.data_loader.as_ref() {
+      data_loader.get_cached_values()
+    } else {
+      HashMap::new()
+    }
   }
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
@@ -52,6 +57,6 @@ impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     let http_client = server_ctx.http_client.clone();
     let server = server_ctx.server.clone();
-    Self::new(http_client, server, HeaderMap::new())
+    Self::new(http_client, server, HeaderMap::new()).data_loader(server_ctx.clone().data_loader)
   }
 }

@@ -19,6 +19,15 @@ pub struct Server {
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
   pub vars: Option<BTreeMap<String, String>>,
+  pub batch: Option<Batch>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Batch {
+  pub max_size: Option<usize>,
+  pub delay: Option<usize>,
+  pub headers: Vec<String>,
 }
 
 impl Server {
