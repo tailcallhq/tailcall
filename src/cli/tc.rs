@@ -65,7 +65,7 @@ pub async fn init(file_path: &str) -> Result<()> {
 
             let graphqlrc = format!(
               r#"schema:
-- "./{}.graphql"
+- "./{}"
 - "./.tailcallrc.graphql"#,
               file_name
             );
