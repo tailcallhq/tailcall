@@ -76,5 +76,5 @@ name = "request_template_bench"
 harness = false
 
 [[bench]]
-name = "path_string_benchmark"
+name = "path_string_evaluationcontext_bench"
 harness = false
