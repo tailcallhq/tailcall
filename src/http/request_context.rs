@@ -14,7 +14,7 @@ pub struct RequestContext {
   pub memo_client: MemoClient,
   pub http_client: HttpClient,
   pub server: Server,
-  pub data_loader: Arc<DataLoader<HttpDataLoader, NoCache>>,
+  pub data_loader: Arc<DataLoader<HttpDataLoader<HttpClient>, NoCache>>,
   pub req_headers: HeaderMap,
 }
 

@@ -1,6 +1,8 @@
 mod client;
 mod data_loader;
 
+mod endpoint_key;
+mod http_client_trait;
 mod memo_client;
 mod method;
 mod request_context;
@@ -13,6 +15,8 @@ use std::time::Duration;
 use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
+pub use endpoint_key::*;
+pub use http_client_trait::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;

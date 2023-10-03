@@ -13,7 +13,7 @@ pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: HttpClient,
   pub server: Server,
-  pub data_loader: Arc<DataLoader<HttpDataLoader, NoCache>>,
+  pub data_loader: Arc<DataLoader<HttpDataLoader<HttpClient>, NoCache>>,
 }
 
 impl ServerContext {
