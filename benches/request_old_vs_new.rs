@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-
 use std::collections::HashMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
@@ -8,10 +7,9 @@ use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
+use tailcall::mustache::Mustache;
 use tailcall::path_string::PathString;
 use tailcall::request_template::RequestTemplate;
-
-use tailcall::mustache::Mustache;
 
 #[derive(Setters)]
 struct Context {
@@ -53,10 +51,8 @@ fn benchmark_to_request_old_vs_new(c: &mut Criterion) {
   let endpoint = Endpoint::new("http://localhost:3000/foo/{{u.a}}/boozes/{{u.v}}".to_string());
 
   let mut data: HashMap<String, i32> = HashMap::new();
-  let mut i = 0;
-  for k in keys {
-    data.insert(k, i);
-    i += 1;
+  for (i, k) in keys.into_iter().enumerate() {
+    data.insert(k, i.try_into().unwrap());
   }
 
   let tmpl = RequestTemplate::try_from(endpoint).unwrap();

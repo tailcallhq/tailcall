@@ -47,7 +47,7 @@ impl RequestTemplate {
         for (k, v) in &self.query {
           let rendered_v = v.render(ctx);
           if !rendered_v.is_empty() {
-            query_list.append_pair(&k, &rendered_v);
+            query_list.append_pair(k, &rendered_v);
           }
         }
       } else {
@@ -368,14 +368,14 @@ mod tests {
     let tmpl = RequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
-    println!("{}", "testing post");
+    println!("testing post");
     assert_eq!(req.method(), reqwest::Method::POST);
-    println!("{}", "testing headers");
+    println!("testing headers");
     assert_eq!(req.headers().get("foo").unwrap(), "bar");
     let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-    println!("{}", "testing body");
+    println!("testing body");
     assert_eq!(body, "foo".as_bytes());
-    println!("{}", "testing url");
+    println!("testing url");
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
   }
   #[test]
