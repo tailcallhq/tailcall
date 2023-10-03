@@ -20,7 +20,7 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
           } else if field.has_resolver() && !field.has_batched_resolver() && is_list {
             vec![new_path]
           } else {
-            find_fan_out(config, &field.type_of, new_path, field.list.unwrap_or(false) || is_list)
+            find_fan_out(config, &field.type_of, new_path, field.list || is_list)
           }
         })
         .collect(),
@@ -294,10 +294,7 @@ mod tests {
 
   #[test]
   fn test_nplusone_nested_non_list() {
-    let mut f_field = Field::default().type_of("F".to_string()).http(Http::default());
-
-    // imitate Option::Some for list but with false value underneath
-    f_field.list = Some(false);
+    let f_field = Field::default().type_of("F".to_string()).http(Http::default());
 
     let config = Config::default().query("Query").types(vec![
       ("Query", Type::default().fields(vec![("f", f_field)])),
