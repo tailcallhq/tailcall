@@ -50,7 +50,7 @@ jobs:
 
       - name: Check formatting with Prettier
         run: |
-          npx prettier@3.0.3 --check "**/*.graphql" "**/*.yaml" "**/*.json"
+          npx -y prettier@3.0.3 --check '**/*.{graphql,yaml,yml,json}'
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
