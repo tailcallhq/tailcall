@@ -6,6 +6,8 @@ use std::io::{self};
 use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
+use inquire::Confirm;
+use resource::resource_str;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -38,52 +40,47 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
-  let tailcallrc = fs::read_to_string("assets/.tailcallrc.graphql")?;
+  let tailcallrc = resource_str!("assets/.tailcallrc.graphql");
 
-  loop {
-    println!("{}", "Do you want to add a file to the project? (yes/no/quit)".yellow());
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
+  let ans = Confirm::new("Do you want to add a file to the project?")
+    .with_default(false)
+    .prompt();
 
-    match input.trim() {
-      "yes" => {
-        println!("{}", "Enter the file name:".yellow());
-        let mut file_name = String::new();
-        io::stdin().read_line(&mut file_name)?;
-        file_name = format!("{}.graphql", file_name.trim());
+  match ans {
+    Ok(true) => {
+      println!("{}", "Enter the file name:".yellow());
+      let mut file_name = String::new();
+      io::stdin().read_line(&mut file_name)?;
+      file_name = format!("{}.graphql", file_name.trim());
 
-        println!(
-          "{}",
-          format!("Do you want to create the file {}? (yes/no/quit)", file_name).yellow()
-        );
-        let mut confirm = String::new();
-        io::stdin().read_line(&mut confirm)?;
+      let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
+        .with_default(false)
+        .prompt();
 
-        match confirm.trim() {
-          "yes" => {
-            fs::write(format!("{}/{}", file_path, &file_name), "")?;
+      match confirm {
+        Ok(true) => {
+          fs::write(format!("{}/{}", file_path, &file_name), "")?;
 
-            let graphqlrc = format!(
-              r#"schema:
+          let graphqlrc = format!(
+            r#"schema:
 - "./{}"
 - "./.tailcallrc.graphql"#,
-              file_name
-            );
-            fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
-            break;
-          }
-          "no" => continue,
-          "quit" => return Ok(()),
-          _ => println!("{}", "Invalid input. Please enter 'yes', 'no' or 'quit'.".red()),
+            file_name
+          );
+          fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
         }
+        Ok(false) => (),
+        Err(_) => println!("{}", "Something went wrong, please try again".red()),
       }
-      "no" => break,
-      "quit" => return Ok(()),
-      _ => println!("{}", "Invalid input. Please enter 'yes', 'no' or 'quit'.".red()),
     }
+    Ok(false) => (),
+    Err(_) => println!("{}", "Something went wrong, please try again".red()),
   }
 
-  fs::write(format!("{}/.tailcallrc.graphql", file_path), tailcallrc)?;
+  fs::write(
+    format!("{}/.tailcallrc.graphql", file_path),
+    tailcallrc.as_ref().as_bytes(),
+  )?;
   Ok(())
 }
 
