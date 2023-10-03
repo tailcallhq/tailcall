@@ -43,6 +43,15 @@ jobs:
           command: fmt
           args: -- --check
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Check formatting with Prettier
+        run: |
+          npx prettier@3.0.3 --check "**/*.graphql" "**/*.yaml" "**/*.json"
+
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
