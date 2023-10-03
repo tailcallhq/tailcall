@@ -35,64 +35,27 @@ impl HasHeaders for Context {
   }
 }
 
-// fn create_url() -> vec{
-// }
-
-// fn create_query_params() ->{
-//     let query = vec![
-//       ("foo".to_string(), Mustache::parse("0").unwrap()),
-//       ("bar".to_string(), Mustache::parse("1").unwrap()),
-//       ("baz".to_string(), Mustache::parse("2").unwrap()),
-//     ];
-// }
-
-// fn create_headers() ->vec{
-//     let headers = vec![
-//       ("foo".to_string(), Mustache::parse("foo").unwrap()),
-//       ("bar".to_string(), Mustache::parse("bar").unwrap()),
-//       ("baz".to_string(), Mustache::parse("baz").unwrap()),
-//     ];
-// }
-
-// fn create_body() ->{
-//   fn test_body_template() {
-//     let tmpl = RequestTemplate::new("http://localhost:3000")
-//       .unwrap()
-//       .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
-//     let ctx = Context::default().value(json!({
-//       "foo": {
-//         "bar": "baz"
-//       }
-//     }));
-//     let body = tmpl
-//       .to_request(&ctx)
-//       .unwrap()
-//       .body()
-//       .unwrap()
-//       .as_bytes()
-//       .unwrap()
-//       .to_owned();
-//     assert_eq!(body, "baz".as_bytes());
-//   }
-
-// }
-
 fn benchmark_to_request_old_vs_new(c: &mut Criterion) {
-
   let keys: [String; 1000] = core::array::from_fn(|i| "k".to_owned() + &i.to_string());
 
-
-  let headers : Vec<_> = keys.iter().map(|kv| (kv.to_owned(), Mustache::parse(&("{{h.".to_owned() + kv + "}}")).unwrap())).collect();
+  let headers: Vec<_> = keys
+    .iter()
+    .map(|kv| {
+      (
+        kv.to_owned(),
+        Mustache::parse(&("{{h.".to_owned() + kv + "}}")).unwrap(),
+      )
+    })
+    .collect();
 
   let query = headers.clone();
 
-  let endpoint =
-    Endpoint::new("http://localhost:3000/foo/{{u.a}}/boozes/{{u.v}}".to_string());
+  let endpoint = Endpoint::new("http://localhost:3000/foo/{{u.a}}/boozes/{{u.v}}".to_string());
 
-  let mut data : HashMap<String, i32>= HashMap::new();
+  let mut data: HashMap<String, i32> = HashMap::new();
   let mut i = 0;
-  for k in keys{
-    data.insert(k,  i);
+  for k in keys {
+    data.insert(k, i);
     i += 1;
   }
 
@@ -109,14 +72,12 @@ fn benchmark_to_request_old_vs_new(c: &mut Criterion) {
   }));
 
   c.bench_function("old_to_request", |b| {
- 
     b.iter(|| {
       black_box(tmpl3.to_request(&ctx).unwrap());
     })
   });
 
   c.bench_function("new_to_request", |b| {
- 
     b.iter(|| {
       black_box(tmpl3.to_request2(&ctx).unwrap());
     })

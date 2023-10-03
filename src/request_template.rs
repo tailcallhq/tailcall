@@ -22,35 +22,38 @@ pub struct RequestTemplate {
 impl RequestTemplate {
   fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let root_url = self.root_url.render(ctx);
-  
+
     let mut url = url::Url::parse(root_url.as_str())?;
 
-    let q:Vec<(String, String)> = url
-         .query_pairs()
-         .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k.to_string(), v.to_string())) })
-          .collect();
-{
-
-    if !self.query.is_empty() || !q.is_empty(){
-
-      url.set_query(None);
-      let mut query_list = url.query_pairs_mut();
-
-      for (k, v) in q{
-        query_list.append_pair(&k, &v);
-      }
-
-      for (k, v) in &self.query{
-        let rendered_v = v.render(ctx);
-        if !rendered_v.is_empty(){
-          query_list.append_pair(&k, &rendered_v);
+    let q: Vec<(String, String)> = url
+      .query_pairs()
+      .filter_map(|(k, v)| {
+        if v.is_empty() {
+          None
+        } else {
+          Some((k.to_string(), v.to_string()))
         }
-      }
-    }else{
-      url.set_query(None);
-    }
+      })
+      .collect();
+    {
+      if !self.query.is_empty() || !q.is_empty() {
+        url.set_query(None);
+        let mut query_list = url.query_pairs_mut();
 
-}
+        for (k, v) in q {
+          query_list.append_pair(&k, &v);
+        }
+
+        for (k, v) in &self.query {
+          let rendered_v = v.render(ctx);
+          if !rendered_v.is_empty() {
+            query_list.append_pair(&k, &rendered_v);
+          }
+        }
+      } else {
+        url.set_query(None);
+      }
+    }
     Ok(url)
   }
 
@@ -60,7 +63,7 @@ impl RequestTemplate {
     url
       .query_pairs_mut()
       .extend_pairs(self.query.iter().map(|(k, v)| (k.as_str(), v.render(ctx))));
-    
+
     let query_string = url
       .query_pairs()
       .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) })
