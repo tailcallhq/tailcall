@@ -76,5 +76,5 @@ name = "request_template_bench"
 harness = false
 
 [[bench]]
-name = "request_old_vs_new.rs"
+name = "request_old_vs_new"
 harness = false
