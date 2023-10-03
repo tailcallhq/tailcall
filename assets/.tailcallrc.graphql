@@ -1,0 +1,45 @@
+directive @server(
+  allowedHeaders: [String]
+  baseURL: String
+  enableApolloTracing: Boolean
+  enableCacheControlHeader: Boolean
+  enableGraphiql: String
+  enableHttpCache: Boolean
+  enableIntrospection: Boolean
+  enableQueryValidation: Boolean
+  enableResponseValidation: Boolean
+  globalResponseTimeout: Int
+  port: Int
+  proxy: Proxy
+  vars: [KeyValue]
+) on SCHEMA
+directive @http(
+  path: String!
+  method: Method = GET
+  query: [KeyValue]
+  body: String
+  baseURL: String
+  headers: [KeyValue]
+) on FIELD_DEFINITION
+directive @inline(path: [String]!) on FIELD_DEFINITION
+directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
+directive @batch(path: [String]!, key: String!) on FIELD_DEFINITION
+
+enum Method {
+  GET
+  POST
+  PUT
+  DELETE
+  PATCH
+  HEAD
+  OPTIONS
+}
+
+input Proxy {
+  url: String
+}
+
+input KeyValue {
+  key: String!
+  value: String!
+}

@@ -7,7 +7,7 @@ type Query {
   """
   This is test
   """
-  foo: String
+  foo: String @http(path: "/foo")
 }
 
 #> client-sdl

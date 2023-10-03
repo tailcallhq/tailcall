@@ -4,7 +4,7 @@ schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
 }
 
 type Query {
-  foo: String
+  foo: String @http(path: "/foo")
 }
 
 #> client-sdl
