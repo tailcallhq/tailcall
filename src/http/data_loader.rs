@@ -7,6 +7,7 @@ use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
+use crate::config::Batch;
 use crate::http::{EndpointKey, HttpClientTrait, Response};
 
 #[derive(Default, Clone)]
@@ -25,10 +26,10 @@ impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
     DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
   }
 
-  pub fn to_async_data_loader_options(self, delay: usize, max_size: usize) -> DataLoader<HttpDataLoader<C>, NoCache> {
+  pub fn to_async_data_loader_options(self, batch: Batch) -> DataLoader<HttpDataLoader<C>, NoCache> {
     DataLoader::new(self, tokio::spawn)
-      .delay(Duration::from_millis(delay as u64))
-      .max_batch_size(max_size)
+      .delay(Duration::from_millis(batch.delay as u64))
+      .max_batch_size(batch.max_size)
   }
 
   pub async fn get_unbatched_results(
@@ -86,7 +87,7 @@ mod tests {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
     let loader = HttpDataLoader { client: client.clone() };
-    let loader = loader.to_async_data_loader_options(1, 1000);
+    let loader = loader.to_async_data_loader_options(Batch::default().delay(1));
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
@@ -104,7 +105,7 @@ mod tests {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
     let loader = HttpDataLoader { client: client.clone() };
-    let loader = loader.to_async_data_loader_options(1, 1000);
+    let loader = loader.to_async_data_loader_options(Batch::default().delay(1));
 
     let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
     let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());

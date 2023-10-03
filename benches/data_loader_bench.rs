@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
+use tailcall::config::Batch;
 use tailcall::http::{EndpointKey, HttpClientTrait, HttpDataLoader, Response};
 
 #[derive(Clone)]
@@ -25,7 +26,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
       tokio::runtime::Runtime::new().unwrap().spawn(async {
         let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
         let loader = HttpDataLoader { client: client.clone() };
-        let loader = loader.to_async_data_loader_options(1, 1000);
+        let loader = loader.to_async_data_loader_options(Batch::default().delay(1));
 
         let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
         let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());

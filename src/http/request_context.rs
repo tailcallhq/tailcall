@@ -20,21 +20,29 @@ pub struct RequestContext {
 
 impl Default for RequestContext {
   fn default() -> Self {
-    RequestContext::new(HttpClient::default(), Server::default(), HeaderMap::new())
+    RequestContext::new(
+      HttpClient::default(),
+      Server::default(),
+      Arc::new(DataLoader::new(
+        HttpDataLoader::new(HttpClient::default()),
+        tokio::spawn,
+      )),
+    )
   }
 }
 
 impl RequestContext {
-  pub fn new(http_client: HttpClient, server: Server, headers: HeaderMap) -> Self {
+  pub fn new(
+    http_client: HttpClient,
+    server: Server,
+    data_loader: Arc<DataLoader<HttpDataLoader<HttpClient>, NoCache>>,
+  ) -> Self {
     Self {
       memo_client: MemoClient::new(http_client.clone()),
-      req_headers: headers,
+      req_headers: HeaderMap::new(),
       http_client: http_client.clone(),
       server: server.clone(),
-      data_loader: Arc::new(HttpDataLoader::new(http_client.clone()).to_async_data_loader_options(
-        server.batch.clone().map(|b| b.delay).unwrap_or(0),
-        server.batch.clone().map(|b| b.max_size).unwrap_or(1000),
-      )),
+      data_loader,
     }
   }
 
@@ -52,6 +60,6 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     let http_client = server_ctx.http_client.clone();
-    Self::new(http_client, server_ctx.server.clone(), HeaderMap::new()).data_loader(server_ctx.data_loader.clone())
+    Self::new(http_client, server_ctx.server.clone(), server_ctx.data_loader.clone())
   }
 }

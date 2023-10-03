@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -22,7 +23,7 @@ pub struct Server {
   pub batch: Option<Batch>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Setters)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
   pub max_size: usize,
