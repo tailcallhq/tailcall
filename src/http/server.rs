@@ -11,6 +11,7 @@ use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
+use crate::blueprint::validation::header_validation::validate_headers;
 use crate::cli::CLIError;
 use crate::config::{Config, Server};
 
@@ -67,8 +68,10 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
   let mut server = config.server.clone();
-    set_response_headers(&mut server);
+  println!("testttt ->>> {:?}" ,validate_headers(server.add_response_headers.clone()));
+  validate_headers(server.add_response_headers.clone()).map_err(CLIError::from)?;
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+  // set_response_headers(&mut server);
   let state = Arc::new(ServerContext::new(blueprint, server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);

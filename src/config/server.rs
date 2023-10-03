@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashSet};
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
+use crate::valid::{Valid, ValidExtensions};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -47,18 +48,21 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn set_response_headers(&mut self) {
+  pub fn set_response_headers(&mut self) -> Result<(), String>{
     // Unwrap is safe as invalid headers are caught in validation
-    let mut header_map = HeaderMap::new();
-    if let Some(headers) = &self.add_response_headers {
-      for (k, v) in headers {
-        header_map.insert(
-          HeaderName::from_bytes(k.as_bytes()).unwrap(),
-          HeaderValue::from_bytes(v.as_bytes()).unwrap(),
-        );
-      }
-    }
-    self.response_headers = header_map;
+    // let mut header_map = HeaderMap::new();
+    // if let Some(headers) = &self.add_response_headers {
+    //   for (k, v) in headers {
+    //     header_map.insert(
+    //       HeaderName::from_bytes(k.as_bytes())?,
+    //       HeaderValue::from_bytes(v.as_bytes())?,
+    //     );
+    //
+    //   Ok(())
+    //   }
+    // }
+    // self.response_headers = header_map;
+    Ok(())
   }
 }
 

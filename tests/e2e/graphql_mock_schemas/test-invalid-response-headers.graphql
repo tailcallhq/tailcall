@@ -1,6 +1,6 @@
 schema @server(
     addResponseHeaders: [["Cöntent-Type", "custom-value_1"],["x-custom_header_3", "custom-value 3"]]
-    enableGraphiql: "/graphiql"
+    enableGraphiql: "/graphiql",
 ) {
     query: Query
 }
