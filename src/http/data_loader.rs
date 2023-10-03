@@ -38,7 +38,7 @@ impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
     let futures: Vec<_> = keys
       .iter()
       .map(|key| async {
-        let result = self.client.clone().execute(key.request()).await;
+        let result = self.client.execute(key.request()).await;
         (key.clone(), result)
       })
       .collect();
