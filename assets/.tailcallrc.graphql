@@ -12,6 +12,7 @@ directive @server(
   port: Int
   proxy: Proxy
   vars: [KeyValue]
+  batch: Batch
 ) on SCHEMA
 directive @http(
   path: String!
@@ -42,4 +43,10 @@ input Proxy {
 input KeyValue {
   key: String!
   value: String!
+}
+
+input Batch {
+  maxSize: Int
+  delay: Int
+  headers: [String]
 }
