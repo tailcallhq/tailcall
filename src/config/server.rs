@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -24,6 +25,20 @@ pub struct Server {
   pub add_response_headers: Option<Vec<(String, String)>>,
   #[serde(skip)]
   pub response_headers: HeaderMap,
+  pub batch: Option<Batch>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Setters)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Batch {
+  pub max_size: usize,
+  pub delay: usize,
+  pub headers: Vec<String>,
+}
+impl Default for Batch {
+  fn default() -> Self {
+    Batch { max_size: 1000, delay: 0, headers: Vec::new() }
+  }
 }
 
 impl Server {
