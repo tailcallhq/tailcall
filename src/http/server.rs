@@ -10,10 +10,11 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
-use crate::blueprint::Blueprint;
 use crate::blueprint::validation::header_validation::validate_headers;
+use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
 use crate::config::{Config, Server};
+use crate::valid::ValidExtensions;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -59,7 +60,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
   new_headers
 }
 
-fn set_response_headers(server: &mut Server){
+fn set_response_headers(server: &mut Server) {
   server.set_response_headers();
 }
 
@@ -68,10 +69,15 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
   let mut server = config.server.clone();
-  println!("testttt ->>> {:?}" ,validate_headers(server.add_response_headers.clone()));
+
   validate_headers(server.add_response_headers.clone()).map_err(CLIError::from)?;
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  // set_response_headers(&mut server);
+
+  validate_headers(server.add_response_headers.clone())
+    .validate_or(Blueprint::try_from(&config))
+    .map_err(CLIError::from)?;
+
+  set_response_headers(&mut server);
   let state = Arc::new(ServerContext::new(blueprint, server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);

@@ -1,4 +1,3 @@
-use hyper::header::InvalidHeaderName;
 use super::ValidationError;
 use crate::valid::Cause;
 

@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, HashSet};
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
-use crate::valid::{Valid, ValidExtensions};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -27,7 +26,6 @@ pub struct Server {
   pub response_headers: HeaderMap,
 }
 
-
 impl Server {
   pub fn enable_http_cache(&self) -> bool {
     self.enable_http_cache.unwrap_or(false)
@@ -48,20 +46,19 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn set_response_headers(&mut self) -> Result<(), String>{
-    // Unwrap is safe as invalid headers are caught in validation
-    // let mut header_map = HeaderMap::new();
-    // if let Some(headers) = &self.add_response_headers {
-    //   for (k, v) in headers {
-    //     header_map.insert(
-    //       HeaderName::from_bytes(k.as_bytes())?,
-    //       HeaderValue::from_bytes(v.as_bytes())?,
-    //     );
-    //
-    //   Ok(())
-    //   }
-    // }
-    // self.response_headers = header_map;
+  pub fn set_response_headers(&mut self) -> Result<(), String> {
+    let mut header_map = HeaderMap::new();
+    if let Some(headers) = &self.add_response_headers {
+
+      for (k, v) in headers {
+        // Unwrap is safe as invalid headers are caught in validation
+        header_map.insert(
+          HeaderName::from_bytes(k.as_bytes()).unwrap(),
+          HeaderValue::from_str(v).unwrap(),
+        );
+      }
+    }
+    self.response_headers = header_map;
     Ok(())
   }
 }
