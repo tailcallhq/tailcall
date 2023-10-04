@@ -25,7 +25,31 @@ type Post {
 }
 
 #> client-query
-query @expect(json: {data:{user:{posts:[{title:"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"},{title:"qui est esse"},{title:"ea molestias quasi exercitationem repellat qui ipsa sit aut"},{title:"eum et est occaecati"},{title:"nesciunt quas odio"},{title:"dolorem eum magni eos aperiam quia"},{title:"magnam facilis autem"},{title:"dolorem dolore est ipsam"},{title:"nesciunt iure omnis dolorem tempora et accusantium"},{title:"optio molestias id quia eum"}]}}}) {
+query
+@expect(
+  json: {
+    data: {
+      user: {
+        posts: [
+          {
+            title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+          }
+          { title: "qui est esse" }
+          {
+            title: "ea molestias quasi exercitationem repellat qui ipsa sit aut"
+          }
+          { title: "eum et est occaecati" }
+          { title: "nesciunt quas odio" }
+          { title: "dolorem eum magni eos aperiam quia" }
+          { title: "magnam facilis autem" }
+          { title: "dolorem dolore est ipsam" }
+          { title: "nesciunt iure omnis dolorem tempora et accusantium" }
+          { title: "optio molestias id quia eum" }
+        ]
+      }
+    }
+  }
+) {
   user {
     posts {
       title

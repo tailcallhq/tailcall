@@ -15,10 +15,10 @@ type User {
   phone: String
   website: String
   postsBatched: [Post]
-    @http(path: "/posts", query: {userId: "{{parent.value.id}}"})
+    @http(path: "/posts", query: { userId: "{{parent.value.id}}" })
     @batch(key: "id", path: ["userId"])
   firstPost: Post
-    @http(path: "/firstPost", query: {userId: "{{parent.value.id}}"})
+    @http(path: "/firstPost", query: { userId: "{{parent.value.id}}" })
     @batch(key: "id", path: ["userId"])
 }
 
@@ -35,9 +35,15 @@ query
   json: {
     data: {
       users: [
-        {postsBatched: [{title: "User 1 Post 1"}, {title: "User 1 Post 2"}]}
-        {postsBatched: [{title: "User 2 Post 1"}, {title: "User 2 Post 2"}]}
-        {postsBatched: [{title: "User 3 Post 1"}, {title: "User 3 Post 2"}]}
+        {
+          postsBatched: [{ title: "User 1 Post 1" }, { title: "User 1 Post 2" }]
+        }
+        {
+          postsBatched: [{ title: "User 2 Post 1" }, { title: "User 2 Post 2" }]
+        }
+        {
+          postsBatched: [{ title: "User 3 Post 1" }, { title: "User 3 Post 2" }]
+        }
       ]
     }
   }
@@ -58,9 +64,9 @@ query
   json: {
     data: {
       users: [
-        {firstPost: {title: "User 1 Post 1"}}
-        {firstPost: {title: "User 2 Post 1"}}
-        {firstPost: {title: "User 3 Post 1"}}
+        { firstPost: { title: "User 1 Post 1" } }
+        { firstPost: { title: "User 2 Post 1" } }
+        { firstPost: { title: "User 3 Post 1" } }
       ]
     }
   }

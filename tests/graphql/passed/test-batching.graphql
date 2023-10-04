@@ -6,7 +6,7 @@ schema
     enableHttpCache: true
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
-    batch: {maxSize: 1000, delay: 0, headers: []}
+    batch: { maxSize: 1000, delay: 0, headers: [] }
   ) {
   query: Query
 }
@@ -29,7 +29,8 @@ type User {
 }
 
 #> client-query
-query @expect(json: {data: {posts: [{user: {name: "Leanne Graham"}}]}}) {
+query
+@expect(json: { data: { posts: [{ user: { name: "Leanne Graham" } }] } }) {
   posts {
     user {
       name

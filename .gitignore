@@ -7,3 +7,5 @@
 .direnv
 .envrc
 .env
+
+/node_modules
