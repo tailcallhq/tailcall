@@ -3,7 +3,6 @@ use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql::QueryPathSegment;
-use http_cache_semantics::RequestLike;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -76,7 +75,6 @@ impl Expression {
           match operation {
             Operation::Endpoint(req_template) => {
               let req = req_template.to_request(ctx)?;
-              let _url = req.uri().clone();
               let is_get = req.method() == reqwest::Method::GET;
               let is_list = ctx
                 .context
