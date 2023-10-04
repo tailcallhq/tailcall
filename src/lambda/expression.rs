@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
-use async_graphql::QueryPathSegment;
+
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -76,15 +76,8 @@ impl Expression {
             Operation::Endpoint(req_template) => {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
-              let is_list = ctx
-                .context
-                .and_then(|c| c.ctx.path_node)
-                .and_then(|p| p.parent)
-                .map(|p| matches!(p.segment, QueryPathSegment::Index(_)))
-                .unwrap_or(false);
-
               // Attempt to short circuit GET request
-              if is_get && is_list {
+              if is_get && ctx.req_ctx.server.batch.is_some() {
                 let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
                 let endpoint_key = crate::http::GetRequest::new(req, headers);
                 let resp = ctx
