@@ -8,16 +8,16 @@ use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
-use crate::http::{GetRequest, HttpClientTrait, Response};
+use crate::http::{GetRequest, HttpClient, Response};
 
 #[derive(Default, Clone)]
 pub struct HttpDataLoader<C>
 where
-  C: HttpClientTrait + Send + Sync + 'static + Clone,
+  C: HttpClient + Send + Sync + 'static + Clone,
 {
   pub client: C,
 }
-impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
+impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
   pub fn new(client: C) -> Self {
     HttpDataLoader { client }
   }
@@ -50,7 +50,7 @@ impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HttpClientTrait + Send + Sync + 'static + Clone> Loader<GetRequest> for HttpDataLoader<C> {
+impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<GetRequest> for HttpDataLoader<C> {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
@@ -75,7 +75,7 @@ mod tests {
   }
 
   #[async_trait::async_trait]
-  impl HttpClientTrait for MockHttpClient {
+  impl HttpClient for MockHttpClient {
     async fn execute(&self, _req: reqwest::Request) -> Result<Response> {
       self.request_count.fetch_add(1, Ordering::SeqCst);
       // You can mock the actual response as per your need

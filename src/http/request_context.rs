@@ -6,25 +6,25 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::memo_client::MemoClient;
-use super::{GetRequest, HttpClient, HttpDataLoader, Response, ServerContext};
+use super::{DefaultHttpClient, GetRequest, HttpDataLoader, Response, ServerContext};
 use crate::config::Server;
 
 #[derive(Setters)]
 pub struct RequestContext {
   pub memo_client: MemoClient,
-  pub http_client: HttpClient,
+  pub http_client: DefaultHttpClient,
   pub server: Server,
-  pub data_loader: Arc<DataLoader<HttpDataLoader<HttpClient>, NoCache>>,
+  pub data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   pub req_headers: HeaderMap,
 }
 
 impl Default for RequestContext {
   fn default() -> Self {
     RequestContext::new(
-      HttpClient::default(),
+      DefaultHttpClient::default(),
       Server::default(),
       Arc::new(DataLoader::new(
-        HttpDataLoader::new(HttpClient::default()),
+        HttpDataLoader::new(DefaultHttpClient::default()),
         tokio::spawn,
       )),
     )
@@ -33,9 +33,9 @@ impl Default for RequestContext {
 
 impl RequestContext {
   pub fn new(
-    http_client: HttpClient,
+    http_client: DefaultHttpClient,
     server: Server,
-    data_loader: Arc<DataLoader<HttpDataLoader<HttpClient>, NoCache>>,
+    data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   ) -> Self {
     Self {
       memo_client: MemoClient::new(http_client.clone()),
