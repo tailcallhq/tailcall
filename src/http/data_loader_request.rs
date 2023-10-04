@@ -2,11 +2,11 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
-pub struct GetRequest(reqwest::Request, Vec<String>);
+pub struct DataLoaderRequest(reqwest::Request, Vec<String>);
 
-impl GetRequest {
+impl DataLoaderRequest {
   pub fn new(req: reqwest::Request, headers: Vec<String>) -> Self {
-    GetRequest(req, headers)
+    DataLoaderRequest(req, headers)
   }
   pub fn to_request(&self) -> reqwest::Request {
     self.clone().0
@@ -15,7 +15,7 @@ impl GetRequest {
     &self.1
   }
 }
-impl Hash for GetRequest {
+impl Hash for DataLoaderRequest {
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.0.url().hash(state);
     for name in &self.1 {
@@ -27,7 +27,7 @@ impl Hash for GetRequest {
   }
 }
 
-impl PartialEq for GetRequest {
+impl PartialEq for DataLoaderRequest {
   fn eq(&self, other: &Self) -> bool {
     let mut hasher_self = DefaultHasher::new();
     self.hash(&mut hasher_self);
@@ -41,15 +41,15 @@ impl PartialEq for GetRequest {
   }
 }
 
-impl Clone for GetRequest {
+impl Clone for DataLoaderRequest {
   fn clone(&self) -> Self {
     let mut req = reqwest::Request::new(reqwest::Method::GET, self.0.url().clone());
     req.headers_mut().extend(self.0.headers().clone());
-    GetRequest(req, self.1.clone())
+    DataLoaderRequest(req, self.1.clone())
   }
 }
 
-impl Eq for GetRequest {}
+impl Eq for DataLoaderRequest {}
 
 #[cfg(test)]
 mod tests {
@@ -67,8 +67,8 @@ mod tests {
     req
   }
 
-  fn create_endpoint_key(url: &str, headers: Vec<(&str, &str)>, hash_key_headers: Vec<String>) -> GetRequest {
-    GetRequest::new(create_request_with_headers(url, headers), hash_key_headers)
+  fn create_endpoint_key(url: &str, headers: Vec<(&str, &str)>, hash_key_headers: Vec<String>) -> DataLoaderRequest {
+    DataLoaderRequest::new(create_request_with_headers(url, headers), hash_key_headers)
   }
 
   #[test]
@@ -111,7 +111,7 @@ mod tests {
   fn test_different_http_methods() {
     let key1 = create_endpoint_key("http://localhost:8080", vec![], vec![]);
     let req = reqwest::Request::new(reqwest::Method::POST, "http://localhost:8080".parse().unwrap());
-    let key2 = GetRequest::new(req, vec![]);
+    let key2 = DataLoaderRequest::new(req, vec![]);
     assert_eq!(key1, key2);
   }
 

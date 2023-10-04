@@ -8,7 +8,7 @@ use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
-use crate::http::{GetRequest, HttpClient, Response};
+use crate::http::{DataLoaderRequest, HttpClient, Response};
 
 #[derive(Default, Clone)]
 pub struct HttpDataLoader<C>
@@ -34,8 +34,8 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 
   pub async fn get_unbatched_results(
     &self,
-    keys: &[GetRequest],
-  ) -> Result<HashMap<GetRequest, <HttpDataLoader<C> as Loader<GetRequest>>::Value>> {
+    keys: &[DataLoaderRequest],
+  ) -> Result<HashMap<DataLoaderRequest, <HttpDataLoader<C> as Loader<DataLoaderRequest>>::Value>> {
     let futures: Vec<_> = keys
       .iter()
       .map(|key| async {
@@ -50,11 +50,14 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<GetRequest> for HttpDataLoader<C> {
+impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> for HttpDataLoader<C> {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
-  async fn load(&self, keys: &[GetRequest]) -> async_graphql::Result<HashMap<GetRequest, Self::Value>, Self::Error> {
+  async fn load(
+    &self,
+    keys: &[DataLoaderRequest],
+  ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     #[allow(clippy::mutable_key_type)]
     let results = self.get_unbatched_results(keys).await?;
     Ok(results)
@@ -66,7 +69,7 @@ mod tests {
   use std::sync::atomic::{AtomicUsize, Ordering};
 
   use super::*;
-  use crate::http::GetRequest;
+  use crate::http::DataLoaderRequest;
 
   #[derive(Clone)]
   struct MockHttpClient {
@@ -91,7 +94,7 @@ mod tests {
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
-    let key = GetRequest::new(request, headers_to_consider);
+    let key = DataLoaderRequest::new(request, headers_to_consider);
     let futures: Vec<_> = (0..100).map(|_| loader.load_one(key.clone())).collect();
     let _ = join_all(futures).await;
     assert_eq!(
@@ -111,8 +114,8 @@ mod tests {
     let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());
 
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
-    let key1 = GetRequest::new(request1, headers_to_consider.clone());
-    let key2 = GetRequest::new(request2, headers_to_consider);
+    let key1 = DataLoaderRequest::new(request1, headers_to_consider.clone());
+    let key2 = DataLoaderRequest::new(request2, headers_to_consider);
     let futures1 = (0..100).map(|_| loader.load_one(key1.clone()));
     let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
     let _ = join_all(futures1.chain(futures2)).await;

@@ -1,7 +1,7 @@
 mod client;
 mod data_loader;
 
-mod get_request;
+mod data_loader_request;
 mod memo_client;
 mod method;
 mod request_context;
@@ -14,7 +14,7 @@ use std::time::Duration;
 use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
-pub use get_request::*;
+pub use data_loader_request::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;

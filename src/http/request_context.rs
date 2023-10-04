@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::memo_client::MemoClient;
-use super::{DefaultHttpClient, GetRequest, HttpDataLoader, Response, ServerContext};
+use super::{DataLoaderRequest, DefaultHttpClient, HttpDataLoader, Response, ServerContext};
 use crate::config::Server;
 
 #[derive(Setters)]
@@ -47,7 +47,7 @@ impl RequestContext {
   }
 
   #[allow(clippy::mutable_key_type)]
-  pub fn get_cached_values(&self) -> HashMap<GetRequest, Response> {
+  pub fn get_cached_values(&self) -> HashMap<DataLoaderRequest, Response> {
     #[allow(clippy::mutable_key_type)]
     self.data_loader.get_cached_values()
   }
