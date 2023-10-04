@@ -1,9 +1,5 @@
 #> server-sdl
-schema
-  @server(
-    baseURL: "http://jsonplacheholder.typicode.com"
-    vars: { foo: "bar" }
-  ) {
+schema @server(baseURL: "http://jsonplacheholder.typicode.com", vars: {foo: "bar"}) {
   query: Query
 }
 

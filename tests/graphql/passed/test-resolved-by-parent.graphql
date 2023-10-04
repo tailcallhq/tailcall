@@ -8,16 +8,15 @@ type Address {
 }
 
 type Query {
-  user: User
-    @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 type User {
-  address: Address @inline(path: ["address", "street"])
+  address: Address @inline(path: ["address","street"])
 }
 
 #> client-query
-query @expect(json: { data: { user: { address: "Kulas Light" } } }) {
+query @expect(json: {data:{user:{address:"Kulas Light"}}}) {
   user {
     address
   }

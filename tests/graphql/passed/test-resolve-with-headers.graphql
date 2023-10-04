@@ -19,16 +19,7 @@ type Query {
 }
 
 #> client-query
-query
-@expect(
-  json: {
-    data: {
-      post1: {
-        title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
-      }
-    }
-  }
-) {
+query @expect(json: {data:{post1:{title:"sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}}) {
   post1 {
     title
   }

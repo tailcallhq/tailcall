@@ -9,6 +9,7 @@ type Query {
   foo: [Json] @http(path: "/foo")
 }
 
+
 #> client-sdl
 scalar Json
 

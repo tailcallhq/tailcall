@@ -1,86 +1,86 @@
-name-template: "v$RESOLVED_VERSION"
-tag-template: "v$NEXT_PATCH_VERSION"
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
 categories:
-  - title: "🚀 Features"
+  - title: '🚀 Features'
     labels:
-      - "feature"
-      - "enhancement"
-      - "feat"
-  - title: "🔧 Improvements"
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+  - title: '🔧 Improvements'
     labels:
-      - "perf"
-      - "performance"
-      - "refactor"
-  - title: "Tests"
+      - 'perf'
+      - 'performance'
+      - 'refactor'
+  - title: 'Tests'
     labels:
-      - "tests"
-      - "testing"
-  - title: "🐛 Bug Fixes"
+      - 'tests'
+      - 'testing'
+  - title: '🐛 Bug Fixes'
     labels:
-      - "fix"
-      - "bugfix"
-      - "bug"
-      - "hotfix"
-      - "revert"
-  - title: "🧰 Maintenance"
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+      - 'hotfix'
+      - 'revert'
+  - title: '🧰 Maintenance'
     labels:
-      - "docs"
-      - "chore"
-      - "maintenance"
-      - "style"
-      - "build"
-      - "chores"
-      - "ci"
-  - title: "💥Breaking Changes"
+      - 'docs'
+      - 'chore'
+      - 'maintenance'
+      - 'style'
+      - 'build'
+      - 'chores'
+      - 'ci'
+  - title: '💥Breaking Changes'
     labels:
-      - "breaking change"
-change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+      - 'breaking change'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
   major:
     labels:
-      - "major"
-      - "breaking change"
+      - 'major'
+      - 'breaking change'
   minor:
     labels:
-      - "feature"
-      - "enhancement"
-      - "feat"
-      - "perf"
-      - "performance"
+      - 'feature'
+      - 'enhancement'
+      - 'feat'
+      - 'perf'
+      - 'performance'
   patch:
     labels:
-      - "patch"
+      - 'patch'
   default: patch
 exclude-labels:
-  - "skip-changelog"
+  - 'skip-changelog'
 template: |
   ## Changes
 
   $CHANGES
 autolabeler:
-  - label: "maintenance"
+  - label: 'maintenance'
     files:
-      - "*.yml"
-      - "*.conf"
-      - "*.sbt"
+      - '*.yml'
+      - '*.conf'
+      - '*.sbt'
     branch:
       - '/chore\/.+/'
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
-  - label: "bug"
+  - label: 'bug'
     branch:
       - '/fix\/.+/'
     title:
-      - "/fix/i"
-  - label: "enhancement"
+      - '/fix/i'
+  - label: 'enhancement'
     branch:
       - '/feat\/.+/'
       - '/refactor\/.+/'
-  - label: "docs"
+  - label: 'docs'
     files:
-      - "*.md"
-      - "*.txt"
+      - '*.md'
+      - '*.txt'
     branch:
       - '/doc\/.+/'
       - '/docs\/.+/'

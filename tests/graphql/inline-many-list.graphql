@@ -14,9 +14,9 @@ type Query {
 }
 
 type U {
-  b: A @inline(path: ["a", "b"])
-  c: A @inline(path: ["a", "c"])
-  d: A @inline(path: ["a", "d"])
+  b: A @inline(path: ["a","b"])
+  c: A @inline(path: ["a","c"])
+  d: A @inline(path: ["a","d"])
   e: String
 }
 

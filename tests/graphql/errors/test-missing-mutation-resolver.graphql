@@ -5,8 +5,7 @@ schema {
 }
 
 type Query {
-  user: User
-    @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/user/1")
+  user: User @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/user/1")
 }
 
 type User {
@@ -23,7 +22,4 @@ type Mutation {
 
 #> client-sdl
 type Failure
-  @error(
-    message: "No resolver has been found in the schema"
-    trace: ["Mutation", "createUser"]
-  )
+  @error(message: "No resolver has been found in the schema", trace: ["Mutation", "createUser"])
