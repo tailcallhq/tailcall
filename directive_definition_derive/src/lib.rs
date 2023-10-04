@@ -54,7 +54,6 @@ fn get_graphql_type(path: &syn::TypePath) -> String {
         }
 
     };
-    // TODO if ends with !!, remove, else add !
     if graphql_type_str.ends_with("!!") {
         graphql_type_str = graphql_type_str.strip_suffix("!!").unwrap_or("").to_string();
     } else {

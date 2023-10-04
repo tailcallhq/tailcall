@@ -1,5 +1,6 @@
 /target
 directive_definition_derive/target
+enum_definition_derive/target
 /.idea
 .vscode
 *.svg
