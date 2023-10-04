@@ -11,7 +11,8 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post
+    @http(body: "{{args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {
@@ -63,8 +64,8 @@ schema {
 }
 
 #> client-query
-mutation @expect(json: {data:{insertPost:{body:"foo"}}}) {
-    insertPost(input: {body: "foo", title: "bar", userId: 1}) {
-        body
-    }
+mutation @expect(json: {data: {insertPost: {body: "foo"}}}) {
+  insertPost(input: {body: "foo", title: "bar", userId: 1}) {
+    body
+  }
 }

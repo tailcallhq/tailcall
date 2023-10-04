@@ -6,7 +6,7 @@ schema {
 type User {
   name: String
   street: Address @inline(path: ["address", "street"])
-  city: Address @inline(path: ["address","city"])
+  city: Address @inline(path: ["address", "city"])
   zipcode: Address @inline(path: ["address", "zipcode"])
 }
 
@@ -17,13 +17,15 @@ type Address {
 }
 
 type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User
+    @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 #> client-query
-query @expect(json: {data:{user:{name:"Leanne Graham",street:"Kulas Light"}}}) {
-    user {
-        name
-        street
-    }
+query
+@expect(json: {data: {user: {name: "Leanne Graham", street: "Kulas Light"}}}) {
+  user {
+    name
+    street
+  }
 }

@@ -7,7 +7,7 @@ type Bar {
   value: Int
     @http(
       path: "/withNestingArrayCtxValue"
-      query: { data: "{{value}}" }
+      query: {data: "{{value}}"}
       baseURL: "https://foo.com"
     )
 }
@@ -22,9 +22,7 @@ type Query {
 
 #> client-query
 query (
-  $expect: Json = {
-    foo: { bar: [{ value: 101 }, { value: 201 }, { value: 301 }] }
-  }
+  $expect: Json = {foo: {bar: [{value: 101}, {value: 201}, {value: 301}]}}
 ) {
   foo {
     bar {

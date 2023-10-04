@@ -17,9 +17,7 @@ type Query {
 
 #> client-query
 query (
-  $expect: Json = {
-    foo: { bar: [{ value: 100 }, { value: 100 }, { value: 100 }] }
-  }
+  $expect: Json = {foo: {bar: [{value: 100}, {value: 100}, {value: 100}]}}
 ) {
   foo {
     bar {

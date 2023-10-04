@@ -22,11 +22,7 @@ query (
   $expect: Json = {
     z: {
       a: 1
-      b: [
-        { key: "k1", value: 1 }
-        { key: "k2", value: 2 }
-        { key: "k3", value: 3 }
-      ]
+      b: [{key: "k1", value: 1}, {key: "k2", value: 2}, {key: "k3", value: 3}]
     }
   }
 ) {
@@ -39,7 +35,7 @@ query (
   }
 }
 
-query @expect(json: { z: { a: 1 } }) {
+query @expect(json: {z: {a: 1}}) {
   z {
     a
   }

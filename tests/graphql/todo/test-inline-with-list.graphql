@@ -22,7 +22,7 @@ type Query {
 }
 
 #> client-query
-query @expect(json: { foo: [[{ c: "Hello" }]] }) {
+query @expect(json: {foo: [[{c: "Hello"}]]}) {
   foo {
     c
   }

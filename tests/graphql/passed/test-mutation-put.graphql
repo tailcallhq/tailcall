@@ -12,7 +12,12 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "PUT", path: "/posts/{{args.input.id}}")
+  insertPost(input: PostInput): Post
+    @http(
+      body: "{{args.input}}"
+      method: "PUT"
+      path: "/posts/{{args.input.id}}"
+    )
 }
 
 type Post {
@@ -32,8 +37,8 @@ type User {
 }
 
 #> client-query
-mutation @expect(json: {data:{insertPost:{body:"abc"}}}) {
-    insertPost(input: {body: "abc", title: "bar", userId: 1, id: 100}) {
-        body
-    }
+mutation @expect(json: {data: {insertPost: {body: "abc"}}}) {
+  insertPost(input: {body: "abc", title: "bar", userId: 1, id: 100}) {
+    body
+  }
 }
