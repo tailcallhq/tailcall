@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Result;
 use async_graphql::async_trait;
-use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
+use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
@@ -22,30 +21,10 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
     HttpDataLoader { client }
   }
 
-  pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader<C>, HashMapCache> {
-    DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
-  }
-
-  pub fn to_async_data_loader_options(self, batch: Batch) -> DataLoader<HttpDataLoader<C>, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader<C>, NoCache> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
-  }
-
-  pub async fn get_unbatched_results(
-    &self,
-    keys: &[DataLoaderRequest],
-  ) -> Result<HashMap<DataLoaderRequest, <HttpDataLoader<C> as Loader<DataLoaderRequest>>::Value>> {
-    let futures: Vec<_> = keys
-      .iter()
-      .map(|key| async {
-        let result = self.client.execute(key.to_request()).await;
-        (key.clone(), result)
-      })
-      .collect();
-
-    let results = join_all(futures).await;
-    results.into_iter().map(|(key, result)| Ok((key, result?))).collect()
   }
 }
 
@@ -59,8 +38,23 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     #[allow(clippy::mutable_key_type)]
-    let results = self.get_unbatched_results(keys).await?;
-    Ok(results)
+    let results: Vec<_> = keys
+      .iter()
+      .map(|key| async {
+        let result = self.client.execute(key.to_request()).await;
+        (key.clone(), result)
+      })
+      .collect();
+
+    let results = join_all(results).await;
+
+    let mut hashmap = HashMap::new();
+
+    for (key, value) in results {
+      hashmap.insert(key, value?);
+    }
+
+    Ok(hashmap)
   }
 }
 
@@ -79,7 +73,7 @@ mod tests {
 
   #[async_trait::async_trait]
   impl HttpClient for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> Result<Response> {
+    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
       self.request_count.fetch_add(1, Ordering::SeqCst);
       // You can mock the actual response as per your need
       Ok(Response::default())
@@ -90,7 +84,7 @@ mod tests {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
     let loader = HttpDataLoader { client: client.clone() };
-    let loader = loader.to_async_data_loader_options(Batch::default().delay(1));
+    let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
@@ -108,7 +102,7 @@ mod tests {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
     let loader = HttpDataLoader { client: client.clone() };
-    let loader = loader.to_async_data_loader_options(Batch::default().delay(1));
+    let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
     let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());

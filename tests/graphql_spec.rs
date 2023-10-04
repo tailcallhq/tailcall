@@ -201,7 +201,7 @@ async fn test_execution() -> std::io::Result<()> {
       let mut headers = HeaderMap::new();
       headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
 
-      let data_loader = Arc::new(HttpDataLoader::default().to_async_data_loader_options(Batch::default()));
+      let data_loader = Arc::new(HttpDataLoader::default().to_data_loader(Batch::default()));
       let req_ctx = RequestContext::default()
         .req_headers(headers)
         .server(config.server.clone())
