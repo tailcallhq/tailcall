@@ -1,44 +1,33 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
 
 #[derive(Debug)]
-pub struct EndpointKey(reqwest::Request, Vec<String>);
+pub struct GetRequest(reqwest::Request, Vec<String>);
 
-impl EndpointKey {
+impl GetRequest {
   pub fn new(req: reqwest::Request, headers: Vec<String>) -> Self {
-    EndpointKey(req, headers)
+    GetRequest(req, headers)
   }
-  pub fn request(&self) -> reqwest::Request {
+  pub fn to_request(&self) -> reqwest::Request {
     self.clone().0
   }
-  pub fn key_headers(&self) -> &Vec<String> {
+  pub fn headers(&self) -> &Vec<String> {
     &self.1
   }
 }
-impl Deref for EndpointKey {
-  type Target = reqwest::Request;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-impl Hash for EndpointKey {
+impl Hash for GetRequest {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.url().hash(state);
-    self.method().hash(state);
-    for (name, value) in self
-      .headers()
-      .iter()
-      .filter(|(name, _)| self.1.contains(&name.as_str().to_string()))
-    {
-      name.hash(state);
-      value.hash(state);
+    self.0.url().hash(state);
+    for name in &self.1 {
+      if let Some(value) = self.0.headers().get(name) {
+        name.hash(state);
+        value.hash(state);
+      }
     }
   }
 }
 
-impl PartialEq for EndpointKey {
+impl PartialEq for GetRequest {
   fn eq(&self, other: &Self) -> bool {
     let mut hasher_self = DefaultHasher::new();
     self.hash(&mut hasher_self);
@@ -52,15 +41,15 @@ impl PartialEq for EndpointKey {
   }
 }
 
-impl Clone for EndpointKey {
+impl Clone for GetRequest {
   fn clone(&self) -> Self {
-    let mut req = reqwest::Request::new(self.method().clone(), self.url().clone());
-    req.headers_mut().extend(self.headers().clone());
-    EndpointKey(req, self.1.clone())
+    let mut req = reqwest::Request::new(reqwest::Method::GET, self.0.url().clone());
+    req.headers_mut().extend(self.0.headers().clone());
+    GetRequest(req, self.1.clone())
   }
 }
 
-impl Eq for EndpointKey {}
+impl Eq for GetRequest {}
 
 #[cfg(test)]
 mod tests {
@@ -78,8 +67,8 @@ mod tests {
     req
   }
 
-  fn create_endpoint_key(url: &str, headers: Vec<(&str, &str)>, hash_key_headers: Vec<String>) -> EndpointKey {
-    EndpointKey::new(create_request_with_headers(url, headers), hash_key_headers)
+  fn create_endpoint_key(url: &str, headers: Vec<(&str, &str)>, hash_key_headers: Vec<String>) -> GetRequest {
+    GetRequest::new(create_request_with_headers(url, headers), hash_key_headers)
   }
 
   #[test]
@@ -122,8 +111,8 @@ mod tests {
   fn test_different_http_methods() {
     let key1 = create_endpoint_key("http://localhost:8080", vec![], vec![]);
     let req = reqwest::Request::new(reqwest::Method::POST, "http://localhost:8080".parse().unwrap());
-    let key2 = EndpointKey::new(req, vec![]);
-    assert_ne!(key1, key2);
+    let key2 = GetRequest::new(req, vec![]);
+    assert_eq!(key1, key2);
   }
 
   #[test]
@@ -164,9 +153,6 @@ mod tests {
 
     // The cloned key should be equal to the original
     assert_eq!(key1, key2);
-
-    // The memory addresses of the two keys should be different
-    assert!(!std::ptr::eq(&key1, &key2));
   }
 
   #[test]

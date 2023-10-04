@@ -88,7 +88,7 @@ impl Expression {
               // Attempt to short circuit GET request
               if is_get && is_list {
                 let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
-                let endpoint_key = crate::http::EndpointKey::new(req, headers);
+                let endpoint_key = crate::http::GetRequest::new(req, headers);
                 let resp = ctx
                   .req_ctx
                   .data_loader

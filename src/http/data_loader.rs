@@ -8,7 +8,7 @@ use async_graphql::dataloader::{DataLoader, HashMapCache, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
-use crate::http::{EndpointKey, HttpClientTrait, Response};
+use crate::http::{GetRequest, HttpClientTrait, Response};
 
 #[derive(Default, Clone)]
 pub struct HttpDataLoader<C>
@@ -34,12 +34,12 @@ impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 
   pub async fn get_unbatched_results(
     &self,
-    keys: &[EndpointKey],
-  ) -> Result<HashMap<EndpointKey, <HttpDataLoader<C> as Loader<EndpointKey>>::Value>> {
+    keys: &[GetRequest],
+  ) -> Result<HashMap<GetRequest, <HttpDataLoader<C> as Loader<GetRequest>>::Value>> {
     let futures: Vec<_> = keys
       .iter()
       .map(|key| async {
-        let result = self.client.execute(key.request()).await;
+        let result = self.client.execute(key.to_request()).await;
         (key.clone(), result)
       })
       .collect();
@@ -50,11 +50,11 @@ impl<C: HttpClientTrait + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HttpClientTrait + Send + Sync + 'static + Clone> Loader<EndpointKey> for HttpDataLoader<C> {
+impl<C: HttpClientTrait + Send + Sync + 'static + Clone> Loader<GetRequest> for HttpDataLoader<C> {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
-  async fn load(&self, keys: &[EndpointKey]) -> async_graphql::Result<HashMap<EndpointKey, Self::Value>, Self::Error> {
+  async fn load(&self, keys: &[GetRequest]) -> async_graphql::Result<HashMap<GetRequest, Self::Value>, Self::Error> {
     #[allow(clippy::mutable_key_type)]
     let results = self.get_unbatched_results(keys).await?;
     Ok(results)
@@ -66,7 +66,7 @@ mod tests {
   use std::sync::atomic::{AtomicUsize, Ordering};
 
   use super::*;
-  use crate::http::EndpointKey;
+  use crate::http::GetRequest;
 
   #[derive(Clone)]
   struct MockHttpClient {
@@ -91,7 +91,7 @@ mod tests {
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
-    let key = EndpointKey::new(request, headers_to_consider);
+    let key = GetRequest::new(request, headers_to_consider);
     let futures: Vec<_> = (0..100).map(|_| loader.load_one(key.clone())).collect();
     let _ = join_all(futures).await;
     assert_eq!(
@@ -111,8 +111,8 @@ mod tests {
     let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());
 
     let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
-    let key1 = EndpointKey::new(request1, headers_to_consider.clone());
-    let key2 = EndpointKey::new(request2, headers_to_consider);
+    let key1 = GetRequest::new(request1, headers_to_consider.clone());
+    let key2 = GetRequest::new(request2, headers_to_consider);
     let futures1 = (0..100).map(|_| loader.load_one(key1.clone()));
     let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
     let _ = join_all(futures1.chain(futures2)).await;
