@@ -14,6 +14,6 @@ type Query {
 }
 
 #> client-query
-query @expect(json: {data:{username:"Leanne Graham"}}) {
+query @expect(json: { data: { username: "Leanne Graham" } }) {
   username
 }
