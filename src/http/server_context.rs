@@ -20,8 +20,7 @@ impl ServerContext {
   pub fn new(blueprint: Blueprint, server: Server) -> Self {
     let schema = blueprint.to_schema(&server);
     let http_client = DefaultHttpClient::new(server.clone());
-    let data_loader =
-      HttpDataLoader::new(http_client.clone()).to_data_loader(server.batch.clone().unwrap_or_default());
+    let data_loader = HttpDataLoader::new(http_client.clone()).to_data_loader(server.batch.clone().unwrap_or_default());
     ServerContext { schema, http_client, server: server.clone(), data_loader: Arc::new(data_loader) }
   }
 }

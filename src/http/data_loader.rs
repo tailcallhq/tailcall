@@ -37,7 +37,6 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    #[allow(clippy::mutable_key_type)]
     let results: Vec<_> = keys
       .iter()
       .map(|key| async {
@@ -46,11 +45,9 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
       })
       .collect();
 
-    let results = join_all(results).await;
-
+    #[allow(clippy::mutable_key_type)]
     let mut hashmap = HashMap::new();
-
-    for (key, value) in results {
+    for (key, value) in join_all(results).await {
       hashmap.insert(key, value?);
     }
 
