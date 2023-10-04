@@ -35,7 +35,7 @@ impl RequestContext {
     server: Server,
     data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   ) -> Self {
-    Self { req_headers: HeaderMap::new(), http_client: http_client.clone(), server: server.clone(), data_loader }
+    Self { req_headers: HeaderMap::new(), http_client, server, data_loader }
   }
 
   #[allow(clippy::mutable_key_type)]
