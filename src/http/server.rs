@@ -70,6 +70,10 @@ pub async fn start_server(file_path: &String) -> Result<()> {
 
   let addr = ([0, 0, 0, 0], port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+  log::info!("🚀 Tailcall launched at [{}]", addr);
+  if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
+    log::info!("🌍 Playground: http://{}{}", addr, graphiql);
+  }
 
   Ok(server.await.map_err(CLIError::from)?)
 }
