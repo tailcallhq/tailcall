@@ -70,10 +70,7 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let port = config.port();
   let mut server = config.server.clone();
 
-  validate_headers(server.add_response_headers.clone()).map_err(CLIError::from)?;
-  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-
-  validate_headers(server.add_response_headers.clone())
+  let blueprint = validate_headers(server.add_response_headers.clone())
     .validate_or(Blueprint::try_from(&config))
     .map_err(CLIError::from)?;
 

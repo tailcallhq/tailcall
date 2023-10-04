@@ -46,10 +46,9 @@ impl Server {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
   }
-  pub fn set_response_headers(&mut self) -> Result<(), String> {
+  pub fn set_response_headers(&mut self) {
     let mut header_map = HeaderMap::new();
     if let Some(headers) = &self.add_response_headers {
-
       for (k, v) in headers {
         // Unwrap is safe as invalid headers are caught in validation
         header_map.insert(
@@ -59,7 +58,6 @@ impl Server {
       }
     }
     self.response_headers = header_map;
-    Ok(())
   }
 }
 
