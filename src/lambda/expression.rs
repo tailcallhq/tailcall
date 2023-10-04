@@ -2,7 +2,6 @@ use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
-
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
