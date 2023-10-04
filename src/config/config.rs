@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashSet};
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
+use directive_definition_derive::DirectiveDefinition;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -224,6 +225,7 @@ pub struct Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(DirectiveDefinition)]
 pub struct Http {
   pub path: String,
   #[serde(default)]
@@ -272,3 +274,26 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 }
+
+#[cfg(test)]
+
+mod tests {
+  use crate::config::Http;
+  use crate::document::print;
+  use async_graphql::parser::types::{ServiceDocument, DirectiveDefinition, TypeSystemDefinition};
+  use async_graphql::{Pos, Positioned};
+
+  #[test]
+  fn test_directive_definition() {
+    let d: DirectiveDefinition = Http::directive_definition();
+    let s = ServiceDocument {
+      definitions: vec![TypeSystemDefinition::Directive(
+        Positioned::new(d, Pos::default())
+      )]
+    };
+    
+    let pd = print(s);
+    println!("{}", pd);
+    assert!(true);
+  }
+}  

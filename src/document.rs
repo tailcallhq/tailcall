@@ -220,6 +220,7 @@ pub fn print(sd: ServiceDocument) -> String {
   let mut enums = Vec::with_capacity(definitions_len);
   let mut unions = Vec::with_capacity(definitions_len);
   let mut inputs = Vec::with_capacity(definitions_len);
+  let mut directives = Vec::with_capacity(definitions_len);
 
   for def in sd.definitions.iter() {
     match def {
@@ -232,7 +233,7 @@ pub fn print(sd: ServiceDocument) -> String {
         TypeKind::Union(_) => unions.push(print_type_def(&type_def.node)),
         TypeKind::InputObject(_) => inputs.push(print_type_def(&type_def.node)),
       },
-      TypeSystemDefinition::Directive(_) => todo!("Directives are not supported yet"),
+      TypeSystemDefinition::Directive(directive) => directives.push(print_top_level_directive(&directive.node)),
     }
   }
 
@@ -245,9 +246,25 @@ pub fn print(sd: ServiceDocument) -> String {
     .chain(unions)
     .chain(enums)
     .chain(objects)
+    .chain(directives)
     // Chain other types as needed...
     .collect::<Vec<String>>()
     .join("\n");
 
   sdl_string.trim_end_matches('\n').to_string()
+}
+
+fn print_top_level_directive(directive: &DirectiveDefinition) -> String {
+  let args = directive
+    .arguments
+    .iter()
+    .map(|arg| format!("  {}: {}", arg.node.name.node, arg.node.ty.node))
+    .collect::<Vec<String>>()
+    .join("\n");
+
+  if args.is_empty() {
+    format!("directive @{}", directive.name.node)
+  } else {
+    format!("directive @{}(\n{}\n)", directive.name.node, args)
+  }
 }
