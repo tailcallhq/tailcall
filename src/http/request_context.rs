@@ -5,13 +5,11 @@ use async_graphql::dataloader::{DataLoader, NoCache};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::memo_client::MemoClient;
 use super::{DataLoaderRequest, DefaultHttpClient, HttpDataLoader, Response, ServerContext};
 use crate::config::Server;
 
 #[derive(Setters)]
 pub struct RequestContext {
-  pub memo_client: MemoClient,
   pub http_client: DefaultHttpClient,
   pub server: Server,
   pub data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
@@ -37,13 +35,7 @@ impl RequestContext {
     server: Server,
     data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   ) -> Self {
-    Self {
-      memo_client: MemoClient::new(http_client.clone()),
-      req_headers: HeaderMap::new(),
-      http_client: http_client.clone(),
-      server: server.clone(),
-      data_loader,
-    }
+    Self { req_headers: HeaderMap::new(), http_client: http_client.clone(), server: server.clone(), data_loader }
   }
 
   #[allow(clippy::mutable_key_type)]
