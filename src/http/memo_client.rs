@@ -6,18 +6,18 @@ use http_cache_semantics::RequestLike;
 use hyper::Uri;
 use reqwest::Method;
 
-use super::HttpClient;
+use super::DefaultHttpClient;
 
 // TODO: drop MemoClient
 #[allow(dead_code)]
 pub struct MemoClient {
-  client: HttpClient,
+  client: DefaultHttpClient,
   cache: Mutex<HashMap<Uri, super::Response>>,
 }
 
 impl MemoClient {
   #[allow(dead_code)]
-  pub fn new(client: HttpClient) -> Self {
+  pub fn new(client: DefaultHttpClient) -> Self {
     Self { client, cache: Mutex::new(HashMap::new()) }
   }
 

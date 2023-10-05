@@ -2,7 +2,6 @@ use std::future::Future;
 use std::pin::Pin;
 
 use anyhow::Result;
-use http_cache_semantics::RequestLike;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -75,13 +74,20 @@ impl Expression {
           match operation {
             Operation::Endpoint(req_template) => {
               let req = req_template.to_request(ctx)?;
-              let url = req.uri().clone();
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
-              if is_get {
-                if let Some(cached) = ctx.req_ctx.cache.get(&url) {
-                  return Ok(cached.body);
-                }
+              if is_get && ctx.req_ctx.server.batch.is_some() {
+                let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
+                let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
+                let resp = ctx
+                  .req_ctx
+                  .data_loader
+                  .as_ref()
+                  .load_one(endpoint_key)
+                  .await
+                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                  .unwrap_or_default();
+                return Ok(resp.body);
               }
 
               // Prepare for HTTP calls
@@ -97,12 +103,6 @@ impl Expression {
                   .validate(&res.body)
                   .map_err(EvaluationError::from)?;
               }
-
-              // Insert into cache for future requests
-              if is_get {
-                ctx.req_ctx.cache.insert(url, res.clone());
-              }
-
               Ok(res.body)
             }
             Operation::JS(input, script) => {

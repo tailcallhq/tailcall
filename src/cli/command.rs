@@ -24,6 +24,8 @@ pub enum Command {
   Start {
     /// Path for the configuration file
     file_path: String,
+    #[arg(long)]
+    log_level: Option<log::Level>,
   },
 
   /// Validate a composition spec
