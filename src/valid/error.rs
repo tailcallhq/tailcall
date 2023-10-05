@@ -101,10 +101,7 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
 
     let re = Regex::new(r" at line \d+ column \d+$").unwrap();
     let message = re
-      .replace(
-        format!("Parsing failed because of {}", error.inner().to_string()).as_str(),
-        "",
-      )
+      .replace(format!("Parsing failed because of {}", error.inner()).as_str(), "")
       .into_owned();
 
     ValidationError(vec![Cause::new(message).trace(trace.into())])
@@ -126,7 +123,9 @@ mod tests {
   fn test_from_serde_error() {
     let foo = &mut serde_json::Deserializer::from_str("{ \"a\": true }");
     let actual = ValidationError::from(serde_path_to_error::deserialize::<_, Foo>(foo).unwrap_err());
-    let expected = ValidationError::new("invalid type: boolean `true`, expected i32".to_string()).trace("a");
+    let expected =
+      ValidationError::new("Parsing failed because of invalid type: boolean `true`, expected i32".to_string())
+        .trace("a");
     assert_eq!(actual, expected);
   }
 }
