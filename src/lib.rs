@@ -18,4 +18,5 @@ pub mod mustache;
 pub mod path_string;
 pub mod print_schema;
 pub mod request_template;
+pub mod schema;
 pub mod valid;
