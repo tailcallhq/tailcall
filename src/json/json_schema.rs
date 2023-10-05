@@ -62,12 +62,21 @@ impl JsonSchema {
       JsonSchema::Obj(fields) => {
         let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
         match value {
-          async_graphql::Value::Object(value_map) => {
-            let items_valid = field_schema_list.validate_all(|(name, field_schema)| {
-              if let Some(field_value) = value_map.get(&Name::new(name)) {
-                field_schema.validate(field_value).trace(name)
+          async_graphql::Value::Object(map) => {
+            let items_valid = field_schema_list.validate_all(|(name, schema)| {
+              let key = Name::new(name);
+              if schema.is_required() {
+                if let Some(field_value) = map.get(&key) {
+                  schema.validate(field_value).trace(name)
+                } else {
+                  Valid::fail("expected field to be non-nullable")
+                }
               } else {
-                Valid::fail("expected field")
+                if let Some(field_value) = map.get(&key) {
+                  schema.validate(field_value).trace(name)
+                } else {
+                  Valid::Ok(())
+                }
               }
             });
             match items_valid {
@@ -83,6 +92,21 @@ impl JsonSchema {
         _ => schema.validate(value),
       },
     }
+  }
+
+  pub fn optional(self) -> JsonSchema {
+    JsonSchema::Opt(Box::new(self))
+  }
+
+  pub fn is_optional(&self) -> bool {
+    match self {
+      JsonSchema::Opt(_) => true,
+      _ => false,
+    }
+  }
+
+  pub fn is_required(&self) -> bool {
+    !self.is_optional()
   }
 }
 
@@ -126,5 +150,18 @@ mod tests {
     });
     let result = schema.validate(&value);
     assert_eq!(result, Valid::fail("expected number").trace("age"));
+  }
+
+  #[test]
+  fn test_null_key() {
+    let schema = JsonSchema::from([("name", JsonSchema::Str.optional()), ("age", JsonSchema::Num)]);
+    let value = async_graphql::Value::Object({
+      let mut map = IndexMap::new();
+      map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
+      map
+    });
+
+    let result = schema.validate(&value);
+    assert_eq!(result, Valid::Ok(()));
   }
 }
