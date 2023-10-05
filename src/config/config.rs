@@ -10,6 +10,7 @@ use super::{Proxy, Server};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::valid::{Valid, ValidExtensions};
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
@@ -168,11 +169,25 @@ pub struct Field {
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
   pub batch: Option<Batch>,
+  pub const_field: Option<ConstField>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+  }
+  pub fn resolvable_directives(&self) -> Vec<&str> {
+    let mut directives = Vec::with_capacity(3);
+    if self.http.is_some() {
+      directives.push("@http")
+    }
+    if self.unsafe_operation.is_some() {
+      directives.push("@unsafe")
+    }
+    if self.const_field.is_some() {
+      directives.push("@const")
+    }
+    directives
   }
   pub fn has_batched_resolver(&self) -> bool {
     if let Some(http) = self.http.as_ref() {
@@ -253,6 +268,11 @@ impl Http {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ConstField {
+  pub data: Value,
+}
+
 impl Config {
   pub fn from_json(json: &str) -> Result<Self> {
     Ok(serde_json::from_str(json)?)
@@ -262,10 +282,12 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> Result<Self> {
-    let doc = async_graphql::parser::parse_schema(sdl)?;
-
-    Ok(Config::from(doc))
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    let doc = async_graphql::parser::parse_schema(sdl);
+    match doc {
+      Ok(doc) => Config::try_from(doc),
+      Err(e) => Valid::fail(e.to_string()),
+    }
   }
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
