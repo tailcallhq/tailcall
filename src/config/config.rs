@@ -295,14 +295,14 @@ mod tests {
     let expected = "directive @http(
   path: String!
   method: Method!
-  query: [KeyValue]!
+  query: [KeyValue]
   input: JsonSchema
   output: JsonSchema
   body: String
-  match_path: [String!]!
+  match_path: [String]!
   match_key: String
   base_url: String
-  headers: [KeyValue]!
+  headers: [KeyValue]
 )";
     assert_eq!(actual, expected);
   }

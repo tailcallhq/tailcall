@@ -19,7 +19,8 @@ fn get_first_seg_ident_string(path: &syn::TypePath) -> Option<String> {
 
 fn get_graphql_type(path: &syn::TypePath, is_required: bool) -> String {
     let ident_string = get_first_seg_ident_string(path);
-    let is_child_required = ident_string.as_ref().unwrap().as_str() != "Option";
+    let ident_string_str = ident_string.as_ref().unwrap().as_str();
+    let is_child_required = ident_string_str!= "Option" && ident_string_str != "Vec";
     let argument_types = match &path.path.segments.first().unwrap().arguments {
         syn::PathArguments::AngleBracketed(angle_bracketed_args) => {
             angle_bracketed_args.args.iter().filter_map(|arg|
@@ -33,7 +34,7 @@ fn get_graphql_type(path: &syn::TypePath, is_required: bool) -> String {
         },
         _ => "".to_string()
     };
-    let mut graphql_type_str = match ident_string.as_ref().unwrap().as_str() {
+    let mut graphql_type_str = match ident_string_str {
         "Option" => format!("{}", argument_types),
         "BTreeMap" => "[KeyValue]".to_string(),
         "Vec" => format!("[{}]", argument_types),
@@ -42,7 +43,7 @@ fn get_graphql_type(path: &syn::TypePath, is_required: bool) -> String {
             format!("{}", ident_string.as_ref().unwrap())
         }
     };
-    if is_required && (ident_string.as_ref().unwrap().as_str() != "Option") {
+    if is_required && ident_string_str != "Option" && ident_string_str != "BTreeMap" {
         graphql_type_str.push_str("!")
     }
     graphql_type_str
