@@ -100,7 +100,12 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
     }
 
     let re = Regex::new(r" at line \d+ column \d+$").unwrap();
-    let message = re.replace(error.inner().to_string().as_str(), "").into_owned();
+    let message = re
+      .replace(
+        format!("Parsing failed because of {}", error.inner().to_string()).as_str(),
+        "",
+      )
+      .into_owned();
 
     ValidationError(vec![Cause::new(message).trace(trace.into())])
   }
