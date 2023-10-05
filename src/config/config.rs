@@ -10,6 +10,7 @@ use super::{Proxy, Server};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::valid::{Valid, ValidExtensions};
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
@@ -262,10 +263,12 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> Result<Self> {
-    let doc = async_graphql::parser::parse_schema(sdl)?;
-
-    Ok(Config::from(doc))
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    let doc = async_graphql::parser::parse_schema(sdl);
+    match doc {
+      Ok(doc) => Config::try_from(doc),
+      Err(e) => Valid::fail(e.to_string()),
+    }
   }
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
