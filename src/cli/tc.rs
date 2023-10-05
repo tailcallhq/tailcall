@@ -8,6 +8,7 @@ use clap::Parser;
 use colored::Colorize;
 use inquire::Confirm;
 use resource::resource_str;
+use log::Level;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -18,8 +19,13 @@ use crate::print_schema;
 
 pub async fn run() -> Result<()> {
   let cli = Cli::parse();
+
   match cli.command {
-    Command::Start { file_path } => {
+    Command::Start { file_path, log_level } => {
+      env_logger::Builder::new()
+        .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
+        .init();
+
       start_server(&file_path).await?;
       Ok(())
     }
