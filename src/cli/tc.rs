@@ -7,8 +7,8 @@ use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 use inquire::Confirm;
-use resource::resource_str;
 use log::Level;
+use resource::resource_str;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
