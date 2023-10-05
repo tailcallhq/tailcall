@@ -16,14 +16,15 @@ fn from_directive<'a, A: Deserialize<'a>>(directive: &'a ConstDirective) -> Vali
     Valid::Ok((
       k.node.as_str().to_string(),
       serde_json::to_value(&v.node)
-        .map_err(|e| ValidationError::new(e.to_string()).trace(directive.name.node.as_str()))?,
+        .map_err(|e| ValidationError::new(e.to_string()).trace(format!("@{}", directive.name.node).as_str()))?,
     ))
   })?;
   p.into_iter().for_each(|(k, v)| {
     map.insert(k, v);
   });
 
-  deserialize(Value::Object(map)).map_err(|e| ValidationError::from(e).trace(directive.name.node.as_str()))
+  deserialize(Value::Object(map))
+    .map_err(|e| ValidationError::from(e).trace(format!("@{}", directive.name.node).as_str()))
 }
 
 fn to_directive<A: Serialize>(a: &A, name: String) -> ConstDirective {
