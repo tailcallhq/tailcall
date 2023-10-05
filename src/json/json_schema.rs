@@ -71,12 +71,10 @@ impl JsonSchema {
                 } else {
                   Valid::fail("expected field to be non-nullable")
                 }
+              } else if let Some(field_value) = map.get(&key) {
+                schema.validate(field_value).trace(name)
               } else {
-                if let Some(field_value) = map.get(&key) {
-                  schema.validate(field_value).trace(name)
-                } else {
-                  Valid::Ok(())
-                }
+                Valid::Ok(())
               }
             });
             match items_valid {
@@ -99,10 +97,7 @@ impl JsonSchema {
   }
 
   pub fn is_optional(&self) -> bool {
-    match self {
-      JsonSchema::Opt(_) => true,
-      _ => false,
-    }
+    matches!(self, JsonSchema::Opt(_))
   }
 
   pub fn is_required(&self) -> bool {
