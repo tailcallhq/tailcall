@@ -9,6 +9,7 @@ use colored::Colorize;
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
+use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -68,11 +69,13 @@ pub async fn init(file_path: &str) -> Result<()> {
           fs::write(format!("{}/{}", file_path, &file_name), "")?;
 
           let graphqlrc = format!(
-            r#"schema:
-- "./{}"
-- "./.tailcallrc.graphql"#,
-            file_name
-          );
+            r#"|schema:
+               |- './{}'
+               |- './.tailcallrc.graphql'
+          "#,
+            &file_name
+          )
+          .strip_margin();
           fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
         }
         Ok(false) => (),
