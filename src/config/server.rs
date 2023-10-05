@@ -1,6 +1,6 @@
-use directive_definition_derive::DirectiveDefinition;
 use std::collections::{BTreeMap, HashSet};
 
+use directive_definition_derive::DirectiveDefinition;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, DirectiveDefinition)]

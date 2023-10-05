@@ -40,10 +40,11 @@ impl From<&Method> for reqwest::Method {
 #[cfg(test)]
 
 mod tests {
-  use crate::document::print;
-  use crate::http::method::Method;
   use async_graphql::parser::types::{ServiceDocument, TypeDefinition, TypeSystemDefinition};
   use async_graphql::{Pos, Positioned};
+
+  use crate::document::print;
+  use crate::http::method::Method;
 
   #[test]
   fn test_enum_definition() {

@@ -277,10 +277,11 @@ impl Config {
 #[cfg(test)]
 
 mod tests {
-  use crate::config::Http;
-  use crate::document::print;
   use async_graphql::parser::types::{DirectiveDefinition, ServiceDocument, TypeSystemDefinition};
   use async_graphql::{Pos, Positioned};
+
+  use crate::config::Http;
+  use crate::document::print;
 
   #[test]
   fn test_directive_definition() {
