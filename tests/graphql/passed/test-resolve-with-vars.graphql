@@ -12,7 +12,7 @@ type Query {
   user: [User]
   @http(
     path: "/users"
-    query: { id: "{{vars.id}}" }
+    query: [{ key: "id",value: "{{vars.id}}" }]
     baseURL: "http://jsonplaceholder.typicode.com"
   )
 }
