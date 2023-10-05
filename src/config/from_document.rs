@@ -196,6 +196,7 @@ fn to_common_field(
   let http = to_http(directives);
   let unsafe_operation = to_unsafe_operation(directives);
   let batch = to_batch(directives);
+  let const_field = to_const_field(directives);
   config::Field {
     type_of,
     list,
@@ -208,6 +209,7 @@ fn to_common_field(
     http,
     unsafe_operation,
     batch,
+    const_field,
   }
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -292,6 +294,15 @@ fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "batch" {
       Batch::from_directive(&directive.node).ok()
+    } else {
+      None
+    }
+  })
+}
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
+  directives.iter().find_map(|directive| {
+    if directive.node.name.node == "const" {
+      config::ConstField::from_directive(&directive.node).ok()
     } else {
       None
     }
