@@ -238,6 +238,25 @@ pub struct Union {
   pub doc: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct KeyValues(pub Vec<KeyValue>);
+
+impl From<KeyValues> for BTreeMap<String, String> {
+  fn from(value: KeyValues) -> Self {
+    let mut map = BTreeMap::new();
+    for KeyValue { key, value } in value.0 {
+      map.insert(key, value);
+    }
+    map
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct KeyValue {
+  pub key: String,
+  pub value: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
@@ -246,7 +265,7 @@ pub struct Http {
   pub method: Method,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
-  pub query: BTreeMap<String, String>,
+  pub query: KeyValues,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
@@ -258,7 +277,7 @@ pub struct Http {
   pub base_url: Option<String>,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
-  pub headers: BTreeMap<String, String>,
+  pub headers: KeyValues,
 }
 
 impl Http {

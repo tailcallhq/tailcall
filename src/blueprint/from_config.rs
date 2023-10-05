@@ -304,11 +304,13 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
           base_url.pop();
         }
         base_url.push_str(http.path.clone().as_str());
-        let query = http.query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        let query: BTreeMap<String, String> = http.query.clone().into();
+        let query = query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
-        for (k, v) in http.headers.iter() {
+        let headers: BTreeMap<String, String> = http.headers.clone().into();
+        for (k, v) in headers.iter() {
           header_map.insert(
             HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
