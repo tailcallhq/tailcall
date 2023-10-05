@@ -70,11 +70,11 @@ pub async fn init(file_path: &str) -> Result<()> {
           fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
         }
         Ok(false) => (),
-        Err(_) => println!("{}", "Something went wrong, please try again".red()),
+        Err(_) => (),
       }
     }
     Ok(false) => (),
-    Err(_) => println!("{}", "Something went wrong, please try again".red()),
+    Err(_) => (),
   }
 
   fs::write(
