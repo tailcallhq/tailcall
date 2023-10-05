@@ -23,8 +23,11 @@ pub struct Config {
 }
 
 impl Config {
-  pub fn port(&self) -> u16 {
-    self.server.port.unwrap_or(8000)
+  pub fn port(&self) -> Result<u16, &'static str> {
+    match self.server.port {
+      Some(port) => Ok(port),
+      None => Err("Please specify a valid port number in the configuration. Port must be a numeric value."),
+    }
   }
 
   pub fn proxy(&self) -> Option<Proxy> {

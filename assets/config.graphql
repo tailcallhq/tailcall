@@ -1,0 +1,14 @@
+schema @server(port: "8000", baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+}
