@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
 use enum_definition_derive::EnumDefinition;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
-#[derive(EnumDefinition)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, EnumDefinition)]
 pub enum Method {
   #[default]
   GET,
@@ -25,15 +24,15 @@ impl From<Method> for reqwest::Method {
 impl From<&Method> for reqwest::Method {
   fn from(method: &Method) -> Self {
     match method {
-        Method::GET => reqwest::Method::GET,
-        Method::POST => reqwest::Method::POST,
-        Method::PUT => reqwest::Method::PUT,
-        Method::PATCH => reqwest::Method::PATCH,
-        Method::DELETE => reqwest::Method::DELETE,
-        Method::HEAD => reqwest::Method::HEAD,
-        Method::OPTIONS => reqwest::Method::OPTIONS,
-        Method::CONNECT => reqwest::Method::CONNECT,
-        Method::TRACE => reqwest::Method::TRACE,
+      Method::GET => reqwest::Method::GET,
+      Method::POST => reqwest::Method::POST,
+      Method::PUT => reqwest::Method::PUT,
+      Method::PATCH => reqwest::Method::PATCH,
+      Method::DELETE => reqwest::Method::DELETE,
+      Method::HEAD => reqwest::Method::HEAD,
+      Method::OPTIONS => reqwest::Method::OPTIONS,
+      Method::CONNECT => reqwest::Method::CONNECT,
+      Method::TRACE => reqwest::Method::TRACE,
     }
   }
 }
@@ -41,23 +40,29 @@ impl From<&Method> for reqwest::Method {
 #[cfg(test)]
 
 mod tests {
-  use crate::http::method::Method;
   use crate::document::print;
-  use async_graphql::parser::types::{ServiceDocument, TypeSystemDefinition, TypeDefinition};
+  use crate::http::method::Method;
+  use async_graphql::parser::types::{ServiceDocument, TypeDefinition, TypeSystemDefinition};
   use async_graphql::{Pos, Positioned};
 
   #[test]
   fn test_enum_definition() {
     let enum_def: TypeDefinition = Method::enum_definition();
-    let s = ServiceDocument {
-        definitions: vec![TypeSystemDefinition::Type(
-            Positioned::new(enum_def, Pos::default())
-        )]
-    };
-    let pd = print(s);
-    println!("{}", pd);
-
-    assert!(true);
-
+    let service_doc =
+      ServiceDocument { definitions: vec![TypeSystemDefinition::Type(Positioned::new(enum_def, Pos::default()))] };
+    let actual = print(service_doc);
+    let expected = "enum Method {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+  CONNECT
+  TRACE
+}";
+    println!("{}", actual);
+    assert_eq!(actual, expected);
   }
 }

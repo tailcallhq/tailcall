@@ -260,9 +260,13 @@ fn print_top_level_directive(directive: &DirectiveDefinition) -> String {
     .iter()
     .map(|arg| {
       if arg.node.default_value.is_some() {
-        format!("  {}: {} = {}", arg.node.name.node, arg.node.ty.node, arg.node.default_value.as_ref().unwrap().node)
+        format!(
+          "  {}: {} = {}",
+          arg.node.name.node,
+          arg.node.ty.node,
+          arg.node.default_value.as_ref().unwrap().node
+        )
       } else {
-
         format!("  {}: {}", arg.node.name.node, arg.node.ty.node)
       }
     })

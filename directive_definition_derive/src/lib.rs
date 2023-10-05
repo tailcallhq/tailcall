@@ -17,26 +17,15 @@ fn get_first_seg_ident_string(path: &syn::TypePath) -> Option<String> {
     }
 }
 
-// fn convert_to_graphql_type(ident: String, arg: Option<String>) -> String {
-//     println!("{:?}", arg);
-//     let default_type = "String".to_string();
-//     match ident.as_str() {
-//         "Option" => format!("{}!!", convert_to_graphql_type(arg.unwrap_or(default_type), None)),
-//         "BTreeMap" => "[KeyValue]".to_string(),
-//         "Vec" => format!("[{}]", convert_to_graphql_type(arg.unwrap_or(default_type), None)),
-//         "Method" => "Method".to_string(),
-//         _ => format!("{}", ident)
-//     }
-// }
-
-fn get_graphql_type(path: &syn::TypePath) -> String {
+fn get_graphql_type(path: &syn::TypePath, is_required: bool) -> String {
     let ident_string = get_first_seg_ident_string(path);
+    let is_child_required = ident_string.as_ref().unwrap().as_str() != "Option";
     let argument_types = match &path.path.segments.first().unwrap().arguments {
         syn::PathArguments::AngleBracketed(angle_bracketed_args) => {
             angle_bracketed_args.args.iter().filter_map(|arg|
                 match arg {
                     syn::GenericArgument::Type(syn::Type::Path(arg_type_path)) => {
-                        Some(get_graphql_type(&arg_type_path))
+                        Some(get_graphql_type(&arg_type_path, is_child_required))
                     },
                     _ => None
                 }
@@ -45,27 +34,19 @@ fn get_graphql_type(path: &syn::TypePath) -> String {
         _ => "".to_string()
     };
     let mut graphql_type_str = match ident_string.as_ref().unwrap().as_str() {
-        "Option" => format!("{}!!", argument_types),
+        "Option" => format!("{}", argument_types),
         "BTreeMap" => "[KeyValue]".to_string(),
         "Vec" => format!("[{}]", argument_types),
         "Method" => "Method".to_string(),
         _ => {
-            format!("{}", ident_string.unwrap())
+            format!("{}", ident_string.as_ref().unwrap())
         }
-
     };
-    if graphql_type_str.ends_with("!!") {
-        graphql_type_str = graphql_type_str.strip_suffix("!!").unwrap_or("").to_string();
-    } else {
+    if is_required && (ident_string.as_ref().unwrap().as_str() != "Option") {
         graphql_type_str.push_str("!")
     }
     graphql_type_str
-
 }
-
-// fn get_graphql_type_for_arg() -> String {
-
-// }
 
 fn impl_directive_definition(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
@@ -87,48 +68,15 @@ fn impl_directive_definition(ast: &syn::DeriveInput) -> TokenStream {
         let field_type = &field.ty;
         let graphql_type = match field_type {
             Type::Path(path) => {
-                get_graphql_type(path)
+                get_graphql_type(path, true)
             },
             _ => "String".to_string()
         };
-        // let graphql_type = match field_type {
-        //     Type::Path(path) => {
-        //         let ident_string = get_first_seg_ident_string(path);
-        //         let mut first_arg: Option<String> = None;
-        //         if let Some(seg) = path.path.segments.first() {                
-        //             first_arg = match &seg.arguments {
-        //                 syn::PathArguments::AngleBracketed(angle_bracketed_args) => {
-        //                     let first = angle_bracketed_args.args.first();
-        //                     if let Some(arg_path) = first {
-        //                         match arg_path {
-        //                             syn::GenericArgument::Type(t) => {
-        //                                 match t {
-        //                                     syn::Type::Path(type_path) => {
-        //                                         get_first_seg_ident_string(type_path)
-        //                                     }
-        //                                     _ => None
-        //                                 }
-        //                             }
-        //                             _ => None
-        //                         }
-        //                     } else {
-        //                         None
-        //                     }
-        //                 },
-        //                 _ => None
-        //             };
-        //         }
-        //         convert_to_graphql_type(ident_string.unwrap_or("".to_string()), first_arg)
-        //     },
-        //     _ => "String".to_string()
-        // };
-
         quote! {
             #graphql_type,
         }
     }).collect::<Vec<_>>();
-
-    
+ 
     let gen = quote! {
         impl #name {
             fn directive_definition() -> async_graphql::parser::types::DirectiveDefinition {

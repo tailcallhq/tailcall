@@ -224,8 +224,7 @@ pub struct Union {
   pub doc: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[derive(DirectiveDefinition)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, DirectiveDefinition)]
 pub struct Http {
   pub path: String,
   #[serde(default)]
@@ -280,20 +279,31 @@ impl Config {
 mod tests {
   use crate::config::Http;
   use crate::document::print;
-  use async_graphql::parser::types::{ServiceDocument, DirectiveDefinition, TypeSystemDefinition};
+  use async_graphql::parser::types::{DirectiveDefinition, ServiceDocument, TypeSystemDefinition};
   use async_graphql::{Pos, Positioned};
 
   #[test]
   fn test_directive_definition() {
-    let d: DirectiveDefinition = Http::directive_definition();
-    let s = ServiceDocument {
-      definitions: vec![TypeSystemDefinition::Directive(
-        Positioned::new(d, Pos::default())
-      )]
+    let directive_def: DirectiveDefinition = Http::directive_definition();
+    let service_doc = ServiceDocument {
+      definitions: vec![TypeSystemDefinition::Directive(Positioned::new(
+        directive_def,
+        Pos::default(),
+      ))],
     };
-    
-    let pd = print(s);
-    println!("{}", pd);
-    assert!(true);
+    let actual = print(service_doc);
+    let expected = "directive @http(
+  path: String!
+  method: Method!
+  query: [KeyValue]!
+  input: JsonSchema
+  output: JsonSchema
+  body: String
+  match_path: [String!]!
+  match_key: String
+  base_url: String
+  headers: [KeyValue]!
+)";
+    assert_eq!(actual, expected);
   }
-}  
+}
