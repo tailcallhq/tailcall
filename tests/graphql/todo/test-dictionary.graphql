@@ -18,14 +18,7 @@ type Query {
 }
 
 #> client-query
-query (
-  $expect: Json = {
-    z: {
-      a: 1
-      b: [{key: "k1", value: 1}, {key: "k2", value: 2}, {key: "k3", value: 3}]
-    }
-  }
-) {
+query ($expect: Json = {z: {a: 1, b: [{key: "k1", value: 1}, {key: "k2", value: 2}, {key: "k3", value: 3}]}}) {
   z {
     a
     b {

@@ -11,24 +11,12 @@ type Post {
 }
 
 type Query {
-  post1: Post
-    @http(
-      path: "/posts/{{headers.authorization}}"
-      baseURL: "http://jsonplaceholder.typicode.com"
-    )
+  post1: Post @http(path: "/posts/{{headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 #> client-query
 query
-@expect(
-  json: {
-    data: {
-      post1: {
-        title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
-      }
-    }
-  }
-) {
+@expect(json: {data: {post1: {title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}}}) {
   post1 {
     title
   }

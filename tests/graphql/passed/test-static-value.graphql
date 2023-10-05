@@ -9,8 +9,7 @@ type User {
 }
 
 type Query {
-  firstUser: User
-    @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  firstUser: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 #> client-query

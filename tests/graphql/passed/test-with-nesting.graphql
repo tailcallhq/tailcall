@@ -31,9 +31,7 @@ query
     data: {
       user: {
         posts: [
-          {
-            title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
-          }
+          {title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"}
           {title: "qui est esse"}
           {title: "ea molestias quasi exercitationem repellat qui ipsa sit aut"}
           {title: "eum et est occaecati"}

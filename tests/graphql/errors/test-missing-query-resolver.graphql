@@ -19,11 +19,5 @@ type Post {
 
 #> client-sdl
 type Failure
-  @error(
-    message: "No resolver has been found in the schema"
-    trace: ["Query", "posts"]
-  )
-  @error(
-    message: "No resolver has been found in the schema"
-    trace: ["Query", "user"]
-  )
+  @error(message: "No resolver has been found in the schema", trace: ["Query", "posts"])
+  @error(message: "No resolver has been found in the schema", trace: ["Query", "user"])

@@ -16,9 +16,7 @@ type Foo {
 }
 
 type Query {
-  foo: Foo
-    @http(path: "/inlineWithList", baseURL: "https://foo.com")
-    @inline(path: ["a", "b"])
+  foo: Foo @http(path: "/inlineWithList", baseURL: "https://foo.com") @inline(path: ["a", "b"])
 }
 
 #> client-query

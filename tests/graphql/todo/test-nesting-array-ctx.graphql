@@ -4,12 +4,7 @@ schema {
 }
 
 type Bar {
-  value: Int
-    @http(
-      path: "/withNestingArrayCtxValue"
-      query: {data: "{{value}}"}
-      baseURL: "https://foo.com"
-    )
+  value: Int @http(path: "/withNestingArrayCtxValue", query: {data: "{{value}}"}, baseURL: "https://foo.com")
 }
 
 type Foo {
@@ -21,9 +16,7 @@ type Query {
 }
 
 #> client-query
-query (
-  $expect: Json = {foo: {bar: [{value: 101}, {value: 201}, {value: 301}]}}
-) {
+query ($expect: Json = {foo: {bar: [{value: 101}, {value: 201}, {value: 301}]}}) {
   foo {
     bar {
       value

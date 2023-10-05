@@ -8344,11 +8344,7 @@
       "width": 60,
       "height": 100,
       "seed": 364930747,
-      "groupIds": [
-        "8m6eyvR-8WqUxa6_znEZ-",
-        "vjoGjxWvKFuPZBzsfWCvS",
-        "5hkvSS2n9zCpLhr0Y-XP2"
-      ],
+      "groupIds": ["8m6eyvR-8WqUxa6_znEZ-", "vjoGjxWvKFuPZBzsfWCvS", "5hkvSS2n9zCpLhr0Y-XP2"],
       "roundness": {
         "type": 1
       },
@@ -8376,11 +8372,7 @@
       "width": 20,
       "height": 20,
       "seed": 1693531,
-      "groupIds": [
-        "8m6eyvR-8WqUxa6_znEZ-",
-        "vjoGjxWvKFuPZBzsfWCvS",
-        "5hkvSS2n9zCpLhr0Y-XP2"
-      ],
+      "groupIds": ["8m6eyvR-8WqUxa6_znEZ-", "vjoGjxWvKFuPZBzsfWCvS", "5hkvSS2n9zCpLhr0Y-XP2"],
       "roundness": {
         "type": 2
       },
@@ -17010,11 +17002,7 @@
       "width": 161.9765625,
       "height": 166.5,
       "seed": 2134123963,
-      "groupIds": [
-        "SMymybPvCzRBFvuul1IYI",
-        "NJgYuQZQCaOhHMQHaQ3fk",
-        "4cnZmL-qZ7zuuD9Q7EPLt"
-      ],
+      "groupIds": ["SMymybPvCzRBFvuul1IYI", "NJgYuQZQCaOhHMQHaQ3fk", "4cnZmL-qZ7zuuD9Q7EPLt"],
       "roundness": {
         "type": 2
       },

@@ -8,9 +8,7 @@ type User {
 }
 
 type Query {
-  username: [User]
-    @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com")
-    @inline(path: ["0", "name"])
+  username: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com") @inline(path: ["0", "name"])
 }
 
 #> client-query
