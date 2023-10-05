@@ -1,6 +1,7 @@
+use directive_definition_derive::DirectiveDefinition;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, DirectiveDefinition)]
 pub struct Batch {
   key: String,
   path: Option<Vec<String>>,

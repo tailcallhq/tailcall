@@ -1,8 +1,9 @@
+use directive_definition_derive::DirectiveDefinition;
 use std::collections::{BTreeMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, DirectiveDefinition)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
   pub allowed_headers: Option<HashSet<String>>,

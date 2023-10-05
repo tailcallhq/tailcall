@@ -193,7 +193,7 @@ pub struct Unsafe {
   pub script: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, DirectiveDefinition)]
 pub struct ModifyField {
   pub name: Option<String>,
   #[serde(default)]
@@ -201,7 +201,7 @@ pub struct ModifyField {
   pub omit: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, DirectiveDefinition)]
 pub struct InlineType {
   pub path: Vec<String>,
 }
