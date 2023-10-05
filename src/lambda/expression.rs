@@ -12,6 +12,8 @@ use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
 
+use super::GraphqlContext;
+
 #[derive(Clone, Debug)]
 pub enum Expression {
   Context(Context),
@@ -52,9 +54,9 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn eval<'a>(
+  pub fn eval<'a, Ctx: GraphqlContext<'a> + Sync + Send>(
     &'a self,
-    ctx: &'a EvaluationContext<'a>,
+    ctx: &'a EvaluationContext<'a, Ctx>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
     Box::pin(async move {
       match self {

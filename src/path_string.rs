@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use serde_json::json;
 
 use crate::json::JsonLike;
-use crate::lambda::EvaluationContext;
+use crate::lambda::{EvaluationContext, GraphqlContext};
 
 pub trait PathString {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
@@ -21,7 +21,7 @@ impl PathString for serde_json::Value {
 }
 
 // TODO: improve performance
-impl PathString for EvaluationContext<'_> {
+impl<'a, Ctx: GraphqlContext<'a>> PathString for EvaluationContext<'a, Ctx> {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
     let mut result = None;

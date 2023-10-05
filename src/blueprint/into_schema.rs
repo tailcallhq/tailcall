@@ -46,7 +46,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 _ => None,
               })),
               Some(expr) => {
-                let ctx = EvaluationContext::new(req_ctx).context(&ctx);
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
                 Ok(Some(expr.eval(&ctx).await?))
               }
             }

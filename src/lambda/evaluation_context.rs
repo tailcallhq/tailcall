@@ -1,19 +1,46 @@
 use std::time::Duration;
 
 use async_graphql::dynamic::ResolverContext;
-#[allow(unused_imports)]
-use async_graphql::InputType;
+use async_graphql::{Name, Value};
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use reqwest::header::HeaderMap;
 
 use crate::http::RequestContext;
 
+pub trait GraphqlContext<'a> {
+  fn value(&'a self) -> Option<&'a Value>;
+  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
+}
+
+pub struct EmptyGraphqlContext;
+
+impl<'a> GraphqlContext<'a> for EmptyGraphqlContext {
+  fn value(&'a self) -> Option<&'a Value> {
+    None
+  }
+
+  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    None
+  }
+}
+
+impl<'a> GraphqlContext<'a> for ResolverContext<'a> {
+  fn value(&'a self) -> Option<&'a Value> {
+    self.parent_value.as_value()
+  }
+
+  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    Some(self.args.as_index_map())
+  }
+}
+
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
-pub struct EvaluationContext<'a> {
+pub struct EvaluationContext<'a, Ctx: GraphqlContext<'a>> {
   pub req_ctx: &'a RequestContext,
-  pub context: Option<&'a ResolverContext<'a>>,
+  pub graphql_ctx: &'a Ctx,
 
   // TODO: JS timeout should be read from server settings
   pub timeout: Duration,
@@ -23,30 +50,27 @@ lazy_static::lazy_static! {
   static ref REQUEST_CTX: RequestContext = RequestContext::default();
 }
 
-impl Default for EvaluationContext<'static> {
+impl Default for EvaluationContext<'static, EmptyGraphqlContext> {
   fn default() -> Self {
-    Self::new(&REQUEST_CTX)
+    Self::new(&REQUEST_CTX, &EmptyGraphqlContext)
   }
 }
 
-impl<'a> EvaluationContext<'a> {
-  pub fn new(req_ctx: &'a RequestContext) -> EvaluationContext<'a> {
-    Self { context: None, timeout: Duration::from_millis(5), req_ctx }
+impl<'a, Ctx: GraphqlContext<'a>> EvaluationContext<'a, Ctx> {
+  pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
+    Self { timeout: Duration::from_millis(5), req_ctx, graphql_ctx }
+  }
+
+  pub fn value(&self) -> Option<&Value> {
+    self.graphql_ctx.value()
   }
 
   pub fn args(&self) -> Option<async_graphql::Value> {
-    let ctx = self.context?;
-
-    Some(async_graphql::Value::Object(ctx.args.as_index_map().clone()))
+    Some(async_graphql::Value::Object(self.graphql_ctx.args()?.clone()))
   }
 
-  pub fn path_value<T: AsRef<str>>(&'a self, path: &[T]) -> Option<&'a async_graphql::Value> {
-    get_path_value(self.value()?, path)
-  }
-
-  pub fn value(&self) -> Option<&'a async_graphql::Value> {
-    let ctx = self.context?;
-    ctx.parent_value.as_value()
+  pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<&'a async_graphql::Value> {
+    get_path_value(self.graphql_ctx.value()?, path)
   }
 
   pub fn headers(&self) -> &HeaderMap {
