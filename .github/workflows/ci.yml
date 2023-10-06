@@ -8,19 +8,14 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
 jobs:
-  check:
-    name: Rust project
+  test:
+    name: Run tests
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -36,6 +31,32 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: llvm-cov
+          args: --all-features --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
+
+  format:
+    name: Run formatter and lint check
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+
       - name: Format code
         uses: actions-rs/cargo@v1
         with:
@@ -50,23 +71,10 @@ jobs:
           command: clippy
           args: --all-targets --all-features -- -D warnings
 
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: llvm-cov
-          args: --all-features --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov.info
-          fail_ci_if_error: true
-
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
-    needs: check
+    needs: [test, format]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-job
@@ -107,7 +115,7 @@ jobs:
 
   release:
     name: Release
-    needs: [check, draft_release]
+    needs: [test, format, draft_release]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
     strategy:

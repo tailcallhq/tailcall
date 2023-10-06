@@ -228,20 +228,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl;
     let config = Config::from_sdl(content.as_str());
 
-    let config = match config {
-      Ok(config) => config,
-      Err(cause) => {
-        assert_eq!(
-          cause.to_string(),
-          expected.first().unwrap().message,
-          "Server SDL failure mismatch: {}",
-          spec.path.display()
-        );
-        continue;
-      }
-    };
-
-    let actual = Blueprint::try_from(&config);
+    let actual = config.and_then(|config| Blueprint::try_from(&config));
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();

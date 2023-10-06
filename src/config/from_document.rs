@@ -13,11 +13,15 @@ use crate::batch::Batch;
 use crate::config;
 use crate::config::{Config, GraphQL, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
+use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
-fn from_document(doc: ServiceDocument) -> Config {
-  Config { server: schema_definition(&doc).and_then(server).unwrap_or_default(), graphql: graphql(&doc) }
+type Valid<A> = ValidDefault<A, String>;
+fn from_document(doc: ServiceDocument) -> Valid<Config> {
+  let schema_definition = schema_definition(&doc)?;
+
+  Valid::Ok(Config { server: server(schema_definition)?, graphql: graphql(&doc)? })
 }
-fn graphql(doc: &ServiceDocument) -> GraphQL {
+fn graphql(doc: &ServiceDocument) -> Valid<GraphQL> {
   let type_definitions: Vec<_> = doc
     .definitions
     .iter()
@@ -27,22 +31,30 @@ fn graphql(doc: &ServiceDocument) -> GraphQL {
     })
     .collect();
 
-  let root_schema = schema_definition(doc).map_or_else(RootSchema::default, to_root_schema);
+  let root_schema = to_root_schema(schema_definition(doc)?);
 
-  GraphQL { schema: root_schema, types: to_types(&type_definitions), unions: to_union_types(&type_definitions) }
-}
-
-fn schema_definition(doc: &ServiceDocument) -> Option<&SchemaDefinition> {
-  doc.definitions.iter().find_map(|def| match def {
-    TypeSystemDefinition::Schema(schema_definition) => Some(&schema_definition.node),
-    _ => None,
+  Valid::Ok(GraphQL {
+    schema: root_schema,
+    types: to_types(&type_definitions),
+    unions: to_union_types(&type_definitions),
   })
 }
-fn server(schema_definition: &SchemaDefinition) -> Option<Server> {
-  let mut server = None;
+
+fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition> {
+  let p = doc.definitions.iter().find_map(|def| match def {
+    TypeSystemDefinition::Schema(schema_definition) => Some(&schema_definition.node),
+    _ => None,
+  });
+  p.map_or_else(
+    || Valid::fail("schema not found".to_string()).trace("schema"),
+    Valid::Ok,
+  )
+}
+fn server(schema_definition: &SchemaDefinition) -> Valid<Server> {
+  let mut server = Valid::Ok(Server::default());
   for directive in schema_definition.directives.iter() {
     if directive.node.name.node == "server" {
-      server = Server::from_directive(&directive.node).ok();
+      server = Server::from_directive(&directive.node)
     }
   }
   server
@@ -184,6 +196,7 @@ fn to_common_field(
   let http = to_http(directives);
   let unsafe_operation = to_unsafe_operation(directives);
   let batch = to_batch(directives);
+  let const_field = to_const_field(directives);
   config::Field {
     type_of,
     list,
@@ -196,6 +209,7 @@ fn to_common_field(
     http,
     unsafe_operation,
     batch,
+    const_field,
   }
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -285,6 +299,15 @@ fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
     }
   })
 }
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
+  directives.iter().find_map(|directive| {
+    if directive.node.name.node == "const" {
+      config::ConstField::from_directive(&directive.node).ok()
+    } else {
+      None
+    }
+  })
+}
 
 trait HasName {
   fn name(&self) -> &Positioned<Name>;
@@ -300,8 +323,10 @@ impl HasName for InputValueDefinition {
   }
 }
 
-impl From<ServiceDocument> for Config {
-  fn from(doc: ServiceDocument) -> Self {
-    from_document(doc)
+impl TryFrom<ServiceDocument> for Config {
+  type Error = ValidationError<String>;
+
+  fn try_from(value: ServiceDocument) -> Valid<Self> {
+    from_document(value)
   }
 }
