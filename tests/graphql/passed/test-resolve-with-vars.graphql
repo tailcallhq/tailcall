@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(vars: [{key: "id",value: "1"}]) {
+schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }
 
