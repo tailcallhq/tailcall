@@ -1,150 +1,118 @@
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Result;
 use async_graphql::async_trait;
-use async_graphql::dataloader::{DataLoader, HashMapCache, Loader};
+use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
-use reqwest::header::HeaderMap;
-use url::Url;
 
-use crate::http::{HttpClient, Method, Response};
-use crate::json::JsonLike;
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct EndpointKey {
-  pub url: Url,
-  pub headers: HeaderMap,
-  pub method: Method,
-  pub match_key_value: ConstValue,
-  pub match_path: Vec<String>,
-  pub batching_enabled: bool,
-  pub list: bool,
-}
+use crate::config::Batch;
+use crate::http::{DataLoaderRequest, HttpClient, Response};
 
-impl Hash for EndpointKey {
-  fn hash<H: Hasher>(&self, state: &mut H) {
-    self.url.hash(state);
-    self.match_key_value.to_string().hash(state);
-  }
-}
 #[derive(Default, Clone)]
-pub struct HttpDataLoader {
-  pub client: HttpClient,
+pub struct HttpDataLoader<C>
+where
+  C: HttpClient + Send + Sync + 'static + Clone,
+{
+  pub client: C,
 }
-
-impl HttpDataLoader {
-  pub fn new(client: HttpClient) -> Self {
+impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
+  pub fn new(client: C) -> Self {
     HttpDataLoader { client }
   }
 
-  pub fn to_async_data_loader(self) -> DataLoader<HttpDataLoader, HashMapCache> {
-    DataLoader::with_cache(self, tokio::spawn, HashMapCache::new()).delay(Duration::from_millis(0))
-  }
-
-  pub async fn get_unbatched_results(
-    &self,
-    keys: &[EndpointKey],
-  ) -> Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>> {
-    let unbatched_keys = keys
-      .iter()
-      .filter(|key| !key.batching_enabled)
-      .map(|key| (*key).clone())
-      .collect::<Vec<_>>();
-    let futures: Vec<_> = unbatched_keys
-      .iter()
-      .map(|key| async {
-        let url = key.url.clone();
-        let mut req = reqwest::Request::new(reqwest::Method::from(&key.method), url);
-        req.headers_mut().extend(key.headers.clone());
-        let result = self.client.clone().execute(req).await;
-
-        (key.clone(), result)
-      })
-      .collect();
-
-    let results = join_all(futures).await;
-    results.into_iter().map(|(key, result)| Ok((key, result?))).collect()
-  }
-
-  pub fn group_by_url_and_type(&self, keys: &[EndpointKey]) -> HashMap<Url, Vec<EndpointKey>> {
-    keys
-      .iter()
-      .filter(|endpoint_key| endpoint_key.batching_enabled)
-      .fold(HashMap::new(), |mut acc, key| {
-        let group = acc.entry(key.url.clone()).or_default();
-        group.push(key.clone());
-        acc
-      })
-  }
-
-  async fn get_batched_results(
-    &self,
-    keys: &[EndpointKey],
-  ) -> Vec<anyhow::Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>>> {
-    let batched_key_groups = self.group_by_url_and_type(keys);
-    join_all(
-      batched_key_groups
-        .iter()
-        .map(|(url, keys)| self.get_batched_results_for_url(url.clone(), keys)),
-    )
-    .await
-  }
-
-  async fn get_batched_results_for_url(
-    &self,
-    url: Url,
-    keys: &[EndpointKey],
-  ) -> anyhow::Result<HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value>> {
-    let req = reqwest::Request::new(Method::GET.into(), url);
-    let response = self.client.clone().execute(req).await?;
-
-    match &response.body {
-      async_graphql::Value::List(list) => {
-        #[allow(clippy::mutable_key_type)]
-        let mut map: HashMap<EndpointKey, <HttpDataLoader as Loader<EndpointKey>>::Value> = HashMap::new();
-        let mut body: ConstValue;
-        for key in keys.iter() {
-          let match_fn = |item: &&ConstValue| -> bool {
-            if let Some(value) = item.get_path(&key.match_path) {
-              value == &key.match_key_value
-            } else {
-              false
-            }
-          };
-
-          if key.list {
-            let items = list.iter().filter(match_fn).cloned().collect();
-            body = async_graphql::Value::List(items);
-          } else {
-            body = list.iter().find(match_fn).cloned().unwrap_or(ConstValue::Null);
-          }
-          let response_for_key = Response { status: response.status, headers: response.headers.clone(), body };
-          map.insert(key.clone(), response_for_key);
-        }
-        Ok(map)
-      }
-      _ => Ok(HashMap::new()), // TODO throw error
-    }
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader<C>, NoCache> {
+    DataLoader::new(self, tokio::spawn)
+      .delay(Duration::from_millis(batch.delay as u64))
+      .max_batch_size(batch.max_size)
   }
 }
 
 #[async_trait::async_trait]
-impl Loader<EndpointKey> for HttpDataLoader {
+impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> for HttpDataLoader<C> {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
-  async fn load(&self, keys: &[EndpointKey]) -> async_graphql::Result<HashMap<EndpointKey, Self::Value>, Self::Error> {
-    let batched_results = self.get_batched_results(keys).await;
-    let unbatched_results = self.get_unbatched_results(keys).await;
+  async fn load(
+    &self,
+    keys: &[DataLoaderRequest],
+  ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
+    let results = keys.iter().map(|key| async {
+      let result = self.client.execute(key.to_request()).await;
+      (key.clone(), result)
+    });
+
+    let results = join_all(results).await;
+
     #[allow(clippy::mutable_key_type)]
-    let mut all_results = HashMap::new();
-    for result in batched_results {
-      all_results.extend(result?);
+    let mut hashmap = HashMap::new();
+    for (key, value) in results {
+      hashmap.insert(key, value?);
     }
-    all_results.extend(unbatched_results?);
-    Ok(all_results)
+
+    Ok(hashmap)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::atomic::{AtomicUsize, Ordering};
+
+  use super::*;
+  use crate::http::DataLoaderRequest;
+
+  #[derive(Clone)]
+  struct MockHttpClient {
+    // To keep track of number of times execute is called
+    request_count: Arc<AtomicUsize>,
+  }
+
+  #[async_trait::async_trait]
+  impl HttpClient for MockHttpClient {
+    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
+      self.request_count.fetch_add(1, Ordering::SeqCst);
+      // You can mock the actual response as per your need
+      Ok(Response::default())
+    }
+  }
+  #[tokio::test]
+  async fn test_load_function() {
+    let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
+
+    let loader = HttpDataLoader { client: client.clone() };
+    let loader = loader.to_data_loader(Batch::default().delay(1));
+
+    let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
+    let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
+    let key = DataLoaderRequest::new(request, headers_to_consider);
+    let futures: Vec<_> = (0..100).map(|_| loader.load_one(key.clone())).collect();
+    let _ = join_all(futures).await;
+    assert_eq!(
+      client.request_count.load(Ordering::SeqCst),
+      1,
+      "Only one request should be made for the same key"
+    );
+  }
+  #[tokio::test]
+  async fn test_load_function_many() {
+    let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
+
+    let loader = HttpDataLoader { client: client.clone() };
+    let loader = loader.to_data_loader(Batch::default().delay(1));
+
+    let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
+    let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());
+
+    let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
+    let key1 = DataLoaderRequest::new(request1, headers_to_consider.clone());
+    let key2 = DataLoaderRequest::new(request2, headers_to_consider);
+    let futures1 = (0..100).map(|_| loader.load_one(key1.clone()));
+    let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
+    let _ = join_all(futures1.chain(futures2)).await;
+    assert_eq!(
+      client.request_count.load(Ordering::SeqCst),
+      2,
+      "Only two requests should be made for two unique keys"
+    );
   }
 }

@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
 use async_graphql::InputType;
+use async_graphql_value::ConstValue;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
@@ -16,6 +17,7 @@ use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::json::JsonSchema;
+use crate::lambda::Expression::Literal;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
@@ -187,6 +189,11 @@ fn to_field(
   name: &str,
   field: &Field,
 ) -> Valid<Option<blueprint::FieldDefinition>> {
+  let directives = field.resolvable_directives();
+  if directives.len() > 1 {
+    return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+  }
+
   let field_type = &field.type_of;
   let args = to_args(field)?;
 
@@ -201,6 +208,7 @@ fn to_field(
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
+  let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)
@@ -283,8 +291,7 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
-  let mut b_field = b_field;
+fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
@@ -297,11 +304,13 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
           base_url.pop();
         }
         base_url.push_str(http.path.clone().as_str());
-        let query = http.query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        let query: BTreeMap<String, String> = http.query.clone().into();
+        let query = query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
-        for (k, v) in http.headers.iter() {
+        let headers: BTreeMap<String, String> = http.headers.clone().into();
+        for (k, v) in headers.iter() {
           header_map.insert(
             HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
@@ -358,8 +367,23 @@ fn update_modify(
     None => Valid::Ok(Some(b_field)),
   }
 }
-fn needs_resolving(field: &config::Field) -> bool {
-  field.unsafe_operation.is_some() || field.http.is_some()
+fn update_const_field(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+  match field.const_field.as_ref() {
+    Some(const_field) => {
+      let data = const_field.data.to_owned();
+      match ConstValue::from_json(data.to_owned()) {
+        Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value) {
+          Ok(_) => {
+            b_field.resolver = Some(Literal(data));
+            Valid::Ok(b_field)
+          }
+          Err(err) => err.into(),
+        },
+        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+      }
+    }
+    None => Valid::Ok(b_field),
+  }
 }
 fn is_scalar(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
@@ -424,11 +448,15 @@ fn process_field_within_type(
   invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type>,
 ) -> Valid<Type> {
   if let Some(next_field) = type_info.fields.get(field_name) {
-    if needs_resolving(next_field) {
+    if next_field.has_resolver() {
       return Valid::<Type>::validate_or(
         Valid::fail(format!(
           "Inline can't be done because of {} resolver at [{}.{}]",
-          next_field.http.as_ref().map(|_| "http").unwrap_or_else(|| "unsafe"),
+          {
+            let next_dir_http = next_field.http.as_ref().map(|_| "http");
+            let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
+            next_dir_http.or(next_dir_const).unwrap_or("unsafe")
+          },
           field.type_of,
           field_name
         )),

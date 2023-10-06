@@ -35,6 +35,16 @@ impl<E> Cause<E> {
   }
 }
 
+impl Cause<&str> {
+  pub fn to_owned(&self) -> Cause<String> {
+    Cause {
+      message: self.message.to_owned(),
+      description: self.description.map(|d| d.to_owned()),
+      trace: self.trace.iter().map(|t| t.to_owned()).collect(),
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::collections::VecDeque;

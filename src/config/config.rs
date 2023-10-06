@@ -10,6 +10,7 @@ use super::{Proxy, Server};
 use crate::batch::Batch;
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::valid::{Valid, ValidExtensions};
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
@@ -168,11 +169,25 @@ pub struct Field {
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
   pub batch: Option<Batch>,
+  pub const_field: Option<ConstField>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+  }
+  pub fn resolvable_directives(&self) -> Vec<&str> {
+    let mut directives = Vec::with_capacity(3);
+    if self.http.is_some() {
+      directives.push("@http")
+    }
+    if self.unsafe_operation.is_some() {
+      directives.push("@unsafe")
+    }
+    if self.const_field.is_some() {
+      directives.push("@const")
+    }
+    directives
   }
   pub fn has_batched_resolver(&self) -> bool {
     if let Some(http) = self.http.as_ref() {
@@ -223,6 +238,25 @@ pub struct Union {
   pub doc: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct KeyValues(pub Vec<KeyValue>);
+
+impl From<KeyValues> for BTreeMap<String, String> {
+  fn from(value: KeyValues) -> Self {
+    let mut map = BTreeMap::new();
+    for KeyValue { key, value } in value.0 {
+      map.insert(key, value);
+    }
+    map
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+pub struct KeyValue {
+  pub key: String,
+  pub value: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
@@ -231,7 +265,7 @@ pub struct Http {
   pub method: Method,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
-  pub query: BTreeMap<String, String>,
+  pub query: KeyValues,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
@@ -243,7 +277,7 @@ pub struct Http {
   pub base_url: Option<String>,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
-  pub headers: BTreeMap<String, String>,
+  pub headers: KeyValues,
 }
 
 impl Http {
@@ -251,6 +285,11 @@ impl Http {
     self.match_key = Some(key.to_string());
     self
   }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ConstField {
+  pub data: Value,
 }
 
 impl Config {
@@ -262,10 +301,12 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> Result<Self> {
-    let doc = async_graphql::parser::parse_schema(sdl)?;
-
-    Ok(Config::from(doc))
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    let doc = async_graphql::parser::parse_schema(sdl);
+    match doc {
+      Ok(doc) => Config::try_from(doc),
+      Err(e) => Valid::fail(e.to_string()),
+    }
   }
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {

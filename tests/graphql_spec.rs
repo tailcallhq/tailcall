@@ -14,7 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
+use tailcall::config::{Batch, Config};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{HttpDataLoader, RequestContext};
 use tailcall::print_schema;
@@ -201,7 +201,7 @@ async fn test_execution() -> std::io::Result<()> {
       let mut headers = HeaderMap::new();
       headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
 
-      let data_loader = HttpDataLoader::default().to_async_data_loader();
+      let data_loader = Arc::new(HttpDataLoader::default().to_data_loader(Batch::default()));
       let req_ctx = RequestContext::default()
         .req_headers(headers)
         .server(config.server.clone())
@@ -227,20 +227,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl;
     let config = Config::from_sdl(content.as_str());
 
-    let config = match config {
-      Ok(config) => config,
-      Err(cause) => {
-        assert_eq!(
-          cause.to_string(),
-          expected.first().unwrap().message,
-          "Server SDL failure mismatch: {}",
-          spec.path.display()
-        );
-        continue;
-      }
-    };
-
-    let actual = Blueprint::try_from(&config);
+    let actual = config.and_then(|config| Blueprint::try_from(&config));
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
