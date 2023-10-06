@@ -9,7 +9,11 @@ type User {
 
 type Query {
   user(id: Int): [User]
-    @http(path: "/users", query: {id: "{{args.id}}"}, baseURL: "http://jsonplaceholder.typicode.com")
+    @http(
+      path: "/users"
+      query: [{key: "id",value: "{{args.id}}" }]
+      baseURL: "http://jsonplaceholder.typicode.com"
+    )
 }
 
 #> client-query
