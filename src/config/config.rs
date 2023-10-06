@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use super::{Proxy, Server};
 use crate::batch::Batch;
-use crate::config::{key_values_to_map, map_to_key_values};
+use crate::config::KeyValues;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};
@@ -246,12 +246,8 @@ pub struct Http {
   #[serde(skip_serializing_if = "is_default")]
   pub method: Method,
   #[serde(default)]
-  #[serde(
-    skip_serializing_if = "is_default",
-    serialize_with = "map_to_key_values",
-    deserialize_with = "key_values_to_map"
-  )]
-  pub query: BTreeMap<String, String>,
+  #[serde(skip_serializing_if = "is_default")]
+  pub query: KeyValues,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
@@ -262,12 +258,8 @@ pub struct Http {
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
-  #[serde(
-    skip_serializing_if = "is_default",
-    serialize_with = "map_to_key_values",
-    deserialize_with = "key_values_to_map"
-  )]
-  pub headers: BTreeMap<String, String>,
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
 }
 
 impl Http {

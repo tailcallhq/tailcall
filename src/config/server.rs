@@ -1,9 +1,9 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::config::{key_values_to_map, map_to_key_values};
+use crate::config::KeyValues;
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
 }
@@ -23,13 +23,8 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
-  #[serde(
-    default,
-    skip_serializing_if = "is_default",
-    serialize_with = "map_to_key_values",
-    deserialize_with = "key_values_to_map"
-  )]
-  pub vars: BTreeMap<String, String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub vars: KeyValues,
   pub batch: Option<Batch>,
 }
 
