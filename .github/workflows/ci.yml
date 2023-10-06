@@ -8,6 +8,12 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
 jobs:
+  health:
+    name: PR Health
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v4.1.1
+
   test:
     name: Run tests
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
