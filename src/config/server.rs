@@ -1,10 +1,12 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::config::KeyValues;
-
+use crate::config::{key_values_to_map, map_to_key_values};
+fn is_default<T: Default + Eq>(val: &T) -> bool {
+  *val == T::default()
+}
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
@@ -21,7 +23,13 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
-  pub vars: Option<KeyValues>,
+  #[serde(
+    default,
+    skip_serializing_if = "is_default",
+    serialize_with = "map_to_key_values",
+    deserialize_with = "key_values_to_map"
+  )]
+  pub vars: BTreeMap<String, String>,
   pub batch: Option<Batch>,
 }
 

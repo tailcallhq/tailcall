@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use super::{Proxy, Server};
 use crate::batch::Batch;
+use crate::config::{key_values_to_map, map_to_key_values};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};
@@ -238,25 +239,6 @@ pub struct Union {
   pub doc: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
-pub struct KeyValues(Vec<KeyValue>);
-
-impl From<KeyValues> for BTreeMap<String, String> {
-  fn from(value: KeyValues) -> Self {
-    let mut map = BTreeMap::new();
-    for KeyValue { key, value } in value.0 {
-      map.insert(key, value);
-    }
-    map
-  }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
-pub struct KeyValue {
-  pub key: String,
-  pub value: String,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
@@ -264,8 +246,12 @@ pub struct Http {
   #[serde(skip_serializing_if = "is_default")]
   pub method: Method,
   #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
-  pub query: KeyValues,
+  #[serde(
+    skip_serializing_if = "is_default",
+    serialize_with = "map_to_key_values",
+    deserialize_with = "key_values_to_map"
+  )]
+  pub query: BTreeMap<String, String>,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
@@ -276,8 +262,12 @@ pub struct Http {
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
-  pub headers: KeyValues,
+  #[serde(
+    skip_serializing_if = "is_default",
+    serialize_with = "map_to_key_values",
+    deserialize_with = "key_values_to_map"
+  )]
+  pub headers: BTreeMap<String, String>,
 }
 
 impl Http {
