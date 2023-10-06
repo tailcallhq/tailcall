@@ -8,16 +8,12 @@ type User {
 }
 
 type Query {
-  user(id: Int): User
-    @http(
-      path: "/users/{{args.id}}"
-      baseURL: "http://jsonplaceholder.typicode.com"
-    )
+  user(id: Int): User @http(path: "/users/{{args.id}}", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 #> client-query
-query @expect(json: {data:{user:{name:"Leanne Graham"}}}) {
-  user(id: 1){
+query @expect(json: {data: {user: {name: "Leanne Graham"}}}) {
+  user(id: 1) {
     name
   }
 }

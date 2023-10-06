@@ -1,0 +1,14 @@
+{
+  "semi": false,
+  "singleQuote": false,
+  "printWidth": 120,
+  "tabWidth": 2,
+  "overrides": [
+    {
+      "files": "**/*.graphql",
+      "options": {
+        "bracketSpacing": false
+      }
+    }
+  ]
+}

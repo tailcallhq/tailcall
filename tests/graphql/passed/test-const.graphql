@@ -5,16 +5,17 @@ schema @server(baseURL: "https://jsonplaceholder.typicode.com") {
 
 type User {
   name: String
-  id: Int
+  age: Int
 }
 
 type Query {
-  firstUser: User @http(path: "/users/1")
+  user: User @const(data: {name: "John", age: 12})
 }
 
 #> client-query
-query @expect(json: {data: {firstUser: {name: "Leanne Graham"}}}) {
-  firstUser {
+query @expect(json: {data: {user: {name: "John", age: 12}}}) {
+  user {
+    age
     name
   }
 }
