@@ -8,6 +8,7 @@ use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 
+use tailcall::config::KeyValues;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, GraphqlContext};
 use tailcall::path_string::PathString;
@@ -67,12 +68,12 @@ lazy_static::lazy_static! {
     map
   };
 
-  static ref TEST_VARS: BTreeMap<String, String> = {
+  static ref TEST_VARS: KeyValues = {
     let mut map = BTreeMap::new();
 
     map.insert("existing".to_owned(), "var".to_owned());
 
-    map
+    KeyValues(map)
   };
 }
 
@@ -134,7 +135,7 @@ fn bench_main(c: &mut Criterion) {
   let mut req_ctx = RequestContext::default();
 
   req_ctx.req_headers = TEST_HEADERS.clone();
-  req_ctx.server.vars = Some(TEST_VARS.clone());
+  req_ctx.server.vars = TEST_VARS.clone();
 
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
