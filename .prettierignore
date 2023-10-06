@@ -1,5 +1,0 @@
-tests/graphql/inline-many.graphql
-tests/graphql/inline-many-list.graphql
-tests/graphql/test-inline.graphql
-tests/graphql/test-inline-list.graphql
-tests/graphql/test-server-vars.graphql
