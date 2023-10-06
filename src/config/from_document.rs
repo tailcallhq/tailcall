@@ -274,13 +274,12 @@ fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::Inline
   })
 }
 fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>> {
-  let mut http = Valid::Ok(None);
   for directive in directives {
     if directive.node.name.node == "http" {
-      http = Http::from_directive(&directive.node).map(Some)
+      return Http::from_directive(&directive.node).map(Some);
     }
   }
-  http
+  Valid::Ok(None)
 }
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
