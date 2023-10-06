@@ -16,6 +16,6 @@ type Query {
 
 #> client-sdl
 type Failure
-@error(message: "Multiple resolvers detected [@http, @const]", trace: ["Query", "user1"])
-@error(message: "Multiple resolvers detected [@unsafe, @const]", trace: ["Query", "user2"])
-@error(message: "Multiple resolvers detected [@http, @unsafe]", trace: ["Query", "user3"])
+  @error(message: "Multiple resolvers detected [@http, @const]", trace: ["Query", "user1"])
+  @error(message: "Multiple resolvers detected [@unsafe, @const]", trace: ["Query", "user2"])
+  @error(message: "Multiple resolvers detected [@http, @unsafe]", trace: ["Query", "user3"])
