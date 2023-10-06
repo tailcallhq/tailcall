@@ -32,8 +32,8 @@ type User {
 }
 
 #> client-query
-mutation @expect(json: {data:{insertPost:{body:"abc"}}}) {
-    insertPost(input: {body: "abc", title: "bar", userId: 1, id: 100}) {
-        body
-    }
+mutation @expect(json: {data: {insertPost: {body: "abc"}}}) {
+  insertPost(input: {body: "abc", title: "bar", userId: 1, id: 100}) {
+    body
+  }
 }
