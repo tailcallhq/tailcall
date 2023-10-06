@@ -239,7 +239,7 @@ pub struct Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
-pub struct KeyValues(pub Vec<KeyValue>);
+pub struct KeyValues(Vec<KeyValue>);
 
 impl From<KeyValues> for BTreeMap<String, String> {
   fn from(value: KeyValues) -> Self {

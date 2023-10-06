@@ -1,7 +1,9 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
+
+use crate::config::KeyValues;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -19,7 +21,7 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
-  pub vars: Option<BTreeMap<String, String>>,
+  pub vars: Option<KeyValues>,
   pub batch: Option<Batch>,
 }
 

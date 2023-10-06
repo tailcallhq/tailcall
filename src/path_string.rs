@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use serde_json::json;
 
@@ -31,7 +32,17 @@ impl PathString for EvaluationContext<'_> {
         "args" => ctx.args()?.get_path(tail).cloned(),
         "headers" => ctx.get_header_as_value(&tail[0]),
         "vars" => Some(async_graphql::Value::String(
-          ctx.req_ctx.server.vars.clone()?.get(&tail[0]).cloned()?,
+          ctx
+            .req_ctx
+            .server
+            .vars
+            .clone()
+            .map(|x| {
+              let b: BTreeMap<String, String> = x.into();
+              b
+            })?
+            .get(&tail[0])
+            .cloned()?,
         )),
         _ => None,
       }
