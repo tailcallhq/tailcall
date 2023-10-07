@@ -102,9 +102,7 @@ impl GraphQLResponse {
       .body(Body::from(serde_json::to_string(&self.0)?))?;
 
     if self.0.is_ok() {
-      self.0.http_headers_iter().for_each(|(name, value)| {
-        response.headers_mut().insert(name, value);
-      });
+      response.headers_mut().extend(self.0.http_headers_iter());
 
       if let Some(cache_control) = self.0.cache_control().value() {
         response

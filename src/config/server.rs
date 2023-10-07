@@ -1,8 +1,8 @@
-use std::collections::{HashSet};
+use std::collections::HashSet;
 
+use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
