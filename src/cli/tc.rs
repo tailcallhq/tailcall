@@ -58,11 +58,7 @@ pub async fn init(file_path: &str) -> Result<()> {
         .prompt()
         .unwrap_or_else(|_| String::from(".graphql"));
 
-      let file_name = if let Some(stripped_name) = file_name.strip_suffix(".graphql") {
-        format!("{}.graphql", stripped_name)
-      } else {
-        file_name
-      };
+      let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
 
       let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
         .with_default(false)
