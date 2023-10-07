@@ -1,7 +1,7 @@
-name: 'Close stale issues and PR'
+name: "Close stale issues and PR"
 on:
   schedule:
-    - cron: '0 * * * *' # This makes it run every hour
+    - cron: "0 * * * *" # This makes it run every hour
 
 env:
   DAYS_BEFORE_ISSUE_STALE: 30
