@@ -4,7 +4,6 @@ use std::fs;
 
 use anyhow::Result;
 use clap::Parser;
-
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
