@@ -36,6 +36,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 2. **Write Clean Code:** Ensure your code is clean, readable, and well-commented.
 3. **Follow Rust Best Practices:** Adhere to the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/about.html).
+4. **Use Title Case in Job Names:** When adding new CI jobs to `.github/workflows`, please use title case e.g. *Close Stale Issues and PR*.
 
 ## Testing
 
