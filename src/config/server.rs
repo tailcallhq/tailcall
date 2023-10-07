@@ -3,10 +3,8 @@ use std::collections::HashSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::config::KeyValues;
-fn is_default<T: Default + Eq>(val: &T) -> bool {
-  *val == T::default()
-}
+use crate::config::{is_default, KeyValues};
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {

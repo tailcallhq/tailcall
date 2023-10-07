@@ -8,14 +8,10 @@ use serde_json::Value;
 
 use super::{Proxy, Server};
 use crate::batch::Batch;
-use crate::config::KeyValues;
+use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};
-
-fn is_default<T: Default + Eq>(val: &T) -> bool {
-  *val == T::default()
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
