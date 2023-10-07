@@ -35,16 +35,16 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
 
-    path.split_first().and_then(|(head, tail)| {
-      assert!(!tail.is_empty());
+    if path.len() < 2 {
+      return None;
+    }
 
-      match head.as_ref() {
-        "value" => convert_value(ctx.path_value(tail)?),
-        "args" => convert_value(ctx.arg(tail)?),
-        "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
-        "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-        _ => None,
-      }
+    path.split_first().and_then(|(head, tail)| match head.as_ref() {
+      "value" => convert_value(ctx.path_value(tail)?),
+      "args" => convert_value(ctx.arg(tail)?),
+      "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
+      "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
+      _ => None,
     })
   }
 }
