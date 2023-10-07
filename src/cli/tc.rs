@@ -1,11 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::fs;
-use std::io::{self};
 
 use anyhow::Result;
 use clap::Parser;
-use colored::Colorize;
+
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
@@ -55,10 +54,16 @@ pub async fn init(file_path: &str) -> Result<()> {
 
   match ans {
     Ok(true) => {
-      println!("{}", "Enter the file name:".yellow());
-      let mut file_name = String::new();
-      io::stdin().read_line(&mut file_name)?;
-      file_name = format!("{}.graphql", file_name.trim());
+      let file_name = inquire::Text::new("Enter the file name:")
+        .with_default(".graphql")
+        .prompt()
+        .unwrap_or_else(|_| String::from(".graphql"));
+
+      let file_name = if let Some(stripped_name) = file_name.strip_suffix(".graphql") {
+        format!("{}.graphql", stripped_name)
+      } else {
+        file_name
+      };
 
       let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
         .with_default(false)
@@ -79,11 +84,11 @@ pub async fn init(file_path: &str) -> Result<()> {
           fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
         }
         Ok(false) => (),
-        Err(_) => (),
+        Err(e) => return Err(e.into()),
       }
     }
     Ok(false) => (),
-    Err(_) => (),
+    Err(e) => return Err(e.into()),
   }
 
   fs::write(
