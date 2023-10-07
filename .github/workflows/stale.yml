@@ -19,23 +19,16 @@ jobs:
       - uses: actions/stale@v8
         with:
           stale-issue-message: |
-            📌 This issue has been inactive for ${{ env.DAYS_BEFORE_ISSUE_STALE }} days. 
-            We value your contribution!
-            Please finish what you started or provide updates. 
-            If no activity is seen, it will be closed in 
-            ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days. 😢
+            **Action required:** Issue inactive for ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
+            Status update or closure in ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days.
           close-issue-message: |
-            🚫 This issue was closed due to ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days 
-            of inactivity. We encourage you to pick it up again or start a new one! 🚀
+            Issue closed after ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days of inactivity.
           stale-pr-message: |
-            📌 This PR has been inactive for ${{ env.DAYS_BEFORE_PR_STALE }} days. 
-            We value your effort! Please continue and finish your work or provide updates. 
-            If no activity is seen, it will be closed in 
-            ${{ env.DAYS_BEFORE_PR_CLOSE }} days. 😢
+            **Action required:** PR inactive for ${{ env.DAYS_BEFORE_PR_STALE }} days.
+            Status update or closure in ${{ env.DAYS_BEFORE_PR_CLOSE }} days.
           close-pr-message: |
-            🚫 This PR was closed due to ${{ env.DAYS_BEFORE_PR_CLOSE }} days 
-            of inactivity. We encourage you to pick it up again or start a new one! 🚀
-          days-before-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
+            PR closed after ${{ env.DAYS_BEFORE_PR_CLOSE }} days of inactivity.
+          days-before-issue-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
           days-before-issue-close: ${{ env.DAYS_BEFORE_ISSUE_CLOSE }}
           days-before-pr-stale: ${{ env.DAYS_BEFORE_PR_STALE }}
           days-before-pr-close: ${{ env.DAYS_BEFORE_PR_CLOSE }}
