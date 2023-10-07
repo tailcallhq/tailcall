@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: "0 * * * *" # This makes it run every hour
   workflow_dispatch:
+permissions:
+  contents: write # only for delete-branch option
+  issues: write
+  pull-requests: write
 env:
   DAYS_BEFORE_ISSUE_STALE: 30
   DAYS_BEFORE_ISSUE_CLOSE: 7
