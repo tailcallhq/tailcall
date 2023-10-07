@@ -31,7 +31,7 @@ impl PathString for EvaluationContext<'_> {
         "args" => ctx.args()?.get_path(tail).cloned(),
         "headers" => ctx.get_header_as_value(&tail[0]),
         "vars" => Some(async_graphql::Value::String(
-          ctx.req_ctx.server.vars.clone()?.get(&tail[0]).cloned()?,
+          ctx.req_ctx.server.vars.get(&tail[0]).cloned()?,
         )),
         _ => None,
       }

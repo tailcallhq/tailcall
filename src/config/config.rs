@@ -8,13 +8,10 @@ use serde_json::Value;
 
 use super::{Proxy, Server};
 use crate::batch::Batch;
+use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};
-
-fn is_default<T: Default + Eq>(val: &T) -> bool {
-  *val == T::default()
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -236,25 +233,6 @@ pub struct Arg {
 pub struct Union {
   pub types: Vec<String>,
   pub doc: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
-pub struct KeyValues(pub Vec<KeyValue>);
-
-impl From<KeyValues> for BTreeMap<String, String> {
-  fn from(value: KeyValues) -> Self {
-    let mut map = BTreeMap::new();
-    for KeyValue { key, value } in value.0 {
-      map.insert(key, value);
-    }
-    map
-  }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
-pub struct KeyValue {
-  pub key: String,
-  pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

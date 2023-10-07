@@ -1,9 +1,11 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{HashSet};
 
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
+
+use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -21,7 +23,8 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub proxy: Option<Proxy>,
-  pub vars: Option<BTreeMap<String, String>>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub vars: KeyValues,
   pub add_response_headers: Option<Vec<(String, String)>>,
   #[serde(skip)]
   pub response_headers: HeaderMap,
