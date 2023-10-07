@@ -12,7 +12,7 @@ use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
 
-use super::GraphqlContext;
+use super::ResolverContextLike;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -54,7 +54,7 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn eval<'a, Ctx: GraphqlContext<'a> + Sync + Send>(
+  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {

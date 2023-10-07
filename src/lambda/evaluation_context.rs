@@ -1,44 +1,16 @@
 use std::time::Duration;
 
-use async_graphql::dynamic::ResolverContext;
 use async_graphql::{Name, Value};
 use derive_setters::Setters;
-use indexmap::IndexMap;
 use reqwest::header::HeaderMap;
 
+use super::{EmptyResolverContext, ResolverContextLike};
 use crate::http::RequestContext;
-
-pub trait GraphqlContext<'a> {
-  fn value(&'a self) -> Option<&'a Value>;
-  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
-}
-
-pub struct EmptyGraphqlContext;
-
-impl<'a> GraphqlContext<'a> for EmptyGraphqlContext {
-  fn value(&'a self) -> Option<&'a Value> {
-    None
-  }
-
-  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-    None
-  }
-}
-
-impl<'a> GraphqlContext<'a> for ResolverContext<'a> {
-  fn value(&'a self) -> Option<&'a Value> {
-    self.parent_value.as_value()
-  }
-
-  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-    Some(self.args.as_index_map())
-  }
-}
 
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
-pub struct EvaluationContext<'a, Ctx: GraphqlContext<'a>> {
+pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
   pub req_ctx: &'a RequestContext,
   pub graphql_ctx: &'a Ctx,
 
@@ -50,13 +22,13 @@ lazy_static::lazy_static! {
   static ref REQUEST_CTX: RequestContext = RequestContext::default();
 }
 
-impl Default for EvaluationContext<'static, EmptyGraphqlContext> {
+impl Default for EvaluationContext<'static, EmptyResolverContext> {
   fn default() -> Self {
-    Self::new(&REQUEST_CTX, &EmptyGraphqlContext)
+    Self::new(&REQUEST_CTX, &EmptyResolverContext)
   }
 }
 
-impl<'a, Ctx: GraphqlContext<'a>> EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
   pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
     Self { timeout: Duration::from_millis(5), req_ctx, graphql_ctx }
   }

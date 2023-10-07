@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 
 use tailcall::config::KeyValues;
 use tailcall::http::RequestContext;
-use tailcall::lambda::{EvaluationContext, GraphqlContext};
+use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path_string::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
@@ -83,7 +83,7 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
 
 struct MockGraphqlContext;
 
-impl<'a> GraphqlContext<'a> for MockGraphqlContext {
+impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn value(&'a self) -> Option<&'a Value> {
     Some(&TEST_VALUES)
   }

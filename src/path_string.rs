@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use serde_json::json;
 
 use crate::json::JsonLike;
-use crate::lambda::{EvaluationContext, GraphqlContext};
+use crate::lambda::{EvaluationContext, ResolverContextLike};
 
 pub trait PathString {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
@@ -31,7 +31,7 @@ fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
   }
 }
 
-impl<'a, Ctx: GraphqlContext<'a>> PathString for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
 
