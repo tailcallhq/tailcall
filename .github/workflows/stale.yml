@@ -4,7 +4,6 @@ on:
     - cron: "0 * * * *" # This makes it run every hour
   workflow_dispatch:
 permissions:
-  contents: write # only for delete-branch option
   issues: write
   pull-requests: write
 env:
