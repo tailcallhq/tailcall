@@ -1,13 +1,11 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-
 use async_graphql::{Name, Value};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
-
 use tailcall::config::KeyValues;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
@@ -132,9 +130,8 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn bench_main(c: &mut Criterion) {
-  let mut req_ctx = RequestContext::default();
+  let mut req_ctx = RequestContext { req_headers: TEST_HEADERS.clone(), ..Default::default() };
 
-  req_ctx.req_headers = TEST_HEADERS.clone();
   req_ctx.server.vars = TEST_VARS.clone();
 
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);

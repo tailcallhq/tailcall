@@ -6,13 +6,12 @@ use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
+use super::ResolverContextLike;
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
-
-use super::ResolverContextLike;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
