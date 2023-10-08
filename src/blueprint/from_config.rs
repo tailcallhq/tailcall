@@ -49,10 +49,12 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 
+const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
+
 fn validate_server(config: &Config) -> Valid<()> {
-  let restricted_routes = ["/", "/graphql"];
-  if let Some(enable_graphiql) = config.server.enable_graphiql.as_deref().map(|s| s.to_lowercase()) {
-    if restricted_routes.iter().any(|&route| route == enable_graphiql) {
+  if let Some(ref enable_graphiql) = config.server.enable_graphiql {
+    let lowered_route = enable_graphiql.to_lowercase();
+    if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
       return Valid::fail(format!(
         "Cannot use restricted routes '{}' for enabling graphiql",
         enable_graphiql
