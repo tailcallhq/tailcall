@@ -48,6 +48,24 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
+
+fn validate_server(config: &Config) -> Valid<()> {
+  let restricted_routes = ["/", "/graphql"];
+  if let Some(enable_graphiql) = config.server.enable_graphiql.as_deref().map(|s| s.to_lowercase()) {
+    if restricted_routes.iter().any(|&route| route == enable_graphiql) {
+      return Valid::fail(format!(
+        "Cannot use restricted routes '{}' for enabling graphiql",
+        enable_graphiql
+      ))
+      .trace("enableGraphiql")
+      .trace("@server")
+      .trace("schema");
+    }
+  }
+
+  Valid::Ok(())
+}
+
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
   let query_type_name = config
     .graphql
@@ -56,7 +74,9 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  validate_query(config).validate_or(validate_mutation(config))?;
+  validate_server(config)
+    .validate_or(validate_query(config))
+    .validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),
