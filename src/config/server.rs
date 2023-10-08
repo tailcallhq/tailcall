@@ -18,6 +18,7 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub vars: Option<BTreeMap<String, String>>,
+  #[serde(skip_serializing_if="Option::is_none")]
   pub upstream: Option<Upstream>,
 }
 
@@ -48,17 +49,68 @@ pub struct Proxy {
   pub url: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Upstream {
+  #[serde(default = "pool_idle_timeout_default")]
   pub pool_idle_timeout: u64,
+  #[serde(default = "pool_max_idle_per_host_default")]
   pub pool_max_idle_per_host: usize,
+  #[serde(default = "keep_alive_interval_default")]
   pub keep_alive_interval: u64,
+  #[serde(default = "keep_alive_timeout_default")]
   pub keep_alive_timeout: u64,
+  #[serde(default = "keep_alive_while_idle_default")]
   pub keep_alive_while_idle: bool,
+  #[serde(default = "proxy_default")]
   pub proxy: Option<Proxy>,
+  #[serde(default = "connect_timeout_default")]
   pub connect_timeout: u64,
+  #[serde(default = "timeout_default")]
   pub timeout: u64,
+  #[serde(default = "tcp_keep_alive_default")]
   pub tcp_keep_alive: u64,
+  #[serde(default = "user_agent_default")]
   pub user_agent: String,
+}
+
+
+fn pool_idle_timeout_default() -> u64 {
+  60
+}
+
+fn pool_max_idle_per_host_default() -> usize {
+  200
+}
+
+fn keep_alive_interval_default() -> u64 {
+  60
+}
+
+fn keep_alive_timeout_default() -> u64 {
+  60
+}
+
+fn keep_alive_while_idle_default() -> bool {
+  false
+}
+
+fn proxy_default() -> Option<Proxy> {
+  None
+}
+
+fn connect_timeout_default() -> u64 {
+  60
+}
+
+fn timeout_default() -> u64 {
+  60
+}
+
+fn tcp_keep_alive_default() -> u64 {
+  5
+}
+
+fn user_agent_default() -> String {
+  "Tailcall/1.0".to_string()
 }

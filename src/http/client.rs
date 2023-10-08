@@ -20,20 +20,13 @@ impl Default for HttpClient {
 
 impl HttpClient {
   pub fn new(server: Server) -> Self {
-    let upstream_settings = &server.upstream.clone().unwrap_or(Upstream {
-      pool_idle_timeout: 60,
-      pool_max_idle_per_host: 200,
-      keep_alive_interval: 60,
-      keep_alive_timeout: 60,
-      keep_alive_while_idle: false,
-      proxy: None,
-      connect_timeout: 60,
-      timeout: 60,
-      tcp_keep_alive: 5,
-      user_agent: "Tailcall/1.0".to_string(),
-    });
+    let mut upstream_settings_serilaised: String = serde_json::to_string(&server.upstream).unwrap();
+    if upstream_settings_serilaised == "null" {
+      upstream_settings_serilaised = "{}".to_owned()
+    }
+    let upstream_settings: Upstream = serde_json::from_str(&upstream_settings_serilaised).unwrap();
 
-    let mut builder = Client::builder()
+    let mut builder = Client::builder() 
       .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))
       .timeout(Duration::from_secs(upstream_settings.timeout))
       .connect_timeout(Duration::from_secs(upstream_settings.connect_timeout))
