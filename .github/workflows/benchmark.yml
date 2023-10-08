@@ -1,4 +1,4 @@
-name: benchmark
+name: Benchmark
 
 on:
   pull_request:
@@ -24,14 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
 
-      - name: Install stable toolchain
+      - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
           components: rustfmt, clippy
 
-      - name: Cache Rust dependencies
+      - name: Cache Rust Dependencies
         uses: actions/cache@v3
         with:
           path: |
@@ -40,13 +40,13 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run cargo build
+      - name: Run Cargo Build
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release
 
-      - name: Run tailcall
+      - name: Run Tailcall
         run: |
           ./target/release/tailcall start ci-benchmark/benchmark.graphql&
 
@@ -72,34 +72,34 @@ jobs:
         run: |
           sudo systemctl start nginx
 
-      - name: Install wrk
+      - name: Install Wrk
         run: |
           sudo apt-get install -y wrk
 
-      - name: Run test query
+      - name: Run Test Query
         run: |
           curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
 
       - id: run_wrk
-        name: Run wrk
+        name: Run Wrk
         working-directory: ci-benchmark
         run: |
           wrk -d 30 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
 
       - id: convert_wrk_output_markdown
-        name: Convert output to markdown
+        name: Convert Output to Markdown
         working-directory: ci-benchmark
         run: |
           node wrk-output-to-md.js wrk-output.txt > wrk-output.md
 
       - id: cat_md
-        name: cat md
+        name: Cat Markdown
         working-directory: ci-benchmark
         run: |
           cat wrk-output.md
 
       - id: get_comment_body
-        name: Get comment body
+        name: Get Comment Body
         working-directory: ci-benchmark
         run: |
           body="$(cat wrk-output.md)"
@@ -108,7 +108,7 @@ jobs:
           echo "$body" >> $GITHUB_OUTPUT
           echo "$delimiter" >> $GITHUB_OUTPUT
 
-      - name: Create commit comment
+      - name: Create Commit Comment
         uses: peter-evans/commit-comment@v3
         with:
           sha: ${{github.event.pull_request.head.sha}}

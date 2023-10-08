@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on:
   push:
@@ -8,26 +8,21 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
 jobs:
-  check:
-    name: Rust project
+  test:
+    name: Run Tests
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
-      - name: Install stable toolchain
+      - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           default: true
 
-      - name: Cache Rust dependencies
+      - name: Cache Rust Dependencies
         uses: actions/cache@v3
         with:
           path: |
@@ -36,37 +31,61 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Format code
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: fmt
-          args: -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: clippy
-          args: --all-targets --all-features -- -D warnings
-
-      - name: Run cargo test
+      - name: Run Cargo Test
         uses: actions-rs/cargo@v1
         with:
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
 
-      - name: Upload coverage to Codecov
+      - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
           fail_ci_if_error: true
 
-  deploy:
-    name: Deploy app
+  format:
+    name: Run Formatter and Lint Check
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Prettier
+        run: npm install --global prettier
+
+      - name: Check Formatting
+        run: prettier --check "**/*.{graphql,yml,json,md}"
+
+      - name: Install Nightly Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+
+      - name: Format Code
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: nightly
+          command: fmt
+          args: -- --check
+
+      - name: Run Cargo Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: nightly
+          command: clippy
+          args: --all-targets --all-features -- -D warnings
+
+  deploy:
+    name: Deploy App
+    runs-on: ubuntu-latest
+    needs: [test, format]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-job
@@ -86,7 +105,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Checkout current branch (fast)
+      - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
 
       - id: create_release
@@ -96,7 +115,7 @@ jobs:
         with:
           config-name: release-drafter.yml
 
-      - name: Set output for later jobs
+      - name: Set Output for Later Jobs
         id: set_output
         run: |
           echo "::set-output name=create_release_name::${{ steps.create_release.outputs.name }}"
@@ -107,7 +126,7 @@ jobs:
 
   release:
     name: Release
-    needs: [check, draft_release]
+    needs: [test, format, draft_release]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
     strategy:
@@ -170,10 +189,10 @@ jobs:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
 
     steps:
-      - name: Checkout current branch (fast)
+      - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
 
-      - name: Install correct toolchain
+      - name: Install Correct Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
@@ -181,7 +200,7 @@ jobs:
           use-cross: ${{ matrix.cross }}
           override: true
 
-      - name: build
+      - name: Build
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
         uses: actions-rs/cargo@v1
@@ -190,7 +209,7 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Rename binary with target name
+      - name: Rename Binary with Target Name
         run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
       - name: Upload ${{ matrix.target }} Binary

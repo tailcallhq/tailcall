@@ -8,5 +8,4 @@ type Query {
 }
 
 #> client-sdl
-type Failure
-  @error(message: "Undeclared type 'User' was found", trace: ["Query", "users"])
+type Failure @error(message: "Undeclared type 'User' was found", trace: ["Query", "users"])

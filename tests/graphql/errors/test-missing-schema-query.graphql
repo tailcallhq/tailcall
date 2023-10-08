@@ -8,5 +8,4 @@ type Mutation {
 }
 
 #> client-sdl
-type Failure
-  @error(message: "schema definition is missing query root", trace: [])
+type Failure @error(message: "schema definition is missing query root", trace: [])
