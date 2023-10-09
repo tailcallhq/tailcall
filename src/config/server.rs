@@ -18,7 +18,7 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   pub vars: Option<BTreeMap<String, String>>,
-  #[serde(skip_serializing_if="Option::is_none")]
+  #[serde(default, skip_serializing_if = "Option::is_none")]
   pub upstream: Option<Upstream>,
 }
 
@@ -74,6 +74,22 @@ pub struct Upstream {
   pub user_agent: String,
 }
 
+impl Default for Upstream {
+  fn default() -> Self {
+    Upstream {
+      pool_idle_timeout: pool_idle_timeout_default(),
+      pool_max_idle_per_host: pool_max_idle_per_host_default(),
+      keep_alive_interval: keep_alive_interval_default(),
+      keep_alive_timeout: keep_alive_timeout_default(),
+      keep_alive_while_idle: keep_alive_while_idle_default(),
+      proxy: proxy_default(),
+      connect_timeout: connect_timeout_default(),
+      timeout: timeout_default(),
+      tcp_keep_alive: tcp_keep_alive_default(),
+      user_agent: user_agent_default(),
+    }
+  }
+}
 
 fn pool_idle_timeout_default() -> u64 {
   60

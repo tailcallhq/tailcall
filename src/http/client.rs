@@ -20,13 +20,11 @@ impl Default for HttpClient {
 
 impl HttpClient {
   pub fn new(server: Server) -> Self {
-    let mut upstream_settings_serilaised: String = serde_json::to_string(&server.upstream).unwrap();
-    if upstream_settings_serilaised == "null" {
-      upstream_settings_serilaised = "{}".to_owned()
-    }
+    let upstream_settings_serilaised: String =
+      serde_json::to_string(&server.upstream.clone().unwrap_or_default()).unwrap();
     let upstream_settings: Upstream = serde_json::from_str(&upstream_settings_serilaised).unwrap();
 
-    let mut builder = Client::builder() 
+    let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))
       .timeout(Duration::from_secs(upstream_settings.timeout))
       .connect_timeout(Duration::from_secs(upstream_settings.connect_timeout))
