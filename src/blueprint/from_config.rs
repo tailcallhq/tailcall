@@ -315,11 +315,11 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_batch(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
-  if let Some(batch) = field.batch.as_ref() {
+fn update_batch(field: &config::Field, b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+  if let Some(_batch) = field.batch.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {
-        return Valid::fail("Batching is only supported for GET requests".to_string());
+        Valid::fail("Batching is only supported for GET requests".to_string())
       } else {
         todo!()
       }

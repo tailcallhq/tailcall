@@ -5,6 +5,7 @@ schema
     enableHttpCache: true
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
+    batch: {delay: 0, maxSize: 1000}
   ) {
   query: Query
 }

@@ -201,27 +201,18 @@ impl Blueprint {
   }
 
   pub fn endpoints(&self) -> Vec<&RequestTemplate> {
-    let mut endpoints = vec![];
-    for def in self.definitions.iter() {
-      match def {
-        Definition::ObjectTypeDefinition(def) => {
-          for field in def.fields.iter() {
-            match field.resolver {
-              Some(ref resolver) => {
-                let _ = match resolver {
-                  Expression::Unsafe(Operation::Endpoint(ref req_template)) => {
-                    endpoints.push(req_template);
-                  }
-                  _ => {}
-                };
-              }
-              None => {}
-            }
-          }
-        }
-        _ => {}
-      }
-    }
-    endpoints
+    self
+      .definitions
+      .iter()
+      .filter_map(|def| match def {
+        Definition::ObjectTypeDefinition(def) => Some(&def.fields),
+        _ => None,
+      })
+      .flat_map(|fields| fields.iter())
+      .filter_map(|field| match &field.resolver {
+        Some(Expression::Unsafe(Operation::Endpoint(req_template))) => Some(req_template),
+        _ => None,
+      })
+      .collect()
   }
 }

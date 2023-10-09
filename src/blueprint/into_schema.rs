@@ -40,6 +40,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field_name = &field.name.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+          // let schema_ctx = ctx.ctx.data::<String>().unwrap();
+          // println!("schema ctx {}", schema_ctx);
           let field_name = field.name.clone();
           let resolver = field.resolver.clone();
           FieldFuture::new(async move {

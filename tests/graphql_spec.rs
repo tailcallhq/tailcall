@@ -205,7 +205,7 @@ async fn test_execution() -> std::io::Result<()> {
       let req_ctx = RequestContext::default()
         .req_headers(headers)
         .server(config.server.clone())
-        .data_loader(data_loader);
+        .data_loaders([data_loader].to_vec());
       let req = Request::from(q.query.as_str()).data(Arc::new(req_ctx));
       let res = schema.execute(req).await;
       let json = serde_json::to_string(&res).unwrap();
