@@ -8,7 +8,8 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::config;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Expression, Lambda, Operation};
+use crate::request_template::RequestTemplate;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -171,7 +172,7 @@ impl Blueprint {
     self.schema.mutation.clone()
   }
 
-  pub fn to_schema(self, server: &config::Server) -> Schema {
+  pub fn to_schema(&self, server: &config::Server) -> Schema {
     let mut schema = SchemaBuilder::from(self);
 
     if server.enable_apollo_tracing.unwrap_or(false) {
@@ -197,5 +198,30 @@ impl Blueprint {
     // We should safely assume the blueprint is correct and,
     // generation of schema cannot fail.
     schema.finish().unwrap()
+  }
+
+  pub fn endpoints(&self) -> Vec<&RequestTemplate> {
+    let mut endpoints = vec![];
+    for def in self.definitions.iter() {
+      match def {
+        Definition::ObjectTypeDefinition(def) => {
+          for field in def.fields.iter() {
+            match field.resolver {
+              Some(ref resolver) => {
+                let _ = match resolver {
+                  Expression::Unsafe(Operation::Endpoint(ref req_template)) => {
+                    endpoints.push(req_template);
+                  }
+                  _ => {}
+                };
+              }
+              None => {}
+            }
+          }
+        }
+        _ => {}
+      }
+    }
+    endpoints
   }
 }

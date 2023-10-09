@@ -16,6 +16,7 @@ use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::Lambda;
@@ -229,6 +230,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_batch(field, field_definition, config).trace("@batch")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -311,6 +313,22 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
     });
   }
   b_field
+}
+
+fn update_batch(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+  if let Some(batch) = field.batch.as_ref() {
+    if let Some(http) = field.http.as_ref() {
+      if http.method != Method::GET {
+        return Valid::fail("Batching is only supported for GET requests".to_string());
+      } else {
+        todo!()
+      }
+    } else {
+      Valid::fail("Batching is only supported for HTTP resolvers".to_string())
+    }
+  } else {
+    Valid::Ok(b_field)
+  }
 }
 
 fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {

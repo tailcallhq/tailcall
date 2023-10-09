@@ -13,6 +13,7 @@ pub struct RequestContext {
   pub http_client: DefaultHttpClient,
   pub server: Server,
   pub data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
+  pub data_loaders: Vec<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   pub req_headers: HeaderMap,
 }
 
@@ -25,6 +26,7 @@ impl Default for RequestContext {
         HttpDataLoader::new(DefaultHttpClient::default()),
         tokio::spawn,
       )),
+      Vec::new(),
     )
   }
 }
@@ -34,8 +36,9 @@ impl RequestContext {
     http_client: DefaultHttpClient,
     server: Server,
     data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
+    data_loaders: Vec<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   ) -> Self {
-    Self { req_headers: HeaderMap::new(), http_client, server, data_loader }
+    Self { req_headers: HeaderMap::new(), http_client, server, data_loader, data_loaders }
   }
 
   #[allow(clippy::mutable_key_type)]
@@ -52,6 +55,11 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     let http_client = server_ctx.http_client.clone();
-    Self::new(http_client, server_ctx.server.clone(), server_ctx.data_loader.clone())
+    Self::new(
+      http_client,
+      server_ctx.server.clone(),
+      server_ctx.data_loader.clone(),
+      server_ctx.data_loaders.clone(),
+    )
   }
 }

@@ -80,9 +80,11 @@ impl Expression {
               if is_get && ctx.req_ctx.server.batch.is_some() {
                 let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = ctx
-                  .req_ctx
-                  .data_loader
+                let mut data_loader = ctx.req_ctx.data_loader.clone();
+                if let Some(id) = req_template.id {
+                  data_loader = ctx.req_ctx.data_loaders[id].clone();
+                }
+                let resp = data_loader
                   .as_ref()
                   .load_one(endpoint_key)
                   .await
