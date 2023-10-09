@@ -83,3 +83,7 @@ harness = false
 [[bench]]
 name = "data_loader_bench"
 harness = false
+
+[[bench]]
+name = "impl_path_string_for_evaluation_context"
+harness = false
