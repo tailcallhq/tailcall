@@ -45,7 +45,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
           FieldFuture::new(async move {
             match resolver {
               None => {
-                let ctx = EvaluationContext::new(req_ctx).context(&ctx);
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
                 Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
               }
               Some(expr) => {
