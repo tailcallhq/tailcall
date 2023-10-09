@@ -2919,6 +2919,7 @@ dependencies = [
  "clap",
  "colored",
  "criterion",
+ "curl-sys",
  "derive_setters",
  "env_logger",
  "exitcode",

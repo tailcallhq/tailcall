@@ -22,7 +22,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 3. **Start the Server:** To start the server, use the following command:
    ```bash
-   cargo run -- start ./assets/jsonplaceholder.graphql
+   cargo run -- start ./examples/jsonplaceholder.graphql
    ```
    Once the server is running, you can access the GraphiQL interface at [http://localhost:8000/graphiql](http://localhost:8000/graphiql).
 
