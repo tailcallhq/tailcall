@@ -8,8 +8,10 @@ use serde_json::Value;
 
 use super::{Server, Upstream};
 use crate::batch::Batch;
+use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::valid::{Valid, ValidExtensions};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +41,7 @@ impl Config {
     }
 
     for (_, type_of) in self.graphql.types.iter() {
-      if type_of.interface.unwrap_or(false) || !type_of.fields.is_empty() {
+      if type_of.interface || !type_of.fields.is_empty() {
         for (_, field) in type_of.fields.iter() {
           types.insert(&field.type_of);
         }
@@ -51,12 +53,10 @@ impl Config {
   pub fn input_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
     for (_, type_of) in self.graphql.types.iter() {
-      if !type_of.interface.unwrap_or(false) {
+      if !type_of.interface {
         for (_, field) in type_of.fields.iter() {
-          if let Some(ref args) = field.args {
-            for (_, arg) in args.iter() {
-              types.insert(&arg.type_of);
-            }
+          for (_, arg) in field.args.iter() {
+            types.insert(&arg.type_of);
           }
         }
       }
@@ -112,17 +112,16 @@ impl Config {
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   pub doc: Option<String>,
-  pub interface: Option<bool>,
-  pub implements: Option<Vec<String>>,
-  #[serde(rename = "enum")]
+  #[serde(default)]
+  pub interface: bool,
+  #[serde(default)]
+  pub implements: Vec<String>,
+  #[serde(rename = "enum", default)]
   pub variants: Option<Vec<String>>,
-  pub scalar: Option<bool>,
+  #[serde(default)]
+  pub scalar: bool,
 }
 impl Type {
-  pub fn is_interface(&self) -> bool {
-    matches!(self.interface, Some(true))
-  }
-
   pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
     let mut graphql_fields = BTreeMap::new();
     for (name, field) in fields {
@@ -152,10 +151,14 @@ pub struct RootSchema {
 #[setters(strip_option)]
 pub struct Field {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
-  pub list_type_required: Option<bool>,
-  pub args: Option<BTreeMap<String, Arg>>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
+  #[serde(default)]
+  pub list_type_required: bool,
+  #[serde(default)]
+  pub args: BTreeMap<String, Arg>,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
   pub inline: Option<InlineType>,
@@ -163,21 +166,35 @@ pub struct Field {
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
   pub batch: Option<Batch>,
+  pub const_field: Option<ConstField>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+  }
+  pub fn resolvable_directives(&self) -> Vec<&str> {
+    let mut directives = Vec::with_capacity(3);
+    if self.http.is_some() {
+      directives.push("@http")
+    }
+    if self.unsafe_operation.is_some() {
+      directives.push("@unsafe")
+    }
+    if self.const_field.is_some() {
+      directives.push("@const")
+    }
+    directives
   }
   pub fn has_batched_resolver(&self) -> bool {
     if let Some(http) = self.http.as_ref() {
-      http.match_key.is_some() || http.match_path.is_some()
+      http.match_key.is_some() || !http.match_path.is_empty()
     } else {
       false
     }
   }
   pub fn to_list(mut self) -> Self {
-    self.list = Some(true);
+    self.list = true;
     self
   }
 }
@@ -190,7 +207,9 @@ pub struct Unsafe {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ModifyField {
   pub name: Option<String>,
-  pub omit: Option<bool>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub omit: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -201,8 +220,10 @@ pub struct InlineType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Arg {
   pub type_of: String,
-  pub list: Option<bool>,
-  pub required: Option<bool>,
+  #[serde(default)]
+  pub list: bool,
+  #[serde(default)]
+  pub required: bool,
   pub doc: Option<String>,
   pub modify: Option<ModifyField>,
   pub default_value: Option<Value>,
@@ -217,16 +238,24 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
-  pub method: Option<Method>,
-  pub query: Option<BTreeMap<String, String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub method: Method,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub query: KeyValues,
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
-  pub match_path: Option<Vec<String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub match_path: Vec<String>,
   pub match_key: Option<String>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
-  pub headers: Option<BTreeMap<String, String>>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
 }
 
 impl Http {
@@ -234,6 +263,11 @@ impl Http {
     self.match_key = Some(key.to_string());
     self
   }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ConstField {
+  pub data: Value,
 }
 
 impl Config {
@@ -245,10 +279,12 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> Result<Self> {
-    let doc = async_graphql::parser::parse_schema(sdl)?;
-
-    Ok(Config::from(doc))
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    let doc = async_graphql::parser::parse_schema(sdl);
+    match doc {
+      Ok(doc) => Config::try_from(doc),
+      Err(e) => Valid::fail(e.to_string()),
+    }
   }
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {

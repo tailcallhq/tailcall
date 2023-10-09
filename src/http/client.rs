@@ -7,18 +7,31 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use super::Response;
 use crate::config::{Server, Upstream};
 
-#[derive(Clone)]
-pub struct HttpClient {
-  client: ClientWithMiddleware,
+#[async_trait::async_trait]
+pub trait HttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
 }
 
-impl Default for HttpClient {
-  fn default() -> Self {
-    HttpClient::new(Default::default())
+#[async_trait::async_trait]
+impl HttpClient for DefaultHttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+    let response = self.execute(req).await?;
+    Ok(response)
   }
 }
 
-impl HttpClient {
+#[derive(Clone)]
+pub struct DefaultHttpClient {
+  client: ClientWithMiddleware,
+}
+
+impl Default for DefaultHttpClient {
+  fn default() -> Self {
+    DefaultHttpClient::new(Default::default())
+  }
+}
+
+impl DefaultHttpClient {
   pub fn new(server: Server) -> Self {
     let upstream_settings_serilaised: String =
       serde_json::to_string(&server.upstream.clone().unwrap_or_default()).unwrap();
@@ -49,10 +62,11 @@ impl HttpClient {
       }))
     }
 
-    HttpClient { client: client.build() }
+    DefaultHttpClient { client: client.build() }
   }
 
   pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
+    log::info!("{} {} ", request.method(), request.url());
     let response = self.client.execute(request).await?;
     let response = Response::from_response(response).await?;
     Ok(response)

@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
 use async_graphql::InputType;
+use async_graphql_value::ConstValue;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
@@ -15,8 +16,8 @@ use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
-use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::lambda::Expression::Literal;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
@@ -47,16 +48,40 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
+
+const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
+
+fn validate_server(config: &Config) -> Valid<()> {
+  if let Some(ref enable_graphiql) = config.server.enable_graphiql {
+    let lowered_route = enable_graphiql.to_lowercase();
+    if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
+      return Valid::fail(format!(
+        "Cannot use restricted routes '{}' for enabling graphiql",
+        enable_graphiql
+      ))
+      .trace("enableGraphiql")
+      .trace("@server")
+      .trace("schema");
+    }
+  }
+
+  Valid::Ok(())
+}
+
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
-  let query = config
+  let query_type_name = config
     .graphql
     .schema
     .query
     .as_ref()
-    .validate_some("Query type is not defined".to_string())?;
+    .validate_some("Query root is missing".to_owned())?;
+
+  validate_server(config)
+    .validate_or(validate_query(config))
+    .validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
-    query: query.clone(),
+    query: query_type_name.clone(),
     mutation: config.graphql.schema.mutation.clone(),
     directives: vec![to_directive(config.server.to_directive("server".to_string()))?],
   })
@@ -74,7 +99,7 @@ fn to_definitions<'a>(
       } else {
         Valid::fail("No variants found for enum".to_string())
       }
-    } else if type_.scalar.is_some() {
+    } else if type_.scalar {
       to_scalar_type_definition(name).trace(name)
     } else if dbl_usage {
       Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -84,7 +109,7 @@ fn to_definitions<'a>(
         Definition::ObjectTypeDefinition(object_type_definition) => {
           if config.input_types().contains(name) {
             to_input_object_type_definition(object_type_definition).trace(name)
-          } else if type_.interface.unwrap_or(false) {
+          } else if type_.interface {
             to_interface_type_definition(object_type_definition).trace(name)
           } else {
             Valid::Ok(definition)
@@ -143,7 +168,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       name: name.to_string(),
       description: type_of.doc.clone(),
       fields,
-      implements: type_of.implements.as_ref().unwrap_or(&Vec::new()).to_vec(),
+      implements: type_of.implements.clone(),
     })
   })
 }
@@ -186,6 +211,11 @@ fn to_field(
   name: &str,
   field: &Field,
 ) -> Valid<Option<blueprint::FieldDefinition>> {
+  let directives = field.resolvable_directives();
+  if directives.len() > 1 {
+    return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+  }
+
   let field_type = &field.type_of;
   let args = to_args(field)?;
 
@@ -193,33 +223,74 @@ fn to_field(
     name: name.to_owned(),
     description: field.doc.clone(),
     args,
-    of_type: to_type(field_type, &field.list, &field.required, &field.list_type_required),
+    of_type: to_type(field_type, field.list, field.required, field.list_type_required),
     directives: Vec::new(),
     resolver: None,
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
+  let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
+  let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
-  let maybe_field_definition = match maybe_field_definition {
-    Some(field_definition) => {
-      Some(update_inline_field(type_of, name, field, field_definition, config).trace("@inline")?)
-    }
-    None => None,
-  };
-
   Ok(maybe_field_definition)
 }
 
-fn to_type(name: &str, list: &Option<bool>, required: &Option<bool>, list_type_required: &Option<bool>) -> Type {
-  let non_null = required.unwrap_or(false);
-  if list.unwrap_or(false) {
+fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> Type {
+  if list {
     Type::ListType {
-      of_type: Box::new(Type::NamedType { name: name.to_string(), non_null: list_type_required.unwrap_or(false) }),
+      of_type: Box::new(Type::NamedType { name: name.to_string(), non_null: list_type_required }),
       non_null,
     }
   } else {
     Type::NamedType { name: name.to_string(), non_null }
+  }
+}
+
+fn validate_query(config: &Config) -> Valid<()> {
+  let query_type_name = config
+    .graphql
+    .schema
+    .query
+    .as_ref()
+    .validate_some("Query root is missing".to_owned())?;
+
+  let Some(query) = config.find_type(query_type_name) else {
+    return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+  };
+
+  query
+    .fields
+    .iter()
+    .validate_all(validate_field_has_resolver)
+    .trace(query_type_name)?;
+
+  Ok(())
+}
+
+fn validate_mutation(config: &Config) -> Valid<()> {
+  let mutation_type_name = config.graphql.schema.mutation.as_ref();
+
+  if let Some(mutation_type_name) = mutation_type_name {
+    let Some(mutation) = config.find_type(mutation_type_name) else {
+      return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
+    };
+
+    mutation
+      .fields
+      .iter()
+      .validate_all(validate_field_has_resolver)
+      .trace(mutation_type_name)?;
+  }
+
+  Ok(())
+}
+
+fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<()> {
+  if field.has_resolver() {
+    Ok(())
+  } else {
+    Valid::fail("No resolver has been found in the schema".to_owned()).trace(name)
   }
 }
 
@@ -242,8 +313,7 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
-  let mut b_field = b_field;
+fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
@@ -256,15 +326,11 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
           base_url.pop();
         }
         base_url.push_str(http.path.clone().as_str());
-        let method = http.method.as_ref().unwrap_or(&Method::GET);
-        let query = match http.query.as_ref() {
-          Some(q) => q.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
-          None => Vec::new(),
-        };
+        let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
-        for (k, v) in http.headers.clone().unwrap_or_default().iter() {
+        for (k, v) in http.headers.clone().iter() {
           header_map.insert(
             HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
@@ -272,7 +338,7 @@ fn update_http(field: &config::Field, b_field: FieldDefinition, config: &Config)
         }
         let req_template = RequestTemplate::try_from(
           Endpoint::new(base_url.to_string())
-            .method(method.clone())
+            .method(http.method.clone())
             .query(query)
             .output(output_schema)
             .input(input_schema)
@@ -298,16 +364,14 @@ fn update_modify(
 ) -> Valid<Option<FieldDefinition>> {
   match field.modify.as_ref() {
     Some(modify) => {
-      if modify.omit.as_ref().is_some() {
+      if modify.omit {
         Ok(None)
       } else if let Some(new_name) = &modify.name {
-        if let Some(interface_names) = type_.implements.clone() {
-          for name in interface_names {
-            let interface = config.find_type(&name);
-            if let Some(interface) = interface {
-              if interface.fields.iter().any(|(name, _)| name == new_name) {
-                return Valid::fail("Field is already implemented from interface".to_string());
-              }
+        for name in type_.implements.iter() {
+          let interface = config.find_type(name);
+          if let Some(interface) = interface {
+            if interface.fields.iter().any(|(name, _)| name == new_name) {
+              return Valid::fail("Field is already implemented from interface".to_string());
             }
           }
         }
@@ -323,8 +387,23 @@ fn update_modify(
     None => Valid::Ok(Some(b_field)),
   }
 }
-fn needs_resolving(field: &config::Field) -> bool {
-  field.unsafe_operation.is_some() || field.http.is_some()
+fn update_const_field(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+  match field.const_field.as_ref() {
+    Some(const_field) => {
+      let data = const_field.data.to_owned();
+      match ConstValue::from_json(data.to_owned()) {
+        Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value) {
+          Ok(_) => {
+            b_field.resolver = Some(Literal(data));
+            Valid::Ok(b_field)
+          }
+          Err(err) => err.into(),
+        },
+        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+      }
+    }
+    None => Valid::Ok(b_field),
+  }
 }
 fn is_scalar(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
@@ -341,7 +420,7 @@ fn process_path(
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
       let mut modified_field = field.clone();
-      modified_field.list = Some(false);
+      modified_field.list = false;
       return process_path(
         remaining_path,
         &modified_field,
@@ -349,98 +428,133 @@ fn process_path(
         false,
         config,
         invalid_path_handler,
-      )
-      .trace(field_name);
+      );
     }
-    if let Some(next_field) = type_info.fields.get(field_name) {
-      let next_is_required = is_required && next_field.required.unwrap_or(false);
-      if is_scalar(&next_field.type_of) {
-        return process_path(
+    let target_type_info = type_info
+      .fields
+      .get(field_name)
+      .map(|_| type_info)
+      .or_else(|| config.find_type(&field.type_of));
+
+    if let Some(type_info) = target_type_info {
+      return process_field_within_type(
+        field,
+        field_name,
+        remaining_path,
+        type_info,
+        is_required,
+        config,
+        invalid_path_handler,
+      );
+    }
+    return invalid_path_handler(field_name, path);
+  }
+
+  Valid::Ok(to_type(
+    &field.type_of,
+    field.list,
+    is_required,
+    field.list_type_required,
+  ))
+}
+
+fn process_field_within_type(
+  field: &config::Field,
+  field_name: &str,
+  remaining_path: &[String],
+  type_info: &config::Type,
+  is_required: bool,
+  config: &Config,
+  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type>,
+) -> Valid<Type> {
+  if let Some(next_field) = type_info.fields.get(field_name) {
+    if next_field.has_resolver() {
+      return Valid::<Type>::validate_or(
+        Valid::fail(format!(
+          "Inline can't be done because of {} resolver at [{}.{}]",
+          {
+            let next_dir_http = next_field.http.as_ref().map(|_| "http");
+            let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
+            next_dir_http.or(next_dir_const).unwrap_or("unsafe")
+          },
+          field.type_of,
+          field_name
+        )),
+        process_path(
           remaining_path,
           next_field,
           type_info,
-          next_is_required,
+          is_required,
           config,
           invalid_path_handler,
-        )
-        .trace(field_name);
-      }
-      if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-        let of_type = process_path(
-          remaining_path,
-          next_field,
-          next_type_info,
-          next_is_required,
-          config,
-          invalid_path_handler,
-        )
-        .trace(field_name)?;
-
-        return if field.list.unwrap_or(false) {
-          Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
-        } else {
-          Ok(of_type)
-        };
-      }
+        ),
+      );
     }
-    return invalid_path_handler(field_name, path).trace(field_name);
+
+    let next_is_required = is_required && next_field.required;
+    if is_scalar(&next_field.type_of) {
+      return process_path(
+        remaining_path,
+        next_field,
+        type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      );
+    }
+
+    if let Some(next_type_info) = config.find_type(&next_field.type_of) {
+      let of_type = process_path(
+        remaining_path,
+        next_field,
+        next_type_info,
+        next_is_required,
+        config,
+        invalid_path_handler,
+      )?;
+
+      return if next_field.list {
+        Valid::Ok(ListType { of_type: Box::new(of_type), non_null: is_required })
+      } else {
+        Ok(of_type)
+      };
+    }
+  } else if let Some((head, tail)) = remaining_path.split_first() {
+    if let Some(field) = type_info.fields.get(head) {
+      return process_path(tail, field, type_info, is_required, config, invalid_path_handler);
+    }
   }
-  Valid::Ok(to_type(
-    &field.type_of,
-    &field.list,
-    &Some(is_required),
-    &field.list_type_required,
-  ))
+
+  invalid_path_handler(field_name, remaining_path)
 }
 
 // Main function to update an inline field
 fn update_inline_field(
   type_info: &config::Type,
-  field_name: &str,
   field: &config::Field,
   base_field: FieldDefinition,
   config: &Config,
 ) -> Valid<FieldDefinition> {
   let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
   let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type> {
-    Valid::fail("Field not found at given path".to_string())
+    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
   };
   let has_index = inlined_path.iter().any(|s| {
     let re = Regex::new(r"^\d+$").unwrap();
     re.is_match(s)
   });
-  let build_path_strings = |name: String| -> Vec<String> {
-    let mut path: Vec<String> = inlined_path.iter().map(|s| s.to_string()).collect();
-    path.insert(0, name);
-    path
-  };
-
   if let Some(InlineType { path }) = field.clone().inline {
-    return match process_path(
-      &build_path_strings(field_name.to_string()),
-      field,
-      type_info,
-      false,
-      config,
-      &handle_invalid_path,
-    ) {
+    return match process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path) {
       Valid::Ok(of_type) => {
-        let new_path = if needs_resolving(field) {
-          path
-        } else {
-          let mut new_path = vec![field_name.to_string()];
-          new_path.extend(path.iter().cloned());
-          new_path
-        };
         let mut updated_base_field = base_field;
-        let resolver = Lambda::context_path(new_path.clone());
+        let resolver = Lambda::context_path(path.clone());
         if has_index {
           updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
         } else {
           updated_base_field.of_type = of_type;
         }
 
-        updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(new_path.clone()));
+        updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
         Valid::Ok(updated_base_field)
       }
       Valid::Err(err) => Valid::Err(err),
@@ -449,42 +563,31 @@ fn update_inline_field(
   Valid::Ok(base_field)
 }
 fn to_args(field: &config::Field) -> Valid<Vec<InputFieldDefinition>> {
-  match field.args.as_ref() {
-    Some(args) => {
-      // TODO! assert type name
-      args.iter().validate_all(|(name, arg)| {
-        Valid::Ok(InputFieldDefinition {
-          name: name.clone(),
-          description: arg.doc.clone(),
-          of_type: to_type(&arg.type_of, &arg.list, &arg.required, &None),
-          default_value: arg.default_value.clone(),
-        })
-      })
-    }
-    None => Valid::Ok(Vec::new()),
-  }
+  // TODO! assert type name
+  field.args.iter().validate_all(|(name, arg)| {
+    Valid::Ok(InputFieldDefinition {
+      name: name.clone(),
+      description: arg.doc.clone(),
+      of_type: to_type(&arg.type_of, arg.list, arg.required, false),
+      default_value: arg.default_value.clone(),
+    })
+  })
 }
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-  to_json_schema(&field.type_of, &field.required, &field.list, config)
+  to_json_schema(&field.type_of, field.required, field.list, config)
 }
-pub fn to_json_schema_for_args(args: &Option<BTreeMap<String, Arg>>, config: &Config) -> JsonSchema {
-  match args {
-    Some(args) => {
-      let mut schema_fields = HashMap::new();
-      for (name, arg) in args.iter() {
-        schema_fields.insert(
-          name.clone(),
-          to_json_schema(&arg.type_of, &arg.required, &arg.list, config),
-        );
-      }
-      JsonSchema::Obj(schema_fields)
-    }
-    None => JsonSchema::Obj(HashMap::new()),
+pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
+  let mut schema_fields = HashMap::new();
+  for (name, arg) in args.iter() {
+    schema_fields.insert(
+      name.clone(),
+      to_json_schema(&arg.type_of, arg.required, arg.list, config),
+    );
   }
+  JsonSchema::Obj(schema_fields)
 }
-pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool>, config: &Config) -> JsonSchema {
+pub fn to_json_schema(type_of: &str, required: bool, list: bool, config: &Config) -> JsonSchema {
   let type_ = config.find_type(type_of);
-  let list = list.unwrap_or(false);
   let schema = match type_ {
     Some(type_) => {
       let mut schema_fields = HashMap::new();
@@ -504,7 +607,7 @@ pub fn to_json_schema(type_of: &str, required: &Option<bool>, list: &Option<bool
     },
   };
 
-  if required.is_none() {
+  if !required {
     if list {
       JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
     } else {

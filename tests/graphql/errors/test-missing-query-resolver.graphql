@@ -1,0 +1,23 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  user: [User]
+  posts: [Post]!
+}
+
+type User {
+  id: ID
+  name: String
+}
+
+type Post {
+  id: ID
+}
+
+#> client-sdl
+type Failure
+  @error(message: "No resolver has been found in the schema", trace: ["Query", "posts"])
+  @error(message: "No resolver has been found in the schema", trace: ["Query", "user"])

@@ -12,11 +12,11 @@ type Query {
 }
 
 type User {
-  address: Address @inline(path: ["street"])
+  address: Address @inline(path: ["address", "street"])
 }
 
 #> client-query
-query @expect(json: {data:{user:{address:"Kulas Light"}}}) {
+query @expect(json: {data: {user: {address: "Kulas Light"}}}) {
   user {
     address
   }

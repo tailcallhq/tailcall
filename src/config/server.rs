@@ -1,6 +1,9 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
+
+use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -20,6 +23,22 @@ pub struct Server {
   pub vars: Option<BTreeMap<String, String>>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub upstream: Option<Upstream>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub vars: KeyValues,
+  pub batch: Option<Batch>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Setters)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Batch {
+  pub max_size: usize,
+  pub delay: usize,
+  pub headers: Vec<String>,
+}
+impl Default for Batch {
+  fn default() -> Self {
+    Batch { max_size: 1000, delay: 0, headers: Vec::new() }
+  }
 }
 
 impl Server {

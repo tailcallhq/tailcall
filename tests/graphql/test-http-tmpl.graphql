@@ -5,12 +5,12 @@ schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
 
 type Post {
   id: Int
-  user: User @http(path: "/users", query: {id: "{{value.userId}}"})
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}])
   userId: Int
 }
 
 type Query {
-  posts: [Post]
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {
@@ -37,5 +37,3 @@ type User {
 schema {
   query: Query
 }
-
-

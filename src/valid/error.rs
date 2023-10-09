@@ -24,10 +24,6 @@ impl<E: Display> Display for ValidationError<E> {
 }
 
 impl<E> ValidationError<E> {
-  pub fn map<E1, F: Fn(E) -> E1>(self, f: F) -> ValidationError<E1> {
-    ValidationError(self.0.into_iter().map(|e| e.map(&f)).collect())
-  }
-
   pub fn as_vec(&self) -> &Vec<Cause<E>> {
     &self.0
   }
@@ -66,8 +62,8 @@ impl<E> ValidationError<E> {
 
 impl<E: Display + Debug> std::error::Error for ValidationError<E> {}
 
-impl From<Cause<String>> for ValidationError<String> {
-  fn from(value: Cause<String>) -> Self {
+impl<E> From<Cause<E>> for ValidationError<E> {
+  fn from(value: Cause<E>) -> Self {
     ValidationError(vec![value])
   }
 }
@@ -104,7 +100,9 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
     }
 
     let re = Regex::new(r" at line \d+ column \d+$").unwrap();
-    let message = re.replace(error.inner().to_string().as_str(), "").into_owned();
+    let message = re
+      .replace(format!("Parsing failed because of {}", error.inner()).as_str(), "")
+      .into_owned();
 
     ValidationError(vec![Cause::new(message).trace(trace.into())])
   }
@@ -125,7 +123,9 @@ mod tests {
   fn test_from_serde_error() {
     let foo = &mut serde_json::Deserializer::from_str("{ \"a\": true }");
     let actual = ValidationError::from(serde_path_to_error::deserialize::<_, Foo>(foo).unwrap_err());
-    let expected = ValidationError::new("invalid type: boolean `true`, expected i32".to_string()).trace("a");
+    let expected =
+      ValidationError::new("Parsing failed because of invalid type: boolean `true`, expected i32".to_string())
+        .trace("a");
     assert_eq!(actual, expected);
   }
 }
