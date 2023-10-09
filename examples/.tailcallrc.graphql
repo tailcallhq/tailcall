@@ -52,6 +52,7 @@ input Upstream {
   baseURL: String
   enableHttpCache: Boolean
   batch: Batch
+  responseHeaders: [KeyValue]
 }
 
 input KeyValue {
