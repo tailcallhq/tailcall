@@ -16,7 +16,7 @@ type Query {
 }
 
 #> client-query
-query @expect(json: { a: { b: [{ c: 1 }, { c: 2 }, { c: 3 }] } }) {
+query @expect(json: {a: {b: [{c: 1}, {c: 2}, {c: 3}]}}) {
   a {
     b {
       c

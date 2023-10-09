@@ -21,5 +21,4 @@ type Mutation {
 }
 
 #> client-sdl
-type Failure
-  @error(message: "No resolver has been found in the schema", trace: ["Mutation", "createUser"])
+type Failure @error(message: "No resolver has been found in the schema", trace: ["Mutation", "createUser"])
