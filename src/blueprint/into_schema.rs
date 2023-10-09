@@ -45,11 +45,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
           FieldFuture::new(async move {
             match resolver {
               None => {
-                let ctx = EvaluationContext::new(req_ctx).context(&ctx);
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
                 Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
               }
               Some(expr) => {
-                let ctx = EvaluationContext::new(req_ctx).context(&ctx);
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
                 let const_value = expr.eval(&ctx).await?;
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),

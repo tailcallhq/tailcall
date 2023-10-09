@@ -6,6 +6,7 @@ use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
+use super::ResolverContextLike;
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -52,9 +53,9 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn eval<'a>(
+  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
-    ctx: &'a EvaluationContext<'a>,
+    ctx: &'a EvaluationContext<'a, Ctx>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
     Box::pin(async move {
       match self {
