@@ -13,7 +13,7 @@ use crate::async_graphql_hyper;
 use crate::blueprint::validation::header_validation::validate_headers;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::{Config, Server};
+use crate::config::Config;
 use crate::valid::ValidExtensions;
 
 fn graphiql() -> Result<Response<Body>> {
@@ -36,12 +36,14 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
     response = response.set_cache_control(ttl);
   }
 
-  response = response.set_response_headers(server_ctx.server.response_headers.clone());
+  response = response.set_response_headers(server_ctx.response_headers.clone());
   response.to_response()
 }
+
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
+
 async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
   match *req.method() {
     hyper::Method::GET if state.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => graphiql(),
@@ -49,6 +51,7 @@ async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result
     _ => not_found(),
   }
 }
+
 fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
   let mut new_headers = HeaderMap::new();
   for (k, v) in headers.iter() {
@@ -60,22 +63,22 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
   new_headers
 }
 
-fn set_response_headers(server: &mut Server) {
-  server.set_response_headers();
-}
-
 pub async fn start_server(file_path: &String) -> Result<()> {
   let server_sdl = fs::read_to_string(file_path)?;
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
-  let mut server = config.server.clone();
+  let server = config.server.clone();
+
+  let mut response_headers = HeaderMap::new();
 
   let blueprint = validate_headers(server.add_response_headers.clone())
+    .map(|headers| {
+      response_headers = headers;
+    })
     .validate_or(Blueprint::try_from(&config))
     .map_err(CLIError::from)?;
 
-  set_response_headers(&mut server);
-  let state = Arc::new(ServerContext::new(blueprint, server));
+  let state = Arc::new(ServerContext::new(blueprint, server, response_headers));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }

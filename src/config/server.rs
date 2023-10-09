@@ -1,8 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use derive_setters::Setters;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
@@ -25,9 +23,8 @@ pub struct Server {
   pub proxy: Option<Proxy>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
-  pub add_response_headers: Option<Vec<(String, String)>>,
+  pub add_response_headers: Option<Vec<BTreeMap<String, String>>>,
   #[serde(skip)]
-  pub response_headers: HeaderMap,
   pub batch: Option<Batch>,
 }
 
@@ -63,19 +60,6 @@ impl Server {
   pub fn allowed_headers(&self) -> HashSet<String> {
     // TODO: cloning isn't required we can return a ref here
     self.allowed_headers.clone().unwrap_or_default()
-  }
-  pub fn set_response_headers(&mut self) {
-    let mut header_map = HeaderMap::new();
-    if let Some(headers) = &self.add_response_headers {
-      for (k, v) in headers {
-        // Unwrap is safe as invalid headers are caught in validation
-        header_map.insert(
-          HeaderName::from_bytes(k.as_bytes()).unwrap(),
-          HeaderValue::from_str(v).unwrap(),
-        );
-      }
-    }
-    self.response_headers = header_map;
   }
 }
 
