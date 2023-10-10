@@ -2946,6 +2946,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_yaml",
  "sha2",
+ "socket2 0.5.4",
  "stripmargin",
  "thiserror",
  "tokio",
