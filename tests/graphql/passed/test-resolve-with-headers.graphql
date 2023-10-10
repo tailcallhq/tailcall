@@ -1,5 +1,5 @@
 #> server-sdl
-schema {
+schema @server(allowedHeaders: ["authorization"]) {
   query: Query
 }
 

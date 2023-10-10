@@ -32,7 +32,7 @@ fn assign_id(blueprint: &mut Blueprint) -> &Blueprint {
   blueprint
 }
 
-pub fn data_loaders(
+pub fn get_data_loaders(
   blueprint: &Blueprint,
   server: Server,
 ) -> Vec<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>> {
@@ -64,11 +64,10 @@ pub fn data_loaders(
 }
 
 impl ServerContext {
-  pub fn new(blueprint: Blueprint, server: Server) -> Self {
-    let mut blueprint = blueprint;
-    let schema = assign_id(&mut blueprint).to_schema(&server);
+  pub fn new(blueprint: &mut Blueprint, server: Server) -> Self {
+    let schema = assign_id(blueprint).to_schema(&server);
     let http_client = DefaultHttpClient::new(server.clone());
-    let data_loaders = data_loaders(&blueprint, server.clone());
+    let data_loaders = get_data_loaders(blueprint, server.clone());
     ServerContext { schema, http_client, server: server.clone(), data_loaders }
   }
 }
