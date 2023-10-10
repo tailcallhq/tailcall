@@ -9,6 +9,7 @@ on:
     types: [opened, reopened, synchronize]
 jobs:
   check_if_build:
+    name: Check if Build
     runs-on: ubuntu-latest
 
     steps:
@@ -212,7 +213,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
-          # use-cross: ${{ matrix.cross }} // invalid action input
           override: true
 
       - name: Build
