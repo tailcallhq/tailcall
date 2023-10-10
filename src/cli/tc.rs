@@ -4,7 +4,10 @@ use std::fs;
 
 use anyhow::Result;
 use clap::Parser;
+use inquire::Confirm;
 use log::Level;
+use resource::resource_str;
+use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -37,7 +40,57 @@ pub async fn run() -> Result<()> {
         Err(e) => Err(e),
       }
     }
+    Command::Init { file_path } => Ok(init(&file_path).await?),
   }
+}
+
+pub async fn init(file_path: &str) -> Result<()> {
+  let tailcallrc = resource_str!("examples/.tailcallrc.graphql");
+
+  let ans = Confirm::new("Do you want to add a file to the project?")
+    .with_default(false)
+    .prompt();
+
+  match ans {
+    Ok(true) => {
+      let file_name = inquire::Text::new("Enter the file name:")
+        .with_default(".graphql")
+        .prompt()
+        .unwrap_or_else(|_| String::from(".graphql"));
+
+      let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
+
+      let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
+        .with_default(false)
+        .prompt();
+
+      match confirm {
+        Ok(true) => {
+          fs::write(format!("{}/{}", file_path, &file_name), "")?;
+
+          let graphqlrc = format!(
+            r#"|schema:
+               |- './{}'
+               |- './.tailcallrc.graphql'
+          "#,
+            &file_name
+          )
+          .strip_margin();
+          fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
+        }
+        Ok(false) => (),
+        Err(e) => return Err(e.into()),
+      }
+    }
+    Ok(false) => (),
+    Err(e) => return Err(e.into()),
+  }
+
+  fs::write(
+    format!("{}/.tailcallrc.graphql", file_path),
+    tailcallrc.as_ref().as_bytes(),
+  )?;
+  Ok(())
 }
 
 pub fn blueprint_from_sdl(sdl: &str) -> Result<Blueprint> {
