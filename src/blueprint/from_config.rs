@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
+use async_graphql::BatchRequest::Batch;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use async_graphql_value::ConstValue;
@@ -22,7 +23,7 @@ use crate::lambda::Expression::Literal;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
-use crate::{blueprint, config};
+use crate::{batch, blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
 
@@ -315,13 +316,16 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_batch(field: &config::Field, b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
-  if let Some(_batch) = field.batch.as_ref() {
+fn update_batch(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+  if let Some(batch) = field.batch.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {
         Valid::fail("Batching is only supported for GET requests".to_string())
       } else {
-        todo!()
+        let batch = batch.to_directive("batch".to_string());
+        let batch = to_directive(batch)?;
+        b_field.directives.push(batch);
+        Valid::Ok(b_field)
       }
     } else {
       Valid::fail("Batching is only supported for HTTP resolvers".to_string())

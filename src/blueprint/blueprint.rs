@@ -8,8 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::config;
-use crate::lambda::{Expression, Lambda, Operation};
-use crate::request_template::RequestTemplate;
+use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -198,21 +197,5 @@ impl Blueprint {
     // We should safely assume the blueprint is correct and,
     // generation of schema cannot fail.
     schema.finish().unwrap()
-  }
-
-  pub fn endpoints(&self) -> Vec<&RequestTemplate> {
-    self
-      .definitions
-      .iter()
-      .filter_map(|def| match def {
-        Definition::ObjectTypeDefinition(def) => Some(&def.fields),
-        _ => None,
-      })
-      .flat_map(|fields| fields.iter())
-      .filter_map(|field| match &field.resolver {
-        Some(Expression::Unsafe(Operation::Endpoint(req_template))) => Some(req_template),
-        _ => None,
-      })
-      .collect()
   }
 }
