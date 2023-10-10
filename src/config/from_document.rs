@@ -9,10 +9,10 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::batch::Batch;
 use crate::config;
 use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
+use crate::group_by::GroupBy;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
 type Valid<A> = ValidDefault<A, String>;
@@ -289,10 +289,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .collect();
   Union { types, doc: doc.clone() }
 }
-fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
+fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "batch" {
-      Batch::from_directive(&directive.node).ok()
+      GroupBy::from_directive(&directive.node).ok()
     } else {
       None
     }

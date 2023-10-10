@@ -4,10 +4,11 @@ use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
-use async_graphql::futures_util::future::{join_all, ok};
+use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 
 use crate::config::Batch;
+use crate::group_by::GroupBy;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
@@ -17,10 +18,10 @@ where
   C: HttpClient + Send + Sync + 'static + Clone,
 {
   pub client: C,
-  pub batched: bool,
+  pub batched: Option<GroupBy>,
 }
 impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
-  pub fn new(client: C, batched: bool) -> Self {
+  pub fn new(client: C, batched: Option<GroupBy>) -> Self {
     HttpDataLoader { client, batched }
   }
 
@@ -40,7 +41,7 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    if self.batched {
+    if let Some(group_by) = self.batched.clone() {
       let mut keys = keys.to_vec();
       keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
 
@@ -54,19 +55,25 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
       }
 
       let res = self.client.execute(request).await?;
+      #[allow(clippy::mutable_key_type)]
       let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
+      let body_value = res.body.group_by(group_by.path());
 
       for key in &keys {
-        let path_indices: Vec<_> = key
-          .to_request()
-          .url()
-          .query_pairs()
-          .map(|a| (a.1.as_ref().parse::<usize>().unwrap_or(0) - 1).to_string())
-          .collect();
-
-        let body_value = res.body.get_path(&path_indices).unwrap_or(&ConstValue::Null);
-
-        hashmap.insert(key.clone(), res.clone().body(body_value.clone()));
+        let req = key.to_request();
+        let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
+        let id = query_set
+          .get(group_by.key().clone().as_str())
+          .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
+        hashmap.insert(
+          key.clone(),
+          res.clone().body(
+            body_value
+              .get(id.as_ref())
+              .and_then(|a| a.first().cloned().cloned())
+              .unwrap_or(ConstValue::Null),
+          ),
+        );
       }
 
       Ok(hashmap)
@@ -114,7 +121,7 @@ mod tests {
   async fn test_load_function() {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
-    let loader = HttpDataLoader { client: client.clone(), batched: false };
+    let loader = HttpDataLoader { client: client.clone(), batched: None };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
@@ -132,7 +139,7 @@ mod tests {
   async fn test_load_function_many() {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
-    let loader = HttpDataLoader { client: client.clone(), batched: false };
+    let loader = HttpDataLoader { client: client.clone(), batched: None };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());

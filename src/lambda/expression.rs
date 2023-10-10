@@ -82,9 +82,7 @@ impl Expression {
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
                 let mut data_loader = ctx.req_ctx.data_loaders[0].clone();
                 if let Some(id) = req_template.id {
-                  // println!(" data loaders {}", ctx.req_ctx.data_loaders.len());
                   data_loader = ctx.req_ctx.data_loaders[id].clone();
-                  // println!("Using data loader {}", id)
                 }
                 let resp = data_loader
                   .as_ref()

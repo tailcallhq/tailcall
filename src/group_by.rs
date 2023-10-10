@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Batch {
+pub struct GroupBy {
   key: String,
   path: Option<Vec<String>>,
 }
 
 const EMPTY_VEC: &Vec<String> = &vec![];
 
-impl Batch {
+impl GroupBy {
   pub fn path(&self) -> &Vec<String> {
     self.path.as_ref().unwrap_or(EMPTY_VEC)
   }
@@ -17,7 +17,7 @@ impl Batch {
     &self.key
   }
 
-  pub fn new(key: String, path: Vec<String>) -> Batch {
-    Batch { key, path: Some(path) }
+  pub fn new(key: String, path: Vec<String>) -> GroupBy {
+    GroupBy { key, path: Some(path) }
   }
 }

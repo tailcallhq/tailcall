@@ -6,6 +6,8 @@ use derive_setters::Setters;
 
 use crate::blueprint::{Blueprint, Definition};
 use crate::config::Server;
+use crate::directive::DirectiveCodec;
+use crate::group_by::GroupBy;
 use crate::http::{DefaultHttpClient, HttpDataLoader};
 use crate::lambda::{Expression, Operation};
 
@@ -30,42 +32,24 @@ fn assign_id(blueprint: &mut Blueprint) -> &Blueprint {
   blueprint
 }
 
-pub fn endpoints(blueprint: &Blueprint) -> Vec<&crate::request_template::RequestTemplate> {
-  blueprint
-    .definitions
-    .iter()
-    .filter_map(|def| match def {
-      Definition::ObjectTypeDefinition(def) => Some(&def.fields),
-      _ => None,
-    })
-    .flat_map(|fields| fields.iter())
-    .filter_map(|field| match &field.resolver {
-      Some(Expression::Unsafe(Operation::Endpoint(req_template))) => Some(req_template),
-      _ => None,
-    })
-    .collect()
-}
-
 pub fn data_loaders(
   blueprint: &Blueprint,
   server: Server,
 ) -> Vec<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>> {
-  println!("data loaders");
   let mut data_loaders = Vec::new();
   for def in blueprint.definitions.iter() {
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &def.fields {
-        if let Some(Expression::Unsafe(Operation::Endpoint(req_template))) = &field.resolver {
+        if let Some(Expression::Unsafe(Operation::Endpoint(_))) = &field.resolver {
           let mut data_loader = Arc::new(
-            HttpDataLoader::new(DefaultHttpClient::default(), false)
+            HttpDataLoader::new(DefaultHttpClient::default(), None)
               .to_data_loader(server.batch.clone().unwrap_or_default()),
           );
-          println!("directive: {:?}", field.directives);
           field.directives.iter().for_each(|directive| {
             if directive.name == "batch" {
-              println!("batch");
+              let batched = GroupBy::from_directive(&directive.arguments.to_directive(directive.name.to_string()));
               data_loader = Arc::new(
-                HttpDataLoader::new(DefaultHttpClient::default(), true)
+                HttpDataLoader::new(DefaultHttpClient::default(), batched.ok())
                   .to_data_loader(server.batch.clone().unwrap_or_default()),
               );
             }

@@ -3,7 +3,6 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
-use async_graphql::BatchRequest::Batch;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use async_graphql_value::ConstValue;
@@ -23,7 +22,7 @@ use crate::lambda::Expression::Literal;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
-use crate::{batch, blueprint, config};
+use crate::{blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
 
