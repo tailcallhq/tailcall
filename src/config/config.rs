@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{Proxy, Server};
+use crate::config::group_by::GroupBy;
 use crate::config::{is_default, KeyValues};
-use crate::group_by::GroupBy;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};

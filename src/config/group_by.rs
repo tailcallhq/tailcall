@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+use crate::config::is_default;
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct GroupBy {
   key: String,
+  #[serde(default, skip_serializing_if = "is_default")]
   path: Option<Vec<String>>,
 }
 

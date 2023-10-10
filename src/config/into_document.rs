@@ -41,6 +41,10 @@ fn config_document(config: &Config) -> ServiceDocument {
               let http_dir = http.to_directive("http".to_string());
               directives.push(pos(http_dir));
             }
+            if let Some(batch) = field.clone().batch {
+              let batch_dir = batch.to_directive("batch".to_string());
+              directives.push(pos(batch_dir));
+            }
             if let Some(us) = field.clone().unsafe_operation {
               let us_dir = us.to_directive("unsafe".to_string());
               directives.push(pos(us_dir));
@@ -84,6 +88,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             if let Some(http) = field.clone().http {
               let http_dir = http.to_directive("http".to_string());
               directives.push(pos(http_dir));
+            }
+            if let Some(batch) = field.clone().batch {
+              let batch_dir = batch.to_directive("batch".to_string());
+              directives.push(pos(batch_dir));
             }
             if let Some(us) = field.clone().unsafe_operation {
               let us_dir = us.to_directive("unsafe".to_string());
@@ -139,6 +147,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             if let Some(us) = field.clone().unsafe_operation {
               let us_dir = us.to_directive("unsafe".to_string());
               directives.push(pos(us_dir));
+            }
+            if let Some(batch) = field.clone().batch {
+              let batch_dir = batch.to_directive("batch".to_string());
+              directives.push(pos(batch_dir));
             }
             if let Some(inline) = field.clone().inline {
               let inline_dir = inline.to_directive("inline".to_string());

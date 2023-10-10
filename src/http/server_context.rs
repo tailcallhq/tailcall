@@ -1,13 +1,10 @@
 use std::sync::Arc;
 
-
 use async_graphql::dynamic;
 use derive_setters::Setters;
 
 use crate::blueprint::{Blueprint, Definition};
 use crate::config::Server;
-
-
 use crate::http::{DefaultHttpClient, HttpDataLoader};
 use crate::lambda::{Expression, Operation};
 

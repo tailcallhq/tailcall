@@ -10,7 +10,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
-use crate::group_by::GroupBy;
+use crate::config::group_by::GroupBy;
 use crate::http::{DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;

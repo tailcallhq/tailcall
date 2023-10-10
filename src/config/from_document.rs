@@ -10,9 +10,9 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use crate::config;
+use crate::config::group_by::GroupBy;
 use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
-use crate::group_by::GroupBy;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
 type Valid<A> = ValidDefault<A, String>;

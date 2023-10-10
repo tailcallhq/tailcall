@@ -1,6 +1,3 @@
-
-
-
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
