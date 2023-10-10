@@ -25,7 +25,7 @@ impl Config {
     self.server.port.unwrap_or(8000)
   }
 
-  pub fn upstream(&self) -> Option<Upstream> {
+  pub fn upstream(&self) -> Upstream {
     self.server.upstream.clone()
   }
 

@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::{Server, Upstream};
+use crate::config::Server;
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -33,9 +33,7 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(server: Server) -> Self {
-    let upstream_settings_serilaised: String =
-      serde_json::to_string(&server.upstream.clone().unwrap_or_default()).unwrap();
-    let upstream_settings: Upstream = serde_json::from_str(&upstream_settings_serilaised).unwrap();
+    let upstream_settings = &server.upstream;
 
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))

@@ -20,9 +20,8 @@ pub struct Server {
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
-  pub vars: Option<BTreeMap<String, String>>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub upstream: Option<Upstream>,
+  #[serde(default)]
+  pub upstream: Upstream,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
   pub batch: Option<Batch>,
@@ -81,7 +80,7 @@ pub struct Upstream {
   pub keep_alive_timeout: u64,
   #[serde(default = "keep_alive_while_idle_default")]
   pub keep_alive_while_idle: bool,
-  #[serde(default = "proxy_default")]
+  #[serde(default)]
   pub proxy: Option<Proxy>,
   #[serde(default = "connect_timeout_default")]
   pub connect_timeout: u64,
@@ -101,7 +100,7 @@ impl Default for Upstream {
       keep_alive_interval: keep_alive_interval_default(),
       keep_alive_timeout: keep_alive_timeout_default(),
       keep_alive_while_idle: keep_alive_while_idle_default(),
-      proxy: proxy_default(),
+      proxy: None,
       connect_timeout: connect_timeout_default(),
       timeout: timeout_default(),
       tcp_keep_alive: tcp_keep_alive_default(),
@@ -128,10 +127,6 @@ fn keep_alive_timeout_default() -> u64 {
 
 fn keep_alive_while_idle_default() -> bool {
   false
-}
-
-fn proxy_default() -> Option<Proxy> {
-  None
 }
 
 fn connect_timeout_default() -> u64 {
