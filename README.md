@@ -48,4 +48,4 @@ Your contributions are invaluable! Kindly go through our [contribution guideline
 
 ### License
 
-This initiative is protected under the MIT License.
+This initiative is protected under the Apache 2.0 License.

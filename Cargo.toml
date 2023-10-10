@@ -56,6 +56,7 @@ httpmock = "0.6"
 mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+curl-sys = { version = "0.4", features = ["force-system-lib-on-osx"] }
 
 [profile.release]
 opt-level = 3
@@ -79,4 +80,8 @@ harness = false
 
 [[bench]]
 name = "data_loader_bench"
+harness = false
+
+[[bench]]
+name = "impl_path_string_for_evaluation_context"
 harness = false

@@ -70,7 +70,7 @@ mod tests {
 
   use crate::endpoint::Endpoint;
   use crate::http::RequestContext;
-  use crate::lambda::{EvaluationContext, Lambda};
+  use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
   use crate::request_template::RequestTemplate;
 
   impl<B> Lambda<B>
@@ -79,7 +79,7 @@ mod tests {
   {
     async fn eval(self) -> Result<B> {
       let req_ctx = RequestContext::default();
-      let ctx = EvaluationContext::new(&req_ctx);
+      let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
       let result = self.expression.eval(&ctx).await?;
       let json = serde_json::to_value(result)?;
       Ok(serde_json::from_value(json)?)

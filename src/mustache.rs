@@ -213,7 +213,9 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+          let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+
           if parts == ["foo", "bar"] {
             Some(Cow::Borrowed("FOOBAR"))
           } else if parts == ["baz", "qux"] {
@@ -240,7 +242,7 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn path_string(&self, _: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
           None
         }
       }
@@ -259,7 +261,9 @@ mod tests {
       struct DummyPath;
 
       impl PathString for DummyPath {
-        fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+          let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+
           if parts == ["foo"] {
             Some(Cow::Borrowed("bar"))
           } else {
