@@ -12,7 +12,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=1&id=2")
+  posts: [Post] @http(path: "/posts?id=1&id=11")
 }
 
 type Post {
@@ -29,10 +29,11 @@ type User {
 }
 
 #> client-query
-query @expect(json: {data: {posts: [{user: {name: "Leanne Graham"}}, {user: {name: "Leanne Graham"}}]}}) {
+query @expect(json: {data: {posts: [{userId: 1, user: {id: 1}}, {userId: 2, user: {id: 2}}]}}) {
   posts {
     user {
-      name
+      id
     }
+    userId
   }
 }
