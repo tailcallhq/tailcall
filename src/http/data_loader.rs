@@ -12,7 +12,7 @@ use crate::group_by::GroupBy;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct HttpDataLoader<C>
 where
   C: HttpClient + Send + Sync + 'static + Clone,

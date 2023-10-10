@@ -19,7 +19,7 @@ use crate::endpoint::Endpoint;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
@@ -321,9 +321,13 @@ fn update_batch(field: &config::Field, mut b_field: FieldDefinition, _config: &C
       if http.method != Method::GET {
         Valid::fail("Batching is only supported for GET requests".to_string())
       } else {
-        let batch = batch.to_directive("batch".to_string());
-        let batch = to_directive(batch)?;
-        b_field.directives.push(batch);
+        if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
+          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+            request_template.clone(),
+            Some(batch.clone()),
+            dl,
+          )));
+        }
         Valid::Ok(b_field)
       }
     } else {
