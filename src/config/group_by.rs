@@ -18,8 +18,4 @@ impl GroupBy {
   pub fn key(&self) -> &String {
     &self.key
   }
-
-  pub fn new(key: String, path: Vec<String>) -> GroupBy {
-    GroupBy { key, path: Some(path) }
-  }
 }

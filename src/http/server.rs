@@ -61,8 +61,8 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
   let server = config.server.clone();
-  let mut blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(&mut blueprint, server));
+  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+  let state = Arc::new(ServerContext::new(blueprint, server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }

@@ -194,8 +194,8 @@ async fn test_execution() -> std::io::Result<()> {
     let mut config = Config::from_sdl(&spec.server_sdl).unwrap();
     config.server.enable_query_validation = Some(false);
 
-    let mut blueprint = Blueprint::try_from(&config).unwrap();
-    let server_ctx = ServerContext::new(&mut blueprint, config.server.clone());
+    let blueprint = Blueprint::try_from(&config).unwrap();
+    let server_ctx = ServerContext::new(blueprint, config.server.clone());
     let schema = server_ctx.schema.clone();
 
     for q in spec.test_queries {

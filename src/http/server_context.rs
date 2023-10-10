@@ -35,9 +35,10 @@ fn assign_data_loaders(blueprint: &mut Blueprint, server: Server, http_client: D
 }
 
 impl ServerContext {
-  pub fn new(blueprint: &mut Blueprint, server: Server) -> Self {
+  pub fn new(blueprint: Blueprint, server: Server) -> Self {
     let http_client = DefaultHttpClient::new(server.clone());
-    let schema = assign_data_loaders(blueprint, server.clone(), http_client.clone()).to_schema(&server);
+    let mut blueprint = blueprint.clone();
+    let schema = assign_data_loaders(&mut blueprint, server.clone(), http_client.clone()).to_schema(&server);
     ServerContext { schema, http_client, server: server.clone() }
   }
 }
