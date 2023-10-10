@@ -35,6 +35,7 @@ fn assign_id(blueprint: &mut Blueprint) -> &Blueprint {
 pub fn get_data_loaders(
   blueprint: &Blueprint,
   server: Server,
+  http_client: DefaultHttpClient,
 ) -> Vec<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>> {
   let mut data_loaders = Vec::new();
   for def in blueprint.definitions.iter() {
@@ -42,14 +43,13 @@ pub fn get_data_loaders(
       for field in &def.fields {
         if let Some(Expression::Unsafe(Operation::Endpoint(_))) = &field.resolver {
           let mut data_loader = Arc::new(
-            HttpDataLoader::new(DefaultHttpClient::default(), None)
-              .to_data_loader(server.batch.clone().unwrap_or_default()),
+            HttpDataLoader::new(http_client.clone(), None).to_data_loader(server.batch.clone().unwrap_or_default()),
           );
           field.directives.iter().for_each(|directive| {
             if directive.name == "batch" {
               let batched = GroupBy::from_directive(&directive.arguments.to_directive(directive.name.to_string()));
               data_loader = Arc::new(
-                HttpDataLoader::new(DefaultHttpClient::default(), batched.ok())
+                HttpDataLoader::new(http_client.clone(), batched.ok())
                   .to_data_loader(server.batch.clone().unwrap_or_default()),
               );
             }
@@ -67,7 +67,7 @@ impl ServerContext {
   pub fn new(blueprint: &mut Blueprint, server: Server) -> Self {
     let schema = assign_id(blueprint).to_schema(&server);
     let http_client = DefaultHttpClient::new(server.clone());
-    let data_loaders = get_data_loaders(blueprint, server.clone());
+    let data_loaders = get_data_loaders(blueprint, server.clone(), http_client.clone());
     ServerContext { schema, http_client, server: server.clone(), data_loaders }
   }
 }
