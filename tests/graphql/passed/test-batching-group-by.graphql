@@ -20,7 +20,7 @@ type Post {
   title: String
   body: String
   userId: Int
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @batch(key: "id", path: ["id"])
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(key: "id", path: ["id"])
 }
 
 type User {

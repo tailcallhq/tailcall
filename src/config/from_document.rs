@@ -195,7 +195,7 @@ fn to_common_field(
   let inline = to_inline(directives);
   let http = to_http(directives)?;
   let unsafe_operation = to_unsafe_operation(directives);
-  let batch = to_batch(directives);
+  let group_by = to_batch(directives);
   let const_field = to_const_field(directives);
   Valid::Ok(config::Field {
     type_of,
@@ -208,7 +208,7 @@ fn to_common_field(
     inline,
     http,
     unsafe_operation,
-    batch,
+    group_by,
     const_field,
   })
 }
@@ -291,7 +291,7 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
 }
 fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "batch" {
+    if directive.node.name.node == "groupBy" {
       GroupBy::from_directive(&directive.node).ok()
     } else {
       None
