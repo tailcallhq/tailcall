@@ -10,8 +10,6 @@ pub fn validate_headers(headers: Option<Vec<BTreeMap<String, String>>>) -> Valid
 
   if let Some(headers) = headers {
     for header in headers {
-      // Do some validation here, extract name and value, don't just unwrap as it might panic
-
       if !header.contains_key("name") {
         return Err(ValidationError::new("Header name is missing".to_string()));
       }
