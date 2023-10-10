@@ -45,7 +45,7 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
-  let tailcallrc = resource_str!("assets/.tailcallrc.graphql");
+  let tailcallrc = resource_str!("examples/.tailcallrc.graphql");
 
   let ans = Confirm::new("Do you want to add a file to the project?")
     .with_default(false)
