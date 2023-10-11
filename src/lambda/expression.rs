@@ -109,7 +109,7 @@ impl Expression {
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
                 let resp = dl
                   .as_ref()
-                  .ok_or(EvaluationError::IOException("DataLoader not found".to_string()))?
+                  .unwrap()
                   .load_one(endpoint_key)
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?

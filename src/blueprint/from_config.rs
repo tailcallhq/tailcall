@@ -230,7 +230,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
-  let field_definition = update_batch(field, field_definition, config).trace("@groupBy")?;
+  let field_definition = update_group_by(field, field_definition, config).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -315,7 +315,7 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_batch(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
   if let Some(batch) = field.group_by.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {

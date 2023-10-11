@@ -17,7 +17,6 @@ pub struct RequestTemplate {
   pub headers: Vec<(String, Mustache)>,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
-  pub id: Option<usize>,
 }
 
 impl RequestTemplate {
@@ -91,7 +90,6 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
-      id: Default::default(),
     })
   }
 }
@@ -118,7 +116,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
       None
     };
 
-    Ok(Self { root_url: path, query, method, headers, body, endpoint, id: None })
+    Ok(Self { root_url: path, query, method, headers, body, endpoint })
   }
 }
 
