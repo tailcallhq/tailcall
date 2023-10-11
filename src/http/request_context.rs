@@ -22,12 +22,6 @@ impl RequestContext {
     Self { req_headers: HeaderMap::new(), http_client, server }
   }
 
-  // #[allow(clippy::mutable_key_type)]
-  // pub fn get_cached_values(&self) -> HashMap<DataLoaderRequest, Response> {
-  //   #[allow(clippy::mutable_key_type)]
-  //   self.data_loader.get_cached_values()
-  // }
-
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     Ok(self.http_client.execute(req).await?)
   }
