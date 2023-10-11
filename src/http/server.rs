@@ -27,8 +27,14 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
   let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
   let req_ctx = Arc::new(RequestContext::from(server_ctx).req_headers(headers));
-  let response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
-  // Todo: Handle Cache-Control headers
+  let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
+
+  if server_ctx.server.enable_cache_control() {
+    if let Some(ttl) = req_ctx.get_min_max_age() {
+      response = response.set_cache_control(ttl as i32);
+    }
+  }
+
   response.to_response()
 }
 fn not_found() -> Result<Response<Body>> {
