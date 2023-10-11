@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, HashSet};
+use std::fs;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -8,7 +9,7 @@ use serde_json::Value;
 
 use super::{Proxy, Server};
 use crate::config::group_by::GroupBy;
-use crate::config::{is_default, KeyValues};
+use crate::config::{is_default, source::Source, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, ValidExtensions};
@@ -285,6 +286,17 @@ impl Config {
     match doc {
       Ok(doc) => Config::try_from(doc),
       Err(e) => Valid::fail(e.to_string()),
+    }
+  }
+
+  pub fn from_filepath(filepath: &str) -> Result<Self> {
+    let source = Source::detect(filepath)?;
+    let definition = fs::read_to_string(filepath)?;
+
+    match source {
+      Source::GraphQL => Ok(Config::from_sdl(&definition)?),
+      Source::Json => Ok(Config::from_json(&definition)?),
+      Source::Yml => Ok(Config::from_yaml(&definition)?),
     }
   }
 
