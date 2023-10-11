@@ -10,7 +10,6 @@ directive @server(
   enableResponseValidation: Boolean
   globalResponseTimeout: Int
   port: Int
-  proxy: Proxy
   vars: [KeyValue]
   batch: Batch
   upstream: Upstream
@@ -40,6 +39,19 @@ enum Method {
 
 input Proxy {
   url: String
+}
+
+input Upstream {
+  pool_idle_timeout: Int
+  pool_max_idle_per_host:  Int
+  keep_alive_interval: Int
+  keep_alive_timeout: Int
+  keep_alive_while_idle: Boolean
+  proxy: Proxy
+  connect_timeout: Int
+  timeout: Int
+  tcp_keep_alive: Int
+  user_agent: String
 }
 
 input KeyValue {

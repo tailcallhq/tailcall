@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Server;
-use crate::batch::Batch;
 use crate::config::group_by::GroupBy;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;

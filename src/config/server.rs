@@ -20,8 +20,7 @@ pub struct Server {
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub upstream: Upstream,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
