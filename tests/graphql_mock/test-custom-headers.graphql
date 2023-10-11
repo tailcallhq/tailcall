@@ -1,0 +1,12 @@
+schema @server(setHeaders: [{key: "x-id", value: "1"}, {key: "x-value", value: "value"}], enableGraphiql: "/graphiql") {
+  query: Query
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type Query {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}
