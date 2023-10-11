@@ -194,36 +194,36 @@ mod test {
   #[test]
   fn test_update_max_age_none() {
     let req_ctx = RequestContext::default();
-    let mut ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
+    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
     ctx.req_ctx.set_min_max_age(120);
-    update_max_age(&mut ctx, None);
+    update_max_age(&ctx, None);
     assert_eq!(ctx.req_ctx.get_min_max_age(), Some(120));
   }
 
   #[test]
   fn test_update_max_age_less_than_existing() {
     let req_ctx = RequestContext::default();
-    let mut ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
+    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
     ctx.req_ctx.set_min_max_age(120);
-    update_max_age(&mut ctx, Some(Duration::new(60, 0)));
+    update_max_age(&ctx, Some(Duration::new(60, 0)));
     assert_eq!(ctx.req_ctx.get_min_max_age(), Some(60));
   }
 
   #[test]
   fn test_update_max_age_greater_than_existing() {
     let req_ctx = RequestContext::default();
-    let mut ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
+    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
     ctx.req_ctx.set_min_max_age(60);
-    update_max_age(&mut ctx, Some(Duration::new(120, 0)));
+    update_max_age(&ctx, Some(Duration::new(120, 0)));
     assert_eq!(ctx.req_ctx.get_min_max_age(), Some(60));
   }
 
   #[test]
   fn test_update_max_age_no_existing_value() {
     let req_ctx = RequestContext::default();
-    let mut ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
+    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
 
-    update_max_age(&mut ctx, Some(Duration::new(120, 0)));
+    update_max_age(&ctx, Some(Duration::new(120, 0)));
     assert_eq!(ctx.req_ctx.get_min_max_age(), Some(120));
   }
 }
