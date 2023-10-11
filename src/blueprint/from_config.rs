@@ -31,7 +31,28 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  Ok(super::compress::compress(Blueprint { schema, definitions }))
+  
+  let mut entity_resolvers = BTreeMap::new();
+  definitions.iter().for_each(|d| {
+    match d {
+      Definition::ObjectTypeDefinition(definition) => {
+        if definition.name == "Query" {
+          definition.fields.iter().for_each(|field| {
+            println!("field:");
+            println!("{:?}", field);
+            if field.entity_resolver.unwrap_or(false) {
+              entity_resolvers.insert(field.name.clone(), field.resolver.clone());
+            }
+          });
+        }
+      },
+      _ => {}
+    }
+  });
+  println!("***");
+  println!("entity resolvers: {:?}", entity_resolvers);
+
+  Ok(super::compress::compress(Blueprint { schema, definitions, entity_resolvers }))
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
@@ -227,6 +248,7 @@ fn to_field(
     of_type: to_type(field_type, field.list, field.required, field.list_type_required),
     directives: Vec::new(),
     resolver: None,
+    entity_resolver: Some(false)
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
@@ -346,6 +368,8 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
       .map_or_else(|| config.server.base_url.as_ref(), Some)
     {
       Some(base_url) => {
+        println!("http:");
+        println!("{:?}", http);
         let mut base_url = base_url.clone();
         if base_url.ends_with('/') {
           base_url.pop();
@@ -373,6 +397,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
         b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+        b_field.entity_resolver = http.entity_resolver;
 
         Valid::Ok(b_field)
       }

@@ -130,6 +130,45 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
     schema = schema.register(to_type(def));
   }
 
+  let entity_resolvers = blueprint.entity_resolvers.clone();
+  if !entity_resolvers.is_empty() {
+    println!("Creating entity resolvers");
+    schema = schema.enable_federation();
+    schema = schema.entity_resolver(
+      move |ctx| {
+        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+        let entity_resolvers = entity_resolvers.clone();
+        FieldFuture::new(async move {
+          let representations = ctx.args.try_get("representations")?.list()?;
+          let mut values = Vec::new();
+
+          for item in representations.iter() {
+            let item = item.object()?;
+            let typename = item
+                .try_get("__typename")
+                .and_then(|value| value.string())?;
+            let resolver = entity_resolvers.get(typename);
+            match resolver {
+              None => {},
+              Some(None) => {},
+              Some(Some(expr)) => {
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                let const_value = expr.eval(&ctx).await?;
+                let p = match const_value {
+                  ConstValue::List(a) => FieldValue::list(a),
+                  a => FieldValue::from(a),
+                };
+                values.push(p);
+              }
+            }
+          }
+          Ok(Some(values))
+        })
+      }
+    );
+    
+  }
+  
   schema
 }
 

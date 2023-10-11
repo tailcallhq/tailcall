@@ -253,6 +253,8 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
+  #[serde(rename = "entityResolver")]
+  pub entity_resolver: Option<bool>,
 }
 
 impl Http {

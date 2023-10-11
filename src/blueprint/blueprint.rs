@@ -9,6 +9,7 @@ use serde_json::Value;
 use super::GlobalTimeout;
 use crate::config;
 use crate::lambda::{Expression, Lambda};
+use std::collections::BTreeMap;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -18,6 +19,7 @@ use crate::lambda::{Expression, Lambda};
 pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
+  pub entity_resolvers: BTreeMap<String, Option<Expression>>,
 }
 
 #[derive(Clone, Debug)]
@@ -117,6 +119,7 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
+  pub entity_resolver: Option<bool>,
 }
 
 impl FieldDefinition {
@@ -159,8 +162,8 @@ pub struct UnionTypeDefinition {
   pub types: Vec<String>,
 }
 impl Blueprint {
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>) -> Self {
-    Self { schema, definitions }
+  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, entity_resolvers: BTreeMap<String, Option<Expression>>) -> Self {
+    Self { schema, definitions, entity_resolvers }
   }
 
   pub fn query(&self) -> String {
