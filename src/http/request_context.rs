@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
