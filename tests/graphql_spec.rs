@@ -14,9 +14,9 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Batch, Config};
+use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{HttpDataLoader, RequestContext};
+use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::Cause;
 
@@ -196,18 +196,15 @@ async fn test_execution() -> std::io::Result<()> {
     config.server.enable_query_validation = Some(false);
 
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let schema = blueprint.to_schema(&config.server);
+    let response_headers = HeaderMap::new();
+    let server_ctx = ServerContext::new(blueprint, config.server.clone(), response_headers);
+    let schema = server_ctx.schema.clone();
 
     for q in spec.test_queries {
       let mut headers = HeaderMap::new();
       headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
-
-      let data_loader = Arc::new(HttpDataLoader::default().to_data_loader(Batch::default()));
-      let req_ctx = RequestContext::default()
-        .req_headers(headers)
-        .server(config.server.clone())
-        .data_loader(data_loader);
-      let req = Request::from(q.query.as_str()).data(Arc::new(req_ctx));
+      let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+      let req = Request::from(q.query.as_str()).data(req_ctx.clone());
       let res = schema.execute(req).await;
       let json = serde_json::to_string(&res).unwrap();
       let expected = serde_json::to_string(&q.expected).unwrap();

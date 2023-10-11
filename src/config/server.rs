@@ -25,7 +25,6 @@ pub struct Server {
   pub vars: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
   pub add_response_headers: KeyValues,
-  #[serde(skip)]
   pub batch: Option<Batch>,
 }
 

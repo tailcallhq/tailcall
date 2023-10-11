@@ -1,5 +1,6 @@
 mod config;
 mod from_document;
+pub mod group_by;
 mod into_document;
 mod key_values;
 mod n_plus_one;
