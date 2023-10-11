@@ -21,6 +21,7 @@ pub struct Server {
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
   #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
   pub upstream: Upstream,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
@@ -62,13 +63,13 @@ impl Server {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 pub struct Proxy {
   pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
+#[serde(rename_all = "camelCase", default)]
 pub struct Upstream {
   #[serde(default = "pool_idle_timeout_default")]
   pub pool_idle_timeout: u64,
