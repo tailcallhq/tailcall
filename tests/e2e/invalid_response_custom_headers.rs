@@ -12,7 +12,7 @@ mod test {
     let res = background_server(file_path.to_string()).await;
     assert_eq!(
       res.unwrap().to_string(),
-      "Error: Invalid Configuration\nCaused by:\n  • invalid HTTP header name"
+      "Error: Invalid Configuration\nCaused by:\n  • invalid HTTP header name [at x-custom_header 1]"
     );
   }
 }
