@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(baseURL: "https://jsonplaceholder.typicode.com", setHeaders: [{key: "🤣", value: "a"}]) {
+schema @server(baseURL: "https://jsonplaceholder.typicode.com", responseHeaders: [{key: "🤣", value: "a"}]) {
   query: Query
 }
 
@@ -14,4 +14,4 @@ type Query {
 
 #> client-sdl
 type Failure
-  @error(message: "Parsing failed because of invalid HTTP header name", trace: ["schema", "@server", "setHeaders"])
+  @error(message: "Parsing failed because of invalid HTTP header name", trace: ["schema", "@server", "responseHeaders"])

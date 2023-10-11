@@ -41,6 +41,6 @@ impl ServerContext {
     let http_client = DefaultHttpClient::new(server.clone());
     let mut blueprint = blueprint.clone();
     let schema = assign_data_loaders(&mut blueprint, server.clone(), http_client.clone()).to_schema(&server);
-    ServerContext { schema, http_client, server: server.clone(), custom_response_header}
+    ServerContext { schema, http_client, server: server.clone(), custom_response_header }
   }
 }

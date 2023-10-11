@@ -204,7 +204,7 @@ async fn test_execution() -> std::io::Result<()> {
     let blueprint = Blueprint::try_from(&config)
       .trace(spec.path.to_str().unwrap_or_default())
       .unwrap();
-    let server_ctx = ServerContext::new(blueprint, config.server.clone());
+    let server_ctx = ServerContext::new(blueprint, config.server.clone(), HeaderMap::new());
     let schema = server_ctx.schema.clone();
 
     for q in spec.test_queries {
