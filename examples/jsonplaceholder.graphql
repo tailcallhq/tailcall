@@ -4,7 +4,6 @@ schema
     upstream: {baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true}
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
-    setHeaders: [{key: "X-Custom-Header", value: "CustomValue"}, {key: "Another-Header", value: "AnotherValue"}]
   ) {
   query: Query
 }
