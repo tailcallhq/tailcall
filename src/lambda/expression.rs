@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
 use async_graphql::dataloader::{DataLoader, NoCache};
@@ -11,7 +12,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{DefaultHttpClient, HttpDataLoader};
+use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -114,6 +115,10 @@ impl Expression {
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
+                if ctx.req_ctx.server.enable_cache_control() && resp.status.is_success() {
+                  let max_age = max_age(&resp);
+                  Self::update_max_age(ctx, max_age).await;
+                }
                 return Ok(resp.body);
               }
 
@@ -129,6 +134,10 @@ impl Expression {
                   .output
                   .validate(&res.body)
                   .map_err(EvaluationError::from)?;
+              }
+              if ctx.req_ctx.server.enable_cache_control() && res.status.is_success() {
+                let max_age = max_age(&res);
+                Self::update_max_age(ctx, max_age).await;
               }
               Ok(res.body)
             }
@@ -153,5 +162,25 @@ impl Expression {
         }
       }
     })
+  }
+
+  async fn update_max_age<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    ctx: &'a EvaluationContext<'a, Ctx>,
+    max_age: Option<Duration>,
+  ) {
+    if let Some(ttl) = max_age {
+      let ttl_secs = ttl.as_secs();
+      let mut min_max_age_lock = ctx.req_ctx.min_max_age.lock().await;
+
+      match &*min_max_age_lock {
+        Some(min_max_age) if ttl_secs < *min_max_age => {
+          *min_max_age_lock = Some(ttl_secs);
+        }
+        None => {
+          *min_max_age_lock = Some(ttl_secs);
+        }
+        _ => {}
+      }
+    }
   }
 }
