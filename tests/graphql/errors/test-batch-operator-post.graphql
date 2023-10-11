@@ -1,0 +1,16 @@
+#> server-sdl
+schema @server(baseURL: "http://localhost:3000") {
+  query: Query
+}
+
+type User {
+  name: String
+  age: Int
+}
+
+type Query {
+  user: User @http(path: "/posts/1", method: "POST") @groupBy(key: "id", path: ["id"])
+}
+
+#> client-sdl
+type Failure @error(message: "GroupBy is only supported for GET requests", trace: ["Query", "user", "@groupBy"])

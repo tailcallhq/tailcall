@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use super::Server;
 use crate::batch::Batch;
+use crate::config::group_by::GroupBy;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -161,7 +162,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  pub batch: Option<Batch>,
+  #[serde(rename = "groupBy")]
+  pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 

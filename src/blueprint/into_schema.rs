@@ -121,7 +121,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: Blueprint) -> SchemaBuilder {
+fn create(blueprint: &Blueprint) -> SchemaBuilder {
   let query = blueprint.query();
   let mutation = blueprint.mutation();
   let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
@@ -133,8 +133,8 @@ fn create(blueprint: Blueprint) -> SchemaBuilder {
   schema
 }
 
-impl From<Blueprint> for SchemaBuilder {
-  fn from(blueprint: Blueprint) -> Self {
+impl From<&Blueprint> for SchemaBuilder {
+  fn from(blueprint: &Blueprint) -> Self {
     create(blueprint)
   }
 }
