@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream};
+use super::Server;
 use crate::batch::Batch;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -23,10 +23,6 @@ pub struct Config {
 impl Config {
   pub fn port(&self) -> u16 {
     self.server.port.unwrap_or(8000)
-  }
-
-  pub fn upstream(&self) -> Upstream {
-    self.server.upstream.clone()
   }
 
   pub fn output_types(&self) -> HashSet<&String> {

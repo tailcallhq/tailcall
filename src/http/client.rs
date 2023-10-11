@@ -33,20 +33,20 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(server: Server) -> Self {
-    let upstream_settings = &server.upstream;
+    let upstream = &server.upstream;
 
     let mut builder = Client::builder()
-      .tcp_keepalive(Some(Duration::from_secs(upstream_settings.tcp_keep_alive)))
-      .timeout(Duration::from_secs(upstream_settings.timeout))
-      .connect_timeout(Duration::from_secs(upstream_settings.connect_timeout))
-      .http2_keep_alive_interval(Some(Duration::from_secs(upstream_settings.keep_alive_interval)))
-      .http2_keep_alive_timeout(Duration::from_secs(upstream_settings.keep_alive_timeout))
-      .http2_keep_alive_while_idle(upstream_settings.keep_alive_while_idle)
-      .pool_idle_timeout(Some(Duration::from_secs(upstream_settings.pool_idle_timeout)))
-      .pool_max_idle_per_host(upstream_settings.pool_max_idle_per_host)
-      .user_agent(upstream_settings.user_agent.clone());
+      .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+      .timeout(Duration::from_secs(upstream.timeout))
+      .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+      .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+      .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+      .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+      .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+      .user_agent(upstream.user_agent.clone());
 
-    if let Some(ref proxy) = upstream_settings.proxy {
+    if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
 
