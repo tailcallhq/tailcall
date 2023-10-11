@@ -65,6 +65,12 @@ fn validate_server(config: &Config) -> Valid<()> {
       .trace("schema");
     }
   }
+  for (k,v) in &config.server.set_headers.0 {
+    HeaderName::from_bytes(k.as_bytes()).map_err(|e|ValidationError::new(format!("Parsing failed because of {}", e.to_string()))).validate_or(HeaderValue::from_str(v.as_str()).map_err(|e|ValidationError::new(format!("Parsing failed because of {}", e.to_string())))).trace("setHeaders")
+        .trace("@server")
+        .trace("schema")?;
+
+  }
 
   Valid::Ok(())
 }
