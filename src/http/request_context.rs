@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
@@ -28,26 +29,23 @@ impl RequestContext {
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     Ok(self.http_client.execute(req).await?)
   }
-  pub fn set_min_max_age(&self, min_max_age: u64) {
+  fn set_min_max_age_conc(&self, min_max_age: u64) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
   pub fn get_min_max_age(&self) -> Option<u64> {
     *self.min_max_age.lock().unwrap()
   }
 
-  pub fn update_max_age(&self, max_age: Option<std::time::Duration>) {
-    if let Some(ttl) = max_age {
-      let ttl_secs = ttl.as_secs();
-      let min_max_age_lock = self.get_min_max_age();
-      match min_max_age_lock {
-        Some(min_max_age) if ttl_secs < min_max_age => {
-          self.set_min_max_age(ttl_secs);
-        }
-        None => {
-          self.set_min_max_age(ttl_secs);
-        }
-        _ => {}
+  pub fn set_min_max_age(&self, max_age: u64) {
+    let min_max_age_lock = self.get_min_max_age();
+    match min_max_age_lock {
+      Some(min_max_age) if max_age < min_max_age => {
+        self.set_min_max_age_conc(max_age);
       }
+      None => {
+        self.set_min_max_age_conc(max_age);
+      }
+      _ => {}
     }
   }
 }
@@ -61,23 +59,14 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-  use std::time::Duration;
 
   use crate::http::RequestContext;
-
-  #[test]
-  fn test_update_max_age_none() {
-    let req_ctx = RequestContext::default();
-    req_ctx.set_min_max_age(120);
-    req_ctx.update_max_age(None);
-    assert_eq!(req_ctx.get_min_max_age(), Some(120));
-  }
 
   #[test]
   fn test_update_max_age_less_than_existing() {
     let req_ctx = RequestContext::default();
     req_ctx.set_min_max_age(120);
-    req_ctx.update_max_age(Some(Duration::new(60, 0)));
+    req_ctx.set_min_max_age(60);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
   }
 
@@ -85,14 +74,14 @@ mod test {
   fn test_update_max_age_greater_than_existing() {
     let req_ctx = RequestContext::default();
     req_ctx.set_min_max_age(60);
-    req_ctx.update_max_age(Some(Duration::new(120, 0)));
+    req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
   }
 
   #[test]
   fn test_update_max_age_no_existing_value() {
     let req_ctx = RequestContext::default();
-    req_ctx.update_max_age(Some(Duration::new(120, 0)));
+    req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(120));
   }
 }

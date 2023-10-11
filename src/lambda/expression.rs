@@ -115,8 +115,9 @@ impl Expression {
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
                 if ctx.req_ctx.server.enable_cache_control() && resp.status.is_success() {
-                  let max_age = max_age(&resp);
-                  ctx.req_ctx.update_max_age(max_age);
+                  if let Some(max_age) = max_age(&resp) {
+                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                  }
                 }
                 return Ok(resp.body);
               }
@@ -135,8 +136,9 @@ impl Expression {
                   .map_err(EvaluationError::from)?;
               }
               if ctx.req_ctx.server.enable_cache_control() && res.status.is_success() {
-                let max_age = max_age(&res);
-                ctx.req_ctx.update_max_age(max_age);
+                if let Some(max_age) = max_age(&res) {
+                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                }
               }
               Ok(res.body)
             }
