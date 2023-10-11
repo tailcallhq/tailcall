@@ -9,8 +9,8 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::batch::Batch;
 use crate::config;
+use crate::config::group_by::GroupBy;
 use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
@@ -195,7 +195,7 @@ fn to_common_field(
   let inline = to_inline(directives);
   let http = to_http(directives)?;
   let unsafe_operation = to_unsafe_operation(directives);
-  let batch = to_batch(directives);
+  let group_by = to_batch(directives);
   let const_field = to_const_field(directives);
   Valid::Ok(config::Field {
     type_of,
@@ -208,7 +208,7 @@ fn to_common_field(
     inline,
     http,
     unsafe_operation,
-    batch,
+    group_by,
     const_field,
   })
 }
@@ -289,10 +289,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .collect();
   Union { types, doc: doc.clone() }
 }
-fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<Batch> {
+fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "batch" {
-      Batch::from_directive(&directive.node).ok()
+    if directive.node.name.node == "groupBy" {
+      GroupBy::from_directive(&directive.node).ok()
     } else {
       None
     }

@@ -4,7 +4,7 @@ use super::expression;
 use super::expression::{Context, Expression, Operation};
 use crate::request_template::RequestTemplate;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Lambda<A> {
   _output: PhantomData<fn() -> A>,
   pub expression: Expression,
@@ -45,7 +45,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template)))
+    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template, None, None)))
   }
 }
 

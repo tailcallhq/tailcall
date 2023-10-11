@@ -1,12 +1,17 @@
+use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::dataloader::{DataLoader, NoCache};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use crate::config::group_by::GroupBy;
+use crate::http::{DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -28,10 +33,32 @@ pub enum Context {
   Path(Vec<String>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Operation {
-  Endpoint(RequestTemplate),
+  Endpoint(
+    RequestTemplate,
+    Option<GroupBy>,
+    Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
+  ),
   JS(Box<Expression>, String),
+}
+
+impl Debug for Operation {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Operation::Endpoint(req_template, group_by, dl) => f
+        .debug_struct("Endpoint")
+        .field("req_template", req_template)
+        .field("group_by", group_by)
+        .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
+        .finish(),
+      Operation::JS(input, script) => f
+        .debug_struct("JS")
+        .field("input", input)
+        .field("script", script)
+        .finish(),
+    }
+  }
 }
 
 #[derive(Debug, Error, Serialize)]
@@ -73,17 +100,16 @@ impl Expression {
         )),
         Expression::Unsafe(operation) => {
           match operation {
-            Operation::Endpoint(req_template) => {
+            Operation::Endpoint(req_template, _, dl) => {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
               if is_get && ctx.req_ctx.server.batch.is_some() {
                 let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = ctx
-                  .req_ctx
-                  .data_loader
+                let resp = dl
                   .as_ref()
+                  .unwrap()
                   .load_one(endpoint_key)
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
