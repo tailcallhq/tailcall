@@ -7,6 +7,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use crate::http::max_age;
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -88,6 +89,8 @@ impl Expression {
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
+
+                ctx.req_ctx.add_max_age(max_age(&resp));
                 return Ok(resp.body);
               }
 

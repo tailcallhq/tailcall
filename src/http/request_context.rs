@@ -7,6 +7,8 @@ use hyper::HeaderMap;
 
 use super::{DataLoaderRequest, DefaultHttpClient, HttpDataLoader, Response, ServerContext};
 use crate::config::Server;
+use std::sync::Mutex;
+use std::time::Duration;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -14,6 +16,7 @@ pub struct RequestContext {
   pub server: Server,
   pub data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   pub req_headers: HeaderMap,
+  pub max_ages: Mutex<Vec<Option<Duration>>>,
 }
 
 impl Default for RequestContext {
@@ -35,7 +38,7 @@ impl RequestContext {
     server: Server,
     data_loader: Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>,
   ) -> Self {
-    Self { req_headers: HeaderMap::new(), http_client, server, data_loader }
+    Self { req_headers: HeaderMap::new(), http_client, server, data_loader, max_ages: Mutex::new(Vec::new()) }
   }
 
   #[allow(clippy::mutable_key_type)]
@@ -46,6 +49,14 @@ impl RequestContext {
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     Ok(self.http_client.execute(req).await?)
+  }
+
+  pub fn add_max_age(&self, value: Option<Duration>) {
+    self.max_ages.lock().unwrap().push(value)
+  }
+
+  pub fn get_max_ages(&self) -> Vec<Option<Duration>> {
+    self.max_ages.lock().unwrap().clone()
   }
 }
 

@@ -30,15 +30,13 @@ pub fn max_age(res: &Response) -> Option<Duration> {
 }
 
 /// Returns the minimum TTL of the given responses.
-pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
+pub fn min_ttl<'a>(durations: impl Iterator<Item = &'a Option<Duration>>) -> i32 {
   let mut min = -1;
 
-  for res in res_vec {
-    if let Some(max_age) = max_age(res) {
-      let ttl = max_age.as_secs() as i32;
-      if min == -1 || ttl < min {
-        min = ttl;
-      }
+  for max_age in durations.flatten() {
+    let ttl = max_age.as_secs() as i32;
+    if min == -1 || ttl < min {
+      min = ttl;
     }
   }
   min
@@ -75,7 +73,7 @@ mod tests {
 
   #[test]
   fn test_min_ttl() {
-    let max_ages = [3600, 1800, 7200].map(|i| Response::default().headers(cache_control_header(i)));
+    let max_ages = [3600, 1800, 7200].map(|i| Some(Duration::from_secs(i)));
     let min = super::min_ttl(max_ages.iter());
     assert_eq!(min, 1800);
   }

@@ -1,0 +1,29 @@
+schema
+  @server(
+    port: 3000
+    baseURL: "http://localhost:8000"
+    enableHttpCache: true
+    enableGraphiql: "/graphiql"
+    enableQueryValidation: false
+    enableCacheControlHeader: true
+    batch: {maxSize: 1000, delay: 0, headers: []}
+  ) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts?id=1")
+}
+
+type Post {
+  id: Int
+  title: String
+  body: String
+  userId: Int
+  user: User @http(path: "/users/{{value.userId}}")
+}
+
+type User {
+  id: Int
+  name: String
+}

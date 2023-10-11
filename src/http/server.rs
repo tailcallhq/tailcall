@@ -30,7 +30,7 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
 
   if server_ctx.server.enable_cache_control() {
-    let ttl = crate::http::min_ttl(req_ctx.get_cached_values().values());
+    let ttl = crate::http::min_ttl(req_ctx.get_max_ages().iter());
     response = response.set_cache_control(ttl);
   }
 
@@ -60,6 +60,7 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let server_sdl = fs::read_to_string(file_path)?;
   let config = Config::from_sdl(&server_sdl)?;
   let port = config.port();
+
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let state = Arc::new(ServerContext::new(blueprint, server));
