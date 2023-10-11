@@ -69,8 +69,7 @@ fn validate_server(config: &Config) -> Valid<()> {
     HeaderName::from_bytes(k.as_bytes())
       .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)))
       .validate_or(
-        HeaderValue::from_str(v.as_str())
-          .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
+        HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
       )
       .trace("setHeaders")
       .trace("@server")
