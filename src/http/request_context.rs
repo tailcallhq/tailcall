@@ -1,8 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use tokio::sync::Mutex;
 
 use super::{DefaultHttpClient, Response, ServerContext};
 use crate::config::Server;
@@ -12,7 +11,7 @@ pub struct RequestContext {
   pub http_client: DefaultHttpClient,
   pub server: Server,
   pub req_headers: HeaderMap,
-  pub min_max_age: Arc<Mutex<Option<u64>>>,
+  min_max_age: Arc<Mutex<Option<u64>>>,
 }
 
 impl Default for RequestContext {
@@ -28,6 +27,12 @@ impl RequestContext {
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     Ok(self.http_client.execute(req).await?)
+  }
+  pub fn set_min_max_age(&self, min_max_age: u64) {
+    *self.min_max_age.lock().unwrap() = Some(min_max_age);
+  }
+  pub fn get_min_max_age(&self) -> Option<u64> {
+    *self.min_max_age.lock().unwrap()
   }
 }
 

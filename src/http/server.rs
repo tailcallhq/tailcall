@@ -30,7 +30,7 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
 
   if server_ctx.server.enable_cache_control() {
-    if let Some(ttl) = *req_ctx.min_max_age.lock().await {
+    if let Some(ttl) = req_ctx.get_min_max_age() {
       response = response.set_cache_control(ttl as i32);
     }
   }
