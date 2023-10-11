@@ -1,0 +1,236 @@
+{
+  "server": {
+    "allowedHeaders": null,
+    "baseURL": "http://jsonplaceholder.typicode.com",
+    "enableApolloTracing": null,
+    "enableCacheControlHeader": null,
+    "enableGraphiql": "/graphiql",
+    "enableHttpCache": true,
+    "enableIntrospection": null,
+    "enableQueryValidation": false,
+    "enableResponseValidation": null,
+    "globalResponseTimeout": null,
+    "port": 8000,
+    "proxy": null,
+    "batch": null
+  },
+  "graphql": {
+    "schema": {
+      "query": "Query",
+      "mutation": null,
+      "subscription": null
+    },
+    "types": {
+      "Post": {
+        "fields": {
+          "body": {
+            "type_of": "String",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "id": {
+            "type_of": "Int",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "title": {
+            "type_of": "String",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "user": {
+            "type_of": "User",
+            "list": false,
+            "required": false,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": {
+              "path": "/users/{{value.userId}}",
+              "input": null,
+              "output": null,
+              "body": null,
+              "match_key": null,
+              "baseURL": null
+            },
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "userId": {
+            "type_of": "Int",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          }
+        },
+        "doc": null,
+        "interface": false,
+        "implements": [],
+        "enum": null,
+        "scalar": false
+      },
+      "Query": {
+        "fields": {
+          "posts": {
+            "type_of": "Post",
+            "list": true,
+            "required": false,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": {
+              "path": "/posts",
+              "input": null,
+              "output": null,
+              "body": null,
+              "match_key": null,
+              "baseURL": null
+            },
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          }
+        },
+        "doc": null,
+        "interface": false,
+        "implements": [],
+        "enum": null,
+        "scalar": false
+      },
+      "User": {
+        "fields": {
+          "email": {
+            "type_of": "String",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "id": {
+            "type_of": "Int",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "name": {
+            "type_of": "String",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "phone": {
+            "type_of": "String",
+            "list": false,
+            "required": false,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "username": {
+            "type_of": "String",
+            "list": false,
+            "required": true,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          },
+          "website": {
+            "type_of": "String",
+            "list": false,
+            "required": false,
+            "list_type_required": false,
+            "args": {},
+            "doc": null,
+            "modify": null,
+            "inline": null,
+            "http": null,
+            "unsafe": null,
+            "groupBy": null,
+            "const_field": null
+          }
+        },
+        "doc": null,
+        "interface": false,
+        "implements": [],
+        "enum": null,
+        "scalar": false
+      }
+    },
+    "unions": {}
+  }
+}
