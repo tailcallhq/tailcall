@@ -1,21 +1,22 @@
-schema @server(
-    addResponseHeaders: [{name: "x-custom_header 1", value: "custom-value_1"},{name: "x-custom_header_3", value: "custom-value 3"}]
-    enableGraphiql: "/graphiql",
-) {
-    query: Query
+#> server-sdl
+schema
+  @server(
+    addResponseHeaders: [
+      {key: "x-custom_header 1", value: "custom-value_1"}
+      {key: "x-custom_header_3", value: "custom-value 3"}
+    ]
+    enableGraphiql: "/graphiql"
+  ) {
+  query: Query
 }
 
 type Post {
-    id: ID!
-    title: String!
-    body: String!
-    userId: ID!
+  id: ID!
+  title: String!
+  body: String!
+  userId: ID!
 }
 
 type Query {
-    post: Post
-    @http(
-        path: "/posts/1"
-        baseURL: "http://jsonplaceholder.typicode.com"
-    )
+  post: Post @http(path: "/posts/1", baseURL: "http://jsonplaceholder.typicode.com")
 }

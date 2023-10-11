@@ -12,6 +12,7 @@ directive @server(
   port: Int
   proxy: Proxy
   vars: [KeyValue]
+  addResponseHeaders: [KeyValue]
   batch: Batch
 ) on SCHEMA
 directive @http(

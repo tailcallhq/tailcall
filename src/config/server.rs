@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,8 @@ pub struct Server {
   pub proxy: Option<Proxy>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
-  pub add_response_headers: Option<Vec<BTreeMap<String, String>>>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub add_response_headers: KeyValues,
   #[serde(skip)]
   pub batch: Option<Batch>,
 }
@@ -35,6 +36,7 @@ pub struct Batch {
   pub delay: usize,
   pub headers: Vec<String>,
 }
+
 impl Default for Batch {
   fn default() -> Self {
     Batch { max_size: 1000, delay: 0, headers: Vec::new() }
