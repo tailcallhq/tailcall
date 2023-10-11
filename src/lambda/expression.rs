@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
 
 use anyhow::Result;
 use async_graphql::dataloader::{DataLoader, NoCache};
@@ -117,7 +116,7 @@ impl Expression {
                   .unwrap_or_default();
                 if ctx.req_ctx.server.enable_cache_control() && resp.status.is_success() {
                   let max_age = max_age(&resp);
-                  update_max_age(ctx, max_age);
+                  ctx.req_ctx.update_max_age(max_age);
                 }
                 return Ok(resp.body);
               }
@@ -137,7 +136,7 @@ impl Expression {
               }
               if ctx.req_ctx.server.enable_cache_control() && res.status.is_success() {
                 let max_age = max_age(&res);
-                update_max_age(ctx, max_age);
+                ctx.req_ctx.update_max_age(max_age);
               }
               Ok(res.body)
             }
@@ -162,68 +161,5 @@ impl Expression {
         }
       }
     })
-  }
-}
-fn update_max_age<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-  ctx: &'a EvaluationContext<'a, Ctx>,
-  max_age: Option<Duration>,
-) {
-  if let Some(ttl) = max_age {
-    let ttl_secs = ttl.as_secs();
-    let min_max_age_lock = ctx.req_ctx.get_min_max_age();
-    match min_max_age_lock {
-      Some(min_max_age) if ttl_secs < min_max_age => {
-        ctx.req_ctx.set_min_max_age(ttl_secs);
-      }
-      None => {
-        ctx.req_ctx.set_min_max_age(ttl_secs);
-      }
-      _ => {}
-    }
-  }
-}
-
-#[cfg(test)]
-mod test {
-  use std::time::Duration;
-
-  use crate::http::RequestContext;
-  use crate::lambda::expression::update_max_age;
-  use crate::lambda::{EmptyResolverContext, EvaluationContext};
-
-  #[test]
-  fn test_update_max_age_none() {
-    let req_ctx = RequestContext::default();
-    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
-    ctx.req_ctx.set_min_max_age(120);
-    update_max_age(&ctx, None);
-    assert_eq!(ctx.req_ctx.get_min_max_age(), Some(120));
-  }
-
-  #[test]
-  fn test_update_max_age_less_than_existing() {
-    let req_ctx = RequestContext::default();
-    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
-    ctx.req_ctx.set_min_max_age(120);
-    update_max_age(&ctx, Some(Duration::new(60, 0)));
-    assert_eq!(ctx.req_ctx.get_min_max_age(), Some(60));
-  }
-
-  #[test]
-  fn test_update_max_age_greater_than_existing() {
-    let req_ctx = RequestContext::default();
-    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
-    ctx.req_ctx.set_min_max_age(60);
-    update_max_age(&ctx, Some(Duration::new(120, 0)));
-    assert_eq!(ctx.req_ctx.get_min_max_age(), Some(60));
-  }
-
-  #[test]
-  fn test_update_max_age_no_existing_value() {
-    let req_ctx = RequestContext::default();
-    let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
-
-    update_max_age(&ctx, Some(Duration::new(120, 0)));
-    assert_eq!(ctx.req_ctx.get_min_max_age(), Some(120));
   }
 }
