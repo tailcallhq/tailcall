@@ -43,7 +43,7 @@ input Proxy {
 
 input Upstream {
   pool_idle_timeout: Int
-  pool_max_idle_per_host:  Int
+  pool_max_idle_per_host: Int
   keep_alive_interval: Int
   keep_alive_timeout: Int
   keep_alive_while_idle: Boolean
