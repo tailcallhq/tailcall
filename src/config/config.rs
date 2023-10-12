@@ -112,6 +112,7 @@ pub struct Type {
   pub interface: bool,
   #[serde(default)]
   pub implements: Vec<String>,
+  pub entity_resolver: Option<EntityResolver>,
   #[serde(rename = "enum", default)]
   pub variants: Option<Vec<String>>,
   #[serde(default)]
@@ -260,6 +261,8 @@ pub struct Http {
   #[serde(rename = "entityType")]
   pub entity_type: Option<String>,
 }
+
+pub type EntityResolver = Http;
 
 impl Http {
   pub fn batch_key(mut self, key: &str) -> Self {

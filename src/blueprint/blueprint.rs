@@ -73,6 +73,7 @@ pub struct ObjectTypeDefinition {
   pub description: Option<String>,
   pub implements: Vec<String>,
   pub key: Option<String>,
+  pub entity_resolver: Option<Expression>,
 }
 
 #[derive(Clone, Debug)]

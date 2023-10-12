@@ -11,7 +11,7 @@ use async_graphql::Name;
 
 use crate::config;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union};
+use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union, EntityResolver};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
@@ -79,12 +79,14 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
         &type_definition.node.description,
         false,
         &object_type.implements,
+        &type_definition.node.directives
       )?),
       TypeKind::Interface(interface_type) => Some(to_object_type(
         &interface_type.fields,
         &type_definition.node.description,
         true,
         &interface_type.implements,
+        &type_definition.node.directives
       )?),
       TypeKind::Enum(enum_type) => Some(to_enum(enum_type)),
       TypeKind::InputObject(input_object_type) => Some(to_input_object(input_object_type)?),
@@ -120,11 +122,14 @@ fn to_object_type(
   description: &Option<Positioned<String>>,
   interface: bool,
   implements: &[Positioned<Name>],
+  directives: &[Positioned<ConstDirective>],
+
 ) -> Valid<config::Type> {
   let fields = to_fields(fields)?;
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-  Valid::Ok(config::Type { fields, doc, interface, implements, ..Default::default() })
+  let entity_resolver = to_entity_resolver(directives)?;
+  Valid::Ok(config::Type { fields, doc, interface, implements, entity_resolver, ..Default::default() })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -317,6 +322,15 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
     }
   })
 }
+fn to_entity_resolver(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::EntityResolver>> {
+  for directive in directives {
+    if directive.node.name.node == "entityResolver" {
+      return EntityResolver::from_directive(&directive.node).map(Some);
+    }
+  }
+  Valid::Ok(None)
+}
+
 
 trait HasName {
   fn name(&self) -> &Positioned<Name>;

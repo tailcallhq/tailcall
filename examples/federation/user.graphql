@@ -10,8 +10,7 @@ schema
 }
 
 type Query {
-  # TODO! use object directive for entityResolver 
-  post2(id: Int): Post @http(path: "/posts/{{value.id}}", entityResolver: true, entityType: "Post")
+  post2(id: Int): Post @http(path: "/posts/{{value.id}}")
 }
 
 type User {
@@ -24,7 +23,7 @@ type User {
 	posts: [Post] @http(path: "/users/{{value.id}}/posts")
 }
 
-type Post {
+type Post @entityResolver(path: "/posts/{{value.id}}") {
   id: Int! @key
   userId: Int!
   user: User @http(path: "/users/{{value.userId}}")
