@@ -24,7 +24,7 @@ sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = ["json","rustls-tls"], default-features = false }
 hyper = { version = "0.14", features = ["full"], default-features = false }
-async-graphql = { version = "6.0", features = [
+async-graphql = { version = "6.0.5", features = [
    "dynamic-schema",
    "dataloader",
    "apollo_tracing"
