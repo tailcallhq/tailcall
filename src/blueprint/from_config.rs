@@ -55,22 +55,44 @@ const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
 
 fn to_server(config: &Config) -> Valid<Server> {
   let mut server = blueprint::Server::default();
+
+  // Handle GraphiQL setup
+  server = handle_graphiql(server, config)?;
+
+  // Handle Response Headers setup
+  server = handle_response_headers(server, config)?;
+
+  // Handle Base URL setup
+  server = handle_base_url(server, config)?;
+
+  // Configure other server settings
+  server = configure_server(server, config);
+
+  Valid::Ok(server.clone())
+}
+
+fn handle_graphiql(mut server: Server, config: &Config) -> Valid<Server> {
   if let Some(enable_graphiql) = config.server.enable_graphiql.clone() {
     let lowered_route = enable_graphiql.to_lowercase();
     if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
-      return Valid::fail(format!(
-        "Cannot use restricted routes '{}' for enabling graphiql",
-        enable_graphiql
-      ))
-      .trace("enableGraphiql")
-      .trace("@server")
-      .trace("schema");
+      return Err(
+        ValidationError::new(format!(
+          "Cannot use restricted routes '{}' for enabling graphiql",
+          enable_graphiql
+        ))
+        .trace("enableGraphiql")
+        .trace("@server")
+        .trace("schema"),
+      );
     } else {
       server = server.clone().enable_graphiql(Some(enable_graphiql));
     }
   }
+  Ok(server)
+}
 
-  let a = config
+fn handle_response_headers(mut server: Server, config: &Config) -> Valid<Server> {
+  let headers = config
     .server
     .response_headers
     .0
@@ -87,12 +109,20 @@ fn to_server(config: &Config) -> Valid<Server> {
     .trace("schema")?;
 
   let mut response_headers = HeaderMap::new();
-  response_headers.extend(a);
+  response_headers.extend(headers);
   server = server.clone().response_headers(response_headers);
+  Ok(server)
+}
+
+fn handle_base_url(mut server: Server, config: &Config) -> Valid<Server> {
   if let Some(base_url) = config.server.base_url.clone() {
     let _ = Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?);
     server = server.clone().base_url(Some(base_url));
   }
+  Ok(server)
+}
+
+fn configure_server(mut server: Server, config: &Config) -> Server {
   server = server
     .clone()
     .allowed_headers(config.server.allowed_headers.clone())
@@ -108,7 +138,7 @@ fn to_server(config: &Config) -> Valid<Server> {
     .upstream(config.server.upstream.clone())
     .vars(config.server.vars.clone().0);
 
-  Valid::Ok(server.clone())
+  server
 }
 
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
