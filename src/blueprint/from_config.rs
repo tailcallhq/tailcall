@@ -189,7 +189,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
   let fields = to_fields(type_of, config)?;
   let key_field = fields.iter().find(|field| field.is_federation_key);
   let key = key_field.map(|field| field.name.clone());
-  let key_type = key_field.map(|field| field.of_type.name().clone().to_string());
+  let key_type = key_field.map(|field| field.of_type.name().to_string());
   let object_definition = ObjectTypeDefinition {
     name: name.to_string(),
     description: type_of.doc.clone(),
