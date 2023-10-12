@@ -1,6 +1,7 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
+use serde_json::json;
 use url::Url;
 
 use crate::endpoint::Endpoint;
@@ -9,7 +10,7 @@ use crate::mustache::Mustache;
 use crate::path_string::PathString;
 
 /// A template to quickly create a request
-#[derive(Setters, Clone, Debug)]
+#[derive(Setters, Debug)]
 pub struct RequestTemplate {
   pub root_url: Mustache,
   pub query: Vec<(String, Mustache)>,
@@ -17,10 +18,48 @@ pub struct RequestTemplate {
   pub headers: Vec<(String, Mustache)>,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
+  static_reqwest: Option<reqwest::Request>,
+  p_all_static: bool,
+}
+
+// #[derive(Setters, Debug)]
+// pub struct RequestOption{
+//   pub option: Option<reqwest::Request>
+// }
+
+// impl Clone for RequestOption {
+//     fn clone(&self) -> RequestOption {
+
+//       match &self.option{
+//         Some(r) => return RequestOption{option:r.try_clone()},
+//         _ =>  return RequestOption{option: None},
+//       };
+//     }
+// }
+
+impl Clone for RequestTemplate {
+  fn clone(&self) -> RequestTemplate {
+    let static_reqwest = if let Some(req) = &self.static_reqwest {
+      req.try_clone()
+    } else {
+      None
+    };
+
+    RequestTemplate {
+      root_url: self.root_url.clone(),
+      query: self.query.clone(),
+      method: self.method.clone(),
+      headers: self.headers.clone(),
+      body: self.body.clone(),
+      endpoint: self.endpoint.clone(),
+      static_reqwest,
+      p_all_static: self.p_all_static,
+    }
+  }
 }
 
 impl RequestTemplate {
-  fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+   fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let root_url = self.root_url.render(ctx);
 
     let mut url = url::Url::parse(root_url.as_str())?;
@@ -55,6 +94,125 @@ impl RequestTemplate {
       }
     }
     Ok(url)
+  }
+
+  fn parse_root_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    let root_url = self.root_url.render(ctx);
+    let url = url::Url::parse(root_url.as_str())?;
+
+    Ok(url)
+  }
+
+  fn create_static_request(&mut self) {
+    self.p_all_static = self.root_url.is_const();
+
+    let ctx = &json!(null);
+
+    let root_url = self.root_url.render(ctx);
+    let mut url: Url = url::Url::parse(root_url.as_str()).unwrap();
+    self.set_static_queries(ctx, &mut url);
+
+    for (_, v) in &self.headers {
+      if !v.is_const() {
+        self.p_all_static = false;
+      }
+    }
+
+    let mut header_map = self.eval_headers2(ctx, true);
+    header_map.insert(
+      reqwest::header::CONTENT_TYPE,
+      HeaderValue::from_static("application/json"),
+    );
+
+    let method = self.method.clone();
+
+    let mut req = reqwest::Request::new(method, url);
+
+    req.headers_mut().extend(header_map);
+
+    if let Some(body) = &self.body {
+      if body.is_const() {
+        req.body_mut().replace(self.eval_body(ctx));
+      } else {
+        self.p_all_static = false;
+      }
+    }
+
+    self.static_reqwest = Some(req);
+  }
+
+  fn set_queries<C: PathString>(&self, ctx: &C, url: &mut Url) -> bool {
+    let q: Vec<(String, String)> = url
+      .query_pairs()
+      .filter_map(|(k, v)| {
+        if v.is_empty() {
+          None
+        } else {
+          Some((k.to_string(), v.to_string()))
+        }
+      })
+      .collect();
+    url.set_query(None);
+
+    let mut is_empty = true;
+
+    let mut query_list = url.query_pairs_mut();
+
+    for (k, v) in &q {
+      query_list.append_pair(k, v);
+      is_empty = false;
+    }
+
+    for (k, v) in &self.query {
+      if v.is_const() {
+        let rendered_v = v.render(ctx);
+        if !rendered_v.is_empty() {
+          query_list.append_pair(k, &rendered_v);
+          is_empty = false;
+        }
+      }
+    }
+
+    is_empty
+  }
+
+  fn set_static_queries<C: PathString>(&self, ctx: &C, url: &mut Url) {
+    if self.set_queries(ctx, url) {
+      url.set_query(None);
+    }
+  }
+
+  fn update_dynamic_queries<C: PathString>(&self, ctx: &C, url: &mut Url) -> bool {
+    let mut is_empty = url.query_pairs().count() == 0;
+    let mut query_list = url.query_pairs_mut();
+
+    for (k, v) in &self.query {
+      if !v.is_const() {
+        let rendered_v = v.render(ctx);
+        if !rendered_v.is_empty() {
+          query_list.append_pair(k, &rendered_v);
+          is_empty = false;
+        }
+      }
+    }
+
+    is_empty
+  }
+
+  fn eval_headers2<C: PathString>(&self, ctx: &C, pred: bool) -> HeaderMap {
+    let mut header_map = HeaderMap::new();
+
+    for (k, v) in &self.headers {
+      if v.is_const() == pred {
+        if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
+          if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+            header_map.insert(header_name, header_value);
+          }
+        }
+      }
+    }
+
+    header_map
   }
 
   fn eval_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
@@ -121,19 +279,61 @@ impl RequestTemplate {
 
   // /// A high-performance way to reliably create a request
   pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    let url = self.eval_url2(ctx)?;
-    let mut header_map = self.eval_headers(ctx);
-    header_map.extend(ctx.headers().to_owned());
-    header_map.insert(
-      reqwest::header::CONTENT_TYPE,
-      HeaderValue::from_static("application/json"),
-    );
-    let body = self.eval_body(ctx);
-    let method = self.method.clone();
-    let mut req = reqwest::Request::new(method, url);
-    req.headers_mut().extend(header_map);
-    req.body_mut().replace(body);
-    Ok(req)
+    if self.p_all_static {
+
+      let mut req = self.static_reqwest.as_ref().unwrap().try_clone().unwrap();
+      let ctx_headers = ctx.headers();
+      if !ctx_headers.is_empty() {
+        req.headers_mut().extend(ctx_headers.to_owned());
+      }
+
+      Ok(req)
+    } else if let Some(r) = &self.static_reqwest {
+      let mut req = r.try_clone().unwrap();
+
+      if !self.root_url.is_const() {
+        *req.url_mut() = self.parse_root_url(ctx)?;
+        self.set_static_queries(ctx, req.url_mut());
+      }
+
+      if self.update_dynamic_queries(ctx, req.url_mut()) {
+        req.url_mut().set_query(None);
+      }
+
+      let header_map = req.headers_mut();
+      let new_headers = self.eval_headers2(ctx, false);
+
+      if !new_headers.is_empty() {
+        header_map.extend(new_headers);
+      }
+
+      let ctx_headers = ctx.headers();
+      if !ctx_headers.is_empty() {
+        header_map.extend(ctx_headers.to_owned());
+      }
+
+      if let Some(body) = &self.body {
+        if !body.is_const() {
+          req.body_mut().replace(self.eval_body(ctx));
+        }
+      }
+
+      return Ok(req);
+    } else {
+      let url = self.eval_url2(ctx)?;
+      let mut header_map = self.eval_headers(ctx);
+      header_map.extend(ctx.headers().to_owned());
+      header_map.insert(
+        reqwest::header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+      );
+      let body = self.eval_body(ctx);
+      let method = self.method.clone();
+      let mut req = reqwest::Request::new(method, url);
+      req.headers_mut().extend(header_map);
+      req.body_mut().replace(body);
+      Ok(req)
+    }
   }
 
   pub fn new(root_url: &str) -> anyhow::Result<Self> {
@@ -144,6 +344,8 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
+      static_reqwest: None,
+      p_all_static: false,
     })
   }
 }
@@ -170,7 +372,10 @@ impl TryFrom<Endpoint> for RequestTemplate {
       None
     };
 
-    Ok(Self { root_url: path, query, method, headers, body, endpoint })
+    let mut req =
+      Self { root_url: path, query, method, headers, body, endpoint, static_reqwest: None, p_all_static: false };
+    req.create_static_request();
+    Ok(req)
   }
 }
 
@@ -185,6 +390,7 @@ mod tests {
 
   use crate::mustache::Mustache;
   use crate::request_template::RequestTemplate;
+
   #[derive(Setters)]
   struct Context {
     pub value: serde_json::Value,

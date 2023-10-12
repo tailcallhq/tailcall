@@ -18,6 +18,19 @@ impl From<Vec<Segment>> for Mustache {
 }
 
 impl Mustache {
+  pub fn is_const(&self) -> bool {
+    match self {
+      Mustache(segments) => {
+        for s in segments {
+          if let Segment::Expression(_) = s {
+            return false;
+          }
+        }
+        true
+      }
+    }
+  }
+
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
     match result {
