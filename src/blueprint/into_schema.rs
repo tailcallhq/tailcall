@@ -8,12 +8,9 @@ use async_graphql::{Name, Value};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
+use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
-use crate::lambda::EvaluationContext;
-use crate::{
-  blueprint::{Blueprint, Definition, Type},
-  lambda::ResolverContextLike,
-};
+use crate::lambda::{EvaluationContext, ResolverContextLike};
 
 struct EntityResolverContext<'a> {
   pub entity_resolver_value: Option<&'a Value>,

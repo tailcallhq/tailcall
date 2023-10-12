@@ -11,7 +11,7 @@ use async_graphql::Name;
 
 use crate::config;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union, EntityResolver};
+use crate::config::{Config, EntityResolver, GraphQL, Http, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
@@ -79,14 +79,14 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
         &type_definition.node.description,
         false,
         &object_type.implements,
-        &type_definition.node.directives
+        &type_definition.node.directives,
       )?),
       TypeKind::Interface(interface_type) => Some(to_object_type(
         &interface_type.fields,
         &type_definition.node.description,
         true,
         &interface_type.implements,
-        &type_definition.node.directives
+        &type_definition.node.directives,
       )?),
       TypeKind::Enum(enum_type) => Some(to_enum(enum_type)),
       TypeKind::InputObject(input_object_type) => Some(to_input_object(input_object_type)?),
@@ -123,7 +123,6 @@ fn to_object_type(
   interface: bool,
   implements: &[Positioned<Name>],
   directives: &[Positioned<ConstDirective>],
-
 ) -> Valid<config::Type> {
   let fields = to_fields(fields)?;
   let doc = description.as_ref().map(|pos| pos.node.clone());
@@ -294,7 +293,7 @@ fn is_federation_key(directives: &[Positioned<ConstDirective>]) -> bool {
       return true;
     }
   }
-  return false;
+  false
 }
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
@@ -330,7 +329,6 @@ fn to_entity_resolver(directives: &[Positioned<ConstDirective>]) -> Valid<Option
   }
   Valid::Ok(None)
 }
-
 
 trait HasName {
   fn name(&self) -> &Positioned<Name>;

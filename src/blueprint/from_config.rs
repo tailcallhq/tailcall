@@ -33,13 +33,12 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let definitions = to_definitions(config, output_types, input_types)?;
 
   let mut entity_resolvers = BTreeMap::new();
-  definitions.iter().for_each(|d| match d {
-    Definition::ObjectTypeDefinition(definition) => {
+  definitions.iter().for_each(|d| {
+    if let Definition::ObjectTypeDefinition(definition) = d {
       if definition.entity_resolver.is_some() {
         entity_resolvers.insert(definition.name.clone(), definition.entity_resolver.clone());
       }
     }
-    _ => {}
   });
   println!("***");
   println!("entity resolvers: {:?}", entity_resolvers);
@@ -184,21 +183,17 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
   let fields = to_fields(type_of, config)?;
   let key_field = fields.iter().find(|field| field.is_federation_key);
   println!("Found key field: {:?}", key_field);
-  let key = match key_field {
-    Some(field) => Some(field.name.clone()),
-    None => None,
-  };
+  let key = key_field.map(|field| field.name.clone());
   let object_definition = ObjectTypeDefinition {
     name: name.to_string(),
     description: type_of.doc.clone(),
     fields,
     implements: type_of.implements.clone(),
     key,
-    entity_resolver: None
+    entity_resolver: None,
   };
   let object_definition = update_entity_resolver(object_definition, type_of, config).trace("@entityResolver")?;
   Valid::Ok(Definition::ObjectTypeDefinition(object_definition))
-  
 }
 fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition> {
   Valid::Ok(Definition::InputObjectTypeDefinition(InputObjectTypeDefinition {
@@ -421,64 +416,71 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
       //   }
       //   None => Valid::fail("No base URL defined".to_string()),
       // }
-    },
+    }
     None => Valid::Ok(b_field),
   }
 }
 
-fn update_entity_resolver(mut definition: ObjectTypeDefinition, type_of: &config::Type, config: &Config) -> Valid<ObjectTypeDefinition> {
+fn update_entity_resolver(
+  mut definition: ObjectTypeDefinition,
+  type_of: &config::Type,
+  config: &Config,
+) -> Valid<ObjectTypeDefinition> {
   match type_of.entity_resolver.as_ref() {
     Some(entity_resolver) => {
-      let expr = build_http_resolver_expression(entity_resolver, config, &definition.name, true, false, &BTreeMap::new())?;
+      let expr =
+        build_http_resolver_expression(entity_resolver, config, &definition.name, true, false, &BTreeMap::new())?;
       definition.entity_resolver = Some(expr);
       Valid::Ok(definition)
-    },
+    }
     None => Valid::Ok(definition),
   }
 }
 
 fn build_http_resolver_expression(
-  http: &config::Http, 
-  config: &Config, 
-  output_type: &String, 
-  required: bool, 
+  http: &config::Http,
+  config: &Config,
+  output_type: &str,
+  required: bool,
   list: bool,
-  args: &BTreeMap<String, Arg>
+  args: &BTreeMap<String, Arg>,
 ) -> Valid<Expression> {
-  match http.base_url.as_ref()
-      .map_or_else(|| config.server.base_url.as_ref(), Some)
-    {
-      Some(base_url) => {
-        let mut base_url = base_url.clone();
-        if base_url.ends_with('/') {
-          base_url.pop();
-        }
-        base_url.push_str(http.path.clone().as_str());
-        let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-        let output_schema = to_json_schema(output_type, required, list, config);
-        let input_schema = to_json_schema_for_args(args, config);
-        let mut header_map = HeaderMap::new();
-        for (k, v) in http.headers.clone().iter() {
-          header_map.insert(
-            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
-            HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
-          );
-        }
-        let req_template = RequestTemplate::try_from(
-          Endpoint::new(base_url.to_string())
-            .method(http.method.clone())
-            .query(query)
-            .output(output_schema)
-            .input(input_schema)
-            .body(http.body.clone())
-            .headers(header_map),
-        )
-        .map_err(|e| ValidationError::new(e.to_string()))?;
+  match http
+    .base_url
+    .as_ref()
+    .map_or_else(|| config.server.base_url.as_ref(), Some)
+  {
+    Some(base_url) => {
+      let mut base_url = base_url.clone();
+      if base_url.ends_with('/') {
+        base_url.pop();
+      }
+      base_url.push_str(http.path.clone().as_str());
+      let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+      let output_schema = to_json_schema(output_type, required, list, config);
+      let input_schema = to_json_schema_for_args(args, config);
+      let mut header_map = HeaderMap::new();
+      for (k, v) in http.headers.clone().iter() {
+        header_map.insert(
+          HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
+          HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
+        );
+      }
+      let req_template = RequestTemplate::try_from(
+        Endpoint::new(base_url.to_string())
+          .method(http.method.clone())
+          .query(query)
+          .output(output_schema)
+          .input(input_schema)
+          .body(http.body.clone())
+          .headers(header_map),
+      )
+      .map_err(|e| ValidationError::new(e.to_string()))?;
 
-        Valid::Ok(Lambda::from_request_template(req_template).expression)
-      },
-      None => Valid::fail("No base URL defined".to_string()),
+      Valid::Ok(Lambda::from_request_template(req_template).expression)
     }
+    None => Valid::fail("No base URL defined".to_string()),
+  }
 }
 
 fn update_modify(
