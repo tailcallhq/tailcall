@@ -36,23 +36,7 @@ fn config_document(config: &Config) -> ServiceDocument {
           .clone()
           .iter()
           .map(|(name, field)| {
-            let mut directives = Vec::new();
-            if let Some(http) = field.clone().http {
-              let http_dir = http.to_directive("http".to_string());
-              directives.push(pos(http_dir));
-            }
-            if let Some(batch) = field.clone().group_by {
-              let batch_dir = batch.to_directive("groupBy".to_string());
-              directives.push(pos(batch_dir));
-            }
-            if let Some(us) = field.clone().unsafe_operation {
-              let us_dir = us.to_directive("unsafe".to_string());
-              directives.push(pos(us_dir));
-            }
-            if let Some(const_field) = field.clone().const_field {
-              let us_dir = const_field.to_directive("const".to_string());
-              directives.push(pos(us_dir));
-            }
+            let directives = get_directives(field);
             let base_type = if field.list {
               BaseType::List(Box::new(Type {
                 nullable: !field.required,
@@ -88,31 +72,7 @@ fn config_document(config: &Config) -> ServiceDocument {
           .clone()
           .iter()
           .map(|(name, field)| {
-            let mut directives = Vec::new();
-            if let Some(http) = field.clone().http {
-              let http_dir = http.to_directive("http".to_string());
-              directives.push(pos(http_dir));
-            }
-            if let Some(batch) = field.clone().group_by {
-              let batch_dir = batch.to_directive("groupBy".to_string());
-              directives.push(pos(batch_dir));
-            }
-            if let Some(us) = field.clone().unsafe_operation {
-              let us_dir = us.to_directive("unsafe".to_string());
-              directives.push(pos(us_dir));
-            }
-            if let Some(const_field) = field.clone().const_field {
-              let us_dir = const_field.to_directive("const".to_string());
-              directives.push(pos(us_dir));
-            }
-            if let Some(inline) = field.clone().inline {
-              let inline_dir = inline.to_directive("inline".to_string());
-              directives.push(pos(inline_dir));
-            }
-            if let Some(modify) = field.clone().modify {
-              let modify_dir = modify.to_directive("modify".to_string());
-              directives.push(pos(modify_dir));
-            }
+            let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
                 nullable: !field.required,
@@ -147,31 +107,7 @@ fn config_document(config: &Config) -> ServiceDocument {
           .clone()
           .iter()
           .map(|(name, field)| {
-            let mut directives = Vec::new();
-            if let Some(http) = field.clone().http {
-              let http_dir = http.to_directive("http".to_string());
-              directives.push(pos(http_dir));
-            }
-            if let Some(us) = field.clone().unsafe_operation {
-              let us_dir = us.to_directive("unsafe".to_string());
-              directives.push(pos(us_dir));
-            }
-            if let Some(const_field) = field.clone().const_field {
-              let us_dir = const_field.to_directive("const".to_string());
-              directives.push(pos(us_dir));
-            }
-            if let Some(batch) = field.clone().group_by {
-              let batch_dir = batch.to_directive("groupBy".to_string());
-              directives.push(pos(batch_dir));
-            }
-            if let Some(inline) = field.clone().inline {
-              let inline_dir = inline.to_directive("inline".to_string());
-              directives.push(pos(inline_dir));
-            }
-            if let Some(modify) = field.clone().modify {
-              let modify_dir = modify.to_directive("modify".to_string());
-              directives.push(pos(modify_dir));
-            }
+            let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
                 nullable: !field.required,
@@ -240,6 +176,35 @@ fn config_document(config: &Config) -> ServiceDocument {
   }
 
   ServiceDocument { definitions }
+}
+
+fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective>> {
+  let mut directives = Vec::new();
+  if let Some(http) = field.clone().http {
+    let http_dir = http.to_directive("http".to_string());
+    directives.push(pos(http_dir));
+  }
+  if let Some(batch) = field.clone().group_by {
+    let batch_dir = batch.to_directive("groupBy".to_string());
+    directives.push(pos(batch_dir));
+  }
+  if let Some(us) = field.clone().unsafe_operation {
+    let us_dir = us.to_directive("unsafe".to_string());
+    directives.push(pos(us_dir));
+  }
+  if let Some(const_field) = field.clone().const_field {
+    let us_dir = const_field.to_directive("const".to_string());
+    directives.push(pos(us_dir));
+  }
+  if let Some(inline) = field.clone().inline {
+    let il_dir = inline.to_directive("inline".to_string());
+    directives.push(pos(il_dir));
+  }
+  if let Some(modify) = field.clone().modify {
+    let dir = modify.to_directive("modify".to_string());
+    directives.push(pos(dir));
+  }
+  directives
 }
 
 impl From<Config> for ServiceDocument {
