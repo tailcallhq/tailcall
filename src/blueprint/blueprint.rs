@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
@@ -19,6 +21,7 @@ pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
   pub entity_resolvers: BTreeMap<String, Option<Expression>>,
+  pub entity_key_map: BTreeMap<String, (String, String)>,
 }
 
 #[derive(Clone, Debug)]
@@ -72,6 +75,7 @@ pub struct ObjectTypeDefinition {
   pub description: Option<String>,
   pub implements: Vec<String>,
   pub key: Option<String>,
+  pub key_type: Option<String>,
   pub entity_resolver: Option<Expression>,
 }
 
@@ -120,9 +124,9 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  pub entity_resolver: Option<bool>,
-  pub entity_type: Option<String>,
-  pub entity_key: Option<String>,
+  // pub entity_resolver: Option<bool>,
+  // pub entity_type: Option<String>,
+  // pub entity_key: Option<String>,
   pub is_federation_key: bool,
 }
 
@@ -170,8 +174,9 @@ impl Blueprint {
     schema: SchemaDefinition,
     definitions: Vec<Definition>,
     entity_resolvers: BTreeMap<String, Option<Expression>>,
+    entity_key_map: BTreeMap<String, (String, String)>,
   ) -> Self {
-    Self { schema, definitions, entity_resolvers }
+    Self { schema, definitions, entity_resolvers, entity_key_map }
   }
 
   pub fn query(&self) -> String {

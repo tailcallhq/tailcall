@@ -149,27 +149,34 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
   }
 
   let entity_resolvers = blueprint.entity_resolvers.clone();
+  let entity_key_map = blueprint.entity_key_map.clone();
+
   if !entity_resolvers.is_empty() {
-    println!("Creating entity resolvers");
     schema = schema.enable_federation();
     schema = schema.entity_resolver(move |ctx| {
       let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
       let entity_resolvers = entity_resolvers.clone();
+      let entity_key_map = entity_key_map.clone();
       FieldFuture::new(async move {
         let representations = ctx.args.try_get("representations")?.list()?;
         let mut values = Vec::new();
-
         for item in representations.iter() {
           let item = item.object()?;
-          // TODO use key name and value instead of hardcoding id
-          let id = item.try_get("id")?.u64()?;
-          let mut value_map = IndexMap::new();
-          value_map.insert(Name::new("id"), Value::from(id));
-          let val = Value::Object(value_map);
-          let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&val) };
           let typename = item.try_get("__typename").and_then(|value| value.string())?;
-
           let resolver = entity_resolvers.get(typename);
+          let key_info = entity_key_map.get(typename);
+          let (key, key_type) = key_info.unwrap();
+          let key_value = match key_type.as_str() {
+            "String" => Value::from(item.try_get(key)?.string()?),
+            "Int" => Value::from(item.try_get(key)?.u64()?),
+            _ => {
+              panic!("Unable to get key value in entity resolver");
+            }
+          };
+          let context_val = Value::Object(IndexMap::from([(Name::new(key), key_value)]));
+          let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&context_val) };
+
+          // let key = blueprint.entity_key_map.get(typename);
           let typename_clone = String::from(typename);
           match resolver {
             None => {}

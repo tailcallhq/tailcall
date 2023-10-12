@@ -33,20 +33,26 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let definitions = to_definitions(config, output_types, input_types)?;
 
   let mut entity_resolvers = BTreeMap::new();
+  let mut entity_key_map = BTreeMap::new();
   definitions.iter().for_each(|d| {
     if let Definition::ObjectTypeDefinition(definition) = d {
       if definition.entity_resolver.is_some() {
         entity_resolvers.insert(definition.name.clone(), definition.entity_resolver.clone());
       }
+      if definition.key.is_some() && definition.key_type.is_some() {
+        entity_key_map.insert(
+          definition.name.clone(),
+          (definition.key.clone().unwrap(), definition.key_type.clone().unwrap()),
+        );
+      }
     }
   });
-  println!("***");
-  println!("entity resolvers: {:?}", entity_resolvers);
 
   Ok(super::compress::compress(Blueprint {
     schema,
     definitions,
     entity_resolvers,
+    entity_key_map,
   }))
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
@@ -182,14 +188,15 @@ fn to_enum_type_definition(
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition> {
   let fields = to_fields(type_of, config)?;
   let key_field = fields.iter().find(|field| field.is_federation_key);
-  println!("Found key field: {:?}", key_field);
   let key = key_field.map(|field| field.name.clone());
+  let key_type = key_field.map(|field| field.of_type.name().clone().to_string());
   let object_definition = ObjectTypeDefinition {
     name: name.to_string(),
     description: type_of.doc.clone(),
     fields,
     implements: type_of.implements.clone(),
     key,
+    key_type,
     entity_resolver: None,
   };
   let object_definition = update_entity_resolver(object_definition, type_of, config).trace("@entityResolver")?;
@@ -249,9 +256,6 @@ fn to_field(
     of_type: to_type(field_type, field.list, field.required, field.list_type_required),
     directives: Vec::new(),
     resolver: None,
-    entity_resolver: Some(false),
-    entity_type: None,
-    entity_key: None,
     is_federation_key: field.is_federation_key,
   };
 
@@ -369,53 +373,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
     Some(http) => {
       let expr = build_http_resolver_expression(http, config, &field.type_of, field.required, field.list, &field.args)?;
       b_field.resolver = Some(expr);
-      b_field.entity_resolver = http.entity_resolver;
-      b_field.entity_type = http.entity_type.clone();
-      b_field.entity_key = http.entity_id.clone();
-
       Valid::Ok(b_field)
-
-      // match http
-      // .base_url
-      // .as_ref()
-      // .map_or_else(|| config.server.base_url.as_ref(), Some)
-      // {
-      //   Some(base_url) => {
-      //     let mut base_url = base_url.clone();
-      //     if base_url.ends_with('/') {
-      //       base_url.pop();
-      //     }
-      //     base_url.push_str(http.path.clone().as_str());
-      //     let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-      //     let output_schema = to_json_schema_for_field(field, config);
-      //     let input_schema = to_json_schema_for_args(&field.args, config);
-      //     let mut header_map = HeaderMap::new();
-      //     for (k, v) in http.headers.clone().iter() {
-      //       header_map.insert(
-      //         HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
-      //         HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
-      //       );
-      //     }
-      //     let req_template = RequestTemplate::try_from(
-      //       Endpoint::new(base_url.to_string())
-      //         .method(http.method.clone())
-      //         .query(query)
-      //         .output(output_schema)
-      //         .input(input_schema)
-      //         .body(http.body.clone())
-      //         .headers(header_map),
-      //     )
-      //     .map_err(|e| ValidationError::new(e.to_string()))?;
-
-      //     b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
-      //     b_field.entity_resolver = http.entity_resolver;
-      //     b_field.entity_type = http.entity_type.clone();
-      //     b_field.entity_key = http.entity_id.clone();
-
-      //     Valid::Ok(b_field)
-      //   }
-      //   None => Valid::fail("No base URL defined".to_string()),
-      // }
     }
     None => Valid::Ok(b_field),
   }
