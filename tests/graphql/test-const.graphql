@@ -1,0 +1,17 @@
+#> server-sdl
+schema @server(upstream: {proxy: {url: "http://localhost:8080"}}) {
+  query: Query
+}
+
+type Query {
+  hello: String @const(data: "Hello from server")
+}
+
+#> client-sdl
+type Query {
+  hello: String
+}
+
+schema {
+  query: Query
+}
