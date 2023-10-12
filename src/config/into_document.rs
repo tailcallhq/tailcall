@@ -49,6 +49,10 @@ fn config_document(config: &Config) -> ServiceDocument {
               let us_dir = us.to_directive("unsafe".to_string());
               directives.push(pos(us_dir));
             }
+            if let Some(const_field) = field.clone().const_field {
+              let us_dir = const_field.to_directive("const".to_string());
+              directives.push(pos(us_dir));
+            }
             let base_type = if field.list {
               BaseType::List(Box::new(Type {
                 nullable: !field.required,
@@ -95,6 +99,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             }
             if let Some(us) = field.clone().unsafe_operation {
               let us_dir = us.to_directive("unsafe".to_string());
+              directives.push(pos(us_dir));
+            }
+            if let Some(const_field) = field.clone().const_field {
+              let us_dir = const_field.to_directive("const".to_string());
               directives.push(pos(us_dir));
             }
             if let Some(inline) = field.clone().inline {
@@ -146,6 +154,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             }
             if let Some(us) = field.clone().unsafe_operation {
               let us_dir = us.to_directive("unsafe".to_string());
+              directives.push(pos(us_dir));
+            }
+            if let Some(const_field) = field.clone().const_field {
+              let us_dir = const_field.to_directive("const".to_string());
               directives.push(pos(us_dir));
             }
             if let Some(batch) = field.clone().group_by {
