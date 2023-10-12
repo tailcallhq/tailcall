@@ -29,6 +29,19 @@ pub trait ValidExtensions<A, E>:
       },
     }
   }
+  fn validate_both<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<(A, A1), E> {
+    match self.to_valid() {
+      Ok(a) => match other {
+        Ok(a1) => Ok((a, a1)),
+        Err(e) => Err(e),
+      },
+      Err(e1) => match other {
+        Ok(_) => Err(e1),
+        Err(e2) => Err(e1.combine(e2)),
+      },
+    }
+  }
+
   fn trace(self, message: &str) -> Valid<A, E> {
     let valid = self.to_valid();
     if let Err(error) = valid {
@@ -209,5 +222,37 @@ mod tests {
   fn test_to_valid() {
     let result = Err::<(), i32>(1).to_valid().unwrap_err();
     assert_eq!(result, ValidationError::new(1));
+  }
+  #[test]
+  fn test_validate_both_ok() {
+    let result1 = Valid::<bool, i32>::succeed(true);
+    let result2 = Valid::<u8, i32>::succeed(3);
+
+    assert_eq!(result1.validate_both(result2), Ok((true, 3u8)));
+  }
+  #[test]
+  fn test_validate_both_first_fail() {
+    let result1 = Valid::<bool, i32>::fail(-1);
+    let result2 = Valid::<u8, i32>::succeed(3);
+
+    assert_eq!(result1.validate_both(result2), Valid::fail(-1));
+  }
+  #[test]
+  fn test_validate_both_second_fail() {
+    let result1 = Valid::<bool, i32>::succeed(true);
+    let result2 = Valid::<u8, i32>::fail(-2);
+
+    assert_eq!(result1.validate_both(result2), Valid::fail(-2));
+  }
+
+  #[test]
+  fn test_validate_both_both_fail() {
+    let result1 = Valid::<bool, i32>::fail(-1);
+    let result2 = Valid::<u8, i32>::fail(-2);
+
+    assert_eq!(
+      result1.validate_both(result2),
+      Valid::fail_cause(vec![Cause::new(-1), Cause::new(-2)])
+    );
   }
 }

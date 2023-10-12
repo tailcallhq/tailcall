@@ -9,6 +9,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::config;
+use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -35,7 +36,7 @@ pub struct Server {
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
   pub port: Option<u16>,
-  pub proxy: Option<crate::config::Proxy>,
+  pub upstream: Upstream,
   pub vars: BTreeMap<String, String>,
   pub batch: Option<crate::config::Batch>,
   pub response_headers: HeaderMap,

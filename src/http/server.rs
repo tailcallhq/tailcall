@@ -69,7 +69,7 @@ pub async fn start_server(config: Config) -> Result<()> {
   let addr = ([0, 0, 0, 0], port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
+  if let Some(graphiql) = blueprint.server.enable_graphiql.as_ref() {
     log::info!("🌍 Playground: http://{}{}", addr, graphiql);
   }
 

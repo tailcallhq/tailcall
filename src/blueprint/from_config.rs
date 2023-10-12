@@ -80,12 +80,12 @@ fn to_server(config: &Config) -> Valid<Server> {
         .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
       let value =
         HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
-
-      Valid::Ok((name?, value?))
+      name.validate_both(value)
     })
     .trace("responseHeaders")
     .trace("@server")
     .trace("schema")?;
+
   let mut response_headers = HeaderMap::new();
   response_headers.extend(a);
   server = server.clone().response_headers(response_headers);
@@ -105,7 +105,7 @@ fn to_server(config: &Config) -> Valid<Server> {
     .enable_response_validation(config.server.enable_response_validation)
     .global_response_timeout(config.server.global_response_timeout)
     .port(config.server.port)
-    .proxy(config.server.proxy.clone())
+    .upstream(config.server.upstream.clone())
     .vars(config.server.vars.clone().0);
 
   Valid::Ok(server.clone())
