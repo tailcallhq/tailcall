@@ -4,7 +4,7 @@ use super::expression;
 use super::expression::{Context, Expression, Operation};
 use crate::request_template::RequestTemplate;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Lambda<A> {
   _output: PhantomData<fn() -> A>,
   pub expression: Expression,
@@ -45,7 +45,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template)))
+    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template, None, None)))
   }
 }
 
@@ -70,7 +70,7 @@ mod tests {
 
   use crate::endpoint::Endpoint;
   use crate::http::RequestContext;
-  use crate::lambda::{EvaluationContext, Lambda};
+  use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
   use crate::request_template::RequestTemplate;
 
   impl<B> Lambda<B>
@@ -79,7 +79,7 @@ mod tests {
   {
     async fn eval(self) -> Result<B> {
       let req_ctx = RequestContext::default();
-      let ctx = EvaluationContext::new(&req_ctx);
+      let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
       let result = self.expression.eval(&ctx).await?;
       let json = serde_json::to_value(result)?;
       Ok(serde_json::from_value(json)?)

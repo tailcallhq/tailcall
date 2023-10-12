@@ -171,7 +171,7 @@ impl Blueprint {
     self.schema.mutation.clone()
   }
 
-  pub fn to_schema(self, server: &config::Server) -> Schema {
+  pub fn to_schema(&self, server: &config::Server) -> Schema {
     let mut schema = SchemaBuilder::from(self);
 
     if server.enable_apollo_tracing.unwrap_or(false) {

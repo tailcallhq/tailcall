@@ -1,32 +1,36 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+title: ""
+labels: ""
+assignees: ""
 ---
+
 ### Prerequisites
 
 - [ ] I have checked the existing issues to ensure this is not a duplicate.
 - [ ] I am running the latest version of Tailcall.
 
 ### Describe the bug
+
 A clear and concise description of what the bug is.
 
 ### Steps to reproduce
 
-1. 
-2. 
-3. 
-... (add as many steps as needed)
+1.
+2.
+3. ... (add as many steps as needed)
 
 ### Expected behavior
+
 A description of what you expected to happen.
 
 ### Actual behavior
+
 A description of what actually happened.
 
 ### Screenshots
+
 If applicable, add screenshots to help explain your problem.
 
 ### Environment information:

@@ -24,7 +24,8 @@ directive @http(
 ) on FIELD_DEFINITION
 directive @inline(path: [String]!) on FIELD_DEFINITION
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
-directive @batch(path: [String]!, key: String!) on FIELD_DEFINITION
+directive @groupBy(path: [String]!, key: String!) on FIELD_DEFINITION
+directive @const(data: Json) on FIELD_DEFINITION
 
 enum Method {
   GET
@@ -50,3 +51,5 @@ input Batch {
   delay: Int
   headers: [String]
 }
+
+scalar Json

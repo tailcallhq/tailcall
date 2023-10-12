@@ -1,0 +1,32 @@
+schema
+  @server(
+    port: 8000
+    baseURL: "http://jsonplaceholder.typicode.com"
+    enableHttpCache: true
+    enableGraphiql: "/graphiql"
+    enableQueryValidation: false
+    batch: {delay: 1, maxSize: 1000}
+  ) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(key: "id", path: ["id"])
+}

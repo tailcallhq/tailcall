@@ -1,11 +1,17 @@
+use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::dataloader::{DataLoader, NoCache};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
+use super::ResolverContextLike;
+use crate::config::group_by::GroupBy;
+use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -27,10 +33,32 @@ pub enum Context {
   Path(Vec<String>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Operation {
-  Endpoint(RequestTemplate),
+  Endpoint(
+    RequestTemplate,
+    Option<GroupBy>,
+    Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
+  ),
   JS(Box<Expression>, String),
+}
+
+impl Debug for Operation {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Operation::Endpoint(req_template, group_by, dl) => f
+        .debug_struct("Endpoint")
+        .field("req_template", req_template)
+        .field("group_by", group_by)
+        .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
+        .finish(),
+      Operation::JS(input, script) => f
+        .debug_struct("JS")
+        .field("input", input)
+        .field("script", script)
+        .finish(),
+    }
+  }
 }
 
 #[derive(Debug, Error, Serialize)]
@@ -52,9 +80,9 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn eval<'a>(
+  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
-    ctx: &'a EvaluationContext<'a>,
+    ctx: &'a EvaluationContext<'a, Ctx>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
     Box::pin(async move {
       match self {
@@ -72,21 +100,25 @@ impl Expression {
         )),
         Expression::Unsafe(operation) => {
           match operation {
-            Operation::Endpoint(req_template) => {
+            Operation::Endpoint(req_template, _, dl) => {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
               if is_get && ctx.req_ctx.server.batch.is_some() {
                 let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = ctx
-                  .req_ctx
-                  .data_loader
+                let resp = dl
                   .as_ref()
+                  .unwrap()
                   .load_one(endpoint_key)
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
+                if ctx.req_ctx.server.enable_cache_control() && resp.status.is_success() {
+                  if let Some(max_age) = max_age(&resp) {
+                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                  }
+                }
                 return Ok(resp.body);
               }
 
@@ -102,6 +134,11 @@ impl Expression {
                   .output
                   .validate(&res.body)
                   .map_err(EvaluationError::from)?;
+              }
+              if ctx.req_ctx.server.enable_cache_control() && res.status.is_success() {
+                if let Some(max_age) = max_age(&res) {
+                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                }
               }
               Ok(res.body)
             }

@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{
-  FieldFuture, SchemaBuilder, {self},
+  FieldFuture, FieldValue, SchemaBuilder, {self},
 };
+use async_graphql_value::ConstValue;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
@@ -35,19 +36,26 @@ fn to_type(def: &Definition) -> dynamic::Type {
       let mut object = dynamic::Object::new(def.name.clone());
       for field in def.fields.iter() {
         let field = field.clone();
-        let mut dyn_schema_field = dynamic::Field::new(field.name.clone(), to_type_ref(&field.of_type), move |ctx| {
+        let type_ref = to_type_ref(&field.of_type);
+        let field_name = &field.name.clone();
+        let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = field.name.clone();
           let resolver = field.resolver.clone();
           FieldFuture::new(async move {
             match resolver {
-              None => Ok(ctx.parent_value.as_value().and_then(|value| match value {
-                async_graphql::Value::Object(map) => map.get(&async_graphql::Name::new(field_name)).cloned(),
-                _ => None,
-              })),
+              None => {
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
+              }
               Some(expr) => {
-                let ctx = EvaluationContext::new(req_ctx).context(&ctx);
-                Ok(Some(expr.eval(&ctx).await?))
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                let const_value = expr.eval(&ctx).await?;
+                let p = match const_value {
+                  ConstValue::List(a) => FieldValue::list(a),
+                  a => FieldValue::from(a),
+                };
+                Ok(Some(p))
               }
             }
           })
@@ -113,7 +121,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: Blueprint) -> SchemaBuilder {
+fn create(blueprint: &Blueprint) -> SchemaBuilder {
   let query = blueprint.query();
   let mutation = blueprint.mutation();
   let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
@@ -125,8 +133,8 @@ fn create(blueprint: Blueprint) -> SchemaBuilder {
   schema
 }
 
-impl From<Blueprint> for SchemaBuilder {
-  fn from(blueprint: Blueprint) -> Self {
+impl From<&Blueprint> for SchemaBuilder {
+  fn from(blueprint: &Blueprint) -> Self {
     create(blueprint)
   }
 }

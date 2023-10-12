@@ -22,7 +22,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 3. **Start the Server:** To start the server, use the following command:
    ```bash
-   cargo run -- start ./assets/jsonplaceholder.graphql
+   cargo run -- start ./examples/jsonplaceholder.graphql
    ```
    Once the server is running, you can access the GraphiQL interface at [http://localhost:8000/graphiql](http://localhost:8000/graphiql).
 
@@ -36,6 +36,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 2. **Write Clean Code:** Ensure your code is clean, readable, and well-commented.
 3. **Follow Rust Best Practices:** Adhere to the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/about.html).
+4. **Use Title Case in Job Names:** When adding new CI jobs to `.github/workflows`, please use title case e.g. _Close Stale Issues and PR_.
 
 ## Testing
 
