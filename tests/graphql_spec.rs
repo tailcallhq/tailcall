@@ -26,7 +26,8 @@ mod graphql_mock;
 struct GraphQLSpec {
   path: PathBuf,
   client_sdl: String,
-  server_sdl: String,
+  server_sdl: Vec<String>,
+  merged_server_sdl: String,
   sdl_errors: Vec<SDLError>,
   test_queries: Vec<GraphQLQuerySpec>,
 }
@@ -63,6 +64,7 @@ impl GraphQLSpec {
 
   fn new(path: PathBuf, content: &str) -> GraphQLSpec {
     let mut spec = GraphQLSpec::default().path(path);
+    let mut server_sdl = Vec::new();
     for component in content.split("#>") {
       if component.contains(CLIENT_SDL) {
         let trimmed = component.replace(CLIENT_SDL, "").trim().to_string();
@@ -84,7 +86,11 @@ impl GraphQLSpec {
         spec = spec.client_sdl(trimmed);
       }
       if component.contains(SERVER_SDL) {
-        spec = spec.server_sdl(component.replace(SERVER_SDL, "").trim().to_string());
+        server_sdl.push(component.replace(SERVER_SDL, "").trim().to_string());
+        spec = spec.server_sdl(server_sdl.clone());
+      }
+      if component.contains(MERGED_SDL) {
+        spec = spec.merged_server_sdl(component.replace(MERGED_SDL, "").trim().to_string());
       }
       if component.contains(CLIENT_QUERY) {
         let regex = Regex::new(r"@expect.*\) ").unwrap();
@@ -143,6 +149,7 @@ impl GraphQLSpec {
 const CLIENT_SDL: &str = "client-sdl";
 const SERVER_SDL: &str = "server-sdl";
 const CLIENT_QUERY: &str = "client-query";
+const MERGED_SDL: &str = "merged-sdl";
 
 // Check if SDL -> Config -> SDL is identity
 #[test]
@@ -150,10 +157,10 @@ fn test_config_identity() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let content = spec.server_sdl;
-    let expected = content.clone();
+    let content = spec.server_sdl[0].as_str();
+    let expected = content;
 
-    let config = Config::from_sdl(content.as_str()).unwrap();
+    let config = Config::from_sdl(content).unwrap();
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "SDL-Config identity failure: {}", spec.path.display());
   }
@@ -168,8 +175,8 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
 
   for spec in specs? {
     let expected = spec.client_sdl;
-    let content = spec.server_sdl;
-    let config = Config::from_sdl(content.as_str()).unwrap();
+    let content = spec.server_sdl[0].as_str();
+    let config = Config::from_sdl(content).unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema(&config.server));
     assert_eq!(
       actual,
@@ -191,7 +198,7 @@ async fn test_execution() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   for spec in specs? {
-    let mut config = Config::from_sdl(&spec.server_sdl).unwrap();
+    let mut config = Config::from_sdl(&spec.server_sdl[0]).unwrap();
     config.server.enable_query_validation = Some(false);
 
     let blueprint = Blueprint::try_from(&config).unwrap();
@@ -220,8 +227,8 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
 
   for spec in specs? {
     let expected = spec.sdl_errors;
-    let content = spec.server_sdl;
-    let config = Config::from_sdl(content.as_str());
+    let content = spec.server_sdl[0].as_str();
+    let config = Config::from_sdl(content);
 
     let actual = config.and_then(|config| Blueprint::try_from(&config));
     match actual {
@@ -231,6 +238,26 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
       }
       _ => panic!("Expected error not found: {}", spec.path.display()),
     }
+  }
+
+  Ok(())
+}
+
+#[test]
+fn test_merge_sdl() -> std::io::Result<()> {
+  let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
+
+  for spec in specs? {
+    let expected = spec.merged_server_sdl;
+    let content = spec
+      .server_sdl
+      .iter()
+      .map(|s| Config::from_sdl(s.as_str()).unwrap())
+      .collect::<Vec<_>>();
+    let config = content[0].clone();
+    let config = config.clone();
+    let actual = config.to_sdl();
+    assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
   }
 
   Ok(())
