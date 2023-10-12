@@ -31,7 +31,8 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  Ok(super::compress::compress(Blueprint { schema, definitions }))
+  let server: blueprint::Server = to_server(config)?;
+  Ok(super::compress::compress(Blueprint { schema, definitions, server }))
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
@@ -52,8 +53,9 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 
 const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
 
-fn validate_server(config: &Config) -> Valid<()> {
-  if let Some(ref enable_graphiql) = config.server.enable_graphiql {
+fn to_server(config: &Config) -> Valid<Server> {
+  let mut server = blueprint::Server::default();
+  if let Some(enable_graphiql) = config.server.enable_graphiql.clone() {
     let lowered_route = enable_graphiql.to_lowercase();
     if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
       return Valid::fail(format!(
@@ -63,18 +65,50 @@ fn validate_server(config: &Config) -> Valid<()> {
       .trace("enableGraphiql")
       .trace("@server")
       .trace("schema");
+    } else {
+      server = server.clone().enable_graphiql(Some(enable_graphiql));
     }
   }
-  let a = config.server.response_headers.0.clone().validate_all(|(k, v)| {
-    HeaderName::from_bytes(k.as_bytes())
-      .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)))
-      .validate_or(
-        HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
-      )
-  });
 
-  a.trace("responseHeaders").trace("@server").trace("schema")?;
-  Valid::Ok(())
+  let a = config
+    .server
+    .response_headers
+    .0
+    .clone()
+    .validate_all(|(k, v)| {
+      let name = HeaderName::from_bytes(k.as_bytes())
+        .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
+      let value =
+        HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
+
+      Valid::Ok((name?, value?))
+    })
+    .trace("responseHeaders")
+    .trace("@server")
+    .trace("schema")?;
+  let mut response_headers = HeaderMap::new();
+  response_headers.extend(a);
+  server = server.clone().response_headers(response_headers);
+  if let Some(base_url) = config.server.base_url.clone() {
+    let _ = Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?);
+    server = server.clone().base_url(Some(base_url));
+  }
+  server = server
+    .clone()
+    .allowed_headers(config.server.allowed_headers.clone())
+    .batch(config.server.batch.clone())
+    .enable_apollo_tracing(config.server.enable_apollo_tracing)
+    .enable_cache_control_header(config.server.enable_cache_control_header)
+    .enable_http_cache(config.server.enable_http_cache)
+    .enable_introspection(config.server.enable_introspection)
+    .enable_query_validation(config.server.enable_query_validation)
+    .enable_response_validation(config.server.enable_response_validation)
+    .global_response_timeout(config.server.global_response_timeout)
+    .port(config.server.port)
+    .proxy(config.server.proxy.clone())
+    .vars(config.server.vars.clone().0);
+
+  Valid::Ok(server.clone())
 }
 
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
@@ -85,7 +119,7 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  validate_server(config)
+  to_server(config)
     .validate_or(validate_query(config))
     .validate_or(validate_mutation(config))?;
 

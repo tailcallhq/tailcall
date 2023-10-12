@@ -23,8 +23,8 @@ type Failure
     message: "Parsing failed because of failed to parse header value"
     trace: ["schema", "@server", "responseHeaders"]
   )
-  @error(message: "Parsing failed because of invalid HTTP header name", trace: ["schema", "@server", "responseHeaders"])
   @error(
     message: "Parsing failed because of failed to parse header value"
     trace: ["schema", "@server", "responseHeaders"]
   )
+  @error(message: "Parsing failed because of invalid HTTP header name", trace: ["schema", "@server", "responseHeaders"])

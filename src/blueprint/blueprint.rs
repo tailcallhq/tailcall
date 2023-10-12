@@ -1,9 +1,10 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, BTreeMap, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::*;
 use derive_setters::Setters;
+use hyper::HeaderMap;
 use serde_json::Value;
 
 use super::GlobalTimeout;
@@ -18,6 +19,26 @@ use crate::lambda::{Expression, Lambda};
 pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
+  pub server: Server,
+}
+
+#[derive(Clone, Debug, Default, Setters)]
+pub struct Server {
+  pub allowed_headers: Option<BTreeSet<String>>,
+  pub base_url: Option<String>,
+  pub enable_apollo_tracing: Option<bool>,
+  pub enable_cache_control_header: Option<bool>,
+  pub enable_graphiql: Option<String>,
+  pub enable_http_cache: Option<bool>,
+  pub enable_introspection: Option<bool>,
+  pub enable_query_validation: Option<bool>,
+  pub enable_response_validation: Option<bool>,
+  pub global_response_timeout: Option<i64>,
+  pub port: Option<u16>,
+  pub proxy: Option<crate::config::Proxy>,
+  pub vars: BTreeMap<String, String>,
+  pub batch: Option<crate::config::Batch>,
+  pub response_headers: HeaderMap,
 }
 
 #[derive(Clone, Debug)]
@@ -159,8 +180,8 @@ pub struct UnionTypeDefinition {
   pub types: BTreeSet<String>,
 }
 impl Blueprint {
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>) -> Self {
-    Self { schema, definitions }
+  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, server: Server) -> Self {
+    Self { schema, definitions, server }
   }
 
   pub fn query(&self) -> String {
