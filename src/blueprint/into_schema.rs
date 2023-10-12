@@ -162,8 +162,9 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
 
           for item in representations.iter() {
             let item = item.object()?;
+            // TODO use key name and value instead of hardcoding id
             let id = item.try_get("id")?.u64()?;
-            let mut value_map = IndexMap::new();
+            let mut value_map = IndexMap::new();   
             value_map.insert(Name::new("id"), Value::from(id));
             let val = Value::Object(value_map);
             let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&val)};
@@ -179,7 +180,6 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
               Some(Some(expr)) => {
                 let ctx = EvaluationContext::new(req_ctx, &entity_resolver_context);
                 let const_value = expr.eval(&ctx).await?;
-                // println!("{:?}", const_value);
                 values.push(FieldValue::from(const_value).with_type(typename_clone));
               }
             }
