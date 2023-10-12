@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -69,7 +69,7 @@ pub struct ObjectTypeDefinition {
   pub name: String,
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
-  pub implements: Vec<String>,
+  pub implements: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug)]

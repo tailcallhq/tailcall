@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
@@ -150,7 +150,7 @@ fn to_enum_type_definition(
   name: &str,
   type_: &config::Type,
   _config: &Config,
-  variants: Vec<String>,
+  variants: BTreeSet<String>,
 ) -> Valid<Definition> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
