@@ -59,7 +59,7 @@ impl Clone for RequestTemplate {
 }
 
 impl RequestTemplate {
-   fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+  fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let root_url = self.root_url.render(ctx);
 
     let mut url = url::Url::parse(root_url.as_str())?;
@@ -280,7 +280,6 @@ impl RequestTemplate {
   // /// A high-performance way to reliably create a request
   pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     if self.p_all_static {
-
       let mut req = self.static_reqwest.as_ref().unwrap().try_clone().unwrap();
       let ctx_headers = ctx.headers();
       if !ctx_headers.is_empty() {
