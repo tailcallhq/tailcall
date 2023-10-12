@@ -277,7 +277,7 @@ impl RequestTemplate {
     Ok(req)
   }
 
-  // /// A high-performance way to reliably create a request
+  /// A high-performance way to reliably create a request
   pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     if self.p_all_static {
       let mut req = self.static_reqwest.as_ref().unwrap().try_clone().unwrap();
