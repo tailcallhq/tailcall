@@ -4,11 +4,26 @@ use std::sync::Arc;
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, SchemaBuilder, {self},
 };
+use async_graphql::{Name, Value};
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 
-use crate::blueprint::{Blueprint, Definition, Type};
+use crate::{blueprint::{Blueprint, Definition, Type}, lambda::ResolverContextLike};
 use crate::http::RequestContext;
 use crate::lambda::EvaluationContext;
+
+struct EntityResolverContext<'a> {
+  pub entity_resolver_value: Option<&'a Value>
+}
+
+impl<'a> ResolverContextLike<'a> for EntityResolverContext<'a> {
+  fn value(&'a self) -> Option<&'a Value> {
+    self.entity_resolver_value
+  }
+  fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    None
+  }
+}
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -34,6 +49,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
+      
       for field in def.fields.iter() {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
@@ -72,7 +88,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
       for interface in def.implements.iter() {
         object = object.implement(interface.clone());
       }
-
+      if def.key.is_some() {
+        object = object.key(def.key.as_ref().unwrap());
+      }
       dynamic::Type::Object(object)
     }
     Definition::InterfaceTypeDefinition(def) => {
@@ -144,25 +162,29 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
 
           for item in representations.iter() {
             let item = item.object()?;
+            let id = item.try_get("id")?.u64()?;
+            let mut value_map = IndexMap::new();
+            value_map.insert(Name::new("id"), Value::from(id));
+            let val = Value::Object(value_map);
+            let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&val)};
             let typename = item
-                .try_get("__typename")
-                .and_then(|value| value.string())?;
+              .try_get("__typename")
+              .and_then(|value| value.string())?;
+ 
             let resolver = entity_resolvers.get(typename);
+            let typename_clone = String::from(typename);
             match resolver {
               None => {},
               Some(None) => {},
               Some(Some(expr)) => {
-                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                let ctx = EvaluationContext::new(req_ctx, &entity_resolver_context);
                 let const_value = expr.eval(&ctx).await?;
-                let p = match const_value {
-                  ConstValue::List(a) => FieldValue::list(a),
-                  a => FieldValue::from(a),
-                };
-                values.push(p);
+                // println!("{:?}", const_value);
+                values.push(FieldValue::from(const_value).with_type(typename_clone));
               }
             }
           }
-          Ok(Some(values))
+          Ok(Some(FieldValue::list(values)))
         })
       }
     );

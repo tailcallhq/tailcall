@@ -197,6 +197,7 @@ fn to_common_field(
   let unsafe_operation = to_unsafe_operation(directives);
   let group_by = to_batch(directives);
   let const_field = to_const_field(directives);
+  let is_federation_key = is_federation_key(directives);
   Valid::Ok(config::Field {
     type_of,
     list,
@@ -210,6 +211,7 @@ fn to_common_field(
     unsafe_operation,
     group_by,
     const_field,
+    is_federation_key
   })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -280,6 +282,14 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Ht
     }
   }
   Valid::Ok(None)
+}
+fn is_federation_key(directives: &[Positioned<ConstDirective>]) -> bool {
+  for directive in directives {
+    if directive.node.name.node == "key" {
+      return true
+    }
+  }
+  return false;
 }
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type

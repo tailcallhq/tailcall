@@ -72,6 +72,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: Vec<String>,
+  pub key: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -120,6 +121,9 @@ pub struct FieldDefinition {
   pub directives: Vec<Directive>,
   pub description: Option<String>,
   pub entity_resolver: Option<bool>,
+  pub entity_type: Option<String>,
+  pub entity_key: Option<String>,
+  pub is_federation_key: bool,
 }
 
 impl FieldDefinition {

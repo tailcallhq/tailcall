@@ -38,10 +38,9 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
       Definition::ObjectTypeDefinition(definition) => {
         if definition.name == "Query" {
           definition.fields.iter().for_each(|field| {
-            println!("field:");
-            println!("{:?}", field);
-            if field.entity_resolver.unwrap_or(false) {
-              entity_resolvers.insert(field.name.clone(), field.resolver.clone());
+            let entity_type = field.entity_type.clone().unwrap_or("".to_string());
+            if field.entity_resolver.unwrap_or(false) && !entity_type.is_empty() {
+              entity_resolvers.insert(entity_type, field.resolver.clone());
             }
           });
         }
@@ -186,11 +185,20 @@ fn to_enum_type_definition(
 }
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition> {
   to_fields(type_of, config).map(|fields| {
+    let key_field = fields.iter().find(|field| {
+      field.is_federation_key
+    });
+    println!("Found key field: {:?}", key_field);
+    let key = match key_field {
+      Some(field) => Some(field.name.clone()),
+      None => None
+    };
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
+      key
     })
   })
 }
@@ -248,7 +256,10 @@ fn to_field(
     of_type: to_type(field_type, field.list, field.required, field.list_type_required),
     directives: Vec::new(),
     resolver: None,
-    entity_resolver: Some(false)
+    entity_resolver: Some(false),
+    entity_type: None,
+    entity_key: None,
+    is_federation_key: field.is_federation_key,
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
@@ -368,8 +379,6 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
       .map_or_else(|| config.server.base_url.as_ref(), Some)
     {
       Some(base_url) => {
-        println!("http:");
-        println!("{:?}", http);
         let mut base_url = base_url.clone();
         if base_url.ends_with('/') {
           base_url.pop();
@@ -398,6 +407,8 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
 
         b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
         b_field.entity_resolver = http.entity_resolver;
+        b_field.entity_type = http.entity_type.clone();
+        b_field.entity_key = http.entity_id.clone();
 
         Valid::Ok(b_field)
       }

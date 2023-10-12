@@ -1,0 +1,31 @@
+schema
+  @server(
+    port: 8002
+    baseURL: "http://jsonplaceholder.typicode.com"
+    enableHttpCache: true
+    enableGraphiql: "/graphiql"
+    enableQueryValidation: false
+  ) {
+  query: Query
+}
+
+type Query {
+  # TODO! use object directive for entityResolver 
+  post2(id: Int): Post @http(path: "/posts/{{value.id}}", entityResolver: true, entityType: "Post")
+}
+
+type User {
+  id: Int! @key
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+	posts: [Post] @http(path: "/users/{{value.id}}/posts")
+}
+
+type Post {
+  id: Int! @key
+  userId: Int!
+  user: User @http(path: "/users/{{value.userId}}")
+}

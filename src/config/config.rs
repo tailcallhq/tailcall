@@ -164,6 +164,7 @@ pub struct Field {
   #[serde(rename = "groupBy")]
   pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
+  pub is_federation_key: bool,
 }
 
 impl Field {
@@ -255,6 +256,9 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "entityResolver")]
   pub entity_resolver: Option<bool>,
+  pub entity_id: Option<String>,
+  #[serde(rename = "entityType")]
+  pub entity_type: Option<String>,
 }
 
 impl Http {
