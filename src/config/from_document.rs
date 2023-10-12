@@ -211,7 +211,7 @@ fn to_common_field(
     unsafe_operation,
     group_by,
     const_field,
-    is_federation_key
+    is_federation_key,
   })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -286,7 +286,7 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Ht
 fn is_federation_key(directives: &[Positioned<ConstDirective>]) -> bool {
   for directive in directives {
     if directive.node.name.node == "key" {
-      return true
+      return true;
     }
   }
   return false;

@@ -166,7 +166,11 @@ pub struct UnionTypeDefinition {
   pub types: Vec<String>,
 }
 impl Blueprint {
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, entity_resolvers: BTreeMap<String, Option<Expression>>) -> Self {
+  pub fn new(
+    schema: SchemaDefinition,
+    definitions: Vec<Definition>,
+    entity_resolvers: BTreeMap<String, Option<Expression>>,
+  ) -> Self {
     Self { schema, definitions, entity_resolvers }
   }
 

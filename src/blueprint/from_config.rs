@@ -31,27 +31,29 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  
+
   let mut entity_resolvers = BTreeMap::new();
-  definitions.iter().for_each(|d| {
-    match d {
-      Definition::ObjectTypeDefinition(definition) => {
-        if definition.name == "Query" {
-          definition.fields.iter().for_each(|field| {
-            let entity_type = field.entity_type.clone().unwrap_or("".to_string());
-            if field.entity_resolver.unwrap_or(false) && !entity_type.is_empty() {
-              entity_resolvers.insert(entity_type, field.resolver.clone());
-            }
-          });
-        }
-      },
-      _ => {}
+  definitions.iter().for_each(|d| match d {
+    Definition::ObjectTypeDefinition(definition) => {
+      if definition.name == "Query" {
+        definition.fields.iter().for_each(|field| {
+          let entity_type = field.entity_type.clone().unwrap_or("".to_string());
+          if field.entity_resolver.unwrap_or(false) && !entity_type.is_empty() {
+            entity_resolvers.insert(entity_type, field.resolver.clone());
+          }
+        });
+      }
     }
+    _ => {}
   });
   println!("***");
   println!("entity resolvers: {:?}", entity_resolvers);
 
-  Ok(super::compress::compress(Blueprint { schema, definitions, entity_resolvers }))
+  Ok(super::compress::compress(Blueprint {
+    schema,
+    definitions,
+    entity_resolvers,
+  }))
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
@@ -185,20 +187,18 @@ fn to_enum_type_definition(
 }
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition> {
   to_fields(type_of, config).map(|fields| {
-    let key_field = fields.iter().find(|field| {
-      field.is_federation_key
-    });
+    let key_field = fields.iter().find(|field| field.is_federation_key);
     println!("Found key field: {:?}", key_field);
     let key = match key_field {
       Some(field) => Some(field.name.clone()),
-      None => None
+      None => None,
     };
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
-      key
+      key,
     })
   })
 }

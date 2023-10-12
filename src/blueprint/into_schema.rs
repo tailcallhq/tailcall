@@ -8,12 +8,15 @@ use async_graphql::{Name, Value};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use crate::{blueprint::{Blueprint, Definition, Type}, lambda::ResolverContextLike};
 use crate::http::RequestContext;
 use crate::lambda::EvaluationContext;
+use crate::{
+  blueprint::{Blueprint, Definition, Type},
+  lambda::ResolverContextLike,
+};
 
 struct EntityResolverContext<'a> {
-  pub entity_resolver_value: Option<&'a Value>
+  pub entity_resolver_value: Option<&'a Value>,
 }
 
 impl<'a> ResolverContextLike<'a> for EntityResolverContext<'a> {
@@ -49,7 +52,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
-      
+
       for field in def.fields.iter() {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
@@ -152,45 +155,40 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
   if !entity_resolvers.is_empty() {
     println!("Creating entity resolvers");
     schema = schema.enable_federation();
-    schema = schema.entity_resolver(
-      move |ctx| {
-        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-        let entity_resolvers = entity_resolvers.clone();
-        FieldFuture::new(async move {
-          let representations = ctx.args.try_get("representations")?.list()?;
-          let mut values = Vec::new();
+    schema = schema.entity_resolver(move |ctx| {
+      let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+      let entity_resolvers = entity_resolvers.clone();
+      FieldFuture::new(async move {
+        let representations = ctx.args.try_get("representations")?.list()?;
+        let mut values = Vec::new();
 
-          for item in representations.iter() {
-            let item = item.object()?;
-            // TODO use key name and value instead of hardcoding id
-            let id = item.try_get("id")?.u64()?;
-            let mut value_map = IndexMap::new();   
-            value_map.insert(Name::new("id"), Value::from(id));
-            let val = Value::Object(value_map);
-            let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&val)};
-            let typename = item
-              .try_get("__typename")
-              .and_then(|value| value.string())?;
- 
-            let resolver = entity_resolvers.get(typename);
-            let typename_clone = String::from(typename);
-            match resolver {
-              None => {},
-              Some(None) => {},
-              Some(Some(expr)) => {
-                let ctx = EvaluationContext::new(req_ctx, &entity_resolver_context);
-                let const_value = expr.eval(&ctx).await?;
-                values.push(FieldValue::from(const_value).with_type(typename_clone));
-              }
+        for item in representations.iter() {
+          let item = item.object()?;
+          // TODO use key name and value instead of hardcoding id
+          let id = item.try_get("id")?.u64()?;
+          let mut value_map = IndexMap::new();
+          value_map.insert(Name::new("id"), Value::from(id));
+          let val = Value::Object(value_map);
+          let entity_resolver_context = EntityResolverContext { entity_resolver_value: Some(&val) };
+          let typename = item.try_get("__typename").and_then(|value| value.string())?;
+
+          let resolver = entity_resolvers.get(typename);
+          let typename_clone = String::from(typename);
+          match resolver {
+            None => {}
+            Some(None) => {}
+            Some(Some(expr)) => {
+              let ctx = EvaluationContext::new(req_ctx, &entity_resolver_context);
+              let const_value = expr.eval(&ctx).await?;
+              values.push(FieldValue::from(const_value).with_type(typename_clone));
             }
           }
-          Ok(Some(FieldValue::list(values)))
-        })
-      }
-    );
-    
+        }
+        Ok(Some(FieldValue::list(values)))
+      })
+    });
   }
-  
+
   schema
 }
 
