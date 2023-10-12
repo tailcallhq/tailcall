@@ -1,0 +1,34 @@
+name: "Close Stale Issues and PR"
+on:
+  schedule:
+    - cron: "0 * * * *" # This runs every hour
+  workflow_dispatch:
+permissions:
+  issues: write
+  pull-requests: write
+env:
+  DAYS_BEFORE_ISSUE_STALE: 30
+  DAYS_BEFORE_ISSUE_CLOSE: 7
+  DAYS_BEFORE_PR_STALE: 2
+  DAYS_BEFORE_PR_CLOSE: 2
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v8
+        with:
+          stale-issue-message: |
+            **Action required:** Issue inactive for ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
+            Status update or closure in ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days.
+          close-issue-message: |
+            Issue closed after ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days of inactivity.
+          stale-pr-message: |
+            **Action required:** PR inactive for ${{ env.DAYS_BEFORE_PR_STALE }} days.
+            Status update or closure in ${{ env.DAYS_BEFORE_PR_CLOSE }} days.
+          close-pr-message: |
+            PR closed after ${{ env.DAYS_BEFORE_PR_CLOSE }} days of inactivity.
+          days-before-issue-stale: ${{ env.DAYS_BEFORE_ISSUE_STALE }}
+          days-before-issue-close: ${{ env.DAYS_BEFORE_ISSUE_CLOSE }}
+          days-before-pr-stale: ${{ env.DAYS_BEFORE_PR_STALE }}
+          days-before-pr-close: ${{ env.DAYS_BEFORE_PR_CLOSE }}

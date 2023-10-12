@@ -13,7 +13,7 @@ pub trait JsonLike {
   fn as_bool_ok(&self) -> Result<bool, &str>;
   fn as_null_ok(&self) -> Result<(), &str>;
   fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str>;
-  fn get_path(&self, path: &[String]) -> Option<&Self::Output>;
+  fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
   fn get_key(&self, path: &str) -> Option<&Self::Output>;
   fn new(value: &Self::Output) -> &Self;
   fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
@@ -50,15 +50,15 @@ impl JsonLike for serde_json::Value {
     }
   }
 
-  fn get_path(&self, path: &[String]) -> Option<&Self::Output> {
+  fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
     let mut val = self;
     for token in path {
       val = match val {
         serde_json::Value::Array(arr) => {
-          let index = token.parse::<usize>().ok()?;
+          let index = token.as_ref().parse::<usize>().ok()?;
           arr.get(index)?
         }
-        serde_json::Value::Object(map) => map.get(token)?,
+        serde_json::Value::Object(map) => map.get(token.as_ref())?,
         _ => return None,
       };
     }
@@ -148,12 +148,12 @@ impl JsonLike for async_graphql::Value {
     }
   }
 
-  fn get_path(&self, path: &[String]) -> Option<&Self::Output> {
+  fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
     let mut val = self;
     for token in path {
       val = match val {
         ConstValue::List(seq) => {
-          let index = token.parse::<usize>().ok()?;
+          let index = token.as_ref().parse::<usize>().ok()?;
           seq.get(index)?
         }
         ConstValue::Object(map) => map.get(&async_graphql::Name::new(token))?,

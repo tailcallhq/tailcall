@@ -16,9 +16,10 @@ use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
@@ -48,6 +49,26 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
+
+const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
+
+fn validate_server(config: &Config) -> Valid<()> {
+  if let Some(ref enable_graphiql) = config.server.enable_graphiql {
+    let lowered_route = enable_graphiql.to_lowercase();
+    if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
+      return Valid::fail(format!(
+        "Cannot use restricted routes '{}' for enabling graphiql",
+        enable_graphiql
+      ))
+      .trace("enableGraphiql")
+      .trace("@server")
+      .trace("schema");
+    }
+  }
+
+  Valid::Ok(())
+}
+
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
   let query_type_name = config
     .graphql
@@ -56,7 +77,9 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  validate_query(config).validate_or(validate_mutation(config))?;
+  validate_server(config)
+    .validate_or(validate_query(config))
+    .validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),
@@ -207,6 +230,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_group_by(field, field_definition, config).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -291,6 +315,29 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+  if let Some(batch) = field.group_by.as_ref() {
+    if let Some(http) = field.http.as_ref() {
+      if http.method != Method::GET {
+        Valid::fail("GroupBy is only supported for GET requests".to_string())
+      } else {
+        if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
+          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+            request_template.clone(),
+            Some(batch.clone()),
+            dl,
+          )));
+        }
+        Valid::Ok(b_field)
+      }
+    } else {
+      Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
+    }
+  } else {
+    Valid::Ok(b_field)
+  }
+}
+
 fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
@@ -304,13 +351,11 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
           base_url.pop();
         }
         base_url.push_str(http.path.clone().as_str());
-        let query: BTreeMap<String, String> = http.query.clone().into();
-        let query = query.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
-        let headers: BTreeMap<String, String> = http.headers.clone().into();
-        for (k, v) in headers.iter() {
+        for (k, v) in http.headers.clone().iter() {
           header_map.insert(
             HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
             HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
