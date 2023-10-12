@@ -68,16 +68,26 @@ pub struct Proxy {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct Upstream {
+  #[serde(skip_serializing_if = "is_default")]
   pub pool_idle_timeout: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub pool_max_idle_per_host: Option<usize>,
+  #[serde(skip_serializing_if = "is_default")]
   pub keep_alive_interval: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub keep_alive_timeout: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub keep_alive_while_idle: Option<bool>,
+  #[serde(skip_serializing_if = "is_default")]
   pub proxy: Option<Proxy>,
+  #[serde(skip_serializing_if = "is_default")]
   pub connect_timeout: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub timeout: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub tcp_keep_alive: Option<u64>,
+  #[serde(skip_serializing_if = "is_default")]
   pub user_agent: Option<String>,
 }
