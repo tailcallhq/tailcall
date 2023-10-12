@@ -102,6 +102,12 @@ impl Config {
   pub fn contains(&self, name: &str) -> bool {
     self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
   }
+
+  pub fn merge_right(self, other: &Self) -> Self {
+    let server = self.server.merge_right(other.server.clone());
+    let graphql = other.graphql.clone();
+    Self { server, graphql }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

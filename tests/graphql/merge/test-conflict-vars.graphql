@@ -1,0 +1,26 @@
+#> server-sdl
+schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) {
+  query: Query
+}
+
+type Query {
+  hello: String @const(data: "world")
+}
+
+#> server-sdl
+schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) {
+  query: Query
+}
+
+type Query {
+  hello: String @const(data: "world")
+}
+
+#> merged-sdl
+schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p", value: "q"}]) {
+  query: Query
+}
+
+type Query {
+  hello: String
+}

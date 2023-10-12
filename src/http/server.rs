@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fs;
 use std::sync::Arc;
 
@@ -47,7 +47,7 @@ async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result
     _ => not_found(),
   }
 }
-fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
+fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
   let mut new_headers = HeaderMap::new();
   for (k, v) in headers.iter() {
     if allowed.contains(k.as_str()) {

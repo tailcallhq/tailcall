@@ -256,7 +256,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .iter()
       .map(|s| Config::from_sdl(s.as_str()).unwrap())
       .collect::<Vec<_>>();
-    let config = content[0].clone();
+    let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let config = config.clone();
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
