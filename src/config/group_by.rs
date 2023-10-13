@@ -21,3 +21,9 @@ impl GroupBy {
 }
 
 const ID: &str = "id";
+
+impl Default for GroupBy {
+  fn default() -> Self {
+    Self { path: vec![ID.to_string()] }
+  }
+}
