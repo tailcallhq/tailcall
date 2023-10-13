@@ -8,6 +8,9 @@ type Query {
 }
 
 type Foo {
+  """
+  test1
+  """
   b: String
 }
 
@@ -21,6 +24,9 @@ type Query {
 }
 
 type Foo {
+  """
+  test2
+  """
   a: String
 }
 
@@ -30,7 +36,13 @@ schema @server(upstream: {baseURL: "http://abc.com"}) {
 }
 
 type Foo {
+  """
+  test2
+  """
   a: String
+  """
+  test1
+  """
   b: String
 }
 
