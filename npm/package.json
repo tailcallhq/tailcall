@@ -1,6 +1,6 @@
 {
   "name": "@tailcallhq/tailcall",
-  "version": "0.0.2",
+  "version": "0.13.0",
   "type": "module",
   "files": [
     "src/*",
@@ -8,6 +8,10 @@
   ],
   "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
   "main": "./src/index.js",
+  "bin": "./src/index.js",
+  "scripts": {
+    "postinstall": "node ./src/index.js --preload"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/tailcallhq/tailcall"
@@ -17,5 +21,8 @@
     "GraphQL",
     "GraphQL Proxy"
   ],
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "easydl": "^1.1.1"
+  }
 }

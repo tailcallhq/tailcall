@@ -2,13 +2,16 @@
 // @ts-check
 
 import { spawnSync } from "child_process"
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-/**
- * Runs the application with args using nodejs spawn
- */
+import { fileURLToPath } from "url"
+import { dirname } from "path"
+import EasyDl from "easydl"
+import fs from "fs"
+import os from "os"
 
-const getBinPath = () => {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const getBinName = () => {
   const platform = process.platform
   const architecture = process.arch
 
@@ -24,21 +27,42 @@ const getBinPath = () => {
     },
   }
 
-  const binPath = platformBinMap[platform]?.[architecture]
+  const binName = platformBinMap[platform]?.[architecture]
 
-  if (!binPath) {
-    throw new Error(`unsupported ${platform} ${architecture}`)
-  }
-
-  return binPath
+  return binName
 }
 
-function run() {
+const binaryName = getBinName()
+const binaryPath = `${os.homedir()}/.tailcall/bin`
+
+const packageJson = JSON.parse(fs.readFileSync(`${__dirname}/../package.json`, "utf8"))
+const version = packageJson.version
+
+const binaryDir = `${binaryPath}/${version}`
+const fullPath = `${binaryDir}/${binaryName}`
+
+const preload = async () => {
+  if (fs.existsSync(binaryDir)) return
+
+  fs.mkdirSync(binaryDir, {recursive: true})
+
+  try {
+    await new EasyDl(`https://github.com/tailcallhq/tailcall/releases/download/v${version}/${binaryName}`, binaryDir, {
+      connections: 10,
+      maxRetry: 5,
+    }).wait()
+
+    fs.chmodSync(fullPath, "755")
+  } catch (err) {
+    console.log("[error]", err)
+  }
+}
+
+async function run() {
+  await preload()
   const args = process.argv.slice(2)
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const processResult = spawnSync(`${__dirname}/../target/${getBinPath()}`, args, {stdio: "inherit"})
+  const processResult = spawnSync(`${binaryDir}/${binaryName}`, args, {stdio: "inherit"})
   process.exit(processResult.status ?? 0)
 }
 
-run()
+process.argv.includes("--preload") ? preload() : run()
