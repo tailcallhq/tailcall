@@ -3,14 +3,11 @@
 use std::fs;
 
 use anyhow::Result;
-use async_graphql::futures_util::future::join_all;
 use clap::Parser;
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -27,12 +24,12 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config = from_files(&file_path).await?;
+      let config = Config::from_file_paths(file_path.iter()).await?;
       start_server(config).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = from_files(&file_path).await?;
+      let config = Config::from_file_paths(file_path.iter()).await?;
       let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
         Ok(blueprint) => {
@@ -44,30 +41,6 @@ pub async fn run() -> Result<()> {
     }
     Command::Init { file_path } => Ok(init(&file_path).await?),
   }
-}
-
-async fn from_files(file_paths: &Vec<String>) -> Result<Config> {
-  let mut config = Config::default();
-  let futures: Vec<_> = file_paths
-    .iter()
-    .map(|file_path| async move {
-      let mut f = File::open(file_path).await?;
-      let mut buffer = Vec::new();
-      f.read_to_end(&mut buffer).await?;
-
-      let server_sdl = String::from_utf8(buffer)?;
-      Ok(Config::from_sdl(&server_sdl)?)
-    })
-    .collect();
-
-  for res in join_all(futures).await {
-    match res {
-      Ok(conf) => config = config.clone().merge_right(&conf),
-      Err(e) => return Err(e), // handle error
-    }
-  }
-
-  Ok(config)
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
