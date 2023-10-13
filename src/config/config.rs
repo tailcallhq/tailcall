@@ -1,10 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
+use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 use super::Server;
 use crate::config::group_by::GroupBy;
@@ -123,6 +126,7 @@ pub struct Type {
   #[serde(default)]
   pub scalar: bool,
 }
+
 impl Type {
   pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
     let mut graphql_fields = BTreeMap::new();
@@ -346,5 +350,28 @@ impl Config {
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
+  }
+
+  pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+    let mut config = Config::default();
+    let futures: Vec<_> = file_paths
+      .map(|file_path| async move {
+        let mut f = File::open(file_path).await?;
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer).await?;
+
+        let server_sdl = String::from_utf8(buffer)?;
+        Ok(Config::from_sdl(&server_sdl)?)
+      })
+      .collect();
+
+    for res in join_all(futures).await {
+      match res {
+        Ok(conf) => config = config.clone().merge_right(&conf),
+        Err(e) => return Err(e), // handle error
+      }
+    }
+
+    Ok(config)
   }
 }
