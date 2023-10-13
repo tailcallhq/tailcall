@@ -1,0 +1,39 @@
+#> server-sdl
+schema @server(upstream: {baseURL: "http://abc.com"}) {
+  query: Query
+}
+
+type Query {
+  hi: Foo @const(data: "world")
+}
+
+type Foo {
+  b: String
+}
+
+#> server-sdl
+schema @server {
+  query: Query
+}
+
+type Query {
+  hi: Foo @const(data: {a: "world"})
+}
+
+type Foo {
+  a: String
+}
+
+#> merged-sdl
+schema @server(upstream: {baseURL: "http://abc.com"}) {
+  query: Query
+}
+
+type Foo {
+  a: String
+  b: String
+}
+
+type Query {
+  hi: Foo @const(data: {a: "world"})
+}

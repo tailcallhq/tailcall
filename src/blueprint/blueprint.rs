@@ -156,7 +156,7 @@ pub struct UnionTypeDefinition {
   pub name: String,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  pub types: Vec<String>,
+  pub types: BTreeSet<String>,
 }
 impl Blueprint {
   pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>) -> Self {

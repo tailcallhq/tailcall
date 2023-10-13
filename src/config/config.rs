@@ -105,7 +105,7 @@ impl Config {
 
   pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
-    let graphql = other.graphql.clone();
+    let graphql = self.graphql.merge_right(other.graphql.clone());
     Self { server, graphql }
   }
 }
@@ -132,6 +132,19 @@ impl Type {
     self.fields = graphql_fields;
     self
   }
+  pub fn merge_right(&mut self, other: &Self) -> Self {
+    let mut fields = self.fields.clone();
+    fields.extend(other.fields.clone());
+    self.implements.extend(other.implements.clone());
+    if let Some(ref variants) = self.variants {
+      if let Some(ref other) = other.variants {
+        self.variants = Some(variants.union(other).cloned().collect());
+      }
+    } else {
+      self.variants = other.variants.clone();
+    }
+    Self { fields, ..other.clone() }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -139,6 +152,28 @@ pub struct GraphQL {
   pub schema: RootSchema,
   pub types: BTreeMap<String, Type>,
   pub unions: BTreeMap<String, Union>,
+}
+
+impl GraphQL {
+  pub fn merge_right(self, other: Self) -> Self {
+    let mut types = self.types;
+    for (name, other) in other.types {
+      if let Some(type_) = types.get_mut(&name) {
+        *type_ = type_.merge_right(&other);
+      } else {
+        types.insert(name, other);
+      }
+    }
+    let mut unions = self.unions;
+    for (name, union_other) in other.unions {
+      if let Some(union) = unions.get_mut(&name) {
+        *union = union.merge_right(union_other);
+      } else {
+        unions.insert(name, union_other);
+      }
+    }
+    Self { types, unions, ..other }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -234,8 +269,15 @@ pub struct Arg {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Union {
-  pub types: Vec<String>,
+  pub types: BTreeSet<String>,
   pub doc: Option<String>,
+}
+
+impl Union {
+  pub fn merge_right(&mut self, other: Self) -> Self {
+    self.types.extend(other.types);
+    self.clone()
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
