@@ -45,7 +45,7 @@ pub enum Command {
     schema: bool,
 
     /// Operations
-    #[arg(short, long)]
+    #[arg(short, long, num_args(0..))]
     operation: Vec<String>
   },
   /// Initialize a new project
