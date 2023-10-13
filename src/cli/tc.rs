@@ -30,8 +30,8 @@ pub async fn run() -> Result<()> {
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
       let source = Source::detect(&file_path)?;
-      let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
-      let config = Config::from_source(source, &server_sdl)?;
+      let schema_definition = fs::read_to_string(file_path)?;
+      let config = Config::from_source(source, &schema_definition)?;
       let blueprint = blueprint_from_config(&config);
       match blueprint {
         Ok(blueprint) => {
