@@ -143,7 +143,7 @@ impl Type {
     } else {
       self.variants = other.variants.clone();
     }
-    Self { fields, ..other.clone() }
+    Self { fields, ..self.clone() }
   }
 }
 
