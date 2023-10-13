@@ -28,7 +28,14 @@ pub async fn run() -> Result<()> {
       start_server(config).await?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
+    Command::Check { file_path, n_plus_one_queries, schema, operation } => {
+      let operation = operation
+        .iter()
+        .flat_map(|operation| operation.split(',').map(|operation| operation.to_string()))
+        .collect::<Vec<String>>();
+
+      println!("Operation: {:?}", operation);
+
       let config = Config::from_file_paths(file_path.iter()).await?;
       let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
