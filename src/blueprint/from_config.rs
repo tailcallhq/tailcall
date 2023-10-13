@@ -31,7 +31,7 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  let server: blueprint::Server = to_server(config)?;
+  let server: blueprint::Server = Server::try_from(config.server.clone())?;
   Ok(super::compress::compress(Blueprint { schema, definitions, server }))
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
@@ -51,10 +51,6 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 
-fn to_server(config: &Config) -> Valid<Server> {
-  Server::try_from(config.server.clone())
-}
-
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
   let query_type_name = config
     .graphql
@@ -63,9 +59,7 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  to_server(config)
-    .validate_or(validate_query(config))
-    .validate_or(validate_mutation(config))?;
+  validate_query(config).validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),

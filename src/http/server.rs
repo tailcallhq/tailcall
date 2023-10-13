@@ -64,11 +64,7 @@ pub async fn start_server(config: Config) -> Result<()> {
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(
-    blueprint.clone(),
-    server,
-    blueprint.server.response_headers.clone(),
-  ));
+  let state = Arc::new(ServerContext::new(blueprint.clone(), server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
@@ -77,8 +73,12 @@ pub async fn start_server(config: Config) -> Result<()> {
   let addr = ([0, 0, 0, 0], port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
-    log::info!("🌍 Playground: http://{}{}", addr, graphiql);
+  if !blueprint.server.enable_graphiql.clone().is_empty() {
+    log::info!(
+      "🌍 Playground: http://{}{}",
+      addr,
+      blueprint.server.enable_graphiql.clone()
+    );
   }
 
   Ok(server.await.map_err(CLIError::from)?)
