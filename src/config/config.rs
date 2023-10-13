@@ -241,11 +241,7 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    if let Some(http) = self.http.as_ref() {
-      http.match_key.is_some() || !http.match_path.is_empty()
-    } else {
-      false
-    }
+    self.group_by.is_some()
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -308,22 +304,11 @@ pub struct Http {
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
-  pub match_path: Vec<String>,
-  pub match_key: Option<String>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-}
-
-impl Http {
-  pub fn batch_key(mut self, key: &str) -> Self {
-    self.match_key = Some(key.to_string());
-    self
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
