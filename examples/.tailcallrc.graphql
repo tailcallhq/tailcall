@@ -1,17 +1,13 @@
 directive @server(
-  allowedHeaders: [String]
-  baseURL: String
   enableApolloTracing: Boolean
   enableCacheControlHeader: Boolean
   enableGraphiql: String
-  enableHttpCache: Boolean
   enableIntrospection: Boolean
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
   globalResponseTimeout: Int
   port: Int
   vars: [KeyValue]
-  batch: Batch
   upstream: Upstream
 ) on SCHEMA
 directive @http(
@@ -42,16 +38,20 @@ input Proxy {
 }
 
 input Upstream {
-  pool_idle_timeout: Int
-  pool_max_idle_per_host: Int
+  allowedHeaders: [String]
+  connect_timeout: Int
   keep_alive_interval: Int
   keep_alive_timeout: Int
   keep_alive_while_idle: Boolean
+  pool_idle_timeout: Int
+  pool_max_idle_per_host: Int
   proxy: Proxy
-  connect_timeout: Int
-  timeout: Int
   tcp_keep_alive: Int
+  timeout: Int
   user_agent: String
+  base_url: String
+  enable_http_cache: Boolean
+  batch: Batch
 }
 
 input KeyValue {

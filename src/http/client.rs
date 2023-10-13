@@ -52,7 +52,7 @@ impl DefaultHttpClient {
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-    if server.enable_http_cache() {
+    if server.upstream.get_enable_http_cache() {
       client = client.with(Cache(HttpCache {
         mode: CacheMode::Default,
         manager: MokaManager::default(),
