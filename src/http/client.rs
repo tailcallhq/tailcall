@@ -33,14 +33,20 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(server: Server) -> Self {
-    let mut builder = Client::builder()
-      .pool_max_idle_per_host(200)
-      .tcp_keepalive(Some(Duration::from_secs(5)))
-      .timeout(Duration::from_secs(60))
-      .connect_timeout(Duration::from_secs(60))
-      .user_agent("Tailcall/1.0");
+    let upstream = &server.upstream;
 
-    if let Some(ref proxy) = server.proxy {
+    let mut builder = Client::builder()
+      .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+      .timeout(Duration::from_secs(upstream.timeout))
+      .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+      .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+      .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+      .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+      .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+      .user_agent(upstream.user_agent.clone());
+
+    if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
 
