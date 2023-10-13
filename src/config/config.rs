@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -111,9 +111,9 @@ pub struct Type {
   #[serde(default)]
   pub interface: bool,
   #[serde(default)]
-  pub implements: Vec<String>,
+  pub implements: BTreeSet<String>,
   #[serde(rename = "enum", default)]
-  pub variants: Option<Vec<String>>,
+  pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
   pub scalar: bool,
 }
