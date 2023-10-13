@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(baseURL: "http://abc.com", port: 3000) {
+schema @server(upstream: {baseURL: "http://abc.com"}, port: 3000) {
   query: Query
 }
 
@@ -8,7 +8,7 @@ type Query {
 }
 
 #> server-sdl
-schema @server(baseURL: "http://xyz.com", upstream: {proxy: {url: "http://localhost:3000"}}) {
+schema @server(port: 8000, upstream: {proxy: {url: "http://localhost:3000"}}) {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
 }
 
 #> merged-sdl
-schema @server(baseURL: "http://xyz.com", port: 3000, upstream: {proxy: {url: "http://localhost:3000"}}) {
+schema @server(port: 8000, upstream: {baseURL: "http://abc.com", proxy: {url: "http://localhost:3000"}}) {
   query: Query
 }
 
