@@ -91,3 +91,33 @@ pub struct Upstream {
   #[serde(skip_serializing_if = "is_default")]
   pub user_agent: Option<String>,
 }
+
+impl Upstream {
+  pub fn get_pool_idle_timeout(&self) -> u64 {
+    self.pool_idle_timeout.unwrap_or(60)
+  }
+  pub fn get_pool_max_idle_per_host(&self) -> usize {
+    self.pool_max_idle_per_host.unwrap_or(60)
+  }
+  pub fn get_keep_alive_interval(&self) -> u64 {
+    self.keep_alive_interval.unwrap_or(60)
+  }
+  pub fn get_keep_alive_timeout(&self) -> u64 {
+    self.keep_alive_timeout.unwrap_or(60)
+  }
+  pub fn get_keep_alive_while_idle(&self) -> bool {
+    self.keep_alive_while_idle.unwrap_or(false)
+  }
+  pub fn get_connect_timeout(&self) -> u64 {
+    self.connect_timeout.unwrap_or(60)
+  }
+  pub fn get_timeout(&self) -> u64 {
+    self.timeout.unwrap_or(60)
+  }
+  pub fn get_tcp_keep_alive(&self) -> u64 {
+    self.tcp_keep_alive.unwrap_or(5)
+  }
+  pub fn get_user_agent(&self) -> String {
+    self.user_agent.clone().unwrap_or("Tailcall/1.0".to_string())
+  }
+}

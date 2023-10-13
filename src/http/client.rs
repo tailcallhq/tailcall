@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::Server;
+use crate::config::{Server};
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -36,15 +36,15 @@ impl DefaultHttpClient {
     let upstream = &server.upstream;
 
     let mut builder = Client::builder()
-      .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive.unwrap_or(5))))
-      .timeout(Duration::from_secs(upstream.timeout.unwrap_or(60)))
-      .connect_timeout(Duration::from_secs(upstream.connect_timeout.unwrap_or(60)))
-      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval.unwrap_or(60))))
-      .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout.unwrap_or(60)))
-      .http2_keep_alive_while_idle(upstream.keep_alive_while_idle.unwrap_or(false))
-      .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout.unwrap_or(60))))
-      .pool_max_idle_per_host(upstream.pool_max_idle_per_host.unwrap_or(200))
-      .user_agent(upstream.user_agent.clone().unwrap_or("Tailcall/1.0".to_string()));
+      .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
+      .timeout(Duration::from_secs(upstream.get_timeout()))
+      .connect_timeout(Duration::from_secs(upstream.get_connect_timeout()))
+      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.get_keep_alive_interval())))
+      .http2_keep_alive_timeout(Duration::from_secs(upstream.get_keep_alive_timeout()))
+      .http2_keep_alive_while_idle(upstream.get_keep_alive_while_idle())
+      .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
+      .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
+      .user_agent(upstream.get_user_agent());
 
     if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
