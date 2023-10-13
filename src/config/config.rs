@@ -132,7 +132,7 @@ impl Type {
     self.fields = graphql_fields;
     self
   }
-  pub fn merge_right(&mut self, other: &Self) -> Self {
+  pub fn merge_right(mut self, other: &Self) -> Self {
     let mut fields = self.fields.clone();
     fields.extend(other.fields.clone());
     self.implements.extend(other.implements.clone());
@@ -155,24 +155,25 @@ pub struct GraphQL {
 }
 
 impl GraphQL {
-  pub fn merge_right(self, other: Self) -> Self {
-    let mut types = self.types;
-    for (name, other) in other.types {
-      if let Some(type_) = types.get_mut(&name) {
-        *type_ = type_.merge_right(&other);
-      } else {
-        types.insert(name, other);
-      }
+  pub fn merge_right(mut self, other: Self) -> Self {
+    for (name, mut other_type) in other.types {
+      if let Some(self_type) = self.types.remove(&name) {
+        other_type = self_type.merge_right(&other_type)
+      };
+
+      self.types.insert(name, other_type);
     }
-    let mut unions = self.unions;
-    for (name, union_other) in other.unions {
-      if let Some(union) = unions.get_mut(&name) {
-        *union = union.merge_right(union_other);
-      } else {
-        unions.insert(name, union_other);
+
+    for (name, mut other_union) in other.unions {
+      if let Some(self_union) = self.unions.remove(&name) {
+        other_union = self_union.merge_right(other_union);
       }
+      self.unions.insert(name, other_union);
     }
-    Self { types, unions, ..other }
+
+    self.schema = self.schema.merge_right(other.schema);
+
+    self
   }
 }
 
@@ -182,6 +183,17 @@ pub struct RootSchema {
   pub query: Option<String>,
   pub mutation: Option<String>,
   pub subscription: Option<String>,
+}
+
+impl RootSchema {
+  // TODO: add unit-tests
+  fn merge_right(self, other: Self) -> Self {
+    Self {
+      query: other.query.or(self.query),
+      mutation: other.mutation.or(self.mutation),
+      subscription: other.subscription.or(self.subscription),
+    }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -274,9 +286,9 @@ pub struct Union {
 }
 
 impl Union {
-  pub fn merge_right(&mut self, other: Self) -> Self {
+  pub fn merge_right(mut self, other: Self) -> Self {
     self.types.extend(other.types);
-    self.clone()
+    self
   }
 }
 

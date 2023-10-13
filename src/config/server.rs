@@ -49,21 +49,20 @@ impl Server {
     self.enable_query_validation.unwrap_or(true)
   }
 
-  pub(crate) fn merge_right(self, other: Self) -> Self {
-    let mut merged = self.clone();
-    merged.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
-    merged.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
-    merged.enable_graphiql = other.enable_graphiql.or(self.enable_graphiql);
-    merged.enable_introspection = other.enable_introspection.or(self.enable_introspection);
-    merged.enable_query_validation = other.enable_query_validation.or(self.enable_query_validation);
-    merged.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
-    merged.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
-    merged.port = other.port.or(self.port);
+  pub fn merge_right(mut self, other: Self) -> Self {
+    self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
+    self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
+    self.enable_graphiql = other.enable_graphiql.or(self.enable_graphiql);
+    self.enable_introspection = other.enable_introspection.or(self.enable_introspection);
+    self.enable_query_validation = other.enable_query_validation.or(self.enable_query_validation);
+    self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
+    self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
+    self.port = other.port.or(self.port);
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
-    merged.vars = KeyValues(vars);
-    merged.upstream = self.upstream.merge_right(other.upstream);
-    merged
+    self.vars = KeyValues(vars);
+    self.upstream = self.upstream.merge_right(other.upstream);
+    self
   }
 }
 
@@ -141,35 +140,34 @@ impl Upstream {
     self.allowed_headers.clone().unwrap_or_default()
   }
 
-  pub fn merge_right(self, other: Self) -> Self {
-    let mut merged = self.clone();
-    merged.allowed_headers = other.allowed_headers.map(|other| {
-      if let Some(mut self_headers) = merged.allowed_headers {
+  pub fn merge_right(mut self, other: Self) -> Self {
+    self.allowed_headers = other.allowed_headers.map(|other| {
+      if let Some(mut self_headers) = self.allowed_headers {
         self_headers.extend(&mut other.iter().map(|s| s.to_owned()));
         self_headers
       } else {
         other
       }
     });
-    merged.base_url = other.base_url.or(self.base_url);
-    merged.connect_timeout = other.connect_timeout.or(self.connect_timeout);
-    merged.enable_http_cache = other.enable_http_cache.or(self.enable_http_cache);
-    merged.keep_alive_interval = other.keep_alive_interval.or(self.keep_alive_interval);
-    merged.keep_alive_timeout = other.keep_alive_timeout.or(self.keep_alive_timeout);
-    merged.keep_alive_while_idle = other.keep_alive_while_idle.or(self.keep_alive_while_idle);
-    merged.pool_idle_timeout = other.pool_idle_timeout.or(self.pool_idle_timeout);
-    merged.pool_max_idle_per_host = other.pool_max_idle_per_host.or(self.pool_max_idle_per_host);
-    merged.proxy = other.proxy.or(self.proxy);
-    merged.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
-    merged.timeout = other.timeout.or(self.timeout);
-    merged.user_agent = other.user_agent.or(self.user_agent);
-    merged.batch = other.batch.map(|other| {
-      let mut merged = self.batch.unwrap_or_default();
-      merged.max_size = other.max_size;
-      merged.delay = other.delay;
-      merged.headers.extend(other.headers);
-      merged
+    self.base_url = other.base_url.or(self.base_url);
+    self.connect_timeout = other.connect_timeout.or(self.connect_timeout);
+    self.enable_http_cache = other.enable_http_cache.or(self.enable_http_cache);
+    self.keep_alive_interval = other.keep_alive_interval.or(self.keep_alive_interval);
+    self.keep_alive_timeout = other.keep_alive_timeout.or(self.keep_alive_timeout);
+    self.keep_alive_while_idle = other.keep_alive_while_idle.or(self.keep_alive_while_idle);
+    self.pool_idle_timeout = other.pool_idle_timeout.or(self.pool_idle_timeout);
+    self.pool_max_idle_per_host = other.pool_max_idle_per_host.or(self.pool_max_idle_per_host);
+    self.proxy = other.proxy.or(self.proxy);
+    self.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
+    self.timeout = other.timeout.or(self.timeout);
+    self.user_agent = other.user_agent.or(self.user_agent);
+    self.batch = other.batch.map(|other| {
+      let mut batch = self.batch.unwrap_or_default();
+      batch.max_size = other.max_size;
+      batch.delay = other.delay;
+      batch.headers.extend(other.headers);
+      batch
     });
-    merged
+    self
   }
 }
