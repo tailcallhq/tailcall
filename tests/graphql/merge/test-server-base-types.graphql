@@ -22,5 +22,5 @@ schema @server(baseURL: "http://xyz.com", port: 3000, upstream: {proxy: {url: "h
 }
 
 type Query {
-  hello: String
+  hello: String @const(data: "world")
 }

@@ -22,5 +22,5 @@ schema @server(allowedHeaders: ["a", "b", "c", "d"]) {
 }
 
 type Query {
-  hello: String
+  hello: String @const(data: "world")
 }
