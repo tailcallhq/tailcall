@@ -1,3 +1,4 @@
+use std::ffi::CString;
 use clap::{Parser, Subcommand};
 
 const VERSION: &str = match option_env!("APP_VERSION") {
@@ -42,6 +43,10 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Operations
+    #[arg(short, long)]
+    operation: Vec<String>
   },
   /// Initialize a new project
   Init { file_path: String },
