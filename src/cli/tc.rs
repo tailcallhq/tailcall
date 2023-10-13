@@ -24,19 +24,12 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      start_server(file_path).await?;
+      let config = from_files(&file_path)?;
+      start_server(config).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let mut configs = Vec::new();
-      for file_path in &file_path {
-        let server_sdl = fs::read_to_string(file_path)?;
-        let config = Config::from_sdl(&server_sdl)?;
-        configs.push(config);
-      }
-
-      let config = configs.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
-
+      let config = from_files(&file_path)?;
       let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
         Ok(blueprint) => {
@@ -48,6 +41,15 @@ pub async fn run() -> Result<()> {
     }
     Command::Init { file_path } => Ok(init(&file_path).await?),
   }
+}
+
+fn from_files(file_path: &Vec<String>) -> Result<Config> {
+  let mut config = Config::default();
+  for file_path in file_path {
+    let server_sdl = fs::read_to_string(file_path)?;
+    config = config.clone().merge_right(&Config::from_sdl(&server_sdl)?);
+  }
+  Ok(config)
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
