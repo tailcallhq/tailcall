@@ -102,6 +102,12 @@ impl Config {
   pub fn contains(&self, name: &str) -> bool {
     self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
   }
+
+  pub fn merge_right(self, other: &Self) -> Self {
+    let server = self.server.merge_right(other.server.clone());
+    let graphql = self.graphql.merge_right(other.graphql.clone());
+    Self { server, graphql }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -126,6 +132,19 @@ impl Type {
     self.fields = graphql_fields;
     self
   }
+  pub fn merge_right(mut self, other: &Self) -> Self {
+    let mut fields = self.fields.clone();
+    fields.extend(other.fields.clone());
+    self.implements.extend(other.implements.clone());
+    if let Some(ref variants) = self.variants {
+      if let Some(ref other) = other.variants {
+        self.variants = Some(variants.union(other).cloned().collect());
+      }
+    } else {
+      self.variants = other.variants.clone();
+    }
+    Self { fields, ..self.clone() }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -135,12 +154,46 @@ pub struct GraphQL {
   pub unions: BTreeMap<String, Union>,
 }
 
+impl GraphQL {
+  pub fn merge_right(mut self, other: Self) -> Self {
+    for (name, mut other_type) in other.types {
+      if let Some(self_type) = self.types.remove(&name) {
+        other_type = self_type.merge_right(&other_type)
+      };
+
+      self.types.insert(name, other_type);
+    }
+
+    for (name, mut other_union) in other.unions {
+      if let Some(self_union) = self.unions.remove(&name) {
+        other_union = self_union.merge_right(other_union);
+      }
+      self.unions.insert(name, other_union);
+    }
+
+    self.schema = self.schema.merge_right(other.schema);
+
+    self
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[setters(strip_option)]
 pub struct RootSchema {
   pub query: Option<String>,
   pub mutation: Option<String>,
   pub subscription: Option<String>,
+}
+
+impl RootSchema {
+  // TODO: add unit-tests
+  fn merge_right(self, other: Self) -> Self {
+    Self {
+      query: other.query.or(self.query),
+      mutation: other.mutation.or(self.mutation),
+      subscription: other.subscription.or(self.subscription),
+    }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -228,8 +281,15 @@ pub struct Arg {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Union {
-  pub types: Vec<String>,
+  pub types: BTreeSet<String>,
   pub doc: Option<String>,
+}
+
+impl Union {
+  pub fn merge_right(mut self, other: Self) -> Self {
+    self.types.extend(other.types);
+    self
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

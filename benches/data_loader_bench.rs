@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -31,7 +32,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
         let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
         let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());
 
-        let headers_to_consider = vec!["Header1".to_string(), "Header2".to_string()];
+        let headers_to_consider = BTreeSet::from(["Header1".to_string(), "Header2".to_string()]);
         let key1 = DataLoaderRequest::new(request1, headers_to_consider.clone());
         let key2 = DataLoaderRequest::new(request2, headers_to_consider);
 
