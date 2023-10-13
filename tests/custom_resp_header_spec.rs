@@ -3,7 +3,10 @@ mod integration_tests {
 
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String) -> &'static str {
-    tailcall::http::start_server(&mock_schema_path)
+    let config = tailcall::config::Config::from_file_paths([mock_schema_path].iter())
+      .await
+      .unwrap();
+    tailcall::http::start_server(config)
       .await
       .expect("Server failed to start");
     "Success"

@@ -1,16 +1,17 @@
-use std::collections::{BTreeSet, BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::*;
 use derive_setters::Setters;
 use hyper::HeaderMap;
+use reqwest::header::{HeaderName, HeaderValue};
 use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::config;
-use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
+use crate::valid::{Valid, ValidExtensions, ValidationError, VectorExtension};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -25,21 +26,113 @@ pub struct Blueprint {
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Server {
-  pub allowed_headers: Option<BTreeSet<String>>,
-  pub base_url: Option<String>,
-  pub enable_apollo_tracing: Option<bool>,
-  pub enable_cache_control_header: Option<bool>,
-  pub enable_graphiql: Option<String>,
-  pub enable_http_cache: Option<bool>,
-  pub enable_introspection: Option<bool>,
-  pub enable_query_validation: Option<bool>,
-  pub enable_response_validation: Option<bool>,
-  pub global_response_timeout: Option<i64>,
-  pub port: Option<u16>,
-  pub upstream: Upstream,
+  pub enable_apollo_tracing: bool,
+  pub enable_cache_control_header: bool,
+  pub enable_graphiql: String,
+  pub enable_introspection: bool,
+  pub enable_query_validation: bool,
+  pub enable_response_validation: bool,
+  pub global_response_timeout: i64,
+  pub port: u16,
+  pub upstream: crate::config::Upstream,
   pub vars: BTreeMap<String, String>,
-  pub batch: Option<crate::config::Batch>,
   pub response_headers: HeaderMap,
+}
+
+impl TryFrom<crate::config::Server> for Server {
+  type Error = ValidationError<String>;
+
+  fn try_from(config_server: config::Server) -> Valid<Self, String> {
+    let mut server = Server::default();
+
+    // Handle GraphiQL setup
+    server = handle_graphiql(server, &config_server)?;
+
+    // Handle Response Headers setup
+    server = handle_response_headers(server, &config_server)?;
+
+    // Handle Base URL setup
+    server = handle_base_url(server, &config_server)?;
+
+    // Configure other server settings
+    server = configure_server(server, &config_server);
+
+    Valid::Ok(server.clone())
+  }
+}
+const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
+
+fn handle_graphiql(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
+  if let Some(enable_graphiql) = config_server.enable_graphiql.clone() {
+    let lowered_route = enable_graphiql.to_lowercase();
+    if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
+      return Err(
+        ValidationError::new(format!(
+          "Cannot use restricted routes '{}' for enabling graphiql",
+          enable_graphiql
+        ))
+        .trace("enableGraphiql")
+        .trace("@server")
+        .trace("schema"),
+      );
+    } else {
+      server = server.clone().enable_graphiql(enable_graphiql);
+    }
+  }
+  Ok(server)
+}
+
+fn handle_response_headers(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
+  let headers = config_server
+    .response_headers
+    .0
+    .clone()
+    .validate_all(|(k, v)| {
+      let name = HeaderName::from_bytes(k.as_bytes())
+        .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
+      let value =
+        HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
+      name.validate_both(value)
+    })
+    .trace("responseHeaders")
+    .trace("@server")
+    .trace("schema")?;
+
+  let mut response_headers = HeaderMap::new();
+  response_headers.extend(headers);
+  server = server.clone().response_headers(response_headers);
+  Ok(server)
+}
+
+fn handle_base_url(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
+  if let Some(base_url) = config_server.upstream.base_url.clone() {
+    Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?)?;
+    server.upstream = server.clone().upstream.base_url(Some(base_url));
+  }
+  Ok(server)
+}
+
+fn configure_server(mut server: Server, config_server: &config::Server) -> Server {
+  server = server
+    .clone()
+    .enable_apollo_tracing(config_server.enable_apollo_tracing.unwrap_or_default())
+    .enable_cache_control_header(config_server.enable_cache_control_header.unwrap_or_default())
+    .enable_introspection(config_server.enable_introspection.unwrap_or_default())
+    .enable_query_validation(config_server.enable_query_validation.unwrap_or_default())
+    .enable_response_validation(config_server.enable_response_validation.unwrap_or_default())
+    .global_response_timeout(config_server.global_response_timeout.unwrap_or_default())
+    .port(config_server.port.unwrap_or_default())
+    .upstream(config_server.upstream.clone())
+    .vars(config_server.vars.clone().0);
+
+  server.upstream = server
+    .upstream
+    .clone()
+    .allowed_headers(config_server.upstream.allowed_headers.clone())
+    .batch(config_server.upstream.batch.clone())
+    .enable_http_cache(config_server.upstream.enable_http_cache);
+
+  server
 }
 
 #[derive(Clone, Debug)]

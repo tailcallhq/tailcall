@@ -9,6 +9,7 @@ directive @server(
   port: Int
   vars: [KeyValue]
   upstream: Upstream
+  responseHeaders: [KeyValue]
 ) on SCHEMA
 directive @http(
   path: String!
@@ -52,7 +53,6 @@ input Upstream {
   baseURL: String
   enableHttpCache: Boolean
   batch: Batch
-  responseHeaders: [KeyValue]
 }
 
 input KeyValue {
