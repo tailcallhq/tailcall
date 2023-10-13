@@ -233,16 +233,3 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
           overwrite: true
-
-      - name: Publish to NPM
-        uses: actions/setup-node@v3
-        with:
-         node-version: "20.x"
-         registry-url: "https://registry.npmjs.org"
-      - run: cd npm && mkdir target
-      - run: cp -r target/${{ matrix.target }}/release/tailcall-${{ matrix.target }} npm/target
-      - name: Update NPM version
-        run: cd npm && node publish.js
-        env:
-          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
