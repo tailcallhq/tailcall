@@ -1,0 +1,21 @@
+{
+  "name": "tailcall-test",
+  "version": "0.0.2",
+  "type": "module",
+  "files": [
+    "src/*",
+    "target/*"
+  ],
+  "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
+  "main": "./src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcallhq/tailcall"
+  },
+  "homepage": "https://tailcall.run/",
+  "keywords": [
+    "GraphQL",
+    "GraphQL Proxy"
+  ],
+  "license": "Apache-2.0"
+}
