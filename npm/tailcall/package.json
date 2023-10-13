@@ -1,0 +1,31 @@
+{
+  "name": "@tailcallhq/tailcall",
+  "version": "0.13.0",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "homepage": "https://tailcall.run",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcallhq/tailcall.git"
+  },
+  "author": "TailcallHQ",
+  "license": "MIT",
+  "bugs": "https://github.com/tailcallhq/tailcall/issues",
+  "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
+  "files": [
+    "scripts/postinstall.js"
+  ],
+  "keywords": [
+    "GraphQL",
+    "Rust",
+    "microservices"
+  ],
+  "engines": {
+    "node": ">=14.*"
+  },
+  "optionalDependencies": {
+    "@tailcallhq/tailcall-aarch64-apple-darwin": "0.13.0"
+  }
+}

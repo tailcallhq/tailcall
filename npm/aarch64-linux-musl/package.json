@@ -1,0 +1,33 @@
+{
+  "name": "@tailcallhq/tailcall-aarch64-linux-musl",
+  "version": "0.13.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "musl"
+  ],
+  "bin": {
+    "tailcall": "./tailcall"
+  },
+  "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
+  "keywords": [
+    "GraphQL"
+  ],
+  "author": "Tailcall",
+  "homepage": "https://tailcall.run",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tailcallhq/tailcall.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tailcallhq/tailcall/issues"
+  }
+}
