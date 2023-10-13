@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -11,7 +12,7 @@ use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::Config;
+use crate::config::{Config, Source};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -57,7 +58,9 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
   new_headers
 }
 pub async fn start_server(file_path: &String) -> Result<()> {
-  let config = Config::from_filepath(&file_path)?;
+  let source = Source::detect(file_path)?;
+  let schema_definition = fs::read_to_string(file_path)?;
+  let config = Config::from_source(source, &schema_definition)?;
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;

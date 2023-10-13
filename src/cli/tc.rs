@@ -12,7 +12,7 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::Config;
+use crate::config::{Config, Source};
 use crate::http::start_server;
 use crate::print_schema;
 
@@ -29,9 +29,10 @@ pub async fn run() -> Result<()> {
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
+      let source = Source::detect(&file_path)?;
       let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
-      let config = Config::from_sdl(&server_sdl)?;
-      let blueprint = blueprint_from_sdl(&server_sdl);
+      let config = Config::from_source(source, &server_sdl)?;
+      let blueprint = blueprint_from_config(&config);
       match blueprint {
         Ok(blueprint) => {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
@@ -93,9 +94,8 @@ pub async fn init(file_path: &str) -> Result<()> {
   Ok(())
 }
 
-pub fn blueprint_from_sdl(sdl: &str) -> Result<Blueprint> {
-  let config = Config::from_sdl(sdl)?;
-  Ok(Blueprint::try_from(&config)?)
+pub fn blueprint_from_config(config: &Config) -> Result<Blueprint> {
+  Ok(Blueprint::try_from(config)?)
 }
 
 pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) -> Result<()> {
