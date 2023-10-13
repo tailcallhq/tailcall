@@ -57,13 +57,14 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
       let res = self.client.execute(request).await?;
       #[allow(clippy::mutable_key_type)]
       let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
-      let body_value = res.body.group_by(group_by.path());
+      let path = &group_by.path();
+      let body_value = res.body.group_by(path);
 
       for key in &keys {
         let req = key.to_request();
         let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
         let id = query_set
-          .get(group_by.key().clone().as_str())
+          .get(group_by.key())
           .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
         hashmap.insert(
           key.clone(),

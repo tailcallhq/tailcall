@@ -1,21 +1,23 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::is_default;
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GroupBy {
-  key: String,
   #[serde(default, skip_serializing_if = "is_default")]
-  path: Option<Vec<String>>,
+  path: Vec<String>,
 }
-
-const EMPTY_VEC: &Vec<String> = &vec![];
 
 impl GroupBy {
-  pub fn path(&self) -> &Vec<String> {
-    self.path.as_ref().unwrap_or(EMPTY_VEC)
+  pub fn path(&self) -> Vec<String> {
+    if self.path.is_empty() {
+      return vec![String::from(ID)];
+    }
+    self.path.clone()
   }
 
-  pub fn key(&self) -> &String {
-    &self.key
+  pub fn key(&self) -> &str {
+    self.path.last().map(|a| a.as_str()).unwrap_or(ID)
   }
 }
+
+const ID: &str = "id";

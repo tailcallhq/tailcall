@@ -7,7 +7,7 @@ type Post {
   body: String
   id: Int
   title: String
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(key: "id", path: ["id"])
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(path: ["id"])
   userId: Int
 }
 
