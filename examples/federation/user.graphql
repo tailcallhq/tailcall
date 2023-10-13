@@ -25,6 +25,7 @@ type User {
 
 type Post @entityResolver(path: "/posts/{{value.id}}") {
   id: Int! @key
+  title: String! @shareable
   userId: Int!
   user: User @http(path: "/users/{{value.userId}}")
 }

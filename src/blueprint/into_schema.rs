@@ -83,6 +83,15 @@ fn to_type(def: &Definition) -> dynamic::Type {
           dyn_schema_field =
             dyn_schema_field.argument(dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)));
         }
+        if field.shareable {
+          dyn_schema_field = dyn_schema_field.shareable();
+        }
+        if field.external {
+          dyn_schema_field = dyn_schema_field.external();
+        }
+        if field.requires.is_some() {
+          dyn_schema_field = dyn_schema_field.requires(field.requires.unwrap());
+        }
         object = object.field(dyn_schema_field);
       }
       for interface in def.implements.iter() {

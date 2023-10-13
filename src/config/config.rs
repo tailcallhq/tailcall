@@ -166,6 +166,9 @@ pub struct Field {
   pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
   pub is_federation_key: bool,
+  pub shareable: bool,
+  pub external: bool,
+  pub requires: Option<Requires>,
 }
 
 impl Field {
@@ -296,4 +299,9 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Requires {
+  pub fields: String,
 }

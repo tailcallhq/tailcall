@@ -257,6 +257,9 @@ fn to_field(
     directives: Vec::new(),
     resolver: None,
     is_federation_key: field.is_federation_key,
+    shareable: field.shareable,
+    external: field.external,
+    requires: None,
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
@@ -264,6 +267,7 @@ fn to_field(
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
+  let field_definition = update_requires(field, field_definition)?;
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)
 }
@@ -438,6 +442,16 @@ fn build_http_resolver_expression(
       Valid::Ok(Lambda::from_request_template(req_template).expression)
     }
     None => Valid::fail("No base URL defined".to_string()),
+  }
+}
+
+fn update_requires(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
+  match field.requires.as_ref() {
+    Some(requires) => {
+      b_field.requires = Some(requires.fields.clone());
+      Valid::Ok(b_field)
+    }
+    None => Valid::Ok(b_field),
   }
 }
 

@@ -16,6 +16,14 @@ type Query {
 
 type Post @entityResolver(path: "/posts/{{value.id}}") {
   id: Int! @key
-  title: String!
+  title: String! @shareable
+  body: String!
+}
+
+type Comment {
+  postId: Int! @key
+  id: Int!
+  name: String!
+  email: String!
   body: String!
 }

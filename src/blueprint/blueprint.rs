@@ -124,10 +124,10 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  // pub entity_resolver: Option<bool>,
-  // pub entity_type: Option<String>,
-  // pub entity_key: Option<String>,
   pub is_federation_key: bool,
+  pub shareable: bool,
+  pub external: bool,
+  pub requires: Option<String>,
 }
 
 impl FieldDefinition {

@@ -11,7 +11,7 @@ use async_graphql::Name;
 
 use crate::config;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, EntityResolver, GraphQL, Http, RootSchema, Server, Union};
+use crate::config::{Config, EntityResolver, GraphQL, Http, Requires, RootSchema, Server, Union};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
@@ -202,6 +202,9 @@ fn to_common_field(
   let group_by = to_batch(directives);
   let const_field = to_const_field(directives);
   let is_federation_key = is_federation_key(directives);
+  let shareable = is_shareable(directives);
+  let external = is_external(directives);
+  let requires = to_requires(directives)?;
   Valid::Ok(config::Field {
     type_of,
     list,
@@ -216,6 +219,9 @@ fn to_common_field(
     group_by,
     const_field,
     is_federation_key,
+    shareable,
+    external,
+    requires,
   })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
@@ -287,14 +293,6 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Ht
   }
   Valid::Ok(None)
 }
-fn is_federation_key(directives: &[Positioned<ConstDirective>]) -> bool {
-  for directive in directives {
-    if directive.node.name.node == "key" {
-      return true;
-    }
-  }
-  false
-}
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members
@@ -325,6 +323,38 @@ fn to_entity_resolver(directives: &[Positioned<ConstDirective>]) -> Valid<Option
   for directive in directives {
     if directive.node.name.node == "entityResolver" {
       return EntityResolver::from_directive(&directive.node).map(Some);
+    }
+  }
+  Valid::Ok(None)
+}
+fn is_federation_key(directives: &[Positioned<ConstDirective>]) -> bool {
+  for directive in directives {
+    if directive.node.name.node == "key" {
+      return true;
+    }
+  }
+  false
+}
+fn is_shareable(directives: &[Positioned<ConstDirective>]) -> bool {
+  for directive in directives {
+    if directive.node.name.node == "shareable" {
+      return true;
+    }
+  }
+  false
+}
+fn is_external(directives: &[Positioned<ConstDirective>]) -> bool {
+  for directive in directives {
+    if directive.node.name.node == "external" {
+      return true;
+    }
+  }
+  false
+}
+fn to_requires(directives: &[Positioned<ConstDirective>]) -> Valid<Option<Requires>> {
+  for directive in directives {
+    if directive.node.name.node == "requires" {
+      return Requires::from_directive(&directive.node).map(Some);
     }
   }
   Valid::Ok(None)
