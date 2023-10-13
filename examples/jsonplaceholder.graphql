@@ -1,8 +1,7 @@
 schema
   @server(
     port: 8000
-    baseURL: "http://jsonplaceholder.typicode.com"
-    enableHttpCache: true
+    upstream: {baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true}
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
   ) {

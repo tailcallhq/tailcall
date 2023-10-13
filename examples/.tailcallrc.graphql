@@ -39,18 +39,18 @@ input Proxy {
 
 input Upstream {
   allowedHeaders: [String]
-  connect_timeout: Int
-  keep_alive_interval: Int
-  keep_alive_timeout: Int
-  keep_alive_while_idle: Boolean
-  pool_idle_timeout: Int
-  pool_max_idle_per_host: Int
+  connectTimeout: Int
+  keepAliveInterval: Int
+  keepAliveTimeout: Int
+  keepAliveWhileIdle: Boolean
+  poolIdleTimeout: Int
+  poolMaxIdlePerHost: Int
   proxy: Proxy
-  tcp_keep_alive: Int
+  tcpKeepAlive: Int
   timeout: Int
-  user_agent: String
-  base_url: String
-  enable_http_cache: Boolean
+  userAgent: String
+  baseURL: String
+  enableHttpCache: Boolean
   batch: Batch
 }
 
