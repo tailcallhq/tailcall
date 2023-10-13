@@ -21,9 +21,3 @@ impl GroupBy {
 }
 
 const ID: &str = "id";
-
-impl Default for GroupBy {
-  fn default() -> GroupBy {
-    GroupBy { path: vec![String::from("id")] }
-  }
-}
