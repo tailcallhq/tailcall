@@ -17,9 +17,9 @@ jobs:
       - name: Update NPM version
         run: echo "Updating NPM version..."
       - run: |
-         cd npm && version=${{ github.event.release.tag_name }}
-         stripped_version=$(echo $version | sed 's/^v//')
-         npm version $stripped_version
+          cd npm && version=${{ github.event.release.tag_name }}
+          stripped_version=$(echo $version | sed 's/^v//')
+          npm version $stripped_version
       - run: cd npm && npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
