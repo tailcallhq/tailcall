@@ -343,7 +343,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
     Some(http) => match http
       .base_url
       .as_ref()
-      .map_or_else(|| config.server.base_url.as_ref(), Some)
+      .map_or_else(|| config.server.upstream.base_url.as_ref(), Some)
     {
       Some(base_url) => {
         let mut base_url = base_url.clone();

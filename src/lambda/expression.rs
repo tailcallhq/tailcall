@@ -104,8 +104,15 @@ impl Expression {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
-              if is_get && ctx.req_ctx.server.batch.is_some() {
-                let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
+              if is_get && ctx.req_ctx.server.upstream.batch.is_some() {
+                let headers = ctx
+                  .req_ctx
+                  .server
+                  .upstream
+                  .batch
+                  .clone()
+                  .map(|s| s.headers)
+                  .unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
                 let resp = dl
                   .as_ref()

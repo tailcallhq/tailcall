@@ -22,7 +22,7 @@ fn graphiql() -> Result<Response<Body>> {
 
 async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
   let server = server_ctx.server.clone();
-  let allowed = server.allowed_headers.unwrap_or_default();
+  let allowed = server.upstream.allowed_headers.unwrap_or_default();
   let headers = create_allowed_headers(req.headers(), &allowed);
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
   let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;

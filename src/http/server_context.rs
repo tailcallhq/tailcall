@@ -21,7 +21,7 @@ fn assign_data_loaders(blueprint: &mut Blueprint, server: Server, http_client: D
       for field in &mut def.fields {
         if let Some(Expression::Unsafe(Operation::Endpoint(req_template, group_by, _))) = &mut field.resolver {
           let data_loader = HttpDataLoader::new(http_client.clone(), group_by.clone())
-            .to_data_loader(server.batch.clone().unwrap_or_default());
+            .to_data_loader(server.upstream.batch.clone().unwrap_or_default());
           field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
             req_template.clone(),
             group_by.clone(),
