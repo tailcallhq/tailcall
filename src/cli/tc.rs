@@ -24,14 +24,20 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-
-      start_server(&file_path).await?;
+      start_server(file_path).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
-      let config = Config::from_sdl(&server_sdl)?;
-      let blueprint = blueprint_from_sdl(&server_sdl);
+      let mut configs = Vec::new();
+      for file_path in &file_path {
+        let server_sdl = fs::read_to_string(file_path)?;
+        let config = Config::from_sdl(&server_sdl)?;
+        configs.push(config);
+      }
+
+      let config = configs.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
+
+      let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
         Ok(blueprint) => {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
@@ -91,11 +97,6 @@ pub async fn init(file_path: &str) -> Result<()> {
     tailcallrc.as_ref().as_bytes(),
   )?;
   Ok(())
-}
-
-pub fn blueprint_from_sdl(sdl: &str) -> Result<Blueprint> {
-  let config = Config::from_sdl(sdl)?;
-  Ok(Blueprint::try_from(&config)?)
 }
 
 pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) -> Result<()> {

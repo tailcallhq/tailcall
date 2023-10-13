@@ -57,9 +57,15 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
-pub async fn start_server(file_path: &String) -> Result<()> {
-  let server_sdl = fs::read_to_string(file_path)?;
-  let config = Config::from_sdl(&server_sdl)?;
+pub async fn start_server(file_path: Vec<String>) -> Result<()> {
+  let mut configs = Vec::new();
+  for file_path in &file_path {
+    let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
+    let config = Config::from_sdl(&server_sdl)?;
+    configs.push(config);
+  }
+
+  let config = configs.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
