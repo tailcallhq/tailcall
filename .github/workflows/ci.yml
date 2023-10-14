@@ -223,7 +223,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Generate npm packages
-        run: node npm/tailcall/scripts/generate-packages.js
+        run: cd npm/tailcall && npm run gen
         env: APP_VERSION=${{ needs.draft_release.outputs.create_release_name }}
 
       - name: Publish npm packages as latest
