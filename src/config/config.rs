@@ -350,13 +350,13 @@ impl Config {
     let mut config = Config::default();
     let futures: Vec<_> = file_paths
       .map(|file_path| async move {
-        let source = Source::detect(&file_path)?;
+        let source = Source::detect(file_path)?;
         let mut f = File::open(file_path).await?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Ok(Config::from_source(source, &server_sdl)?)
+        Config::from_source(source, &server_sdl)
       })
       .collect();
 

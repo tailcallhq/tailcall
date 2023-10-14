@@ -60,7 +60,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
- pub async fn start_server(config: Config) -> Result<()> {
+pub async fn start_server(config: Config) -> Result<()> {
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
