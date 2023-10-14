@@ -9,7 +9,7 @@ type User {
 }
 
 type Query {
-  user: User @const(data: {name: "John"}) @groupBy(key: "id", path: ["id"])
+  user: User @const(data: {name: "John"}) @groupBy(path: ["id"])
 }
 
 #> client-sdl

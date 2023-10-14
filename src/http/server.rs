@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-use std::fs;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -22,7 +21,7 @@ fn graphiql() -> Result<Response<Body>> {
 
 async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
   let server = server_ctx.server.clone();
-  let allowed = server.allowed_headers.unwrap_or_default();
+  let allowed = server.upstream.allowed_headers.unwrap_or_default();
   let headers = create_allowed_headers(req.headers(), &allowed);
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
   let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
@@ -34,8 +33,12 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
       response = response.set_cache_control(ttl as i32);
     }
   }
+  let mut resp = response.to_response()?;
+  if !server_ctx.custom_response_header.is_empty() {
+    resp.headers_mut().extend(server_ctx.custom_response_header.clone());
+  }
 
-  response.to_response()
+  Ok(resp)
 }
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
@@ -47,7 +50,7 @@ async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result
     _ => not_found(),
   }
 }
-fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
+fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
   let mut new_headers = HeaderMap::new();
   for (k, v) in headers.iter() {
     if allowed.contains(k.as_str()) {
@@ -57,14 +60,11 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> Hea
 
   new_headers
 }
-pub async fn start_server(file_path: &String) -> Result<()> {
-  let source = Source::detect(file_path)?;
-  let schema_definition = fs::read_to_string(file_path)?;
-  let config = Config::from_source(source, &schema_definition)?;
+ pub async fn start_server(config: Config) -> Result<()> {
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(blueprint, server));
+  let state = Arc::new(ServerContext::new(blueprint.clone(), server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
@@ -73,8 +73,12 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   let addr = ([0, 0, 0, 0], port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
-    log::info!("🌍 Playground: http://{}{}", addr, graphiql);
+  if !blueprint.server.enable_graphiql.clone().is_empty() {
+    log::info!(
+      "🌍 Playground: http://{}{}",
+      addr,
+      blueprint.server.enable_graphiql.clone()
+    );
   }
 
   Ok(server.await.map_err(CLIError::from)?)

@@ -1,18 +1,15 @@
 directive @server(
-  allowedHeaders: [String]
-  baseURL: String
   enableApolloTracing: Boolean
   enableCacheControlHeader: Boolean
   enableGraphiql: String
-  enableHttpCache: Boolean
   enableIntrospection: Boolean
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
   globalResponseTimeout: Int
   port: Int
   vars: [KeyValue]
-  batch: Batch
   upstream: Upstream
+  responseHeaders: [KeyValue]
 ) on SCHEMA
 directive @http(
   path: String!
@@ -24,7 +21,7 @@ directive @http(
 ) on FIELD_DEFINITION
 directive @inline(path: [String]!) on FIELD_DEFINITION
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
-directive @groupBy(path: [String]!, key: String!) on FIELD_DEFINITION
+directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: Json) on FIELD_DEFINITION
 
 enum Method {
@@ -42,16 +39,20 @@ input Proxy {
 }
 
 input Upstream {
-  pool_idle_timeout: Int
-  pool_max_idle_per_host: Int
-  keep_alive_interval: Int
-  keep_alive_timeout: Int
-  keep_alive_while_idle: Boolean
+  allowedHeaders: [String]
+  connectTimeout: Int
+  keepAliveInterval: Int
+  keepAliveTimeout: Int
+  keepAliveWhileIdle: Boolean
+  poolIdleTimeout: Int
+  poolMaxIdlePerHost: Int
   proxy: Proxy
-  connect_timeout: Int
+  tcpKeepAlive: Int
   timeout: Int
-  tcp_keep_alive: Int
-  user_agent: String
+  userAgent: String
+  baseURL: String
+  enableHttpCache: Boolean
+  batch: Batch
 }
 
 input KeyValue {

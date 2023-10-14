@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(baseURL: "http://abc.com") {
+schema @server(upstream: {baseURL: "http://abc.com"}) {
   query: Query
 }
 

@@ -18,7 +18,7 @@ use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
-use tailcall::valid::Cause;
+use tailcall::valid::{Cause, ValidExtensions};
 
 mod graphql_mock;
 
@@ -201,7 +201,9 @@ async fn test_execution() -> std::io::Result<()> {
     let mut config = Config::from_sdl(&spec.server_sdl[0]).unwrap();
     config.server.enable_query_validation = Some(false);
 
-    let blueprint = Blueprint::try_from(&config).unwrap();
+    let blueprint = Blueprint::try_from(&config)
+      .trace(spec.path.to_str().unwrap_or_default())
+      .unwrap();
     let server_ctx = ServerContext::new(blueprint, config.server.clone());
     let schema = server_ctx.schema.clone();
 
@@ -254,8 +256,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .iter()
       .map(|s| Config::from_sdl(s.as_str()).unwrap())
       .collect::<Vec<_>>();
-    let config = content[0].clone();
-    let config = config.clone();
+    let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
   }

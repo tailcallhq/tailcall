@@ -24,15 +24,13 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-
-      start_server(&file_path).await?;
+      let config = Config::from_file_paths(file_path.iter()).await?;
+      start_server(config).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let source = Source::detect(&file_path)?;
-      let schema_definition = fs::read_to_string(file_path)?;
-      let config = Config::from_source(source, &schema_definition)?;
-      let blueprint = blueprint_from_config(&config);
+      let config = Config::from_file_paths(file_path.iter()).await?;
+      let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
         Ok(blueprint) => {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
