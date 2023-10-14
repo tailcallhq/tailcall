@@ -12,7 +12,7 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::{Config, Source};
+use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
 
@@ -90,10 +90,6 @@ pub async fn init(file_path: &str) -> Result<()> {
     tailcallrc.as_ref().as_bytes(),
   )?;
   Ok(())
-}
-
-pub fn blueprint_from_config(config: &Config) -> Result<Blueprint> {
-  Ok(Blueprint::try_from(config)?)
 }
 
 pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) -> Result<()> {

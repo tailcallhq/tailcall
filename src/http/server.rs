@@ -11,7 +11,7 @@ use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::{Config, Source};
+use crate::config::Config;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(

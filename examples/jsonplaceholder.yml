@@ -1,9 +1,10 @@
 server:
-  baseURL: http://jsonplaceholder.typicode.com
-  enableGraphiql: /graphiql
-  enableHttpCache: true
-  enableQueryValidation: false
   port: 8000
+  upstream:
+    baseURL: "http://jsonplaceholder.typicode.com"
+    enableHttpCache: true
+  enableGraphiql: /graphiql
+  enableQueryValidation: false
 graphql:
   schema:
     query: Query
