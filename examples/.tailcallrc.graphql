@@ -9,6 +9,7 @@ directive @server(
   port: Int
   vars: [KeyValue]
   upstream: Upstream
+  responseHeaders: [KeyValue]
 ) on SCHEMA
 directive @http(
   path: String!

@@ -33,8 +33,12 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
       response = response.set_cache_control(ttl as i32);
     }
   }
+  let mut resp = response.to_response()?;
+  if !server_ctx.custom_response_header.is_empty() {
+    resp.headers_mut().extend(server_ctx.custom_response_header.clone());
+  }
 
-  response.to_response()
+  Ok(resp)
 }
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
@@ -60,7 +64,7 @@ pub async fn start_server(config: Config) -> Result<()> {
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(blueprint, server));
+  let state = Arc::new(ServerContext::new(blueprint.clone(), server));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
@@ -69,8 +73,12 @@ pub async fn start_server(config: Config) -> Result<()> {
   let addr = ([0, 0, 0, 0], port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
-    log::info!("🌍 Playground: http://{}{}", addr, graphiql);
+  if !blueprint.server.enable_graphiql.clone().is_empty() {
+    log::info!(
+      "🌍 Playground: http://{}{}",
+      addr,
+      blueprint.server.enable_graphiql.clone()
+    );
   }
 
   Ok(server.await.map_err(CLIError::from)?)

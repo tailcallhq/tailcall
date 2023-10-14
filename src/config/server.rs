@@ -20,6 +20,8 @@ pub struct Server {
   pub upstream: Upstream,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
+  #[serde(skip_serializing_if = "is_default", default)]
+  pub response_headers: KeyValues,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
@@ -61,6 +63,9 @@ impl Server {
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);
+    let mut response_headers = self.response_headers.0.clone();
+    response_headers.extend(other.response_headers.0);
+    self.response_headers = KeyValues(response_headers);
     self.upstream = self.upstream.merge_right(other.upstream);
     self
   }

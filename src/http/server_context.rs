@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::dynamic;
 use derive_setters::Setters;
+use hyper::HeaderMap;
 
 use crate::blueprint::{Blueprint, Definition};
 use crate::config::Server;
@@ -13,6 +14,7 @@ pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: DefaultHttpClient,
   pub server: Server,
+  pub custom_response_header: HeaderMap,
 }
 
 fn assign_data_loaders(blueprint: &mut Blueprint, server: Server, http_client: DefaultHttpClient) -> &Blueprint {
@@ -39,6 +41,11 @@ impl ServerContext {
     let http_client = DefaultHttpClient::new(server.clone());
     let mut blueprint = blueprint.clone();
     let schema = assign_data_loaders(&mut blueprint, server.clone(), http_client.clone()).to_schema(&server);
-    ServerContext { schema, http_client, server: server.clone() }
+    ServerContext {
+      schema,
+      http_client,
+      server: server.clone(),
+      custom_response_header: blueprint.server.response_headers,
+    }
   }
 }
