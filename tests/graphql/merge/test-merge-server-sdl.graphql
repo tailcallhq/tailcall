@@ -12,16 +12,16 @@ type User {
   name: String
 }
 
-#> client-sdl
+#> merged-sdl
+schema @server(upstream: {baseURL: "http://jsonplacheholder.typicode.com"}) {
+  query: Query
+}
+
 type Query {
-  foo: [User]
+  foo: [User] @http(path: "/users")
 }
 
 type User {
   id: Int
   name: String
-}
-
-schema {
-  query: Query
 }

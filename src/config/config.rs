@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -6,8 +6,8 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Proxy, Server};
-use crate::batch::Batch;
+use super::Server;
+use crate::config::group_by::GroupBy;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -23,10 +23,6 @@ pub struct Config {
 impl Config {
   pub fn port(&self) -> u16 {
     self.server.port.unwrap_or(8000)
-  }
-
-  pub fn proxy(&self) -> Option<Proxy> {
-    self.server.proxy.clone()
   }
 
   pub fn output_types(&self) -> HashSet<&String> {
@@ -115,9 +111,9 @@ pub struct Type {
   #[serde(default)]
   pub interface: bool,
   #[serde(default)]
-  pub implements: Vec<String>,
+  pub implements: BTreeSet<String>,
   #[serde(rename = "enum", default)]
-  pub variants: Option<Vec<String>>,
+  pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
   pub scalar: bool,
 }
@@ -165,7 +161,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  pub batch: Option<Batch>,
+  #[serde(rename = "groupBy")]
+  pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 

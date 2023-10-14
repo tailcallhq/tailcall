@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
@@ -16,9 +16,10 @@ use crate::blueprint::*;
 use crate::config::{Arg, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
@@ -149,7 +150,7 @@ fn to_enum_type_definition(
   name: &str,
   type_: &config::Type,
   _config: &Config,
-  variants: Vec<String>,
+  variants: BTreeSet<String>,
 ) -> Valid<Definition> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
@@ -229,6 +230,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_group_by(field, field_definition, config).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -313,12 +315,35 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+  if let Some(batch) = field.group_by.as_ref() {
+    if let Some(http) = field.http.as_ref() {
+      if http.method != Method::GET {
+        Valid::fail("GroupBy is only supported for GET requests".to_string())
+      } else {
+        if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
+          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+            request_template.clone(),
+            Some(batch.clone()),
+            dl,
+          )));
+        }
+        Valid::Ok(b_field)
+      }
+    } else {
+      Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
+    }
+  } else {
+    Valid::Ok(b_field)
+  }
+}
+
 fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
       .as_ref()
-      .map_or_else(|| config.server.base_url.as_ref(), Some)
+      .map_or_else(|| config.server.upstream.base_url.as_ref(), Some)
     {
       Some(base_url) => {
         let mut base_url = base_url.clone();
