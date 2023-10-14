@@ -13,6 +13,7 @@ use super::{Server, Upstream};
 use crate::config::group_by::GroupBy;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
+use crate::graphqlsource::IntrospectionResult;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::NeoValid;
@@ -106,6 +107,26 @@ impl Config {
 
   pub fn contains(&self, name: &str) -> bool {
     self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
+  }
+
+  pub fn graphql_urls(&self) -> Vec<String> {
+    self
+      .graphql
+      .types
+      .values()
+      .flat_map(|type_| {
+        type_
+          .fields
+          .values()
+          .filter_map(|field| match &field.graphql_source {
+            Some(GraphQLSource { query: _, base_url, headers: _ }) if base_url.is_some() => {
+              Some(base_url.clone().unwrap())
+            }
+            _ => None,
+          })
+          .collect::<Vec<_>>()
+      })
+      .collect::<Vec<_>>()
   }
 
   pub fn merge_right(self, other: &Self) -> Self {
@@ -224,6 +245,7 @@ pub struct Field {
   #[serde(rename = "groupBy")]
   pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
+  pub graphql_source: Option<GraphQLSource>,
 }
 
 impl Field {
@@ -314,6 +336,22 @@ pub struct Http {
   pub headers: KeyValues,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLSource {
+  pub query: GraphQLQuery,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLQuery {
+  pub name: String,
+  pub args: KeyValues,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstField {
   pub data: Value,
@@ -372,3 +410,5 @@ impl Config {
     Ok(config)
   }
 }
+
+pub struct ConfigAndIntrospectionData(pub Config, pub BTreeMap<String, IntrospectionResult>);

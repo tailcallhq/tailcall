@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
@@ -14,8 +15,9 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
+use tailcall::config::{Config, ConfigAndIntrospectionData};
 use tailcall::directive::DirectiveCodec;
+use tailcall::graphqlsource::IntrospectionResult;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, NeoValid, ValidExtensions};
@@ -153,6 +155,16 @@ impl GraphQLSpec {
     );
     Ok(files)
   }
+
+  fn mock_introspection_result() -> BTreeMap<String, IntrospectionResult> {
+    let mut introspection_result_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    introspection_result_path.push("tests/data/upstream-introspection-result.json");
+    let result: IntrospectionResult =
+      serde_json::from_str(fs::read_to_string(introspection_result_path).unwrap().as_str()).unwrap();
+    let mut introspection_result: BTreeMap<String, IntrospectionResult> = BTreeMap::new();
+    introspection_result.insert("http://localhost:8000/graphql".to_string(), result);
+    introspection_result
+  }
 }
 
 const CLIENT_SDL: &str = "client-sdl";
@@ -187,9 +199,32 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let expected = spec.client_sdl;
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
-    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
+    let actual = print_schema::print_schema(
+      (Blueprint::try_from(ConfigAndIntrospectionData(
+        config,
+        GraphQLSpec::mock_introspection_result(),
+      ))
+      .unwrap())
+      .to_schema(),
+    );
     assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     log::info!("ClientSDL: {} ... ok", spec.path.display());
+    // let config = Config::from_sdl(content).unwrap();
+    // let actual = print_schema::print_schema(
+    //   (Blueprint::try_from(ConfigAndIntrospectionData(
+    //     config,
+    //     GraphQLSpec::mock_introspection_result(),
+    //   ))
+    //   .unwrap())
+    //   .to_schema(),
+    // );
+
+    assert_eq!(
+      actual,
+      expected,
+      "Server to client SDL failure: {}",
+      spec.path.display()
+    );
   }
 
   Ok(())
@@ -207,7 +242,7 @@ async fn test_execution() -> std::io::Result<()> {
     let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
     config.server.enable_query_validation = Some(false);
 
-    let blueprint = Blueprint::try_from(&config)
+    let blueprint = Blueprint::try_from(ConfigAndIntrospectionData(config, BTreeMap::new()))
       .trace(spec.path.to_str().unwrap_or_default())
       .unwrap();
     let server_ctx = ServerContext::new(blueprint);
@@ -240,7 +275,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let config = Config::from_sdl(content);
 
     let actual = config
-      .and_then(|config| NeoValid::from(Blueprint::try_from(&config)))
+      .and_then(|config| NeoValid::from(Blueprint::try_from(ConfigAndIntrospectionData(config, BTreeMap::new()))))
       .to_result();
     match actual {
       Err(cause) => {

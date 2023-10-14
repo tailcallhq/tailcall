@@ -11,7 +11,8 @@ use super::ServerContext;
 use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::Config;
+use crate::config::{Config, ConfigAndIntrospectionData};
+use crate::graphqlsource::introspect_graphql_sources;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -72,7 +73,9 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 pub async fn start_server(config: Config) -> Result<()> {
-  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+  let introspection_results = introspect_graphql_sources(config.graphql_urls()).await;
+  let blueprint =
+    Blueprint::try_from(ConfigAndIntrospectionData(config, introspection_results)).map_err(CLIError::from)?;
   let state = Arc::new(ServerContext::new(blueprint.clone()));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);

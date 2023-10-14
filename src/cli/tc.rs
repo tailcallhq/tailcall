@@ -12,7 +12,8 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::Config;
+use crate::config::{Config, ConfigAndIntrospectionData};
+use crate::graphqlsource::introspect_graphql_sources;
 use crate::http::start_server;
 use crate::print_schema;
 
@@ -30,7 +31,11 @@ pub async fn run() -> Result<()> {
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
       let config = Config::from_file_paths(file_path.iter()).await?;
-      let blueprint = Ok(Blueprint::try_from(&config)?);
+      let introspection_results = introspect_graphql_sources(config.graphql_urls()).await;
+      let blueprint = Ok(Blueprint::try_from(ConfigAndIntrospectionData(
+        config.clone(),
+        introspection_results,
+      ))?);
       match blueprint {
         Ok(blueprint) => {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;

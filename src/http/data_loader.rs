@@ -91,7 +91,6 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
       for (key, value) in results {
         hashmap.insert(key, value?);
       }
-
       Ok(hashmap)
     }
   }

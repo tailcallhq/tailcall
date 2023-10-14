@@ -1,0 +1,49 @@
+{
+  "data": {
+    "__schema": {
+      "queryType": {
+        "name": "Query",
+        "fields": [
+          {
+            "name": "user",
+            "args": [
+              {
+                "name": "id",
+                "type": {
+                  "name": "Int",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            ],
+            "type": {
+              "name": "User",
+              "kind": "OBJECT",
+              "ofType": null,
+              "fields": [
+                {
+                  "name": "email"
+                },
+                {
+                  "name": "id"
+                },
+                {
+                  "name": "name"
+                },
+                {
+                  "name": "phone"
+                },
+                {
+                  "name": "username"
+                },
+                {
+                  "name": "website"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use crate::config::group_by::GroupBy;
-use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, GraphQL, GraphQLSource, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::{NeoValid, ValidationError};
 
@@ -202,25 +202,28 @@ fn to_common_field(
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
   let inline = to_inline(directives);
-  to_http(directives).map(|http| {
-    let unsafe_operation = to_unsafe_operation(directives);
-    let group_by = to_batch(directives);
-    let const_field = to_const_field(directives);
-    config::Field {
-      type_of,
-      list,
-      required: !nullable,
-      list_type_required,
-      args,
-      doc,
-      modify,
-      inline,
-      http,
-      unsafe_operation,
-      group_by,
-      const_field,
-    }
-  })
+  to_http(directives)
+    .zip(to_graphqlsource(directives))
+    .map(|(http, graphql_source)| {
+      let unsafe_operation = to_unsafe_operation(directives);
+      let group_by = to_batch(directives);
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        inline,
+        http,
+        unsafe_operation,
+        group_by,
+        const_field,
+        graphql_source,
+      }
+    })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
@@ -287,6 +290,14 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> NeoValid<Option<config:
   for directive in directives {
     if directive.node.name.node == "http" {
       return Http::from_directive(&directive.node).map(Some);
+    }
+  }
+  NeoValid::succeed(None)
+}
+fn to_graphqlsource(directives: &[Positioned<ConstDirective>]) -> NeoValid<Option<config::GraphQLSource>, String> {
+  for directive in directives {
+    if directive.node.name.node == "graphql" {
+      return GraphQLSource::from_directive(&directive.node).map(Some);
     }
   }
   NeoValid::succeed(None)

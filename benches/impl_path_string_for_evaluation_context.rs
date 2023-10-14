@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
+use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
@@ -87,6 +88,10 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
 
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
     Some(&TEST_ARGS)
+  }
+
+  fn field(&'a self) -> Option<SelectionField> {
+    None
   }
 }
 

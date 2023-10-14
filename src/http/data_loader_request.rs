@@ -19,6 +19,15 @@ impl DataLoaderRequest {
 impl Hash for DataLoaderRequest {
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.0.url().hash(state);
+    if let Some(body) = self.0.body() {
+      if let Some(bytes) = body.as_bytes() {
+        if let Ok(body_str) = std::str::from_utf8(bytes) {
+          if !body_str.is_empty() {
+            body_str.to_string().hash(state);
+          }
+        }
+      }
+    }
     for name in &self.1 {
       if let Some(value) = self.0.headers().get(name) {
         name.hash(state);
@@ -44,8 +53,10 @@ impl PartialEq for DataLoaderRequest {
 
 impl Clone for DataLoaderRequest {
   fn clone(&self) -> Self {
-    let mut req = reqwest::Request::new(reqwest::Method::GET, self.0.url().clone());
-    req.headers_mut().extend(self.0.headers().clone());
+    let req = self.0.try_clone().unwrap();
+    // let mut req = reqwest::Request::new(reqwest::Method::GET, self.0.url().clone());
+    // req.headers_mut().extend(self.0.headers().clone());
+
     DataLoaderRequest(req, self.1.clone())
   }
 }

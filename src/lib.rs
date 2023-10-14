@@ -7,6 +7,7 @@ pub mod config;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod graphqlsource;
 pub mod has_headers;
 pub mod http;
 #[cfg(feature = "unsafe-js")]

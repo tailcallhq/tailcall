@@ -13,9 +13,10 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, Field, InlineType};
+use crate::config::{Arg, Batch, Config, ConfigAndIntrospectionData, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::graphqlsource::{get_arg_type, IntrospectionResult};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
@@ -26,11 +27,14 @@ use crate::{blueprint, config};
 
 type Valid<A> = ValidDefault<A, String>;
 
-pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
+pub fn config_blueprint(
+  config: &Config,
+  introspection_results: BTreeMap<String, IntrospectionResult>,
+) -> Valid<Blueprint> {
   let output_types = config.output_types();
   let input_types = config.input_types();
   let schema = to_schema(config)?;
-  let definitions = to_definitions(config, output_types, input_types)?;
+  let definitions = to_definitions(config, output_types, input_types, &introspection_results)?;
   let server: Server = Server::try_from(config.server.clone())?;
   let upstream = config.upstream.clone();
   valid_base_url(upstream.base_url.as_ref())?;
@@ -95,6 +99,7 @@ fn to_definitions<'a>(
   config: &Config,
   output_types: HashSet<&'a String>,
   input_types: HashSet<&'a String>,
+  introspection_results: &BTreeMap<String, IntrospectionResult>,
 ) -> Valid<Vec<Definition>> {
   let mut types: Vec<Definition> = config.graphql.types.iter().validate_all(|(name, type_)| {
     let dbl_usage = input_types.contains(name) && output_types.contains(name);
@@ -109,7 +114,7 @@ fn to_definitions<'a>(
     } else if dbl_usage {
       Valid::fail("type is used in input and output".to_string()).trace(name)
     } else {
-      let definition = to_object_type_definition(name, type_, config).trace(name)?;
+      let definition = to_object_type_definition(name, type_, config, introspection_results).trace(name)?;
       match definition.clone() {
         Definition::ObjectTypeDefinition(object_type_definition) => {
           if config.input_types().contains(name) {
@@ -167,8 +172,13 @@ fn to_enum_type_definition(
   });
   Valid::Ok(enum_type_definition)
 }
-fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition> {
-  to_fields(type_of, config).map(|fields| {
+fn to_object_type_definition(
+  name: &str,
+  type_of: &config::Type,
+  config: &Config,
+  introspection_results: &BTreeMap<String, IntrospectionResult>,
+) -> Valid<Definition> {
+  to_fields(type_of, config, introspection_results).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
@@ -200,10 +210,14 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
     description: definition.description,
   }))
 }
-fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>> {
+fn to_fields(
+  type_of: &config::Type,
+  config: &Config,
+  introspection_results: &BTreeMap<String, IntrospectionResult>,
+) -> Valid<Vec<blueprint::FieldDefinition>> {
   let fields: Vec<Option<blueprint::FieldDefinition>> = type_of.fields.iter().validate_all(|(name, field)| {
     validate_field_type_exist(config, field)
-      .validate_or(to_field(type_of, config, name, field))
+      .validate_or(to_field(type_of, config, name, field, introspection_results))
       .trace(name)
   })?;
 
@@ -215,6 +229,7 @@ fn to_field(
   config: &Config,
   name: &str,
   field: &Field,
+  introspection_results: &BTreeMap<String, IntrospectionResult>,
 ) -> Valid<Option<blueprint::FieldDefinition>> {
   let directives = field.resolvable_directives();
   if directives.len() > 1 {
@@ -224,7 +239,7 @@ fn to_field(
   let field_type = &field.type_of;
   let args = to_args(field)?;
 
-  let field_definition = FieldDefinition {
+  let mut field_definition = FieldDefinition {
     name: name.to_owned(),
     description: field.doc.clone(),
     args,
@@ -233,7 +248,11 @@ fn to_field(
     resolver: None,
   };
 
-  let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  if field.http.is_some() {
+    field_definition = update_http(field, field_definition, config).trace("@http")?;
+  } else if field.graphql_source.is_some() {
+    field_definition = update_graphql(field, field_definition, config, introspection_results).trace("@graphql")?;
+  }
   let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
@@ -385,6 +404,91 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
     None => Valid::Ok(b_field),
   }
 }
+
+fn update_graphql(
+  field: &config::Field,
+  mut b_field: FieldDefinition,
+  config: &Config,
+  introspection_results: &BTreeMap<String, IntrospectionResult>,
+) -> Valid<FieldDefinition> {
+  match field.graphql_source.as_ref() {
+    Some(graphql) => match graphql
+      .base_url
+      .as_ref()
+      .map_or_else(|| config.upstream.base_url.as_ref(), Some)
+    {
+      Some(base_url) => {
+        let mut base_url = base_url.clone();
+        if base_url.ends_with('/') {
+          base_url.pop();
+        }
+        let query = Vec::new();
+        let output_schema = to_json_schema_for_field(field, config);
+        let input_schema = to_json_schema_for_args(&field.args, config);
+        let mut header_map = HeaderMap::new();
+        for (k, v) in graphql.headers.clone().iter() {
+          header_map.insert(
+            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
+            HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
+          );
+        }
+
+        let introspection_result = introspection_results.get(&base_url);
+        let mut variable_definitions: Vec<String> = Vec::new();
+        for (arg_name, _) in graphql.query.args.iter() {
+          let arg_type = match introspection_result {
+            Some(introspection_result) => get_arg_type(introspection_result, &graphql.query.name, arg_name),
+            _ => None,
+          }
+          .ok_or(ValidationError::new(format!(
+            "Could not find argument type for {} from introspection",
+            arg_name
+          )))?;
+          variable_definitions.push(format!("${}: {}", arg_name, arg_type));
+        }
+        let variable_definitions = variable_definitions.join(",");
+        let args = graphql
+          .query
+          .args
+          .clone()
+          .iter()
+          .map(|(k, _)| format!("{}: ${}", k, k))
+          .collect::<Vec<_>>()
+          .join(",");
+        let variable_values = graphql
+          .query
+          .args
+          .clone()
+          .iter()
+          .map(|(k, v)| format!(r#""{}": {}"#, k, v))
+          .collect::<Vec<_>>()
+          .join(",");
+        let selection_set = "{{field.selectionSet}}";
+        let graphql_query = format!(
+          r#"{{ "query": "query({}) {{ {}({}) {{ {} }} }}", "variables": {{ {} }} }}"#,
+          variable_definitions, graphql.query.name, args, selection_set, variable_values
+        );
+        let req_template = RequestTemplate::try_from(
+          Endpoint::new(base_url.to_string())
+            .method(Method::POST.clone())
+            .query(query)
+            .output(output_schema)
+            .input(input_schema)
+            .body(Some(graphql_query))
+            .headers(header_map),
+        )
+        .map_err(|e| ValidationError::new(e.to_string()))?;
+
+        b_field.resolver = Some(Lambda::from_graphql_request_template(req_template, b_field.name.clone()).expression);
+
+        Valid::Ok(b_field)
+      }
+      None => Valid::fail("No base URL defined".to_string()),
+    },
+    None => Valid::Ok(b_field),
+  }
+}
+
 fn update_modify(
   field: &config::Field,
   mut b_field: FieldDefinition,
@@ -649,10 +753,10 @@ pub fn to_json_schema(type_of: &str, required: bool, list: bool, config: &Config
   }
 }
 
-impl TryFrom<&Config> for Blueprint {
+impl TryFrom<ConfigAndIntrospectionData> for Blueprint {
   type Error = ValidationError<String>;
 
-  fn try_from(config: &Config) -> Result<Self, Self::Error> {
-    config_blueprint(config)
+  fn try_from(config: ConfigAndIntrospectionData) -> Result<Self, Self::Error> {
+    config_blueprint(&config.0, config.1)
   }
 }
