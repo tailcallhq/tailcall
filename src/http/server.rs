@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use anyhow::Result;
@@ -9,8 +9,6 @@ use async_graphql::http::GraphiQLSource;
 use hyper::header::{HeaderValue, IF_NONE_MATCH};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
-use socket2::{Domain, Socket, Type};
-use std::net::TcpListener;
 use tokio::time;
 extern crate tokio;
 use super::request_context::RequestContext;
@@ -45,13 +43,24 @@ async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Resu
 fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
-async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
-  match *req.method() {
-    hyper::Method::GET if state.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => graphiql(),
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
-    _ => not_found(),
+
+async fn handle_request(req: Request<Body>, state: Arc<RwLock<ServerContext>>) -> Result<Response<Body>> {
+  let server_ctx;
+  {
+    let state = state.read().unwrap();
+    server_ctx = state.clone(); // Clone the ServerContext here
+    match *req.method() {
+      hyper::Method::GET if server_ctx.server.enable_graphiql.as_ref() == Some(&req.uri().path().to_string()) => {
+        return graphiql()
+      }
+      hyper::Method::POST if req.uri().path() == "/graphql" => (),
+      _ => return not_found(),
+    }
   }
+  // Now the lock is dropped, and we can await
+  graphql_request(req, &server_ctx).await
 }
+
 fn create_allowed_headers(headers: &HeaderMap, allowed: &HashSet<String>) -> HeaderMap {
   let mut new_headers = HeaderMap::new();
   for (k, v) in headers.iter() {
@@ -77,10 +86,14 @@ pub async fn start_server(file_path: &String) -> Result<()> {
   };
 
   let config = Config::from_sdl(&server_sdl)?;
+
   let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(blueprint, server));
+  let state = Arc::new(RwLock::new(ServerContext::new(blueprint, server)));
+
+  let state_clone = Arc::clone(&state);
+
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
@@ -88,33 +101,14 @@ pub async fn start_server(file_path: &String) -> Result<()> {
 
   let addr: SocketAddr = ([0, 0, 0, 0], port).into();
 
-  let socket = Socket::new(Domain::IPV4, Type::STREAM, None).map_err(|e| {
-    log::error!("Failed to create socket: {}", e);
-    e
-  })?;
-
-  if let Err(e) = socket.set_reuse_port(true) {
-    log::error!("Failed to set reuse port: {}", e);
-  }
-  if let Err(e) = socket.bind(&addr.into()) {
-    log::error!("Failed to bind socket: {}", e);
-  }
-  if let Err(e) = socket.listen(128) {
-    log::error!("Failed to listen on socket: {}", e);
-  }
-
-  let listener: TcpListener = socket.into();
-
-  let server = hyper::Server::from_tcp(listener)
-    .map_err(CLIError::from)?
-    .serve(make_svc);
+  let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
 
   log::info!("🚀 Tailcall launched at [{}]", addr);
   if let Some(graphiql) = config.server.enable_graphiql.as_ref() {
     log::info!("🌍 Playground: http://{}{}", addr, graphiql);
   }
 
-  let refresh_interval = 10; // default to 5 minutes
+  let refresh_interval = 10;
   let client = reqwest::Client::new();
   let file_path_clone = file_path.clone();
 
@@ -167,60 +161,17 @@ pub async fn start_server(file_path: &String) -> Result<()> {
       match Config::from_sdl(&updated_sdl) {
         Ok(updated_config) => {
           println!("{:?}", updated_config);
-          let port = updated_config.port();
-          let server = updated_config.server.clone();
-
-          let blueprint = match Blueprint::try_from(&updated_config) {
-            Ok(blueprint) => blueprint,
+          let mut state = state_clone.write().unwrap();
+          match Blueprint::try_from(&updated_config) {
+            Ok(blueprint) => {
+              state.schema = blueprint.to_schema(&state.server);
+              state.server = updated_config.server;
+            }
             Err(e) => {
               log::error!("Failed to create blueprint: {}", e);
               continue;
             }
-          };
-
-          let state = Arc::new(ServerContext::new(blueprint, server));
-          let make_svc = make_service_fn(move |_conn| {
-            let state = Arc::clone(&state);
-            async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
-          });
-
-          let addr: SocketAddr = ([0, 0, 0, 0], port).into();
-          let socket = match Socket::new(Domain::IPV4, Type::STREAM, None) {
-            Ok(socket) => socket,
-            Err(e) => {
-              log::error!("Failed to create socket: {}", e);
-              continue;
-            }
-          };
-
-          if let Err(e) = socket.set_reuse_port(true) {
-            log::error!("Failed to set reuse port: {}", e);
-            continue;
           }
-          if let Err(e) = socket.set_reuse_address(true) {
-            log::error!("Failed to set reuse address: {}", e);
-            continue;
-          }
-          if let Err(e) = socket.bind(&addr.into()) {
-            log::error!("Failed to bind socket: {}", e);
-            continue;
-          }
-          if let Err(e) = socket.listen(999999) {
-            log::error!("Failed to listen on socket: {}", e);
-            continue;
-          }
-
-          let listener: TcpListener = socket.into();
-          match hyper::Server::from_tcp(listener) {
-            Ok(server) => {
-              log::info!("server reloaded");
-              server.serve(make_svc);
-            }
-            Err(e) => {
-              log::error!("Failed to bind server: {}", e);
-              continue;
-            }
-          };
         }
         Err(_) => continue,
       };
