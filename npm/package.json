@@ -7,8 +7,7 @@
     "target/*"
   ],
   "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
-  "main": "./src/index.js",
-  "bin": "./src/index.js",
+  "bin": "~/.tailcall/bin/tailcall",
   "scripts": {
     "postinstall": "node ./src/index.js --preload"
   },

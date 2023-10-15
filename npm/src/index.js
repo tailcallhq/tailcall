@@ -34,22 +34,21 @@ const getBinName = () => {
 
 const binaryName = getBinName()
 const binaryPath = `${os.homedir()}/.tailcall/bin`
-
-const packageJson = JSON.parse(fs.readFileSync(`${__dirname}/../package.json`, "utf8"))
-const version = packageJson.version
-
-const binaryDir = `${binaryPath}/${version}`
-const fullPath = `${binaryDir}/${binaryName}`
+const fullPath = `${binaryPath}/tailcall`
 
 const preload = async () => {
-  if (fs.existsSync(binaryDir)) return
+  if (fs.existsSync(fullPath)) return
 
-  fs.mkdirSync(binaryDir, {recursive: true})
+  fs.mkdirSync(binaryPath, {recursive: true})
+
+  const packageJson = JSON.parse(fs.readFileSync(`${__dirname}/../package.json`, "utf8"))
+  const version = packageJson.version
 
   try {
-    await new EasyDl(`https://github.com/tailcallhq/tailcall/releases/download/v${version}/${binaryName}`, binaryDir, {
+    await new EasyDl(`https://github.com/tailcallhq/tailcall/releases/download/v${version}/${binaryName}`, fullPath, {
       connections: 10,
       maxRetry: 5,
+      overwrite: true,
     }).wait()
 
     fs.chmodSync(fullPath, "755")
@@ -61,7 +60,7 @@ const preload = async () => {
 async function run() {
   await preload()
   const args = process.argv.slice(2)
-  const processResult = spawnSync(`${binaryDir}/${binaryName}`, args, {stdio: "inherit"})
+  const processResult = spawnSync(fullPath, args, {stdio: "inherit"})
   process.exit(processResult.status ?? 0)
 }
 
