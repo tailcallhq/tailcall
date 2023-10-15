@@ -81,7 +81,7 @@ name = "request_template_bench"
 harness = false
 
 [[bench]]
-name = "request_old_vs_new"
+name = "to_request"
 harness = false
 
 [[bench]]
