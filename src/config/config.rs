@@ -293,6 +293,14 @@ impl Union {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HttpBatch {
+  #[serde(rename = "groupByPath")]
+  pub group_by: Vec<String>,
+  #[serde(rename = "selectKey")]
+  pub select_key: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
@@ -310,6 +318,7 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
+  pub batch: Option<HttpBatch>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
