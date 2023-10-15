@@ -29,7 +29,7 @@ pub struct DefaultHttpClient {
 impl Default for DefaultHttpClient {
   fn default() -> Self {
     let server = config::Server::default();
-    //todo: remove unwrap
+    //TODO: default is used only in tests. Drop default and move it to test.
     DefaultHttpClient::new(Server::try_from(server).unwrap())
   }
 }

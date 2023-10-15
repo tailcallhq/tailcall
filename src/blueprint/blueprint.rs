@@ -24,7 +24,7 @@ pub struct Blueprint {
   pub schema: SchemaDefinition,
   pub server: Server,
 }
-//Todo: Move to new file
+//TODO: Move to new file
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
   pub enable_apollo_tracing: bool,
@@ -36,7 +36,7 @@ pub struct Server {
   pub global_response_timeout: i64,
   pub port: u16,
   pub hostname: IpAddr,
-  // todo:: add blueprint::Server::Upstream
+  // TODO: add blueprint::Server::Upstream
   pub upstream: crate::config::Upstream,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,

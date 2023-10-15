@@ -18,7 +18,7 @@ pub struct RequestContext {
 impl Default for RequestContext {
   fn default() -> Self {
     let config = config::Server::default();
-    //todo: remove unwrap
+    //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config).unwrap();
     RequestContext::new(DefaultHttpClient::default(), server)
   }
