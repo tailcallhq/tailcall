@@ -6,6 +6,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
 use crate::blueprint::Server;
+use crate::config;
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -27,7 +28,9 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    DefaultHttpClient::new(Default::default())
+    let server = config::Server::default();
+    //todo: remove unwrap
+    DefaultHttpClient::new(Server::try_from(server).unwrap())
   }
 }
 

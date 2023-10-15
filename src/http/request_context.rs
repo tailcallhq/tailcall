@@ -5,6 +5,7 @@ use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, Response, ServerContext};
 use crate::blueprint::Server;
+use crate::config;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -16,7 +17,10 @@ pub struct RequestContext {
 
 impl Default for RequestContext {
   fn default() -> Self {
-    RequestContext::new(DefaultHttpClient::default(), Server::default())
+    let config = config::Server::default();
+    //todo: remove unwrap
+    let server = Server::try_from(config).unwrap();
+    RequestContext::new(DefaultHttpClient::default(), server)
   }
 }
 

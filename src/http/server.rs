@@ -47,7 +47,16 @@ fn not_found() -> Result<Response<Body>> {
 }
 async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::GET if state.blueprint.server.enable_graphiql == *req.uri().path() => graphiql(),
+    hyper::Method::GET
+      if state
+        .blueprint
+        .server
+        .enable_graphiql
+        .as_ref()
+        .map_or(false, |s| s.as_str() == req.uri().path()) =>
+    {
+      graphiql()
+    }
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
     _ => not_found(),
   }
@@ -63,7 +72,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 pub async fn start_server(config: Config) -> Result<()> {
-  let _server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let state = Arc::new(ServerContext::new(blueprint.clone()));
   let make_svc = make_service_fn(move |_conn| {
