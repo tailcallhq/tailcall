@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,8 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
+  #[serde(skip_serializing_if = "is_default")]
+  pub hostname: Option<String>,
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub upstream: Upstream,
@@ -38,6 +40,18 @@ impl Default for Batch {
 }
 
 impl Server {
+  pub fn enable_apollo_tracing(&self) -> bool {
+    self.enable_apollo_tracing.unwrap_or(false)
+  }
+  pub fn enable_graphiql(&self) -> Option<String> {
+    self.enable_graphiql.clone()
+  }
+  pub fn get_global_response_timeout(&self) -> i64 {
+    self.global_response_timeout.unwrap_or(0)
+  }
+  pub fn get_port(&self) -> u16 {
+    self.port.unwrap_or(8000)
+  }
   pub fn enable_http_validation(&self) -> bool {
     self.enable_response_validation.unwrap_or(false)
   }
@@ -51,6 +65,22 @@ impl Server {
     self.enable_query_validation.unwrap_or(true)
   }
 
+  pub fn get_hostname(&self) -> String {
+    self.hostname.clone().unwrap_or("127.0.0.1".to_string())
+  }
+
+  pub fn get_vars(&self) -> BTreeMap<String, String> {
+    self.vars.clone().0
+  }
+
+  pub fn get_response_headers(&self) -> KeyValues {
+    self.response_headers.clone()
+  }
+
+  pub fn get_upstream(&self) -> Upstream {
+    self.upstream.clone()
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
     self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
@@ -60,6 +90,7 @@ impl Server {
     self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
+    self.hostname = other.hostname.or(self.hostname);
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);

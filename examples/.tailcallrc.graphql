@@ -10,6 +10,7 @@ directive @server(
   vars: [KeyValue]
   upstream: Upstream
   responseHeaders: [KeyValue]
+  hostname: String
 ) on SCHEMA
 directive @http(
   path: String!
