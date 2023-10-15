@@ -99,7 +99,7 @@ pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries
 
   if *schema {
     Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
-    let sdl = blueprint.to_schema(&config.server);
+    let sdl = blueprint.to_schema();
     Fmt::display(print_schema::print_schema(sdl));
   }
   Ok(())

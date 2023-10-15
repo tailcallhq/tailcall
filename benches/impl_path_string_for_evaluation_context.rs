@@ -6,7 +6,6 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
-use tailcall::config::KeyValues;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path_string::PathString;
@@ -66,12 +65,12 @@ lazy_static::lazy_static! {
     map
   };
 
-  static ref TEST_VARS: KeyValues = {
+  static ref TEST_VARS: BTreeMap<String, String> = {
     let mut map = BTreeMap::new();
 
     map.insert("existing".to_owned(), "var".to_owned());
 
-    KeyValues(map)
+    map
   };
 }
 

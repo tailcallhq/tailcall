@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, Response, ServerContext};
-use crate::config::Server;
+use crate::blueprint::Server;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -52,7 +52,7 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     let http_client = server_ctx.http_client.clone();
-    Self::new(http_client, server_ctx.server.clone())
+    Self::new(http_client, server_ctx.blueprint.server.clone())
   }
 }
 

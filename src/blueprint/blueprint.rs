@@ -41,6 +41,23 @@ pub struct Server {
   pub response_headers: HeaderMap,
 }
 
+impl Server {
+  pub fn get_enable_http_validation(&self) -> bool {
+    self.enable_response_validation
+  }
+  pub fn get_enable_cache_control(&self) -> bool {
+    self.enable_cache_control_header
+  }
+
+  pub fn get_enable_introspection(&self) -> bool {
+    self.enable_introspection
+  }
+
+  pub fn get_enable_query_validation(&self) -> bool {
+    self.enable_query_validation
+  }
+}
+
 impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
@@ -283,26 +300,26 @@ impl Blueprint {
     self.schema.mutation.clone()
   }
 
-  pub fn to_schema(&self, server: &config::Server) -> Schema {
+  pub fn to_schema(&self) -> Schema {
+    let server = &self.server;
     let mut schema = SchemaBuilder::from(self);
 
-    if server.enable_apollo_tracing.unwrap_or(false) {
+    if server.enable_apollo_tracing {
       schema = schema.extension(ApolloTracing);
     }
 
-    let global_response_timeout = server.global_response_timeout.unwrap_or(0);
-    if global_response_timeout > 0 {
+    if server.global_response_timeout > 0 {
       schema = schema
-        .data(async_graphql::Value::from(global_response_timeout))
+        .data(async_graphql::Value::from(server.global_response_timeout))
         .extension(GlobalTimeout);
     }
 
-    if server.enable_query_validation() {
+    if server.get_enable_query_validation() {
       schema = schema.validation_mode(ValidationMode::Strict);
     } else {
       schema = schema.validation_mode(ValidationMode::Fast);
     }
-    if !server.enable_introspection() {
+    if !server.get_enable_introspection() {
       schema = schema.disable_introspection();
     }
 

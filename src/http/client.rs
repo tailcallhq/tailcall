@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::Server;
+use crate::blueprint::Server;
 
 #[async_trait::async_trait]
 pub trait HttpClient {
