@@ -61,7 +61,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 pub async fn start_server(config: Config) -> Result<()> {
-  let port = config.port();
   let server = config.server.clone();
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let state = Arc::new(ServerContext::new(blueprint.clone(), server));
@@ -69,8 +68,7 @@ pub async fn start_server(config: Config) -> Result<()> {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
   });
-
-  let addr = (blueprint.server.hostname, port).into();
+  let addr = (blueprint.server.hostname, blueprint.server.port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
   if let Some(enable_graphiql) = blueprint.server.enable_graphiql {

@@ -4,6 +4,7 @@ schema
     upstream: {baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true}
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
+    hostname: "0.0.0.0"
   ) {
   query: Query
 }

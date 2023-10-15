@@ -1,9 +1,5 @@
 schema
-  @server(
-    responseHeaders: [{key: "x-id", value: "1"}, {key: "x-value", value: "value"}]
-    enableGraphiql: "/graphiql"
-    hostname: "localhost"
-  ) {
+  @server(responseHeaders: [{key: "x-id", value: "1"}, {key: "x-value", value: "value"}], enableGraphiql: "/graphiql") {
   query: Query
 }
 
