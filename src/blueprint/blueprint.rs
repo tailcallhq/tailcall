@@ -128,7 +128,7 @@ fn configure_server(config_server: &config::Server) -> Valid<Server, String> {
     hostname: validate_hostname(config_server.get_hostname().to_lowercase())?,
     upstream: config_server.get_upstream(),
     vars: config_server.get_vars(),
-    response_headers: handle_response_headers(config_server.get_response_headers())?,
+    response_headers: handle_response_headers(config_server.get_response_headers().0)?,
   })
 }
 

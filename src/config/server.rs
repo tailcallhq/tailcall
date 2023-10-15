@@ -73,8 +73,8 @@ impl Server {
     self.vars.clone().0
   }
 
-  pub fn get_response_headers(&self) -> BTreeMap<String, String> {
-    self.response_headers.clone().0
+  pub fn get_response_headers(&self) -> KeyValues {
+    self.response_headers.clone()
   }
 
   pub fn get_upstream(&self) -> Upstream {
