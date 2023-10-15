@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server {
+schema @server @upstream {
   query: Query
 }
 
