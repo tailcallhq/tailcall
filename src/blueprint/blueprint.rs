@@ -20,7 +20,7 @@ pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
   pub server: Server,
-  pub upstream: crate::config::Upstream,
+  pub upstream: Upstream,
 }
 
 #[derive(Clone, Debug)]
