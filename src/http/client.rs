@@ -5,7 +5,8 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::Server;
+use crate::blueprint::Server;
+use crate::config;
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -27,7 +28,9 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    DefaultHttpClient::new(Default::default())
+    let server = config::Server::default();
+    //TODO: default is used only in tests. Drop default and move it to test.
+    DefaultHttpClient::new(Server::try_from(server).unwrap())
   }
 }
 
