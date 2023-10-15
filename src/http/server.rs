@@ -70,7 +70,7 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
   });
 
-  let addr = ([0, 0, 0, 0], port).into();
+  let addr = (blueprint.server.hostname, port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
   if !blueprint.server.enable_graphiql.clone().is_empty() {

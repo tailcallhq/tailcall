@@ -15,6 +15,8 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
+  #[serde(skip_serializing_if = "is_default")]
+  pub hostname: Option<String>,
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub upstream: Upstream,
@@ -51,6 +53,10 @@ impl Server {
     self.enable_query_validation.unwrap_or(true)
   }
 
+  pub fn get_hostname(&self) -> String {
+    self.hostname.clone().unwrap_or("0.0.0.0".to_string())
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
     self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
@@ -60,6 +66,7 @@ impl Server {
     self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
+    self.hostname = other.hostname.or(self.hostname);
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);

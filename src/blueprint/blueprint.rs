@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::net::{AddrParseError, IpAddr};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -24,7 +25,7 @@ pub struct Blueprint {
   pub server: Server,
 }
 
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Setters)]
 pub struct Server {
   pub enable_apollo_tracing: bool,
   pub enable_cache_control_header: bool,
@@ -34,9 +35,29 @@ pub struct Server {
   pub enable_response_validation: bool,
   pub global_response_timeout: i64,
   pub port: u16,
+  pub hostname: IpAddr,
   pub upstream: crate::config::Upstream,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
+}
+
+impl Default for Server {
+  fn default() -> Self {
+    Server {
+      enable_apollo_tracing: false,
+      enable_cache_control_header: false,
+      enable_graphiql: "/graphiql".to_string(),
+      enable_introspection: true,
+      enable_query_validation: true,
+      enable_response_validation: false,
+      global_response_timeout: 0,
+      port: 8000,
+      hostname: IpAddr::from([0, 0, 0, 0]),
+      upstream: crate::config::Upstream::default(),
+      vars: BTreeMap::new(),
+      response_headers: HeaderMap::new(),
+    }
+  }
 }
 
 impl TryFrom<crate::config::Server> for Server {
@@ -57,8 +78,29 @@ impl TryFrom<crate::config::Server> for Server {
     // Configure other server settings
     server = configure_server(server, &config_server);
 
+    // Handle hostname
+
+    server = validate_hostname(server, &config_server)?;
+
     Valid::Ok(server.clone())
   }
+}
+fn validate_hostname(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
+  let hostname = config_server.get_hostname().to_lowercase();
+  if hostname == "localhost" {
+    server = server.clone().hostname(IpAddr::from([127, 0, 0, 1]));
+  } else {
+    server = server.clone().hostname(
+      hostname
+        .parse()
+        .map_err(|e: AddrParseError| ValidationError::new(format!("Parsing failed because of {}", e)))
+        .trace("hostname")
+        .trace("@server")
+        .trace("schema")?,
+    );
+  }
+
+  Ok(server)
 }
 const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
 
