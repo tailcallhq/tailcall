@@ -5,7 +5,6 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 
 #[async_trait::async_trait]

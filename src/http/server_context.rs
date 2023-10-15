@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use async_graphql::dynamic;
 use derive_setters::Setters;
-use hyper::HeaderMap;
 
 use crate::blueprint::{Blueprint, Definition};
 use crate::http::{DefaultHttpClient, HttpDataLoader};

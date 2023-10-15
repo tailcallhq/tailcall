@@ -45,7 +45,7 @@ impl TryFrom<crate::config::Config> for Server {
 
   fn try_from(config_config: config::Config) -> Valid<Self, String> {
     // Configure other server settings
-    let mut server = configure_server(&config_config)?;
+    let server = configure_server(&config_config)?;
     Valid::Ok(server.clone())
   }
 }
@@ -103,16 +103,6 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
   let mut response_headers = HeaderMap::new();
   response_headers.extend(headers);
   Ok(response_headers)
-}
-
-fn handle_base_url(base_url: Option<String>) -> Valid<Option<String>, String> {
-  let base_url = if let Some(base_url) = base_url {
-    Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?)?;
-    Some(base_url)
-  } else {
-    None
-  };
-  Ok(base_url)
 }
 
 fn configure_server(config_config: &config::Config) -> Valid<Server, String> {
