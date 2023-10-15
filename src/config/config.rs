@@ -346,6 +346,19 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
+  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<(Config, Option<String>)> {
+    let first_path = file_paths.clone().next().unwrap();
+    if first_path.starts_with("http://") || first_path.starts_with("https://") {
+      let resp = reqwest::get(first_path).await?;
+      let server_sdl = resp.text().await?;
+      let config = Config::from_sdl(&server_sdl)?;
+      Ok((config, Some(first_path.to_string())))
+    } else {
+      let config = Config::from_file_paths(file_paths).await?;
+      Ok((config, None))
+    }
+  }
+
   pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
     let mut config = Config::default();
     let futures: Vec<_> = file_paths

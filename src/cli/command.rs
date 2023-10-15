@@ -27,6 +27,8 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
+    #[arg(long)]
+    refresh_interval: Option<u64>,
   },
 
   /// Validate a composition spec

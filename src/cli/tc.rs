@@ -20,12 +20,12 @@ pub async fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level } => {
+    Command::Start { file_path, log_level, refresh_interval } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config = Config::from_file_paths(file_path.iter()).await?;
-      start_server(config).await?;
+      let config = Config::from_file_or_url(file_path.iter()).await?;
+      start_server(config.0, config.1, refresh_interval).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

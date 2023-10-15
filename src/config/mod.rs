@@ -1,4 +1,5 @@
 mod config;
+pub(crate) mod config_poll;
 mod from_document;
 pub mod group_by;
 mod into_document;
