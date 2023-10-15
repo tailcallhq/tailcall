@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::server::Server;
+use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -19,6 +20,7 @@ pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
   pub server: Server,
+  pub upstream: crate::config::Upstream,
 }
 
 #[derive(Clone, Debug)]
@@ -160,8 +162,9 @@ pub struct UnionTypeDefinition {
   pub types: BTreeSet<String>,
 }
 impl Blueprint {
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, server: Server) -> Self {
-    Self { schema, definitions, server }
+  #[allow(clippy::too_many_arguments)]
+  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, server: Server, upstream: Upstream) -> Self {
+    Self { schema, definitions, server, upstream }
   }
 
   pub fn query(&self) -> String {

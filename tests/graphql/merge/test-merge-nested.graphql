@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(upstream: {baseURL: "http://abc.com"}) {
+schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }
 
@@ -31,7 +31,7 @@ type Foo {
 }
 
 #> merged-sdl
-schema @server(upstream: {baseURL: "http://abc.com"}) {
+schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }
 

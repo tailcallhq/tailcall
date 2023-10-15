@@ -6,7 +6,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
 use crate::blueprint::Server;
-use crate::config;
+use crate::config::{self, Upstream};
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -28,16 +28,14 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    let server = config::Server::default();
+    let upstream = config::Upstream::default();
     //TODO: default is used only in tests. Drop default and move it to test.
-    DefaultHttpClient::new(Server::try_from(server).unwrap())
+    DefaultHttpClient::new(upstream)
   }
 }
 
 impl DefaultHttpClient {
-  pub fn new(server: Server) -> Self {
-    let upstream = &server.upstream;
-
+  pub fn new(upstream: Upstream) -> Self {
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
       .timeout(Duration::from_secs(upstream.get_timeout()))
@@ -55,7 +53,7 @@ impl DefaultHttpClient {
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-    if server.upstream.get_enable_http_cache() {
+    if upstream.get_enable_http_cache() {
       client = client.with(Cache(HttpCache {
         mode: CacheMode::Default,
         manager: MokaManager::default(),

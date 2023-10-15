@@ -104,10 +104,9 @@ impl Expression {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
-              if is_get && ctx.req_ctx.server.upstream.batch.is_some() {
+              if is_get && ctx.req_ctx.upstream.batch.is_some() {
                 let headers = ctx
                   .req_ctx
-                  .server
                   .upstream
                   .batch
                   .clone()

@@ -9,9 +9,8 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, GraphQL, Http, RootSchema, Server, Union};
+use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
 
@@ -19,7 +18,11 @@ type Valid<A> = ValidDefault<A, String>;
 fn from_document(doc: ServiceDocument) -> Valid<Config> {
   let schema_definition = schema_definition(&doc)?;
 
-  Valid::Ok(Config { server: server(schema_definition)?, graphql: graphql(&doc)? })
+  Valid::Ok(Config {
+    server: server(schema_definition)?,
+    upstream: upstream(schema_definition)?,
+    graphql: graphql(&doc)?,
+  })
 }
 fn graphql(doc: &ServiceDocument) -> Valid<GraphQL> {
   let type_definitions: Vec<_> = doc
@@ -50,14 +53,25 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition> {
     Valid::Ok,
   )
 }
-fn server(schema_definition: &SchemaDefinition) -> Valid<Server> {
-  let mut server = Valid::Ok(Server::default());
+
+fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
+  schema_definition: &'a SchemaDefinition,
+  directive_name: &str,
+) -> Valid<T> {
+  let mut res: Result<T, ValidationError<String>> = Valid::Ok(T::default());
   for directive in schema_definition.directives.iter() {
-    if directive.node.name.node == "server" {
-      server = Server::from_directive(&directive.node)
+    if directive.node.name.node.as_ref() == directive_name {
+      res = T::from_directive(&directive.node);
     }
   }
-  server
+  res
+}
+
+fn server(schema_definition: &SchemaDefinition) -> Valid<Server> {
+  process_schema_directives(schema_definition, "server")
+}
+fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream> {
+  process_schema_directives(schema_definition, "upstream")
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);

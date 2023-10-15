@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) {
+schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) @upstream {
   query: Query
 }
 
@@ -8,7 +8,7 @@ type Query {
 }
 
 #> server-sdl
-schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) {
+schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) @upstream {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
 }
 
 #> merged-sdl
-schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p", value: "q"}]) {
+schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p", value: "q"}]) @upstream {
   query: Query
 }
 

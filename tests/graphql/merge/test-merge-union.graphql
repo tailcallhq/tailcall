@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(upstream: {baseURL: "http://jsonplacheholder.typicode.com"}) {
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
   foo: FooBar @http(path: "/foo")
 }
 #> server-sdl
-schema @server(upstream: {baseURL: "http://jsonplacheholder.typicode.com"}) {
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
@@ -37,7 +37,7 @@ type Query {
 }
 
 #> merged-sdl
-schema @server(upstream: {baseURL: "http://jsonplacheholder.typicode.com"}) {
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
