@@ -14,9 +14,6 @@
   "license": "Apache-2.0",
   "bugs": "https://github.com/tailcallhq/tailcall/issues",
   "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
-  "files": [
-    "scripts/postinstall.js"
-  ],
   "keywords": [
     "GraphQL",
     "Rust",

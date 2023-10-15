@@ -206,8 +206,7 @@ jobs:
       - name: Copy CLI binary
         id: copy-cli
         run: |
-          mkdir dist
-          cp target/${{ matrix.target }}/release/tailcall ./dist/tailcall-${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tailcall ./npm/${{ matrix.target }}
 
       - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
@@ -228,6 +227,6 @@ jobs:
 
       - name: Publish npm packages as latest
         # CD to package and publish and move back to top-level folder
-        run: for package in npm/*; do cd $package; npm publish --tag latest --access public --provenance; cd ../..; done
+        run: for package in npm/*; do pushd $package; npm publish --tag latest --access public --provenance; popd; done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
