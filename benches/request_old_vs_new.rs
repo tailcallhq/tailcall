@@ -23,7 +23,7 @@ impl Default for Context {
   }
 }
 impl PathString for Context {
-  fn path_string(&self, parts: &[String]) -> Option<Cow<'_, str>> {
+  fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
     self.value.path_string(parts)
   }
 }

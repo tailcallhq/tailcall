@@ -22,28 +22,8 @@ pub struct RequestTemplate {
   p_all_static: bool,
 }
 
-// #[derive(Setters, Debug)]
-// pub struct RequestOption{
-//   pub option: Option<reqwest::Request>
-// }
-
-// impl Clone for RequestOption {
-//     fn clone(&self) -> RequestOption {
-
-//       match &self.option{
-//         Some(r) => return RequestOption{option:r.try_clone()},
-//         _ =>  return RequestOption{option: None},
-//       };
-//     }
-// }
-
 impl Clone for RequestTemplate {
   fn clone(&self) -> RequestTemplate {
-    let static_reqwest = if let Some(req) = &self.static_reqwest {
-      req.try_clone()
-    } else {
-      None
-    };
 
     RequestTemplate {
       root_url: self.root_url.clone(),
@@ -52,158 +32,120 @@ impl Clone for RequestTemplate {
       headers: self.headers.clone(),
       body: self.body.clone(),
       endpoint: self.endpoint.clone(),
-      static_reqwest,
-      p_all_static: self.p_all_static,
+      static_reqwest: self.static_reqwest.as_ref().map_or(None, reqwest::Request::try_clone),
+      p_all_static: self.p_all_static
     }
   }
 }
 
 impl RequestTemplate {
   fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
-    let root_url = self.root_url.render(ctx);
+    let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
 
-    let mut url = url::Url::parse(root_url.as_str())?;
+    if !url.query().is_none(){
 
-    let q: Vec<(String, String)> = url
-      .query_pairs()
-      .filter_map(|(k, v)| {
-        if v.is_empty() {
+      let q: Vec<(String, String)> = url.query_pairs().filter_map(|(k, v)| {
+        if !v.is_empty(){
+          Some((k.into_owned(), v.into_owned()))
+        }else{
           None
-        } else {
-          Some((k.to_string(), v.to_string()))
         }
-      })
-      .collect();
-    {
-      if !self.query.is_empty() || !q.is_empty() {
-        url.set_query(None);
-        let mut query_list = url.query_pairs_mut();
+      }).collect();
 
-        for (k, v) in q {
-          query_list.append_pair(&k, &v);
-        }
+      url.set_query(None);
 
-        for (k, v) in &self.query {
-          let rendered_v = v.render(ctx);
-          if !rendered_v.is_empty() {
-            query_list.append_pair(k, &rendered_v);
-          }
-        }
-      } else {
-        url.set_query(None);
+      if q.len() > 0{
+        url.query_pairs_mut().extend_pairs(q);
       }
     }
+
     Ok(url)
   }
 
-  fn parse_root_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
-    let root_url = self.root_url.render(ctx);
-    let url = url::Url::parse(root_url.as_str())?;
+  #[inline]
+  fn static_mustache(v : &Mustache) -> bool{
+    v.is_const()
+  }
 
-    Ok(url)
+  #[inline]
+  fn dynamic_mustache(v : &Mustache) -> bool{
+    !v.is_const()
+  }
+
+  #[inline]
+  fn everything(_: &Mustache) -> bool{
+    true
   }
 
   fn create_static_request(&mut self) {
-    self.p_all_static = self.root_url.is_const();
-
     let ctx = &json!(null);
-
-    let root_url = self.root_url.render(ctx);
-    let mut url: Url = url::Url::parse(root_url.as_str()).unwrap();
-    self.set_static_queries(ctx, &mut url);
-
-    for (_, v) in &self.headers {
-      if !v.is_const() {
-        self.p_all_static = false;
-      }
-    }
-
-    let mut header_map = self.eval_headers2(ctx, true);
-    header_map.insert(
+    let mut req = self.create_request(ctx).unwrap();
+    self.setup_req(ctx, &mut req, RequestTemplate::static_mustache);
+    req.headers_mut().insert( 
       reqwest::header::CONTENT_TYPE,
-      HeaderValue::from_static("application/json"),
+      HeaderValue::from_static("application/json")
     );
-
-    let method = self.method.clone();
-
-    let mut req = reqwest::Request::new(method, url);
-
-    req.headers_mut().extend(header_map);
-
-    if let Some(body) = &self.body {
-      if body.is_const() {
-        req.body_mut().replace(self.eval_body(ctx));
-      } else {
-        self.p_all_static = false;
-      }
-    }
-
     self.static_reqwest = Some(req);
+
+    self.p_all_static = self.root_url.is_const()
+      && self.body.as_ref().map_or(true, Mustache::is_const)
+      && self.query.iter().all(|(_, v)| v.is_const())
+      && self.headers.iter().all(|(_, v)| v.is_const());
   }
 
-  fn set_queries<C: PathString>(&self, ctx: &C, url: &mut Url) -> bool {
-    let q: Vec<(String, String)> = url
-      .query_pairs()
-      .filter_map(|(k, v)| {
-        if v.is_empty() {
+  fn update_query<'a>(url: &mut Url, pairs: impl Iterator<Item = (&'a str, String)>) -> bool
+  {
+    let mut p_has_pairs = url.query().is_some();
+    let mut query_pairs = url.query_pairs_mut();
+    for (k, v) in pairs{
+      query_pairs.append_pair(k, &v);
+      p_has_pairs = true;
+    }
+    p_has_pairs
+  }
+
+  fn setup_req<C: PathString>(&self, ctx: &C, req : &mut reqwest::Request, mustache_filter: fn(&Mustache) -> bool){
+
+    let filter_list = self.query.iter().filter_map(|(k,v)| {
+      if mustache_filter(&v){      
+        let rendered_v = v.render(ctx);
+        if !rendered_v.is_empty(){
+          Some((k.as_str(), rendered_v))
+        }else{
           None
-        } else {
-          Some((k.to_string(), v.to_string()))
         }
-      })
-      .collect();
-    url.set_query(None);
+      }else{
+        None
+      }
+    }); 
 
-    let mut is_empty = true;
-
-    let mut query_list = url.query_pairs_mut();
-
-    for (k, v) in &q {
-      query_list.append_pair(k, v);
-      is_empty = false;
+    if !RequestTemplate::update_query(req.url_mut(), filter_list){
+      req.url_mut().set_query(None);
     }
 
-    for (k, v) in &self.query {
-      if v.is_const() {
-        let rendered_v = v.render(ctx);
-        if !rendered_v.is_empty() {
-          query_list.append_pair(k, &rendered_v);
-          is_empty = false;
+    let headers = self.eval_headers2(ctx, mustache_filter);
+    if !headers.is_empty() {
+      req.headers_mut().extend(headers);
+    }
+    
+     if let Some(body) = &self.body {
+        if mustache_filter(&body) {
+            req.body_mut().replace(self.eval_body(ctx));
         }
       }
-    }
-
-    is_empty
   }
 
-  fn set_static_queries<C: PathString>(&self, ctx: &C, url: &mut Url) {
-    if self.set_queries(ctx, url) {
-      url.set_query(None);
-    }
+  fn create_request<C: PathString>(&self, ctx :&C) ->anyhow::Result<reqwest::Request>{
+    let url = self.eval_url2(ctx)?;
+    let method = self.method.clone();
+    Ok(reqwest::Request::new(method, url))
   }
 
-  fn update_dynamic_queries<C: PathString>(&self, ctx: &C, url: &mut Url) -> bool {
-    let mut is_empty = url.query_pairs().count() == 0;
-    let mut query_list = url.query_pairs_mut();
-
-    for (k, v) in &self.query {
-      if !v.is_const() {
-        let rendered_v = v.render(ctx);
-        if !rendered_v.is_empty() {
-          query_list.append_pair(k, &rendered_v);
-          is_empty = false;
-        }
-      }
-    }
-
-    is_empty
-  }
-
-  fn eval_headers2<C: PathString>(&self, ctx: &C, pred: bool) -> HeaderMap {
+  fn eval_headers2<C: PathString>(&self, ctx: &C, mustache_filter: fn(&Mustache) -> bool) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
-      if v.is_const() == pred {
+      if mustache_filter(v){
         if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
           if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
             header_map.insert(header_name, header_value);
@@ -253,11 +195,9 @@ impl RequestTemplate {
   }
 
   fn eval_body<C: PathString>(&self, ctx: &C) -> reqwest::Body {
-    self
-      .body
+    self.body
       .as_ref()
-      .map(|b| b.render(ctx).into())
-      .unwrap_or(reqwest::Body::from("".to_string()))
+      .map_or(reqwest::Body::from("".to_string()), |b| b.render(ctx).into())
   }
 
   /// A high-performance way to reliably create a request
@@ -279,58 +219,35 @@ impl RequestTemplate {
 
   /// A high-performance way to reliably create a request
   pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    if self.p_all_static {
-      let mut req = self.static_reqwest.as_ref().unwrap().try_clone().unwrap();
-      let ctx_headers = ctx.headers();
-      if !ctx_headers.is_empty() {
-        req.headers_mut().extend(ctx_headers.to_owned());
+
+    if let Some(r) = &self.static_reqwest{
+      let mut req = r.try_clone().unwrap();
+      
+      if !self.p_all_static{
+        if !self.root_url.is_const(){
+          *req.url_mut() = self.eval_url2(ctx)?;
+        }
+        self.setup_req(ctx, &mut req, RequestTemplate::dynamic_mustache);
+      }
+
+      let ctx_headers = ctx.headers().to_owned();
+
+      if !ctx_headers.is_empty(){
+        req.headers_mut().extend(ctx_headers);
       }
 
       Ok(req)
-    } else if let Some(r) = &self.static_reqwest {
-      let mut req = r.try_clone().unwrap();
 
-      if !self.root_url.is_const() {
-        *req.url_mut() = self.parse_root_url(ctx)?;
-        self.set_static_queries(ctx, req.url_mut());
-      }
+    }else{
 
-      if self.update_dynamic_queries(ctx, req.url_mut()) {
-        req.url_mut().set_query(None);
-      }
-
-      let header_map = req.headers_mut();
-      let new_headers = self.eval_headers2(ctx, false);
-
-      if !new_headers.is_empty() {
-        header_map.extend(new_headers);
-      }
-
-      let ctx_headers = ctx.headers();
-      if !ctx_headers.is_empty() {
-        header_map.extend(ctx_headers.to_owned());
-      }
-
-      if let Some(body) = &self.body {
-        if !body.is_const() {
-          req.body_mut().replace(self.eval_body(ctx));
-        }
-      }
-
-      return Ok(req);
-    } else {
-      let url = self.eval_url2(ctx)?;
-      let mut header_map = self.eval_headers(ctx);
-      header_map.extend(ctx.headers().to_owned());
-      header_map.insert(
-        reqwest::header::CONTENT_TYPE,
-        HeaderValue::from_static("application/json"),
-      );
-      let body = self.eval_body(ctx);
-      let method = self.method.clone();
-      let mut req = reqwest::Request::new(method, url);
-      req.headers_mut().extend(header_map);
-      req.body_mut().replace(body);
+      let mut req = self.create_request(ctx)?;
+      self.setup_req(ctx, &mut req, RequestTemplate::everything);
+      let headers = req.headers_mut();
+      headers.insert(
+          reqwest::header::CONTENT_TYPE,
+          HeaderValue::from_static("application/json"),
+        );
+      headers.extend(ctx.headers().to_owned());
       Ok(req)
     }
   }
