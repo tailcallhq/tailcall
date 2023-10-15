@@ -24,14 +24,13 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-
-      start_server(&file_path).await?;
+      let config = Config::from_file_paths(file_path.iter()).await?;
+      start_server(config).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let server_sdl = fs::read_to_string(file_path).expect("Failed to read file");
-      let config = Config::from_sdl(&server_sdl)?;
-      let blueprint = blueprint_from_sdl(&server_sdl);
+      let config = Config::from_file_paths(file_path.iter()).await?;
+      let blueprint = Ok(Blueprint::try_from(&config)?);
       match blueprint {
         Ok(blueprint) => {
           display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
@@ -93,11 +92,6 @@ pub async fn init(file_path: &str) -> Result<()> {
   Ok(())
 }
 
-pub fn blueprint_from_sdl(sdl: &str) -> Result<Blueprint> {
-  let config = Config::from_sdl(sdl)?;
-  Ok(Blueprint::try_from(&config)?)
-}
-
 pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) -> Result<()> {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(*n_plus_one_queries, config)];
@@ -105,7 +99,7 @@ pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries
 
   if *schema {
     Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
-    let sdl = blueprint.to_schema(&config.server);
+    let sdl = blueprint.to_schema();
     Fmt::display(print_schema::print_schema(sdl));
   }
   Ok(())

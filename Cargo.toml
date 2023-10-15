@@ -36,12 +36,12 @@ lazy_static = "1.4.0"
 mini-v8 = { version = "0.4.1", optional = true }
 clap = { version = "4.4.6", features = ["derive"] }
 colored = "2"
-regex = "1.10.0"
+regex = "1.10.1"
 http-cache-reqwest = { version = "0.11.3", features = [
    "manager-moka"
 ], default-features = false }
 reqwest-middleware = "0.2.3"
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 serde_path_to_error = "0.1.14"
 moka = { version = "0.12.1", default-features = false, features = ["future"] }
 cache_control = "0.2.0"

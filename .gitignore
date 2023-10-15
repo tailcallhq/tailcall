@@ -2,6 +2,7 @@
 /.idea
 .vscode
 *.svg
+.DS_Store
 
 # direnv
 .direnv

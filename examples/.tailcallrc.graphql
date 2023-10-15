@@ -1,18 +1,16 @@
 directive @server(
-  allowedHeaders: [String]
-  baseURL: String
   enableApolloTracing: Boolean
   enableCacheControlHeader: Boolean
   enableGraphiql: String
-  enableHttpCache: Boolean
   enableIntrospection: Boolean
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
   globalResponseTimeout: Int
   port: Int
-  proxy: Proxy
   vars: [KeyValue]
-  batch: Batch
+  upstream: Upstream
+  responseHeaders: [KeyValue]
+  hostname: String
 ) on SCHEMA
 directive @http(
   path: String!
@@ -24,7 +22,7 @@ directive @http(
 ) on FIELD_DEFINITION
 directive @inline(path: [String]!) on FIELD_DEFINITION
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
-directive @groupBy(path: [String]!, key: String!) on FIELD_DEFINITION
+directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: Json) on FIELD_DEFINITION
 
 enum Method {
@@ -39,6 +37,23 @@ enum Method {
 
 input Proxy {
   url: String
+}
+
+input Upstream {
+  allowedHeaders: [String]
+  connectTimeout: Int
+  keepAliveInterval: Int
+  keepAliveTimeout: Int
+  keepAliveWhileIdle: Boolean
+  poolIdleTimeout: Int
+  poolMaxIdlePerHost: Int
+  proxy: Proxy
+  tcpKeepAlive: Int
+  timeout: Int
+  userAgent: String
+  baseURL: String
+  enableHttpCache: Boolean
+  batch: Batch
 }
 
 input KeyValue {

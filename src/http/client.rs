@@ -5,7 +5,8 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
-use crate::config::Server;
+use crate::blueprint::Server;
+use crate::config;
 
 #[async_trait::async_trait]
 pub trait HttpClient {
@@ -27,26 +28,34 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    DefaultHttpClient::new(Default::default())
+    let server = config::Server::default();
+    //TODO: default is used only in tests. Drop default and move it to test.
+    DefaultHttpClient::new(Server::try_from(server).unwrap())
   }
 }
 
 impl DefaultHttpClient {
   pub fn new(server: Server) -> Self {
-    let mut builder = Client::builder()
-      .pool_max_idle_per_host(200)
-      .tcp_keepalive(Some(Duration::from_secs(5)))
-      .timeout(Duration::from_secs(60))
-      .connect_timeout(Duration::from_secs(60))
-      .user_agent("Tailcall/1.0");
+    let upstream = &server.upstream;
 
-    if let Some(ref proxy) = server.proxy {
+    let mut builder = Client::builder()
+      .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
+      .timeout(Duration::from_secs(upstream.get_timeout()))
+      .connect_timeout(Duration::from_secs(upstream.get_connect_timeout()))
+      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.get_keep_alive_interval())))
+      .http2_keep_alive_timeout(Duration::from_secs(upstream.get_keep_alive_timeout()))
+      .http2_keep_alive_while_idle(upstream.get_keep_alive_while_idle())
+      .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
+      .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
+      .user_agent(upstream.get_user_agent());
+
+    if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-    if server.enable_http_cache() {
+    if server.upstream.get_enable_http_cache() {
       client = client.with(Cache(HttpCache {
         mode: CacheMode::Default,
         manager: MokaManager::default(),

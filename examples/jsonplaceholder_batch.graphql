@@ -1,11 +1,9 @@
 schema
   @server(
     port: 8000
-    baseURL: "http://jsonplaceholder.typicode.com"
-    enableHttpCache: true
+    upstream: {baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true, batch: {delay: 1, maxSize: 1000}}
     enableGraphiql: "/graphiql"
     enableQueryValidation: false
-    batch: {delay: 1, maxSize: 1000}
   ) {
   query: Query
 }
@@ -28,5 +26,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(key: "id", path: ["id"])
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy
 }

@@ -22,16 +22,18 @@ pub struct Cli {
 pub enum Command {
   /// Starts the GraphQL server on the configured port
   Start {
-    /// Path for the configuration file
-    file_path: String,
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
   },
 
   /// Validate a composition spec
   Check {
-    /// Path for the configuration file
-    file_path: String,
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_path: Vec<String>,
 
     /// N plus one queries
     #[arg(short, long)]

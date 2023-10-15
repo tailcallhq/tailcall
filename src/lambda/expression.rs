@@ -104,8 +104,15 @@ impl Expression {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
-              if is_get && ctx.req_ctx.server.batch.is_some() {
-                let headers = ctx.req_ctx.server.batch.clone().map(|s| s.headers).unwrap_or_default();
+              if is_get && ctx.req_ctx.server.upstream.batch.is_some() {
+                let headers = ctx
+                  .req_ctx
+                  .server
+                  .upstream
+                  .batch
+                  .clone()
+                  .map(|s| s.headers)
+                  .unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
                 let resp = dl
                   .as_ref()
@@ -114,7 +121,7 @@ impl Expression {
                   .await
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
-                if ctx.req_ctx.server.enable_cache_control() && resp.status.is_success() {
+                if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
                   if let Some(max_age) = max_age(&resp) {
                     ctx.req_ctx.set_min_max_age(max_age.as_secs());
                   }
@@ -128,14 +135,14 @@ impl Expression {
                 .execute(req)
                 .await
                 .map_err(|e| EvaluationError::IOException(e.to_string()))?;
-              if ctx.req_ctx.server.enable_http_validation() {
+              if ctx.req_ctx.server.get_enable_http_validation() {
                 req_template
                   .endpoint
                   .output
                   .validate(&res.body)
                   .map_err(EvaluationError::from)?;
               }
-              if ctx.req_ctx.server.enable_cache_control() && res.status.is_success() {
+              if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
                 if let Some(max_age) = max_age(&res) {
                   ctx.req_ctx.set_min_max_age(max_age.as_secs());
                 }

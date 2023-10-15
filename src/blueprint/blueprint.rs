@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -7,7 +7,7 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::config;
+use crate::blueprint::server::Server;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -18,6 +18,7 @@ use crate::lambda::{Expression, Lambda};
 pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
+  pub server: Server,
 }
 
 #[derive(Clone, Debug)]
@@ -69,7 +70,7 @@ pub struct ObjectTypeDefinition {
   pub name: String,
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
-  pub implements: Vec<String>,
+  pub implements: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -156,11 +157,11 @@ pub struct UnionTypeDefinition {
   pub name: String,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  pub types: Vec<String>,
+  pub types: BTreeSet<String>,
 }
 impl Blueprint {
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>) -> Self {
-    Self { schema, definitions }
+  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, server: Server) -> Self {
+    Self { schema, definitions, server }
   }
 
   pub fn query(&self) -> String {
@@ -171,26 +172,26 @@ impl Blueprint {
     self.schema.mutation.clone()
   }
 
-  pub fn to_schema(&self, server: &config::Server) -> Schema {
+  pub fn to_schema(&self) -> Schema {
+    let server = &self.server;
     let mut schema = SchemaBuilder::from(self);
 
-    if server.enable_apollo_tracing.unwrap_or(false) {
+    if server.enable_apollo_tracing {
       schema = schema.extension(ApolloTracing);
     }
 
-    let global_response_timeout = server.global_response_timeout.unwrap_or(0);
-    if global_response_timeout > 0 {
+    if server.global_response_timeout > 0 {
       schema = schema
-        .data(async_graphql::Value::from(global_response_timeout))
+        .data(async_graphql::Value::from(server.global_response_timeout))
         .extension(GlobalTimeout);
     }
 
-    if server.enable_query_validation() {
+    if server.get_enable_query_validation() {
       schema = schema.validation_mode(ValidationMode::Strict);
     } else {
       schema = schema.validation_mode(ValidationMode::Fast);
     }
-    if !server.enable_introspection() {
+    if !server.get_enable_introspection() {
       schema = schema.disable_introspection();
     }
 

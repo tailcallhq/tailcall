@@ -1,0 +1,62 @@
+server:
+  port: 8000
+  upstream:
+    baseURL: http://jsonplaceholder.typicode.com
+    enableHttpCache: true
+    batch:
+      maxSize: 1000
+      delay: 1
+      headers: []
+  enableGraphiql: /graphiql
+graphql:
+  schema:
+    query: Query
+  types:
+    Post:
+      fields:
+        body:
+          type_of: String
+          required: true
+        id:
+          type_of: Int
+          required: true
+        title:
+          type_of: String
+          required: true
+        user:
+          type_of: User
+          http:
+            path: /users
+            query:
+              - key: id
+                value: "{{value.userId}}"
+          groupBy: {}
+        userId:
+          type_of: Int
+          required: true
+    Query:
+      fields:
+        posts:
+          type_of: Post
+          list: true
+          http:
+            path: /posts
+    User:
+      fields:
+        email:
+          type_of: String
+          required: true
+        id:
+          type_of: Int
+          required: true
+        name:
+          type_of: String
+          required: true
+        phone:
+          type_of: String
+        username:
+          type_of: String
+          required: true
+        website:
+          type_of: String
+  unions: {}

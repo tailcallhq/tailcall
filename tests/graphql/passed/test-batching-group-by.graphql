@@ -1,18 +1,13 @@
 #> server-sdl
 schema
   @server(
-    port: 8000
-    baseURL: "http://jsonplaceholder.typicode.com"
-    enableHttpCache: true
-    enableGraphiql: "/graphiql"
-    enableQueryValidation: false
-    batch: {delay: 1, maxSize: 1000}
+    upstream: {baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true, batch: {delay: 1, maxSize: 1000}}
   ) {
   query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=1&id=11")
+  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
 }
 
 type Post {
@@ -20,7 +15,9 @@ type Post {
   title: String
   body: String
   userId: Int
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(key: "id", path: ["id"])
+  user: User
+    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
+    @groupBy(path: ["id"])
 }
 
 type User {
