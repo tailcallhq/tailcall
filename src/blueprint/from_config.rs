@@ -13,7 +13,7 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Arg, Config, Field, InlineType};
+use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -32,7 +32,23 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
   let server: Server = Server::try_from(config.server.clone())?;
-  Ok(super::compress::compress(Blueprint { schema, definitions, server }))
+  let blueprint = Blueprint { schema, definitions, server };
+  let blueprint = apply_batching(blueprint);
+  Ok(super::compress::compress(blueprint))
+}
+
+pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
+  for def in blueprint.definitions.iter() {
+    if let Definition::ObjectTypeDefinition(object_type_definition) = def {
+      for field in object_type_definition.fields.iter() {
+        if let Some(Expression::Unsafe(Operation::Endpoint(_request_template, Some(_), _dl))) = field.resolver.clone() {
+          blueprint.server.upstream.batch = blueprint.server.upstream.batch.or(Some(Batch::default()));
+          return blueprint;
+        }
+      }
+    }
+  }
+  blueprint
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
@@ -210,7 +226,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
-  let field_definition = update_group_by(field, field_definition, config).trace("@groupBy")?;
+  let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -295,7 +311,7 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_group_by(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
   if let Some(batch) = field.group_by.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {
