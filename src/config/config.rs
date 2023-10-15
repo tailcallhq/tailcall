@@ -11,6 +11,7 @@ use tokio::io::AsyncReadExt;
 
 use super::Server;
 use crate::config::group_by::GroupBy;
+use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -333,6 +334,14 @@ impl Config {
     }
   }
 
+  pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    match source {
+      Source::GraphQL => Ok(Config::from_sdl(schema)?),
+      Source::Json => Ok(Config::from_json(schema)?),
+      Source::Yml => Ok(Config::from_yaml(schema)?),
+    }
+  }
+
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
@@ -341,12 +350,13 @@ impl Config {
     let mut config = Config::default();
     let futures: Vec<_> = file_paths
       .map(|file_path| async move {
+        let source = Source::detect(file_path)?;
         let mut f = File::open(file_path).await?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Ok(Config::from_sdl(&server_sdl)?)
+        Config::from_source(source, &server_sdl)
       })
       .collect();
 
