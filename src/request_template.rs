@@ -80,18 +80,20 @@ impl RequestTemplate {
 
   fn create_static_request(&mut self) {
     let ctx = &json!(null);
-    let mut req = self.create_request(ctx).unwrap();
-    self.setup_req(ctx, &mut req, RequestTemplate::static_mustache);
-    req.headers_mut().insert(
-      reqwest::header::CONTENT_TYPE,
-      HeaderValue::from_static("application/json"),
-    );
-    self.static_reqwest = Some(req);
+    let r = self.setup_req(ctx, RequestTemplate::static_mustache);
 
-    self.p_all_static = self.root_url.is_const()
-      && self.body.as_ref().map_or(true, Mustache::is_const)
-      && self.query.iter().all(|(_, v)| v.is_const())
-      && self.headers.iter().all(|(_, v)| v.is_const());
+    if let Ok(mut req) = r {
+      req.headers_mut().insert(
+        reqwest::header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+      );
+      self.static_reqwest = Some(req);
+
+      self.p_all_static = self.root_url.is_const()
+        && self.body.as_ref().map_or(true, Mustache::is_const)
+        && self.query.iter().all(|(_, v)| v.is_const())
+        && self.headers.iter().all(|(_, v)| v.is_const());
+    }
   }
 
   fn update_query<'a>(url: &mut Url, pairs: impl Iterator<Item = (&'a str, String)>) -> bool {
@@ -104,7 +106,31 @@ impl RequestTemplate {
     p_has_pairs
   }
 
-  fn setup_req<C: PathString>(&self, ctx: &C, req: &mut reqwest::Request, mustache_filter: fn(&Mustache) -> bool) {
+  fn get_req<C: PathString>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+    if let Some(r) = &self.static_reqwest {
+      let mut req = r.try_clone().unwrap();
+
+      if !self.p_all_static && !self.root_url.is_const() {
+        *req.url_mut() = self.eval_url2(ctx)?;
+      }
+
+      Ok(req)
+    } else {
+      self.create_request(ctx)
+    }
+  }
+
+  fn setup_req<C: PathString>(
+    &self,
+    ctx: &C,
+    mustache_filter: fn(&Mustache) -> bool,
+  ) -> anyhow::Result<reqwest::Request> {
+    let mut req = self.get_req(ctx)?;
+
+    if self.p_all_static {
+      return Ok(req);
+    }
+
     let filter_list = self.query.iter().filter_map(|(k, v)| {
       if mustache_filter(v) {
         let rendered_v = v.render(ctx);
@@ -132,6 +158,8 @@ impl RequestTemplate {
         req.body_mut().replace(self.eval_body(ctx));
       }
     }
+
+    Ok(req)
   }
 
   fn create_request<C: PathString>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
@@ -219,15 +247,8 @@ impl RequestTemplate {
 
   /// A high-performance way to reliably create a request
   pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    if let Some(r) = &self.static_reqwest {
-      let mut req = r.try_clone().unwrap();
-
-      if !self.p_all_static {
-        if !self.root_url.is_const() {
-          *req.url_mut() = self.eval_url2(ctx)?;
-        }
-        self.setup_req(ctx, &mut req, RequestTemplate::dynamic_mustache);
-      }
+    if self.static_reqwest.is_some() {
+      let mut req = self.setup_req(ctx, RequestTemplate::dynamic_mustache)?;
 
       let ctx_headers = ctx.headers().to_owned();
 
@@ -237,8 +258,7 @@ impl RequestTemplate {
 
       Ok(req)
     } else {
-      let mut req = self.create_request(ctx)?;
-      self.setup_req(ctx, &mut req, RequestTemplate::everything);
+      let mut req = self.setup_req(ctx, RequestTemplate::everything)?;
       let headers = req.headers_mut();
       headers.insert(
         reqwest::header::CONTENT_TYPE,
