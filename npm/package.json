@@ -3,8 +3,7 @@
   "version": "0.13.0",
   "type": "module",
   "files": [
-    "src/*",
-    "target/*"
+    "src/*"
   ],
   "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
   "bin": "~/.tailcall/bin/tailcall",
