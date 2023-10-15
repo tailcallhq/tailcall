@@ -29,7 +29,7 @@ pub struct Blueprint {
 pub struct Server {
   pub enable_apollo_tracing: bool,
   pub enable_cache_control_header: bool,
-  pub enable_graphiql: String,
+  pub enable_graphiql: Option<String>,
   pub enable_introspection: bool,
   pub enable_query_validation: bool,
   pub enable_response_validation: bool,
@@ -41,71 +41,34 @@ pub struct Server {
   pub response_headers: HeaderMap,
 }
 
-impl Default for Server {
-  fn default() -> Self {
-    Server {
-      enable_apollo_tracing: false,
-      enable_cache_control_header: false,
-      enable_graphiql: "/graphiql".to_string(),
-      enable_introspection: true,
-      enable_query_validation: true,
-      enable_response_validation: false,
-      global_response_timeout: 0,
-      port: 8000,
-      hostname: IpAddr::from([0, 0, 0, 0]),
-      upstream: crate::config::Upstream::default(),
-      vars: BTreeMap::new(),
-      response_headers: HeaderMap::new(),
-    }
-  }
-}
-
 impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Valid<Self, String> {
-    let mut server = Server::default();
-
-    // Handle GraphiQL setup
-    server = handle_graphiql(server, &config_server)?;
-
-    // Handle Response Headers setup
-    server = handle_response_headers(server, &config_server)?;
-
-    // Handle Base URL setup
-    server = handle_base_url(server, &config_server)?;
-
     // Configure other server settings
-    server = configure_server(server, &config_server);
-
-    // Handle hostname
-
-    server = validate_hostname(server, &config_server)?;
-
+    let mut server = configure_server(&config_server)?;
+    server.upstream.base_url = handle_base_url(config_server.upstream.base_url.clone())?;
     Valid::Ok(server.clone())
   }
 }
-fn validate_hostname(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
-  let hostname = config_server.get_hostname().to_lowercase();
-  if hostname == "localhost" {
-    server = server.clone().hostname(IpAddr::from([127, 0, 0, 1]));
+fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
+  let host = if hostname == "localhost" {
+    IpAddr::from([127, 0, 0, 1])
   } else {
-    server = server.clone().hostname(
-      hostname
-        .parse()
-        .map_err(|e: AddrParseError| ValidationError::new(format!("Parsing failed because of {}", e)))
-        .trace("hostname")
-        .trace("@server")
-        .trace("schema")?,
-    );
-  }
-
-  Ok(server)
+    hostname
+      .parse()
+      .map_err(|e: AddrParseError| ValidationError::new(format!("Parsing failed because of {}", e)))
+      .trace("hostname")
+      .trace("@server")
+      .trace("schema")?
+  };
+  Ok(host)
 }
 const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
 
-fn handle_graphiql(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
-  if let Some(enable_graphiql) = config_server.enable_graphiql.clone() {
+fn handle_graphiql(graphiql: Option<String>) -> Valid<Option<String>, String> {
+  let mut graph = None;
+  if let Some(enable_graphiql) = graphiql.clone() {
     let lowered_route = enable_graphiql.to_lowercase();
     if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
       return Err(
@@ -118,17 +81,14 @@ fn handle_graphiql(mut server: Server, config_server: &config::Server) -> Valid<
         .trace("schema"),
       );
     } else {
-      server = server.clone().enable_graphiql(enable_graphiql);
+      graph = Some(enable_graphiql);
     }
-  }
-  Ok(server)
+  };
+  Ok(graph)
 }
 
-fn handle_response_headers(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
-  let headers = config_server
-    .response_headers
-    .0
-    .clone()
+fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {
+  let headers = resp_headers
     .validate_all(|(k, v)| {
       let name = HeaderName::from_bytes(k.as_bytes())
         .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e)));
@@ -142,39 +102,34 @@ fn handle_response_headers(mut server: Server, config_server: &config::Server) -
 
   let mut response_headers = HeaderMap::new();
   response_headers.extend(headers);
-  server = server.clone().response_headers(response_headers);
-  Ok(server)
+  Ok(response_headers)
 }
 
-fn handle_base_url(mut server: Server, config_server: &config::Server) -> Valid<Server, String> {
-  if let Some(base_url) = config_server.upstream.base_url.clone() {
+fn handle_base_url(base_url: Option<String>) -> Valid<Option<String>, String> {
+  let base_url = if let Some(base_url) = base_url {
     Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?)?;
-    server.upstream = server.clone().upstream.base_url(Some(base_url));
-  }
-  Ok(server)
+    Some(base_url)
+  } else {
+    None
+  };
+  Ok(base_url)
 }
 
-fn configure_server(mut server: Server, config_server: &config::Server) -> Server {
-  server = server
-    .clone()
-    .enable_apollo_tracing(config_server.enable_apollo_tracing.unwrap_or_default())
-    .enable_cache_control_header(config_server.enable_cache_control_header.unwrap_or_default())
-    .enable_introspection(config_server.enable_introspection.unwrap_or_default())
-    .enable_query_validation(config_server.enable_query_validation.unwrap_or_default())
-    .enable_response_validation(config_server.enable_response_validation.unwrap_or_default())
-    .global_response_timeout(config_server.global_response_timeout.unwrap_or_default())
-    .port(config_server.port.unwrap_or_default())
-    .upstream(config_server.upstream.clone())
-    .vars(config_server.vars.clone().0);
-
-  server.upstream = server
-    .upstream
-    .clone()
-    .allowed_headers(config_server.upstream.allowed_headers.clone())
-    .batch(config_server.upstream.batch.clone())
-    .enable_http_cache(config_server.upstream.enable_http_cache);
-
-  server
+fn configure_server(config_server: &config::Server) -> Valid<Server, String> {
+  Ok(Server {
+    enable_apollo_tracing: config_server.enable_apollo_tracing(),
+    enable_cache_control_header: config_server.enable_cache_control(),
+    enable_graphiql: handle_graphiql(config_server.enable_graphiql())?,
+    enable_introspection: config_server.enable_introspection(),
+    enable_query_validation: config_server.enable_query_validation(),
+    enable_response_validation: config_server.enable_http_validation(),
+    global_response_timeout: config_server.get_global_response_timeout(),
+    port: config_server.get_port(),
+    hostname: validate_hostname(config_server.get_hostname().to_lowercase())?,
+    upstream: config_server.get_upstream(),
+    vars: config_server.get_vars(),
+    response_headers: handle_response_headers(config_server.get_response_headers())?,
+  })
 }
 
 #[derive(Clone, Debug)]
