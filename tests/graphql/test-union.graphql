@@ -1,11 +1,11 @@
 #> server-sdl
-schema @server(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server(upstream: {baseURL: "http://jsonplacheholder.typicode.com"}) {
   query: Query
 }
 
 scalar Baz
 
-union FooBar = Foo | Bar
+union FooBar = Bar | Foo
 
 type Bar {
   bar: String
@@ -28,7 +28,7 @@ type Foo {
   foo: String
 }
 
-union FooBar = Foo | Bar
+union FooBar = Bar | Foo
 
 type Query {
   foo: FooBar

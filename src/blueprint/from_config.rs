@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
@@ -13,7 +13,7 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Arg, Config, Field, InlineType};
+use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -31,7 +31,24 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  Ok(super::compress::compress(Blueprint { schema, definitions }))
+  let server: Server = Server::try_from(config.server.clone())?;
+  let blueprint = Blueprint { schema, definitions, server };
+  let blueprint = apply_batching(blueprint);
+  Ok(super::compress::compress(blueprint))
+}
+
+pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
+  for def in blueprint.definitions.iter() {
+    if let Definition::ObjectTypeDefinition(object_type_definition) = def {
+      for field in object_type_definition.fields.iter() {
+        if let Some(Expression::Unsafe(Operation::Endpoint(_request_template, Some(_), _dl))) = field.resolver.clone() {
+          blueprint.server.upstream.batch = blueprint.server.upstream.batch.or(Some(Batch::default()));
+          return blueprint;
+        }
+      }
+    }
+  }
+  blueprint
 }
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   let arguments = const_directive
@@ -50,25 +67,6 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
   Ok(Directive { name: const_directive.name.node.clone().to_string(), arguments, index: 0 })
 }
 
-const RESTRICTED_ROUTES: &[&str] = &["/", "/graphql"];
-
-fn validate_server(config: &Config) -> Valid<()> {
-  if let Some(ref enable_graphiql) = config.server.enable_graphiql {
-    let lowered_route = enable_graphiql.to_lowercase();
-    if RESTRICTED_ROUTES.contains(&lowered_route.as_str()) {
-      return Valid::fail(format!(
-        "Cannot use restricted routes '{}' for enabling graphiql",
-        enable_graphiql
-      ))
-      .trace("enableGraphiql")
-      .trace("@server")
-      .trace("schema");
-    }
-  }
-
-  Valid::Ok(())
-}
-
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
   let query_type_name = config
     .graphql
@@ -77,9 +75,7 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  validate_server(config)
-    .validate_or(validate_query(config))
-    .validate_or(validate_mutation(config))?;
+  validate_query(config).validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),
@@ -150,7 +146,7 @@ fn to_enum_type_definition(
   name: &str,
   type_: &config::Type,
   _config: &Config,
-  variants: Vec<String>,
+  variants: BTreeSet<String>,
 ) -> Valid<Definition> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
@@ -230,7 +226,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
-  let field_definition = update_group_by(field, field_definition, config).trace("@groupBy")?;
+  let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -315,7 +311,7 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_group_by(field: &config::Field, mut b_field: FieldDefinition, _config: &Config) -> Valid<FieldDefinition> {
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
   if let Some(batch) = field.group_by.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {
@@ -343,7 +339,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
     Some(http) => match http
       .base_url
       .as_ref()
-      .map_or_else(|| config.server.base_url.as_ref(), Some)
+      .map_or_else(|| config.server.upstream.base_url.as_ref(), Some)
     {
       Some(base_url) => {
         let mut base_url = base_url.clone();

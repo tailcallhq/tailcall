@@ -1,13 +1,17 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
+use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
-use super::{Proxy, Server};
+use super::Server;
 use crate::config::group_by::GroupBy;
+use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -23,10 +27,6 @@ pub struct Config {
 impl Config {
   pub fn port(&self) -> u16 {
     self.server.port.unwrap_or(8000)
-  }
-
-  pub fn proxy(&self) -> Option<Proxy> {
-    self.server.proxy.clone()
   }
 
   pub fn output_types(&self) -> HashSet<&String> {
@@ -106,6 +106,12 @@ impl Config {
   pub fn contains(&self, name: &str) -> bool {
     self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
   }
+
+  pub fn merge_right(self, other: &Self) -> Self {
+    let server = self.server.merge_right(other.server.clone());
+    let graphql = self.graphql.merge_right(other.graphql.clone());
+    Self { server, graphql }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -115,12 +121,13 @@ pub struct Type {
   #[serde(default)]
   pub interface: bool,
   #[serde(default)]
-  pub implements: Vec<String>,
+  pub implements: BTreeSet<String>,
   #[serde(rename = "enum", default)]
-  pub variants: Option<Vec<String>>,
+  pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
   pub scalar: bool,
 }
+
 impl Type {
   pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
     let mut graphql_fields = BTreeMap::new();
@@ -129,6 +136,19 @@ impl Type {
     }
     self.fields = graphql_fields;
     self
+  }
+  pub fn merge_right(mut self, other: &Self) -> Self {
+    let mut fields = self.fields.clone();
+    fields.extend(other.fields.clone());
+    self.implements.extend(other.implements.clone());
+    if let Some(ref variants) = self.variants {
+      if let Some(ref other) = other.variants {
+        self.variants = Some(variants.union(other).cloned().collect());
+      }
+    } else {
+      self.variants = other.variants.clone();
+    }
+    Self { fields, ..self.clone() }
   }
 }
 
@@ -139,12 +159,46 @@ pub struct GraphQL {
   pub unions: BTreeMap<String, Union>,
 }
 
+impl GraphQL {
+  pub fn merge_right(mut self, other: Self) -> Self {
+    for (name, mut other_type) in other.types {
+      if let Some(self_type) = self.types.remove(&name) {
+        other_type = self_type.merge_right(&other_type)
+      };
+
+      self.types.insert(name, other_type);
+    }
+
+    for (name, mut other_union) in other.unions {
+      if let Some(self_union) = self.unions.remove(&name) {
+        other_union = self_union.merge_right(other_union);
+      }
+      self.unions.insert(name, other_union);
+    }
+
+    self.schema = self.schema.merge_right(other.schema);
+
+    self
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[setters(strip_option)]
 pub struct RootSchema {
   pub query: Option<String>,
   pub mutation: Option<String>,
   pub subscription: Option<String>,
+}
+
+impl RootSchema {
+  // TODO: add unit-tests
+  fn merge_right(self, other: Self) -> Self {
+    Self {
+      query: other.query.or(self.query),
+      mutation: other.mutation.or(self.mutation),
+      subscription: other.subscription.or(self.subscription),
+    }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -188,11 +242,7 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    if let Some(http) = self.http.as_ref() {
-      http.match_key.is_some() || !http.match_path.is_empty()
-    } else {
-      false
-    }
+    self.group_by.is_some()
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -232,8 +282,15 @@ pub struct Arg {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Union {
-  pub types: Vec<String>,
+  pub types: BTreeSet<String>,
   pub doc: Option<String>,
+}
+
+impl Union {
+  pub fn merge_right(mut self, other: Self) -> Self {
+    self.types.extend(other.types);
+    self
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -248,22 +305,11 @@ pub struct Http {
   pub input: Option<JsonSchema>,
   pub output: Option<JsonSchema>,
   pub body: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
-  pub match_path: Vec<String>,
-  pub match_key: Option<String>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-}
-
-impl Http {
-  pub fn batch_key(mut self, key: &str) -> Self {
-    self.match_key = Some(key.to_string());
-    self
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -288,7 +334,39 @@ impl Config {
     }
   }
 
+  pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    match source {
+      Source::GraphQL => Ok(Config::from_sdl(schema)?),
+      Source::Json => Ok(Config::from_json(schema)?),
+      Source::Yml => Ok(Config::from_yaml(schema)?),
+    }
+  }
+
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
+  }
+
+  pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+    let mut config = Config::default();
+    let futures: Vec<_> = file_paths
+      .map(|file_path| async move {
+        let source = Source::detect(file_path)?;
+        let mut f = File::open(file_path).await?;
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer).await?;
+
+        let server_sdl = String::from_utf8(buffer)?;
+        Config::from_source(source, &server_sdl)
+      })
+      .collect();
+
+    for res in join_all(futures).await {
+      match res {
+        Ok(conf) => config = config.clone().merge_right(&conf),
+        Err(e) => return Err(e), // handle error
+      }
+    }
+
+    Ok(config)
   }
 }
