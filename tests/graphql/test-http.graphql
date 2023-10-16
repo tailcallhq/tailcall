@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(port: 4005) @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
