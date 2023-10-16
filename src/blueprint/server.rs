@@ -40,12 +40,12 @@ impl Server {
   }
 }
 
-impl TryFrom<crate::config::Config> for Server {
+impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
-  fn try_from(config_config: config::Config) -> Valid<Self, String> {
+  fn try_from(config_server: config::Server) -> Valid<Self, String> {
     // Configure other server settings
-    let server = configure_server(&config_config)?;
+    let server = configure_server(&config_server)?;
     Valid::Ok(server.clone())
   }
 }
@@ -105,18 +105,18 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
   Ok(response_headers)
 }
 
-fn configure_server(config_config: &config::Config) -> Valid<Server, String> {
+fn configure_server(config_config: &config::Server) -> Valid<Server, String> {
   Ok(Server {
-    enable_apollo_tracing: config_config.server.enable_apollo_tracing(),
-    enable_cache_control_header: config_config.server.enable_cache_control(),
-    enable_graphiql: handle_graphiql(config_config.server.enable_graphiql())?,
-    enable_introspection: config_config.server.enable_introspection(),
-    enable_query_validation: config_config.server.enable_query_validation(),
-    enable_response_validation: config_config.server.enable_http_validation(),
-    global_response_timeout: config_config.server.get_global_response_timeout(),
-    port: config_config.server.get_port(),
-    hostname: validate_hostname(config_config.server.get_hostname().to_lowercase())?,
-    vars: config_config.server.get_vars(),
-    response_headers: handle_response_headers(config_config.server.get_response_headers().0)?,
+    enable_apollo_tracing: config_config.enable_apollo_tracing(),
+    enable_cache_control_header: config_config.enable_cache_control(),
+    enable_graphiql: handle_graphiql(config_config.enable_graphiql())?,
+    enable_introspection: config_config.enable_introspection(),
+    enable_query_validation: config_config.enable_query_validation(),
+    enable_response_validation: config_config.enable_http_validation(),
+    global_response_timeout: config_config.get_global_response_timeout(),
+    port: config_config.get_port(),
+    hostname: validate_hostname(config_config.get_hostname().to_lowercase())?,
+    vars: config_config.get_vars(),
+    response_headers: handle_response_headers(config_config.get_response_headers().0)?,
   })
 }

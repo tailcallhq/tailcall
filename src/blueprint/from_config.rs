@@ -31,7 +31,7 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let input_types = config.input_types();
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
-  let server: Server = Server::try_from(config.clone())?;
+  let server: Server = Server::try_from(config.server.clone())?;
   let blueprint = Blueprint { schema, definitions, server, upstream: config.upstream.clone() };
   let blueprint = apply_batching(blueprint);
   Ok(super::compress::compress(blueprint))
