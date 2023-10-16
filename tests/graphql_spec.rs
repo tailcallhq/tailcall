@@ -177,7 +177,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let expected = spec.client_sdl;
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content).unwrap();
-    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema(&config.server));
+    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
     assert_eq!(
       actual,
       expected,
@@ -204,7 +204,7 @@ async fn test_execution() -> std::io::Result<()> {
     let blueprint = Blueprint::try_from(&config)
       .trace(spec.path.to_str().unwrap_or_default())
       .unwrap();
-    let server_ctx = ServerContext::new(blueprint, config.server.clone());
+    let server_ctx = ServerContext::new(blueprint);
     let schema = server_ctx.schema.clone();
 
     for q in spec.test_queries {

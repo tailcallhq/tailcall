@@ -2,10 +2,8 @@ use std::sync::Arc;
 
 use async_graphql::dynamic;
 use derive_setters::Setters;
-use hyper::HeaderMap;
 
 use crate::blueprint::{Blueprint, Definition};
-use crate::config::Server;
 use crate::http::{DefaultHttpClient, HttpDataLoader};
 use crate::lambda::{Expression, Operation};
 
@@ -13,17 +11,16 @@ use crate::lambda::{Expression, Operation};
 pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: DefaultHttpClient,
-  pub server: Server,
-  pub custom_response_header: HeaderMap,
+  pub blueprint: Blueprint,
 }
 
-fn assign_data_loaders(blueprint: &mut Blueprint, server: Server, http_client: DefaultHttpClient) -> &Blueprint {
+fn assign_data_loaders(blueprint: &mut Blueprint, http_client: DefaultHttpClient) -> &Blueprint {
   for def in blueprint.definitions.iter_mut() {
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &mut def.fields {
         if let Some(Expression::Unsafe(Operation::Endpoint(req_template, group_by, _))) = &mut field.resolver {
           let data_loader = HttpDataLoader::new(http_client.clone(), group_by.clone())
-            .to_data_loader(server.upstream.batch.clone().unwrap_or_default());
+            .to_data_loader(blueprint.server.upstream.batch.clone().unwrap_or_default());
           field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
             req_template.clone(),
             group_by.clone(),
@@ -37,15 +34,9 @@ fn assign_data_loaders(blueprint: &mut Blueprint, server: Server, http_client: D
 }
 
 impl ServerContext {
-  pub fn new(blueprint: Blueprint, server: Server) -> Self {
-    let http_client = DefaultHttpClient::new(server.clone());
-    let mut blueprint = blueprint.clone();
-    let schema = assign_data_loaders(&mut blueprint, server.clone(), http_client.clone()).to_schema(&server);
-    ServerContext {
-      schema,
-      http_client,
-      server: server.clone(),
-      custom_response_header: blueprint.server.response_headers,
-    }
+  pub fn new(blueprint: Blueprint) -> Self {
+    let http_client = DefaultHttpClient::new(blueprint.server.clone());
+    let schema = assign_data_loaders(&mut blueprint.clone(), http_client.clone()).to_schema();
+    ServerContext { schema, http_client, blueprint }
   }
 }
