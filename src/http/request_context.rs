@@ -21,7 +21,7 @@ impl Default for RequestContext {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(DefaultHttpClient::default(), server.clone(), config.upstream.clone())
+    RequestContext::new(DefaultHttpClient::default(), server, config.upstream.clone())
   }
 }
 
