@@ -38,7 +38,7 @@ impl Clone for RequestTemplate {
 }
 
 impl RequestTemplate {
-  fn eval_url2<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+  fn eval_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
 
     if url.query().is_some() {
@@ -111,7 +111,7 @@ impl RequestTemplate {
       let mut req = r.try_clone().unwrap();
 
       if !self.p_all_static && !self.root_url.is_const() {
-        *req.url_mut() = self.eval_url2(ctx)?;
+        *req.url_mut() = self.eval_url(ctx)?;
       }
 
       Ok(req)
@@ -148,7 +148,7 @@ impl RequestTemplate {
       req.url_mut().set_query(None);
     }
 
-    let headers = self.eval_headers2(ctx, mustache_filter);
+    let headers = self.eval_headers(ctx, mustache_filter);
     if !headers.is_empty() {
       req.headers_mut().extend(headers);
     }
@@ -163,12 +163,12 @@ impl RequestTemplate {
   }
 
   fn create_request<C: PathString>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    let url = self.eval_url2(ctx)?;
+    let url = self.eval_url(ctx)?;
     let method = self.method.clone();
     Ok(reqwest::Request::new(method, url))
   }
 
-  fn eval_headers2<C: PathString>(&self, ctx: &C, mustache_filter: fn(&Mustache) -> bool) -> HeaderMap {
+  fn eval_headers<C: PathString>(&self, ctx: &C, mustache_filter: fn(&Mustache) -> bool) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
@@ -177,43 +177,6 @@ impl RequestTemplate {
           if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
             header_map.insert(header_name, header_value);
           }
-        }
-      }
-    }
-
-    header_map
-  }
-
-  fn eval_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
-    let root_url = self.root_url.render(ctx);
-    let mut url = url::Url::parse(root_url.as_str())?;
-    url
-      .query_pairs_mut()
-      .extend_pairs(self.query.iter().map(|(k, v)| (k.as_str(), v.render(ctx))));
-
-    let query_string = url
-      .query_pairs()
-      .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) })
-      .map(|(k, v)| format!("{}={}", k, v))
-      .collect::<Vec<_>>()
-      .join("&");
-
-    if !query_string.is_empty() {
-      url.set_query(Some(&query_string));
-    } else {
-      url.set_query(None);
-    }
-
-    Ok(url)
-  }
-
-  fn eval_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
-    let mut header_map = HeaderMap::new();
-
-    for (k, v) in &self.headers {
-      if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
-        if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-          header_map.insert(header_name, header_value);
         }
       }
     }
@@ -230,23 +193,6 @@ impl RequestTemplate {
 
   /// A high-performance way to reliably create a request
   pub fn to_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    let url = self.eval_url(ctx)?;
-    let mut header_map = self.eval_headers(ctx);
-    header_map.extend(ctx.headers().to_owned());
-    header_map.insert(
-      reqwest::header::CONTENT_TYPE,
-      HeaderValue::from_static("application/json"),
-    );
-    let body = self.eval_body(ctx);
-    let method = self.method.clone();
-    let mut req = reqwest::Request::new(method, url);
-    req.headers_mut().extend(header_map);
-    req.body_mut().replace(body);
-    Ok(req)
-  }
-
-  /// A high-performance way to reliably create a request
-  pub fn to_request2<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     if self.static_reqwest.is_some() {
       let mut req = self.setup_req(ctx, RequestTemplate::dynamic_mustache)?;
 
@@ -590,255 +536,6 @@ mod tests {
     headers.insert("baz", "qux".parse().unwrap());
     let ctx = Context::default().headers(headers);
     let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.headers().get("baz").unwrap(), "qux");
-  }
-
-  //testing to_request2 should be removed when to_request2 replaces to_request
-  #[test]
-  fn test_url2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/");
-  }
-
-  #[test]
-  fn test_url_path2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
-  }
-
-  #[test]
-  fn test_url_path_template2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
-    let ctx = Context::default().value(json!({
-      "bar": {
-        "baz": "bar"
-      }
-    }));
-
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
-  }
-  #[test]
-  fn test_url_path_template_multi2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}").unwrap();
-    let ctx = Context::default().value(json!({
-      "bar": {
-        "baz": "bar",
-        "booz": 1
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar/boozes/1");
-  }
-  #[test]
-  fn test_url_query_params2() {
-    let query = vec![
-      ("foo".to_string(), Mustache::parse("0").unwrap()),
-      ("bar".to_string(), Mustache::parse("1").unwrap()),
-      ("baz".to_string(), Mustache::parse("2").unwrap()),
-    ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
-  }
-  #[test]
-  fn test_url_query_params_template2() {
-    let query = vec![
-      ("foo".to_string(), Mustache::parse("0").unwrap()),
-      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
-    ];
-    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap().query(query);
-    let ctx = Context::default().value(json!({
-      "bar": {
-        "id": 1
-      },
-      "baz": {
-        "id": 2
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
-  }
-  #[test]
-  fn test_headers2() {
-    let headers = vec![
-      ("foo".to_string(), Mustache::parse("foo").unwrap()),
-      ("bar".to_string(), Mustache::parse("bar").unwrap()),
-      ("baz".to_string(), Mustache::parse("baz").unwrap()),
-    ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.headers().get("foo").unwrap(), "foo");
-    assert_eq!(req.headers().get("bar").unwrap(), "bar");
-    assert_eq!(req.headers().get("baz").unwrap(), "baz");
-  }
-  #[test]
-  fn test_header_template2() {
-    let headers = vec![
-      ("foo".to_string(), Mustache::parse("0").unwrap()),
-      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
-    ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
-    let ctx = Context::default().value(json!({
-      "bar": {
-        "id": 1
-      },
-      "baz": {
-        "id": 2
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.headers().get("foo").unwrap(), "0");
-    assert_eq!(req.headers().get("bar").unwrap(), "1");
-    assert_eq!(req.headers().get("baz").unwrap(), "2");
-  }
-  #[test]
-  fn test_method2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
-      .unwrap()
-      .method(reqwest::Method::POST);
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.method(), reqwest::Method::POST);
-  }
-  #[test]
-  fn test_body2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
-      .unwrap()
-      .body(Some(Mustache::parse("foo").unwrap()));
-    let ctx = Context::default();
-    let body = tmpl
-      .to_request2(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
-    assert_eq!(body, "foo".as_bytes());
-  }
-  #[test]
-  fn test_body_template2() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
-      .unwrap()
-      .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz"
-      }
-    }));
-    let body = tmpl
-      .to_request2(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
-    assert_eq!(body, "baz".as_bytes());
-  }
-  #[test]
-  fn test_from_endpoint2() {
-    let mut headers = HeaderMap::new();
-    headers.insert("foo", "bar".parse().unwrap());
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string())
-      .method(crate::http::Method::POST)
-      .headers(headers)
-      .body(Some("foo".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.method(), reqwest::Method::POST);
-    assert_eq!(req.headers().get("foo").unwrap(), "bar");
-    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-    assert_eq!(body, "foo".as_bytes());
-    assert_eq!(req.url().to_string(), "http://localhost:3000/");
-  }
-  #[test]
-  fn test_from_endpoint_template2() {
-    let mut headers = HeaderMap::new();
-    headers.insert("foo", "{{foo.header}}".parse().unwrap());
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
-      .method(crate::http::Method::POST)
-      .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
-      .headers(headers)
-      .body(Some("{{foo.bar}}".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz",
-        "header": "abc"
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.method(), reqwest::Method::POST);
-    assert_eq!(req.headers().get("foo").unwrap(), "abc");
-    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-    assert_eq!(body, "baz".as_bytes());
-    assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
-  }
-
-  #[test]
-  fn test_from_endpoint_template_null_value2() {
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/");
-  }
-
-  #[test]
-  fn test_from_endpoint_template_few_null_value2() {
-    let endpoint = crate::endpoint::Endpoint::new(
-      "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-    );
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "args": {
-        "b": "foo",
-        "d": "bar"
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar");
-  }
-
-  #[test]
-  fn test_from_endpoint_template_few_null_value_mixed2() {
-    let endpoint = crate::endpoint::Endpoint::new(
-      "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-    )
-    .query(vec![
-      ("e".to_string(), "{{args.e}}".to_string()),
-      ("f".to_string(), "{{args.f}}".to_string()),
-    ]);
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "args": {
-        "b": "foo",
-        "d": "bar",
-        "f": "baz"
-      }
-    }));
-    let req = tmpl.to_request2(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar&f=baz");
-  }
-  #[test]
-  fn test_headers_forward2() {
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let mut headers = HeaderMap::new();
-    headers.insert("baz", "qux".parse().unwrap());
-    let ctx = Context::default().headers(headers);
-    let req = tmpl.to_request2(&ctx).unwrap();
     assert_eq!(req.headers().get("baz").unwrap(), "qux");
   }
 }

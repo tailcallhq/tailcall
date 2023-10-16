@@ -33,7 +33,7 @@ impl HasHeaders for Context {
   }
 }
 
-fn benchmark_to_request_old_vs_new(c: &mut Criterion) {
+fn benchmark_to_request(c: &mut Criterion) {
   let keys: [String; 1000] = core::array::from_fn(|i| "k".to_owned() + &i.to_string());
 
   let headers: Vec<_> = keys
@@ -72,13 +72,7 @@ fn benchmark_to_request_old_vs_new(c: &mut Criterion) {
       black_box(tmpl3.to_request(&ctx).unwrap());
     })
   });
-
-  c.bench_function("new_to_request", |b| {
-    b.iter(|| {
-      black_box(tmpl3.to_request2(&ctx).unwrap());
-    })
-  });
 }
 
-criterion_group!(benches, benchmark_to_request_old_vs_new);
+criterion_group!(benches, benchmark_to_request);
 criterion_main!(benches);
