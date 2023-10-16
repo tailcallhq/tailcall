@@ -219,8 +219,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  #[serde(rename = "groupBy")]
-  pub group_by: Option<GroupBy>,
+  // #[serde(rename = "groupBy")]
+  // pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 
@@ -242,7 +242,11 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    self.group_by.is_some()
+    if let Some(http) = &self.http {
+      http.batch.is_some()
+    } else {
+      false
+    }
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -294,7 +298,7 @@ impl Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct HttpBatch {
+pub struct HttpGroupBy {
   #[serde(rename = "groupByPath")]
   pub group_by: Vec<String>,
   #[serde(rename = "selectKey")]
@@ -318,7 +322,7 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  pub batch: Option<HttpBatch>,
+  pub batch: Option<HttpGroupBy>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

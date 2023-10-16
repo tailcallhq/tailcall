@@ -26,5 +26,10 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy
+  user: User
+    @http(
+      path: "/users"
+      query: [{key: "id", value: "{{value.userId}}"}]
+      batch: {groupByPath: ["id"], selectKey: "id"}
+    )
 }

@@ -312,8 +312,8 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
 }
 
 fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
-  if let Some(batch) = field.group_by.as_ref() {
-    if let Some(http) = field.http.as_ref() {
+  if let Some(http) = field.http.as_ref() {
+    if let Some(batch) = http.batch.as_ref() {
       if http.method != Method::GET {
         Valid::fail("GroupBy is only supported for GET requests".to_string())
       } else {
@@ -327,7 +327,9 @@ fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid
         Valid::Ok(b_field)
       }
     } else {
-      Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
+      // FIXME: Is this still useful ?
+      // Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
+      Valid::Ok(b_field)
     }
   } else {
     Valid::Ok(b_field)

@@ -183,10 +183,11 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
   if let Some(http) = field.clone().http {
     let http_dir = http.to_directive("http".to_string());
     directives.push(pos(http_dir));
-  }
-  if let Some(batch) = field.clone().group_by {
-    let batch_dir = batch.to_directive("groupBy".to_string());
-    directives.push(pos(batch_dir));
+
+    if let Some(batch) = http.batch {
+      let batch_dir = batch.to_directive("groupBy".to_string());
+      directives.push(pos(batch_dir));
+    }
   }
   if let Some(us) = field.clone().unsafe_operation {
     let us_dir = us.to_directive("unsafe".to_string());
