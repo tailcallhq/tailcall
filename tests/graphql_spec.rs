@@ -198,7 +198,7 @@ async fn test_execution() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   for spec in specs? {
-    let mut config = Config::from_sdl(dbg!(&spec.server_sdl[0])).unwrap();
+    let mut config = Config::from_sdl(&spec.server_sdl[0]).unwrap();
     config.server.enable_query_validation = Some(false);
 
     let blueprint = Blueprint::try_from(&config)

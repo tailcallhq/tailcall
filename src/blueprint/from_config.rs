@@ -32,9 +32,21 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
   let server: Server = Server::try_from(config.server.clone())?;
-  let blueprint = Blueprint { schema, definitions, server, upstream: config.upstream.clone() };
+  let mut upstream = config.upstream.clone();
+  upstream.base_url = handle_base_url(upstream.base_url)?;
+  let blueprint = Blueprint { schema, definitions, server, upstream };
   let blueprint = apply_batching(blueprint);
   Ok(super::compress::compress(blueprint))
+}
+
+fn handle_base_url(base_url: Option<String>) -> Valid<Option<String>> {
+  let base_url = if let Some(base_url) = base_url {
+    Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?)?;
+    Some(base_url)
+  } else {
+    None
+  };
+  Ok(base_url)
 }
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
