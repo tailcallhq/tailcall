@@ -8,10 +8,26 @@ directive @server(
   globalResponseTimeout: Int
   port: Int
   vars: [KeyValue]
-  upstream: Upstream
   responseHeaders: [KeyValue]
   hostname: String
 ) on SCHEMA
+directive @Upstream(
+  allowedHeaders: [String]
+  connectTimeout: Int
+  keepAliveInterval: Int
+  keepAliveTimeout: Int
+  keepAliveWhileIdle: Boolean
+  poolIdleTimeout: Int
+  poolMaxIdlePerHost: Int
+  proxy: Proxy
+  tcpKeepAlive: Int
+  timeout: Int
+  userAgent: String
+  baseURL: String
+  enableHttpCache: Boolean
+  batch: Batch
+) on SCHEMA
+
 directive @http(
   path: String!
   method: Method = GET
@@ -37,23 +53,6 @@ enum Method {
 
 input Proxy {
   url: String
-}
-
-input Upstream {
-  allowedHeaders: [String]
-  connectTimeout: Int
-  keepAliveInterval: Int
-  keepAliveTimeout: Int
-  keepAliveWhileIdle: Boolean
-  poolIdleTimeout: Int
-  poolMaxIdlePerHost: Int
-  proxy: Proxy
-  tcpKeepAlive: Int
-  timeout: Int
-  userAgent: String
-  baseURL: String
-  enableHttpCache: Boolean
-  batch: Batch
 }
 
 input KeyValue {
