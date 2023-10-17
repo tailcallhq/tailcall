@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
-use std::sync::{Arc, RwLock};
+use std::sync::atomic::AtomicPtr;
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
@@ -46,10 +47,10 @@ fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
 
-async fn handle_request(req: Request<Body>, state: Arc<RwLock<ServerContext>>) -> Result<Response<Body>> {
+async fn handle_request(req: Request<Body>, state: Arc<AtomicPtr<ServerContext>>) -> Result<Response<Body>> {
   let server_ctx;
   {
-    let state = state.read().unwrap();
+    let state = unsafe { state.load(std::sync::atomic::Ordering::Relaxed).as_ref().unwrap() };
     server_ctx = state.clone();
     match *req.method() {
       hyper::Method::GET
@@ -79,10 +80,32 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
-pub async fn start_server(config: Config, file_path: Option<String>, refresh_interval: Option<u64>) -> Result<()> {
+
+pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let blueprint_clone = blueprint.clone(); // Clone the blueprint here
-  let state = Arc::new(RwLock::new(ServerContext::new(blueprint)));
+  let state = Arc::new(AtomicPtr::new(Box::into_raw(Box::new(ServerContext::new(
+    blueprint.clone(),
+  )))));
+  let make_svc = make_service_fn(move |_conn| {
+    let state = Arc::clone(&state);
+    async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
+  });
+  let addr = (blueprint.server.hostname, blueprint.server.port).into();
+  let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+  log::info!("🚀 Tailcall launched at [{}]", addr);
+  if let Some(enable_graphiql) = blueprint.server.enable_graphiql {
+    log::info!("🌍 Playground: http://{}{}", addr, enable_graphiql);
+  }
+
+  Ok(server.await.map_err(CLIError::from)?)
+}
+
+pub async fn start_server_with_polling(config: Config, file_path: String, poll_interval: u64) -> Result<()> {
+  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+  let blueprint_clone = blueprint.clone();
+  let state = Arc::new(AtomicPtr::new(Box::into_raw(Box::new(ServerContext::new(
+    blueprint.clone(),
+  )))));
   let state_clone = Arc::clone(&state);
 
   let make_svc = make_service_fn(move |_conn| {
@@ -97,10 +120,8 @@ pub async fn start_server(config: Config, file_path: Option<String>, refresh_int
     log::info!("🌍 Playground: http://{}{}", addr, enable_graphiql);
   }
 
-  if let (Some(file_path), Some(refresh_interval)) = (file_path, refresh_interval) {
-    let config_loader = config::config_poll::ConfigLoader::new(file_path, refresh_interval, Arc::clone(&state_clone));
-    config_loader?.start_polling().await;
-  }
+  let config_loader = config::config_poll::ConfigLoader::new(file_path, poll_interval, Arc::clone(&state_clone));
+  config_loader?.start_polling().await;
 
   Ok(server.await.map_err(CLIError::from)?)
 }

@@ -13,19 +13,27 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::start_server;
+use crate::http::{start_server, start_server_with_polling};
 use crate::print_schema;
 
 pub async fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level, refresh_interval } => {
+    Command::Start { file_path, log_level, poll_interval } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config = Config::from_file_or_url(file_path.iter()).await?;
-      start_server(config.0, config.1, refresh_interval).await?;
+
+      match (poll_interval, config.1) {
+        (Some(poll_interval), Some(file_path)) => {
+          start_server_with_polling(config.0, file_path, poll_interval).await?;
+        }
+        _ => {
+          start_server(config.0).await?;
+        }
+      }
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

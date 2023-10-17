@@ -28,7 +28,7 @@ pub enum Command {
     #[arg(long)]
     log_level: Option<log::Level>,
     #[arg(long)]
-    refresh_interval: Option<u64>,
+    poll_interval: Option<u64>,
   },
 
   /// Validate a composition spec
