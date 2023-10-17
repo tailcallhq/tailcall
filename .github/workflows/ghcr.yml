@@ -1,9 +1,5 @@
 name: GHCR Docker Image
 
-# Configures this workflow to run every time a change is pushed to the branch called `main`.
-on:
-  push:
-    branches: ['feat/docker']
 on:
   workflow_dispatch:
   push:
