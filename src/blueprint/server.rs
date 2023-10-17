@@ -19,8 +19,6 @@ pub struct Server {
   pub global_response_timeout: i64,
   pub port: u16,
   pub hostname: IpAddr,
-  // TODO: add blueprint::Server::Upstream
-  pub upstream: crate::config::Upstream,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
 }
@@ -47,8 +45,7 @@ impl TryFrom<crate::config::Server> for Server {
 
   fn try_from(config_server: config::Server) -> Valid<Self, String> {
     // Configure other server settings
-    let mut server = configure_server(&config_server)?;
-    server.upstream.base_url = handle_base_url(config_server.upstream.base_url.clone())?;
+    let server = configure_server(&config_server)?;
     Valid::Ok(server.clone())
   }
 }
@@ -108,29 +105,18 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
   Ok(response_headers)
 }
 
-fn handle_base_url(base_url: Option<String>) -> Valid<Option<String>, String> {
-  let base_url = if let Some(base_url) = base_url {
-    Valid::Ok(reqwest::Url::parse(base_url.as_str()).map_err(|e| ValidationError::new(e.to_string()))?)?;
-    Some(base_url)
-  } else {
-    None
-  };
-  Ok(base_url)
-}
-
-fn configure_server(config_server: &config::Server) -> Valid<Server, String> {
+fn configure_server(config_config: &config::Server) -> Valid<Server, String> {
   Ok(Server {
-    enable_apollo_tracing: config_server.enable_apollo_tracing(),
-    enable_cache_control_header: config_server.enable_cache_control(),
-    enable_graphiql: handle_graphiql(config_server.enable_graphiql())?,
-    enable_introspection: config_server.enable_introspection(),
-    enable_query_validation: config_server.enable_query_validation(),
-    enable_response_validation: config_server.enable_http_validation(),
-    global_response_timeout: config_server.get_global_response_timeout(),
-    port: config_server.get_port(),
-    hostname: validate_hostname(config_server.get_hostname().to_lowercase())?,
-    upstream: config_server.get_upstream(),
-    vars: config_server.get_vars(),
-    response_headers: handle_response_headers(config_server.get_response_headers().0)?,
+    enable_apollo_tracing: config_config.enable_apollo_tracing(),
+    enable_cache_control_header: config_config.enable_cache_control(),
+    enable_graphiql: handle_graphiql(config_config.enable_graphiql())?,
+    enable_introspection: config_config.enable_introspection(),
+    enable_query_validation: config_config.enable_query_validation(),
+    enable_response_validation: config_config.enable_http_validation(),
+    global_response_timeout: config_config.get_global_response_timeout(),
+    port: config_config.get_port(),
+    hostname: validate_hostname(config_config.get_hostname().to_lowercase())?,
+    vars: config_config.get_vars(),
+    response_headers: handle_response_headers(config_config.get_response_headers().0)?,
   })
 }

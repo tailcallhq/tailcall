@@ -9,7 +9,7 @@ use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-use super::Server;
+use super::{Server, Upstream};
 use crate::config::group_by::GroupBy;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
@@ -21,6 +21,7 @@ use crate::valid::{Valid, ValidExtensions};
 #[serde(rename_all = "camelCase")]
 pub struct Config {
   pub server: Server,
+  pub upstream: Upstream,
   pub graphql: GraphQL,
 }
 
@@ -110,7 +111,8 @@ impl Config {
   pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
     let graphql = self.graphql.merge_right(other.graphql.clone());
-    Self { server, graphql }
+    let upstream = self.upstream.merge_right(other.upstream.clone());
+    Self { server, upstream, graphql }
   }
 }
 

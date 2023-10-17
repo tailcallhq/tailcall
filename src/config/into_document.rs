@@ -12,7 +12,10 @@ fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
   let schema_definition = SchemaDefinition {
     extend: false,
-    directives: vec![pos(config.server.to_directive("server".to_string()))],
+    directives: vec![
+      pos(config.server.to_directive("server".to_string())),
+      pos(config.upstream.to_directive("upstream".to_string())),
+    ],
     query: config.graphql.schema.query.clone().map(|name| pos(Name::new(name))),
     mutation: config.graphql.schema.mutation.clone().map(|name| pos(Name::new(name))),
     subscription: config

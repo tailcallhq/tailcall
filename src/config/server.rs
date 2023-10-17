@@ -19,8 +19,6 @@ pub struct Server {
   pub hostname: Option<String>,
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub upstream: Upstream,
-  #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
@@ -77,10 +75,6 @@ impl Server {
     self.response_headers.clone()
   }
 
-  pub fn get_upstream(&self) -> Upstream {
-    self.upstream.clone()
-  }
-
   pub fn merge_right(mut self, other: Self) -> Self {
     self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
     self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
@@ -97,7 +91,6 @@ impl Server {
     let mut response_headers = self.response_headers.0.clone();
     response_headers.extend(other.response_headers.0);
     self.response_headers = KeyValues(response_headers);
-    self.upstream = self.upstream.merge_right(other.upstream);
     self
   }
 }
