@@ -11,7 +11,7 @@ directive @server(
   responseHeaders: [KeyValue]
   hostname: String
 ) on SCHEMA
-directive @Upstream(
+directive @upstream(
   allowedHeaders: [String]
   connectTimeout: Int
   keepAliveInterval: Int
