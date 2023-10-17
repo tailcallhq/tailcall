@@ -102,10 +102,16 @@ jobs:
     name: Run Lint
     if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Run lint script
         run: ./lint.sh
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Apply lint changes
 
   deploy:
     name: Deploy App
