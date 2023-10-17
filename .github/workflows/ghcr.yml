@@ -1,16 +1,15 @@
 name: GHCR Docker Image
-
 on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
-      - 'v0.13.0'
+      - "main"
+      - "v0.13.0"
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
-      - 'main'
+      - "main"
 
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
@@ -25,7 +24,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      # 
+      #
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
