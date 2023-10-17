@@ -101,7 +101,7 @@ jobs:
   lint:
     name: CI:Lint
     if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  
     permissions:
       contents: write
     steps:
