@@ -3,27 +3,25 @@ use hyper::HeaderMap;
 
 use crate::blueprint::from_config::{to_json_schema_for_args, to_json_schema_for_field};
 use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::Valid;
 use crate::blueprint::FieldDefinition;
 use crate::config;
 use crate::config::Config;
 use crate::endpoint::Endpoint;
 use crate::lambda::Lambda;
 use crate::request_template::RequestTemplate;
-use crate::valid::{ValidExtensions, ValidationError};
+use crate::try_fold::TryFolding;
+use crate::valid::{Valid, ValidExtensions, ValidationError};
 
-pub struct HttpTransform {
+pub struct HttpFold {
   pub field: config::Field,
 }
 
-impl From<HttpTransform> for Transform<Config, FieldDefinition, String> {
-  fn from(value: HttpTransform) -> Self {
-    Transform::new(move |config, field_definition| value.transform(config, field_definition).trace("@http"))
-  }
-}
+impl TryFolding for HttpFold {
+  type Input = Config;
+  type Value = FieldDefinition;
+  type Error = String;
 
-impl HttpTransform {
-  fn transform(self, config: &Config, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
+  fn try_fold(self, config: &Self::Input, mut field_definition: Self::Value) -> Valid<Self::Value, Self::Error> {
     match self.field.http.as_ref() {
       Some(http) => match http
         .base_url
@@ -57,13 +55,13 @@ impl HttpTransform {
           )
           .map_err(|e| ValidationError::new(e.to_string()))?;
 
-          b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+          field_definition.resolver = Some(Lambda::from_request_template(req_template).expression);
 
-          Valid::Ok(b_field)
+          Ok(field_definition)
         }
         None => Valid::fail("No base URL defined".to_string()),
       },
-      None => Valid::Ok(b_field),
+      None => Ok(field_definition),
     }
   }
 }

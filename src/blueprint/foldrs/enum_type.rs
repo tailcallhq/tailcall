@@ -1,24 +1,28 @@
 use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::Valid;
 use crate::blueprint::{Blueprint, Definition, EnumTypeDefinition, EnumValueDefinition};
 use crate::config;
 use crate::config::Config;
-use crate::valid::ValidExtensions;
+use crate::try_fold::TryFolding;
+use crate::valid::{Valid, ValidExtensions};
 
-pub struct EnumTransform {
+pub struct EnumFold {
   pub name: String,
   pub type_of: config::Type,
 }
 
-impl From<EnumTransform> for Transform<Config, Blueprint, String> {
-  fn from(value: EnumTransform) -> Self {
+impl From<EnumFold> for Transform<Config, Blueprint, String> {
+  fn from(value: EnumFold) -> Self {
     let name = value.name.clone();
     Transform::new(move |config, blueprint| value.transform(config, blueprint).trace(name.as_str()))
   }
 }
 
-impl EnumTransform {
-  fn transform(self, _config: &Config, mut blueprint: Blueprint) -> Valid<Blueprint> {
+impl TryFolding for EnumFold {
+  type Input = Config;
+  type Value = Blueprint;
+  type Error = String;
+
+  fn try_fold(self, _cfg: &Self::Input, mut blueprint: Self::Value) -> Valid<Self::Value, Self::Error> {
     let Some(variants) = self.type_of.variants else {
       return Valid::fail(format!("No variants in {}", self.name));
     };

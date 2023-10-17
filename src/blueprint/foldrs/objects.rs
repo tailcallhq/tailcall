@@ -1,40 +1,40 @@
-use super::update_group_by::GroupByTransform;
+use clap::builder::Str;
+
+use crate::blueprint::foldrs::fd::update_const::ConstFold;
+use crate::blueprint::foldrs::fd::update_group_by::GroupByFold;
+use crate::blueprint::foldrs::fd::update_inline::InlineFold;
+use crate::blueprint::foldrs::fd::update_modify::ModifyFold;
+use crate::blueprint::foldrs::fd::update_unsafe::UnsafeFold;
+use crate::blueprint::foldrs::http::HttpFold;
 use crate::blueprint::from_config::{to_args, to_type, validate_field_type_exist};
 use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::http::HttpTransform;
-use crate::blueprint::transformers::update_const::UpdateConstTransform;
-use crate::blueprint::transformers::update_inline::UpdateInlineTransform;
-use crate::blueprint::transformers::update_modify::ModifyTransform;
-use crate::blueprint::transformers::update_unsafe::UpdateUnsafeTransform;
-use crate::blueprint::transformers::Valid;
 use crate::blueprint::{
   Blueprint, Definition, FieldDefinition, InputFieldDefinition, InputObjectTypeDefinition, InterfaceTypeDefinition,
   ObjectTypeDefinition,
 };
 use crate::config;
-use crate::config::Config;
-use crate::valid::{ValidExtensions, VectorExtension};
+use crate::config::{Config, ConstField, ModifyField};
+use crate::try_fold::TryFolding;
+use crate::valid::{Valid, ValidExtensions, VectorExtension};
 
-pub struct ObjectTransform {
+pub struct ObjectsFold {
   pub type_of: config::Type,
   pub name: String,
 }
 
-impl From<ObjectTransform> for Transform<Config, Blueprint, String> {
-  fn from(value: ObjectTransform) -> Self {
-    let name = value.name.clone();
-    Transform::new(move |config, blueprint| value.transform(config, blueprint).trace(name.as_str()))
-  }
-}
-impl ObjectTransform {
-  fn transform(self, config: &Config, mut blueprint: Blueprint) -> Valid<Blueprint> {
+impl TryFolding for ObjectsFold {
+  type Input = Config;
+  type Value = Blueprint;
+  type Error = String;
+
+  fn try_fold(self, cfg: &Self::Input, mut blueprint: Self::Value) -> Valid<Self::Value, Self::Error> {
     let definition = self
       .type_of
       .fields
       .iter()
       .validate_all(|(name, field)| {
-        validate_field_type_exist(config, field)
-          .validate_or(to_field(config, &self.type_of, name, field))
+        validate_field_type_exist(cfg, field)
+          .validate_or(to_field(cfg, &self.type_of, name, field))
           .trace(name)
       })
       .map(|fields| {
@@ -47,10 +47,10 @@ impl ObjectTransform {
       })?;
     // TODO: remove the `clone` operation
     let definition = if let Definition::ObjectTypeDefinition(object_type_definition) = definition.clone() {
-      if config.input_types().contains(&self.name) {
-        to_input_object_type_definition(object_type_definition)?
+      if cfg.input_types().contains(&self.name) {
+        to_input_object_type_definition(object_type_definition).trace(&self.name)?
       } else if self.type_of.interface {
-        to_interface_type_definition(object_type_definition)?
+        to_interface_type_definition(object_type_definition).trace(&self.name)?
       } else {
         definition
       }
@@ -70,7 +70,7 @@ fn to_field(
   type_of: &config::Type,
   name: &str,
   field: &config::Field,
-) -> Valid<Option<FieldDefinition>> {
+) -> Valid<Option<FieldDefinition>, String> {
   let directives = field.resolvable_directives();
   if directives.len() > 1 {
     return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
@@ -88,11 +88,11 @@ fn to_field(
     resolver: None,
   };
 
-  let mut field_transformer = Transform::from(HttpTransform { field: field.clone() })
-    + Transform::from(GroupByTransform { field: field.clone() })
-    + Transform::from(UpdateUnsafeTransform { field: field.clone() })
-    + Transform::from(UpdateConstTransform { field: field.clone() })
-    + Transform::from(UpdateInlineTransform { field: field.clone(), type_info: type_of.clone() });
+  let mut field_fold = HttpFold { field: field.clone() }
+    .and(GroupByFold { field: field.clone() })
+    .and(UnsafeFold { field: field.clone() })
+    .and(ConstFold { field: field.clone() })
+    .and(InlineFold { field: field.clone(), type_info: type_of.clone() });
 
   let modify = field.modify.clone();
 
@@ -101,13 +101,13 @@ fn to_field(
       return Ok(None);
     }
   }
-  field_transformer = field_transformer + Transform::from(ModifyTransform { modify, type_info: type_of.clone() });
+  field_fold = field_fold.and(ModifyFold { modify, type_info: type_of.clone() });
 
-  let field = field_transformer.transform(config, field_definition)?;
+  let field = field_fold.transform(config, field_definition)?;
   Ok(Some(field))
 }
 
-fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition> {
+fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
   Valid::Ok(Definition::InputObjectTypeDefinition(InputObjectTypeDefinition {
     name: definition.name,
     fields: definition
@@ -124,7 +124,7 @@ fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<De
   }))
 }
 
-fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition> {
+fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
   Valid::Ok(Definition::InterfaceTypeDefinition(InterfaceTypeDefinition {
     name: definition.name,
     fields: definition.fields,

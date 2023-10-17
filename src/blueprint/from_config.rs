@@ -5,39 +5,25 @@ use std::collections::{BTreeMap, HashMap};
 #[allow(unused_imports)]
 use async_graphql::InputType;
 
-use super::transformers::server::{
-  ServerBaseUrlTransform, ServerCmpletefTransform, ServerGraphqlTransform, ServerResponseHeaderTransform,
-};
-use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::definitions::DefinitionsTransform;
-use crate::blueprint::transformers::directive::DirectiveTransform;
-use crate::blueprint::transformers::schema::SchemaTransform;
-use crate::blueprint::transformers::Valid;
+use crate::blueprint::foldrs::definitions::DefinitionsFold;
+use crate::blueprint::foldrs::directive::DirectiveFold;
+use crate::blueprint::foldrs::schema::SchemaFold;
+use crate::blueprint::foldrs::server::ServerFold;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Arg, Config, Field};
 use crate::json::JsonSchema;
+use crate::try_fold::{TryFold, TryFolding};
 use crate::valid::{ValidExtensions, ValidationError, VectorExtension};
 
-pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
-  let transformer = Transform::from(SchemaTransform)
-    + Transform::from(DefinitionsTransform)
-    + Transform::from(DirectiveTransform)
-    + server_transform();
-  let blueprint = transformer.transform(config, Blueprint::default())?;
-  Ok(compress::compress(blueprint))
-}
+/// Just [`crate::valid::Valid`] with `String set as error type
+pub type Valid<T> = crate::valid::Valid<T, String>;
 
-fn server_transform() -> Transform<Config, Blueprint, String> {
-  Transform::new(|config: &Config, mut blueprint: Blueprint| {
-    blueprint.server = (Transform::from(ServerGraphqlTransform)
-      + Transform::from(ServerResponseHeaderTransform)
-      + Transform::from(ServerBaseUrlTransform)
-      + Transform::from(ServerCmpletefTransform))
-    .transform(&config.server, blueprint::Server::default())?;
-    Ok(blueprint)
-  })
+pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
+  let blueprint = TryFold::try_all(vec![SchemaFold, DefinitionsFold, DirectiveFold, ServerFold])
+    .try_fold(config, Blueprint::default())?;
+  Ok(compress::compress(blueprint))
 }
 
 fn is_scalar(type_name: &str) -> bool {

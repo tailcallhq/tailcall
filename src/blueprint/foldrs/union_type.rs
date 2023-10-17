@@ -1,22 +1,20 @@
-use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::Valid;
 use crate::blueprint::{Blueprint, Definition, UnionTypeDefinition};
 use crate::config;
 use crate::config::Config;
+use crate::try_fold::TryFolding;
+use crate::valid::Valid;
 
-pub struct UnionTransform {
+pub struct UnionTransFold {
   pub name: String,
   pub union: config::Union,
 }
 
-impl From<UnionTransform> for Transform<Config, Blueprint, String> {
-  fn from(value: UnionTransform) -> Self {
-    Transform::new(move |config, blueprint| value.transform(config, blueprint))
-  }
-}
+impl TryFolding for UnionTransFold {
+  type Input = Config;
+  type Value = Blueprint;
+  type Error = String;
 
-impl UnionTransform {
-  fn transform(self, _: &Config, mut blueprint: Blueprint) -> Valid<Blueprint> {
+  fn try_fold(self, _cfg: &Self::Input, mut blueprint: Self::Value) -> Valid<Self::Value, Self::Error> {
     blueprint
       .definitions
       .push(Definition::UnionTypeDefinition(UnionTypeDefinition {

@@ -1,15 +1,17 @@
+use clap::builder::Str;
+
 use crate::blueprint::from_config::validate_field_has_resolver;
 use crate::blueprint::transform::Transform;
-use crate::blueprint::transformers::Valid;
 use crate::blueprint::{Blueprint, SchemaDefinition};
 use crate::config::Config;
-use crate::valid::{OptionExtension, ValidExtensions, VectorExtension};
+use crate::try_fold::TryFolding;
+use crate::valid::{OptionExtension, Valid, ValidExtensions, VectorExtension};
 
 /// Transform the config blueprint schema
-pub struct SchemaTransform;
+pub struct SchemaFold;
 
-impl From<SchemaTransform> for Transform<Config, Blueprint, String> {
-  fn from(_value: SchemaTransform) -> Self {
+impl From<SchemaFold> for Transform<Config, Blueprint, String> {
+  fn from(_value: SchemaFold) -> Self {
     Transform::new(|config: &Config, mut blueprint: Blueprint| {
       let query_type_name = config
         .graphql
@@ -30,15 +32,39 @@ impl From<SchemaTransform> for Transform<Config, Blueprint, String> {
   }
 }
 
-fn validate_query(config: &Config) -> Valid<()> {
-  let query_type_name = config
+impl TryFolding for SchemaFold {
+  type Input = Config;
+  type Value = Blueprint;
+  type Error = String;
+
+  fn try_fold(self, cfg: &Self::Input, mut blueprint: Self::Value) -> Valid<Self::Value, Self::Error> {
+    let query_type_name = cfg
+      .graphql
+      .schema
+      .query
+      .as_ref()
+      .validate_some("Query root is missing".to_string())?;
+
+    validate_query(cfg).validate_or(validate_mutation(cfg))?;
+
+    blueprint.schema = SchemaDefinition {
+      query: query_type_name.clone(),
+      mutation: cfg.graphql.schema.mutation.clone(),
+      directives: Vec::with_capacity(0), // We'll re-intalze it anyway
+    };
+    Ok(blueprint)
+  }
+}
+
+fn validate_query(cfg: &Config) -> Valid<(), String> {
+  let query_type_name = cfg
     .graphql
     .schema
     .query
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
 
-  let Some(query) = config.find_type(query_type_name) else {
+  let Some(query) = cfg.find_type(query_type_name) else {
     return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
   };
 
@@ -51,11 +77,11 @@ fn validate_query(config: &Config) -> Valid<()> {
   Ok(())
 }
 
-fn validate_mutation(config: &Config) -> Valid<()> {
-  let mutation_type_name = config.graphql.schema.mutation.as_ref();
+fn validate_mutation(cfg: &Config) -> Valid<(), String> {
+  let mutation_type_name = cfg.graphql.schema.mutation.as_ref();
 
   if let Some(mutation_type_name) = mutation_type_name {
-    let Some(mutation) = config.find_type(mutation_type_name) else {
+    let Some(mutation) = cfg.find_type(mutation_type_name) else {
       return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
     };
 
