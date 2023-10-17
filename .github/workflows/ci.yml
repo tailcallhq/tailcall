@@ -98,6 +98,15 @@ jobs:
           command: clippy
           args: --all-targets --all-features -- -D warnings
 
+  lint:
+    name: Run Lint
+    if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run lint script
+        run: ./lint.sh
+
   deploy:
     name: Deploy App
     runs-on: ubuntu-latest
