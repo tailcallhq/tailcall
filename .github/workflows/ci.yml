@@ -111,7 +111,7 @@ jobs:
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: style: apply lint fixes
+          commit_message: "style: apply lint fixes"
   deploy:
     name: Deploy App
     runs-on: ubuntu-latest
