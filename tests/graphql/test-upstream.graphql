@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(port: 8001) @upstream(proxy: {url: "http://localhost:8085"}) {
+schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
   query: Query
 }
 
