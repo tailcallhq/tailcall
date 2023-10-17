@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(upstream: {batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}}) {
+schema @server @upstream(batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}) {
   query: Query
 }
 
@@ -8,7 +8,7 @@ type Query {
 }
 
 #> server-sdl
-schema @server(upstream: {batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}}) {
+schema @server @upstream(batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}) {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
 }
 
 #> merged-sdl
-schema @server(upstream: {batch: {delay: 5, headers: ["a", "b", "c"], maxSize: 100}}) {
+schema @server @upstream(batch: {delay: 5, headers: ["a", "b", "c"], maxSize: 100}) {
   query: Query
 }
 
