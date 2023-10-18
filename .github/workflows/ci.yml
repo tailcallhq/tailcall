@@ -140,6 +140,28 @@ jobs:
       create_release_name: ${{ steps.set_output.outputs.create_release_name }}
       create_release_id: ${{ steps.set_output.outputs.create_release_id }}
 
+  publish_npm:
+    name: Publish NPM main package
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+      - name: Publish to NPM
+        shell: bash
+        run: |
+          cd npm/tailcall
+          npm install
+          cp ../../README.md .
+          npm publish --access public
+        env:
+            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
