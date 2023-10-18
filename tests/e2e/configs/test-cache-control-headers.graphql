@@ -1,7 +1,6 @@
 schema
-@server(enableCacheControlHeader: true , enableGraphiql: "/graphiql")
-@upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true)
-{
+  @server(enableCacheControlHeader: true, enableGraphiql: "/graphiql", port: 8090)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query
 }
 
@@ -13,7 +12,7 @@ type User {
 type Post {
   id: Int
   title: String
-  userId:  Int
+  userId: Int
   user: User @http(path: "/users/{{value.userId}}")
 }
 

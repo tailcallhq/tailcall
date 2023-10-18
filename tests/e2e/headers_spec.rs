@@ -51,9 +51,9 @@ mod integration_tests {
     let query_data = "{\"query\":\"query { posts { title user {name} } }\"}";
 
     let api_request = http_client
-        .post("http://localhost:8000/graphql")
-        .header("Content-Type", "application/json")
-        .body(query_data);
+      .post("http://localhost:8090/graphql")
+      .header("Content-Type", "application/json")
+      .body(query_data);
 
     let response = api_request.send().await.expect("Failed to send request");
 
