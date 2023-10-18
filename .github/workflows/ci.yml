@@ -162,41 +162,48 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-gnu
+            publish_npm: true
             cross: false
 
           - build: linux-x86_64-musl
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
+            publish_npm: false # necessary to avoid name collision with linux-x86_64-gnu
             cross: true
 
           - build: linux-aarch64-gnu
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-gnu
+            publish_npm: true
             cross: true
 
           - build: linux-aarch64-musl
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
+            publish_npm: false # necessary to avoid name collision with linux-aarch64-gnu
             cross: true
 
           - build: linux-i686-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
+            publish_npm: true
             cross: true
 
           - build: apple-arm64
             os: macos-latest
             rust: stable
             target: aarch64-apple-darwin
+            publish_npm: true
 
           - build: apple-x86_64
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
+            publish_npm: true
             cross: false
     permissions:
       contents: write
@@ -226,6 +233,32 @@ jobs:
 
       - name: Rename Binary with Target Name
         run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+
+      - name: Install Node
+        if: matrix.publish_npm == true
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish to NPM
+        if: matrix.publish_npm == true
+        shell: bash
+        run: |
+          cd npm
+          bin="tailcall"
+          export node_os=$(echo "${{ matrix.build }}" | cut -d '-' -f1)
+          export node_arch=$(echo "${{ matrix.build }}" | cut -d '-' -f2)
+          export version=${{ needs.draft_release.outputs.create_release_name }}
+          export node_package="${bin}-${node_os}-${node_arch}"
+          mkdir -p "${node_package}/bin"
+          envsubtst < package.json.template > "${node_package}/package.json"
+          cp ../target/${{ matrix.target }}/release/${bin}-${{ matrix.target }} "${node_package}/bin"
+          cp ../README.md "${node_package}"
+          cd "${node_package}"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
