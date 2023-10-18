@@ -33,11 +33,11 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let definitions = to_definitions(config, output_types, input_types);
   let server: Valid<Server> = Server::try_from(config.server.clone());
   let upstream = config.upstream.clone();
-  let server = valid_base_url(upstream.base_url.as_ref())
-    .validate_or(schema.clone())
-    .validate_or(definitions.clone())
-    .validate_or(server)?;
-  let blueprint = Blueprint { schema: schema?, definitions: definitions?, server, upstream };
+  let (((_, schema), definitions), server) = valid_base_url(upstream.base_url.as_ref())
+    .validate_both(schema.clone())
+    .validate_both(definitions.clone())
+    .validate_both(server)?;
+  let blueprint = Blueprint { schema, definitions, server, upstream };
   let blueprint = apply_batching(blueprint);
   Ok(super::compress::compress(blueprint))
 }
