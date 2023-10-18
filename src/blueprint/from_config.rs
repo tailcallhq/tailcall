@@ -32,9 +32,17 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let schema = to_schema(config)?;
   let definitions = to_definitions(config, output_types, input_types)?;
   let server: Server = Server::try_from(config.server.clone())?;
-  let blueprint = Blueprint { schema, definitions, server };
+  let upstream = config.upstream.clone();
+  valid_base_url(upstream.base_url.as_ref())?;
+  let blueprint = Blueprint { schema, definitions, server, upstream };
   let blueprint = apply_batching(blueprint);
   Ok(super::compress::compress(blueprint))
+}
+fn valid_base_url(base_url: Option<&String>) -> Valid<()> {
+  if let Some(base_url) = base_url {
+    reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))?;
+  }
+  Ok(())
 }
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
@@ -42,7 +50,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
       for field in object_type_definition.fields.iter() {
         if let Some(Expression::Unsafe(Operation::Endpoint(_request_template, Some(_), _dl))) = field.resolver.clone() {
-          blueprint.server.upstream.batch = blueprint.server.upstream.batch.or(Some(Batch::default()));
+          blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
           return blueprint;
         }
       }
@@ -339,7 +347,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
     Some(http) => match http
       .base_url
       .as_ref()
-      .map_or_else(|| config.server.upstream.base_url.as_ref(), Some)
+      .map_or_else(|| config.upstream.base_url.as_ref(), Some)
     {
       Some(base_url) => {
         let mut base_url = base_url.clone();

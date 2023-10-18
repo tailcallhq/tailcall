@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(upstream: {allowedHeaders: ["a", "b", "c"]}) {
+schema @server @upstream(allowedHeaders: ["a", "b", "c"]) {
   query: Query
 }
 
@@ -8,7 +8,7 @@ type Query {
 }
 
 #> server-sdl
-schema @server(upstream: {allowedHeaders: ["b", "c", "d"]}) {
+schema @server @upstream(allowedHeaders: ["b", "c", "d"]) {
   query: Query
 }
 
@@ -17,7 +17,7 @@ type Query {
 }
 
 #> merged-sdl
-schema @server(upstream: {allowedHeaders: ["a", "b", "c", "d"]}) {
+schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
   query: Query
 }
 

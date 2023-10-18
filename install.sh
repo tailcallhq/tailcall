@@ -8,8 +8,7 @@ VERSION=${1:-"latest"}
 BASE_URL="https://github.com/tailcallhq/tailcall/releases/download"
 
 if [ "$VERSION" = "latest" ]; then
-  # Fetch latest version from local JSON file
-  VERSION=$(jq -r '.version' version.json)
+  VERSION=$(curl --silent "https://api.github.com/repos/tailcallhq/tailcall/releases/latest" | jq -r '.tag_name')
 fi
 
 # Determine OS and architecture to get the correct URL
