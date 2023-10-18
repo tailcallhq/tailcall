@@ -24,10 +24,10 @@
     "url": "https://github.com/tailcall/tailcall/issues"
   },
   "optionalDependencies": {
-    "tailcall-linux-x86_64": "0.1.0",
-    "tailcall-linux-aarch64": "0.1.0",
-    "tailcall-linux-i686": "0.1.0",
-    "tailcall-apple-arm64": "0.1.0",
-    "tailcall-apple-x86_64": "0.1.0"
+    "@tailcallhq/tailcall-linux-x86_64": "0.1.0",
+    "@tailcallhq/tailcall-linux-aarch64": "0.1.0",
+    "@tailcallhq/tailcall-linux-i686": "0.1.0",
+    "@tailcallhq/tailcall-apple-arm64": "0.1.0",
+    "@tailcallhq/tailcall-apple-x86_64": "0.1.0"
   }
 }

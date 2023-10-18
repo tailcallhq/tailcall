@@ -1,5 +1,5 @@
 {
-  "name": "${node_package}",
+  "name": "@tailcallhq/${node_package}",
   "version": "${version}",
   "description": "",
   "bin": "./bin/cli.js",
