@@ -1,0 +1,32 @@
+{
+  "name": "${node_package}",
+  "version": "${version}",
+  "description": "",
+  "bin": "./bin/cli.js",
+  "scripts": {
+    "dev": "node src/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tailcall",
+    "graphql",
+    "graphiql",
+    "rust"
+  ],
+  "author": "Taillcall contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcall/tailcall.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tailcall/tailcall/issues"
+  },
+  "homepage": "https://github.com/tailcall/tailcall#readme",
+  "os": [
+    "${node_os}"
+  ],
+  "cpu": [
+    "${node_arch}"
+  ]
+}
