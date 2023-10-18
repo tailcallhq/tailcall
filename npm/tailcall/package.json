@@ -1,6 +1,6 @@
 {
   "name": "tailcall",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "src/cli.js",
   "bin": "./bin/cli.js",
@@ -23,5 +23,12 @@
   "homepage": "https://github.com/tailcall/tailcall#readme",
   "bugs": {
     "url": "https://github.com/tailcall/tailcall/issues"
+  },
+  "optionalDependencies": {
+    "tailcall-linux-x86_64": "0.1.0",
+    "tailcall-linux-aarch64": "0.1.0",
+    "tailcall-linux-i686": "0.1.0",
+    "tailcall-apple-arm64": "0.1.0",
+    "tailcall-apple-x86_64": "0.1.0"
   }
 }
