@@ -34,8 +34,8 @@ pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let server: Valid<Server> = Server::try_from(config.server.clone());
   let upstream = config.upstream.clone();
   let (((_, schema), definitions), server) = valid_base_url(upstream.base_url.as_ref())
-    .validate_both(schema.clone())
-    .validate_both(definitions.clone())
+    .validate_both(schema)
+    .validate_both(definitions)
     .validate_both(server)?;
   let blueprint = Blueprint { schema, definitions, server, upstream };
   let blueprint = apply_batching(blueprint);
