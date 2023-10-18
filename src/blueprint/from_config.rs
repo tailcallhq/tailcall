@@ -29,12 +29,15 @@ type Valid<A> = ValidDefault<A, String>;
 pub fn config_blueprint(config: &Config) -> Valid<Blueprint> {
   let output_types = config.output_types();
   let input_types = config.input_types();
-  let schema = to_schema(config)?;
-  let definitions = to_definitions(config, output_types, input_types)?;
-  let server: Server = Server::try_from(config.server.clone())?;
+  let schema = to_schema(config);
+  let definitions = to_definitions(config, output_types, input_types);
+  let server: Valid<Server> = Server::try_from(config.server.clone());
   let upstream = config.upstream.clone();
-  valid_base_url(upstream.base_url.as_ref())?;
-  let blueprint = Blueprint { schema, definitions, server, upstream };
+  let server = valid_base_url(upstream.base_url.as_ref())
+    .validate_or(schema.clone())
+    .validate_or(definitions.clone())
+    .validate_or(server)?;
+  let blueprint = Blueprint { schema: schema?, definitions: definitions?, server, upstream };
   let blueprint = apply_batching(blueprint);
   Ok(super::compress::compress(blueprint))
 }
@@ -76,14 +79,13 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive> {
 }
 
 fn to_schema(config: &Config) -> Valid<SchemaDefinition> {
+  validate_query(config).validate_or(validate_mutation(config))?;
   let query_type_name = config
     .graphql
     .schema
     .query
     .as_ref()
     .validate_some("Query root is missing".to_owned())?;
-
-  validate_query(config).validate_or(validate_mutation(config))?;
 
   Ok(SchemaDefinition {
     query: query_type_name.clone(),

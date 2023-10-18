@@ -4,7 +4,7 @@ use regex::Regex;
 
 use super::Cause;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct ValidationError<E>(Vec<Cause<E>>);
 
 impl<E: Display> Display for ValidationError<E> {
