@@ -1,0 +1,22 @@
+schema
+@server(enableCacheControlHeader: true , enableGraphiql: "/graphiql")
+@upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true)
+{
+  query: Query
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type Post {
+  id: Int
+  title: String
+  userId:  Int
+  user: User @http(path: "/users/{{value.userId}}")
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts?id=1")
+}

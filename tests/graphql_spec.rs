@@ -20,6 +20,7 @@ use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, ValidExtensions};
 
+mod e2e;
 mod graphql_mock;
 
 #[derive(Debug, Default, Setters)]
