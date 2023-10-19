@@ -7,7 +7,7 @@ use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
 impl GraphQLBatchRequest {
   /// Shortcut method to execute the request on the executor.
@@ -16,6 +16,13 @@ impl GraphQLBatchRequest {
     E: Executor,
   {
     GraphQLResponse(executor.execute_batch(self.0).await)
+  }
+
+  pub fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
+    for request in self.0.iter_mut() {
+      request.data.insert(data.clone());
+    }
+    self
   }
 }
 #[derive(Debug, Deserialize)]

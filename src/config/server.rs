@@ -14,6 +14,7 @@ pub struct Server {
   pub enable_introspection: Option<bool>,
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
+  pub enable_batch_requests: Option<bool>,
   pub global_response_timeout: Option<i64>,
   #[serde(skip_serializing_if = "is_default")]
   pub hostname: Option<String>,
@@ -62,6 +63,9 @@ impl Server {
   pub fn enable_query_validation(&self) -> bool {
     self.enable_query_validation.unwrap_or(true)
   }
+  pub fn enable_batch_requests(&self) -> bool {
+    self.enable_batch_requests.unwrap_or(false)
+  }
 
   pub fn get_hostname(&self) -> String {
     self.hostname.clone().unwrap_or("127.0.0.1".to_string())
@@ -82,6 +86,7 @@ impl Server {
     self.enable_introspection = other.enable_introspection.or(self.enable_introspection);
     self.enable_query_validation = other.enable_query_validation.or(self.enable_query_validation);
     self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
+    self.enable_batch_requests = other.enable_batch_requests.or(self.enable_batch_requests);
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);

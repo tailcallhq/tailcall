@@ -15,7 +15,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{graphql_single_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -244,5 +244,5 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
     .method(method)
     .uri(url.as_str())
     .body(Body::from(query_string));
-  graphql_request(req?, state.as_ref()).await
+  graphql_single_request(req?, state.as_ref()).await
 }

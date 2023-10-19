@@ -18,7 +18,7 @@ use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
 pub use response::*;
-pub use server::{graphql_request, start_server};
+pub use server::{graphql_single_request, start_server};
 pub use server_context::ServerContext;
 
 pub fn max_age(res: &Response) -> Option<Duration> {
