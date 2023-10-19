@@ -132,7 +132,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
           components: rustfmt, clippy
       - name: Cache Rust Dependencies
         uses: actions/cache@v3

@@ -7,7 +7,7 @@ Fixes #... _(Replace "..." with the issue number)_
 **Build & Testing:**
 
 - [ ] I ran `cargo test` successfully.
-- [ ] I have run `./lint.sh` to address and fix linting issues.
+- [ ] I have run `./lint.sh --mode=fix` to fix all linting issues raised by `./lint.sh --mode=check`.
 
 **Checklist:**
 
