@@ -85,7 +85,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
-      - name: Run lint script
+      - name: Run Lint Script
         run: ./lint.sh --mode=check
 
   deploy:
