@@ -221,8 +221,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  // #[serde(rename = "groupBy")]
-  // pub group_by: Option<GroupBy>,
+  #[serde(rename = "groupBy")]
+  pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 
@@ -299,14 +299,6 @@ impl Union {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct HttpGroupBy {
-  #[serde(rename = "groupByPath")]
-  pub group_by: Vec<String>,
-  #[serde(rename = "selectKey")]
-  pub select_key: String,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Http {
   pub path: String,
@@ -324,7 +316,7 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  pub batch: Option<HttpGroupBy>,
+  pub batch: Option<GroupBy>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
