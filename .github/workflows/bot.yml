@@ -144,7 +144,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
       - name: Run lint script
-        run: ./lint.sh
+        run: ./lint.sh fix
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
