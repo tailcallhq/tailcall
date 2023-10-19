@@ -79,8 +79,7 @@ impl RequestTemplate {
   }
 
   fn create_static_request(&mut self) {
-    if self.root_url.is_const(){
-
+    if self.root_url.is_const() {
       let ctx = &json!(null);
       let r = self.setup_req(ctx, RequestTemplate::static_mustache);
 
