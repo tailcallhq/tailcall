@@ -65,38 +65,28 @@ jobs:
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
-
+          node-version: "18"
       - name: Install Prettier
         run: npm install --global prettier
-
-      - name: Check Formatting
-        run: prettier --check "**/*.{graphql,yml,json,md}"
-
       - name: Install Nightly Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt, clippy
-
-      - name: Format Code
-        uses: actions-rs/cargo@v1
+      - name: Cache Rust Dependencies
+        uses: actions/cache@v3
         with:
-          toolchain: nightly
-          command: fmt
-          args: -- --check
-
-      - name: Run Cargo Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: clippy
-          args: --all-targets --all-features -- -D warnings
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/checkout@v4
+      - name: Run Lint Script
+        run: ./lint.sh --mode=check
 
   deploy:
     name: Deploy App
