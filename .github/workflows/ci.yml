@@ -71,7 +71,7 @@ jobs:
           node-version: "18"
       - name: Install Prettier
         run: npm install --global prettier
-      - name: Install Stable Toolchain
+      - name: Install Nightly Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
