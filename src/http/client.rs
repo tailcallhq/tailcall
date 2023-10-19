@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
@@ -64,8 +64,29 @@ impl DefaultHttpClient {
   }
 
   pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
-    log::info!("{} {} ", request.method(), request.url());
+    let mut log_req = None;
+    let mut log_start = None;
+    if log::log_enabled!(log::Level::Info) {
+      log_req = request.try_clone();
+      log_start = Some(SystemTime::now());
+    };
     let response = self.client.execute(request).await?;
+
+    if log::log_enabled!(log::Level::Info) {
+      let req = log_req.unwrap();
+      let time = SystemTime::now()
+        .duration_since(log_start.unwrap())
+        .unwrap()
+        .as_millis();
+      log::info!(
+        "{} {} {} {}ms",
+        response.status().as_str(),
+        req.method(),
+        req.url(),
+        time,
+      );
+    }
+
     let response = Response::from_response(response).await?;
     Ok(response)
   }
