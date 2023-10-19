@@ -79,20 +79,23 @@ impl RequestTemplate {
   }
 
   fn create_static_request(&mut self) {
-    let ctx = &json!(null);
-    let r = self.setup_req(ctx, RequestTemplate::static_mustache);
+    if self.root_url.is_const(){
 
-    if let Ok(mut req) = r {
-      req.headers_mut().insert(
-        reqwest::header::CONTENT_TYPE,
-        HeaderValue::from_static("application/json"),
-      );
-      self.static_reqwest = Some(req);
+      let ctx = &json!(null);
+      let r = self.setup_req(ctx, RequestTemplate::static_mustache);
 
-      self.p_all_static = self.root_url.is_const()
-        && self.body.as_ref().map_or(true, Mustache::is_const)
-        && self.query.iter().all(|(_, v)| v.is_const())
-        && self.headers.iter().all(|(_, v)| v.is_const());
+      if let Ok(mut req) = r {
+        req.headers_mut().insert(
+          reqwest::header::CONTENT_TYPE,
+          HeaderValue::from_static("application/json"),
+        );
+        self.static_reqwest = Some(req);
+
+        self.p_all_static = self.root_url.is_const()
+          && self.body.as_ref().map_or(true, Mustache::is_const)
+          && self.query.iter().all(|(_, v)| v.is_const())
+          && self.headers.iter().all(|(_, v)| v.is_const());
+      }
     }
   }
 
