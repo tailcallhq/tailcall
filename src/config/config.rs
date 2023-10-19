@@ -221,8 +221,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  #[serde(rename = "groupBy")]
-  pub group_by: Option<GroupBy>,
+  // #[serde(rename = "groupBy")]
+  // pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 
