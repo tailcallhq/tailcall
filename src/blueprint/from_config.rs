@@ -283,8 +283,6 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
     // type if it doesn't exist, so we wouldn't be able to get enough
     // context from that method alone
     // So we must duplicate some of that logic here :(
-    println!("Field: {field:#?}");
-
     if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
       for parts in req_template.root_url.all_parts() {
         validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
