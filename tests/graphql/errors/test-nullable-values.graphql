@@ -1,0 +1,22 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type Query {
+  user(id: ID!): User @http(path: "/user/{{args.id}}", baseURL: "http://localhost:8080")
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+
+type Post {
+  id: Int!
+  userId: Int
+  user: User @http(path: "/users/{{value.userId}}", baseURL: "http://localhost:8080")
+}
+
+#> client-sdl
+type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "user"])

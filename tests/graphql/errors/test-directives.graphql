@@ -1,0 +1,21 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  id: ID!
+}
+
+type Query {
+  user(id: ID!): User @http(path: "/user/{{args.id}}/{{headers.garbage}}/{{vars.garbage}}", baseURL: "http://localhost:8080")
+}
+
+type Post {
+  id: Int!
+  userId: Int
+  user: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
+}
+
+#> client-sdl
+type Failure @error(message: "unknown template directive 'valu'", trace: ["Post", "user"])

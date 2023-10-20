@@ -249,8 +249,8 @@ where
         return Valid::fail(format!("no argument '{tail}' found"));
       }
     }
-    "header" | "vars" => {
-      // "header" refers to the header values known at runtime, which we can't
+    "headers" | "vars" => {
+      // "headers" refers to the header values known at runtime, which we can't
       // validate here
 
       // "vars" refer to the server's configuration variables, set up in
@@ -293,8 +293,8 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
 
         for parts in mustache.all_parts() {
           validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied())
-            .trace(&field.name)
-            .trace(name)?;
+            .trace(name)
+            .trace(&field.name)?;
         }
       }
     }

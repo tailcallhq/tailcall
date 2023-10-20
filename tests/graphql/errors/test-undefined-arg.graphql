@@ -1,0 +1,15 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  id: ID!
+}
+
+type Query {
+  user(id: ID): User @http(path: "/user/{{args.uid}}", baseURL: "http://localhost:8080")
+}
+
+#> client-sdl
+type Failure @error(message: "no argument 'uid' found", trace: ["Query", "user"])
