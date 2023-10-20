@@ -20,7 +20,6 @@ use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Operation};
-use crate::mustache::{Mustache, Segment};
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
@@ -215,10 +214,17 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
   Ok(fields)
 }
 
-fn validate_mustache_parts<'a, F>(head: &str, tail: &'a str, args: &[InputFieldDefinition], get_value: F) -> Valid<()>
+fn validate_mustache_parts<'a, F>(parts: &'a [String], args: &[InputFieldDefinition], get_value: F) -> Valid<()>
 where
   F: Fn(&'a str) -> Option<&FieldDefinition>,
 {
+  if parts.len() < 2 {
+    return Valid::fail("too few parts in template".to_string());
+  }
+
+  let head = parts[0].as_str();
+  let tail = parts[1].as_str();
+
   match head {
     "value" => {
       if let Some(val) = get_value(tail) {
@@ -282,20 +288,20 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
     // type if it doesn't exist, so we wouldn't be able to get enough
     // context from that method alone
     // So we must duplicate some of that logic here :(
-    if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
-      match &req_template.root_url {
-        Mustache(segments) => {
-          for segment in segments {
-            if let Segment::Expression(parts) = segment {
-              if parts.len() < 2 {
-                Valid::fail("not enough parts in template".to_string()).trace(&field.name)?;
-                continue;
-              }
+    println!("Field: {field:#?}");
 
-              validate_mustache_parts(&parts[0], &parts[1], &field.args, |k| validation_map.get(k).copied())
-                .trace(&field.name)?;
-            }
-          }
+    if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
+      for parts in req_template.root_url.all_parts() {
+        validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
+      }
+
+      for query in &req_template.query {
+        let (name, mustache) = query;
+
+        for parts in mustache.all_parts() {
+          validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied())
+            .trace(&field.name)
+            .trace(name)?;
         }
       }
     }

@@ -2,11 +2,8 @@ use nom::{Finish, IResult};
 
 use crate::path_string::PathString;
 
-// TODO should this be `pub`, or should we have another associated
-// function to extract the raw segments? Or should we build a generic
-// interface for dry-run validation?
 #[derive(Debug, Clone, PartialEq)]
-pub struct Mustache(pub Vec<Segment>);
+pub struct Mustache(Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Segment {
@@ -52,6 +49,22 @@ impl Mustache {
         })
         .collect(),
     }
+  }
+
+  pub fn all_parts(&self) -> Vec<&Vec<String>> {
+    let mut out = Vec::new();
+
+    match self {
+      Mustache(segments) => {
+        for s in segments {
+          if let Segment::Expression(parts) = s {
+            out.push(parts);
+          }
+        }
+      }
+    }
+
+    out
   }
 }
 
