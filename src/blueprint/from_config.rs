@@ -244,19 +244,19 @@ where
       }
     }
     "header" | "vars" => {
-      // TODO neither of these values make sense for usage in a URL template
-      // should we error out here?
-
       // "header" refers to the header values known at runtime, which we can't
       // validate here
 
       // "vars" refer to the server's configuration variables, set up in
       // `config/server.rs` and they all have fallbacks to default values, so
       // we don't need any checks here
+
+      // neither of these values make sense for usage in a URL template
+      // TODO should we error out here or is this valid usage?
+      return Valid::fail("the 'header' and 'vars' directives can't be used in a template".to_string());
     }
     _ => {
-      // TODO have we covered all the cases? Does reaching here mean some
-      // invariant was violated?
+      return Valid::fail(format!("unknown template directive '{head}'"));
     }
   }
 
@@ -287,9 +287,8 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
         Mustache(segments) => {
           for segment in segments {
             if let Segment::Expression(parts) = segment {
-              // TODO is this invariant enforced anywhere so that we can omit
-              // this check?
               if parts.len() < 2 {
+                Valid::fail("not enough parts in template".to_string()).trace(&field.name)?;
                 continue;
               }
 
