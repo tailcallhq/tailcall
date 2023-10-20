@@ -6,7 +6,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 type Post {
   id: Int
   user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}])
-  userId: Int
+  userId: Int!
 }
 
 type Query {
@@ -22,7 +22,7 @@ type User {
 type Post {
   id: Int
   user: User
-  userId: Int
+  userId: Int!
 }
 
 type Query {

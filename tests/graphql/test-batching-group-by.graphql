@@ -8,7 +8,7 @@ type Post {
   id: Int
   title: String
   user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}]) @groupBy(path: ["id"])
-  userId: Int
+  userId: Int!
 }
 
 type Query {
@@ -26,7 +26,7 @@ type Post {
   id: Int
   title: String
   user: User
-  userId: Int
+  userId: Int!
 }
 
 type Query {
