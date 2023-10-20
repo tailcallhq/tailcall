@@ -8,7 +8,8 @@ type User {
 }
 
 type Query {
-  user(id: ID!): User @http(path: "/user/{{args.id}}/{{headers.garbage}}/{{vars.garbage}}", baseURL: "http://localhost:8080")
+  user(id: ID!): User
+    @http(path: "/user/{{args.id}}/{{headers.garbage}}/{{vars.garbage}}", baseURL: "http://localhost:8080")
 }
 
 type Post {
