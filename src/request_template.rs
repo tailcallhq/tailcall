@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -27,27 +29,39 @@ impl RequestTemplate {
   /// Fills in all the mustache templates with required values.
   fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
-
-    if url.query().is_some() {
-      let q: Vec<(String, String)> = url
-        .query_pairs()
-        .filter_map(|(k, v)| {
-          if !v.is_empty() {
-            Some((k.into_owned(), v.into_owned()))
-          } else {
-            None
-          }
-        })
-        .collect();
-
-      url.set_query(None);
-
-      if !q.is_empty() {
-        url.query_pairs_mut().extend_pairs(q);
+    let extra_qp = self.query.iter().filter_map(|(k, v)| {
+      let value = v.render(ctx);
+      if value.is_empty() {
+        None
+      } else {
+        Some((Cow::Borrowed(k.as_str()), Cow::Owned(value)))
       }
-    }
+    });
 
-    Ok(url)
+    // Merge all query params
+    let base_qp = url
+      .query_pairs()
+      .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) });
+
+    let qp = base_qp.chain(extra_qp);
+
+    let qp_string = qp
+      .map(|(k, v)| format!("{}={}", k, v))
+      .fold("".to_string(), |str, item| {
+        if str.is_empty() {
+          item
+        } else {
+          format!("{}&{}", str, item)
+        }
+      });
+
+    if qp_string.is_empty() {
+      url.set_query(None);
+      Ok(url)
+    } else {
+      url.set_query(Some(qp_string.as_str()));
+      Ok(url)
+    }
   }
 
   /// Checks if the template has any mustache templates or not
@@ -57,17 +71,6 @@ impl RequestTemplate {
       && self.body.as_ref().map_or(true, Mustache::is_const)
       && self.query.iter().all(|(_, v)| v.is_const())
       && self.headers.iter().all(|(_, v)| v.is_const())
-  }
-
-  // Why is is returning a boolean?
-  fn update_query<'a>(url: &mut Url, pairs: impl Iterator<Item = (&'a str, String)>) -> bool {
-    let mut p_has_pairs = url.query().is_some();
-    let mut query_pairs = url.query_pairs_mut();
-    for (k, v) in pairs {
-      query_pairs.append_pair(k, &v);
-      p_has_pairs = true;
-    }
-    p_has_pairs
   }
 
   /// Creates a HeaderMap for the context
@@ -91,7 +94,6 @@ impl RequestTemplate {
     let url = self.create_url(ctx)?;
     let method = self.method.clone();
     let mut req = reqwest::Request::new(method, url);
-    req = self.set_query_params(req, ctx);
     req = self.set_headers(req, ctx);
     req = self.set_body(req, ctx);
 
@@ -122,24 +124,6 @@ impl RequestTemplate {
     req
   }
 
-  /// Sets the query params for the request
-  fn set_query_params<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
-    let filter_list = self.query.iter().filter_map(|(k, v)| {
-      let rendered_v = v.render(ctx);
-      if !rendered_v.is_empty() {
-        Some((k.as_str(), rendered_v))
-      } else {
-        None
-      }
-    });
-
-    if !RequestTemplate::update_query(req.url_mut(), filter_list) {
-      req.url_mut().set_query(None);
-    }
-
-    req
-  }
-
   pub fn new(root_url: &str) -> anyhow::Result<Self> {
     Ok(Self {
       root_url: Mustache::parse(root_url)?,
@@ -149,20 +133,6 @@ impl RequestTemplate {
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
     })
-  }
-}
-
-#[derive(Default)]
-struct StaticContext(HeaderMap);
-impl PathString for StaticContext {
-  fn path_string<T: AsRef<str>>(&self, _path: &[T]) -> Option<std::borrow::Cow<'_, str>> {
-    unimplemented!()
-  }
-}
-
-impl HasHeaders for StaticContext {
-  fn headers(&self) -> &HeaderMap {
-    &self.0
   }
 }
 
@@ -296,6 +266,7 @@ mod tests {
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
   }
+
   #[test]
   fn test_headers() {
     let headers = vec![
@@ -424,6 +395,18 @@ mod tests {
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
+  }
+
+  #[test]
+  fn test_from_endpoint_template_with_query_null_value() {
+    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}&q=1".to_string()).query(vec![
+      ("b".to_string(), "1".to_string()),
+      ("c".to_string(), "{{args.c}}".to_string()),
+    ]);
+    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let ctx = Context::default();
+    let req = tmpl.to_request(&ctx).unwrap();
+    assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
   }
 
   #[test]
