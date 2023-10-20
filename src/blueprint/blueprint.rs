@@ -38,7 +38,7 @@ impl Type {
   }
 
   pub fn is_nullable(&self) -> bool {
-    match self {
+    !match self {
       Type::NamedType { non_null, .. } => *non_null,
       Type::ListType { non_null, .. } => *non_null,
     }
