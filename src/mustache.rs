@@ -2,8 +2,11 @@ use nom::{Finish, IResult};
 
 use crate::path_string::PathString;
 
+// TODO should this be `pub`, or should we have another associated
+// function to extract the raw segments? Or should we build a generic
+// interface for dry-run validation?
 #[derive(Debug, Clone, PartialEq)]
-pub struct Mustache(Vec<Segment>);
+pub struct Mustache(pub Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Segment {
