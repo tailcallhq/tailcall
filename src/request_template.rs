@@ -38,14 +38,12 @@ impl RequestTemplate {
       }
     });
 
-    // Merge all query params
     let base_qp = url
       .query_pairs()
       .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) });
 
-    let qp = base_qp.chain(extra_qp);
-
-    let qp_string = qp
+    let qp_string = base_qp
+      .chain(extra_qp)
       .map(|(k, v)| format!("{}={}", k, v))
       .fold("".to_string(), |str, item| {
         if str.is_empty() {
