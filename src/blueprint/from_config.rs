@@ -244,7 +244,13 @@ where
         return Valid::fail(format!("no argument '{tail}' found"));
       }
     }
-    "header" | "vars" | _ => {}
+    "header" | "vars" => {
+      // TODO do we need to do anything here? Where do vars come from?
+    }
+    _ => {
+      // TODO have we covered all the cases? Does reaching here mean some
+      // invariant was violated?
+    }
   }
 
   Valid::Ok(())
@@ -255,7 +261,7 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
   validation_map.reserve(fields.len());
 
   for field in fields {
-    if validation_map.insert(&field.name, &field).is_some() {
+    if validation_map.insert(&field.name, field).is_some() {
       // TODO is this really unreachable? Do we already error out on duplicated
       // fields?
       panic!("Field '{}' shouldn't be already present!", field.name);
@@ -263,27 +269,25 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
   }
 
   for field in fields {
-    if let Some(resolver) = &field.resolver {
-      // XXX we could use `Mustache`'s `render` method with a mock
-      // struct implementing the `PathString` trait encapsulating `validation_map`
-      // but `render` simply falls back to the default value for a given
-      // type if it doesn't exist, so we wouldn't be able to get enough
-      // context from that method alone
-      // So we must duplicate some of that logic here :(
-      if let Expression::Unsafe(Operation::Endpoint(req_template, _, _)) = resolver {
-        match &req_template.root_url {
-          Mustache(segments) => {
-            for segment in segments {
-              if let Segment::Expression(parts) = segment {
-                // TODO is this invariant enforced anywhere so that we can omit
-                // this check?
-                if parts.len() < 2 {
-                  continue;
-                }
-
-                validate_mustache_parts(&parts[0], &parts[1], &field.args, |k| validation_map.get(k).copied())
-                  .trace(&field.name)?;
+    // XXX we could use `Mustache`'s `render` method with a mock
+    // struct implementing the `PathString` trait encapsulating `validation_map`
+    // but `render` simply falls back to the default value for a given
+    // type if it doesn't exist, so we wouldn't be able to get enough
+    // context from that method alone
+    // So we must duplicate some of that logic here :(
+    if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
+      match &req_template.root_url {
+        Mustache(segments) => {
+          for segment in segments {
+            if let Segment::Expression(parts) = segment {
+              // TODO is this invariant enforced anywhere so that we can omit
+              // this check?
+              if parts.len() < 2 {
+                continue;
               }
+
+              validate_mustache_parts(&parts[0], &parts[1], &field.args, |k| validation_map.get(k).copied())
+                .trace(&field.name)?;
             }
           }
         }
