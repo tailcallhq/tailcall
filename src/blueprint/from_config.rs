@@ -275,8 +275,7 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
 
   for field in fields {
     if validation_map.insert(&field.name, field).is_some() {
-      // TODO is this really unreachable? Do we already error out on duplicated
-      // fields?
+      // Fields are already de-duplicated for us beforehand
       panic!("Field '{}' shouldn't be already present!", field.name);
     }
   }
