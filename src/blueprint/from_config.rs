@@ -245,7 +245,15 @@ where
       }
     }
     "header" | "vars" => {
-      // TODO do we need to do anything here? Where do vars come from?
+      // TODO neither of these values make sense for usage in a URL template
+      // should we error out here?
+
+      // "header" refers to the header values known at runtime, which we can't
+      // validate here
+
+      // "vars" refer to the server's configuration variables, set up in
+      // `config/server.rs` and they all have fallbacks to default values, so
+      // we don't need any checks here
     }
     _ => {
       // TODO have we covered all the cases? Does reaching here mean some
