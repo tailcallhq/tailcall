@@ -100,12 +100,6 @@ impl RequestTemplate {
 
   /// Sets the body for the request
   fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
-    // req.body_mut().replace(
-    //   self
-    //     .body
-    //     .as_ref()
-    //     .map_or(reqwest::Body::from("".to_string()), |b| b.render(ctx).into()),
-    // );
     if let Some(body) = &self.body {
       req.body_mut().replace(body.render(ctx).into());
     }
