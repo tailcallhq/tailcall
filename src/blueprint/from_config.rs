@@ -20,6 +20,7 @@ use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Operation};
+use crate::mustache::{Mustache, Segment};
 use crate::request_template::RequestTemplate;
 use crate::valid::{OptionExtension, Valid as ValidDefault, ValidExtensions, ValidationError, VectorExtension};
 use crate::{blueprint, config};
@@ -207,7 +208,90 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .trace(name)
   })?;
 
-  Ok(fields.into_iter().flatten().collect())
+  let fields = fields.into_iter().flatten().collect::<Vec<_>>();
+
+  validate_fields(&fields)?;
+
+  Ok(fields)
+}
+
+fn validate_mustache_parts<'a, F>(head: &str, tail: &'a str, args: &[InputFieldDefinition], get_value: F) -> Valid<()>
+where
+  F: Fn(&'a str) -> Option<&FieldDefinition>,
+{
+  match head {
+    "value" => {
+      if let Some(val) = get_value(tail) {
+        if val.of_type.is_nullable() {
+          return Valid::fail(format!("value '{tail}' is a nullable type"));
+        }
+      } else {
+        return Valid::fail(format!("no value '{tail}' found"));
+      }
+    }
+    // TODO this should probably error out on the `ListType` match arm since it
+    // doesn't make sense to have a list in the template URL
+    "args" => {
+      // XXX this is a linear search but it's cost is less than that of
+      // constructing a HashMap since we'd have 3-4 arguments at max in
+      // most cases
+      if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+        // TODO should we pass the validation if `default_value` exists?
+        if arg.of_type.is_nullable() {
+          return Valid::fail(format!("argument '{tail}' is a nullable type"));
+        }
+      } else {
+        return Valid::fail(format!("no argument '{tail}' found"));
+      }
+    }
+    "header" | "vars" | _ => {}
+  }
+
+  Valid::Ok(())
+}
+
+fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
+  let mut validation_map = HashMap::<&str, &FieldDefinition>::new();
+  validation_map.reserve(fields.len());
+
+  for field in fields {
+    if validation_map.insert(&field.name, &field).is_some() {
+      // TODO is this really unreachable? Do we already error out on duplicated
+      // fields?
+      panic!("Field '{}' shouldn't be already present!", field.name);
+    }
+  }
+
+  for field in fields {
+    if let Some(resolver) = &field.resolver {
+      // XXX we could use `Mustache`'s `render` method with a mock
+      // struct implementing the `PathString` trait encapsulating `validation_map`
+      // but `render` simply falls back to the default value for a given
+      // type if it doesn't exist, so we wouldn't be able to get enough
+      // context from that method alone
+      // So we must duplicate some of that logic here :(
+      if let Expression::Unsafe(Operation::Endpoint(req_template, _, _)) = resolver {
+        match &req_template.root_url {
+          Mustache(segments) => {
+            for segment in segments {
+              if let Segment::Expression(parts) = segment {
+                // TODO is this invariant enforced anywhere so that we can omit
+                // this check?
+                if parts.len() < 2 {
+                  continue;
+                }
+
+                validate_mustache_parts(&parts[0], &parts[1], &field.args, |k| validation_map.get(k).copied())
+                  .trace(&field.name)?;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Valid::Ok(())
 }
 
 fn to_field(
