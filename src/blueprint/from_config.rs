@@ -236,8 +236,7 @@ where
       // constructing a HashMap since we'd have 3-4 arguments at max in
       // most cases
       if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-        // TODO should we pass the validation if `default_value` exists?
-        if arg.of_type.is_nullable() {
+        if arg.default_value.is_none() && arg.of_type.is_nullable() {
           return Valid::fail(format!("argument '{tail}' is a nullable type"));
         }
       } else {
