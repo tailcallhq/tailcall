@@ -233,6 +233,10 @@ where
   match head {
     "value" => {
       if let Some(val) = get_value(tail) {
+        if !is_scalar(val.of_type.name()) {
+          return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+        }
+
         // Queries can use optional values
         if !is_query && val.of_type.is_nullable() {
           return Valid::fail(format!("value '{tail}' is a nullable type"));
@@ -249,6 +253,8 @@ where
         if let Type::ListType { .. } = arg.of_type {
           return Valid::fail(format!("can't use list type '{tail}' here"));
         }
+
+        // we can use non-scalar types in args
 
         if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
           return Valid::fail(format!("argument '{tail}' is a nullable type"));
