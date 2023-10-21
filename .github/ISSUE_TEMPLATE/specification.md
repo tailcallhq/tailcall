@@ -1,9 +1,10 @@
 ---
 name: Specification
-about: Create a specification
-title: Doc:
-labels: "documentation"
-assignees: ""
+about: Create a specification pull request
+title: ''
+labels: documentation
+assignees: ''
+
 ---
 
 <!-- Introduction -->
