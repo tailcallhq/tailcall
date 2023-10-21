@@ -241,13 +241,15 @@ where
         return Valid::fail(format!("no value '{tail}' found"));
       }
     }
-    // TODO this should probably error out on the `ListType` match arm since it
-    // doesn't make sense to have a list in the template URL
     "args" => {
       // XXX this is a linear search but it's cost is less than that of
       // constructing a HashMap since we'd have 3-4 arguments at max in
       // most cases
       if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+        if let Type::ListType { .. } = arg.of_type {
+          return Valid::fail(format!("can't use list type '{tail}' here"));
+        }
+
         if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
           return Valid::fail(format!("argument '{tail}' is a nullable type"));
         }
