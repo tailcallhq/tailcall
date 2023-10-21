@@ -214,7 +214,12 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
   Ok(fields)
 }
 
-fn validate_mustache_parts<'a, F>(parts: &'a [String], args: &[InputFieldDefinition], get_value: F) -> Valid<()>
+fn validate_mustache_parts<'a, F>(
+  parts: &'a [String],
+  is_query: bool,
+  args: &[InputFieldDefinition],
+  get_value: F,
+) -> Valid<()>
 where
   F: Fn(&'a str) -> Option<&FieldDefinition>,
 {
@@ -228,7 +233,8 @@ where
   match head {
     "value" => {
       if let Some(val) = get_value(tail) {
-        if val.of_type.is_nullable() {
+        // Queries can use optional values
+        if !is_query && val.of_type.is_nullable() {
           return Valid::fail(format!("value '{tail}' is a nullable type"));
         }
       } else {
@@ -242,7 +248,7 @@ where
       // constructing a HashMap since we'd have 3-4 arguments at max in
       // most cases
       if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-        if arg.default_value.is_none() && arg.of_type.is_nullable() {
+        if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
           return Valid::fail(format!("argument '{tail}' is a nullable type"));
         }
       } else {
@@ -285,14 +291,14 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
     // So we must duplicate some of that logic here :(
     if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
       for parts in req_template.root_url.expression_segments() {
-        validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
+        validate_mustache_parts(parts, false, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
       }
 
       for query in &req_template.query {
         let (name, mustache) = query;
 
         for parts in mustache.expression_segments() {
-          validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied())
+          validate_mustache_parts(parts, true, &field.args, |k| validation_map.get(k).copied())
             .trace(name)
             .trace(&field.name)?;
         }
