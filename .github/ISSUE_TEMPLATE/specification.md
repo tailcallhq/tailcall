@@ -2,7 +2,7 @@
 name: Specification
 about: Create a specification
 title: Doc:
-labels: ""
+labels: "documentation"
 assignees: ""
 ---
 
