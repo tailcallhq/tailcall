@@ -37,7 +37,7 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 
 #[cfg(test)]
 mod tests {
-  use crate::config::group_by::GroupBy;
+
   use crate::config::{Config, Field, Http, Type};
 
   #[test]
@@ -97,8 +97,7 @@ mod tests {
           Field::default()
             .type_of("F2".to_string())
             .to_list()
-            .http(Http::default())
-            // .group_by(GroupBy::default()),n_p
+            .http(Http::default()),
         )]),
       ),
       (

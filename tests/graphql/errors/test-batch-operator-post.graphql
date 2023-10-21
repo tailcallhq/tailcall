@@ -9,7 +9,7 @@ type User {
 }
 
 type Query {
-  user: User @http(path: "/posts/1", method: "POST") @groupBy(path: ["id"])
+  user: User @http(path: "/posts/1", method: "POST", batch: {groupByPath: ["id"], selectKey: "id"})
 }
 
 #> client-sdl

@@ -9,7 +9,6 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::group_by::GroupBy;
 use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid as ValidDefault, ValidExtensions, ValidationError};
@@ -210,7 +209,6 @@ fn to_common_field(
   // TODO: Update this
   let http = to_http(directives)?;
   let unsafe_operation = to_unsafe_operation(directives);
-  // let group_by = to_batch(directives);
   let const_field = to_const_field(directives);
   Valid::Ok(config::Field {
     type_of,
@@ -223,7 +221,6 @@ fn to_common_field(
     inline,
     http,
     unsafe_operation,
-    // group_by,
     const_field,
   })
 }
@@ -303,15 +300,6 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .map(|member| member.node.to_string())
     .collect();
   Union { types, doc: doc.clone() }
-}
-fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == "groupBy" {
-      GroupBy::from_directive(&directive.node).ok()
-    } else {
-      None
-    }
-  })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
   directives.iter().find_map(|directive| {
