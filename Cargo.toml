@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
-thiserror = "1.0.49"
+thiserror = "1.0.50"
 http-cache-semantics = { version = "1.0.1", default-features = false, features = [
    "reqwest"
 ] }
@@ -22,7 +22,10 @@ serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
 sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.11", features = ["json","rustls-tls"], default-features = false }
+reqwest = { version = "0.11", features = [
+   "json",
+   "rustls-tls"
+], default-features = false }
 hyper = { version = "0.14", features = ["full"], default-features = false }
 async-graphql = { version = "6.0", features = [
    "dynamic-schema",

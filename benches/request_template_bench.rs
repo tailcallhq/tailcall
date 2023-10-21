@@ -31,17 +31,29 @@ impl HasHeaders for Context {
   }
 }
 fn benchmark_to_request(c: &mut Criterion) {
-  c.bench_function("test_to_request", |b| {
+  let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(
+    "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string(),
+  ))
+  .unwrap();
+
+  let tmpl_literal =
+    RequestTemplate::try_from(Endpoint::new("http://localhost:3000/foo?a=bar&b=foo&c=baz".to_string())).unwrap();
+
+  let ctx = Context::default().value(json!({
+    "args": {
+      "b": "foo"
+    }
+  }));
+
+  c.bench_function("with_mustache_literal", |b| {
     b.iter(|| {
-      let endpoint =
-        Endpoint::new("http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string());
-      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-      let ctx = Context::default().value(json!({
-        "args": {
-          "b": "foo"
-        }
-      }));
-      black_box(tmpl.to_request(&ctx).unwrap());
+      black_box(tmpl_literal.to_request(&ctx).unwrap());
+    })
+  });
+
+  c.bench_function("with_mustache_expressions", |b| {
+    b.iter(|| {
+      black_box(tmpl_mustache.to_request(&ctx).unwrap());
     })
   });
 }
