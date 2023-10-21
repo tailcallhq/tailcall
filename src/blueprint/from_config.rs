@@ -284,14 +284,14 @@ fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
     // context from that method alone
     // So we must duplicate some of that logic here :(
     if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
-      for parts in req_template.root_url.all_parts() {
+      for parts in req_template.root_url.expression_segments() {
         validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
       }
 
       for query in &req_template.query {
         let (name, mustache) = query;
 
-        for parts in mustache.all_parts() {
+        for parts in mustache.expression_segments() {
           validate_mustache_parts(parts, &field.args, |k| validation_map.get(k).copied())
             .trace(name)
             .trace(&field.name)?;

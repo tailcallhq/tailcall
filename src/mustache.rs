@@ -51,7 +51,7 @@ impl Mustache {
     }
   }
 
-  pub fn all_parts(&self) -> Vec<&Vec<String>> {
+  pub fn expression_segments(&self) -> Vec<&Vec<String>> {
     let mut out = Vec::new();
 
     match self {
