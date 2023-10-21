@@ -207,6 +207,7 @@ fn to_common_field(
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
   let inline = to_inline(directives);
+  // TODO: Update this
   let http = to_http(directives)?;
   let unsafe_operation = to_unsafe_operation(directives);
   // let group_by = to_batch(directives);

@@ -234,7 +234,6 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
-  let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
@@ -319,31 +318,6 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition> {
-  if let Some(http) = field.http.as_ref() {
-    if let Some(batch) = http.batch.as_ref() {
-      if http.method != Method::GET {
-        Valid::fail("GroupBy is only supported for GET requests".to_string())
-      } else {
-        if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
-          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
-            request_template.clone(),
-            Some(batch.clone()),
-            dl,
-          )));
-        }
-        Valid::Ok(b_field)
-      }
-    } else {
-      // FIXME: Is this still useful ?
-      // Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
-      Valid::Ok(b_field)
-    }
-  } else {
-    Valid::Ok(b_field)
-  }
-}
-
 fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
@@ -378,9 +352,23 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         )
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
-        b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
-
-        Valid::Ok(b_field)
+        match http.batch.as_ref() {
+          Some(batch) if http.method == Method::GET => {
+            b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+              req_template,
+              Some(batch.clone()),
+              None,
+            )));
+            Valid::Ok(b_field)
+          }
+          Some(_) if http.method != Method::GET => {
+            Valid::fail("GroupBy is only supported for GET requests".to_string())
+          }
+          _ => {
+            b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+            Valid::Ok(b_field)
+          }
+        }
       }
       None => Valid::fail("No base URL defined".to_string()),
     },

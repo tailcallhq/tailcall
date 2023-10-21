@@ -98,7 +98,7 @@ mod tests {
             .type_of("F2".to_string())
             .to_list()
             .http(Http::default())
-            .group_by(GroupBy::default()),
+            // .group_by(GroupBy::default()),n_p
         )]),
       ),
       (
