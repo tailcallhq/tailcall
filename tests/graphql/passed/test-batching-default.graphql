@@ -13,7 +13,11 @@ type Post {
   body: String
   userId: Int
   user: User
-    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], batch: {})
+    @http(
+      path: "/users"
+      query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}]
+      batch: {groupByPath: ["id"], selectKey: "id"}
+    )
 }
 
 type User {
