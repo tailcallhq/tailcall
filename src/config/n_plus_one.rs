@@ -38,7 +38,8 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
 
-  use crate::config::{group_by::GroupBy, Config, Field, Http, Type};
+  use crate::config::group_by::GroupBy;
+  use crate::config::{Config, Field, Http, Type};
 
   #[test]
   fn test_nplusone_resolvers() {

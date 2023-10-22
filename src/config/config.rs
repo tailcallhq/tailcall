@@ -316,8 +316,6 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
   pub batch: Option<GroupBy>,
 }
 
