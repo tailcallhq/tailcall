@@ -52,19 +52,15 @@ impl Mustache {
   }
 
   pub fn expression_segments(&self) -> Vec<&Vec<String>> {
-    let mut out = Vec::new();
-
     match self {
-      Mustache(segments) => {
-        for s in segments {
-          if let Segment::Expression(parts) = s {
-            out.push(parts);
-          }
-        }
-      }
+      Mustache(segments) => segments
+        .iter()
+        .filter_map(|seg| match seg {
+          Segment::Expression(parts) => Some(parts),
+          _ => None,
+        })
+        .collect(),
     }
-
-    out
   }
 }
 
