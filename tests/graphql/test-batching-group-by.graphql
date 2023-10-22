@@ -10,8 +10,8 @@ type Post {
   user: User
     @http(
       path: "/users"
-      query: [{key: "id", value: "{{value.userId}}"}]
       batch: {groupByPath: ["id"], selectKey: "id"}
+      query: [{key: "id", value: "{{value.userId}}"}]
     )
   userId: Int
 }
