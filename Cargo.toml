@@ -2,6 +2,8 @@
 name = "tailcall"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = ""
 
 [[bin]]
 name = "tailcall"
