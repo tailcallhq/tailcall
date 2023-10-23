@@ -26,8 +26,16 @@ export const writePackageJson = async (destination, { name, version, ...pkgData 
   const { license, description } = parse(cargoToml.toString());
 
   const pkgPath = join(BASE_DIR, 'npm', destination, 'package.json');
-  // read the base package.json if exists, else use an empty object
-  const basePkg = JSON.parse(await readFile(pkgPath).catch(() => '{}'));
+  const basePkg = {};
+
+  const exists = await access(pkgPath, constants.F_OK)
+    .then(() => true)
+    .catch(() => false)
+
+  if (exists) {
+    Object.assign(basePkg, JSON.parse(await readFile(pkgPath)));
+    await rm(pkgPath);
+  }
 
   const packageJson = {
     name,
@@ -38,10 +46,6 @@ export const writePackageJson = async (destination, { name, version, ...pkgData 
     ...templatePkg,
     ...pkgData,
   };
-
-  const exists = await access(pkgPath, constants.F_OK)
-    .then(() => true)
-    .catch(() => false)
 
   if (exists) await rm(pkgPath)
 
