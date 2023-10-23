@@ -68,7 +68,11 @@ pub struct IntrospectionResults(pub BTreeMap<String, IntrospectionResult>);
 
 impl IntrospectionResults {
   pub fn merge_right(mut self, other: Self) -> Self {
+<<<<<<< HEAD
     let mut merged = self.0;
+=======
+    let mut merged = BTreeMap::from(self.0);
+>>>>>>> c23c7488 (Introspect schema, get arg type for field)
     for (key, value) in other.0 {
       merged.insert(key, value);
     }
