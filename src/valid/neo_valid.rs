@@ -106,6 +106,14 @@ impl<A, E> NeoValid<A, E> {
   pub fn unit(self) -> NeoValid<(), E> {
     self.map(|_| ())
   }
+
+  pub fn some(self) -> NeoValid<Option<A>, E> {
+    self.map(Some)
+  }
+
+  pub fn none() -> NeoValid<Option<A>, E> {
+    NeoValid::succeed(None)
+  }
 }
 
 impl<A, E> From<super::Valid<A, E>> for NeoValid<A, E> {
