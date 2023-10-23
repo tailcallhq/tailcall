@@ -8,3 +8,6 @@
 .direnv
 .envrc
 .env
+
+# node
+npm/packages
