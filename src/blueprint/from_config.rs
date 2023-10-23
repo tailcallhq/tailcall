@@ -13,6 +13,7 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
+use crate::config::group_by::GroupBy;
 use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
@@ -352,22 +353,18 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         )
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
-        match http.batch.as_ref() {
-          Some(batch) if http.method == Method::GET => {
-            b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
-              req_template,
-              Some(batch.clone()),
-              None,
-            )));
-            Valid::Ok(b_field)
-          }
-          Some(_) if http.method != Method::GET => {
-            Valid::fail("GroupBy is only supported for GET requests".to_string())
-          }
-          _ => {
-            b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
-            Valid::Ok(b_field)
-          }
+        if !http.group_by.is_empty() && http.method == Method::GET {
+          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+            req_template,
+            Some(GroupBy::new(http.group_by.clone())),
+            None,
+          )));
+          Valid::Ok(b_field)
+        } else if !http.group_by.is_empty() && http.method != Method::GET {
+          Valid::fail("GroupBy is only supported for GET requests".to_string())
+        } else {
+          b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+          Valid::Ok(b_field)
         }
       }
       None => Valid::fail("No base URL defined".to_string()),

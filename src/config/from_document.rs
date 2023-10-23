@@ -203,7 +203,6 @@ fn to_common_field(
   let inline = to_inline(directives);
   to_http(directives).map(|http| {
     let unsafe_operation = to_unsafe_operation(directives);
-    // let group_by = to_batch(directives);
     let const_field = to_const_field(directives);
     config::Field {
       type_of,
@@ -216,7 +215,6 @@ fn to_common_field(
       inline,
       http,
       unsafe_operation,
-      // group_by,
       const_field,
     }
   })

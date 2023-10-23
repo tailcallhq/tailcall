@@ -98,7 +98,7 @@ mod tests {
           Field::default()
             .type_of("F2".to_string())
             .to_list()
-            .http(Http { batch: Some(GroupBy::default()), ..Default::default() }),
+            .http(Http { group_by: vec!["id".into()], ..Default::default() }),
         )]),
       ),
       (

@@ -245,7 +245,7 @@ impl Field {
   }
   pub fn has_batched_resolver(&self) -> bool {
     if let Some(http) = &self.http {
-      http.batch.is_some()
+      !http.group_by.is_empty()
     } else {
       false
     }
@@ -316,7 +316,9 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  pub batch: Option<GroupBy>,
+  #[serde(default)]
+  #[serde(rename = "groupBy", skip_serializing_if = "is_default")]
+  pub group_by: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
