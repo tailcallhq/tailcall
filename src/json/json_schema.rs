@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_graphql::Name;
 use serde::{Deserialize, Serialize};
 
-use crate::valid::{Valid, ValidExtensions, VectorExtension};
+use crate::valid::NeoValid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "schema")]
@@ -34,59 +34,53 @@ impl Default for JsonSchema {
 
 impl JsonSchema {
   // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-  pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
+  pub fn validate(&self, value: &async_graphql::Value) -> NeoValid<(), &'static str> {
     match self {
       JsonSchema::Str => match value {
-        async_graphql::Value::String(_) => Valid::Ok(()),
-        _ => Valid::fail("expected string"),
+        async_graphql::Value::String(_) => NeoValid::succeed(()),
+        _ => NeoValid::fail("expected string"),
       },
       JsonSchema::Num => match value {
-        async_graphql::Value::Number(_) => Valid::Ok(()),
-        _ => Valid::fail("expected number"),
+        async_graphql::Value::Number(_) => NeoValid::succeed(()),
+        _ => NeoValid::fail("expected number"),
       },
       JsonSchema::Bool => match value {
-        async_graphql::Value::Boolean(_) => Valid::Ok(()),
-        _ => Valid::fail("expected boolean"),
+        async_graphql::Value::Boolean(_) => NeoValid::succeed(()),
+        _ => NeoValid::fail("expected boolean"),
       },
       JsonSchema::Arr(schema) => match value {
         async_graphql::Value::List(list) => {
           // TODO: add unit tests
-          list
-            .iter()
-            .enumerate()
-            .validate_all(|(i, item)| schema.validate(item).trace(i.to_string().as_str()))?;
-          Ok(())
+          NeoValid::from_iter(list.iter().enumerate(), |(i, item)| {
+            schema.validate(item).trace(i.to_string().as_str())
+          })
+          .unit()
         }
-        _ => Valid::fail("expected array"),
+        _ => NeoValid::fail("expected array"),
       },
       JsonSchema::Obj(fields) => {
         let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
         match value {
-          async_graphql::Value::Object(map) => {
-            let items_valid = field_schema_list.validate_all(|(name, schema)| {
-              let key = Name::new(name);
-              if schema.is_required() {
-                if let Some(field_value) = map.get(&key) {
-                  schema.validate(field_value).trace(name)
-                } else {
-                  Valid::fail("expected field to be non-nullable")
-                }
-              } else if let Some(field_value) = map.get(&key) {
+          async_graphql::Value::Object(map) => NeoValid::from_iter(field_schema_list, |(name, schema)| {
+            let key = Name::new(name);
+            if schema.is_required() {
+              if let Some(field_value) = map.get(&key) {
                 schema.validate(field_value).trace(name)
               } else {
-                Valid::Ok(())
+                NeoValid::fail("expected field to be non-nullable")
               }
-            });
-            match items_valid {
-              Valid::Ok(_) => Valid::Ok(()),
-              Valid::Err(err) => Valid::Err(err),
+            } else if let Some(field_value) = map.get(&key) {
+              schema.validate(field_value).trace(name)
+            } else {
+              NeoValid::succeed(())
             }
-          }
-          _ => Valid::fail("expected object"),
+          })
+          .unit(),
+          _ => NeoValid::fail("expected object"),
         }
       }
       JsonSchema::Opt(schema) => match value {
-        async_graphql::Value::Null => Valid::Ok(()),
+        async_graphql::Value::Null => NeoValid::succeed(()),
         _ => schema.validate(value),
       },
     }
@@ -111,14 +105,14 @@ mod tests {
   use indexmap::IndexMap;
 
   use crate::json::JsonSchema;
-  use crate::valid::{Valid, ValidExtensions};
+  use crate::valid::NeoValid;
 
   #[test]
   fn test_validate_string() {
     let schema = JsonSchema::Str;
     let value = async_graphql::Value::String("hello".to_string());
     let result = schema.validate(&value);
-    assert_eq!(result, Valid::Ok(()));
+    assert_eq!(result, NeoValid::succeed(()));
   }
 
   #[test]
@@ -131,7 +125,7 @@ mod tests {
       map
     });
     let result = schema.validate(&value);
-    assert_eq!(result, Valid::Ok(()));
+    assert_eq!(result, NeoValid::succeed(()));
   }
 
   #[test]
@@ -144,7 +138,7 @@ mod tests {
       map
     });
     let result = schema.validate(&value);
-    assert_eq!(result, Valid::fail("expected number").trace("age"));
+    assert_eq!(result, NeoValid::fail("expected number").trace("age"));
   }
 
   #[test]
@@ -157,6 +151,6 @@ mod tests {
     });
 
     let result = schema.validate(&value);
-    assert_eq!(result, Valid::Ok(()));
+    assert_eq!(result, NeoValid::succeed(()));
   }
 }

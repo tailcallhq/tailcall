@@ -18,7 +18,7 @@ use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
-use tailcall::valid::{Cause, ValidExtensions};
+use tailcall::valid::{Cause, NeoValid, ValidExtensions};
 mod graphql_mock;
 
 static INIT: Once = Once::new();
@@ -83,7 +83,9 @@ impl GraphQLSpec {
             if let TypeSystemDefinition::Type(type_def) = def {
               for dir in type_def.node.directives {
                 if dir.node.name.node == "error" {
-                  spec.sdl_errors.push(SDLError::from_directive(&dir.node).unwrap());
+                  spec
+                    .sdl_errors
+                    .push(SDLError::from_directive(&dir.node).to_result().unwrap());
                 }
               }
             }
@@ -167,7 +169,7 @@ fn test_config_identity() -> std::io::Result<()> {
     let content = spec.server_sdl[0].as_str();
     let expected = content;
 
-    let config = Config::from_sdl(content).unwrap();
+    let config = Config::from_sdl(content).to_result().unwrap();
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
@@ -184,7 +186,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
   for spec in specs? {
     let expected = spec.client_sdl;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content).unwrap();
+    let config = Config::from_sdl(content).to_result().unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
     assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     log::info!("ClientSDL: {} ... ok", spec.path.display());
@@ -202,7 +204,7 @@ async fn test_execution() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   for spec in specs? {
-    let mut config = Config::from_sdl(&spec.server_sdl[0]).unwrap();
+    let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
     config.server.enable_query_validation = Some(false);
 
     let blueprint = Blueprint::try_from(&config)
@@ -237,7 +239,9 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content);
 
-    let actual = config.and_then(|config| Blueprint::try_from(&config));
+    let actual = config
+      .and_then(|config| NeoValid::from(Blueprint::try_from(&config)))
+      .to_result();
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
@@ -260,7 +264,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
     let content = spec
       .server_sdl
       .iter()
-      .map(|s| Config::from_sdl(s.as_str()).unwrap())
+      .map(|s| Config::from_sdl(s.as_str()).to_result().unwrap())
       .collect::<Vec<_>>();
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
