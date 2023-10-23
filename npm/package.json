@@ -8,6 +8,10 @@
     "graphiql",
     "rust"
   ],
+  "scripts": {
+    "prepare": "node prepare-main-package.js"
+  },
+  "files": ["README.md"],
   "author": "Taillcall contributors",
   "repository": {
     "type": "git",

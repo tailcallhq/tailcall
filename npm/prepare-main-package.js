@@ -1,3 +1,4 @@
+import { copyFile } from 'fs/promises';
 import { writePackageJson } from './lib/index.js';
 
 const { node_package, version } = process.env;
@@ -16,4 +17,8 @@ await writePackageJson('.', {
   name: node_package,
   version,
   optionalDependencies,
-})
+});
+
+await copyFile('../README.md', './README.md')
+
+console.log('aaaaa')
