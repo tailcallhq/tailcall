@@ -1,7 +1,6 @@
 {
   "name": "@tailcallhq/tailcall",
   "version": "0.1.0",
-  "description": "",
   "type": "module",
   "keywords": [
     "tailcall",
@@ -10,7 +9,6 @@
     "rust"
   ],
   "author": "Taillcall contributors",
-  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/tailcall/tailcall.git"
@@ -20,12 +18,15 @@
     "url": "https://github.com/tailcall/tailcall/issues"
   },
   "optionalDependencies": {
-    "@tailcallhq/core-linux-x86_64-gnu": "0.1.0",
-    "@tailcallhq/core-linux-x86_64-musl": "0.1.0",
-    "@tailcallhq/core-linux-aarch64-gnu": "0.1.0",
-    "@tailcallhq/core-linux-aarch64-musl": "0.1.0",
-    "@tailcallhq/core-linux-i686-gnu": "0.1.0",
-    "@tailcallhq/core-darwin-arm64": "0.1.0",
-    "@tailcallhq/core-darwin-x86_64": "0.1.0"
+    "@tailcallhq/core-darwin-arm64": "*",
+    "@tailcallhq/core-darwin-x86_64": "*",
+    "@tailcallhq/core-linux-aarch64-gnu": "*",
+    "@tailcallhq/core-linux-aarch64-musl": "*",
+    "@tailcallhq/core-linux-i686-gnu": "*",
+    "@tailcallhq/core-linux-x86_64-gnu": "*",
+    "@tailcallhq/core-linux-x86_64-musl": "*"
+  },
+  "devDependencies": {
+    "toml": "^3.0.0"
   }
 }
