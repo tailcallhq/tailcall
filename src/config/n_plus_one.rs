@@ -38,7 +38,6 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
 
-  use crate::config::group_by::GroupBy;
   use crate::config::{Config, Field, Http, Type};
 
   #[test]

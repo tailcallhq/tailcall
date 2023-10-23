@@ -10,7 +10,6 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
-use crate::config::group_by::GroupBy;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;

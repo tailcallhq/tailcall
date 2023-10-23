@@ -40,7 +40,8 @@
                   "key": "id",
                   "value": "{{value.userId}}"
                 }
-              ]
+              ],
+              "groupBy": ["id"]
             },
             "groupBy": {}
           },

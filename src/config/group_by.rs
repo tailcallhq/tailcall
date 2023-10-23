@@ -8,7 +8,9 @@ pub struct GroupBy {
 }
 
 impl GroupBy {
-    pub fn new(path: Vec<String>) -> Self { Self { path } }
+  pub fn new(path: Vec<String>) -> Self {
+    Self { path }
+  }
 
   pub fn path(&self) -> Vec<String> {
     if self.path.is_empty() {

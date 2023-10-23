@@ -30,7 +30,8 @@ graphql:
             query:
               - key: id
                 value: "{{value.userId}}"
-          groupBy: {}
+            groupBy:
+              - id
         userId:
           type_of: Int
           required: true
