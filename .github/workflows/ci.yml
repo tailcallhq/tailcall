@@ -115,6 +115,28 @@ jobs:
       create_release_name: ${{ steps.set_output.outputs.create_release_name }}
       create_release_id: ${{ steps.set_output.outputs.create_release_id }}
 
+  publish_npm:
+    name: Publish NPM main package
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+      - name: Publish to NPM
+        shell: bash
+        run: |
+          cd npm
+          npm install
+          cp ../../README.md .
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
@@ -138,41 +160,55 @@ jobs:
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
+            node_os: linux
+            node_arch: x64
 
           - build: linux-x86_64-musl
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
             cross: true
+            node_os: linux
+            node_arch: x64
 
           - build: linux-aarch64-gnu
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-gnu
             cross: true
+            node_os: linux
+            node_arch: arm64
 
           - build: linux-aarch64-musl
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
             cross: true
+            node_os: linux
+            node_arch: arm64
 
           - build: linux-i686-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
             cross: true
+            node_os: linux
+            node_arch: x86
 
           - build: apple-arm64
             os: macos-latest
             rust: stable
             target: aarch64-apple-darwin
+            node_os: darwin
+            node_arch: arm64
 
           - build: apple-x86_64
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
             cross: false
+            node_os: darwin
+            node_arch: x64
     permissions:
       contents: write
       pull-requests: write
@@ -198,6 +234,26 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
+  
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18"
+      - name: Publish optional dependency
+        shell: bash
+        run: |
+          cd npm
+          bin="tailcall"
+          export node_os=${{ matrix.node_os }}
+          export node_arch=${{ matrix.node_arch }}
+          export version=${{ needs.draft_release.outputs.create_release_name }}
+          export node_package="@tailcallhq/core-${{ matrix.build }}"
+          export binary_source="target/${{ matrix.target }}"
+          node prepare.js
+          cd packages/@taillcallhq/core-${{ matrix.build }}
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Rename Binary with Target Name
         run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
