@@ -26,6 +26,6 @@ type Post {
     @http(
       path: "/users"
       query: [{key: "id", value: "{{value.userId}}"}]
-      batch: {groupByPath: ["id"], selectKey: "id"}
+      groupBy: ["id"]
     )
 }
