@@ -6,7 +6,6 @@ mod timeout;
 
 // TODO: make it private
 mod server;
-pub mod transform;
 
 pub use blueprint::*;
 pub use server::*;
