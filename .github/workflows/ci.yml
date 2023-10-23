@@ -243,7 +243,6 @@ jobs:
         shell: bash
         run: |
           cd npm
-          bin="tailcall"
           export node_os=${{ matrix.node_os }}
           export node_arch=${{ matrix.node_arch }}
           export version=${{ needs.draft_release.outputs.create_release_name }}
