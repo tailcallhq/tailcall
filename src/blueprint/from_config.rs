@@ -421,7 +421,7 @@ fn update_const_field(field: &config::Field, mut b_field: FieldDefinition, confi
     Some(const_field) => {
       let data = const_field.data.to_owned();
       match ConstValue::from_json(data.to_owned()) {
-        Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value) {
+        Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
           Ok(_) => {
             b_field.resolver = Some(Literal(data));
             Valid::Ok(b_field)

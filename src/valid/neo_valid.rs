@@ -102,6 +102,10 @@ impl<A, E> NeoValid<A, E> {
       Err(e) => NeoValid(Err(e)),
     }
   }
+
+  pub fn unit(self) -> NeoValid<(), E> {
+    self.map(|_| ())
+  }
 }
 
 impl<A, E> From<super::Valid<A, E>> for NeoValid<A, E> {

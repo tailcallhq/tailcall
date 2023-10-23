@@ -139,6 +139,7 @@ impl Expression {
                   .endpoint
                   .output
                   .validate(&res.body)
+                  .to_result()
                   .map_err(EvaluationError::from)?;
               }
               if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
