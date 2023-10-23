@@ -132,7 +132,6 @@ jobs:
         run: |
           cd npm
           npm install
-          cp ../../README.md .
           npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -248,7 +247,7 @@ jobs:
           export version=${{ needs.draft_release.outputs.create_release_name }}
           export node_package="@tailcallhq/core-${{ matrix.build }}"
           export binary_source="target/${{ matrix.target }}"
-          node prepare.js
+          node prepare-core-packages.js
           cd packages/@taillcallhq/core-${{ matrix.build }}
           npm publish --access public
         env:
