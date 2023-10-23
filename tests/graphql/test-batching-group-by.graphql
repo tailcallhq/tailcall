@@ -3,12 +3,16 @@ schema @server(port: 4000) @upstream(baseURL: "http://abc.com", batch: {delay: 1
   query: Query
 }
 
-# prettier-ignore
 type Post {
   body: String
   id: Int
   title: String
-  user: User @http(batch: {groupByPath: ["id"], selectKey: "id"}, path: "/users", query: [{key: "id", value: "{{value.userId}}"}])
+  user: User
+    @http(
+      batch: {groupByPath: ["id"], selectKey: "id"}
+      path: "/users"
+      query: [{key: "id", value: "{{value.userId}}"}]
+    )
   userId: Int
 }
 
