@@ -4,9 +4,6 @@ import { fileURLToPath } from 'url';
 
 const basePkg = {
   "description": "",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "tailcall",
     "graphql",
