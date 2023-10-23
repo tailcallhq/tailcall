@@ -1,11 +1,6 @@
 {
   "type": "module",
-  "keywords": [
-    "tailcall",
-    "graphql",
-    "graphiql",
-    "rust"
-  ],
+  "keywords": ["tailcall", "graphql", "graphiql", "rust"],
   "author": "Taillcall contributors",
   "repository": {
     "type": "git",
