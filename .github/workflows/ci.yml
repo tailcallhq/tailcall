@@ -234,7 +234,7 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
-  
+
       - name: Install Node
         uses: actions/setup-node@v2
         with:
