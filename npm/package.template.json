@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "keywords": [
+    "tailcall",
+    "graphql",
+    "graphiql",
+    "rust"
+  ],
+  "author": "Taillcall contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcall/tailcall.git"
+  },
+  "homepage": "https://github.com/tailcall/tailcall#readme",
+  "bugs": {
+    "url": "https://github.com/tailcall/tailcall/issues"
+  }
+}
