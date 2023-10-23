@@ -207,22 +207,28 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .trace(name)
   })?;
 
-  let fields = fields.into_iter().flatten().collect::<Vec<_>>();
-
-  validate_fields(&fields)?;
-
-  Ok(fields)
+  Ok(fields.into_iter().flatten().collect())
 }
 
-fn validate_mustache_parts<'a, F>(
-  parts: &'a [String],
+fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
+  if let Some(field) = type_of.fields.get(value) {
+    return Some(to_type(
+      &field.type_of,
+      field.list,
+      field.required,
+      field.list_type_required,
+    ));
+  }
+
+  None
+}
+
+fn validate_mustache_parts(
+  type_of: &config::Type,
   is_query: bool,
+  parts: &[String],
   args: &[InputFieldDefinition],
-  get_value: F,
-) -> Valid<()>
-where
-  F: Fn(&'a str) -> Option<&FieldDefinition>,
-{
+) -> Valid<()> {
   if parts.len() < 2 {
     return Valid::fail("too few parts in template".to_string());
   }
@@ -232,13 +238,13 @@ where
 
   match head {
     "value" => {
-      if let Some(val) = get_value(tail) {
-        if !is_scalar(val.of_type.name()) {
+      if let Some(val_type) = get_value_type(type_of, tail) {
+        if !is_scalar(val_type.name()) {
           return Valid::fail(format!("value '{tail}' is not of a scalar type"));
         }
 
         // Queries can use optional values
-        if !is_query && val.of_type.is_nullable() {
+        if !is_query && val_type.is_nullable() {
           return Valid::fail(format!("value '{tail}' is a nullable type"));
         }
       } else {
@@ -279,37 +285,23 @@ where
   Valid::Ok(())
 }
 
-fn validate_fields(fields: &[FieldDefinition]) -> Valid<()> {
-  let mut validation_map = HashMap::<&str, &FieldDefinition>::new();
-  validation_map.reserve(fields.len());
-
-  for field in fields {
-    if validation_map.insert(&field.name, field).is_some() {
-      // Fields are already de-duplicated for us beforehand
-      panic!("Field '{}' shouldn't be already present!", field.name);
+fn validate_field(type_of: &config::Type, field: &FieldDefinition) -> Valid<()> {
+  // XXX we could use `Mustache`'s `render` method with a mock
+  // struct implementing the `PathString` trait encapsulating `validation_map`
+  // but `render` simply falls back to the default value for a given
+  // type if it doesn't exist, so we wouldn't be able to get enough
+  // context from that method alone
+  // So we must duplicate some of that logic here :(
+  if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
+    for parts in req_template.root_url.expression_segments() {
+      validate_mustache_parts(type_of, false, parts, &field.args)?;
     }
-  }
 
-  for field in fields {
-    // XXX we could use `Mustache`'s `render` method with a mock
-    // struct implementing the `PathString` trait encapsulating `validation_map`
-    // but `render` simply falls back to the default value for a given
-    // type if it doesn't exist, so we wouldn't be able to get enough
-    // context from that method alone
-    // So we must duplicate some of that logic here :(
-    if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
-      for parts in req_template.root_url.expression_segments() {
-        validate_mustache_parts(parts, false, &field.args, |k| validation_map.get(k).copied()).trace(&field.name)?;
-      }
+    for query in &req_template.query {
+      let (name, mustache) = query;
 
-      for query in &req_template.query {
-        let (name, mustache) = query;
-
-        for parts in mustache.expression_segments() {
-          validate_mustache_parts(parts, true, &field.args, |k| validation_map.get(k).copied())
-            .trace(name)
-            .trace(&field.name)?;
-        }
+      for parts in mustache.expression_segments() {
+        validate_mustache_parts(type_of, true, parts, &field.args).trace(name)?;
       }
     }
   }
@@ -345,6 +337,8 @@ fn to_field(
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
+  validate_field(type_of, &field_definition)?;
+
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)
 }
