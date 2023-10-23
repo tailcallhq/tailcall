@@ -95,6 +95,22 @@ impl<A, E> NeoValid<A, E> {
   pub fn to_result(self) -> Result<A, ValidationError<E>> {
     self.0
   }
+
+  pub fn and_then<B>(self, f: impl FnOnce(A) -> NeoValid<B, E>) -> NeoValid<B, E> {
+    match self.0 {
+      Ok(a) => f(a),
+      Err(e) => NeoValid(Err(e)),
+    }
+  }
+}
+
+impl<A, E> From<super::Valid<A, E>> for NeoValid<A, E> {
+  fn from(value: super::Valid<A, E>) -> Self {
+    match value {
+      Ok(a) => NeoValid::succeed(a),
+      Err(e) => NeoValid::from_validation_err(e),
+    }
+  }
 }
 
 #[cfg(test)]
@@ -227,5 +243,17 @@ mod tests {
       result1.zip(result2),
       NeoValid::from_vec_cause(vec![Cause::new(-1), Cause::new(-2)])
     );
+  }
+
+  #[test]
+  fn test_and_then_success() {
+    let result = NeoValid::<i32, i32>::succeed(1).and_then(|a| NeoValid::succeed(a + 1));
+    assert_eq!(result, NeoValid::succeed(2));
+  }
+
+  #[test]
+  fn test_and_then_fail() {
+    let result = NeoValid::<i32, i32>::succeed(1).and_then(|a| NeoValid::<i32, i32>::fail(a + 1));
+    assert_eq!(result, NeoValid::fail(2));
   }
 }

@@ -61,7 +61,7 @@ fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
   let mut res: Result<T, ValidationError<String>> = Valid::Ok(T::default());
   for directive in schema_definition.directives.iter() {
     if directive.node.name.node.as_ref() == directive_name {
-      res = T::from_directive(&directive.node);
+      res = T::from_directive(&directive.node).to_result();
     }
   }
   res
@@ -229,7 +229,7 @@ fn to_common_field(
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "unsafe" {
-      config::Unsafe::from_directive(&directive.node).ok()
+      config::Unsafe::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -272,7 +272,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
 fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::ModifyField> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "modify" {
-      config::ModifyField::from_directive(&directive.node).ok()
+      config::ModifyField::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -281,7 +281,7 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
 fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::InlineType> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "inline" {
-      config::InlineType::from_directive(&directive.node).ok()
+      config::InlineType::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -290,7 +290,7 @@ fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::Inline
 fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>> {
   for directive in directives {
     if directive.node.name.node == "http" {
-      return Http::from_directive(&directive.node).map(Some);
+      return Http::from_directive(&directive.node).to_result().map(Some);
     }
   }
   Valid::Ok(None)
@@ -306,7 +306,7 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
 fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "groupBy" {
-      GroupBy::from_directive(&directive.node).ok()
+      GroupBy::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -315,7 +315,7 @@ fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "const" {
-      config::ConstField::from_directive(&directive.node).ok()
+      config::ConstField::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }

@@ -83,7 +83,9 @@ impl GraphQLSpec {
             if let TypeSystemDefinition::Type(type_def) = def {
               for dir in type_def.node.directives {
                 if dir.node.name.node == "error" {
-                  spec.sdl_errors.push(SDLError::from_directive(&dir.node).unwrap());
+                  spec
+                    .sdl_errors
+                    .push(SDLError::from_directive(&dir.node).to_result().unwrap());
                 }
               }
             }
