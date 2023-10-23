@@ -2,7 +2,7 @@ use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Once};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
@@ -19,8 +19,9 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, ValidExtensions};
-
 mod graphql_mock;
+
+static INIT: Once = Once::new();
 
 #[derive(Debug, Default, Setters)]
 struct GraphQLSpec {
@@ -63,6 +64,12 @@ impl GraphQLSpec {
   }
 
   fn new(path: PathBuf, content: &str) -> GraphQLSpec {
+    INIT.call_once(|| {
+      env_logger::builder()
+        .filter(Some("graphql_spec"), log::LevelFilter::Info)
+        .init();
+    });
+
     let mut spec = GraphQLSpec::default().path(path);
     let mut server_sdl = Vec::new();
     for component in content.split("#>") {
@@ -162,7 +169,8 @@ fn test_config_identity() -> std::io::Result<()> {
 
     let config = Config::from_sdl(content).unwrap();
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "SDL-Config identity failure: {}", spec.path.display());
+    assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+    log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
   }
 
   Ok(())
@@ -178,12 +186,8 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content).unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
-    assert_eq!(
-      actual,
-      expected,
-      "Server to client SDL failure: {}",
-      spec.path.display()
-    );
+    assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
+    log::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
   Ok(())
@@ -215,7 +219,8 @@ async fn test_execution() -> std::io::Result<()> {
       let res = schema.execute(req).await;
       let json = serde_json::to_string(&res).unwrap();
       let expected = serde_json::to_string(&q.expected).unwrap();
-      assert_eq!(json, expected, "execution failure: {}", spec.path.display());
+      assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+      log::info!("QueryExecution: {} ... ok", spec.path.display());
     }
   }
 
@@ -237,8 +242,9 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
         assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+        log::info!("ClientSDLError: {} ... ok", spec.path.display());
       }
-      _ => panic!("Expected error not found: {}", spec.path.display()),
+      _ => panic!("ClientSDLError: {}", spec.path.display()),
     }
   }
 
@@ -258,7 +264,8 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .collect::<Vec<_>>();
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+    assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
+    log::info!("SDLMerge: {} ... ok", spec.path.display());
   }
 
   Ok(())
