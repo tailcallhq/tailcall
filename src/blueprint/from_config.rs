@@ -225,6 +225,7 @@ fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
 
 fn validate_mustache_parts(
   type_of: &config::Type,
+  config: &Config,
   is_query: bool,
   parts: &[String],
   args: &[InputFieldDefinition],
@@ -269,13 +270,14 @@ fn validate_mustache_parts(
         return Valid::fail(format!("no argument '{tail}' found"));
       }
     }
-    "headers" | "vars" => {
+    "vars" => {
+      if config.server.vars.get(tail).is_none() {
+        return Valid::fail(format!("var '{tail}' is not set in the server config"));
+      }
+    }
+    "headers" => {
       // "headers" refers to the header values known at runtime, which we can't
       // validate here
-
-      // "vars" refer to the server's configuration variables, set up in
-      // `config/server.rs` and they all have fallbacks to default values, so
-      // we don't need any checks here
     }
     _ => {
       return Valid::fail(format!("unknown template directive '{head}'"));
@@ -285,7 +287,7 @@ fn validate_mustache_parts(
   Valid::Ok(())
 }
 
-fn validate_field(type_of: &config::Type, field: &FieldDefinition) -> Valid<()> {
+fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> Valid<()> {
   // XXX we could use `Mustache`'s `render` method with a mock
   // struct implementing the `PathString` trait encapsulating `validation_map`
   // but `render` simply falls back to the default value for a given
@@ -294,14 +296,14 @@ fn validate_field(type_of: &config::Type, field: &FieldDefinition) -> Valid<()> 
   // So we must duplicate some of that logic here :(
   if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
     for parts in req_template.root_url.expression_segments() {
-      validate_mustache_parts(type_of, false, parts, &field.args)?;
+      validate_mustache_parts(type_of, config, false, parts, &field.args)?;
     }
 
     for query in &req_template.query {
       let (name, mustache) = query;
 
       for parts in mustache.expression_segments() {
-        validate_mustache_parts(type_of, true, parts, &field.args).trace(name)?;
+        validate_mustache_parts(type_of, config, true, parts, &field.args).trace(name)?;
       }
     }
   }
@@ -337,7 +339,7 @@ fn to_field(
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
-  validate_field(type_of, &field_definition)?;
+  validate_field(type_of, config, &field_definition)?;
 
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)

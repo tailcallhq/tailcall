@@ -1,5 +1,5 @@
 #> server-sdl
-schema {
+schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
   query: Query
 }
 
@@ -30,6 +30,7 @@ type Post {
   # but not undefined values
   user_undefined_value_query: User
     @http(path: "/users", query: [{key: "id", value: "{{value.userid}}"}], baseURL: "http://localhost:8080")
+  user_vars: User @http(path: "/users/{{vars.a}}", baseURL: "http://localhost:8080")
 }
 
 #> client-sdl
@@ -39,6 +40,8 @@ type Failure @error(message: "value 'user' is not of a scalar type", trace: ["Po
 type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "user_null_value"])
 type Failure @error(message: "no value 'userid' found", trace: ["Post", "user_undefined_value"])
 type Failure @error(message: "no value 'userid' found", trace: ["Post", "user_undefined_value_query", "id"])
+type Failure
+  @error(message: "var 'garbage' is not set in the server config", trace: ["Query", "user_access_headers_vars"])
 type Failure @error(message: "can't use list type 'id' here", trace: ["Query", "user_list_arg"])
 type Failure @error(message: "argument 'id' is a nullable type", trace: ["Query", "user_nullable_arg"])
 type Failure @error(message: "no argument 'uid' found", trace: ["Query", "user_undefined_arg"])
