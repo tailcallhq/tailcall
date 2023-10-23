@@ -1,0 +1,34 @@
+{
+  "name": "@ologbonowiwi/tailcall",
+  "version": "0.1.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tailcall",
+    "graphql",
+    "graphiql",
+    "rust"
+  ],
+  "author": "Taillcall contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcall/tailcall.git"
+  },
+  "homepage": "https://github.com/tailcall/tailcall#readme",
+  "bugs": {
+    "url": "https://github.com/tailcall/tailcall/issues"
+  },
+  "optionalDependencies": {
+    "@ologbonowiwi/core-linux-x86_64-gnu": "0.1.0",
+    "@ologbonowiwi/core-linux-x86_64-musl": "0.1.0",
+    "@ologbonowiwi/core-linux-aarch64-gnu": "0.1.0",
+    "@ologbonowiwi/core-linux-aarch64-musl": "0.1.0",
+    "@ologbonowiwi/core-linux-i686-gnu": "0.1.0",
+    "@ologbonowiwi/core-darwin-arm64": "0.1.0",
+    "@ologbonowiwi/core-darwin-x86_64": "0.1.0"
+  }
+}
