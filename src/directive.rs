@@ -26,9 +26,9 @@ fn from_directive<'a, A: Deserialize<'a>>(directive: &'a ConstDirective) -> NeoV
   })
   .and_then(|map| match deserialize(Value::Object(map)) {
     Ok(a) => NeoValid::succeed(a),
-    Err(e) => NeoValid::from_validation_err(
-      ValidationError::new(e.to_string()).trace(format!("@{}", directive.name.node).as_str()),
-    ),
+    Err(e) => {
+      NeoValid::from_validation_err(ValidationError::from(e).trace(format!("@{}", directive.name.node).as_str()))
+    }
   })
 }
 
