@@ -18,13 +18,13 @@
     "url": "https://github.com/tailcall/tailcall/issues"
   },
   "optionalDependencies": {
-    "@tailcallhq/core-darwin-arm64": "*",
-    "@tailcallhq/core-darwin-x86_64": "*",
+    "@tailcallhq/core-linux-x86_64-gnu": "*",
+    "@tailcallhq/core-linux-x86_64-musl": "*",
     "@tailcallhq/core-linux-aarch64-gnu": "*",
     "@tailcallhq/core-linux-aarch64-musl": "*",
     "@tailcallhq/core-linux-i686-gnu": "*",
-    "@tailcallhq/core-linux-x86_64-gnu": "*",
-    "@tailcallhq/core-linux-x86_64-musl": "*"
+    "@tailcallhq/core-darwin-arm64": "*",
+    "@tailcallhq/core-darwin-x86_64": "*"
   },
   "devDependencies": {
     "toml": "^3.0.0"
