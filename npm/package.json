@@ -11,7 +11,9 @@
   "scripts": {
     "prepare": "node prepare-main-package.js"
   },
-  "files": ["README.md"],
+  "files": [
+    "README.md"
+  ],
   "author": "Taillcall contributors",
   "repository": {
     "type": "git",

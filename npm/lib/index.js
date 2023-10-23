@@ -26,28 +26,26 @@ export const writePackageJson = async (destination, { name, version, ...pkgData 
   const { license, description } = parse(cargoToml.toString());
 
   const pkgPath = join(BASE_DIR, 'npm', destination, 'package.json');
-  const basePkg = {};
-
-  const exists = await access(pkgPath, constants.F_OK)
-    .then(() => true)
-    .catch(() => false)
-
-  if (exists) {
-    Object.assign(basePkg, JSON.parse(await readFile(pkgPath)));
-    await rm(pkgPath);
-  }
-
-  const packageJson = {
+  const basePkg = {
     name,
     version,
     license,
     description,
+  };
+
+  try {
+    // this method will throw an error if file does not exists
+    await access(pkgPath, constants.F_OK)
+
+    Object.assign(basePkg, JSON.parse(await readFile(pkgPath)));
+    await rm(pkgPath);
+  } catch (error) {}
+
+  const packageJson = {
     ...basePkg,
     ...templatePkg,
     ...pkgData,
   };
-
-  if (exists) await rm(pkgPath)
 
   await writeFile(pkgPath, JSON.stringify(packageJson, null, 2));
 }
