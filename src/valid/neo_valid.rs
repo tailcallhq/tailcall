@@ -168,13 +168,11 @@ mod tests {
   #[test]
   fn test_trace() {
     let result = NeoValid::<(), i32>::fail(1).trace("A").trace("B").trace("C");
-    let expected = NeoValid::from_vec_cause(
-      vec![Cause {
-        message: 1,
-        description: None,
-        trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
-      }],
-    );
+    let expected = NeoValid::from_vec_cause(vec![Cause {
+      message: 1,
+      description: None,
+      trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
+    }]);
     assert_eq!(result, expected);
   }
 
