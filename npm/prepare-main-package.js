@@ -1,7 +1,7 @@
 import { copyFile } from 'fs/promises';
 import { writePackageJson } from './lib/index.js';
 
-const { node_package, version } = process.env;
+const { version } = process.env;
 
 const optionalDependencies = {
   "@tailcallhq/core-linux-x86_64-gnu": "*",
@@ -14,7 +14,6 @@ const optionalDependencies = {
 }
 
 await writePackageJson('.', {
-  name: node_package,
   version,
   optionalDependencies,
 });

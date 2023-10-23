@@ -131,6 +131,7 @@ jobs:
         shell: bash
         run: |
           cd npm
+          export version=${{ needs.draft_release.outputs.create_release_name }}
           npm install
           npm publish --access public
         env:
@@ -247,7 +248,7 @@ jobs:
           export version=${{ needs.draft_release.outputs.create_release_name }}
           export node_package="@tailcallhq/core-${{ matrix.build }}"
           export binary_source="target/${{ matrix.target }}"
-          node prepare-core-packages.js
+          node prepare-core-package.js
           cd packages/@taillcallhq/core-${{ matrix.build }}
           npm publish --access public
         env:
