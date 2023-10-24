@@ -10,7 +10,7 @@
         "headers": []
       }
     },
-    "enableGraphiql": "/graphiql"
+    "enableGraphiql": true
   },
   "graphql": {
     "schema": {
