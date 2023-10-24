@@ -461,7 +461,7 @@ fn update_http(
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
         if !http.group_by.is_empty() && http.method != Method::GET {
-          return Valid::fail("GroupBy is only supported for GET requests".to_string())
+          return Valid::fail("GroupBy is only supported for GET requests".to_string());
         } else if !http.group_by.is_empty() && http.method == Method::GET {
           b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
             req_template,
