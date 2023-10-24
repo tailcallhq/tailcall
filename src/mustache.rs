@@ -50,6 +50,18 @@ impl Mustache {
         .collect(),
     }
   }
+
+  pub fn expression_segments(&self) -> Vec<&Vec<String>> {
+    match self {
+      Mustache(segments) => segments
+        .iter()
+        .filter_map(|seg| match seg {
+          Segment::Expression(parts) => Some(parts),
+          _ => None,
+        })
+        .collect(),
+    }
+  }
 }
 
 fn parse_name(input: &str) -> IResult<&str, String> {

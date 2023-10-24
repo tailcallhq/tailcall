@@ -1,0 +1,51 @@
+#> server-sdl
+schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
+  query: Query
+}
+
+type User {
+  id: ID!
+}
+
+type Query {
+  userAccessHeadersVars(id: ID!): User
+    @http(path: "/user/{{args.id}}/{{headers.garbage}}/{{vars.garbage}}", baseURL: "http://localhost:8080")
+  userListArg(id: [ID]): User @http(path: "/user/{{args.id}}", baseURL: "http://localhost:8080")
+  userNullableArg(id: ID): User @http(path: "/user/{{args.id}}", baseURL: "http://localhost:8080")
+  userUndefinedArg(id: ID): User @http(path: "/user/{{args.uid}}", baseURL: "http://localhost:8080")
+}
+
+type Post {
+  id: Int!
+  userId: Int
+  user: User @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
+  userArg: User @http(path: "/users/{{args.id}}", baseURL: "http://localhost:8080")
+  userInvalidDirective: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
+  userNonScalar: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
+  userNullValue: User @http(path: "/users/{{value.userId}}", baseURL: "http://localhost:8080")
+  # nullable values are allowed in queries
+  userNullValueQuery: User
+    @http(path: "/users", query: [{key: "id", value: "{{value.id}}"}], baseURL: "http://localhost:8080")
+  userUndefinedValue: User @http(path: "/users/{{value.userid}}", baseURL: "http://localhost:8080")
+  # but not undefined values
+  userUndefinedValueQuery: User
+    @http(path: "/users", query: [{key: "id", value: "{{value.userid}}"}], baseURL: "http://localhost:8080")
+  userVars: User @http(path: "/users/{{vars.a}}", baseURL: "http://localhost:8080")
+}
+
+#> client-sdl
+type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
+type Failure
+  @error(message: "unknown template directive 'valu'", trace: ["Post", "userInvalidDirective", "@http", "path"])
+type Failure @error(message: "value 'user' is not of a scalar type", trace: ["Post", "userNonScalar", "@http", "path"])
+type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "userNullValue", "@http", "path"])
+type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValue", "@http", "path"])
+type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValueQuery", "@http", "query"])
+type Failure
+  @error(
+    message: "var 'garbage' is not set in the server config"
+    trace: ["Query", "userAccessHeadersVars", "@http", "path"]
+  )
+type Failure @error(message: "can't use list type 'id' here", trace: ["Query", "userListArg", "@http", "path"])
+type Failure @error(message: "argument 'id' is a nullable type", trace: ["Query", "userNullableArg", "@http", "path"])
+type Failure @error(message: "no argument 'uid' found", trace: ["Query", "userUndefinedArg", "@http", "path"])

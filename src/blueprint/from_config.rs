@@ -210,6 +210,107 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
   Ok(fields.into_iter().flatten().collect())
 }
 
+fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
+  if let Some(field) = type_of.fields.get(value) {
+    return Some(to_type(
+      &field.type_of,
+      field.list,
+      field.required,
+      field.list_type_required,
+    ));
+  }
+
+  None
+}
+
+fn validate_mustache_parts(
+  type_of: &config::Type,
+  config: &Config,
+  is_query: bool,
+  parts: &[String],
+  args: &[InputFieldDefinition],
+) -> Valid<()> {
+  if parts.len() < 2 {
+    return Valid::fail("too few parts in template".to_string());
+  }
+
+  let head = parts[0].as_str();
+  let tail = parts[1].as_str();
+
+  match head {
+    "value" => {
+      if let Some(val_type) = get_value_type(type_of, tail) {
+        if !is_scalar(val_type.name()) {
+          return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+        }
+
+        // Queries can use optional values
+        if !is_query && val_type.is_nullable() {
+          return Valid::fail(format!("value '{tail}' is a nullable type"));
+        }
+      } else {
+        return Valid::fail(format!("no value '{tail}' found"));
+      }
+    }
+    "args" => {
+      // XXX this is a linear search but it's cost is less than that of
+      // constructing a HashMap since we'd have 3-4 arguments at max in
+      // most cases
+      if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+        if let Type::ListType { .. } = arg.of_type {
+          return Valid::fail(format!("can't use list type '{tail}' here"));
+        }
+
+        // we can use non-scalar types in args
+
+        if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
+          return Valid::fail(format!("argument '{tail}' is a nullable type"));
+        }
+      } else {
+        return Valid::fail(format!("no argument '{tail}' found"));
+      }
+    }
+    "vars" => {
+      if config.server.vars.get(tail).is_none() {
+        return Valid::fail(format!("var '{tail}' is not set in the server config"));
+      }
+    }
+    "headers" => {
+      // "headers" refers to the header values known at runtime, which we can't
+      // validate here
+    }
+    _ => {
+      return Valid::fail(format!("unknown template directive '{head}'"));
+    }
+  }
+
+  Valid::Ok(())
+}
+
+fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> Valid<()> {
+  // XXX we could use `Mustache`'s `render` method with a mock
+  // struct implementing the `PathString` trait encapsulating `validation_map`
+  // but `render` simply falls back to the default value for a given
+  // type if it doesn't exist, so we wouldn't be able to get enough
+  // context from that method alone
+  // So we must duplicate some of that logic here :(
+  if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
+    for parts in req_template.root_url.expression_segments() {
+      validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")?;
+    }
+
+    for query in &req_template.query {
+      let (_, mustache) = query;
+
+      for parts in mustache.expression_segments() {
+        validate_mustache_parts(type_of, config, true, parts, &field.args).trace("query")?;
+      }
+    }
+  }
+
+  Valid::Ok(())
+}
+
 fn to_field(
   type_of: &config::Type,
   config: &Config,
@@ -233,11 +334,12 @@ fn to_field(
     resolver: None,
   };
 
-  let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_http(field, field_definition, type_of, config).trace("@http")?;
   let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
+
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)
 }
@@ -342,7 +444,12 @@ fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid
   }
 }
 
-fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+fn update_http(
+  field: &config::Field,
+  mut b_field: FieldDefinition,
+  type_of: &config::Type,
+  config: &Config,
+) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
@@ -377,6 +484,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
         b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+        validate_field(type_of, config, &b_field)?;
 
         Valid::Ok(b_field)
       }

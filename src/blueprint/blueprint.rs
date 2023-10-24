@@ -36,6 +36,13 @@ impl Type {
       Type::ListType { of_type, .. } => of_type.name(),
     }
   }
+
+  pub fn is_nullable(&self) -> bool {
+    !match self {
+      Type::NamedType { non_null, .. } => *non_null,
+      Type::ListType { non_null, .. } => *non_null,
+    }
+  }
 }
 
 #[derive(Clone, Debug)]
