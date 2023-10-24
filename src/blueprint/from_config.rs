@@ -296,14 +296,14 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   // So we must duplicate some of that logic here :(
   if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
     for parts in req_template.root_url.expression_segments() {
-      validate_mustache_parts(type_of, config, false, parts, &field.args)?;
+      validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")?;
     }
 
     for query in &req_template.query {
-      let (name, mustache) = query;
+      let (_, mustache) = query;
 
       for parts in mustache.expression_segments() {
-        validate_mustache_parts(type_of, config, true, parts, &field.args).trace(name)?;
+        validate_mustache_parts(type_of, config, true, parts, &field.args).trace("query")?;
       }
     }
   }
@@ -334,12 +334,11 @@ fn to_field(
     resolver: None,
   };
 
-  let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_http(field, field_definition, type_of, config).trace("@http")?;
   let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
   let field_definition = update_inline_field(type_of, field, field_definition, config).trace("@inline")?;
-  validate_field(type_of, config, &field_definition)?;
 
   let maybe_field_definition = update_modify(field, field_definition, type_of, config).trace("@modify")?;
   Ok(maybe_field_definition)
@@ -445,7 +444,12 @@ fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid
   }
 }
 
-fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+fn update_http(
+  field: &config::Field,
+  mut b_field: FieldDefinition,
+  type_of: &config::Type,
+  config: &Config,
+) -> Valid<FieldDefinition> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
@@ -480,6 +484,7 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
         b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+        validate_field(type_of, config, &b_field)?;
 
         Valid::Ok(b_field)
       }

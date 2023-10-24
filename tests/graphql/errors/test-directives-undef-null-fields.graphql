@@ -34,13 +34,18 @@ type Post {
 }
 
 #> client-sdl
-type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg"])
-type Failure @error(message: "unknown template directive 'valu'", trace: ["Post", "userInvalidDirective"])
-type Failure @error(message: "value 'user' is not of a scalar type", trace: ["Post", "userNonScalar"])
-type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "userNullValue"])
-type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValue"])
-type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValueQuery", "id"])
-type Failure @error(message: "var 'garbage' is not set in the server config", trace: ["Query", "userAccessHeadersVars"])
-type Failure @error(message: "can't use list type 'id' here", trace: ["Query", "userListArg"])
-type Failure @error(message: "argument 'id' is a nullable type", trace: ["Query", "userNullableArg"])
-type Failure @error(message: "no argument 'uid' found", trace: ["Query", "userUndefinedArg"])
+type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
+type Failure
+  @error(message: "unknown template directive 'valu'", trace: ["Post", "userInvalidDirective", "@http", "path"])
+type Failure @error(message: "value 'user' is not of a scalar type", trace: ["Post", "userNonScalar", "@http", "path"])
+type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "userNullValue", "@http", "path"])
+type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValue", "@http", "path"])
+type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValueQuery", "@http", "query"])
+type Failure
+  @error(
+    message: "var 'garbage' is not set in the server config"
+    trace: ["Query", "userAccessHeadersVars", "@http", "path"]
+  )
+type Failure @error(message: "can't use list type 'id' here", trace: ["Query", "userListArg", "@http", "path"])
+type Failure @error(message: "argument 'id' is a nullable type", trace: ["Query", "userNullableArg", "@http", "path"])
+type Failure @error(message: "no argument 'uid' found", trace: ["Query", "userUndefinedArg", "@http", "path"])
