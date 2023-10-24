@@ -20,4 +20,3 @@ await writePackageJson('.', {
 
 await copyFile('../README.md', './README.md')
 
-console.log('aaaaa')
