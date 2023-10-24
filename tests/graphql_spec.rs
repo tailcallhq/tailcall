@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
 
+use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
@@ -19,6 +20,7 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, NeoValid, ValidExtensions};
+
 mod graphql_mock;
 
 static INIT: Once = Once::new();
@@ -161,15 +163,15 @@ const CLIENT_QUERY: &str = "client-query";
 const MERGED_SDL: &str = "merged-sdl";
 
 // Check if SDL -> Config -> SDL is identity
-#[test]
-fn test_config_identity() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_config_identity() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
     let content = spec.server_sdl[0].as_str();
     let expected = content;
 
-    let config = Config::from_sdl(content).to_result().unwrap();
+    let config = Config::from_sdl(content).await.to_result().unwrap();
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
@@ -179,14 +181,14 @@ fn test_config_identity() -> std::io::Result<()> {
 }
 
 // Check server SDL matches expected client SDL
-#[test]
-fn test_server_to_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
     let expected = spec.client_sdl;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content).to_result().unwrap();
+    let config = Config::from_sdl(content).await.to_result().unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
     assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     log::info!("ClientSDL: {} ... ok", spec.path.display());
@@ -204,7 +206,7 @@ async fn test_execution() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   for spec in specs? {
-    let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
+    let mut config = Config::from_sdl(&spec.server_sdl[0]).await.to_result().unwrap();
     config.server.enable_query_validation = Some(false);
 
     let blueprint = Blueprint::try_from(&config)
@@ -230,14 +232,14 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[test]
-fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
 
   for spec in specs? {
     let expected = spec.sdl_errors;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content);
+    let config = Config::from_sdl(content).await;
 
     let actual = config
       .and_then(|config| NeoValid::from(Blueprint::try_from(&config)))
@@ -255,17 +257,18 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
   Ok(())
 }
 
-#[test]
-fn test_merge_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_merge_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {
     let expected = spec.merged_server_sdl;
-    let content = spec
+    let futures = spec
       .server_sdl
       .iter()
-      .map(|s| Config::from_sdl(s.as_str()).to_result().unwrap())
+      .map(|s| async { Config::from_sdl(s.as_str()).await.to_result().unwrap() })
       .collect::<Vec<_>>();
+    let content = join_all(futures).await;
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
