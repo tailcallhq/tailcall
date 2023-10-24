@@ -79,11 +79,22 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
   });
   let addr = (blueprint.server.hostname, blueprint.server.port).into();
-  let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
-  log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(enable_graphiql) = blueprint.server.enable_graphiql {
-    log::info!("🌍 Playground: http://{}{}", addr, enable_graphiql);
-  }
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(blueprint.server.worker)
+    .enable_all()
+    .build()
+    .unwrap();
 
-  Ok(server.await.map_err(CLIError::from)?)
+  tokio::task::spawn_blocking(move || {
+    let _ = rt.block_on(async move {
+      let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+      log::info!("🚀 Tailcall launched at [{}]", addr);
+      if let Some(enable_graphiql) = blueprint.server.enable_graphiql {
+        log::info!("🌍 Playground: http://{}{}", addr, enable_graphiql);
+      }
+      server.await.map_err(CLIError::from)
+    });
+  });
+
+  Ok(())
 }

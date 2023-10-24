@@ -6,6 +6,7 @@ directive @server(
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
   globalResponseTimeout: Int
+  worker: Int
   port: Int
   vars: [KeyValue]
   responseHeaders: [KeyValue]
