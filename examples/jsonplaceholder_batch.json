@@ -42,8 +42,7 @@
                 }
               ],
               "groupBy": ["id"]
-            },
-            "groupBy": {}
+            }
           },
           "userId": {
             "type_of": "Int",
