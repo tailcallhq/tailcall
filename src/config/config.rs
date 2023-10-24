@@ -241,8 +241,7 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    // TODO: Write a test for this
-    self.http.iter().all(|http| !http.group_by.is_empty())
+    self.http.as_ref().is_some_and(|http| !http.group_by.is_empty())
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -371,5 +370,24 @@ impl Config {
     }
 
     Ok(config)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_field_has_or_not_batch_resolver() {
+    let f1 = Field { ..Default::default() };
+
+    let f2 =
+      Field { http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }), ..Default::default() };
+
+    let f3 = Field { http: Some(Http { group_by: vec![], ..Default::default() }), ..Default::default() };
+
+    assert!(!f1.has_batched_resolver());
+    assert!(f2.has_batched_resolver());
+    assert!(!f3.has_batched_resolver());
   }
 }
