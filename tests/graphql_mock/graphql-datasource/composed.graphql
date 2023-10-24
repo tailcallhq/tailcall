@@ -1,0 +1,30 @@
+schema
+  @server(port: 8001, enableGraphiql: "/graphiql", enableQueryValidation: false, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{args.id}}")
+}
+
+type Post {
+  id: Int!
+  title: String!
+  body: String!
+  user: User
+    @graphql(
+      baseURL: "http://localhost:8000/graphql"
+      query: {name: "user", args: [{key: "id", value: "{{value.userId}}"}]}
+    )
+}
+
+type User {
+  id: Int!
+  name(id: Int): String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}

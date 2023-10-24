@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::dataloader::{DataLoader, NoCache};
+use async_graphql_value::ConstValue;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -15,6 +16,7 @@ use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
+use crate::lambda::evaluation_context::get_path_value;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
 
@@ -40,6 +42,7 @@ pub enum Operation {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   ),
+  GraphQLEndpoint(RequestTemplate, String),
   JS(Box<Expression>, String),
 }
 
@@ -56,6 +59,11 @@ impl Debug for Operation {
         .debug_struct("JS")
         .field("input", input)
         .field("script", script)
+        .finish(),
+      Operation::GraphQLEndpoint(req_template, field_name) => f
+        .debug_struct("GraphQLEndpoint")
+        .field("req_template", req_template)
+        .field("field_name", field_name)
         .finish(),
     }
   }
@@ -148,6 +156,17 @@ impl Expression {
                 }
               }
               Ok(res.body)
+            }
+            Operation::GraphQLEndpoint(req_template, field_name) => {
+              let req = req_template.to_request(ctx)?;
+              let res = ctx
+                .req_ctx
+                .execute(req)
+                .await
+                .map_err(|e| EvaluationError::IOException(e.to_string()))?;
+              let path = ["data", field_name];
+              let v = get_path_value(&res.body, &path);
+              Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null))
             }
             Operation::JS(input, script) => {
               let result;

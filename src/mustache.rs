@@ -77,11 +77,14 @@ fn parse_expression(input: &str) -> IResult<&str, Vec<String>> {
 
 fn parse_segment(input: &str) -> IResult<&str, Segment> {
   let expression = nom::combinator::map(parse_expression, Segment::Expression);
-  let literal = nom::combinator::map(nom::bytes::complete::take_while1(|c| c != '{'), |r: &str| {
+  let take_till_end = nom::combinator::map(nom::bytes::complete::take_while1(|c| c != '\n'), |r: &str| {
+    Segment::Literal(r.to_string())
+  });
+  let take_till_double_brace = nom::combinator::map(nom::bytes::complete::take_until1("{{"), |r: &str| {
     Segment::Literal(r.to_string())
   });
 
-  nom::branch::alt((expression, literal))(input)
+  nom::branch::alt((expression, take_till_double_brace, take_till_end))(input)
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
@@ -202,6 +205,20 @@ mod tests {
     fn test_new_number() {
       let mustache = Mustache::parse("123").unwrap();
       assert_eq!(mustache, Mustache::from(vec![Segment::Literal("123".to_string())]));
+    }
+
+    #[test]
+    fn test_expression_with_curly_brace() {
+      let s = "{ query { user(id: {{foo.bar}})  name } } }";
+      let mustache: Mustache = Mustache::parse(s).unwrap();
+      assert_eq!(
+        mustache,
+        Mustache::from(vec![
+          Segment::Literal("{ query { user(id: ".to_string()),
+          Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+          Segment::Literal(")  name } } }".to_string())
+        ])
+      );
     }
   }
   mod render {

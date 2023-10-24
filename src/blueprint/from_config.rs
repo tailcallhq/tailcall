@@ -13,6 +13,7 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
+use crate::config::introspection::get_arg_type;
 use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
@@ -234,6 +235,7 @@ fn to_field(
   };
 
   let field_definition = update_http(field, field_definition, config).trace("@http")?;
+  let field_definition = update_graphql(field, field_definition, config).trace("@graphql")?;
   let field_definition = update_group_by(field, field_definition).trace("@groupBy")?;
   let field_definition = update_unsafe(field.clone(), field_definition);
   let field_definition = update_const_field(field, field_definition, config).trace("@const")?;
@@ -377,6 +379,84 @@ fn update_http(field: &config::Field, mut b_field: FieldDefinition, config: &Con
         .map_err(|e| ValidationError::new(e.to_string()))?;
 
         b_field.resolver = Some(Lambda::from_request_template(req_template).expression);
+
+        Valid::Ok(b_field)
+      }
+      None => Valid::fail("No base URL defined".to_string()),
+    },
+    None => Valid::Ok(b_field),
+  }
+}
+fn update_graphql(field: &config::Field, mut b_field: FieldDefinition, config: &Config) -> Valid<FieldDefinition> {
+  match field.graphql_source.as_ref() {
+    Some(graphql) => match graphql
+      .base_url
+      .as_ref()
+      .map_or_else(|| config.upstream.base_url.as_ref(), Some)
+    {
+      Some(base_url) => {
+        let mut base_url = base_url.clone();
+        if base_url.ends_with('/') {
+          base_url.pop();
+        }
+        let query = Vec::new();
+        let output_schema = to_json_schema_for_field(field, config);
+        let input_schema = to_json_schema_for_args(&field.args, config);
+        let mut header_map = HeaderMap::new();
+        for (k, v) in graphql.headers.clone().iter() {
+          header_map.insert(
+            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))?,
+            HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))?,
+          );
+        }
+
+        let introspection_result = graphql.introspection.clone();
+        let mut variable_definitions: Vec<String> = Vec::new();
+        for (arg_name, _) in graphql.query.args.iter() {
+          let arg_type = match &introspection_result {
+            Some(introspection_result) => get_arg_type(introspection_result, &graphql.query.name, arg_name),
+            _ => None,
+          }
+          .ok_or(ValidationError::new(format!(
+            "Could not find argument type for {} from introspection",
+            arg_name
+          )))?;
+          variable_definitions.push(format!("${}: {}", arg_name, arg_type));
+        }
+        let variable_definitions = variable_definitions.join(",");
+        let args = graphql
+          .query
+          .args
+          .clone()
+          .iter()
+          .map(|(k, _)| format!("{}: ${}", k, k))
+          .collect::<Vec<_>>()
+          .join(",");
+        let variable_values = graphql
+          .query
+          .args
+          .clone()
+          .iter()
+          .map(|(k, v)| format!(r#""{}": {}"#, k, v))
+          .collect::<Vec<_>>()
+          .join(",");
+        let selection_set = "{{field.selectionSet}}";
+        let graphql_query = format!(
+          r#"{{ "query": "query({}) {{ {}({}) {{ {} }} }}", "variables": {{ {} }} }}"#,
+          variable_definitions, graphql.query.name, args, selection_set, variable_values
+        );
+        let req_template = RequestTemplate::try_from(
+          Endpoint::new(base_url.to_string())
+            .method(Method::POST.clone())
+            .query(query)
+            .output(output_schema)
+            .input(input_schema)
+            .body(Some(graphql_query))
+            .headers(header_map),
+        )
+        .map_err(|e| ValidationError::new(e.to_string()))?;
+
+        b_field.resolver = Some(Lambda::from_graphql_request_template(req_template, b_field.name.clone()).expression);
 
         Valid::Ok(b_field)
       }
