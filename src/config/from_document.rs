@@ -10,14 +10,20 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use crate::config::group_by::GroupBy;
-use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
+use crate::config::introspection::introspect_endpoint;
+use crate::config::{self, Config, GraphQL, GraphQLSource, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
-use crate::valid::{NeoValid, ValidationError};
+use crate::valid::NeoValid;
 
-fn from_document(doc: ServiceDocument) -> NeoValid<Config, String> {
-  schema_definition(&doc)
+pub async fn from_document(doc: ServiceDocument) -> NeoValid<Config, String> {
+  let config = schema_definition(&doc)
     .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
-    .map(|((server, upstream), graphql)| Config { server, upstream, graphql })
+    .map(|((server, upstream), graphql)| Config { server, upstream, graphql });
+
+  match config {
+    NeoValid(Ok(config)) => update_introspection_results(config).await,
+    NeoValid(Err(e)) => NeoValid(Err(e)),
+  }
 }
 
 fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> NeoValid<GraphQL, String> {
@@ -202,25 +208,28 @@ fn to_common_field(
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
   let inline = to_inline(directives);
-  to_http(directives).map(|http| {
-    let unsafe_operation = to_unsafe_operation(directives);
-    let group_by = to_batch(directives);
-    let const_field = to_const_field(directives);
-    config::Field {
-      type_of,
-      list,
-      required: !nullable,
-      list_type_required,
-      args,
-      doc,
-      modify,
-      inline,
-      http,
-      unsafe_operation,
-      group_by,
-      const_field,
-    }
-  })
+  to_http(directives)
+    .zip(to_graphqlsource(directives))
+    .map(|(http, graphql_source)| {
+      let unsafe_operation = to_unsafe_operation(directives);
+      let group_by = to_batch(directives);
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        inline,
+        http,
+        unsafe_operation,
+        group_by,
+        const_field,
+        graphql_source,
+      }
+    })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
@@ -317,7 +326,51 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
     }
   })
 }
-
+fn to_graphqlsource(directives: &[Positioned<ConstDirective>]) -> NeoValid<Option<config::GraphQLSource>, String> {
+  for directive in directives {
+    if directive.node.name.node == "graphql" {
+      return GraphQLSource::from_directive(&directive.node).map(Some);
+    }
+  }
+  NeoValid::succeed(None)
+}
+async fn update_introspection_results(mut config: Config) -> NeoValid<Config, String> {
+  for type_ in config.graphql.types.values_mut() {
+    for field in type_.fields.values_mut() {
+      match &field.graphql_source {
+        Some(graphql_source) => {
+          let updated = update_introspection(graphql_source).await;
+          match &updated {
+            NeoValid(Ok(source)) => {
+              field.graphql_source = Some(source.clone());
+            }
+            NeoValid(Err(e)) => {
+              return NeoValid(Err(e.clone()));
+            }
+          }
+        }
+        None => {}
+      }
+    }
+  }
+  NeoValid::succeed(config)
+}
+async fn update_introspection(graphqlsource: &config::GraphQLSource) -> NeoValid<config::GraphQLSource, String> {
+  let mut updated: GraphQLSource = graphqlsource.clone();
+  match &graphqlsource.base_url {
+    Some(base_url) => {
+      let introspection_result = introspect_endpoint(base_url).await;
+      match introspection_result {
+        Ok(introspection) => {
+          updated.introspection = Some(introspection);
+          NeoValid::succeed(updated)
+        }
+        Err(e) => NeoValid::fail(e.to_string()),
+      }
+    }
+    None => NeoValid::fail("No base url found for graphql directive".to_string()).trace("introspection"),
+  }
+}
 trait HasName {
   fn name(&self) -> &Positioned<Name>;
 }
@@ -329,13 +382,5 @@ impl HasName for FieldDefinition {
 impl HasName for InputValueDefinition {
   fn name(&self) -> &Positioned<Name> {
     &self.name
-  }
-}
-
-impl TryFrom<ServiceDocument> for Config {
-  type Error = ValidationError<String>;
-
-  fn try_from(value: ServiceDocument) -> Result<Self, ValidationError<String>> {
-    from_document(value).to_result()
   }
 }

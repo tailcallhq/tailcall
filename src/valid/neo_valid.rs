@@ -2,7 +2,7 @@ use super::ValidationError;
 use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
-pub struct NeoValid<A, E>(Result<A, ValidationError<E>>);
+pub struct NeoValid<A, E>(pub Result<A, ValidationError<E>>);
 
 impl<A, E> NeoValid<A, E> {
   pub fn fail(e: E) -> NeoValid<A, E> {

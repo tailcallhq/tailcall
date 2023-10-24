@@ -66,21 +66,6 @@ pub enum TypeKind {
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
 pub struct IntrospectionResults(pub BTreeMap<String, IntrospectionResult>);
 
-impl IntrospectionResults {
-  pub fn merge_right(mut self, other: Self) -> Self {
-<<<<<<< HEAD
-    let mut merged = self.0;
-=======
-    let mut merged = BTreeMap::from(self.0);
->>>>>>> c23c7488 (Introspect schema, get arg type for field)
-    for (key, value) in other.0 {
-      merged.insert(key, value);
-    }
-    self.0 = merged;
-    self
-  }
-}
-
 pub async fn introspect_endpoint(graphql_url: &String) -> Result<IntrospectionResult, Box<dyn std::error::Error>> {
   let introspection_query: String =
   json!({"query": "query { __schema { queryType { name fields { name args { name type { name kind ofType {name }}} type { name kind ofType { name fields {name} } fields { name }}  } } } }"}).to_string();

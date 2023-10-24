@@ -10,7 +10,9 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
+use crate::config::from_document::from_document;
 use crate::config::group_by::GroupBy;
+use crate::config::introspection::IntrospectionResult;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -224,6 +226,7 @@ pub struct Field {
   #[serde(rename = "groupBy")]
   pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
+  pub graphql_source: Option<GraphQLSource>,
 }
 
 impl Field {
@@ -314,6 +317,25 @@ pub struct Http {
   pub headers: KeyValues,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLSource {
+  pub query: GraphQLQuery,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+  #[serde(default)]
+  #[serde(skip_serializing)]
+  pub introspection: Option<IntrospectionResult>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLQuery {
+  pub name: String,
+  pub args: KeyValues,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstField {
   pub data: Value,
@@ -328,17 +350,17 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> NeoValid<Self, String> {
+  pub async fn from_sdl(sdl: &str) -> NeoValid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => NeoValid::from(Config::try_from(doc)),
+      Ok(doc) => from_document(doc).await,
       Err(e) => NeoValid::fail(e.to_string()),
     }
   }
 
-  pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+  pub async fn from_source(source: Source, schema: &str) -> Result<Self> {
     match source {
-      Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+      Source::GraphQL => Ok(Config::from_sdl(schema).await.to_result()?),
       Source::Json => Ok(Config::from_json(schema)?),
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
@@ -358,7 +380,7 @@ impl Config {
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl)
+        Config::from_source(source, &server_sdl).await
       })
       .collect();
 
