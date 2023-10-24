@@ -114,10 +114,13 @@ impl<A, E> NeoValid<A, E> {
   pub fn none() -> NeoValid<Option<A>, E> {
     NeoValid::succeed(None)
   }
+  pub fn map_to<B>(self, b: B) -> NeoValid<B, E> {
+    self.map(|_| b)
+  }
 }
 
-impl<A, E> From<super::Valid<A, E>> for NeoValid<A, E> {
-  fn from(value: super::Valid<A, E>) -> Self {
+impl<A, E> From<Result<A, ValidationError<E>>> for NeoValid<A, E> {
+  fn from(value: Result<A, ValidationError<E>>) -> Self {
     match value {
       Ok(a) => NeoValid::succeed(a),
       Err(e) => NeoValid::from_validation_err(e),

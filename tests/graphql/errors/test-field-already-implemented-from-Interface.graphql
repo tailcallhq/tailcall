@@ -18,5 +18,6 @@ type Query {
 
 #> client-sdl
 type Failure
+  @error(message: "no argument 'input' found", trace: ["Query", "user", "@http", "path"])
   @error(message: "Field is already implemented from interface", trace: ["User", "userId", "@modify"])
   @error(message: "Field is already implemented from interface", trace: ["User", "userName", "@modify"])

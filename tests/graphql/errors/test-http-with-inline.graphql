@@ -11,7 +11,7 @@ type Post {
   id: Int
   title: String
   body: String
-  userId: Int
+  userId: Int!
   user: User @http(path: "/users/{{value.userId}}")
 }
 

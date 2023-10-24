@@ -220,8 +220,6 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  // #[serde(rename = "groupBy")]
-  // pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 
@@ -243,11 +241,8 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    if let Some(http) = &self.http {
-      !http.group_by.is_empty()
-    } else {
-      false
-    }
+    // TODO: Write a test for this
+    self.http.iter().all(|http| !http.group_by.is_empty())
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
