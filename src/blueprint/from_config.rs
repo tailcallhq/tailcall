@@ -21,10 +21,10 @@ use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
-use crate::valid::{NeoValid, ValidationError};
+use crate::valid::{Valid, ValidationError};
 use crate::{blueprint, config};
 
-pub fn config_blueprint(config: &Config) -> NeoValid<Blueprint, String> {
+pub fn config_blueprint(config: &Config) -> Valid<Blueprint, String> {
   let output_types = config.output_types();
   let input_types = config.input_types();
   let schema = to_schema(config);
@@ -41,11 +41,11 @@ pub fn config_blueprint(config: &Config) -> NeoValid<Blueprint, String> {
     .map(super::compress::compress)
 }
 
-fn to_upstream(upstream: config::Upstream) -> NeoValid<config::Upstream, String> {
+fn to_upstream(upstream: config::Upstream) -> Valid<config::Upstream, String> {
   if let Some(ref base_url) = upstream.base_url {
-    NeoValid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))).map_to(upstream)
+    Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))).map_to(upstream)
   } else {
-    NeoValid::succeed(upstream)
+    Valid::succeed(upstream)
   }
 }
 
@@ -63,7 +63,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   blueprint
 }
 
-fn to_directive(const_directive: ConstDirective) -> NeoValid<Directive, String> {
+fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
   const_directive
     .arguments
     .into_iter()
@@ -80,10 +80,10 @@ fn to_directive(const_directive: ConstDirective) -> NeoValid<Directive, String> 
     .into()
 }
 
-fn to_schema(config: &Config) -> NeoValid<SchemaDefinition, String> {
+fn to_schema(config: &Config) -> Valid<SchemaDefinition, String> {
   validate_query(config)
     .and(validate_mutation(config))
-    .and(NeoValid::from_option(
+    .and(Valid::from_option(
       config.graphql.schema.query.as_ref(),
       "Query root is missing".to_owned(),
     ))
@@ -99,19 +99,19 @@ fn to_definitions<'a>(
   config: &Config,
   output_types: HashSet<&'a String>,
   input_types: HashSet<&'a String>,
-) -> NeoValid<Vec<Definition>, String> {
-  NeoValid::from_iter(config.graphql.types.iter(), |(name, type_)| {
+) -> Valid<Vec<Definition>, String> {
+  Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
     let dbl_usage = input_types.contains(name) && output_types.contains(name);
     if let Some(variants) = &type_.variants {
       if !variants.is_empty() {
         to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
       } else {
-        NeoValid::fail("No variants found for enum".to_string())
+        Valid::fail("No variants found for enum".to_string())
       }
     } else if type_.scalar {
       to_scalar_type_definition(name).trace(name)
     } else if dbl_usage {
-      NeoValid::fail("type is used in input and output".to_string()).trace(name)
+      Valid::fail("type is used in input and output".to_string()).trace(name)
     } else {
       to_object_type_definition(name, type_, config)
         .trace(name)
@@ -122,10 +122,10 @@ fn to_definitions<'a>(
             } else if type_.interface {
               to_interface_type_definition(object_type_definition).trace(name)
             } else {
-              NeoValid::succeed(definition)
+              Valid::succeed(definition)
             }
           }
-          _ => NeoValid::succeed(definition),
+          _ => Valid::succeed(definition),
         })
     }
   })
@@ -141,8 +141,8 @@ fn to_definitions<'a>(
     types
   })
 }
-fn to_scalar_type_definition(name: &str) -> NeoValid<Definition, String> {
-  NeoValid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
+fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
+  Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
     name: name.to_string(),
     directive: Vec::new(),
     description: None,
@@ -161,7 +161,7 @@ fn to_enum_type_definition(
   type_: &config::Type,
   _config: &Config,
   variants: BTreeSet<String>,
-) -> NeoValid<Definition, String> {
+) -> Valid<Definition, String> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
     directives: Vec::new(),
@@ -171,9 +171,9 @@ fn to_enum_type_definition(
       .map(|variant| EnumValueDefinition { description: None, name: variant.clone(), directives: Vec::new() })
       .collect(),
   });
-  NeoValid::succeed(enum_type_definition)
+  Valid::succeed(enum_type_definition)
 }
-fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> NeoValid<Definition, String> {
+fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition, String> {
   to_fields(type_of, config).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
@@ -183,8 +183,8 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
     })
   })
 }
-fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> NeoValid<Definition, String> {
-  NeoValid::succeed(Definition::InputObjectTypeDefinition(InputObjectTypeDefinition {
+fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
+  Valid::succeed(Definition::InputObjectTypeDefinition(InputObjectTypeDefinition {
     name: definition.name,
     fields: definition
       .fields
@@ -199,15 +199,15 @@ fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> NeoValid
     description: definition.description,
   }))
 }
-fn to_interface_type_definition(definition: ObjectTypeDefinition) -> NeoValid<Definition, String> {
-  NeoValid::succeed(Definition::InterfaceTypeDefinition(InterfaceTypeDefinition {
+fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
+  Valid::succeed(Definition::InterfaceTypeDefinition(InterfaceTypeDefinition {
     name: definition.name,
     fields: definition.fields,
     description: definition.description,
   }))
 }
-fn to_fields(type_of: &config::Type, config: &Config) -> NeoValid<Vec<blueprint::FieldDefinition>, String> {
-  NeoValid::from_iter(type_of.fields.iter(), |(name, field)| {
+fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+  Valid::from_iter(type_of.fields.iter(), |(name, field)| {
     validate_field_type_exist(config, field)
       .and(to_field(type_of, config, name, field))
       .trace(name)
@@ -234,9 +234,9 @@ fn validate_mustache_parts(
   is_query: bool,
   parts: &[String],
   args: &[InputFieldDefinition],
-) -> NeoValid<(), String> {
+) -> Valid<(), String> {
   if parts.len() < 2 {
-    return NeoValid::fail("too few parts in template".to_string());
+    return Valid::fail("too few parts in template".to_string());
   }
 
   let head = parts[0].as_str();
@@ -246,15 +246,15 @@ fn validate_mustache_parts(
     "value" => {
       if let Some(val_type) = get_value_type(type_of, tail) {
         if !is_scalar(val_type.name()) {
-          return NeoValid::fail(format!("value '{tail}' is not of a scalar type"));
+          return Valid::fail(format!("value '{tail}' is not of a scalar type"));
         }
 
         // Queries can use optional values
         if !is_query && val_type.is_nullable() {
-          return NeoValid::fail(format!("value '{tail}' is a nullable type"));
+          return Valid::fail(format!("value '{tail}' is a nullable type"));
         }
       } else {
-        return NeoValid::fail(format!("no value '{tail}' found"));
+        return Valid::fail(format!("no value '{tail}' found"));
       }
     }
     "args" => {
@@ -263,21 +263,21 @@ fn validate_mustache_parts(
       // most cases
       if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
         if let Type::ListType { .. } = arg.of_type {
-          return NeoValid::fail(format!("can't use list type '{tail}' here"));
+          return Valid::fail(format!("can't use list type '{tail}' here"));
         }
 
         // we can use non-scalar types in args
 
         if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-          return NeoValid::fail(format!("argument '{tail}' is a nullable type"));
+          return Valid::fail(format!("argument '{tail}' is a nullable type"));
         }
       } else {
-        return NeoValid::fail(format!("no argument '{tail}' found"));
+        return Valid::fail(format!("no argument '{tail}' found"));
       }
     }
     "vars" => {
       if config.server.vars.get(tail).is_none() {
-        return NeoValid::fail(format!("var '{tail}' is not set in the server config"));
+        return Valid::fail(format!("var '{tail}' is not set in the server config"));
       }
     }
     "headers" => {
@@ -285,14 +285,14 @@ fn validate_mustache_parts(
       // validate here
     }
     _ => {
-      return NeoValid::fail(format!("unknown template directive '{head}'"));
+      return Valid::fail(format!("unknown template directive '{head}'"));
     }
   }
 
-  NeoValid::succeed(())
+  Valid::succeed(())
 }
 
-fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> NeoValid<(), String> {
+fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> Valid<(), String> {
   // XXX we could use `Mustache`'s `render` method with a mock
   // struct implementing the `PathString` trait encapsulating `validation_map`
   // but `render` simply falls back to the default value for a given
@@ -300,19 +300,19 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   // context from that method alone
   // So we must duplicate some of that logic here :(
   if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
-    NeoValid::from_iter(req_template.root_url.expression_segments(), |parts| {
+    Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
       validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")
     })
-    .and(NeoValid::from_iter(req_template.query.clone(), |query| {
+    .and(Valid::from_iter(req_template.query.clone(), |query| {
       let (_, mustache) = query;
 
-      NeoValid::from_iter(mustache.expression_segments(), |parts| {
+      Valid::from_iter(mustache.expression_segments(), |parts| {
         validate_mustache_parts(type_of, config, true, parts, &field.args).trace("query")
       })
     }))
     .unit()
   } else {
-    NeoValid::succeed(())
+    Valid::succeed(())
   }
 }
 
@@ -321,10 +321,10 @@ fn to_field(
   config: &Config,
   name: &str,
   field: &Field,
-) -> NeoValid<Option<blueprint::FieldDefinition>, String> {
+) -> Valid<Option<blueprint::FieldDefinition>, String> {
   let directives = field.resolvable_directives();
   if directives.len() > 1 {
-    return NeoValid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+    return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
   }
 
   let field_type = &field.type_of;
@@ -359,46 +359,46 @@ fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> 
   }
 }
 
-fn validate_query(config: &Config) -> NeoValid<(), String> {
-  NeoValid::from_option(config.graphql.schema.query.clone(), "Query root is missing".to_owned())
+fn validate_query(config: &Config) -> Valid<(), String> {
+  Valid::from_option(config.graphql.schema.query.clone(), "Query root is missing".to_owned())
     .and_then(|ref query_type_name| {
       let Some(query) = config.find_type(query_type_name) else {
-        return NeoValid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+        return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
       };
 
-      NeoValid::from_iter(query.fields.iter(), validate_field_has_resolver).trace(query_type_name)
+      Valid::from_iter(query.fields.iter(), validate_field_has_resolver).trace(query_type_name)
     })
     .unit()
 }
 
-fn validate_mutation(config: &Config) -> NeoValid<(), String> {
+fn validate_mutation(config: &Config) -> Valid<(), String> {
   let mutation_type_name = config.graphql.schema.mutation.as_ref();
 
   if let Some(mutation_type_name) = mutation_type_name {
     let Some(mutation) = config.find_type(mutation_type_name) else {
-      return NeoValid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
+      return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
     };
 
-    NeoValid::from_iter(mutation.fields.iter(), validate_field_has_resolver)
+    Valid::from_iter(mutation.fields.iter(), validate_field_has_resolver)
       .trace(mutation_type_name)
       .unit()
   } else {
-    NeoValid::succeed(())
+    Valid::succeed(())
   }
 }
 
-fn validate_field_has_resolver((name, field): (&String, &Field)) -> NeoValid<(), String> {
-  NeoValid::<(), String>::fail("No resolver has been found in the schema".to_owned())
+fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<(), String> {
+  Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
     .when(|| !field.has_resolver())
     .trace(name)
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> NeoValid<(), String> {
+fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
   let field_type = &field.type_of;
   if !is_scalar(field_type) && !config.contains(field_type) {
-    NeoValid::fail(format!("Undeclared type '{field_type}' was found"))
+    Valid::fail(format!("Undeclared type '{field_type}' was found"))
   } else {
-    NeoValid::succeed(())
+    Valid::succeed(())
   }
 }
 
@@ -411,11 +411,11 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> NeoValid<FieldDefinition, String> {
+fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition, String> {
   if let Some(batch) = field.group_by.as_ref() {
     if let Some(http) = field.http.as_ref() {
       if http.method != Method::GET {
-        NeoValid::fail("GroupBy is only supported for GET requests".to_string())
+        Valid::fail("GroupBy is only supported for GET requests".to_string())
       } else {
         if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
           b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
@@ -424,13 +424,13 @@ fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> NeoVa
             dl,
           )));
         }
-        NeoValid::succeed(b_field)
+        Valid::succeed(b_field)
       }
     } else {
-      NeoValid::fail("GroupBy is only supported for HTTP resolvers".to_string())
+      Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
     }
   } else {
-    NeoValid::succeed(b_field)
+    Valid::succeed(b_field)
   }
 }
 
@@ -439,7 +439,7 @@ fn update_http(
   b_field: FieldDefinition,
   type_of: &config::Type,
   config: &Config,
-) -> NeoValid<FieldDefinition, String> {
+) -> Valid<FieldDefinition, String> {
   match field.http.as_ref() {
     Some(http) => match http
       .base_url
@@ -456,12 +456,10 @@ fn update_http(
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
 
-        NeoValid::from_iter(http.headers.iter(), |(k, v)| {
-          let name =
-            NeoValid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
+        Valid::from_iter(http.headers.iter(), |(k, v)| {
+          let name = Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
 
-          let value =
-            NeoValid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
+          let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
 
           name.zip(value).map(|(name, value)| (name, value))
         })
@@ -482,9 +480,9 @@ fn update_http(
         .map(|req_template| b_field.resolver(Some(Lambda::from_request_template(req_template).expression)))
         .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
       }
-      None => NeoValid::fail("No base URL defined".to_string()),
+      None => Valid::fail("No base URL defined".to_string()),
     },
-    None => NeoValid::succeed(b_field),
+    None => Valid::succeed(b_field),
   }
 }
 fn update_modify(
@@ -492,17 +490,17 @@ fn update_modify(
   mut b_field: FieldDefinition,
   type_: &config::Type,
   config: &Config,
-) -> NeoValid<Option<FieldDefinition>, String> {
+) -> Valid<Option<FieldDefinition>, String> {
   match field.modify.as_ref() {
     Some(modify) => {
       if modify.omit {
-        NeoValid::succeed(None)
+        Valid::succeed(None)
       } else if let Some(new_name) = &modify.name {
         for name in type_.implements.iter() {
           let interface = config.find_type(name);
           if let Some(interface) = interface {
             if interface.fields.iter().any(|(name, _)| name == new_name) {
-              return NeoValid::fail("Field is already implemented from interface".to_string());
+              return Valid::fail("Field is already implemented from interface".to_string());
             }
           }
         }
@@ -510,19 +508,19 @@ fn update_modify(
         let lambda = Lambda::context_field(b_field.name.clone());
         b_field = b_field.resolver_or_default(lambda, |r| r);
         b_field = b_field.name(new_name.clone());
-        NeoValid::succeed(Some(b_field))
+        Valid::succeed(Some(b_field))
       } else {
-        NeoValid::succeed(Some(b_field))
+        Valid::succeed(Some(b_field))
       }
     }
-    None => NeoValid::succeed(Some(b_field)),
+    None => Valid::succeed(Some(b_field)),
   }
 }
 fn update_const_field(
   field: &config::Field,
   mut b_field: FieldDefinition,
   config: &Config,
-) -> NeoValid<FieldDefinition, String> {
+) -> Valid<FieldDefinition, String> {
   match field.const_field.as_ref() {
     Some(const_field) => {
       let data = const_field.data.to_owned();
@@ -530,14 +528,14 @@ fn update_const_field(
         Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
           Ok(_) => {
             b_field.resolver = Some(Literal(data));
-            NeoValid::succeed(b_field)
+            Valid::succeed(b_field)
           }
-          Err(err) => NeoValid::from_validation_err(err.transform(|a| a.to_owned())),
+          Err(err) => Valid::from_validation_err(err.transform(|a| a.to_owned())),
         },
-        Err(e) => NeoValid::fail(format!("invalid JSON: {}", e)),
+        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
       }
     }
-    None => NeoValid::succeed(b_field),
+    None => Valid::succeed(b_field),
   }
 }
 fn is_scalar(type_name: &str) -> bool {
@@ -550,8 +548,8 @@ fn process_path(
   type_info: &config::Type,
   is_required: bool,
   config: &Config,
-  invalid_path_handler: &dyn Fn(&str, &[String]) -> NeoValid<Type, String>,
-) -> NeoValid<Type, String> {
+  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type, String>,
+) -> Valid<Type, String> {
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
       let mut modified_field = field.clone();
@@ -585,7 +583,7 @@ fn process_path(
     return invalid_path_handler(field_name, path);
   }
 
-  NeoValid::succeed(to_type(
+  Valid::succeed(to_type(
     &field.type_of,
     field.list,
     is_required,
@@ -600,11 +598,11 @@ fn process_field_within_type(
   type_info: &config::Type,
   is_required: bool,
   config: &Config,
-  invalid_path_handler: &dyn Fn(&str, &[String]) -> NeoValid<Type, String>,
-) -> NeoValid<Type, String> {
+  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type, String>,
+) -> Valid<Type, String> {
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
-      return NeoValid::<Type, String>::fail(format!(
+      return Valid::<Type, String>::fail(format!(
         "Inline can't be done because of {} resolver at [{}.{}]",
         {
           let next_dir_http = next_field.http.as_ref().map(|_| "http");
@@ -647,9 +645,9 @@ fn process_field_within_type(
       )
       .and_then(|of_type| {
         if next_field.list {
-          NeoValid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
+          Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
         } else {
-          NeoValid::succeed(of_type)
+          Valid::succeed(of_type)
         }
       });
     }
@@ -668,10 +666,10 @@ fn update_inline_field(
   field: &config::Field,
   base_field: FieldDefinition,
   config: &Config,
-) -> NeoValid<FieldDefinition, String> {
+) -> Valid<FieldDefinition, String> {
   let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
-  let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> NeoValid<Type, String> {
-    NeoValid::fail("Inline can't be done because provided path doesn't exist".to_string())
+  let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
+    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
   };
   let has_index = inlined_path.iter().any(|s| {
     let re = Regex::new(r"^\d+$").unwrap();
@@ -688,15 +686,15 @@ fn update_inline_field(
       }
 
       updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-      NeoValid::succeed(updated_base_field)
+      Valid::succeed(updated_base_field)
     });
   }
-  NeoValid::succeed(base_field)
+  Valid::succeed(base_field)
 }
-fn to_args(field: &config::Field) -> NeoValid<Vec<InputFieldDefinition>, String> {
+fn to_args(field: &config::Field) -> Valid<Vec<InputFieldDefinition>, String> {
   // TODO! assert type name
-  NeoValid::from_iter(field.args.iter(), |(name, arg)| {
-    NeoValid::succeed(InputFieldDefinition {
+  Valid::from_iter(field.args.iter(), |(name, arg)| {
+    Valid::succeed(InputFieldDefinition {
       name: name.clone(),
       description: arg.doc.clone(),
       of_type: to_type(&arg.type_of, arg.list, arg.required, false),

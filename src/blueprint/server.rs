@@ -6,7 +6,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
 use crate::config;
-use crate::valid::{NeoValid, ValidationError};
+use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
@@ -48,11 +48,11 @@ impl TryFrom<crate::config::Server> for Server {
   }
 }
 
-fn validate_hostname(hostname: String) -> NeoValid<IpAddr, String> {
+fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
   if hostname == "localhost" {
-    NeoValid::succeed(IpAddr::from([127, 0, 0, 1]))
+    Valid::succeed(IpAddr::from([127, 0, 0, 1]))
   } else {
-    NeoValid::from(
+    Valid::from(
       hostname
         .parse()
         .map_err(|e: AddrParseError| ValidationError::new(format!("Parsing failed because of {}", e))),
@@ -63,13 +63,13 @@ fn validate_hostname(hostname: String) -> NeoValid<IpAddr, String> {
   }
 }
 
-fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> NeoValid<HeaderMap, String> {
-  NeoValid::from_iter(resp_headers.iter(), |(k, v)| {
-    let name = NeoValid::from(
+fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {
+  Valid::from_iter(resp_headers.iter(), |(k, v)| {
+    let name = Valid::from(
       HeaderName::from_bytes(k.as_bytes())
         .map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
     );
-    let value = NeoValid::from(
+    let value = Valid::from(
       HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(format!("Parsing failed because of {}", e))),
     );
     name.zip(value)
@@ -80,7 +80,7 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> NeoValid<H
   .trace("schema")
 }
 
-fn configure_server(config_config: &config::Server) -> NeoValid<Server, String> {
+fn configure_server(config_config: &config::Server) -> Valid<Server, String> {
   validate_hostname(config_config.get_hostname().to_lowercase())
     .zip(handle_response_headers(config_config.get_response_headers().0))
     .map(|(hostname, response_headers)| Server {
