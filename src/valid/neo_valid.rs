@@ -117,6 +117,13 @@ impl<A, E> NeoValid<A, E> {
   pub fn map_to<B>(self, b: B) -> NeoValid<B, E> {
     self.map(|_| b)
   }
+  pub fn when(self, f: impl FnOnce() -> bool) -> NeoValid<(), E> {
+    if f() {
+      self.unit()
+    } else {
+      NeoValid::succeed(())
+    }
+  }
 }
 
 impl<A, E> From<Result<A, ValidationError<E>>> for NeoValid<A, E> {
