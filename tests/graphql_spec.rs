@@ -18,7 +18,7 @@ use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
-use tailcall::valid::{Cause, NeoValid, ValidExtensions};
+use tailcall::valid::{Cause, NeoValid};
 mod graphql_mock;
 
 static INIT: Once = Once::new();
@@ -207,8 +207,9 @@ async fn test_execution() -> std::io::Result<()> {
     let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
     config.server.enable_query_validation = Some(false);
 
-    let blueprint = Blueprint::try_from(&config)
+    let blueprint = NeoValid::from(Blueprint::try_from(&config))
       .trace(spec.path.to_str().unwrap_or_default())
+      .to_result()
       .unwrap();
     let server_ctx = ServerContext::new(blueprint);
     let schema = server_ctx.schema.clone();
