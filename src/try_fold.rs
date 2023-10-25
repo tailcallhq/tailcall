@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::valid::NeoValid;
+use crate::valid::Valid;
 
 /// Trait for types that support a "try fold" operation.
 ///
@@ -18,9 +18,9 @@ pub trait TryFolding: Sized {
   /// - `value`: The value to be folded.
   ///
   /// # Returns
-  /// Returns a `NeoValid` value, which can be either a success with the folded value
+  /// Returns a `Valid` value, which can be either a success with the folded value
   /// or an error.
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> NeoValid<Self::Value, Self::Error>;
+  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error>;
 
   /// Combine two `TryFolding` implementors into a sequential operation.
   ///
@@ -41,7 +41,7 @@ pub trait TryFolding: Sized {
 ///
 /// `TryFold` is a structure that wraps a closure to perform a custom fold operation
 /// with the possibility of failure.
-pub struct TryFold<'a, I, O, E>(Box<dyn Fn(&I, O) -> NeoValid<O, E> + 'a>);
+pub struct TryFold<'a, I, O, E>(Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>);
 
 impl<'a, I, O, E> TryFold<'a, I, O, E> {
   /// Create a new `TryFold` with a specified folding function.
@@ -51,7 +51,7 @@ impl<'a, I, O, E> TryFold<'a, I, O, E> {
   ///
   /// # Returns
   /// Returns a new `TryFold` instance.
-  pub fn new(f: impl Fn(&I, O) -> NeoValid<O, E> + 'static) -> Self {
+  pub fn new(f: impl Fn(&I, O) -> Valid<O, E> + 'static) -> Self {
     Self(Box::new(f))
   }
 
@@ -74,7 +74,7 @@ impl<I, O: Clone, E> TryFolding for TryFold<'static, I, O, E> {
   type Value = O;
   type Error = E;
 
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> NeoValid<Self::Value, Self::Error> {
+  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
     (self.0)(input, value)
   }
 }
@@ -92,10 +92,10 @@ impl<L: TryFolding<Input = R::Input, Value = R::Value, Error = R::Error>, R: Try
   type Value = L::Value;
   type Error = L::Error;
 
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> NeoValid<Self::Value, Self::Error> {
-    match self.left.try_fold(input, value.clone()) {
+  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+    match self.left.try_fold(input, value.clone()).to_result() {
       Ok(value) => self.right.try_fold(input, value),
-      err => err.validate_or(self.right.try_fold(input, value)),
+      err => Valid::from(err).and(self.right.try_fold(input, value)),
     }
   }
 }
@@ -110,7 +110,7 @@ impl<A: TryFolding> TryFolding for Collect<A> {
   type Value = A::Value;
   type Error = A::Error;
 
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> NeoValid<Self::Value, Self::Error> {
+  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
     let mut items = self.0;
     let head = items.pop_front();
     let tail = items;
@@ -120,7 +120,7 @@ impl<A: TryFolding> TryFolding for Collect<A> {
         .and(TryFold::<Self::Input, Self::Value, Self::Error>::try_all(tail.into()))
         .try_fold(input, value)
     } else {
-      NeoValid::succeed(value)
+      Valid::succeed(value)
     }
   }
 }
@@ -129,15 +129,15 @@ impl<A: TryFolding> TryFolding for Collect<A> {
 mod tests {
   use super::TryFolding;
   use crate::try_fold::TryFold;
-  use crate::valid::{NeoValid, NeoValidExtensions, NeoValidationError};
+  use crate::valid::{Valid, ValidationError};
 
   #[test]
   fn test_combine_ok() {
-    let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| NeoValid::succeed(a + b));
-    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| NeoValid::succeed(a * b));
+    let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a + b));
+    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a * b));
     let t = t1.and(t2);
 
-    let actual = t.try_fold(&2, 3).unwrap();
+    let actual = t.try_fold(&2, 3).to_result().unwrap();
     let expected = 10;
 
     assert_eq!(actual, expected)
@@ -145,89 +145,89 @@ mod tests {
 
   #[test]
   fn test_one_failure() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a + b));
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a * b));
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b));
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a * b));
     let t = t1.and(t2);
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(5);
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(5);
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_both_failure() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a + b));
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b));
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b));
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b));
     let t = t1.and(t2);
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(5).combine(NeoValidationError::new(6));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(5).combine(ValidationError::new(6));
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_1_3_failure_left() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a + b)); // 2 + 3
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a * b)); // 2 * 3
-    let t3 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b * 100)); // 2 * 6
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b)); // 2 + 3
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a * b)); // 2 * 3
+    let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100)); // 2 * 6
     let t = t1.and(t2).and(t3);
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(5).combine(NeoValidationError::new(600));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(5).combine(ValidationError::new(600));
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_1_3_failure_right() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a + b)); // 2 + 3
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a * b)); // 2 * 3
-    let t3 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b * 100)); // 2 * 6
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b)); // 2 + 3
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a * b)); // 2 * 3
+    let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100)); // 2 * 6
     let t = t1.and(t2.and(t3));
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(5).combine(NeoValidationError::new(1200));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(5).combine(ValidationError::new(1200));
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_2_3_failure() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a + b));
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b));
-    let t3 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b * 100));
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a + b));
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b));
+    let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100));
     let t = t1.and(t2.and(t3));
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(10).combine(NeoValidationError::new(1000));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(10).combine(ValidationError::new(1000));
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_try_all() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a + b));
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b));
-    let t3 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b * 100));
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a + b));
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b));
+    let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100));
     let t = TryFold::try_all(vec![t1, t2, t3]);
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(10).combine(NeoValidationError::new(1000));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(10).combine(ValidationError::new(1000));
 
     assert_eq!(actual, expected)
   }
 
   #[test]
   fn test_try_all_1_3_fail() {
-    let t1 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a + b));
-    let t2 = TryFold::new(|a: &i32, b: i32| NeoValid::succeed(a * b));
-    let t3 = TryFold::new(|a: &i32, b: i32| NeoValid::fail(a * b * 100));
+    let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b));
+    let t2 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a * b));
+    let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100));
     let t = TryFold::try_all(vec![t1, t2, t3]);
 
-    let actual = t.try_fold(&2, 3).unwrap_err();
-    let expected = NeoValidationError::new(5).combine(NeoValidationError::new(1200));
+    let actual = t.try_fold(&2, 3).to_result().unwrap_err();
+    let expected = ValidationError::new(5).combine(ValidationError::new(1200));
 
     assert_eq!(actual, expected)
   }
