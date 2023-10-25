@@ -16,13 +16,21 @@ use crate::config::{self, Config, GraphQL, GraphQLSource, Http, RootSchema, Serv
 use crate::directive::DirectiveCodec;
 use crate::valid::NeoValid;
 
-pub async fn from_document(doc: ServiceDocument) -> NeoValid<Config, String> {
+pub async fn from_document(
+  doc: ServiceDocument,
+  initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
+) -> NeoValid<Config, String> {
   let config = schema_definition(&doc)
     .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
     .map(|((server, upstream), graphql)| Config { server, upstream, graphql, introspection_cache: BTreeMap::new() });
 
   match config {
-    NeoValid(Ok(config)) => update_introspection_results(config).await,
+    NeoValid(Ok(mut config)) => {
+      if let Some(initialize) = initialize_introspection_cache {
+        config.introspection_cache = initialize()
+      }
+      update_introspection_results(config).await
+    }
     NeoValid(Err(e)) => NeoValid(Err(e)),
   }
 }

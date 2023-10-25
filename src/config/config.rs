@@ -358,17 +358,20 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub async fn from_sdl(sdl: &str) -> NeoValid<Self, String> {
+  pub async fn from_sdl(
+    sdl: &str,
+    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
+  ) -> NeoValid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => from_document(doc).await,
+      Ok(doc) => from_document(doc, initialize_introspection_cache).await,
       Err(e) => NeoValid::fail(e.to_string()),
     }
   }
 
   pub async fn from_source(source: Source, schema: &str) -> Result<Self> {
     match source {
-      Source::GraphQL => Ok(Config::from_sdl(schema).await.to_result()?),
+      Source::GraphQL => Ok(Config::from_sdl(schema, None).await.to_result()?),
       Source::Json => Ok(Config::from_json(schema)?),
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
