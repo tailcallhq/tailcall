@@ -1,16 +1,12 @@
-use std::collections::VecDeque;
-
 use crate::valid::Valid;
 
 /// Trait for types that support a "try fold" operation.
 ///
 /// `TryFolding` describes a composable folding operation that can potentially fail.
 /// It can optionally consume an input to transform the provided value.
-pub trait TryFolding: Sized {
-  type Input;
-  type Value: Clone;
-  type Error;
+pub struct TryFold<'a, I: 'a, O: 'a, E: 'a>(Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>);
 
+impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// Try to fold the value with the input.
   ///
   /// # Parameters
@@ -20,7 +16,9 @@ pub trait TryFolding: Sized {
   /// # Returns
   /// Returns a `Valid` value, which can be either a success with the folded value
   /// or an error.
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error>;
+  pub fn try_fold(&self, input: &I, state: O) -> Valid<O, E> {
+    (self.0)(input, state)
+  }
 
   /// Combine two `TryFolding` implementors into a sequential operation.
   ///
@@ -32,18 +30,14 @@ pub trait TryFolding: Sized {
   ///
   /// # Returns
   /// Returns a combined `And` structure that represents the sequential folding operation.
-  fn and<R: TryFolding>(self, other: R) -> And<Self, R> {
-    And { left: self, right: other }
+  pub fn and(self, other: TryFold<'a, I, O, E>) -> Self {
+    TryFold(Box::new(move |input, state| {
+      self
+        .try_fold(input, state.clone())
+        .fold(|value| other.try_fold(input, value), other.try_fold(input, state))
+    }))
   }
-}
 
-/// Represents a custom folding operation.
-///
-/// `TryFold` is a structure that wraps a closure to perform a custom fold operation
-/// with the possibility of failure.
-pub struct TryFold<'a, I, O, E>(Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>);
-
-impl<'a, I, O, E> TryFold<'a, I, O, E> {
   /// Create a new `TryFold` with a specified folding function.
   ///
   /// # Parameters
@@ -51,85 +45,79 @@ impl<'a, I, O, E> TryFold<'a, I, O, E> {
   ///
   /// # Returns
   /// Returns a new `TryFold` instance.
-  pub fn new(f: impl Fn(&I, O) -> Valid<O, E> + 'static) -> Self {
-    Self(Box::new(f))
+  pub fn new(f: impl Fn(&I, O) -> Valid<O, E> + 'a) -> Self {
+    TryFold(Box::new(f))
   }
 
-  /// Tries to fold all items in the provided list.
+  /// Tries to fold all items in the provided iterator.
   ///
   /// # Parameters
-  /// - `list`: A list of items implementing `TryFolding`.
+  /// - `items`: A list of items implementing `TryFolding`.
   ///
   /// # Returns
   /// Returns a `Collect` instance that can be used to perform a folding operation
   /// over all the items in the list.
-
-  pub fn try_all<A: TryFolding<Input = I, Value = O, Error = E>>(list: Vec<A>) -> Collect<A> {
-    Collect(VecDeque::from(list))
-  }
-}
-
-impl<I, O: Clone, E> TryFolding for TryFold<'static, I, O, E> {
-  type Input = I;
-  type Value = O;
-  type Error = E;
-
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-    (self.0)(input, value)
-  }
-}
-
-///
-/// Represents a sequential folding operation combining two `TryFolding` implementors.
-///
-pub struct And<L, R> {
-  left: L,
-  right: R,
-}
-
-impl<L: TryFolding<Input = R::Input, Value = R::Value, Error = R::Error>, R: TryFolding> TryFolding for And<L, R> {
-  type Input = L::Input;
-  type Value = L::Value;
-  type Error = L::Error;
-
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-    match self.left.try_fold(input, value.clone()).to_result() {
-      Ok(value) => self.right.try_fold(input, value),
-      err => Valid::from(err).and(self.right.try_fold(input, value)),
-    }
-  }
-}
-
-/// Represents a folding operation that applies to many items.
-///
-/// `Collect` is used to perform a fold operation over a list of items,
-/// with each item being processed sequentially.
-pub struct Collect<A>(VecDeque<A>);
-impl<A: TryFolding> TryFolding for Collect<A> {
-  type Input = A::Input;
-  type Value = A::Value;
-  type Error = A::Error;
-
-  fn try_fold(self, input: &Self::Input, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-    let mut items = self.0;
-    let head = items.pop_front();
-    let tail = items;
+  pub fn from_iter<F: IntoIterator<Item = TryFold<'a, I, O, E>>>(items: F) -> TryFold<'a, I, O, E> {
+    let mut iter = items.into_iter();
+    let head = iter.next();
 
     if let Some(head) = head {
-      head
-        .and(TryFold::<Self::Input, Self::Value, Self::Error>::try_all(tail.into()))
-        .try_fold(input, value)
+      head.and(TryFold::from_iter(iter))
     } else {
-      Valid::succeed(value)
+      TryFold::empty()
     }
+  }
+
+  pub fn transform<O1>(self, up: impl Fn(O) -> O1 + 'a, down: impl Fn(O1) -> O + 'a) -> TryFold<'a, I, O1, E> {
+    self.transform_valid(move |o| Valid::succeed(up(o)), move |o1| Valid::succeed(down(o1)))
+  }
+
+  pub fn transform_valid<O1>(
+    self,
+    up: impl Fn(O) -> Valid<O1, E> + 'a,
+    down: impl Fn(O1) -> Valid<O, E> + 'a,
+  ) -> TryFold<'a, I, O1, E> {
+    TryFold(Box::new(move |input, o1| {
+      down(o1).and_then(|o| self.try_fold(input, o)).and_then(|o| up(o))
+    }))
+  }
+
+  /// Create a `TryFold` that always succeeds with the provided state.
+  ///
+  /// # Parameters
+  /// - `state`: The state to succeed with.
+  ///
+  /// # Returns
+  /// Returns a `TryFold` that always succeeds with the provided state.
+  pub fn succeed(state: O) -> Self {
+    TryFold(Box::new(move |_, _| Valid::succeed(state.clone())))
+  }
+
+  /// Create a `TryFold` that doesn't do anything.
+  ///
+  /// # Returns
+  /// Returns a `TryFold` that doesn't do anything.
+  pub fn empty() -> Self {
+    TryFold::new(|_, o| Valid::succeed(o))
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::TryFolding;
-  use crate::try_fold::TryFold;
+  use super::TryFold;
   use crate::valid::{Valid, ValidationError};
+
+  #[test]
+  fn test_and() {
+    let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a + b));
+    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a * b));
+    let t = t1.and(t2);
+
+    let actual = t.try_fold(&2, 3).to_result().unwrap();
+    let expected = 10;
+
+    assert_eq!(actual, expected)
+  }
 
   #[test]
   fn test_combine_ok() {
@@ -211,7 +199,7 @@ mod tests {
     let t1 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a + b));
     let t2 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b));
     let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100));
-    let t = TryFold::try_all(vec![t1, t2, t3]);
+    let t = TryFold::from_iter(vec![t1, t2, t3]);
 
     let actual = t.try_fold(&2, 3).to_result().unwrap_err();
     let expected = ValidationError::new(10).combine(ValidationError::new(1000));
@@ -224,11 +212,22 @@ mod tests {
     let t1 = TryFold::new(|a: &i32, b: i32| Valid::fail(a + b));
     let t2 = TryFold::new(|a: &i32, b: i32| Valid::succeed(a * b));
     let t3 = TryFold::new(|a: &i32, b: i32| Valid::fail(a * b * 100));
-    let t = TryFold::try_all(vec![t1, t2, t3]);
+    let t = TryFold::from_iter(vec![t1, t2, t3]);
 
     let actual = t.try_fold(&2, 3).to_result().unwrap_err();
     let expected = ValidationError::new(5).combine(ValidationError::new(1200));
 
     assert_eq!(actual, expected)
   }
+}
+
+#[test]
+fn test_transform() {
+  let t: TryFold<'_, i32, String, ()> = TryFold::new(|a: &i32, b: i32| Valid::succeed(a + b))
+    .transform(|v: i32| v.to_string(), |v: String| v.parse::<i32>().unwrap());
+
+  let actual = t.try_fold(&2, "3".to_string()).to_result().unwrap();
+  let expected = "5".to_string();
+
+  assert_eq!(actual, expected)
 }
