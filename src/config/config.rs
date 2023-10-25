@@ -14,7 +14,7 @@ use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
-use crate::valid::NeoValid;
+use crate::valid::Valid;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -328,11 +328,11 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> NeoValid<Self, String> {
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => NeoValid::from(Config::try_from(doc)),
-      Err(e) => NeoValid::fail(e.to_string()),
+      Ok(doc) => Valid::from(Config::try_from(doc)),
+      Err(e) => Valid::fail(e.to_string()),
     }
   }
 
