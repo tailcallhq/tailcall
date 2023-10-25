@@ -258,7 +258,7 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   for spec in specs? {
     let expected = spec.sdl_errors;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content, None).await;
+    let config = Config::from_sdl(content, Some(GraphQLSpec::mock_introspection_cache)).await;
 
     let actual = config
       .and_then(|config| NeoValid::from(Blueprint::try_from(&config)))
@@ -285,7 +285,7 @@ async fn test_merge_sdl() -> std::io::Result<()> {
     let futures = spec
       .server_sdl
       .iter()
-      .map(|s| async { Config::from_sdl(s.as_str(), None).await.to_result().unwrap() })
+      .map(|s| async { Config::from_sdl(s.as_str(), Some(GraphQLSpec::mock_introspection_cache)).await.to_result().unwrap() })
       .collect::<Vec<_>>();
     let content = join_all(futures).await;
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));

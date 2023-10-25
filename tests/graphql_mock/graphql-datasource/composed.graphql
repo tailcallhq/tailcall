@@ -1,6 +1,6 @@
 schema
   @server(port: 8001, enableGraphiql: "/graphiql", enableQueryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

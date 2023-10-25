@@ -4,7 +4,7 @@ use async_graphql::dynamic;
 use derive_setters::Setters;
 
 use crate::blueprint::{Blueprint, Definition};
-use crate::http::{DefaultHttpClient, HttpDataLoader};
+use crate::http::{DefaultHttpClient, HttpDataLoader, GraphqlDataLoader};
 use crate::lambda::{Expression, Operation};
 
 #[derive(Setters, Clone)]
@@ -27,6 +27,15 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: DefaultHttpClient
             Some(Arc::new(data_loader)),
           )));
         }
+        if let Some(Expression::Unsafe(Operation::GraphQLEndpoint(req_template, field_name, _))) = &mut field.resolver {
+          let graphql_data_loader = GraphqlDataLoader::new(http_client.clone())
+              .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
+          field.resolver = Some(Expression::Unsafe(Operation::GraphQLEndpoint(
+            req_template.clone(),
+            field_name.clone(),
+            Some(Arc::new(graphql_data_loader)),
+          )))
+        }    
       }
     }
   }
