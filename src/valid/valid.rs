@@ -117,13 +117,6 @@ impl<A> OptionExtension<A> for Option<A> {
   }
 }
 
-impl<A> From<ValidationError<&str>> for Valid<A, String> {
-  fn from(value: ValidationError<&str>) -> Self {
-    let message = value.as_vec().iter().map(|c| c.to_owned()).collect();
-    Valid::fail_cause(message)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use crate::valid::{

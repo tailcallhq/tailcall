@@ -534,7 +534,7 @@ fn update_const_field(field: &config::Field, mut b_field: FieldDefinition, confi
             b_field.resolver = Some(Literal(data));
             Valid::Ok(b_field)
           }
-          Err(err) => err.into(),
+          Err(err) => Err(err.transform(|a| a.to_owned())),
         },
         Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
       }
