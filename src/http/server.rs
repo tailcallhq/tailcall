@@ -47,11 +47,7 @@ fn not_found() -> Result<Response<Body>> {
 }
 async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::GET
-      if state
-        .blueprint
-        .server
-        .enable_graphiql => graphiql(),
+    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
     _ => not_found(),
   }

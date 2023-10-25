@@ -81,7 +81,7 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> NeoValid<H
 }
 
 fn configure_server(config_config: &config::Server) -> NeoValid<Server, String> {
-    validate_hostname(config_config.get_hostname().to_lowercase())
+  validate_hostname(config_config.get_hostname().to_lowercase())
     .zip(handle_response_headers(config_config.get_response_headers().0))
     .map(|(hostname, response_headers)| Server {
       enable_apollo_tracing: config_config.enable_apollo_tracing(),
