@@ -51,12 +51,7 @@ async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result
       if state
         .blueprint
         .server
-        .enable_graphiql
-        .as_ref()
-        .map_or(false, |s| s.as_str() == req.uri().path()) =>
-    {
-      graphiql()
-    }
+        .enable_graphiql => graphiql(),
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
     _ => not_found(),
   }
@@ -81,8 +76,8 @@ pub async fn start_server(config: Config) -> Result<()> {
   let addr = (blueprint.server.hostname, blueprint.server.port).into();
   let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
   log::info!("🚀 Tailcall launched at [{}]", addr);
-  if let Some(enable_graphiql) = blueprint.server.enable_graphiql {
-    log::info!("🌍 Playground: http://{}{}", addr, enable_graphiql);
+  if blueprint.server.enable_graphiql {
+    log::info!("🌍 Playground: http://{}", addr);
   }
 
   Ok(server.await.map_err(CLIError::from)?)

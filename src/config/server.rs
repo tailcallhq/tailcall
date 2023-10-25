@@ -10,7 +10,7 @@ use crate::config::{is_default, KeyValues};
 pub struct Server {
   pub enable_apollo_tracing: Option<bool>,
   pub enable_cache_control_header: Option<bool>,
-  pub enable_graphiql: Option<String>,
+  pub enable_graphiql: Option<bool>,
   pub enable_introspection: Option<bool>,
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
@@ -41,8 +41,8 @@ impl Server {
   pub fn enable_apollo_tracing(&self) -> bool {
     self.enable_apollo_tracing.unwrap_or(false)
   }
-  pub fn enable_graphiql(&self) -> Option<String> {
-    self.enable_graphiql.clone()
+  pub fn enable_graphiql(&self) -> bool {
+    self.enable_graphiql.unwrap_or(false)
   }
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
