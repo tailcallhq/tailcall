@@ -25,6 +25,7 @@ pub struct Config {
   pub server: Server,
   pub upstream: Upstream,
   pub graphql: GraphQL,
+  pub introspection_cache: BTreeMap<String, IntrospectionResult>,
 }
 
 impl Config {
@@ -114,7 +115,14 @@ impl Config {
     let server = self.server.merge_right(other.server.clone());
     let graphql = self.graphql.merge_right(other.graphql.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    Self { server, upstream, graphql }
+    let mut introspection_cache = BTreeMap::new();
+    self.introspection_cache.iter().for_each(|(k, v)| {
+      introspection_cache.insert(k.clone(), v.clone());
+    });
+    other.introspection_cache.iter().for_each(|(k, v)| {
+      introspection_cache.insert(k.clone(), v.clone());
+    });
+    Self { server, upstream, graphql, introspection_cache }
   }
 }
 

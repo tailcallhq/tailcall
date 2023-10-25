@@ -9,6 +9,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
+use super::introspection::IntrospectionResult;
 use crate::config::group_by::GroupBy;
 use crate::config::introspection::introspect_endpoint;
 use crate::config::{self, Config, GraphQL, GraphQLSource, Http, RootSchema, Server, Union, Upstream};
@@ -18,7 +19,7 @@ use crate::valid::NeoValid;
 pub async fn from_document(doc: ServiceDocument) -> NeoValid<Config, String> {
   let config = schema_definition(&doc)
     .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
-    .map(|((server, upstream), graphql)| Config { server, upstream, graphql });
+    .map(|((server, upstream), graphql)| Config { server, upstream, graphql, introspection_cache: BTreeMap::new() });
 
   match config {
     NeoValid(Ok(config)) => update_introspection_results(config).await,
@@ -339,7 +340,7 @@ async fn update_introspection_results(mut config: Config) -> NeoValid<Config, St
     for field in type_.fields.values_mut() {
       match &field.graphql_source {
         Some(graphql_source) => {
-          let updated = update_introspection(graphql_source).await;
+          let updated = update_introspection(graphql_source, &mut config.introspection_cache).await;
           match &updated {
             NeoValid(Ok(source)) => {
               field.graphql_source = Some(source.clone());
@@ -355,17 +356,30 @@ async fn update_introspection_results(mut config: Config) -> NeoValid<Config, St
   }
   NeoValid::succeed(config)
 }
-async fn update_introspection(graphqlsource: &config::GraphQLSource) -> NeoValid<config::GraphQLSource, String> {
+async fn update_introspection(
+  graphqlsource: &config::GraphQLSource,
+  introspection_cache: &mut BTreeMap<String, IntrospectionResult>,
+) -> NeoValid<config::GraphQLSource, String> {
   let mut updated: GraphQLSource = graphqlsource.clone();
   match &graphqlsource.base_url {
     Some(base_url) => {
-      let introspection_result = introspect_endpoint(base_url).await;
+      let introspection_result = introspection_cache.get(base_url);
       match introspection_result {
-        Ok(introspection) => {
-          updated.introspection = Some(introspection);
+        Some(introspection) => {
+          updated.introspection = Some(introspection.clone());
           NeoValid::succeed(updated)
         }
-        Err(e) => NeoValid::fail(e.to_string()),
+        None => {
+          let introspection_result = introspect_endpoint(base_url).await;
+          match introspection_result {
+            Ok(introspection) => {
+              updated.introspection = Some(introspection.clone());
+              introspection_cache.insert(base_url.clone(), introspection.clone());
+              NeoValid::succeed(updated)
+            }
+            Err(e) => NeoValid::fail(e.to_string()),
+          }
+        }
       }
     }
     None => NeoValid::fail("No base url found for graphql directive".to_string()).trace("introspection"),
