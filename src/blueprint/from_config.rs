@@ -17,6 +17,7 @@ use crate::config::introspection::get_arg_type;
 use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
@@ -399,9 +400,6 @@ fn update_graphql(field: &config::Field, mut b_field: FieldDefinition, config: &
         if base_url.ends_with('/') {
           base_url.pop();
         }
-        let query = Vec::new();
-        let output_schema = to_json_schema_for_field(field, config);
-        let input_schema = to_json_schema_for_args(&field.args, config);
         let mut header_map = HeaderMap::new();
         for (k, v) in graphql.headers.clone().iter() {
           header_map.insert(
@@ -429,33 +427,17 @@ fn update_graphql(field: &config::Field, mut b_field: FieldDefinition, config: &
           .args
           .clone()
           .iter()
-          .map(|(k, _)| format!("{}: ${}", k, k))
-          .collect::<Vec<_>>()
-          .join(",");
-        let variable_values = graphql
-          .query
-          .args
-          .clone()
-          .iter()
-          .map(|(k, v)| format!(r#""{}": {}"#, k, v))
-          .collect::<Vec<_>>()
-          .join(",");
-        let selection_set = "{{field.selectionSet}}";
-        let graphql_query = format!(
-          r#"{{ "query": "query({}) {{ {}({}) {{ {} }} }}", "variables": {{ {} }} }}"#,
-          variable_definitions, graphql.query.name, args, selection_set, variable_values
-        );
-        let req_template = RequestTemplate::try_from(
-          Endpoint::new(base_url.to_string())
-            .method(Method::POST.clone())
-            .query(query)
-            .output(output_schema)
-            .input(input_schema)
-            .body(Some(graphql_query))
-            .headers(header_map),
+          .map(|(k, v)| (k.clone(), v.clone()))
+          .collect::<Vec<_>>();
+
+        let req_template = GraphqlRequestTemplate::new(
+          base_url,
+          graphql.query.name.clone(),
+          args,
+          variable_definitions,
+          header_map,
         )
         .map_err(|e| ValidationError::new(e.to_string()))?;
-
         b_field.resolver = Some(Lambda::from_graphql_request_template(req_template, b_field.name.clone()).expression);
 
         Valid::Ok(b_field)

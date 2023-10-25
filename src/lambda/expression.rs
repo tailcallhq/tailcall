@@ -12,6 +12,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
+use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -42,7 +43,7 @@ pub enum Operation {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   ),
-  GraphQLEndpoint(RequestTemplate, String),
+  GraphQLEndpoint(GraphqlRequestTemplate, String),
   JS(Box<Expression>, String),
 }
 
