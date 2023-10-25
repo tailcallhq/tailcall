@@ -2,13 +2,13 @@ mod client;
 mod data_loader;
 
 mod data_loader_request;
+mod graphql_data_loader;
 mod memo_client;
 mod method;
 mod request_context;
 mod response;
 mod server;
 mod server_context;
-mod graphql_data_loader;
 
 use std::time::Duration;
 
@@ -16,13 +16,13 @@ use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
+pub use graphql_data_loader::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
 pub use response::*;
 pub use server::start_server;
 pub use server_context::ServerContext;
-pub use graphql_data_loader::*;
 
 pub fn max_age(res: &Response) -> Option<Duration> {
   let header = res.headers.get(CACHE_CONTROL)?;

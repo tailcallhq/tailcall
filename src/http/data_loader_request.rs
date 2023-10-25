@@ -26,7 +26,7 @@ impl Hash for DataLoaderRequest {
             body_str.to_string().hash(state);
           }
         }
-      }    
+      }
     }
     for name in &self.1 {
       if let Some(value) = self.0.headers().get(name) {

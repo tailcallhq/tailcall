@@ -13,7 +13,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{max_age, DefaultHttpClient, HttpDataLoader, GraphqlDataLoader};
+use crate::http::{max_age, DefaultHttpClient, GraphqlDataLoader, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -164,7 +164,7 @@ impl Expression {
             }
             Operation::GraphQLEndpoint(req_template, field_name, dl) => {
               let req = req_template.to_request(ctx)?;
-              
+
               if ctx.req_ctx.upstream.batch.is_some() {
                 let headers = ctx
                   .req_ctx
@@ -189,7 +189,7 @@ impl Expression {
                 let path = ["data", field_name];
                 let v = get_path_value(&resp.body, &path);
                 return Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null));
-              }   
+              }
 
               let res = ctx
                 .req_ctx

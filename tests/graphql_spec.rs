@@ -285,7 +285,12 @@ async fn test_merge_sdl() -> std::io::Result<()> {
     let futures = spec
       .server_sdl
       .iter()
-      .map(|s| async { Config::from_sdl(s.as_str(), Some(GraphQLSpec::mock_introspection_cache)).await.to_result().unwrap() })
+      .map(|s| async {
+        Config::from_sdl(s.as_str(), Some(GraphQLSpec::mock_introspection_cache))
+          .await
+          .to_result()
+          .unwrap()
+      })
       .collect::<Vec<_>>();
     let content = join_all(futures).await;
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
