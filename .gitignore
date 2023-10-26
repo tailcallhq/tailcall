@@ -3,6 +3,7 @@
 .vscode
 *.svg
 .DS_Store
+.gitpod.yml
 
 # direnv
 .direnv
