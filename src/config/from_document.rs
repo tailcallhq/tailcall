@@ -82,6 +82,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
         &type_definition.node.description,
         false,
         &object_type.implements,
+        &type_definition.node.directives,
       )
       .some(),
       TypeKind::Interface(interface_type) => to_object_type(
@@ -89,6 +90,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
         &type_definition.node.description,
         true,
         &interface_type.implements,
+        &type_definition.node.directives,
       )
       .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
@@ -124,17 +126,24 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
+
 fn to_object_type(
   fields: &Vec<Positioned<FieldDefinition>>,
   description: &Option<Positioned<String>>,
   interface: bool,
   implements: &[Positioned<Name>],
+  directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String> {
-  to_fields(fields).map(|fields| {
-    let doc = description.as_ref().map(|pos| pos.node.clone());
-    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-    config::Type { fields, doc, interface, implements, ..Default::default() }
-  })
+  to_fields(fields)
+    .and_then(|fields| {
+      let added_fields = to_added_fields(directives, fields.clone());
+      added_fields.map(|added_fields| (fields, added_fields))
+    })
+    .map(|(fields, added_fields)| {
+      let doc = description.as_ref().map(|pos| pos.node.clone());
+      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+      config::Type { fields, added_fields: added_fields, doc, interface, implements, ..Default::default() }
+    })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -304,6 +313,59 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
       None
     }
   })
+}
+fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {
+  directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node == "field" {
+        config::AddField::from_directive(&directive.node).to_result().ok()
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>()
+}
+
+fn to_added_fields(
+  directives: &[Positioned<ConstDirective>],
+  fields: BTreeMap<String, config::Field>,
+) -> Valid<Vec<config::AddedField>, String> {
+  let add_fields = to_add_fields_from_directives(directives);
+  Valid::succeed(
+    add_fields
+      .iter()
+      .filter_map(|add_field| {
+        let source_field = fields
+          .iter()
+          .find(|&(field_name, _)| field_name.to_owned() == add_field.path[0]);
+
+        match source_field {
+          Some((_, source_field)) => {
+            let path = match source_field.http {
+              Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
+              None => add_field.path.clone(),
+            };
+            let new_field = config::Field {
+              type_of: source_field.type_of.clone(),
+              list: source_field.list,
+              required: source_field.required,
+              list_type_required: source_field.list_type_required,
+              args: source_field.args.clone(),
+              doc: None,
+              modify: source_field.modify.clone(),
+              inline: Some(config::InlineType { path }),
+              http: source_field.http.clone(),
+              unsafe_operation: source_field.unsafe_operation.clone(),
+              const_field: source_field.const_field.clone(),
+            };
+            Some(config::AddedField { field_info: add_field.clone(), field: new_field })
+          }
+          None => None,
+        }
+      })
+      .collect::<Vec<_>>(),
+  )
 }
 
 trait HasName {

@@ -229,17 +229,18 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
-  Valid::from_iter(
-    type_of
-      .fields
-      .iter()
-      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
-    |(name, field)| {
-      validate_field_type_exist(config, field)
-        .and(to_field(type_of, config, name, field))
-        .trace(name)
-    },
-  )
+  let mut all_fields: BTreeMap<String, Field> = BTreeMap::new();
+  all_fields.append(&mut type_of.fields.clone());
+  let mut additional_fields = BTreeMap::new();
+  type_of.added_fields.iter().for_each(|added_field| {
+    additional_fields.insert(added_field.field_info.name.clone(), added_field.field.clone());
+  });
+  all_fields.append(&mut additional_fields);
+  Valid::from_iter(all_fields.iter().filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)), |(name, field)| {
+    validate_field_type_exist(config, field)
+      .and(to_field(type_of, config, name, field))
+      .trace(name)
+  })
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
