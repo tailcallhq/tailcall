@@ -13,6 +13,7 @@ use regex::Regex;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
+use crate::config::group_by::GroupBy;
 use crate::config::{Arg, Batch, Config, Field, InlineType};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
@@ -340,7 +341,6 @@ fn to_field(
 
     update_http(field, field_definition, type_of, config)
       .trace("@http")
-      .and_then(|field_definition| update_group_by(field, field_definition).trace("@groupBy"))
       .map(|field_definition| update_unsafe(field.clone(), field_definition))
       .and_then(|field_definition| update_const_field(field, field_definition, config).trace("@const"))
       .and_then(|field_definition| update_inline_field(type_of, field, field_definition, config).trace("@inline"))
@@ -411,29 +411,6 @@ fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDef
   b_field
 }
 
-fn update_group_by(field: &config::Field, mut b_field: FieldDefinition) -> Valid<FieldDefinition, String> {
-  if let Some(batch) = field.group_by.as_ref() {
-    if let Some(http) = field.http.as_ref() {
-      if http.method != Method::GET {
-        Valid::fail("GroupBy is only supported for GET requests".to_string())
-      } else {
-        if let Some(Expression::Unsafe(Operation::Endpoint(request_template, _group_by, dl))) = b_field.resolver {
-          b_field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
-            request_template.clone(),
-            Some(batch.clone()),
-            dl,
-          )));
-        }
-        Valid::succeed(b_field)
-      }
-    } else {
-      Valid::fail("GroupBy is only supported for HTTP resolvers".to_string())
-    }
-  } else {
-    Valid::succeed(b_field)
-  }
-}
-
 fn update_http(
   field: &config::Field,
   b_field: FieldDefinition,
@@ -456,29 +433,42 @@ fn update_http(
         let output_schema = to_json_schema_for_field(field, config);
         let input_schema = to_json_schema_for_args(&field.args, config);
 
-        Valid::from_iter(http.headers.iter(), |(k, v)| {
-          let name = Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
+        Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
+          .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+          .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
+            let name =
+              Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
 
-          let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
+            let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
 
-          name.zip(value).map(|(name, value)| (name, value))
-        })
-        .map(HeaderMap::from_iter)
-        .and_then(|header_map| {
-          RequestTemplate::try_from(
-            Endpoint::new(base_url.to_string())
-              .method(http.method.clone())
-              .query(query)
-              .output(output_schema)
-              .input(input_schema)
-              .body(http.body.clone())
-              .headers(header_map),
-          )
-          .map_err(|e| ValidationError::new(e.to_string()))
-          .into()
-        })
-        .map(|req_template| b_field.resolver(Some(Lambda::from_request_template(req_template).expression)))
-        .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
+            name.zip(value).map(|(name, value)| (name, value))
+          }))
+          .map(HeaderMap::from_iter)
+          .and_then(|header_map| {
+            RequestTemplate::try_from(
+              Endpoint::new(base_url.to_string())
+                .method(http.method.clone())
+                .query(query)
+                .output(output_schema)
+                .input(input_schema)
+                .body(http.body.clone())
+                .headers(header_map),
+            )
+            .map_err(|e| ValidationError::new(e.to_string()))
+            .into()
+          })
+          .map(|req_template| {
+            if !http.group_by.is_empty() && http.method == Method::GET {
+              b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
+                req_template,
+                Some(GroupBy::new(http.group_by.clone())),
+                None,
+              ))))
+            } else {
+              b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+            }
+          })
+          .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
       }
       None => Valid::fail("No base URL defined".to_string()),
     },
