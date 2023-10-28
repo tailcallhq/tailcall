@@ -10,12 +10,11 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
-use crate::config::group_by::GroupBy;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
-use crate::valid::NeoValid;
+use crate::valid::Valid;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -221,8 +220,6 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  #[serde(rename = "groupBy")]
-  pub group_by: Option<GroupBy>,
   pub const_field: Option<ConstField>,
 }
 
@@ -244,7 +241,7 @@ impl Field {
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
-    self.group_by.is_some()
+    self.http.as_ref().is_some_and(|http| !http.group_by.is_empty())
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -312,6 +309,9 @@ pub struct Http {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
+  #[serde(default)]
+  #[serde(rename = "groupBy", skip_serializing_if = "is_default")]
+  pub group_by: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -328,11 +328,11 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> NeoValid<Self, String> {
+  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => NeoValid::from(Config::try_from(doc)),
-      Err(e) => NeoValid::fail(e.to_string()),
+      Ok(doc) => Valid::from(Config::try_from(doc)),
+      Err(e) => Valid::fail(e.to_string()),
     }
   }
 
@@ -370,5 +370,24 @@ impl Config {
     }
 
     Ok(config)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_field_has_or_not_batch_resolver() {
+    let f1 = Field { ..Default::default() };
+
+    let f2 =
+      Field { http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }), ..Default::default() };
+
+    let f3 = Field { http: Some(Http { group_by: vec![], ..Default::default() }), ..Default::default() };
+
+    assert!(!f1.has_batched_resolver());
+    assert!(f2.has_batched_resolver());
+    assert!(!f3.has_batched_resolver());
   }
 }

@@ -1,6 +1,6 @@
 #> server-sdl
 schema
-  @server(port: 8000, enableGraphiql: "/graphiql", enableQueryValidation: false)
+  @server(port: 8000, enableGraphiql: true, enableQueryValidation: false)
   @upstream(
     enableHttpCache: true
     batch: {maxSize: 1000, delay: 0, headers: []}
@@ -17,7 +17,7 @@ type Post {
   id: Int
   title: String
   body: String
-  userId: Int
+  userId: Int!
   user: User @http(path: "/users/{{value.userId}}")
 }
 

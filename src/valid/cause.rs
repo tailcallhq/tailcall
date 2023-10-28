@@ -33,15 +33,9 @@ impl<E> Cause<E> {
   pub fn new(e: E) -> Self {
     Cause { message: e, description: None, trace: VecDeque::new() }
   }
-}
 
-impl Cause<&str> {
-  pub fn to_owned(&self) -> Cause<String> {
-    Cause {
-      message: self.message.to_owned(),
-      description: self.description.map(|d| d.to_owned()),
-      trace: self.trace.iter().map(|t| t.to_owned()).collect(),
-    }
+  pub fn transform<E1>(self, e: impl Fn(E) -> E1) -> Cause<E1> {
+    Cause { message: e(self.message), description: self.description.map(e), trace: self.trace }
   }
 }
 

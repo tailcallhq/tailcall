@@ -3,7 +3,7 @@ server:
   upstream:
     baseURL: "http://jsonplaceholder.typicode.com"
     enableHttpCache: true
-  enableGraphiql: /graphiql
+  enableGraphiql: true
   enableQueryValidation: false
 graphql:
   schema:

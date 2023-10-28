@@ -9,18 +9,17 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::group_by::GroupBy;
 use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
-use crate::valid::{NeoValid, ValidationError};
+use crate::valid::{Valid, ValidationError};
 
-fn from_document(doc: ServiceDocument) -> NeoValid<Config, String> {
+fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   schema_definition(&doc)
     .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
     .map(|((server, upstream), graphql)| Config { server, upstream, graphql })
 }
 
-fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> NeoValid<GraphQL, String> {
+fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> Valid<GraphQL, String> {
   let type_definitions: Vec<_> = doc
     .definitions
     .iter()
@@ -34,22 +33,22 @@ fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> NeoValid<GraphQL, St
     .map(|types| (GraphQL { schema: to_root_schema(sd), types, unions: to_union_types(&type_definitions) }))
 }
 
-fn schema_definition(doc: &ServiceDocument) -> NeoValid<&SchemaDefinition, String> {
+fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
   let p = doc.definitions.iter().find_map(|def| match def {
     TypeSystemDefinition::Schema(schema_definition) => Some(&schema_definition.node),
     _ => None,
   });
   p.map_or_else(
-    || NeoValid::fail("schema not found".to_string()).trace("schema"),
-    NeoValid::succeed,
+    || Valid::fail("schema not found".to_string()).trace("schema"),
+    Valid::succeed,
   )
 }
 
 fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
   schema_definition: &'a SchemaDefinition,
   directive_name: &str,
-) -> NeoValid<T, String> {
-  let mut res = NeoValid::succeed(T::default());
+) -> Valid<T, String> {
+  let mut res = Valid::succeed(T::default());
   for directive in schema_definition.directives.iter() {
     if directive.node.name.node.as_ref() == directive_name {
       res = T::from_directive(&directive.node);
@@ -58,10 +57,10 @@ fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
   res
 }
 
-fn server(schema_definition: &SchemaDefinition) -> NeoValid<Server, String> {
+fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
   process_schema_directives(schema_definition, "server")
 }
-fn upstream(schema_definition: &SchemaDefinition) -> NeoValid<Upstream, String> {
+fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, "upstream")
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
@@ -74,8 +73,8 @@ fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
   pos.node.to_string()
 }
-fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> NeoValid<BTreeMap<String, config::Type>, String> {
-  NeoValid::from_iter(type_definitions, |type_definition| {
+fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
+  Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => to_object_type(
@@ -92,10 +91,10 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> NeoValid<BTr
         &interface_type.implements,
       )
       .some(),
-      TypeKind::Enum(enum_type) => NeoValid::succeed(Some(to_enum(enum_type))),
+      TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
       TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
-      TypeKind::Union(_) => NeoValid::none(),
-      TypeKind::Scalar => NeoValid::succeed(Some(to_scalar_type())),
+      TypeKind::Union(_) => Valid::none(),
+      TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
     }
     .map(|option| (type_name, option))
   })
@@ -130,7 +129,7 @@ fn to_object_type(
   description: &Option<Positioned<String>>,
   interface: bool,
   implements: &[Positioned<Name>],
-) -> NeoValid<config::Type, String> {
+) -> Valid<config::Type, String> {
   to_fields(fields).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
@@ -145,30 +144,30 @@ fn to_enum(enum_type: EnumType) -> config::Type {
     .collect();
   config::Type { variants: Some(variants), ..Default::default() }
 }
-fn to_input_object(input_object_type: InputObjectType) -> NeoValid<config::Type, String> {
+fn to_input_object(input_object_type: InputObjectType) -> Valid<config::Type, String> {
   to_input_object_fields(&input_object_type.fields).map(|fields| config::Type { fields, ..Default::default() })
 }
 
-fn to_fields_inner<T, F>(fields: &Vec<Positioned<T>>, transform: F) -> NeoValid<BTreeMap<String, config::Field>, String>
+fn to_fields_inner<T, F>(fields: &Vec<Positioned<T>>, transform: F) -> Valid<BTreeMap<String, config::Field>, String>
 where
-  F: Fn(&T) -> NeoValid<config::Field, String>,
+  F: Fn(&T) -> Valid<config::Field, String>,
   T: HasName,
 {
-  NeoValid::from_iter(fields, |field| {
+  Valid::from_iter(fields, |field| {
     let field_name = pos_name_to_string(field.node.name());
     transform(&field.node).map(|field| (field_name, field))
   })
   .map(BTreeMap::from_iter)
 }
-fn to_fields(fields: &Vec<Positioned<FieldDefinition>>) -> NeoValid<BTreeMap<String, config::Field>, String> {
+fn to_fields(fields: &Vec<Positioned<FieldDefinition>>) -> Valid<BTreeMap<String, config::Field>, String> {
   to_fields_inner(fields, to_field)
 }
 fn to_input_object_fields(
   input_object_fields: &Vec<Positioned<InputValueDefinition>>,
-) -> NeoValid<BTreeMap<String, config::Field>, String> {
+) -> Valid<BTreeMap<String, config::Field>, String> {
   to_fields_inner(input_object_fields, to_input_object_field)
 }
-fn to_field(field_definition: &FieldDefinition) -> NeoValid<config::Field, String> {
+fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
   to_common_field(
     &field_definition.ty.node,
     &field_definition.ty.node.base,
@@ -178,7 +177,7 @@ fn to_field(field_definition: &FieldDefinition) -> NeoValid<config::Field, Strin
     &field_definition.directives,
   )
 }
-fn to_input_object_field(field_definition: &InputValueDefinition) -> NeoValid<config::Field, String> {
+fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
   to_common_field(
     &field_definition.ty.node,
     &field_definition.ty.node.base,
@@ -195,7 +194,7 @@ fn to_common_field(
   args: BTreeMap<String, config::Arg>,
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
-) -> NeoValid<config::Field, String> {
+) -> Valid<config::Field, String> {
   let type_of = to_type_of(type_);
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
@@ -204,7 +203,6 @@ fn to_common_field(
   let inline = to_inline(directives);
   to_http(directives).map(|http| {
     let unsafe_operation = to_unsafe_operation(directives);
-    let group_by = to_batch(directives);
     let const_field = to_const_field(directives);
     config::Field {
       type_of,
@@ -217,7 +215,6 @@ fn to_common_field(
       inline,
       http,
       unsafe_operation,
-      group_by,
       const_field,
     }
   })
@@ -283,13 +280,13 @@ fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::Inline
     }
   })
 }
-fn to_http(directives: &[Positioned<ConstDirective>]) -> NeoValid<Option<config::Http>, String> {
+fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>, String> {
   for directive in directives {
     if directive.node.name.node == "http" {
       return Http::from_directive(&directive.node).map(Some);
     }
   }
-  NeoValid::succeed(None)
+  Valid::succeed(None)
 }
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
@@ -298,15 +295,6 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .map(|member| member.node.to_string())
     .collect();
   Union { types, doc: doc.clone() }
-}
-fn to_batch(directives: &[Positioned<ConstDirective>]) -> Option<GroupBy> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == "groupBy" {
-      GroupBy::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
   directives.iter().find_map(|directive| {

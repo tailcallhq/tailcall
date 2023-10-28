@@ -13,8 +13,9 @@ type Post {
   id: Int
   title: String
   body: String
-  userId: Int
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}]) @groupBy
+  userId: Int!
+  user: User
+    @http(groupBy: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
 }
 
 type User {

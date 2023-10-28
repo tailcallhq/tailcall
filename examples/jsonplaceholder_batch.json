@@ -10,7 +10,7 @@
         "headers": []
       }
     },
-    "enableGraphiql": "/graphiql"
+    "enableGraphiql": true
   },
   "graphql": {
     "schema": {
@@ -40,9 +40,9 @@
                   "key": "id",
                   "value": "{{value.userId}}"
                 }
-              ]
-            },
-            "groupBy": {}
+              ],
+              "groupBy": ["id"]
+            }
           },
           "userId": {
             "type_of": "Int",

@@ -9,8 +9,8 @@ type User {
 }
 
 type Query {
-  user: User @http(path: "/posts/1", method: "POST") @groupBy(path: ["id"])
+  user: User @http(path: "/posts/1", method: "POST", groupBy: ["id"])
 }
 
 #> client-sdl
-type Failure @error(message: "GroupBy is only supported for GET requests", trace: ["Query", "user", "@groupBy"])
+type Failure @error(message: "GroupBy is only supported for GET requests", trace: ["Query", "user", "@http"])

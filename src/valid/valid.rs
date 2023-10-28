@@ -1,96 +1,74 @@
 use super::ValidationError;
 use crate::valid::Cause;
 
-pub type Valid<A, E> = Result<A, ValidationError<E>>;
+#[derive(Debug, PartialEq)]
+pub struct Valid<A, E>(Result<A, ValidationError<E>>);
 
-pub trait ValidExtensions<A, E>:
-  Sized + From<Result<A, ValidationError<E>>> + Into<Result<A, ValidationError<E>>>
-{
-  fn to_valid(self) -> Valid<A, E>;
-
-  fn fail(e: E) -> Valid<A, E> {
-    Err((vec![Cause::new(e)]).into())
+impl<A, E> Valid<A, E> {
+  pub fn fail(e: E) -> Valid<A, E> {
+    Valid(Err((vec![Cause::new(e)]).into()))
   }
 
-  fn fail_cause(cause: Vec<Cause<E>>) -> Valid<A, E> {
-    Err(cause.into())
+  pub fn from_validation_err(error: ValidationError<E>) -> Self {
+    Valid(Err(error))
   }
 
-  fn succeed(a: A) -> Valid<A, E> {
-    Ok(a)
+  pub fn from_vec_cause(error: Vec<Cause<E>>) -> Self {
+    Valid(Err(error.into()))
   }
 
-  fn validate_or<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<A1, E> {
-    match self.to_valid() {
+  pub fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
+    Valid(self.0.map(f))
+  }
+
+  pub fn succeed(a: A) -> Valid<A, E> {
+    Valid(Ok(a))
+  }
+
+  pub fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
+    match self.0 {
       Ok(_) => other,
-      Err(e1) => match other {
-        Err(e2) => Err(e1.combine(e2)),
-        _ => Err(e1),
-      },
-    }
-  }
-  fn validate_both<A1>(self, other: Result<A1, ValidationError<E>>) -> Valid<(A, A1), E> {
-    match self.to_valid() {
-      Ok(a) => match other {
-        Ok(a1) => Ok((a, a1)),
-        Err(e) => Err(e),
-      },
-      Err(e1) => match other {
-        Ok(_) => Err(e1),
-        Err(e2) => Err(e1.combine(e2)),
+      Err(e1) => match other.0 {
+        Err(e2) => Valid(Err(e1.combine(e2))),
+        _ => Valid(Err(e1)),
       },
     }
   }
 
-  fn trace(self, message: &str) -> Valid<A, E> {
-    let valid = self.to_valid();
+  pub fn zip<A1>(self, other: Valid<A1, E>) -> Valid<(A, A1), E> {
+    match self.0 {
+      Ok(a) => match other.0 {
+        Ok(a1) => Valid(Ok((a, a1))),
+        Err(e1) => Valid(Err(e1)),
+      },
+      Err(e1) => match other.0 {
+        Ok(_) => Valid(Err(e1)),
+        Err(e2) => Valid(Err(e1.combine(e2))),
+      },
+    }
+  }
+
+  pub fn trace(self, message: &str) -> Valid<A, E> {
+    let valid = self.0;
     if let Err(error) = valid {
-      return Err(error.trace(message));
+      return Valid(Err(error.trace(message)));
     }
 
-    valid
+    Valid(valid)
   }
-  fn validate_fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
-    match self.to_valid() {
+
+  pub fn fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
+    match self.0 {
       Ok(a) => ok(a),
-      Err(e) => Err::<A1, ValidationError<E>>(e).validate_or(err),
+      Err(e) => Valid::<A1, E>(Err(e)).and(err),
     }
   }
-}
 
-pub trait ValidConstructor<A, E> {
-  fn to_valid(self) -> Valid<A, E>;
-}
-
-impl<A, E> ValidConstructor<A, E> for Result<A, E> {
-  fn to_valid(self) -> Valid<A, E> {
-    self.map_err(|e| ValidationError::new(e))
-  }
-}
-
-impl<A, E> ValidExtensions<A, E> for Result<A, ValidationError<E>> {
-  fn to_valid(self) -> Valid<A, E> {
-    self
-  }
-}
-
-pub trait OptionExtension<A> {
-  fn validate_some<E>(self, e: E) -> Valid<A, E>;
-}
-
-pub trait VectorExtension<A, E> {
-  fn validate_all<B>(self, f: impl Fn(A) -> Valid<B, E>) -> Valid<Vec<B>, E>;
-}
-
-impl<A, E, I> VectorExtension<A, E> for I
-where
-  I: IntoIterator<Item = A>,
-{
-  fn validate_all<B>(self, f: impl Fn(A) -> Valid<B, E>) -> Valid<Vec<B>, E> {
+  pub fn from_iter<B>(iter: impl IntoIterator<Item = A>, f: impl Fn(A) -> Valid<B, E>) -> Valid<Vec<B>, E> {
     let mut values: Vec<B> = Vec::new();
     let mut errors: ValidationError<E> = ValidationError::empty();
-    for a in self {
-      match f(a) {
+    for a in iter.into_iter() {
+      match f(a).to_result() {
         Ok(b) => {
           values.push(b);
         }
@@ -101,39 +79,71 @@ where
     }
 
     if errors.is_empty() {
-      Ok(values)
+      Valid::succeed(values)
     } else {
-      Err(errors)
+      Valid::from_validation_err(errors)
     }
   }
-}
 
-impl<A> OptionExtension<A> for Option<A> {
-  fn validate_some<E>(self, e: E) -> Valid<A, E> {
-    match self {
-      Some(a) => Ok(a),
+  pub fn from_option(option: Option<A>, e: E) -> Valid<A, E> {
+    match option {
+      Some(a) => Valid::succeed(a),
       None => Valid::fail(e),
     }
   }
+
+  pub fn to_result(self) -> Result<A, ValidationError<E>> {
+    self.0
+  }
+
+  pub fn and_then<B>(self, f: impl FnOnce(A) -> Valid<B, E>) -> Valid<B, E> {
+    match self.0 {
+      Ok(a) => f(a),
+      Err(e) => Valid(Err(e)),
+    }
+  }
+
+  pub fn unit(self) -> Valid<(), E> {
+    self.map(|_| ())
+  }
+
+  pub fn some(self) -> Valid<Option<A>, E> {
+    self.map(Some)
+  }
+
+  pub fn none() -> Valid<Option<A>, E> {
+    Valid::succeed(None)
+  }
+  pub fn map_to<B>(self, b: B) -> Valid<B, E> {
+    self.map(|_| b)
+  }
+  pub fn when(self, f: impl FnOnce() -> bool) -> Valid<(), E> {
+    if f() {
+      self.unit()
+    } else {
+      Valid::succeed(())
+    }
+  }
 }
 
-impl<A> From<ValidationError<&str>> for Valid<A, String> {
-  fn from(value: ValidationError<&str>) -> Self {
-    let message = value.as_vec().iter().map(|c| c.to_owned()).collect();
-    Valid::fail_cause(message)
+impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
+  fn from(value: Result<A, ValidationError<E>>) -> Self {
+    match value {
+      Ok(a) => Valid::succeed(a),
+      Err(e) => Valid::from_validation_err(e),
+    }
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::valid::{
-    Cause, OptionExtension, Valid, ValidConstructor, ValidExtensions, ValidationError, VectorExtension,
-  };
+  use super::{Cause, ValidationError};
+  use crate::valid::valid::Valid;
 
   #[test]
   fn test_ok() {
     let result = Valid::<i32, ()>::succeed(1);
-    assert_eq!(result, Ok(1));
+    assert_eq!(result, Valid::succeed(1));
   }
 
   #[test]
@@ -147,7 +157,7 @@ mod tests {
     let result1 = Valid::<bool, i32>::succeed(true);
     let result2 = Valid::<u8, i32>::succeed(3);
 
-    assert_eq!(result1.validate_or(result2), Ok(3u8));
+    assert_eq!(result1.and(result2), Valid::succeed(3u8));
   }
 
   #[test]
@@ -155,7 +165,7 @@ mod tests {
     let result1 = Valid::<bool, i32>::fail(-1);
     let result2 = Valid::<u8, i32>::succeed(3);
 
-    assert_eq!(result1.validate_or(result2), Valid::fail(-1));
+    assert_eq!(result1.and(result2), Valid::fail(-1));
   }
 
   #[test]
@@ -163,86 +173,87 @@ mod tests {
     let result1 = Valid::<bool, i32>::succeed(true);
     let result2 = Valid::<u8, i32>::fail(-2);
 
-    assert_eq!(result1.validate_or(result2), Valid::fail(-2));
+    assert_eq!(result1.and(result2), Valid::fail(-2));
   }
 
   #[test]
   fn test_validate_all() {
     let input: Vec<i32> = [1, 2, 3].to_vec();
-    let result: Valid<Vec<i32>, i32> = input.validate_all(|a| Valid::fail(a * 2));
-    assert_eq!(result, Err(vec![Cause::new(2), Cause::new(4), Cause::new(6)].into()));
+    let result: Valid<Vec<i32>, i32> = Valid::from_iter(input, |a| Valid::fail(a * 2));
+    assert_eq!(
+      result,
+      Valid::from_vec_cause(vec![Cause::new(2), Cause::new(4), Cause::new(6)])
+    );
   }
 
   #[test]
   fn test_validate_all_ques() {
     let input: Vec<i32> = [1, 2, 3].to_vec();
-    let result: Valid<Vec<i32>, i32> = input.validate_all(|a| {
-      let a = Valid::fail(a * 2)?;
-      Ok(a)
-    });
-    assert_eq!(result, Err(vec![Cause::new(2), Cause::new(4), Cause::new(6)].into()));
+    let result: Valid<Vec<i32>, i32> = Valid::from_iter(input, |a| Valid::fail(a * 2));
+    assert_eq!(
+      result,
+      Valid::from_vec_cause(vec![Cause::new(2), Cause::new(4), Cause::new(6)])
+    );
   }
 
   #[test]
   fn test_ok_ok_cause() {
     let option: Option<i32> = None;
-    let result = option.validate_some(1);
-    assert_eq!(result, Err(vec![Cause::new(1)].into()));
+    let result = Valid::from_option(option, 1);
+    assert_eq!(result, Valid::from_vec_cause(vec![Cause::new(1)]));
   }
 
   #[test]
   fn test_trace() {
     let result = Valid::<(), i32>::fail(1).trace("A").trace("B").trace("C");
-    let expected = Err(
-      vec![Cause {
-        message: 1,
-        description: None,
-        trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
-      }]
-      .into(),
-    );
+    let expected = Valid::from_vec_cause(vec![Cause {
+      message: 1,
+      description: None,
+      trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
+    }]);
     assert_eq!(result, expected);
   }
 
   #[test]
   fn test_validate_fold_err() {
     let valid = Valid::<(), i32>::fail(1);
-    let result = valid.validate_fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
-    assert_eq!(result, Valid::fail_cause(vec![Cause::new(1), Cause::new(3)]));
+    let result = valid.fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+    assert_eq!(result, Valid::from_vec_cause(vec![Cause::new(1), Cause::new(3)]));
   }
 
   #[test]
   fn test_validate_fold_ok() {
     let valid = Valid::<i32, i32>::succeed(1);
-    let result = valid.validate_fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
+    let result = valid.fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
     assert_eq!(result, Valid::fail(1));
   }
 
   #[test]
-  fn test_to_valid() {
-    let result = Err::<(), i32>(1).to_valid().unwrap_err();
+  fn test_to_result() {
+    let result = Valid::<(), i32>::fail(1).to_result().unwrap_err();
     assert_eq!(result, ValidationError::new(1));
   }
+
   #[test]
   fn test_validate_both_ok() {
     let result1 = Valid::<bool, i32>::succeed(true);
     let result2 = Valid::<u8, i32>::succeed(3);
 
-    assert_eq!(result1.validate_both(result2), Ok((true, 3u8)));
+    assert_eq!(result1.zip(result2), Valid::succeed((true, 3u8)));
   }
   #[test]
   fn test_validate_both_first_fail() {
     let result1 = Valid::<bool, i32>::fail(-1);
     let result2 = Valid::<u8, i32>::succeed(3);
 
-    assert_eq!(result1.validate_both(result2), Valid::fail(-1));
+    assert_eq!(result1.zip(result2), Valid::fail(-1));
   }
   #[test]
   fn test_validate_both_second_fail() {
     let result1 = Valid::<bool, i32>::succeed(true);
     let result2 = Valid::<u8, i32>::fail(-2);
 
-    assert_eq!(result1.validate_both(result2), Valid::fail(-2));
+    assert_eq!(result1.zip(result2), Valid::fail(-2));
   }
 
   #[test]
@@ -251,8 +262,20 @@ mod tests {
     let result2 = Valid::<u8, i32>::fail(-2);
 
     assert_eq!(
-      result1.validate_both(result2),
-      Valid::fail_cause(vec![Cause::new(-1), Cause::new(-2)])
+      result1.zip(result2),
+      Valid::from_vec_cause(vec![Cause::new(-1), Cause::new(-2)])
     );
+  }
+
+  #[test]
+  fn test_and_then_success() {
+    let result = Valid::<i32, i32>::succeed(1).and_then(|a| Valid::succeed(a + 1));
+    assert_eq!(result, Valid::succeed(2));
+  }
+
+  #[test]
+  fn test_and_then_fail() {
+    let result = Valid::<i32, i32>::succeed(1).and_then(|a| Valid::<i32, i32>::fail(a + 1));
+    assert_eq!(result, Valid::fail(2));
   }
 }
