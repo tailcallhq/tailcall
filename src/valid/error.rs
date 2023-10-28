@@ -4,7 +4,7 @@ use regex::Regex;
 
 use super::Cause;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct ValidationError<E>(Vec<Cause<E>>);
 
 impl<E: Display> Display for ValidationError<E> {
@@ -57,6 +57,10 @@ impl<E> ValidationError<E> {
     let mut errors = self.0;
     errors.push(Cause::new(error));
     Self(errors)
+  }
+
+  pub fn transform<E1>(self, f: impl Fn(E) -> E1) -> ValidationError<E1> {
+    ValidationError(self.0.into_iter().map(|cause| cause.transform(|a| f(a))).collect())
   }
 }
 

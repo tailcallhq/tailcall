@@ -1,6 +1,6 @@
 #> server-sdl
 schema
-  @server(port: 8000, enableGraphiql: "/graphiql")
+  @server(port: 8000, enableGraphiql: true)
   @upstream(
     baseURL: "http://jsonplaceholder.typicode.com"
     enableQueryValidation: false
@@ -20,8 +20,7 @@ type Post {
   body: String
   userId: Int!
   user: User
-    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
-    @groupBy(path: ["id"])
+    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], groupBy: ["id"])
 }
 
 type User {
