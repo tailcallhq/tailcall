@@ -1,0 +1,19 @@
+name: Deploy & Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    name: Deploy App
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-job
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
