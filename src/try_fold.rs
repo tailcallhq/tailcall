@@ -59,7 +59,11 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// # Returns
   /// Returns a new TryFold<I, O1, E> that applies the transformations.
   ///
-  pub fn transform<O1>(self, up: impl Fn(&O, O1) -> O1 + 'a, down: impl Fn(&O1) -> O + 'a) -> TryFold<'a, I, O1, E> {
+  pub fn transform<O1: Clone>(
+    self,
+    up: impl Fn(O, O1) -> O1 + 'a,
+    down: impl Fn(O1) -> O + 'a,
+  ) -> TryFold<'a, I, O1, E> {
     self.transform_valid(
       move |o, o1| Valid::succeed(up(o, o1)),
       move |o1| Valid::succeed(down(o1)),
@@ -76,18 +80,20 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// # Returns
   /// Returns a new TryFold<I, O1, E> that applies the transformations.
   ///
-  pub fn transform_valid<O1>(
+  pub fn transform_valid<O1: Clone>(
     self,
-    up: impl Fn(&O, O1) -> Valid<O1, E> + 'a,
-    down: impl Fn(&O1) -> Valid<O, E> + 'a,
+    up: impl Fn(O, O1) -> Valid<O1, E> + 'a,
+    down: impl Fn(O1) -> Valid<O, E> + 'a,
   ) -> TryFold<'a, I, O1, E> {
     TryFold(Box::new(move |i, o1| {
-      down(&o1).and_then(|o| self.try_fold(i, o)).and_then(|o| up(&o, o1))
+      down(o1.clone())
+        .and_then(|o| self.try_fold(i, o))
+        .and_then(|o| up(o, o1))
     }))
   }
 
   pub fn update(self, f: impl Fn(O) -> O + 'a) -> TryFold<'a, I, O, E> {
-    self.transform(move |_, o| f(o), |o| o.clone())
+    self.transform(move |o, _| f(o), |o| o)
   }
 
   /// Create a `TryFold` that always succeeds with the provided state.
@@ -245,7 +251,7 @@ mod tests {
   #[test]
   fn test_transform() {
     let t: TryFold<'_, i32, String, ()> = TryFold::succeed(|a: &i32, b: i32| a + b)
-      .transform(|v: &i32, _| v.to_string(), |v: &String| v.parse::<i32>().unwrap());
+      .transform(|v: i32, _| v.to_string(), |v: String| v.parse::<i32>().unwrap());
 
     let actual = t.try_fold(&2, "3".to_string()).to_result().unwrap();
     let expected = "5".to_string();
@@ -256,13 +262,21 @@ mod tests {
   #[test]
   fn test_transform_valid() {
     let t: TryFold<'_, i32, String, ()> = TryFold::succeed(|a: &i32, b: i32| a + b).transform_valid(
-      |v: &i32, _| Valid::succeed(v.to_string()),
-      |v: &String| Valid::succeed(v.parse::<i32>().unwrap()),
+      |v: i32, _| Valid::succeed(v.to_string()),
+      |v: String| Valid::succeed(v.parse::<i32>().unwrap()),
     );
 
     let actual = t.try_fold(&2, "3".to_string()).to_result().unwrap();
     let expected = "5".to_string();
 
     assert_eq!(actual, expected)
+  }
+
+  #[test]
+  fn test_update() {
+    let t = TryFold::<i32, i32, String>::succeed(|a: &i32, b: i32| a + b).update(|a| a + 1);
+    let actual = t.try_fold(&2, 3).to_result().unwrap();
+    let expected = 6;
+    assert_eq!(actual, expected);
   }
 }
