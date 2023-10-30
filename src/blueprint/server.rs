@@ -23,6 +23,13 @@ pub struct Server {
   pub response_headers: HeaderMap,
 }
 
+impl Default for Server {
+  fn default() -> Self {
+    // NOTE: Using unwrap because try_from default will never fail
+    Server::try_from(config::Server::default()).unwrap()
+  }
+}
+
 impl Server {
   pub fn get_enable_http_validation(&self) -> bool {
     self.enable_response_validation
@@ -96,4 +103,15 @@ fn configure_server(config_config: &config::Server) -> Valid<Server, String> {
       vars: config_config.get_vars(),
       response_headers,
     })
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::config;
+
+  #[test]
+  fn test_try_from_default() {
+    let actual = super::Server::try_from(config::Server::default());
+    assert!(actual.is_ok())
+  }
 }

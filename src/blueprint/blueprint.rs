@@ -15,7 +15,7 @@ use crate::lambda::{Expression, Lambda};
 /// It can only be generated from a valid Config.
 /// It allows us to choose a different GraphQL Backend, without re-writing all orchestration logic.
 /// It's not optimized for REST APIs (yet).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
@@ -104,7 +104,7 @@ pub struct EnumValueDefinition {
   pub directives: Vec<Directive>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct SchemaDefinition {
   pub query: String,
   pub mutation: Option<String>,
