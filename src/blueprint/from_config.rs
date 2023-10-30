@@ -26,21 +26,26 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{blueprint, config};
 
-type TryFromConfig<'a> = TryFold<'a, Config, Blueprint, String>;
+type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
-  let server = TryFromConfig::new(|config, blueprint| {
+  let server = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
     Valid::from(Server::try_from(config.server.clone())).map(|server| blueprint.server(server))
   });
 
-  let schema = TryFromConfig::new(|config, blueprint| to_schema(config).map(|schema| blueprint.schema(schema)));
+  let schema = to_schema().transform::<Blueprint>(
+    |schema, blueprint| blueprint.schema(schema.clone()),
+    |blueprint| blueprint.schema.clone(),
+  );
 
-  let definitions = TryFromConfig::new(|config, blueprint| {
-    to_definitions(config).map(|definitions| blueprint.definitions(definitions))
+  let definitions = to_definitions().transform::<Blueprint>(
+    |definitions, blueprint| blueprint.definitions(definitions.clone()),
+    |blueprint| blueprint.definitions.clone(),
+  );
+
+  let upstream = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
+    to_upstream(config).map(|upstream| blueprint.upstream(upstream))
   });
-
-  let upstream =
-    TryFromConfig::new(|config, blueprint| to_upstream(config).map(|upstream| blueprint.upstream(upstream)));
 
   server
     .and(schema)
@@ -90,65 +95,70 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
     .into()
 }
 
-fn to_schema(config: &Config) -> Valid<SchemaDefinition, String> {
-  validate_query(config)
-    .and(validate_mutation(config))
-    .and(Valid::from_option(
-      config.graphql.schema.query.as_ref(),
-      "Query root is missing".to_owned(),
-    ))
-    .zip(to_directive(config.server.to_directive("server".to_string())))
-    .map(|(query_type_name, directive)| SchemaDefinition {
-      query: query_type_name.to_owned(),
-      mutation: config.graphql.schema.mutation.clone(),
-      directives: vec![directive],
-    })
+fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
+  TryFoldConfig::new(|config, _| {
+    validate_query(config)
+      .and(validate_mutation(config))
+      .and(Valid::from_option(
+        config.graphql.schema.query.as_ref(),
+        "Query root is missing".to_owned(),
+      ))
+      .zip(to_directive(config.server.to_directive("server".to_string())))
+      .map(|(query_type_name, directive)| SchemaDefinition {
+        query: query_type_name.to_owned(),
+        mutation: config.graphql.schema.mutation.clone(),
+        directives: vec![directive],
+      })
+  })
 }
 
-fn to_definitions<'a>(config: &Config) -> Valid<Vec<Definition>, String> {
-  let output_types = config.output_types();
-  let input_types = config.input_types();
-  Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
-    let dbl_usage = input_types.contains(name) && output_types.contains(name);
-    if let Some(variants) = &type_.variants {
-      if !variants.is_empty() {
-        to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
+  TryFold::<Config, Vec<Definition>, String>::new(|config, _| {
+    let output_types = config.output_types();
+    let input_types = config.input_types();
+    Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
+      let dbl_usage = input_types.contains(name) && output_types.contains(name);
+      if let Some(variants) = &type_.variants {
+        if !variants.is_empty() {
+          to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+        } else {
+          Valid::fail("No variants found for enum".to_string())
+        }
+      } else if type_.scalar {
+        to_scalar_type_definition(name).trace(name)
+      } else if dbl_usage {
+        Valid::fail("type is used in input and output".to_string()).trace(name)
       } else {
-        Valid::fail("No variants found for enum".to_string())
-      }
-    } else if type_.scalar {
-      to_scalar_type_definition(name).trace(name)
-    } else if dbl_usage {
-      Valid::fail("type is used in input and output".to_string()).trace(name)
-    } else {
-      to_object_type_definition(name, type_, config)
-        .trace(name)
-        .and_then(|definition| match definition.clone() {
-          Definition::ObjectTypeDefinition(object_type_definition) => {
-            if config.input_types().contains(name) {
-              to_input_object_type_definition(object_type_definition).trace(name)
-            } else if type_.interface {
-              to_interface_type_definition(object_type_definition).trace(name)
-            } else {
-              Valid::succeed(definition)
+        to_object_type_definition(name, type_, config)
+          .trace(name)
+          .and_then(|definition| match definition.clone() {
+            Definition::ObjectTypeDefinition(object_type_definition) => {
+              if config.input_types().contains(name) {
+                to_input_object_type_definition(object_type_definition).trace(name)
+              } else if type_.interface {
+                to_interface_type_definition(object_type_definition).trace(name)
+              } else {
+                Valid::succeed(definition)
+              }
             }
-          }
-          _ => Valid::succeed(definition),
-        })
-    }
-  })
-  .map(|mut types| {
-    types.extend(
-      config
-        .graphql
-        .unions
-        .iter()
-        .map(to_union_type_definition)
-        .map(Definition::UnionTypeDefinition),
-    );
-    types
+            _ => Valid::succeed(definition),
+          })
+      }
+    })
+    .map(|mut types| {
+      types.extend(
+        config
+          .graphql
+          .unions
+          .iter()
+          .map(to_union_type_definition)
+          .map(Definition::UnionTypeDefinition),
+      );
+      types
+    })
   })
 }
+
 fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
   Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
     name: name.to_string(),
