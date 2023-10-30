@@ -82,6 +82,10 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     }))
   }
 
+  pub fn update(self, f: impl Fn(O) -> O + 'a) -> TryFold<'a, I, O, E> {
+    self.transform(f, |o| o)
+  }
+
   /// Create a `TryFold` that always succeeds with the provided state.
   ///
   /// # Parameters
