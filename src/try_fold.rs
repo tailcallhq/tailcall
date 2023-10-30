@@ -49,25 +49,6 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     TryFold(Box::new(f))
   }
 
-  /// Tries to fold all items in the provided iterator.
-  ///
-  /// # Parameters
-  /// - `items`: A list of items implementing `TryFolding`.
-  ///
-  /// # Returns
-  /// Returns a `Collect` instance that can be used to perform a folding operation
-  /// over all the items in the list.
-  pub fn from_iter<F: IntoIterator<Item = TryFold<'a, I, O, E>>>(items: F) -> TryFold<'a, I, O, E> {
-    let mut iter = items.into_iter();
-    let head = iter.next();
-
-    if let Some(head) = head {
-      head.and(TryFold::from_iter(iter))
-    } else {
-      TryFold::empty()
-    }
-  }
-
   /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying transformations.
   /// Check `transform_valid` if you want to return a `Valid` instead of an `O1`.
   ///
@@ -127,6 +108,19 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// Returns a `TryFold` that doesn't do anything.
   pub fn empty() -> Self {
     TryFold::new(|_, o| Valid::succeed(o))
+  }
+}
+
+impl<'a, I, O: Clone, E> FromIterator<TryFold<'a, I, O, E>> for TryFold<'a, I, O, E> {
+  fn from_iter<T: IntoIterator<Item = TryFold<'a, I, O, E>>>(iter: T) -> Self {
+    let mut iter = iter.into_iter();
+    let head = iter.next();
+
+    if let Some(head) = head {
+      head.and(TryFold::from_iter(iter))
+    } else {
+      TryFold::empty()
+    }
   }
 }
 
