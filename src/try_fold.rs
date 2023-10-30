@@ -34,7 +34,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     TryFold(Box::new(move |input, state| {
       self
         .try_fold(input, state.clone())
-        .fold(|value| other.try_fold(input, value), other.try_fold(input, state))
+        .fold(|state| other.try_fold(input, state), other.try_fold(input, state))
     }))
   }
 
