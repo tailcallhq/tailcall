@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
@@ -14,7 +14,7 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, InlineType};
+use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -22,32 +22,49 @@ use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
+use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{blueprint, config};
 
-pub fn config_blueprint(config: &Config) -> Valid<Blueprint, String> {
-  let output_types = config.output_types();
-  let input_types = config.input_types();
-  let schema = to_schema(config);
-  let definitions = to_definitions(config, output_types, input_types);
-  let server = Server::try_from(config.server.clone()).into();
-  let upstream = to_upstream(config.upstream.clone());
+type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 
-  schema
-    .zip(definitions)
-    .zip(server)
-    .zip(upstream)
-    .map(|(((schema, definitions), server), upstream)| Blueprint { schema, definitions, server, upstream })
-    .map(apply_batching)
-    .map(super::compress::compress)
+pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
+  let server = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
+    Valid::from(Server::try_from(config.server.clone())).map(|server| blueprint.server(server))
+  });
+
+  let schema = to_schema().transform::<Blueprint>(
+    |schema, blueprint| blueprint.schema(schema),
+    |blueprint| blueprint.schema,
+  );
+
+  let definitions = to_definitions().transform::<Blueprint>(
+    |definitions, blueprint| blueprint.definitions(definitions),
+    |blueprint| blueprint.definitions,
+  );
+
+  let upstream = to_upstream().transform::<Blueprint>(
+    |upstream, blueprint| blueprint.upstream(upstream),
+    |blueprint| blueprint.upstream,
+  );
+
+  server
+    .and(schema)
+    .and(definitions)
+    .and(upstream)
+    .update(apply_batching)
+    .update(super::compress::compress)
 }
 
-fn to_upstream(upstream: config::Upstream) -> Valid<config::Upstream, String> {
-  if let Some(ref base_url) = upstream.base_url {
-    Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))).map_to(upstream)
-  } else {
-    Valid::succeed(upstream)
-  }
+fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
+  TryFoldConfig::<Upstream>::new(|_, upstream| {
+    if let Some(ref base_url) = upstream.base_url {
+      Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
+        .map_to(upstream.clone())
+    } else {
+      Valid::succeed(upstream.clone())
+    }
+  })
 }
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
@@ -81,67 +98,71 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
     .into()
 }
 
-fn to_schema(config: &Config) -> Valid<SchemaDefinition, String> {
-  validate_query(config)
-    .and(validate_mutation(config))
-    .and(Valid::from_option(
-      config.graphql.schema.query.as_ref(),
-      "Query root is missing".to_owned(),
-    ))
-    .zip(to_directive(config.server.to_directive("server".to_string())))
-    .map(|(query_type_name, directive)| SchemaDefinition {
-      query: query_type_name.to_owned(),
-      mutation: config.graphql.schema.mutation.clone(),
-      directives: vec![directive],
-    })
+fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
+  TryFoldConfig::new(|config, schema_definition| {
+    validate_query(config)
+      .and(validate_mutation(config))
+      .and(Valid::from_option(
+        config.graphql.schema.query.as_ref(),
+        "Query root is missing".to_owned(),
+      ))
+      .zip(to_directive(config.server.to_directive("server".to_string())))
+      .map(|(query_type_name, directive)| SchemaDefinition {
+        query: query_type_name.to_owned(),
+        mutation: config.graphql.schema.mutation.clone(),
+        directives: vec![directive],
+        ..schema_definition
+      })
+  })
 }
 
-fn to_definitions<'a>(
-  config: &Config,
-  output_types: HashSet<&'a String>,
-  input_types: HashSet<&'a String>,
-) -> Valid<Vec<Definition>, String> {
-  Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
-    let dbl_usage = input_types.contains(name) && output_types.contains(name);
-    if let Some(variants) = &type_.variants {
-      if !variants.is_empty() {
-        to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
+  TryFold::<Config, Vec<Definition>, String>::new(|config, _| {
+    let output_types = config.output_types();
+    let input_types = config.input_types();
+    Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
+      let dbl_usage = input_types.contains(name) && output_types.contains(name);
+      if let Some(variants) = &type_.variants {
+        if !variants.is_empty() {
+          to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+        } else {
+          Valid::fail("No variants found for enum".to_string())
+        }
+      } else if type_.scalar {
+        to_scalar_type_definition(name).trace(name)
+      } else if dbl_usage {
+        Valid::fail("type is used in input and output".to_string()).trace(name)
       } else {
-        Valid::fail("No variants found for enum".to_string())
-      }
-    } else if type_.scalar {
-      to_scalar_type_definition(name).trace(name)
-    } else if dbl_usage {
-      Valid::fail("type is used in input and output".to_string()).trace(name)
-    } else {
-      to_object_type_definition(name, type_, config)
-        .trace(name)
-        .and_then(|definition| match definition.clone() {
-          Definition::ObjectTypeDefinition(object_type_definition) => {
-            if config.input_types().contains(name) {
-              to_input_object_type_definition(object_type_definition).trace(name)
-            } else if type_.interface {
-              to_interface_type_definition(object_type_definition).trace(name)
-            } else {
-              Valid::succeed(definition)
+        to_object_type_definition(name, type_, config)
+          .trace(name)
+          .and_then(|definition| match definition.clone() {
+            Definition::ObjectTypeDefinition(object_type_definition) => {
+              if config.input_types().contains(name) {
+                to_input_object_type_definition(object_type_definition).trace(name)
+              } else if type_.interface {
+                to_interface_type_definition(object_type_definition).trace(name)
+              } else {
+                Valid::succeed(definition)
+              }
             }
-          }
-          _ => Valid::succeed(definition),
-        })
-    }
-  })
-  .map(|mut types| {
-    types.extend(
-      config
-        .graphql
-        .unions
-        .iter()
-        .map(to_union_type_definition)
-        .map(Definition::UnionTypeDefinition),
-    );
-    types
+            _ => Valid::succeed(definition),
+          })
+      }
+    })
+    .map(|mut types| {
+      types.extend(
+        config
+          .graphql
+          .unions
+          .iter()
+          .map(to_union_type_definition)
+          .map(Definition::UnionTypeDefinition),
+      );
+      types
+    })
   })
 }
+
 fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
   Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
     name: name.to_string(),
@@ -743,6 +764,6 @@ impl TryFrom<&Config> for Blueprint {
   type Error = ValidationError<String>;
 
   fn try_from(config: &Config) -> Result<Self, Self::Error> {
-    config_blueprint(config).to_result()
+    config_blueprint().try_fold(config, Blueprint::default()).to_result()
   }
 }

@@ -26,13 +26,7 @@ impl<A, E> Valid<A, E> {
   }
 
   pub fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
-    match self.0 {
-      Ok(_) => other,
-      Err(e1) => match other.0 {
-        Err(e2) => Valid(Err(e1.combine(e2))),
-        _ => Valid(Err(e1)),
-      },
-    }
+    self.zip(other).map(|(_, a1)| a1)
   }
 
   pub fn zip<A1>(self, other: Valid<A1, E>) -> Valid<(A, A1), E> {
