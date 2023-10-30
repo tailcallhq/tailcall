@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
@@ -22,31 +22,40 @@ use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Operation};
 use crate::request_template::RequestTemplate;
+use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{blueprint, config};
 
-pub fn config_blueprint(config: &Config) -> Valid<Blueprint, String> {
-  let output_types = config.output_types();
-  let input_types = config.input_types();
-  let schema = to_schema(config);
-  let definitions = to_definitions(config, output_types, input_types);
-  let server = Server::try_from(config.server.clone()).into();
-  let upstream = to_upstream(config.upstream.clone());
+type TryFromConfig<'a> = TryFold<'a, Config, Blueprint, String>;
 
-  schema
-    .zip(definitions)
-    .zip(server)
-    .zip(upstream)
-    .map(|(((schema, definitions), server), upstream)| Blueprint { schema, definitions, server, upstream })
-    .map(apply_batching)
-    .map(super::compress::compress)
+pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
+  let server = TryFromConfig::new(|config, blueprint| {
+    Valid::from(Server::try_from(config.server.clone())).map(|server| blueprint.server(server))
+  });
+
+  let schema = TryFromConfig::new(|config, blueprint| to_schema(config).map(|schema| blueprint.schema(schema)));
+
+  let definitions = TryFromConfig::new(|config, blueprint| {
+    to_definitions(config).map(|definitions| blueprint.definitions(definitions))
+  });
+
+  let upstream =
+    TryFromConfig::new(|config, blueprint| to_upstream(config).map(|upstream| blueprint.upstream(upstream)));
+
+  server
+    .and(schema)
+    .and(definitions)
+    .and(upstream)
+    .update(apply_batching)
+    .update(super::compress::compress)
 }
 
-fn to_upstream(upstream: config::Upstream) -> Valid<config::Upstream, String> {
-  if let Some(ref base_url) = upstream.base_url {
-    Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string()))).map_to(upstream)
+fn to_upstream(config: &Config) -> Valid<config::Upstream, String> {
+  if let Some(ref base_url) = config.upstream.base_url {
+    Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
+      .map_to(config.upstream.clone())
   } else {
-    Valid::succeed(upstream)
+    Valid::succeed(config.upstream.clone())
   }
 }
 
@@ -96,11 +105,9 @@ fn to_schema(config: &Config) -> Valid<SchemaDefinition, String> {
     })
 }
 
-fn to_definitions<'a>(
-  config: &Config,
-  output_types: HashSet<&'a String>,
-  input_types: HashSet<&'a String>,
-) -> Valid<Vec<Definition>, String> {
+fn to_definitions<'a>(config: &Config) -> Valid<Vec<Definition>, String> {
+  let output_types = config.output_types();
+  let input_types = config.input_types();
   Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
     let dbl_usage = input_types.contains(name) && output_types.contains(name);
     if let Some(variants) = &type_.variants {
@@ -743,6 +750,6 @@ impl TryFrom<&Config> for Blueprint {
   type Error = ValidationError<String>;
 
   fn try_from(config: &Config) -> Result<Self, Self::Error> {
-    config_blueprint(config).to_result()
+    config_blueprint().try_fold(config, Blueprint::default()).to_result()
   }
 }
