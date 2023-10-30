@@ -35,17 +35,17 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
 
   let schema = to_schema().transform::<Blueprint>(
     |schema, blueprint| blueprint.schema(schema.clone()),
-    |blueprint| blueprint.schema.clone(),
+    |blueprint| blueprint.schema,
   );
 
   let definitions = to_definitions().transform::<Blueprint>(
     |definitions, blueprint| blueprint.definitions(definitions.clone()),
-    |blueprint| blueprint.definitions.clone(),
+    |blueprint| blueprint.definitions,
   );
 
   let upstream = to_upstream().transform::<Blueprint>(
     |upstream, blueprint| blueprint.upstream(upstream.clone()),
-    |blueprint| blueprint.upstream.clone(),
+    |blueprint| blueprint.upstream,
   );
 
   server
