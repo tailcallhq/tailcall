@@ -34,17 +34,17 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
   });
 
   let schema = to_schema().transform::<Blueprint>(
-    |schema, blueprint| blueprint.schema(schema.clone()),
+    |schema, blueprint| blueprint.schema(schema),
     |blueprint| blueprint.schema,
   );
 
   let definitions = to_definitions().transform::<Blueprint>(
-    |definitions, blueprint| blueprint.definitions(definitions.clone()),
+    |definitions, blueprint| blueprint.definitions(definitions),
     |blueprint| blueprint.definitions,
   );
 
   let upstream = to_upstream().transform::<Blueprint>(
-    |upstream, blueprint| blueprint.upstream(upstream.clone()),
+    |upstream, blueprint| blueprint.upstream(upstream),
     |blueprint| blueprint.upstream,
   );
 
@@ -99,7 +99,7 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
 }
 
 fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
-  TryFoldConfig::new(|config, _| {
+  TryFoldConfig::new(|config, schema_definition| {
     validate_query(config)
       .and(validate_mutation(config))
       .and(Valid::from_option(
@@ -111,6 +111,7 @@ fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         query: query_type_name.to_owned(),
         mutation: config.graphql.schema.mutation.clone(),
         directives: vec![directive],
+        ..schema_definition
       })
   })
 }
