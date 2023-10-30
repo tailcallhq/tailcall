@@ -49,6 +49,14 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     TryFold(Box::new(f))
   }
 
+  /// Transforms a TryFold<I, O, E> to TryFold<I, Option<O>, E> by applying transformations.
+  pub fn transform_to_option(self) -> TryFold<'a, I, Option<O>, E>
+  where
+    O: Default,
+  {
+    self.transform::<Option<O>>(|o, _| Some(o), |o1| o1.unwrap_or_default())
+  }
+
   /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying transformations.
   /// Check `transform_valid` if you want to return a `Valid` instead of an `O1`.
   ///
@@ -291,5 +299,21 @@ mod tests {
     let actual = t.try_fold(&2, 3).to_result().unwrap();
     let expected = 6;
     assert_eq!(actual, expected);
+  }
+
+  #[test]
+  fn test_transform_to_option() {
+    let t: TryFold<'_, String, Option<String>, String> = TryFold::succeed(|a: &String, b: String| {
+      let mut s = a.clone();
+      s.push_str(b.as_str());
+      s.to_string()
+    })
+    .transform_to_option();
+    assert_eq!(
+      t.try_fold(&"hello".to_string(), Some(" world".to_string()))
+        .to_result()
+        .unwrap(),
+      Some("hello world".to_string())
+    );
   }
 }

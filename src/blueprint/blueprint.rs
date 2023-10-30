@@ -29,6 +29,12 @@ pub enum Type {
   ListType { of_type: Box<Type>, non_null: bool },
 }
 
+impl Default for Type {
+  fn default() -> Self {
+    Type::NamedType { name: "".to_string(), non_null: false }
+  }
+}
+
 impl Type {
   pub fn name(&self) -> &str {
     match self {
@@ -119,7 +125,7 @@ pub struct InputFieldDefinition {
   pub description: Option<String>,
 }
 
-#[derive(Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters, Default)]
 pub struct FieldDefinition {
   pub name: String,
   pub args: Vec<InputFieldDefinition>,
