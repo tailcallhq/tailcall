@@ -14,7 +14,7 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, InlineType};
+use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -43,9 +43,10 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     |blueprint| blueprint.definitions.clone(),
   );
 
-  let upstream = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
-    to_upstream(config).map(|upstream| blueprint.upstream(upstream))
-  });
+  let upstream = to_upstream().transform::<Blueprint>(
+    |upstream, blueprint| blueprint.upstream(upstream.clone()),
+    |blueprint| blueprint.upstream.clone(),
+  );
 
   server
     .and(schema)
@@ -55,13 +56,15 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     .update(super::compress::compress)
 }
 
-fn to_upstream(config: &Config) -> Valid<config::Upstream, String> {
-  if let Some(ref base_url) = config.upstream.base_url {
-    Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
-      .map_to(config.upstream.clone())
-  } else {
-    Valid::succeed(config.upstream.clone())
-  }
+fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
+  TryFoldConfig::<Upstream>::new(|_, upstream| {
+    if let Some(ref base_url) = upstream.base_url {
+      Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
+        .map_to(upstream.clone())
+    } else {
+      Valid::succeed(upstream.clone())
+    }
+  })
 }
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
