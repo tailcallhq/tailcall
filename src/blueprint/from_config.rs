@@ -350,12 +350,12 @@ fn to_field(
   }
 
   update_args()
-    .and(update_http())
-    .and(update_unsafe())
-    .and(update_const_field())
-    .and(update_inline_field())
+    .and(update_http().trace("@http"))
+    .and(update_unsafe().trace("@unsafe"))
+    .and(update_const_field().trace("@const"))
+    .and(update_inline_field().trace("@inline"))
     .transform_to_option()
-    .and(update_modify())
+    .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), Some(FieldDefinition::default()))
 }
 
@@ -487,7 +487,7 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
         },
         None => Valid::succeed(b_field),
       };
-      result.trace("@http")
+      result
     },
   )
 }
@@ -511,7 +511,7 @@ fn update_modify<'a>(// field: &config::Field,
                   let interface = config.find_type(name);
                   if let Some(interface) = interface {
                     if interface.fields.iter().any(|(name, _)| name == new_name) {
-                      return Valid::fail("Field is already implemented from interface".to_string()).trace("@modify");
+                      return Valid::fail("Field is already implemented from interface".to_string());
                     }
                   }
                 }
@@ -554,7 +554,7 @@ fn update_const_field<'a>(// field: &config::Field,
       }
       None => Valid::succeed(updated_b_field),
     };
-    result.trace("@const")
+    result
   })
 }
 fn is_scalar(type_name: &str) -> bool {
@@ -693,8 +693,8 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
         re.is_match(s)
       });
       if let Some(InlineType { path }) = &field.inline {
-        return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path)
-          .and_then(|of_type| {
+        return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(
+          |of_type| {
             let mut updated_base_field = base_field;
             let resolver = Lambda::context_path(path.clone());
             if has_index {
@@ -705,8 +705,8 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
 
             updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
             Valid::succeed(updated_base_field)
-          })
-          .trace("@inline");
+          },
+        );
       } else {
         Valid::succeed(base_field)
       }

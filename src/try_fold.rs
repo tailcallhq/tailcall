@@ -136,6 +136,19 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   {
     TryFold::new(move |_, _| Valid::fail(e.clone()))
   }
+
+  /// Add trace logging to the fold operation.
+  ///
+  /// # Parameters
+  ///
+  /// * `msg` - The message to log when this fold operation is executed.
+  ///
+  /// # Returns
+  ///
+  /// Returns a new `TryFold` with trace logging added.
+  pub fn trace(self, msg: &'a str) -> Self {
+    TryFold::new(move |i, o| self.try_fold(i, o).trace(msg))
+  }
 }
 
 impl<'a, I, O: Clone, E> FromIterator<TryFold<'a, I, O, E>> for TryFold<'a, I, O, E> {
