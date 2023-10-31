@@ -1,0 +1,42 @@
+#> server-sdl
+schema @server @upstream {
+  query: Query
+}
+
+type Address {
+  city: String
+  street: String
+  zipcode: String
+}
+
+type Query {
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User @field(name: "city", path: ["address", "city"]) @field(name: "street", path: ["address", "street"]) @field(name: "zipcode", path: ["address", "zipcode"]) {
+  address: Address
+  name: String
+}
+
+#> client-sdl
+type Address {
+  city: String
+  street: String
+  zipcode: String
+}
+
+type Query {
+  user: User
+}
+
+type User {
+  address: Address
+  city: String
+  name: String
+  street: String
+  zipcode: String
+}
+
+schema {
+  query: Query
+}

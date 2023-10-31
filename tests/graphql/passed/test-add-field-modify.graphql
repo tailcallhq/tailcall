@@ -1,0 +1,30 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User
+  @field(name: "street", path: ["address", "street"])
+  @field(name: "city", path: ["address", "city"])
+  @field(name: "zipcode", path: ["address", "zipcode"]) {
+  name: String
+  address: Address
+}
+
+type Address {
+  street: String
+  city: String
+  zipcode: String
+}
+
+type Query {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}
+
+#> client-query
+query @expect(json: {data: {user: {name: "Leanne Graham", street: "Kulas Light"}}}) {
+  user {
+    name
+    street
+  }
+}

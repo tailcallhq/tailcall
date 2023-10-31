@@ -1,0 +1,42 @@
+#> server-sdl
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type A {
+  b: B
+}
+
+type B {
+  c: String
+}
+
+type Foo {
+  a: A
+}
+
+type Query @field(name: "b", path: ["foo", "a", "0", "b"]) {
+  foo: [Foo] @http(path: "/foo")
+}
+
+#> client-sdl
+type A {
+  b: B
+}
+
+type B {
+  c: String
+}
+
+type Foo {
+  a: A
+}
+
+type Query {
+  b: B
+  foo: [Foo]
+}
+
+schema {
+  query: Query
+}
