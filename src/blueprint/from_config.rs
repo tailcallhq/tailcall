@@ -236,11 +236,16 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
     additional_fields.insert(added_field.field_info.name.clone(), added_field.field.clone());
   });
   all_fields.append(&mut additional_fields);
-  Valid::from_iter(all_fields.iter().filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)), |(name, field)| {
-    validate_field_type_exist(config, field)
-      .and(to_field(type_of, config, name, field))
-      .trace(name)
-  })
+  Valid::from_iter(
+    all_fields
+      .iter()
+      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    |(name, field)| {
+      validate_field_type_exist(config, field)
+        .and(to_field(type_of, config, name, field))
+        .trace(name)
+    },
+  )
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
