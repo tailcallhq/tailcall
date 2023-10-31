@@ -31,7 +31,7 @@ pub enum Type {
 
 impl Default for Type {
   fn default() -> Self {
-    Type::NamedType { name: "".to_string(), non_null: false }
+    Type::NamedType { name: "JSON".to_string(), non_null: false }
   }
 }
 
