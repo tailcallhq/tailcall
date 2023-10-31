@@ -1,0 +1,23 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+  address: Address
+}
+type Address {
+  city: String
+}
+
+type Query @field(name: "street", path: ["user", "address", "street"]) {
+  user: User @http(path: "/user/1", baseURL: "http://localhost:8000")
+}
+
+#> client-sdl
+type Failure
+  @error(
+    message: "Adding a field can't be done because provided path doesn't exist"
+    trace: ["Query", "street", "@field"]
+  )

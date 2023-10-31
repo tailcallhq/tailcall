@@ -3,8 +3,8 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query {
-  post: Post @http(path: "/posts/1") @inline(path: ["user", "name"])
+type Query @field(name: "name", path: ["post", "user", "name"]) {
+  post: Post @http(path: "/posts/1")
 }
 
 type Post {
@@ -22,4 +22,7 @@ type User {
 
 #> client-sdl
 type Failure
-  @error(message: "Inline can't be done because of const resolver at [Post.user]", trace: ["Query", "post", "@inline"])
+  @error(
+    message: "Add field can't be done because of const resolver at [Post.user]"
+    trace: ["Query", "name", "@field"]
+  )

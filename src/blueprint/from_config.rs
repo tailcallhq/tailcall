@@ -359,7 +359,7 @@ fn to_field(
     .and(update_http().trace("@http"))
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
-    .and(update_inline_field().trace("@inline"))
+    .and(update_inline_field().trace("@field"))
     .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
@@ -606,7 +606,7 @@ fn process_field_within_type(
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
       return Valid::<Type, String>::fail(format!(
-        "Inline can't be done because of {} resolver at [{}.{}]",
+        "Add field can't be done because of {} resolver at [{}.{}]",
         {
           let next_dir_http = next_field.http.as_ref().map(|_| "http");
           let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
@@ -670,7 +670,7 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
     |(config, field, type_info, _), base_field| {
       let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
       let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
-        Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
+        Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
       };
       let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
