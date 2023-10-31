@@ -51,19 +51,19 @@ impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
-    validate_hostname((&config_server).get_hostname().to_lowercase())
-      .zip(handle_response_headers((&config_server).get_response_headers().0))
+    validate_hostname((config_server).get_hostname().to_lowercase())
+      .zip(handle_response_headers((config_server).get_response_headers().0))
       .map(|(hostname, response_headers)| Server {
-        enable_apollo_tracing: (&config_server).enable_apollo_tracing(),
-        enable_cache_control_header: (&config_server).enable_cache_control(),
-        enable_graphiql: (&config_server).enable_graphiql(),
-        enable_introspection: (&config_server).enable_introspection(),
-        enable_query_validation: (&config_server).enable_query_validation(),
-        enable_response_validation: (&config_server).enable_http_validation(),
-        global_response_timeout: (&config_server).get_global_response_timeout(),
-        port: (&config_server).get_port(),
+        enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+        enable_cache_control_header: (config_server).enable_cache_control(),
+        enable_graphiql: (config_server).enable_graphiql(),
+        enable_introspection: (config_server).enable_introspection(),
+        enable_query_validation: (config_server).enable_query_validation(),
+        enable_response_validation: (config_server).enable_http_validation(),
+        global_response_timeout: (config_server).get_global_response_timeout(),
+        port: (config_server).get_port(),
         hostname,
-        vars: (&config_server).get_vars(),
+        vars: (config_server).get_vars(),
         response_headers,
       })
       .to_result()
