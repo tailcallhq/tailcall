@@ -228,12 +228,17 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
-  Valid::from_iter(type_of.fields.iter(), |(name, field)| {
-    validate_field_type_exist(config, field)
-      .and(to_field(type_of, config, name, field))
-      .trace(name)
-  })
-  .map(|fields| fields.into_iter().flatten().collect())
+  Valid::from_iter(
+    type_of
+      .fields
+      .iter()
+      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    |(name, field)| {
+      validate_field_type_exist(config, field)
+        .and(to_field(type_of, config, name, field))
+        .trace(name)
+    },
+  )
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
@@ -342,7 +347,7 @@ fn to_field(
   config: &Config,
   name: &str,
   field: &Field,
-) -> Valid<Option<blueprint::FieldDefinition>, String> {
+) -> Valid<blueprint::FieldDefinition, String> {
   let directives = field.resolvable_directives();
   if directives.len() > 1 {
     return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
@@ -353,9 +358,8 @@ fn to_field(
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
     .and(update_inline_field().trace("@inline"))
-    .transform(|o, _| Some(o), |o1| o1.unwrap_or_default())
     .and(update_modify().trace("@modify"))
-    .try_fold(&(config, field, type_of, name), Some(FieldDefinition::default()))
+    .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
 
 fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> Type {
@@ -486,38 +490,27 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
     },
   )
 }
-fn update_modify<'a>(
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), Option<FieldDefinition>, String> {
-  TryFold::<(&Config, &Field, &config::Type, &'a str), Option<FieldDefinition>, String>::new(
-    |(config, field, type_of, _), b_field_opt| match b_field_opt {
-      Some(b_field) => {
-        let mut updated_b_field = b_field;
-        match field.modify.as_ref() {
-          Some(modify) => {
-            if modify.omit {
-              Valid::succeed(None)
-            } else if let Some(new_name) = &modify.name {
-              for name in type_of.implements.iter() {
-                let interface = config.find_type(name);
-                if let Some(interface) = interface {
-                  if interface.fields.iter().any(|(name, _)| name == new_name) {
-                    return Valid::fail("Field is already implemented from interface".to_string());
-                  }
-                }
-              }
 
-              let lambda = Lambda::context_field(updated_b_field.name.clone());
-              updated_b_field = updated_b_field.resolver_or_default(lambda, |r| r);
-              updated_b_field = updated_b_field.name(new_name.clone());
-              Valid::succeed(Some(updated_b_field))
-            } else {
-              Valid::succeed(Some(updated_b_field))
+fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    |(config, field, type_of, _), mut b_field| {
+      if let Some(modify) = field.modify.as_ref() {
+        if let Some(new_name) = &modify.name {
+          for name in type_of.implements.iter() {
+            let interface = config.find_type(name);
+            if let Some(interface) = interface {
+              if interface.fields.iter().any(|(name, _)| name == new_name) {
+                return Valid::fail("Field is already implemented from interface".to_string());
+              }
             }
           }
-          None => Valid::succeed(Some(updated_b_field)),
+
+          let lambda = Lambda::context_field(b_field.name.clone());
+          b_field = b_field.resolver_or_default(lambda, |r| r);
+          b_field = b_field.name(new_name.clone());
         }
       }
-      None => Valid::succeed(None),
+      Valid::succeed(b_field)
     },
   )
 }
