@@ -62,6 +62,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_query_validation: (config_server).enable_query_validation(),
         enable_response_validation: (config_server).enable_http_validation(),
         global_response_timeout: (config_server).get_global_response_timeout(),
+        worker: (config_server).get_worker(),
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),
@@ -101,25 +102,6 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
   .trace("responseHeaders")
   .trace("@server")
   .trace("schema")
-}
-
-fn configure_server(config_config: &config::Server) -> Valid<Server, String> {
-  validate_hostname(config_config.get_hostname().to_lowercase())
-    .zip(handle_response_headers(config_config.get_response_headers().0))
-    .map(|(hostname, response_headers)| Server {
-      enable_apollo_tracing: config_config.enable_apollo_tracing(),
-      enable_cache_control_header: config_config.enable_cache_control(),
-      enable_graphiql: config_config.enable_graphiql(),
-      enable_introspection: config_config.enable_introspection(),
-      enable_query_validation: config_config.enable_query_validation(),
-      enable_response_validation: config_config.enable_http_validation(),
-      global_response_timeout: config_config.get_global_response_timeout(),
-      worker: config_config.get_worker(),
-      port: config_config.get_port(),
-      hostname,
-      vars: config_config.get_vars(),
-      response_headers,
-    })
 }
 
 #[cfg(test)]
