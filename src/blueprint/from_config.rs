@@ -426,66 +426,63 @@ fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, 
 
 fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, type_of, _), b_field| {
-      let result = match field.http.as_ref() {
-        Some(http) => match http
-          .base_url
-          .as_ref()
-          .map_or_else(|| config.upstream.base_url.as_ref(), Some)
-        {
-          Some(base_url) => {
-            let mut base_url = base_url.clone();
-            if base_url.ends_with('/') {
-              base_url.pop();
-            }
-            base_url.push_str(http.path.clone().as_str());
-            let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-            let output_schema = to_json_schema_for_field(field, config);
-            let input_schema = to_json_schema_for_args(&field.args, config);
-
-            Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-              .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-              .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
-                let name =
-                  Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
-
-                let value =
-                  Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
-
-                name.zip(value).map(|(name, value)| (name, value))
-              }))
-              .map(HeaderMap::from_iter)
-              .and_then(|header_map| {
-                RequestTemplate::try_from(
-                  Endpoint::new(base_url.to_string())
-                    .method(http.method.clone())
-                    .query(query)
-                    .output(output_schema)
-                    .input(input_schema)
-                    .body(http.body.clone())
-                    .headers(header_map),
-                )
-                .map_err(|e| ValidationError::new(e.to_string()))
-                .into()
-              })
-              .map(|req_template| {
-                if !http.group_by.is_empty() && http.method == Method::GET {
-                  b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
-                    req_template,
-                    Some(GroupBy::new(http.group_by.clone())),
-                    None,
-                  ))))
-                } else {
-                  b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
-                }
-              })
-              .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
+    |(config, field, type_of, _), b_field| match field.http.as_ref() {
+      Some(http) => match http
+        .base_url
+        .as_ref()
+        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
+      {
+        Some(base_url) => {
+          let mut base_url = base_url.clone();
+          if base_url.ends_with('/') {
+            base_url.pop();
           }
-          None => Valid::fail("No base URL defined".to_string()),
-        },
-        None => Valid::succeed(b_field),
-      };
-      result
+          base_url.push_str(http.path.clone().as_str());
+          let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+          let output_schema = to_json_schema_for_field(field, config);
+          let input_schema = to_json_schema_for_args(&field.args, config);
+
+          Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
+            .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+            .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
+              let name =
+                Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
+
+              let value =
+                Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
+
+              name.zip(value).map(|(name, value)| (name, value))
+            }))
+            .map(HeaderMap::from_iter)
+            .and_then(|header_map| {
+              RequestTemplate::try_from(
+                Endpoint::new(base_url.to_string())
+                  .method(http.method.clone())
+                  .query(query)
+                  .output(output_schema)
+                  .input(input_schema)
+                  .body(http.body.clone())
+                  .headers(header_map),
+              )
+              .map_err(|e| ValidationError::new(e.to_string()))
+              .into()
+            })
+            .map(|req_template| {
+              if !http.group_by.is_empty() && http.method == Method::GET {
+                b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
+                  req_template,
+                  Some(GroupBy::new(http.group_by.clone())),
+                  None,
+                ))))
+              } else {
+                b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+              }
+            })
+            .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
+        }
+        None => Valid::fail("No base URL defined".to_string()),
+      },
+      None => Valid::succeed(b_field),
     },
   )
 }
@@ -528,7 +525,7 @@ fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::T
 {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(config, field, _, _), b_field| {
     let mut updated_b_field = b_field;
-    let result = match field.const_field.as_ref() {
+    match field.const_field.as_ref() {
       Some(const_field) => {
         let data = const_field.data.to_owned();
         match ConstValue::from_json(data.to_owned()) {
@@ -543,8 +540,7 @@ fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::T
         }
       }
       None => Valid::succeed(updated_b_field),
-    };
-    result
+    }
   })
 }
 fn is_scalar(type_name: &str) -> bool {
