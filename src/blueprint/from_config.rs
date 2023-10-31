@@ -99,7 +99,7 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
 }
 
 fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
-  TryFoldConfig::new(|config, schema_definition| {
+  TryFoldConfig::new(|config, _| {
     validate_query(config)
       .and(validate_mutation(config))
       .and(Valid::from_option(
@@ -111,7 +111,6 @@ fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         query: query_type_name.to_owned(),
         mutation: config.graphql.schema.mutation.clone(),
         directives: vec![directive],
-        ..schema_definition
       })
   })
 }
@@ -413,8 +412,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn update_unsafe<'a>(/*field: config::Field, mut b_field: FieldDefinition*/
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, _), b_field| {
     let mut updated_b_field = b_field;
     if let Some(op) = &field.unsafe_operation {
@@ -491,51 +489,43 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
     },
   )
 }
-fn update_modify<'a>(// field: &config::Field,
-  // mut b_field: FieldDefinition,
-  // type_: &config::Type,
-  // config: &Config,
+fn update_modify<'a>(
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), Option<FieldDefinition>, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), Option<FieldDefinition>, String>::new(
-    |(config, field, type_of, _), b_field_opt| {
-      // -> Valid<Option<FieldDefinition>, String> {
-      match b_field_opt {
-        Some(b_field) => {
-          let mut updated_b_field = b_field;
-          match field.modify.as_ref() {
-            Some(modify) => {
-              if modify.omit {
-                Valid::succeed(None)
-              } else if let Some(new_name) = &modify.name {
-                for name in type_of.implements.iter() {
-                  let interface = config.find_type(name);
-                  if let Some(interface) = interface {
-                    if interface.fields.iter().any(|(name, _)| name == new_name) {
-                      return Valid::fail("Field is already implemented from interface".to_string());
-                    }
+    |(config, field, type_of, _), b_field_opt| match b_field_opt {
+      Some(b_field) => {
+        let mut updated_b_field = b_field;
+        match field.modify.as_ref() {
+          Some(modify) => {
+            if modify.omit {
+              Valid::succeed(None)
+            } else if let Some(new_name) = &modify.name {
+              for name in type_of.implements.iter() {
+                let interface = config.find_type(name);
+                if let Some(interface) = interface {
+                  if interface.fields.iter().any(|(name, _)| name == new_name) {
+                    return Valid::fail("Field is already implemented from interface".to_string());
                   }
                 }
-
-                let lambda = Lambda::context_field(updated_b_field.name.clone());
-                updated_b_field = updated_b_field.resolver_or_default(lambda, |r| r);
-                updated_b_field = updated_b_field.name(new_name.clone());
-                Valid::succeed(Some(updated_b_field))
-              } else {
-                Valid::succeed(Some(updated_b_field))
               }
+
+              let lambda = Lambda::context_field(updated_b_field.name.clone());
+              updated_b_field = updated_b_field.resolver_or_default(lambda, |r| r);
+              updated_b_field = updated_b_field.name(new_name.clone());
+              Valid::succeed(Some(updated_b_field))
+            } else {
+              Valid::succeed(Some(updated_b_field))
             }
-            None => Valid::succeed(Some(updated_b_field)),
           }
+          None => Valid::succeed(Some(updated_b_field)),
         }
-        None => Valid::succeed(None),
       }
+      None => Valid::succeed(None),
     },
   )
 }
-fn update_const_field<'a>(// field: &config::Field,
-  // mut b_field: FieldDefinition,
-  // config: &Config,
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(config, field, _, _), b_field| {
     let mut updated_b_field = b_field;
     let result = match field.const_field.as_ref() {
