@@ -354,7 +354,7 @@ fn to_field(
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
     .and(update_inline_field().trace("@inline"))
-    .transform_to_option()
+    .transform(|o, _| Some(o), |o1| o1.unwrap_or_default())
     .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), Some(FieldDefinition::default()))
 }
