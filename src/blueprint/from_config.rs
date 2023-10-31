@@ -99,7 +99,7 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
 }
 
 fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
-  TryFoldConfig::new(|config, schema_definition| {
+  TryFoldConfig::new(|config, _| {
     validate_query(config)
       .and(validate_mutation(config))
       .and(Valid::from_option(
@@ -111,7 +111,6 @@ fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         query: query_type_name.to_owned(),
         mutation: config.graphql.schema.mutation.clone(),
         directives: vec![directive],
-        ..schema_definition
       })
   })
 }
@@ -229,12 +228,17 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
-  Valid::from_iter(type_of.fields.iter(), |(name, field)| {
-    validate_field_type_exist(config, field)
-      .and(to_field(type_of, config, name, field))
-      .trace(name)
-  })
-  .map(|fields| fields.into_iter().flatten().collect())
+  Valid::from_iter(
+    type_of
+      .fields
+      .iter()
+      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    |(name, field)| {
+      validate_field_type_exist(config, field)
+        .and(to_field(type_of, config, name, field))
+        .trace(name)
+    },
+  )
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
@@ -343,30 +347,19 @@ fn to_field(
   config: &Config,
   name: &str,
   field: &Field,
-) -> Valid<Option<blueprint::FieldDefinition>, String> {
+) -> Valid<blueprint::FieldDefinition, String> {
   let directives = field.resolvable_directives();
   if directives.len() > 1 {
     return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
   }
 
-  let field_type = &field.type_of;
-  to_args(field).and_then(|args| {
-    let field_definition = FieldDefinition {
-      name: name.to_owned(),
-      description: field.doc.clone(),
-      args,
-      of_type: to_type(field_type, field.list, field.required, field.list_type_required),
-      directives: Vec::new(),
-      resolver: None,
-    };
-
-    update_http(field, field_definition, type_of, config)
-      .trace("@http")
-      .map(|field_definition| update_unsafe(field.clone(), field_definition))
-      .and_then(|field_definition| update_const_field(field, field_definition, config).trace("@const"))
-      .and_then(|field_definition| update_inline_field(type_of, field, field_definition, config).trace("@inline"))
-      .and_then(|field_definition| update_modify(field, field_definition, type_of, config).trace("@modify"))
-  })
+  update_args()
+    .and(update_http().trace("@http"))
+    .and(update_unsafe().trace("@unsafe"))
+    .and(update_const_field().trace("@const"))
+    .and(update_inline_field().trace("@inline"))
+    .and(update_modify().trace("@modify"))
+    .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
 
 fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> Type {
@@ -423,131 +416,125 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn update_unsafe(field: config::Field, mut b_field: FieldDefinition) -> FieldDefinition {
-  if let Some(op) = field.unsafe_operation {
-    b_field = b_field.resolver_or_default(Lambda::context().to_unsafe_js(op.script.clone()), |r| {
-      r.to_unsafe_js(op.script.clone())
-    });
-  }
-  b_field
+fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, _), b_field| {
+    let mut updated_b_field = b_field;
+    if let Some(op) = &field.unsafe_operation {
+      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(op.script.clone()), |r| {
+        r.to_unsafe_js(op.script.clone())
+      });
+    }
+    Valid::succeed(updated_b_field)
+  })
 }
 
-fn update_http(
-  field: &config::Field,
-  b_field: FieldDefinition,
-  type_of: &config::Type,
-  config: &Config,
-) -> Valid<FieldDefinition, String> {
-  match field.http.as_ref() {
-    Some(http) => match http
-      .base_url
-      .as_ref()
-      .map_or_else(|| config.upstream.base_url.as_ref(), Some)
-    {
-      Some(base_url) => {
-        let mut base_url = base_url.clone();
-        if base_url.ends_with('/') {
-          base_url.pop();
+fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    |(config, field, type_of, _), b_field| match field.http.as_ref() {
+      Some(http) => match http
+        .base_url
+        .as_ref()
+        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
+      {
+        Some(base_url) => {
+          let mut base_url = base_url.clone();
+          if base_url.ends_with('/') {
+            base_url.pop();
+          }
+          base_url.push_str(http.path.clone().as_str());
+          let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+          let output_schema = to_json_schema_for_field(field, config);
+          let input_schema = to_json_schema_for_args(&field.args, config);
+
+          Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
+            .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+            .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
+              let name =
+                Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
+
+              let value =
+                Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
+
+              name.zip(value).map(|(name, value)| (name, value))
+            }))
+            .map(HeaderMap::from_iter)
+            .and_then(|header_map| {
+              RequestTemplate::try_from(
+                Endpoint::new(base_url.to_string())
+                  .method(http.method.clone())
+                  .query(query)
+                  .output(output_schema)
+                  .input(input_schema)
+                  .body(http.body.clone())
+                  .headers(header_map),
+              )
+              .map_err(|e| ValidationError::new(e.to_string()))
+              .into()
+            })
+            .map(|req_template| {
+              if !http.group_by.is_empty() && http.method == Method::GET {
+                b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
+                  req_template,
+                  Some(GroupBy::new(http.group_by.clone())),
+                  None,
+                ))))
+              } else {
+                b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+              }
+            })
+            .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
         }
-        base_url.push_str(http.path.clone().as_str());
-        let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-        let output_schema = to_json_schema_for_field(field, config);
-        let input_schema = to_json_schema_for_args(&field.args, config);
-
-        Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-          .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-          .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
-            let name =
-              Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
-
-            let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
-
-            name.zip(value).map(|(name, value)| (name, value))
-          }))
-          .map(HeaderMap::from_iter)
-          .and_then(|header_map| {
-            RequestTemplate::try_from(
-              Endpoint::new(base_url.to_string())
-                .method(http.method.clone())
-                .query(query)
-                .output(output_schema)
-                .input(input_schema)
-                .body(http.body.clone())
-                .headers(header_map),
-            )
-            .map_err(|e| ValidationError::new(e.to_string()))
-            .into()
-          })
-          .map(|req_template| {
-            if !http.group_by.is_empty() && http.method == Method::GET {
-              b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
-                req_template,
-                Some(GroupBy::new(http.group_by.clone())),
-                None,
-              ))))
-            } else {
-              b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
-            }
-          })
-          .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
-      }
-      None => Valid::fail("No base URL defined".to_string()),
+        None => Valid::fail("No base URL defined".to_string()),
+      },
+      None => Valid::succeed(b_field),
     },
-    None => Valid::succeed(b_field),
-  }
+  )
 }
-fn update_modify(
-  field: &config::Field,
-  mut b_field: FieldDefinition,
-  type_: &config::Type,
-  config: &Config,
-) -> Valid<Option<FieldDefinition>, String> {
-  match field.modify.as_ref() {
-    Some(modify) => {
-      if modify.omit {
-        Valid::succeed(None)
-      } else if let Some(new_name) = &modify.name {
-        for name in type_.implements.iter() {
-          let interface = config.find_type(name);
-          if let Some(interface) = interface {
-            if interface.fields.iter().any(|(name, _)| name == new_name) {
-              return Valid::fail("Field is already implemented from interface".to_string());
+
+fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    |(config, field, type_of, _), mut b_field| {
+      if let Some(modify) = field.modify.as_ref() {
+        if let Some(new_name) = &modify.name {
+          for name in type_of.implements.iter() {
+            let interface = config.find_type(name);
+            if let Some(interface) = interface {
+              if interface.fields.iter().any(|(name, _)| name == new_name) {
+                return Valid::fail("Field is already implemented from interface".to_string());
+              }
             }
           }
-        }
 
-        let lambda = Lambda::context_field(b_field.name.clone());
-        b_field = b_field.resolver_or_default(lambda, |r| r);
-        b_field = b_field.name(new_name.clone());
-        Valid::succeed(Some(b_field))
-      } else {
-        Valid::succeed(Some(b_field))
+          let lambda = Lambda::context_field(b_field.name.clone());
+          b_field = b_field.resolver_or_default(lambda, |r| r);
+          b_field = b_field.name(new_name.clone());
+        }
       }
-    }
-    None => Valid::succeed(Some(b_field)),
-  }
+      Valid::succeed(b_field)
+    },
+  )
 }
-fn update_const_field(
-  field: &config::Field,
-  mut b_field: FieldDefinition,
-  config: &Config,
-) -> Valid<FieldDefinition, String> {
-  match field.const_field.as_ref() {
-    Some(const_field) => {
-      let data = const_field.data.to_owned();
-      match ConstValue::from_json(data.to_owned()) {
-        Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
-          Ok(_) => {
-            b_field.resolver = Some(Literal(data));
-            Valid::succeed(b_field)
-          }
-          Err(err) => Valid::from_validation_err(err.transform(|a| a.to_owned())),
-        },
-        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(config, field, _, _), b_field| {
+    let mut updated_b_field = b_field;
+    match field.const_field.as_ref() {
+      Some(const_field) => {
+        let data = const_field.data.to_owned();
+        match ConstValue::from_json(data.to_owned()) {
+          Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
+            Ok(_) => {
+              updated_b_field.resolver = Some(Literal(data));
+              Valid::succeed(updated_b_field)
+            }
+            Err(err) => Valid::from_validation_err(err.transform(|a| a.to_owned())),
+          },
+          Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+        }
       }
+      None => Valid::succeed(updated_b_field),
     }
-    None => Valid::succeed(b_field),
-  }
+  })
 }
 fn is_scalar(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
@@ -672,44 +659,62 @@ fn process_field_within_type(
 }
 
 // Main function to update an inline field
-fn update_inline_field(
-  type_info: &config::Type,
-  field: &config::Field,
-  base_field: FieldDefinition,
-  config: &Config,
-) -> Valid<FieldDefinition, String> {
-  let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
-  let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
-    Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
-  };
-  let has_index = inlined_path.iter().any(|s| {
-    let re = Regex::new(r"^\d+$").unwrap();
-    re.is_match(s)
-  });
-  if let Some(InlineType { path }) = field.clone().inline {
-    return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(|of_type| {
-      let mut updated_base_field = base_field;
-      let resolver = Lambda::context_path(path.clone());
-      if has_index {
-        updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-      } else {
-        updated_base_field.of_type = of_type;
-      }
+fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+    |(config, field, type_info, _), base_field| {
+      let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
+      let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
+        Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
+      };
+      let has_index = inlined_path.iter().any(|s| {
+        let re = Regex::new(r"^\d+$").unwrap();
+        re.is_match(s)
+      });
+      if let Some(InlineType { path }) = &field.inline {
+        return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(
+          |of_type| {
+            let mut updated_base_field = base_field;
+            let resolver = Lambda::context_path(path.clone());
+            if has_index {
+              updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+            } else {
+              updated_base_field.of_type = of_type;
+            }
 
-      updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-      Valid::succeed(updated_base_field)
-    });
-  }
-  Valid::succeed(base_field)
+            updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
+            Valid::succeed(updated_base_field)
+          },
+        );
+      } else {
+        Valid::succeed(base_field)
+      }
+    },
+  )
 }
-fn to_args(field: &config::Field) -> Valid<Vec<InputFieldDefinition>, String> {
-  // TODO! assert type name
-  Valid::from_iter(field.args.iter(), |(name, arg)| {
-    Valid::succeed(InputFieldDefinition {
-      name: name.clone(),
-      description: arg.doc.clone(),
-      of_type: to_type(&arg.type_of, arg.list, arg.required, false),
-      default_value: arg.default_value.clone(),
+fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, name), _| {
+    // TODO! assert type name
+    Valid::from_iter(field.args.iter(), |(name, arg)| {
+      Valid::succeed(InputFieldDefinition {
+        name: name.clone(),
+        description: arg.doc.clone(),
+        of_type: to_type(&arg.type_of, arg.list, arg.required, false),
+        default_value: arg.default_value.clone(),
+      })
+    })
+    .map(|args| FieldDefinition {
+      name: name.to_string(),
+      description: field.doc.clone(),
+      args,
+      of_type: to_type(
+        field.type_of.as_str(),
+        field.list,
+        field.required,
+        field.list_type_required,
+      ),
+      directives: Vec::new(),
+      resolver: None,
     })
   })
 }
