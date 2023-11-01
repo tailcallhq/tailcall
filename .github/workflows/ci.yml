@@ -136,31 +136,31 @@ jobs:
           - build: linux-x86_64-gnu
             os: ubuntu-latest
             rust: stable
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-linux-gnu
             cross: false
 
           - build: linux-x86_64-musl
             os: ubuntu-latest
             rust: stable
-            target: x86_64-unknown-linux-musl
+            target: x86_64-linux-musl
             cross: true
 
           - build: linux-aarch64-gnu
             os: ubuntu-latest
             rust: stable
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-linux-gnu
             cross: true
 
           - build: linux-aarch64-musl
             os: ubuntu-latest
             rust: stable
-            target: aarch64-unknown-linux-musl
+            target: aarch64-linux-musl
             cross: true
 
           - build: linux-i686-gnu
             os: ubuntu-latest
             rust: stable
-            target: i686-unknown-linux-gnu
+            target: i686-linux-gnu
             cross: true
 
           - build: apple-arm64
@@ -202,9 +202,31 @@ jobs:
       - name: Rename Binary with Target Name
         run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
+      # Copy the CLI binary and rename it to include the name of the target platform
+      - name: Copy CLI binary
+        id: copy-cli
+        run: |
+          cp target/${{ matrix.target }}/release/tailcall ./npm/${{ matrix.target }}
+
       - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
           overwrite: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Generate npm packages
+        run: cd npm/tailcall && npm run gen
+        env: APP_VERSION=${{ needs.draft_release.outputs.create_release_name }}
+
+      - name: Publish npm packages as latest
+        # CD to package and publish and move back to top-level folder
+        run: for package in npm/*; do pushd $package; npm publish --tag latest --access public --provenance; popd; done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
