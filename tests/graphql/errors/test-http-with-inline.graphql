@@ -1,0 +1,25 @@
+#> server-sdl
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  post: Post @http(path: "/posts/1") @http(path: "/users/{{value.userId}}") @inline(path: ["user", "name"])
+}
+
+type Post {
+  id: Int
+  title: String
+  body: String
+  userId: Int!
+  user: User @http(path: "/users/{{value.userId}}")
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Inline can't be done because of http resolver at [Post.user]", trace: ["Query", "post", "@inline"])

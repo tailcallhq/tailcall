@@ -1,0 +1,17 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+}
+
+type Query {
+  username: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com") @inline(path: ["0", "name"])
+}
+
+#> client-query
+query @expect(json: {data: {username: "Leanne Graham"}}) {
+  username
+}

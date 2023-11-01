@@ -1,0 +1,20 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+  address: Address
+}
+type Address {
+  city: String
+}
+
+type Query {
+  user: User @http(path: "/user/1", baseURL: "http://localhost:8000") @inline(path: ["address", "street"])
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Inline can't be done because provided path doesn't exist", trace: ["Query", "user", "@inline"])

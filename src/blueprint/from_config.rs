@@ -14,7 +14,7 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
+use crate::config::{AddedFieldType, Arg, Batch, Config, Field, InlineType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -364,7 +364,8 @@ fn to_field(
     .and(update_http().trace("@http"))
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
-    .and(update_inline_field().trace("@field"))
+    .and(update_inline_field().trace("@inline"))
+    .and(update_added_field().trace("@field"))
     .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
@@ -548,6 +549,7 @@ fn is_scalar(type_name: &str) -> bool {
 }
 
 type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
+type PathResolverErrorHandler = dyn Fn(&str, &str, &str) -> Valid<Type, String>;
 
 // Helper function to recursively process the path and return the corresponding type
 fn process_path(
@@ -557,6 +559,7 @@ fn process_path(
   is_required: bool,
   config: &Config,
   invalid_path_handler: &InvalidPathHandler,
+  path_resolver_error_handler: &PathResolverErrorHandler,
 ) -> Valid<Type, String> {
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
@@ -569,6 +572,7 @@ fn process_path(
         false,
         config,
         invalid_path_handler,
+        path_resolver_error_handler,
       );
     }
     let target_type_info = type_info
@@ -586,6 +590,7 @@ fn process_path(
         is_required,
         config,
         invalid_path_handler,
+        path_resolver_error_handler,
       );
     }
     return invalid_path_handler(field_name, path);
@@ -607,19 +612,17 @@ fn process_field_within_type(
   is_required: bool,
   config: &Config,
   invalid_path_handler: &InvalidPathHandler,
+  path_resolver_error_handler: &PathResolverErrorHandler,
 ) -> Valid<Type, String> {
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
-      return Valid::<Type, String>::fail(format!(
-        "Add field can't be done because of {} resolver at [{}.{}]",
-        {
-          let next_dir_http = next_field.http.as_ref().map(|_| "http");
-          let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
-          next_dir_http.or(next_dir_const).unwrap_or("unsafe")
-        },
-        field.type_of,
-        field_name
-      ))
+      let next_dir_http = next_field.http.as_ref().map(|_| "http");
+      let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
+      return path_resolver_error_handler(
+        next_dir_http.or(next_dir_const).unwrap_or("unsafe"),
+        &field.type_of,
+        field_name,
+      )
       .and(process_path(
         remaining_path,
         next_field,
@@ -627,6 +630,7 @@ fn process_field_within_type(
         is_required,
         config,
         invalid_path_handler,
+        path_resolver_error_handler,
       ));
     }
 
@@ -639,6 +643,7 @@ fn process_field_within_type(
         next_is_required,
         config,
         invalid_path_handler,
+        path_resolver_error_handler,
       );
     }
 
@@ -650,6 +655,7 @@ fn process_field_within_type(
         next_is_required,
         config,
         invalid_path_handler,
+        path_resolver_error_handler,
       )
       .and_then(|of_type| {
         if next_field.list {
@@ -661,7 +667,15 @@ fn process_field_within_type(
     }
   } else if let Some((head, tail)) = remaining_path.split_first() {
     if let Some(field) = type_info.fields.get(head) {
-      return process_path(tail, field, type_info, is_required, config, invalid_path_handler);
+      return process_path(
+        tail,
+        field,
+        type_info,
+        is_required,
+        config,
+        invalid_path_handler,
+        path_resolver_error_handler,
+      );
     }
   }
 
@@ -675,27 +689,88 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
     |(config, field, type_info, _), base_field| {
       let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
       let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
-        Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
+        Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
       };
+      let path_resolver_error_handler =
+        |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
+          Valid::<Type, String>::fail(format!(
+            "Inline can't be done because of {} resolver at [{}.{}]",
+            resolver_name, field_type, field_name
+          ))
+        };
       let has_index = inlined_path.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
       });
       if let Some(InlineType { path }) = &field.inline {
-        return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(
-          |of_type| {
-            let mut updated_base_field = base_field;
-            let resolver = Lambda::context_path(path.clone());
-            if has_index {
-              updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-            } else {
-              updated_base_field.of_type = of_type;
-            }
+        return process_path(
+          &inlined_path,
+          field,
+          type_info,
+          false,
+          config,
+          &handle_invalid_path,
+          &path_resolver_error_handler,
+        )
+        .and_then(|of_type| {
+          let mut updated_base_field = base_field;
+          let resolver = Lambda::context_path(path.clone());
+          if has_index {
+            updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+          } else {
+            updated_base_field.of_type = of_type;
+          }
 
-            updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-            Valid::succeed(updated_base_field)
-          },
-        );
+          updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
+          Valid::succeed(updated_base_field)
+        });
+      } else {
+        Valid::succeed(base_field)
+      }
+    },
+  )
+}
+fn update_added_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+    |(config, field, type_info, _), base_field| {
+      let inlined_path = field.added_field.as_ref().map(|x| x.path.clone()).unwrap_or_default();
+      let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
+        Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
+      };
+      let path_resolver_error_handler =
+        |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
+          Valid::<Type, String>::fail(format!(
+            "Add field can't be done because of {} resolver at [{}.{}]",
+            resolver_name, field_type, field_name
+          ))
+        };
+      let has_index = inlined_path.iter().any(|s| {
+        let re = Regex::new(r"^\d+$").unwrap();
+        re.is_match(s)
+      });
+      if let Some(AddedFieldType { path }) = &field.added_field {
+        return process_path(
+          &inlined_path,
+          field,
+          type_info,
+          false,
+          config,
+          &handle_invalid_path,
+          &path_resolver_error_handler,
+        )
+        .and_then(|of_type| {
+          let mut updated_base_field = base_field;
+          let resolver = Lambda::context_path(path.clone());
+          if has_index {
+            updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+          } else {
+            updated_base_field.of_type = of_type;
+          }
+
+          updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
+          Valid::succeed(updated_base_field)
+        });
       } else {
         Valid::succeed(base_field)
       }
