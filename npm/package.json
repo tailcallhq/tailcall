@@ -1,0 +1,15 @@
+{
+  "name": "tailcall-npm-generator",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "gen": "node ./generate.js"
+  },
+  "dependencies": {
+    "yaml": "^2.3.3",
+    "yml": "^1.0.0"
+  },
+  "workspaces": [
+    "@tailcallhq/*"
+  ]
+}

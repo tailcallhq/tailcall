@@ -8,3 +8,5 @@
 .direnv
 .envrc
 .env
+
+npm/@tailcallhq
