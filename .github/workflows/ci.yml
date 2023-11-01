@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
+  release:
+    types: [published]
 jobs:
   check_if_build:
     name: Check if Build
@@ -25,7 +27,7 @@ jobs:
 
   test:
     name: Run Tests
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    #    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +64,7 @@ jobs:
 
   format:
     name: Run Formatter and Lint Check
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    #    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Install Node.js
@@ -208,3 +210,33 @@ jobs:
       #     release_id: ${{ needs.draft_release.outputs.create_release_id }}
       #     file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
       #     overwrite: true
+  publish_npm:
+    name: Publish NPM main package
+    #    needs: release
+    #    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+      - name: Install dependencies
+        run: |
+          cd npm
+          npm install
+
+      - name: Run generate.js script
+        run: npm run gen
+
+      - name: Publish packages
+        run: |
+          packages=($(ls npm/@tailcallhq))
+          cd npm/@tailcallhq/server
+          npm publish --access public
+          cd -
+
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
