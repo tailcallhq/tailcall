@@ -17,7 +17,4 @@ type Query @field(name: "street", path: ["user", "address", "street"]) {
 
 #> client-sdl
 type Failure
-  @error(
-    message: "Adding a field can't be done because provided path doesn't exist"
-    trace: ["Query", "street", "@field"]
-  )
+  @error(message: "Adding a field can't be done because provided path doesn't exist", trace: ["Query", "@field"])

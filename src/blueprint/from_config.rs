@@ -229,15 +229,9 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
-  let mut all_fields: BTreeMap<String, Field> = BTreeMap::new();
-  all_fields.append(&mut type_of.fields.clone());
-  let mut additional_fields = BTreeMap::new();
-  type_of.added_fields.iter().for_each(|added_field| {
-    additional_fields.insert(added_field.field_info.name.clone(), added_field.field.clone());
-  });
-  all_fields.append(&mut additional_fields);
-  Valid::from_iter(
-    all_fields
+  let fields = Valid::from_iter(
+    type_of
+      .fields
       .iter()
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
     |(name, field)| {
@@ -245,7 +239,26 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
         .and(to_field(type_of, config, name, field))
         .trace(name)
     },
-  )
+  );
+  let added_fields = Valid::from_iter(
+    type_of
+      .added_fields
+      .iter()
+      .filter(|added_field| added_field.field.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    |added_field| {
+      validate_field_type_exist(config, &added_field.field).and(to_field(
+        type_of,
+        config,
+        &added_field.field_info.name,
+        &added_field.field,
+      ))
+    },
+  );
+
+  fields.zip(added_fields).map(|(mut fields, added_fields)| {
+    fields.extend(added_fields);
+    fields
+  })
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
