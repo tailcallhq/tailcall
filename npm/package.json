@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "gen": "node ./generate.js"
+    "gen": "node ./generate.js",
+    "gen-root": "node ./generate-root.js"
   },
   "dependencies": {
     "yaml": "^2.3.3",
