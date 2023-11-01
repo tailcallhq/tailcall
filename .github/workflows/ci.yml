@@ -118,7 +118,7 @@ jobs:
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -202,9 +202,9 @@ jobs:
       - name: Rename Binary with Target Name
         run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
-      - name: Upload ${{ matrix.target }} Binary
-        uses: xresloader/upload-to-github-release@v1
-        with:
-          release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
-          overwrite: true
+      # - name: Upload ${{ matrix.target }} Binary
+      #   uses: xresloader/upload-to-github-release@v1
+      #   with:
+      #     release_id: ${{ needs.draft_release.outputs.create_release_id }}
+      #     file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+      #     overwrite: true
