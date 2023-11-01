@@ -202,7 +202,9 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Rename Binary with Target Name
-        run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+        run: |
+          pwd
+          cp target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
       # - name: Upload ${{ matrix.target }} Binary
       #   uses: xresloader/upload-to-github-release@v1
@@ -212,7 +214,7 @@ jobs:
       #     overwrite: true
   publish_npm:
     name: Publish NPM main package
-    #    needs: release
+    needs: release
     #    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
@@ -229,7 +231,9 @@ jobs:
           npm install
 
       - name: Run generate.js script
-        run: npm run gen
+        run: |
+          cd npm
+          npm run gen
 
       - name: Publish packages
         run: |
