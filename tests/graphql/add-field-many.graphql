@@ -13,7 +13,6 @@ type Query {
   user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
-# prettier-ignore
 type User @field(name: "city", path: ["address", "city"]) @field(name: "street", path: ["address", "street"]) @field(name: "zipcode", path: ["address", "zipcode"]) {
   address: Address
   name: String
