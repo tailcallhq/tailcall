@@ -222,6 +222,12 @@ jobs:
           cd npm
           npm run gen -- --target ${{matrix.target}} --version 0.1.0 --build ${{matrix.build}}
 
+      #      - name: NPM Publish
+      #        #        if: github.event_name == 'release' && github.event.action == 'published'
+      #        run: |
+      #          cd npm/@tailcallhq/${{ matrix.build }}
+      #          npm publish --access public
+
       - name: Rename Binary with Target Name
         run: |
           pwd
@@ -239,8 +245,6 @@ jobs:
     #    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
       - name: Install Node
         uses: actions/setup-node@v2
         with:
@@ -248,7 +252,9 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Install dependencies
         run: |
+          ls
           cd npm
+          ls @tailcallhq
           npm install
 
       - name: Run generate-root.js script
