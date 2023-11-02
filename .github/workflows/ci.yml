@@ -226,9 +226,9 @@ jobs:
 
       - name: NPM Publish
         #        if: github.event_name == 'release' && github.event.action == 'published'
-        run: |
-          cd npm/@tailcallhq/${{ matrix.build }}
-          npm publish --access public
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
 
       - name: Rename Binary with Target Name
         run: |

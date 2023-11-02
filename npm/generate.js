@@ -28,6 +28,8 @@ if (!match) {
     process.exit(1);
 }
 
+const [, processor] = build.split('-');
+
 const [, cpu, flavour, os] = match;
 
 async function genPlatformPackage() {
@@ -43,7 +45,7 @@ async function genPlatformPackage() {
         description: `Tailcall ${build} Platform`,
         directories: { bin: "bin" },
         os: [os],
-        cpu: [cpu],
+        cpu: [processor],
     };
 
     const filePath = resolve(__dirname, `@tailcallhq/${build}/bin`); // Using build name here
