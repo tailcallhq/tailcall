@@ -219,7 +219,7 @@ jobs:
       - name: Run generate.js script
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version 0.1.0
+          npm run gen -- --target ${{matrix.target}} --version 0.1.0 --build ${{matrix.build}}
       - name: NPM Publish
         #        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
@@ -237,10 +237,10 @@ jobs:
       #     release_id: ${{ needs.draft_release.outputs.create_release_id }}
       #     file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
       #     overwrite: true
-  publish_npm:
+  publish_npm_root:
     name: Publish NPM main package
     needs: release
-    #    if: github.event_name == 'release'
+    #    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Current Branch (Fast)
@@ -255,7 +255,7 @@ jobs:
           cd npm
           npm install
 
-      - name: Run generate.js script
+      - name: Run generate-root.js script
         run: |
           cd npm
           npm run gen
