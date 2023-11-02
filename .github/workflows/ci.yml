@@ -217,14 +217,10 @@ jobs:
           npm install
 
       - name: Run generate.js script
+        #        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
           npm run gen -- --target ${{matrix.target}} --version 0.1.0 --build ${{matrix.build}}
-      - name: NPM Publish
-        #        if: github.event_name == 'release' && github.event.action == 'published'
-        run: |
-          cd npm/@tailcallhq/${{ matrix.build }}
-          npm publish --access public
 
       - name: Rename Binary with Target Name
         run: |
@@ -258,14 +254,18 @@ jobs:
       - name: Run generate-root.js script
         run: |
           cd npm
-          npm run gen
+          npm run gen-root -- --version 0.1.0
 
       - name: Publish packages
         run: |
+          ls npm/@tailcallhq
           packages=($(ls npm/@tailcallhq))
-          cd npm/@tailcallhq/server
+          for package in "${packages[@]}"; do
+          echo "Publishing package: $package"
+          cd npm/@tailcallhq/$package
           npm publish --access public
           cd -
+          done
 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
