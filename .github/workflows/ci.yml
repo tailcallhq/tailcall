@@ -223,7 +223,7 @@ jobs:
       - name: NPM Publish
         #        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
-          cd npm/@tailcallhq/${{ matrix.target }}
+          cd npm/@tailcallhq/${{ matrix.build }}
           npm publish --access public
 
       - name: Rename Binary with Target Name
