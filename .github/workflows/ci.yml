@@ -119,7 +119,8 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build]
+    #    needs: [test, format, draft_release, check_if_build]
+    needs: [draft_release, check_if_build]
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
@@ -140,41 +141,55 @@ jobs:
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
+            node_os: linux
+            node_arch: x64
 
           - build: linux-x86_64-musl
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
             cross: true
+            node_os: linux
+            node_arch: x64
 
           - build: linux-aarch64-gnu
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-gnu
             cross: true
+            node_os: linux
+            node_arch: arm64
 
           - build: linux-aarch64-musl
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
             cross: true
+            node_os: linux
+            node_arch: arm64
 
           - build: linux-i686-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
             cross: true
+            node_os: linux
+            node_arch: x86
 
           - build: apple-arm64
             os: macos-latest
             rust: stable
             target: aarch64-apple-darwin
+            node_os: darwin
+            node_arch: arm64
 
           - build: apple-x86_64
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
             cross: false
+            node_os: darwin
+            node_arch: x64
     permissions:
       contents: write
       pull-requests: write
@@ -195,11 +210,35 @@ jobs:
       - name: Build
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
+
+      - name: Install Node.js
+        #        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        #        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          cd npm
+          npm install
+
+      - name: Run generate.js script
+        run: |
+          cd npm
+          npm run gen -- --os ${{matrix.node_os}} --cpu ${{matrix.node_arch}} --version 0.1.0
+      - name: NPM Publish
+        #        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          cd npm/@tailcallhq/${{ matrix.target }}
+          npm publish --access public
 
       - name: Rename Binary with Target Name
         run: |
