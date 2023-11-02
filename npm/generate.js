@@ -40,24 +40,29 @@ async function genPlatformPackage() {
         name = `${cpu}-${os}`;
     }
     const platformPackage = {
-        name: `@tailcallhq/${build}`, // Using build name here
+        name: `@tailcallhq/${build}`,
         version,
         description: `Tailcall ${build} Platform`,
-        directories: { bin: "bin" },
+        // Modify the `bin` property here to be an object instead of a `directories` property
+        bin: {
+            "tc": "./bin/tailcall" // Command 'tc' points to the executable 'tailcall'
+        },
         os: [os],
         cpu: [processor],
     };
 
-    const filePath = resolve(__dirname, `@tailcallhq/${build}/bin`); // Using build name here
+    const filePath = resolve(__dirname, `@tailcallhq/${build}/bin`);
     await fs.mkdir(filePath, { recursive: true });
     await fs.writeFile(
         resolve(filePath, "../package.json"),
         JSON.stringify(platformPackage, null, 2),
         "utf8"
     );
+
+    // Copy the executable to the bin directory as before
     await fs.copyFile(
         resolve(__dirname, "../target", name, "release/tailcall"),
-        resolve(filePath, "./tailcall")
+        resolve(filePath, "tailcall")
     );
 }
 
