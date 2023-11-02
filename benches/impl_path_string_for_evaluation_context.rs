@@ -9,6 +9,7 @@ use indexmap::IndexMap;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path_string::PathString;
+use once_cell::sync::Lazy;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
@@ -32,47 +33,46 @@ const HEADERS_VALUE: &[&[&str]] = &[&["headers", "existing"], &["headers", "miss
 
 const VARS_VALUE: &[&[&str]] = &[&["vars", "existing"], &["vars", "missing"]];
 
-lazy_static::lazy_static! {
-  static ref TEST_VALUES: Value = {
-    let mut root = IndexMap::new();
-    let mut nested = IndexMap::new();
+static TEST_VALUES: Lazy<Value> = Lazy::new(|| {
+  let mut root = IndexMap::new();
+  let mut nested = IndexMap::new();
 
-    nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
+  nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
 
-    root.insert(Name::new("root"), Value::String("root-test".to_owned()));
-    root.insert(Name::new("nested"), Value::Object(nested));
+  root.insert(Name::new("root"), Value::String("root-test".to_owned()));
+  root.insert(Name::new("nested"), Value::Object(nested));
 
-    Value::Object(root)
-  };
+  Value::Object(root)
+});
 
-  static ref TEST_ARGS: IndexMap<Name, Value> = {
-    let mut root = IndexMap::new();
-    let mut nested = IndexMap::new();
+static TEST_ARGS: Lazy<IndexMap<Name, Value>> = Lazy::new(|| {
+  let mut root = IndexMap::new();
+  let mut nested = IndexMap::new();
 
-    nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
+  nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
 
-    root.insert(Name::new("root"), Value::String("root-test".to_owned()));
-    root.insert(Name::new("nested"), Value::Object(nested));
+  root.insert(Name::new("root"), Value::String("root-test".to_owned()));
+  root.insert(Name::new("nested"), Value::Object(nested));
 
-    root
-  };
+  root
+});
 
-  static ref TEST_HEADERS: HeaderMap = {
-    let mut map = HeaderMap::new();
+static TEST_HEADERS: Lazy<HeaderMap> = Lazy::new(|| {
+  let mut map = HeaderMap::new();
 
-    map.insert("x-existing", HeaderValue::from_static("header"));
+  map.insert("x-existing", HeaderValue::from_static("header"));
 
-    map
-  };
+  map
+});
 
-  static ref TEST_VARS: BTreeMap<String, String> = {
-    let mut map = BTreeMap::new();
+static TEST_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
+  let mut map = BTreeMap::new();
 
-    map.insert("existing".to_owned(), "var".to_owned());
+  map.insert("existing".to_owned(), "var".to_owned());
 
-    map
-  };
-}
+  map
+});
+
 
 fn to_bench_id(input: &[&str]) -> BenchmarkId {
   BenchmarkId::new("input", input.join("."))
@@ -82,11 +82,11 @@ struct MockGraphqlContext;
 
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn value(&'a self) -> Option<&'a Value> {
-    Some(&TEST_VALUES)
+    Lazy::get(&TEST_VALUES)
   }
 
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-    Some(&TEST_ARGS)
+    Lazy::get(&TEST_ARGS)
   }
 }
 
@@ -132,7 +132,6 @@ fn bench_main(c: &mut Criterion) {
   let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
   req_ctx.server.vars = TEST_VARS.clone();
-
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
   assert_test(&eval_ctx);
