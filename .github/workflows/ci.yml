@@ -180,6 +180,7 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
+      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
 
     steps:
       - name: Checkout Current Branch (Fast)
@@ -194,7 +195,7 @@ jobs:
 
       - name: Build
         env:
-          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
+          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
@@ -219,7 +220,7 @@ jobs:
         if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version ${{ needs.draft_release.outputs.create_release_name }} --build ${{matrix.build}}
+          npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
@@ -262,7 +263,7 @@ jobs:
       - name: Run generate-root.js script
         run: |
           cd npm
-          npm run gen-root -- --version ${{ needs.draft_release.outputs.create_release_name }}
+          npm run gen-root -- --version ${{ env.APP_VERSION }}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
@@ -273,4 +274,5 @@ jobs:
           access: public
 
         env:
+          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
