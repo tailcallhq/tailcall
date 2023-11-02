@@ -221,12 +221,14 @@ jobs:
         run: |
           cd npm
           npm run gen -- --target ${{matrix.target}} --version 0.1.0 --build ${{matrix.build}}
+      - name: Setup .npmrc file to publish to npm
+        run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
-      #      - name: NPM Publish
-      #        #        if: github.event_name == 'release' && github.event.action == 'published'
-      #        run: |
-      #          cd npm/@tailcallhq/${{ matrix.build }}
-      #          npm publish --access public
+      - name: NPM Publish
+        #        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          cd npm/@tailcallhq/${{ matrix.build }}
+          npm publish --access public
 
       - name: Rename Binary with Target Name
         run: |
@@ -245,6 +247,8 @@ jobs:
     #    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
       - name: Install Node
         uses: actions/setup-node@v2
         with:
@@ -261,17 +265,12 @@ jobs:
         run: |
           cd npm
           npm run gen-root -- --version 0.1.0
-
+      - name: Setup .npmrc file to publish to npm
+        run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
         run: |
-          ls npm/@tailcallhq
-          packages=($(ls npm/@tailcallhq))
-          for package in "${packages[@]}"; do
-          echo "Publishing package: $package"
-          cd npm/@tailcallhq/$package
+          cd npm/@tailcallhq/server
           npm publish --access public
-          cd -
-          done
 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
