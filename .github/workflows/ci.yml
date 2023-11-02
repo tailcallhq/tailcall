@@ -230,6 +230,7 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: npm/@tailcallhq/${{matrix.build}}
+          access: public
 
       - name: Rename Binary with Target Name
         run: |
