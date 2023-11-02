@@ -10,6 +10,8 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
+use crate::config::from_document::from_document;
+use crate::config::introspection::IntrospectionResult;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -22,6 +24,7 @@ pub struct Config {
   pub server: Server,
   pub upstream: Upstream,
   pub graphql: GraphQL,
+  pub introspection_cache: BTreeMap<String, IntrospectionResult>,
 }
 
 impl Config {
@@ -111,7 +114,14 @@ impl Config {
     let server = self.server.merge_right(other.server.clone());
     let graphql = self.graphql.merge_right(other.graphql.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    Self { server, upstream, graphql }
+    let mut introspection_cache = BTreeMap::new();
+    self.introspection_cache.iter().for_each(|(k, v)| {
+      introspection_cache.insert(k.clone(), v.clone());
+    });
+    other.introspection_cache.iter().for_each(|(k, v)| {
+      introspection_cache.insert(k.clone(), v.clone());
+    });
+    Self { server, upstream, graphql, introspection_cache }
   }
 }
 
@@ -221,6 +231,7 @@ pub struct Field {
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
   pub const_field: Option<ConstField>,
+  pub graphql_source: Option<GraphQLSource>,
 }
 
 impl Field {
@@ -314,6 +325,25 @@ pub struct Http {
   pub group_by: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLSource {
+  pub query: GraphQLQuery,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+  #[serde(default)]
+  #[serde(skip_serializing)]
+  pub introspection: Option<IntrospectionResult>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQLQuery {
+  pub name: String,
+  pub args: KeyValues,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstField {
   pub data: Value,
@@ -328,17 +358,20 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+  pub async fn from_sdl(
+    sdl: &str,
+    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
+  ) -> Valid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => Valid::from(Config::try_from(doc)),
+      Ok(doc) => from_document(doc, initialize_introspection_cache).await,
       Err(e) => Valid::fail(e.to_string()),
     }
   }
 
-  pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+  pub async fn from_source(source: Source, schema: &str) -> Result<Self> {
     match source {
-      Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+      Source::GraphQL => Ok(Config::from_sdl(schema, None).await.to_result()?),
       Source::Json => Ok(Config::from_json(schema)?),
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
@@ -358,7 +391,7 @@ impl Config {
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl)
+        Config::from_source(source, &server_sdl).await
       })
       .collect();
 

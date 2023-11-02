@@ -171,7 +171,7 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
       .map(|arg| {
         let nullable = match arg.node.ty.node.nullable {
           true => "",
-          false => "!"
+          false => "!",
         };
         format!("{}: {}{}", arg.node.name, arg.node.ty.node.base, nullable)
       })

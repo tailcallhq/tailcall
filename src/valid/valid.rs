@@ -2,7 +2,7 @@ use super::ValidationError;
 use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
-pub struct Valid<A, E>(Result<A, ValidationError<E>>);
+pub struct Valid<A, E>(pub Result<A, ValidationError<E>>);
 
 impl<A, E> Valid<A, E> {
   pub fn fail(e: E) -> Valid<A, E> {

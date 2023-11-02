@@ -203,6 +203,10 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     let dir = modify.to_directive("modify".to_string());
     directives.push(pos(dir));
   }
+  if let Some(graphql_source) = field.clone().graphql_source {
+    let graphql_dir = graphql_source.to_directive("graphql".to_string());
+    directives.push(pos(graphql_dir));
+  }
   directives
 }
 
