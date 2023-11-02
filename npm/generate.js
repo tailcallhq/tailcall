@@ -13,15 +13,30 @@ function getArguments() {
   return args;
 }
 
-const { os, cpu, version } = getArguments();
+const { target, version } = getArguments();
 
-if (!os || !cpu || !version) {
-  console.error('Usage: node <script.js> --os <os> --cpu <cpu> --version <version>');
+if (!target || !version) {
+  console.error('Usage: node <script.js> --target <target> --version <version>');
   process.exit(1);
 }
 
+const targetRegex = /^([a-zA-Z0-9_]+)-([a-zA-Z0-9_]+)-([a-zA-Z0-9_\-]+)/;
+const match = target.match(targetRegex);
+
+if (!match) {
+  console.error('Invalid target format. Expected format: <cpu>-<vendor>-<os>');
+  process.exit(1);
+}
+
+const [, cpu, flavour ,os] = match;
+
 async function genPlatformPackage() {
-  const name = `${cpu}-${os}`;
+    let name;
+    if (flavour) {
+      name = `${cpu}-${flavour}-${os}`;
+    } else {
+      name = `${cpu}-${os}`;
+    }
   const platformPackage = {
     name: `@tailcallhq/${name}`,
     version,
@@ -38,7 +53,7 @@ async function genPlatformPackage() {
     JSON.stringify(platformPackage, null, 2),
     "utf8"
   );
-  fs.copyFile(
+  await fs.copyFile(
     resolve(__dirname, "../target", name, "release/tailcall"),
     resolve(filePath, "./tailcall")
   );
