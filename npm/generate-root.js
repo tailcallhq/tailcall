@@ -24,21 +24,37 @@ async function getBuildDefinitions() {
 }
 
 async function genServerPackage(buildDefinitions) {
+  // Use the version passed from the CLI or default to "0.1.0"
+  const packageVersion = version || "0.1.0";
+  console.log(`Generating package.json with version ${packageVersion}`);
+
+  // Construct the optionalDependencies object with the provided version
+  const optionalDependencies = buildDefinitions.reduce((deps, buildDef) => {
+    deps["@tailcallhq/" + buildDef] = packageVersion;
+    return deps;
+  }, {});
+
   const tailcallPackage = {
     name: "@tailcallhq/server",
-    version: version || "0.1.0",
+    version: packageVersion,
     description: "Tailcall Server",
-    optionalDependencies: buildDefinitions.map((_) => "@tailcallhq/" + _),
+    optionalDependencies, // Now it's an object with versions set from CLI
   };
 
-  const filePath = resolve(__dirname, "@tailcallhq/server");
-  await fs.mkdir(filePath, { recursive: true });
+  // Define the directory path where the package.json should be created
+  const directoryPath = resolve(__dirname, "@tailcallhq/server");
 
+  // Ensure the directory exists
+  await fs.mkdir(directoryPath, { recursive: true });
+
+  // Write the package.json file with pretty JSON formatting
   await fs.writeFile(
-    resolve(filePath, "./package.json"),
+    resolve(directoryPath, "./package.json"),
     JSON.stringify(tailcallPackage, null, 2),
     "utf8"
   );
 }
 
-await getBuildDefinitions().then(genServerPackage);
+// Execute the script with the provided version argument from CLI
+const buildDefinitions = await getBuildDefinitions();
+await genServerPackage(buildDefinitions);
