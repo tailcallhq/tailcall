@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
+  release:
+    types: [published]
 jobs:
   check_if_build:
     name: Check if Build
@@ -25,7 +27,7 @@ jobs:
 
   test:
     name: Run Tests
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +64,7 @@ jobs:
 
   format:
     name: Run Formatter and Lint Check
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     steps:
       - name: Install Node.js
@@ -90,7 +92,7 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -118,7 +120,7 @@ jobs:
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -193,14 +195,46 @@ jobs:
       - name: Build
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
 
+      - name: Install Node.js
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          cd npm
+          npm install
+
+      - name: Run generate.js script
+        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          cd npm
+          npm run gen -- --target ${{matrix.target}} --version ${{ needs.draft_release.outputs.create_release_name }} --build ${{matrix.build}}
+      - name: Setup .npmrc file to publish to npm
+        run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+
+      - name: NPM Publish
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: npm/@tailcallhq/core-${{matrix.build}}
+          access: public
+
       - name: Rename Binary with Target Name
-        run: mv target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+        run: |
+          pwd
+          cp target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
       - name: Upload ${{ matrix.target }} Binary
         uses: xresloader/upload-to-github-release@v1
@@ -208,3 +242,35 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
           overwrite: true
+  publish_npm_root:
+    name: Publish NPM main package
+    needs: [draft_release, release]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org
+      - name: Install dependencies
+        run: |
+          cd npm
+          npm install
+      - name: Run generate-root.js script
+        run: |
+          cd npm
+          npm run gen-root -- --version ${{ needs.draft_release.outputs.create_release_name }}
+      - name: Setup .npmrc file to publish to npm
+        run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+      - name: Publish packages
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: npm/@tailcallhq/server
+          access: public
+
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
