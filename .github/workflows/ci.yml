@@ -229,7 +229,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/${{matrix.build}}
+          package: npm/@tailcallhq/core-${{matrix.build}}
           access: public
 
       - name: Rename Binary with Target Name
