@@ -1,8 +1,11 @@
 import * as fs from "fs/promises";
 import { resolve, dirname } from "path";
 import * as yml from "yaml";
+import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 
-const __dirname = dirname(new URL(import.meta.url).pathname);
+// This snippet makes sure __dirname is defined in an ES module context
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function getArguments() {
   const args = {};
@@ -30,7 +33,7 @@ async function genServerPackage(buildDefinitions) {
 
   // Construct the optionalDependencies object with the provided version
   const optionalDependencies = buildDefinitions.reduce((deps, buildDef) => {
-    deps["@tailcallhq/core-" + buildDef] = "*";
+    deps["@tailcallhq/core-" + buildDef] = packageVersion;
     return deps;
   }, {});
 
@@ -38,16 +41,43 @@ async function genServerPackage(buildDefinitions) {
     name: "@tailcallhq/server",
     version: packageVersion,
     description: "Tailcall Server",
-    optionalDependencies, // Now it's an object with versions set from CLI
+    optionalDependencies,
+    scripts: {
+      postinstall: "node ./scripts/installOptionalDeps.js"
+    }
   };
 
   // Define the directory path where the package.json should be created
   const directoryPath = resolve(__dirname, "@tailcallhq/server");
+  const scriptsPath = resolve(directoryPath, "./scripts");
 
-  // Ensure the directory exists
+  await fs.mkdir(scriptsPath, { recursive: true });
+
+  const installScriptContent = `
+const exec = require('child_process').exec;
+const optionalDependencies = ${JSON.stringify(optionalDependencies)};
+
+Object.entries(optionalDependencies).forEach(([pkg, version]) => {
+  exec(\`npm install \${pkg}@\${version} --no-save\`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(\`Failed to install optional dependency: \${pkg}\`, stderr);
+    } else {
+      console.log(\`Successfully installed optional dependency: \${pkg}\`, stdout);
+    }
+  });
+});
+  `.trim();
+
+// Ensure the directory exists
   await fs.mkdir(directoryPath, { recursive: true });
 
-  // Write the package.json file with pretty JSON formatting
+  await fs.writeFile(
+    resolve(scriptsPath, "installOptionalDeps.js"),
+    installScriptContent,
+    "utf8"
+  );
+
+// Write the package.json file with pretty JSON formatting
   await fs.writeFile(
     resolve(directoryPath, "./package.json"),
     JSON.stringify(tailcallPackage, null, 2),

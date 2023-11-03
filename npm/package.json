@@ -9,8 +9,5 @@
   "dependencies": {
     "yaml": "^2.3.3",
     "yml": "^1.0.0"
-  },
-  "workspaces": [
-    "@tailcallhq/*"
-  ]
+  }
 }
