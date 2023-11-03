@@ -6,10 +6,10 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
+use once_cell::sync::Lazy;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path_string::PathString;
-use once_cell::sync::Lazy;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
@@ -72,7 +72,6 @@ static TEST_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
 
   map
 });
-
 
 fn to_bench_id(input: &[&str]) -> BenchmarkId {
   BenchmarkId::new("input", input.join("."))
