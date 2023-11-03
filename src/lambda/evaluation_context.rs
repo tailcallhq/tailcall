@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use async_graphql::{Name, Value};
+use async_graphql::{Name, SelectionField, Value};
 use derive_setters::Setters;
 use reqwest::header::HeaderMap;
 
@@ -62,9 +62,42 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 
     vars.get(key).map(|v| v.as_str())
   }
+
+  pub fn field(&self, key: &str) -> String {
+    if key == "selectionSet" {
+      let selection_set = self.graphql_ctx.field().unwrap().selection_set();
+      format_selection_set(selection_set)
+    } else {
+      "".to_string()
+    }
+  }
 }
 
-fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
+fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> String {
+  let fields = selection_set.map(format_selection_field).collect::<Vec<_>>().join(" ");
+  fields.to_string()
+}
+
+fn format_selection_field(field: SelectionField) -> String {
+  let name = field.name();
+  let arguments = format_selection_field_arguments(field.arguments().unwrap());
+  let selection_set = format_selection_set(field.selection_set());
+  format!("{}{} {}", name, arguments, selection_set)
+}
+
+fn format_selection_field_arguments(arguments: Vec<(Name, Value)>) -> String {
+  if arguments.is_empty() {
+    return "".into();
+  }
+  let args = arguments
+    .iter()
+    .map(|(name, value)| format!("{}: {}", name, value))
+    .collect::<Vec<_>>()
+    .join(",");
+  format!("({})", args)
+}
+
+pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
   let mut value = Some(input);
   for name in path {
     match value {

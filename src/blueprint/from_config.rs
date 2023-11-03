@@ -14,9 +14,11 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
+use crate::config::introspection::get_arg_type;
 use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
+use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
@@ -355,6 +357,7 @@ fn to_field(
 
   update_args()
     .and(update_http().trace("@http"))
+    .and(update_graphql().trace("@graphql"))
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
     .and(update_inline_field().trace("@inline"))
@@ -490,7 +493,83 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
     },
   )
 }
+fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    |(config, field, _, _), b_field| match field.graphql_source.as_ref() {
+      Some(graphql) => match graphql
+        .base_url
+        .as_ref()
+        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
+      {
+        Some(base_url) => {
+          let mut base_url = base_url.clone();
+          if base_url.ends_with('/') {
+            base_url.pop();
+          }
 
+          let introspection_result = graphql.introspection.clone();
+
+          let header_map = Valid::from_iter(graphql.headers.iter(), |(k, v)| {
+            let name =
+              Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
+            let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
+            name.zip(value).map(|(name, value)| (name, value))
+          })
+          .map(HeaderMap::from_iter);
+
+          let variable_definitions = Valid::from_iter(graphql.query.args.iter(), |(arg_name, _)| {
+            Valid::from(
+              match &introspection_result {
+                Some(introspection_result) => get_arg_type(introspection_result, &graphql.query.name, arg_name),
+                _ => None,
+              }
+              .ok_or(ValidationError::new(format!(
+                "Could not find argument type for {} from introspection",
+                arg_name
+              )))
+              .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
+            )
+          })
+          .map(|variable_definitions| variable_definitions.join(","));
+
+          let args = graphql
+            .query
+            .args
+            .clone()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<Vec<_>>();
+
+          header_map
+            .zip(variable_definitions)
+            .fold(
+              |(header_map, variable_definitions)| {
+                Valid::from(
+                  GraphqlRequestTemplate::new(
+                    base_url.clone(),
+                    graphql.query.name.clone(),
+                    args.clone(),
+                    variable_definitions,
+                    header_map,
+                  )
+                  .map_err(|e| ValidationError::new(e.to_string())),
+                )
+              },
+              Valid::<GraphqlRequestTemplate, String>::fail("".to_string()),
+            )
+            .map(|req_template| {
+              let field_name = b_field.name.clone();
+              b_field.resolver(Some(
+                Lambda::from_graphql_request_template(req_template, field_name).expression,
+              ))
+            })
+        }
+        None => Valid::fail("No base URL defined".to_string()),
+      },
+      None => Valid::succeed(b_field),
+    },
+  )
+}
 fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, type_of, _), mut b_field| {
