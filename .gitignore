@@ -8,3 +8,6 @@
 .direnv
 .envrc
 .env
+
+npm/@tailcallhq
+npm/node_modules
