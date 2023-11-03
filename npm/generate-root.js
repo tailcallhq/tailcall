@@ -30,7 +30,7 @@ async function genServerPackage(buildDefinitions) {
 
   // Construct the optionalDependencies object with the provided version
   const optionalDependencies = buildDefinitions.reduce((deps, buildDef) => {
-    deps["@tailcallhq/core-" + buildDef] = packageVersion;
+    deps["@tailcallhq/core-" + buildDef] = "*";
     return deps;
   }, {});
 
