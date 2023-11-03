@@ -44,9 +44,6 @@ async function genPlatformPackage() {
         version,
         description: `Tailcall core-${build} Platform`,
         directories: { bin: "bin" },
-        bin: {
-            "tc": "./bin/tailcall" // Command 'tc' points to the executable 'tailcall'
-        },
         os: [os],
         cpu: [processor],
     };
