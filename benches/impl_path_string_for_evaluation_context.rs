@@ -81,11 +81,11 @@ struct MockGraphqlContext;
 
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn value(&'a self) -> Option<&'a Value> {
-    Lazy::get(&TEST_VALUES)
+    Some(&TEST_VALUES)
   }
 
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-    Lazy::get(&TEST_ARGS)
+    Some(&TEST_ARGS)
   }
 }
 
