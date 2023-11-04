@@ -53,9 +53,11 @@ jobs:
         with:
           command: build
           args: --release
-
-   
-
+  
+      - name: Install iai-callgrind-runner
+        run: |
+          cargo install --version 0.7.3 iai-callgrind-runner
+            
       - name: Calculate Build Time Change
         id: build_time
         run: |
