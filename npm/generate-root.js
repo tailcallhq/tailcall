@@ -38,9 +38,9 @@ async function genServerPackage(buildDefinitions) {
   }, {});
 
   const tailcallPackage = {
-    name: "@tailcallhq/server",
+    name: "@tailcallhq/tailcall",
     version: packageVersion,
-    description: "Tailcall Server",
+    description: "Tailcall: Zero Code GraphQL Backend",
     optionalDependencies,
     scripts: {
       postinstall: "node ./scripts/installOptionalDeps.js"
@@ -48,7 +48,7 @@ async function genServerPackage(buildDefinitions) {
   };
 
   // Define the directory path where the package.json should be created
-  const directoryPath = resolve(__dirname, "@tailcallhq/server");
+  const directoryPath = resolve(__dirname, "@tailcallhq/tailcall");
   const scriptsPath = resolve(directoryPath, "./scripts");
 
   await fs.mkdir(scriptsPath, { recursive: true });
