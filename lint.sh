@@ -10,6 +10,7 @@ run_cargo_fmt() {
     else
         cargo +nightly fmt
     fi
+    return $?
 }
 
 run_cargo_clippy() {
@@ -18,6 +19,7 @@ run_cargo_clippy() {
     [ "$MODE" == "check" ] || CMD="$CMD --fix --allow-staged --allow-dirty"
     CMD="$CMD -- -D warnings"
     $CMD
+    return $?
 }
 
 run_prettier() {
@@ -27,6 +29,7 @@ run_prettier() {
     else
         prettier --write "**/*.$FILE_TYPES"
     fi
+    return $?
 }
 
 # Extract the mode from the argument
@@ -41,11 +44,19 @@ fi
 case $MODE in
     check|fix)
         run_cargo_fmt $MODE
+        FMT_EXIT_CODE=$?
         run_cargo_clippy $MODE
+        CLIPPY_EXIT_CODE=$?
         run_prettier $MODE
+        PRETTIER_EXIT_CODE=$?
         ;;
     *)
         echo "Invalid mode. Please use --mode=check or --mode=fix"
         exit 1
         ;;
 esac
+
+# If any command failed, exit with a non-zero status code
+if [ $FMT_EXIT_CODE -ne 0 ] || [ $CLIPPY_EXIT_CODE -ne 0 ] || [ $PRETTIER_EXIT_CODE -ne 0 ]; then
+    exit 1
+fi
