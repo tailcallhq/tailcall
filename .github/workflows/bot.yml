@@ -31,6 +31,23 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+    name: Run Benchmarks and Build Time Checks
+    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark')
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Stable Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
       - name: Cache Rust Dependencies
         uses: actions/cache@v3
         with:
@@ -46,9 +63,11 @@ jobs:
           command: build
           args: --release
 
-      - name: Run Tailcall
+       - name: Run Benchmark Tests
         run: |
-          ./target/release/tailcall start ci-benchmark/benchmark.graphql&
+          cargo bench
+
+     
 
       - name: Install Nginx
         run: |
