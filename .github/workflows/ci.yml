@@ -275,7 +275,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/server
+          package: npm/@tailcallhq/tailcall
           access: public
 
         env:

@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::{Blueprint, Definition};
 
+// compress() takes a Blueprint and returns a compressed Blueprint. So that unused types are removed.
 pub fn compress(mut blueprint: Blueprint) -> Blueprint {
   let graph = build_dependency_graph(&blueprint);
   let mut referenced_types = identify_referenced_types(&graph, vec!["Query", "Mutation", "Subscription"]);
