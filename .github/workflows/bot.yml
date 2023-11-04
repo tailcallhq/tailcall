@@ -17,7 +17,7 @@ jobs:
   benchmark:
     name: Macro Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark')
-    runs-on: benchmarking-runner
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write
@@ -31,107 +31,105 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-    name: Run Benchmarks and Build Time Checks
-    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark')
-    runs-on: benchmarking-runner
-    permissions:
-      pull-requests: write
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Run Benchmarks and Build Time Checks
+        if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark')
+        runs-on: ubuntu-latest
+        permissions:
+          pull-requests: write
+          contents: write
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v2
 
-      - name: Install Stable Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
+          - name: Install Stable Toolchain
+            uses: actions-rs/toolchain@v1
+            with:
+              toolchain: stable
+              override: true
+              components: rustfmt, clippy
 
-      - name: Cache Rust Dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          - name: Cache Rust Dependencies
+            uses: actions/cache@v3
+            with:
+              path: |
+                ~/.cargo/registry
+                ~/.cargo/git
+                target
+              key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run Cargo Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+          - name: Run Cargo Build
+            uses: actions-rs/cargo@v1
+            with:
+              command: build
+              args: --release
 
-       - name: Run Benchmark Tests
-        run: |
-          cargo bench
+          - name: Run Benchmark Tests
+            run: |
+              cargo bench
 
-     
+          - name: Install Nginx
+            run: |
+              sudo apt-get update
+              sudo apt-get install -y nginx
 
-      - name: Install Nginx
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y nginx
+          - name: Clean Up
+            run: |
+              sudo rm -rf /etc/nginx/sites-enabled/default
 
-      - name: Clean Up
-        run: |
-          sudo rm -rf /etc/nginx/sites-enabled/default
+          - name: Copy Nginx Configuration
+            working-directory: ci-benchmark
+            run: |
+              sudo cp nginx.conf /etc/nginx/
 
-      - name: Copy Nginx Configuration
-        working-directory: ci-benchmark
-        run: |
-          sudo cp nginx.conf /etc/nginx/
+          - name: Test Nginx Configuration
+            run: |
+              sudo nginx -t
 
-      - name: Test Nginx Configuration
-        run: |
-          sudo nginx -t
+          - name: Start Nginx
+            run: |
+              sudo systemctl start nginx
 
-      - name: Start Nginx
-        run: |
-          sudo systemctl start nginx
+          - name: Install Wrk
+            run: |
+              sudo apt-get install -y wrk
 
-      - name: Install Wrk
-        run: |
-          sudo apt-get install -y wrk
+          - name: Run Test Query
+            run: |
+              curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
 
-      - name: Run Test Query
-        run: |
-          curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
+          - id: run_wrk
+            name: Run Wrk
+            working-directory: ci-benchmark
+            run: |
+              wrk -d 30 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
 
-      - id: run_wrk
-        name: Run Wrk
-        working-directory: ci-benchmark
-        run: |
-          wrk -d 30 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          - id: convert_wrk_output_markdown
+            name: Convert Output to Markdown
+            working-directory: ci-benchmark
+            run: |
+              node wrk-output-to-md.js wrk-output.txt > wrk-output.md
 
-      - id: convert_wrk_output_markdown
-        name: Convert Output to Markdown
-        working-directory: ci-benchmark
-        run: |
-          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
+          - id: cat_md
+            name: Cat Markdown
+            working-directory: ci-benchmark
+            run: |
+              cat wrk-output.md
 
-      - id: cat_md
-        name: Cat Markdown
-        working-directory: ci-benchmark
-        run: |
-          cat wrk-output.md
+          - id: get_comment_body
+            name: Get Comment Body
+            working-directory: ci-benchmark
+            run: |
+              body="$(cat wrk-output.md)"
+              delimiter="$(openssl rand -hex 8)"
+              echo "body<<$delimiter" >> $GITHUB_OUTPUT
+              echo "$body" >> $GITHUB_OUTPUT
+              echo "$delimiter" >> $GITHUB_OUTPUT
 
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: ci-benchmark
-        run: |
-          body="$(cat wrk-output.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
-        with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
+          - name: Create Commit Comment
+            uses: peter-evans/commit-comment@v3
+            with:
+              sha: ${{github.event.pull_request.head.sha}}
+              body: ${{steps.get_comment_body.outputs.body}}
 
   lint:
     name: CI:Lint
@@ -145,13 +143,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+
       - name: Install Prettier
         run: npm install --global prettier
+
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt, clippy
+
       - name: Cache Rust Dependencies
         uses: actions/cache@v3
         with:
@@ -160,7 +161,9 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - uses: actions/checkout@v4
+
       - name: Run lint script
         run: ./lint.sh --mode=fix
       - name: Commit and push if changed
