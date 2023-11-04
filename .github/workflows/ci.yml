@@ -134,6 +134,11 @@ jobs:
             linux-i686-gnu,
             apple-arm64,
             apple-x86_64,
+            x86_64-pc-windows-msvc,
+            x86_64-pc-windows-gnu,
+            aarch64-pc-windows-msvc,
+            aarch64-pc-windows-gnu,
+            i686-pc-windows-gnu,
           ]
         include:
           - build: linux-x86_64-gnu
@@ -176,6 +181,31 @@ jobs:
             rust: stable
             target: x86_64-apple-darwin
             cross: false
+
+          - build: windows-x86_64-msvc
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+
+          - build: windows-x86_64-gnu
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-gnu
+
+          - build: windows-aarch64-msvc
+            os: windows-latest
+            rust: stable
+            target: aarch64-pc-windows-msvc
+
+          - build: windows-aarch64-gnu
+            os: windows-latest
+            rust: stable
+            target: aarch64-pc-windows-gnu
+
+          - build: windows-i686-gnu
+            os: windows-latest
+            rust: stable
+            target: i686-pc-windows-gnu
     permissions:
       contents: write
       pull-requests: write
