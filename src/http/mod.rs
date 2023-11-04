@@ -2,6 +2,7 @@ mod client;
 mod data_loader;
 
 mod data_loader_request;
+mod graphql_data_loader;
 mod memo_client;
 mod method;
 mod request_context;
@@ -15,6 +16,7 @@ use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
+pub use graphql_data_loader::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;

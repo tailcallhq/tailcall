@@ -257,7 +257,7 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   for spec in specs? {
     let expected = spec.sdl_errors;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content, None).await;
+    let config = Config::from_sdl(content, Some(GraphQLSpec::mock_introspection_cache)).await;
 
     let actual = config
       .and_then(|config| Valid::from(Blueprint::try_from(&config)))

@@ -53,7 +53,11 @@ impl Lambda<serde_json::Value> {
     req_template: GraphqlRequestTemplate,
     field_name: String,
   ) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::GraphQLEndpoint(req_template, field_name)))
+    Lambda::new(Expression::Unsafe(Operation::GraphQLEndpoint(
+      req_template,
+      field_name,
+      None,
+    )))
   }
 }
 

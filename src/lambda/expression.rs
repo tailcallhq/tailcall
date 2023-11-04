@@ -13,7 +13,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
+use crate::http::{max_age, DefaultHttpClient, GraphqlDataLoader, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -43,7 +43,11 @@ pub enum Operation {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   ),
-  GraphQLEndpoint(GraphqlRequestTemplate, String),
+  GraphQLEndpoint(
+    GraphqlRequestTemplate,
+    String,
+    Option<Arc<DataLoader<GraphqlDataLoader<DefaultHttpClient>, NoCache>>>,
+  ),
   JS(Box<Expression>, String),
 }
 
@@ -56,7 +60,7 @@ impl Debug for Operation {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Operation::GraphQLEndpoint(req_template, field_name) => f
+      Operation::GraphQLEndpoint(req_template, field_name, _dl) => f
         .debug_struct("GraphQLEndpoint")
         .field("req_template", req_template)
         .field("field_name", field_name)
@@ -158,8 +162,34 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Operation::GraphQLEndpoint(req_template, field_name) => {
+            Operation::GraphQLEndpoint(req_template, field_name, dl) => {
               let req = req_template.to_request(ctx)?;
+
+              if ctx.req_ctx.upstream.batch.is_some() {
+                let headers = ctx
+                  .req_ctx
+                  .upstream
+                  .batch
+                  .clone()
+                  .map(|s| s.headers)
+                  .unwrap_or_default();
+                let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
+                let resp = dl
+                  .as_ref()
+                  .unwrap()
+                  .load_one(endpoint_key)
+                  .await
+                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                  .unwrap_or_default();
+                if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
+                  if let Some(max_age) = max_age(&resp) {
+                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                  }
+                }
+                let path = ["data", field_name];
+                let v = get_path_value(&resp.body, &path);
+                return Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null));
+              }
               let res = ctx
                 .req_ctx
                 .execute(req)
