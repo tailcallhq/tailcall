@@ -22,18 +22,7 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Stable Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-
-     
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
@@ -57,36 +46,6 @@ jobs:
           command: build
           args: --release
 
-       - name: Run Benchmark Tests
-        run: |
-          cargo bench
-
-      - name: Calculate Build Time Change
-        id: build_time
-        run: |
-          # Add a script to calculate the build time change and store it as an output variable.
-          # For example, you can use the following script:
-          BUILD_TIME_PERCENT_CHANGE=$(./calculate_build_time_change.sh)
-          echo "Build time change: $BUILD_TIME_PERCENT_CHANGE%"
-          echo "::set-output name=build_time_change::$BUILD_TIME_PERCENT_CHANGE"
-
-      - name: Publish Benchmark Report
-        run: |
-          # Add a script to generate and publish the benchmark report.
-
-      - name: Post Comment on PR
-        if: always()
-        run: |
-          # Post a comment on the PR with benchmark and build time information.
-
-      - name: Set Status Check
-        if: always()
-        run: |
-          # Set the status check to success or failure based on the benchmark and build time results.
-
-      - name: Fail CI on Benchmark Degradation
-        if: steps.build_time.outputs.build_time_change > 10
-        run: exit 1
       - name: Run Tailcall
         run: |
           ./target/release/tailcall start ci-benchmark/benchmark.graphql&
