@@ -19,7 +19,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
   pub timeout: Duration,
 }
 
-static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(|| RequestContext::default());
+static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(RequestContext::default);
 
 impl Default for EvaluationContext<'static, EmptyResolverContext> {
   fn default() -> Self {
