@@ -59,7 +59,7 @@ async function genPlatformPackage() {
     // Copy the executable to the bin directory
     await fs.copyFile(
         resolve(__dirname, "../target", name, "release/tailcall"),
-        resolve(filePath, "tailcall")
+        resolve(filePath, "tc")
     );
 }
 
