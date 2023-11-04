@@ -136,8 +136,6 @@ jobs:
             apple-x86_64,
             windows-x86_64-msvc,
             windows-x86_64-gnu,
-            windows-aarch64-msvc,
-            windows-aarch64-gnu,
             windows-i686-gnu,
           ]
         include:
@@ -191,16 +189,6 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
-
-          - build: windows-aarch64-msvc
-            os: windows-latest
-            rust: stable
-            target: aarch64-pc-windows-msvc
-
-          - build: windows-aarch64-gnu
-            os: windows-latest
-            rust: stable
-            target: aarch64-pc-windows-gnu
 
           - build: windows-i686-gnu
             os: windows-latest
