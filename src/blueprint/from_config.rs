@@ -531,7 +531,6 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
             )
           })
           .map(|variable_definitions| variable_definitions.join(","));
-
           let args = graphql
             .query
             .args
@@ -542,21 +541,18 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
 
           header_map
             .zip(variable_definitions)
-            .fold(
-              |(header_map, variable_definitions)| {
-                Valid::from(
-                  GraphqlRequestTemplate::new(
-                    base_url.clone(),
-                    graphql.query.name.clone(),
-                    args.clone(),
-                    variable_definitions,
-                    header_map,
-                  )
-                  .map_err(|e| ValidationError::new(e.to_string())),
+            .and_then(|(header_map, variable_definitions)| {
+              Valid::from(
+                GraphqlRequestTemplate::new(
+                  base_url.clone(),
+                  graphql.query.name.clone(),
+                  args.clone(),
+                  variable_definitions,
+                  header_map,
                 )
-              },
-              Valid::<GraphqlRequestTemplate, String>::fail("".to_string()),
-            )
+                .map_err(|e| ValidationError::new(e.to_string())),
+              )
+            })
             .map(|req_template| {
               let field_name = b_field.name.clone();
               b_field.resolver(Some(
