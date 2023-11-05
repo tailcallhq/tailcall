@@ -183,29 +183,34 @@ jobs:
             cross: false
 
           - build: windows-x86_64-msvc
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: x86_64-pc-windows-msvc
+            cross: true
 
           - build: windows-x86_64-gnu
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: x86_64-pc-windows-gnu
+            cross: true
 
           - build: windows-aarch64-msvc
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            cross: true
 
           - build: windows-aarch64-gnu
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-gnu
+            cross: true
 
           - build: windows-i686-gnu
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            cross: true
     permissions:
       contents: write
       pull-requests: write
