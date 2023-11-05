@@ -203,7 +203,8 @@ async fn test_execution() -> std::io::Result<()> {
 
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
-  let tasks: Vec<_> = specs?.into_iter()
+  let tasks: Vec<_> = specs?
+    .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
         let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
