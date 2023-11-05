@@ -203,28 +203,37 @@ async fn test_execution() -> std::io::Result<()> {
 
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
-  for spec in specs? {
-    let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
-    config.server.enable_query_validation = Some(false);
+  let tasks: Vec<_> = specs?
+    .into_iter()
+    .map(|spec| {
+      tokio::spawn(async move {
+        let mut config = Config::from_sdl(&spec.server_sdl[0]).to_result().unwrap();
+        config.server.enable_query_validation = Some(false);
 
-    let blueprint = Valid::from(Blueprint::try_from(&config))
-      .trace(spec.path.to_str().unwrap_or_default())
-      .to_result()
-      .unwrap();
-    let server_ctx = ServerContext::new(blueprint);
-    let schema = server_ctx.schema.clone();
+        let blueprint = Valid::from(Blueprint::try_from(&config))
+          .trace(spec.path.to_str().unwrap_or_default())
+          .to_result()
+          .unwrap();
+        let server_ctx = ServerContext::new(blueprint);
+        let schema = server_ctx.schema.clone();
 
-    for q in spec.test_queries {
-      let mut headers = HeaderMap::new();
-      headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
-      let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
-      let req = Request::from(q.query.as_str()).data(req_ctx.clone());
-      let res = schema.execute(req).await;
-      let json = serde_json::to_string(&res).unwrap();
-      let expected = serde_json::to_string(&q.expected).unwrap();
-      assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
-      log::info!("QueryExecution: {} ... ok", spec.path.display());
-    }
+        for q in spec.test_queries {
+          let mut headers = HeaderMap::new();
+          headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
+          let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+          let req = Request::from(q.query.as_str()).data(req_ctx.clone());
+          let res = schema.execute(req).await;
+          let json = serde_json::to_string(&res).unwrap();
+          let expected = serde_json::to_string(&q.expected).unwrap();
+          assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+          log::info!("QueryExecution: {} ... ok", spec.path.display());
+        }
+      })
+    })
+    .collect();
+
+  for task in tasks {
+    task.await?;
   }
 
   Ok(())
