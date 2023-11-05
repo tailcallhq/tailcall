@@ -12,22 +12,6 @@ fn pos<A>(a: A) -> Positioned<A> {
   Positioned::new(a, Pos::default())
 }
 
-fn to_directive<A: Serialize>(a: &A, name: String) -> ConstDirective {
-  let value = serde_json::to_value(a).unwrap();
-  let default_map = &Map::new();
-  let map = value.as_object().unwrap_or(default_map);
-
-  let mut arguments = Vec::new();
-  for (k, v) in map {
-    arguments.push((
-      pos(Name::new(k.clone())),
-      pos(serde_json::from_value(v.to_owned()).unwrap()),
-    ));
-  }
-
-  ConstDirective { name: pos(Name::new(name)), arguments }
-}
-
 fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
   Valid::from_iter(directive.arguments.iter(), |(k, v)| {
     let name = pos(Name::new(k.clone()));
