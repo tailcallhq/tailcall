@@ -283,7 +283,11 @@ fn to_added_field_definition(
         })
         .trace("@field")
     }
-    None => Valid::fail(format!("Could not find field wit {}", add_field.path[0])),
+    None => Valid::fail(format!(
+      "Could not find field {} in path {}",
+      add_field.path[0],
+      add_field.path.join(",")
+    )),
   }
 }
 
@@ -404,7 +408,6 @@ fn to_field(
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
     .and(update_inline_field().trace("@inline"))
-    // .and(update_added_field().trace("@field"))
     .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
@@ -721,55 +724,80 @@ fn process_field_within_type(
   invalid_path_handler(field_name, remaining_path)
 }
 
+fn item_is_numberic(list: &[String]) -> bool {
+  list.iter().any(|s| {
+    let re = Regex::new(r"^\d+$").unwrap();
+    re.is_match(s)
+  })
+}
+
+fn update_resolver_from_path(
+  path: &[String],
+  field: &config::Field,
+  type_info: &config::Type,
+  config: &Config,
+  handle_invalid_path: &InvalidPathHandler,
+  handle_path_resolver_error: &PathResolverErrorHandler,
+  base_field: blueprint::FieldDefinition,
+) -> Valid<blueprint::FieldDefinition, String> {
+  let has_index = item_is_numberic(path);
+
+  process_path(
+    path,
+    field,
+    type_info,
+    false,
+    config,
+    handle_invalid_path,
+    handle_path_resolver_error,
+  )
+  .and_then(|of_type| {
+    let mut updated_base_field = base_field;
+    let resolver = Lambda::context_path(path.to_owned());
+    if has_index {
+      updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+    } else {
+      updated_base_field.of_type = of_type;
+    }
+
+    updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.to_owned()));
+    Valid::succeed(updated_base_field)
+  })
+}
+
 // Main function to update an inline field
 fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
     |(config, field, type_info, _), base_field| {
-      let inlined_path = field.inline.as_ref().map(|x| x.path.clone()).unwrap_or_default();
       let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
         Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
       };
-      let path_resolver_error_handler =
+      let handle_path_resolver_error =
         |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
           Valid::<Type, String>::fail(format!(
             "Inline can't be done because of {} resolver at [{}.{}]",
             resolver_name, field_type, field_name
           ))
         };
-      let has_index = inlined_path.iter().any(|s| {
-        let re = Regex::new(r"^\d+$").unwrap();
-        re.is_match(s)
-      });
       if let Some(InlineType { path }) = &field.inline {
-        return process_path(
-          &inlined_path,
+        update_resolver_from_path(
+          path,
           field,
           type_info,
-          false,
           config,
           &handle_invalid_path,
-          &path_resolver_error_handler,
+          &handle_path_resolver_error,
+          base_field,
         )
-        .and_then(|of_type| {
-          let mut updated_base_field = base_field;
-          let resolver = Lambda::context_path(path.clone());
-          if has_index {
-            updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-          } else {
-            updated_base_field.of_type = of_type;
-          }
-
-          updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-          Valid::succeed(updated_base_field)
-        });
       } else {
         Valid::succeed(base_field)
       }
     },
   )
 }
-fn update_added_field<'a>(
+
+fn update_added_field(
   config: &Config,
   field: &Field,
   type_info: &config::Type,
@@ -779,39 +807,23 @@ fn update_added_field<'a>(
   let handle_invalid_path = |_field_name: &str, _added_field_path: &[String]| -> Valid<Type, String> {
     Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
   };
-  let path_resolver_error_handler = |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
+  let handle_path_resolver_error = |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
     Valid::<Type, String>::fail(format!(
       "Add field can't be done because of {} resolver at [{}.{}]",
       resolver_name, field_type, field_name
     ))
   };
-  let has_index = added_field_path.iter().any(|s| {
-    let re = Regex::new(r"^\d+$").unwrap();
-    re.is_match(s)
-  });
-  process_path(
+  update_resolver_from_path(
     &added_field_path,
     field,
     type_info,
-    false,
     config,
     &handle_invalid_path,
-    &path_resolver_error_handler,
+    &handle_path_resolver_error,
+    base_field,
   )
-  .and_then(|of_type| {
-    let mut updated_base_field = base_field;
-    let resolver = Lambda::context_path(added_field_path.clone());
-    if has_index {
-      updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-    } else {
-      updated_base_field.of_type = of_type;
-    }
-
-    updated_base_field =
-      updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(added_field_path.clone()));
-    Valid::succeed(updated_base_field)
-  })
 }
+
 fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, name), _| {
     // TODO! assert type name
