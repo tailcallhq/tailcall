@@ -57,7 +57,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
 }
 
 fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
-  TryFoldConfig::<Upstream>::new(|_, upstream| {
+  TryFoldConfig::<Upstream>::new(|config, up| {
+    let upstream = up.merge_right(config.upstream.clone());
     if let Some(ref base_url) = upstream.base_url {
       Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
         .map_to(upstream.clone())
@@ -527,7 +528,7 @@ fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::T
               updated_b_field.resolver = Some(Literal(data));
               Valid::succeed(updated_b_field)
             }
-            Err(err) => Valid::from_validation_err(err.transform(|a| a.to_owned())),
+            Err(err) => Valid::from_validation_err(err.transform(&|a| a.to_owned())),
           },
           Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
         }
@@ -539,6 +540,9 @@ fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::T
 fn is_scalar(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
+
+type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
+
 // Helper function to recursively process the path and return the corresponding type
 fn process_path(
   path: &[String],
@@ -546,7 +550,7 @@ fn process_path(
   type_info: &config::Type,
   is_required: bool,
   config: &Config,
-  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type, String>,
+  invalid_path_handler: &InvalidPathHandler,
 ) -> Valid<Type, String> {
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
@@ -596,7 +600,7 @@ fn process_field_within_type(
   type_info: &config::Type,
   is_required: bool,
   config: &Config,
-  invalid_path_handler: &dyn Fn(&str, &[String]) -> Valid<Type, String>,
+  invalid_path_handler: &InvalidPathHandler,
 ) -> Valid<Type, String> {
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {

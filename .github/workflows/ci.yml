@@ -103,7 +103,7 @@ jobs:
 
       - id: create_release
         uses: release-drafter/release-drafter@v5
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -275,7 +275,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/server
+          package: npm/@tailcallhq/tailcall
           access: public
 
         env:
