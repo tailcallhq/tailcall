@@ -185,22 +185,26 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-msvc
+            ext: ".exe"
 
           - build: windows-x86_64-gnu
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
+            ext: ".exe"
 
           - build: windows-aarch64-msvc
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            ext: ".exe"
 
           - build: windows-i686-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
             cross: true
+            ext: ".exe"
     permissions:
       contents: write
       pull-requests: write
@@ -245,7 +249,7 @@ jobs:
         #        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version "0.1.0" --build ${{matrix.build}}
+          npm run gen -- --target ${{matrix.target}} --version "0.1.0" --build ${{matrix.build}} --ext ${{ matrix.ext || '' }}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
@@ -259,20 +263,16 @@ jobs:
 
       - name: Rename Binary with Target Name
         #        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          FILE_EXTENSION: ${{ contains(matrix.target, 'windows') && '.exe' || '' }}
         run: |
           pwd
-          cp target/${{ matrix.target }}/release/tailcall${{ env.FILE_EXTENSION }} target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ env.FILE_EXTENSION }}
+          cp target/${{ matrix.target }}/release/tailcall${{ matrix.ext }} target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
 
       - name: Upload ${{ matrix.target }} Binary
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: xresloader/upload-to-github-release@v1
-        env:
-          FILE_EXTENSION: ${{ contains(matrix.target, 'windows') && '.exe' || '' }}
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ env.FILE_EXTENSION }}
+          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
   publish_npm_root:
     name: Publish NPM main package
