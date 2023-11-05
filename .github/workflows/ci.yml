@@ -103,6 +103,7 @@ jobs:
 
       - id: create_release
         uses: release-drafter/release-drafter@v5
+        if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -205,7 +206,7 @@ jobs:
 
       - name: Install Node.js
         if: github.event_name == 'release' && github.event.action == 'published'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org
@@ -233,11 +234,13 @@ jobs:
           access: public
 
       - name: Rename Binary with Target Name
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           pwd
           cp target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
 
       - name: Upload ${{ matrix.target }} Binary
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
@@ -252,7 +255,7 @@ jobs:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
       - name: Install Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org
@@ -261,6 +264,8 @@ jobs:
           cd npm
           npm install
       - name: Run generate-root.js script
+        env:
+          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name}}
         run: |
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }}
@@ -270,7 +275,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/server
+          package: npm/@tailcallhq/tailcall
           access: public
 
         env:

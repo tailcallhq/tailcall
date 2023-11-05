@@ -59,8 +59,8 @@ impl<E> ValidationError<E> {
     Self(errors)
   }
 
-  pub fn transform<E1>(self, f: impl Fn(E) -> E1) -> ValidationError<E1> {
-    ValidationError(self.0.into_iter().map(|cause| cause.transform(|a| f(a))).collect())
+  pub fn transform<E1>(self, f: &impl Fn(E) -> E1) -> ValidationError<E1> {
+    ValidationError(self.0.into_iter().map(|cause| cause.transform(f)).collect())
   }
 }
 

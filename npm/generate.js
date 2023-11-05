@@ -39,10 +39,19 @@ async function genPlatformPackage() {
     } else {
         name = `${cpu}-${os}`;
     }
+
+    const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
+    const basePackage = JSON.parse(packageJson);
+    const { description, license, repository, homepage, keywords } = basePackage
+
     const platformPackage = {
+        description,
+        license,
+        repository,
+        homepage,
+        keywords,
         name: `@tailcallhq/core-${build}`,
         version,
-        description: `Tailcall core-${build} Platform`,
         directories: { bin: "bin" },
         os: [os],
         cpu: [processor],
@@ -59,8 +68,14 @@ async function genPlatformPackage() {
     // Copy the executable to the bin directory
     await fs.copyFile(
         resolve(__dirname, "../target", name, "release/tailcall"),
-        resolve(filePath, "tailcall")
+        resolve(filePath, "tc")
     );
+
+    await fs.copyFile(
+        resolve(__dirname, "../README.md"),
+        resolve(filePath, "../README.md")
+    );
+
 }
 
 await genPlatformPackage();
