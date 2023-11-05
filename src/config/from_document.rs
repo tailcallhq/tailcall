@@ -138,7 +138,7 @@ fn to_object_type(
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields: added_fields, doc, interface, implements, ..Default::default() }
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {

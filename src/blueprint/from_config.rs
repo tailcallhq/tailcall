@@ -258,7 +258,7 @@ fn to_added_field_definition(
 ) -> Valid<FieldDefinition, String> {
   let source_field = fields
     .iter()
-    .find(|&(field_name, _)| field_name.to_owned() == add_field.path[0]);
+    .find(|&(field_name, _)| *field_name == add_field.path[0]);
 
   match source_field {
     Some((_, source_field)) => {
