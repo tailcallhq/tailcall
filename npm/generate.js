@@ -42,10 +42,14 @@ async function genPlatformPackage() {
 
     const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
     const basePackage = JSON.parse(packageJson);
-    delete basePackage['dependencies']
+    const { description, license, repository, homepage, keywords } = basePackage
 
     const platformPackage = {
-        ...basePackage,
+        description,
+        license,
+        repository,
+        homepage,
+        keywords,
         name: `@tailcallhq/core-${build}`,
         version,
         directories: { bin: "bin" },

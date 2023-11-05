@@ -39,10 +39,14 @@ async function genServerPackage(buildDefinitions) {
 
   const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
   const basePackage = JSON.parse(packageJson);
-  delete basePackage['dependencies']
-  
+  const { description, license, repository, homepage, keywords } = basePackage
+
   const tailcallPackage = {
-    ...basePackage,
+    description,
+    license,
+    repository,
+    homepage,
+    keywords,
     name: "@tailcallhq/tailcall",
     version: packageVersion,
     optionalDependencies,
@@ -72,7 +76,7 @@ Object.entries(optionalDependencies).forEach(([pkg, version]) => {
 });
   `.trim();
 
-// Ensure the directory exists
+  // Ensure the directory exists
   await fs.mkdir(directoryPath, { recursive: true });
 
   await fs.writeFile(
@@ -81,7 +85,7 @@ Object.entries(optionalDependencies).forEach(([pkg, version]) => {
     "utf8"
   );
 
-// Write the package.json file with pretty JSON formatting
+  // Write the package.json file with pretty JSON formatting
   await fs.writeFile(
     resolve(directoryPath, "./package.json"),
     JSON.stringify(tailcallPackage, null, 2),
