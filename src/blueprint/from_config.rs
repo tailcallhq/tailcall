@@ -14,7 +14,7 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
+use crate::config::{Arg, Batch, Config, Field, Inline, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -107,7 +107,7 @@ fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         config.graphql.schema.query.as_ref(),
         "Query root is missing".to_owned(),
       ))
-      .zip(to_directive(config.server.to_directive("server".to_string())))
+      .zip(to_directive(config.server.to_directive()))
       .map(|(query_type_name, directive)| SchemaDefinition {
         query: query_type_name.to_owned(),
         mutation: config.graphql.schema.mutation.clone(),
@@ -675,7 +675,7 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
       });
-      if let Some(InlineType { path }) = &field.inline {
+      if let Some(Inline { path }) = &field.inline {
         return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(
           |of_type| {
             let mut updated_base_field = base_field;
