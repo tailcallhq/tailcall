@@ -13,9 +13,36 @@ Tailcall is an open-source solution for building [high-performance] GraphQL back
 
 ## Installation
 
+### NPM
+
+```bash
+npm i -g @tailcallhq/tailcall
+```
+
+### Yarn
+
+```bash
+yarn global add @tailcallhq/tailcall
+```
+
+### Home Brew
+
 ```bash
 brew tap tailcallhq/tailcall
 brew install tailcall
+```
+
+### Curl
+
+```bash
+curl -sSL https://raw.githubusercontent.com/tailcallhq/tailcall/master/install.sh | bash
+```
+
+### Docker
+
+```bash
+docker pull ghcr.io/tailcallhq/tailcall/tc-server
+docker run -p 8080:8080 -p 8081:8081 ghcr.io/tailcallhq/tailcall/tc-server
 ```
 
 ## Get Started
