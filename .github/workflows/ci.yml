@@ -258,16 +258,20 @@ jobs:
 
       - name: Rename Binary with Target Name
         #        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          FILE_EXTENSION: ${{ contains(matrix.target, 'windows') && '.exe' || '' }}
         run: |
           pwd
-          cp target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tailcall${{ env.FILE_EXTENSION }} target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ env.FILE_EXTENSION }}
 
       - name: Upload ${{ matrix.target }} Binary
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: xresloader/upload-to-github-release@v1
+        env:
+          FILE_EXTENSION: ${{ contains(matrix.target, 'windows') && '.exe' || '' }}
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ env.FILE_EXTENSION }}
           overwrite: true
   publish_npm_root:
     name: Publish NPM main package
