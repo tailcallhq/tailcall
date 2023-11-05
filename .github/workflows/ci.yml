@@ -206,7 +206,7 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
-      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }} || "0.1.0"
 
     steps:
       - name: Checkout Current Branch (Fast)
@@ -245,7 +245,7 @@ jobs:
         #        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}}
+          npm run gen -- --target ${{matrix.target}} --version "0.1.0" --build ${{matrix.build}}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 

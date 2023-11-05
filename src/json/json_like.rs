@@ -304,7 +304,7 @@ mod tests {
       (json!("2"), json!({"id": "2"})),
       (json!("3"), json!({"id": "3"})),
     ];
-    let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|(k, v)| (k, v)).collect();
+    let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|a| (&a.0, &a.1)).collect();
 
     let actual = serde_json::to_value(group_by_key(input)).unwrap();
 
@@ -327,7 +327,7 @@ mod tests {
       (json!(2), json!({"id": 2})),
       (json!(3), json!({"id": 3})),
     ];
-    let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|(k, v)| (k, v)).collect();
+    let input: Vec<(&serde_json::Value, &serde_json::Value)> = arr.iter().map(|a| (&a.0, &a.1)).collect();
 
     let actual = serde_json::to_value(group_by_key(input)).unwrap();
 
