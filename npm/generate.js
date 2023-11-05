@@ -1,7 +1,9 @@
 import * as fs from "fs/promises";
 import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = dirname(new URL(import.meta.url).pathname);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function getArguments() {
     const args = {};
@@ -13,7 +15,7 @@ function getArguments() {
     return args;
 }
 
-const { target, build, version } = getArguments();
+const { target, build, version, ext } = getArguments();
 
 if (!target || !build || !version) {
     console.error('Usage: node <script.js> --target <target> --build <build> --version <version>');
@@ -48,7 +50,7 @@ async function genPlatformPackage() {
         cpu: [processor],
     };
 
-    const filePath = resolve(__dirname, `@tailcallhq/core-${build}/bin`);
+    const filePath = resolve(__dirname, `@tailcallhq/core-${build}`, 'bin');
     await fs.mkdir(filePath, { recursive: true });
     await fs.writeFile(
         resolve(filePath, "../package.json"),
@@ -58,8 +60,8 @@ async function genPlatformPackage() {
 
     // Copy the executable to the bin directory
     await fs.copyFile(
-        resolve(__dirname, "../target", name, "release/tailcall"),
-        resolve(filePath, "tc")
+        resolve(__dirname, `../target`, name, `release/tailcall${ext ? ext : ''}`),
+        resolve(filePath, `tc${ext ? ext : ''}`)
     );
 }
 
