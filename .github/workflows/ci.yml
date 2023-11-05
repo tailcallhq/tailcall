@@ -137,6 +137,7 @@ jobs:
             windows-x86_64-msvc,
             windows-x86_64-gnu,
             windows-aarch64-msvc,
+            windows-i686-gnu,
           ]
         include:
           - build: linux-x86_64-gnu
@@ -194,6 +195,12 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+
+          - build: windows-i686-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: i686-pc-windows-gnu
+            cross: true
     permissions:
       contents: write
       pull-requests: write
