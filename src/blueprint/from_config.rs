@@ -14,7 +14,7 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{AddedFieldType, Arg, Batch, Config, Field, InlineType, Upstream};
+use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -240,25 +240,53 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
         .trace(name)
     },
   );
-  let added_fields = Valid::from_iter(
-    type_of
-      .added_fields
-      .iter()
-      .filter(|added_field| added_field.field.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
-    |added_field| {
-      validate_field_type_exist(config, &added_field.field).and(to_field(
-        type_of,
-        config,
-        &added_field.field_info.name,
-        &added_field.field,
-      ))
-    },
-  );
 
+  let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
+    to_added_field_definition(added_field.clone(), type_of.fields.clone(), config, type_of)
+  });
   fields.zip(added_fields).map(|(mut fields, added_fields)| {
     fields.extend(added_fields);
     fields
   })
+}
+
+fn to_added_field_definition(
+  add_field: config::AddField,
+  fields: BTreeMap<String, config::Field>,
+  config: &Config,
+  type_of: &config::Type,
+) -> Valid<FieldDefinition, String> {
+  let source_field = fields
+    .iter()
+    .find(|&(field_name, _)| field_name.to_owned() == add_field.path[0]);
+
+  match source_field {
+    Some((_, source_field)) => {
+      let new_field = config::Field {
+        type_of: source_field.type_of.clone(),
+        list: source_field.list,
+        required: source_field.required,
+        list_type_required: source_field.list_type_required,
+        args: source_field.args.clone(),
+        doc: None,
+        modify: source_field.modify.clone(),
+        inline: None,
+        http: source_field.http.clone(),
+        unsafe_operation: source_field.unsafe_operation.clone(),
+        const_field: source_field.const_field.clone(),
+      };
+      to_field(type_of, config, add_field.name.as_str(), &new_field)
+        .and_then(|field_definition| {
+          let added_field_path = match source_field.http {
+            Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
+            None => add_field.path.clone(),
+          };
+          update_added_field(config, source_field, type_of, field_definition, added_field_path)
+        })
+        .trace("@field")
+    }
+    None => Valid::fail(format!("Could not find field wit {}", add_field.path[0])),
+  }
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
@@ -378,7 +406,7 @@ fn to_field(
     .and(update_unsafe().trace("@unsafe"))
     .and(update_const_field().trace("@const"))
     .and(update_inline_field().trace("@inline"))
-    .and(update_added_field().trace("@field"))
+    // .and(update_added_field().trace("@field"))
     .and(update_modify().trace("@modify"))
     .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
@@ -743,52 +771,48 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
     },
   )
 }
-fn update_added_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-    |(config, field, type_info, _), base_field| {
-      let inlined_path = field.added_field.as_ref().map(|x| x.path.clone()).unwrap_or_default();
-      let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
-        Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
-      };
-      let path_resolver_error_handler =
-        |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
-          Valid::<Type, String>::fail(format!(
-            "Add field can't be done because of {} resolver at [{}.{}]",
-            resolver_name, field_type, field_name
-          ))
-        };
-      let has_index = inlined_path.iter().any(|s| {
-        let re = Regex::new(r"^\d+$").unwrap();
-        re.is_match(s)
-      });
-      if let Some(AddedFieldType { path }) = &field.added_field {
-        return process_path(
-          &inlined_path,
-          field,
-          type_info,
-          false,
-          config,
-          &handle_invalid_path,
-          &path_resolver_error_handler,
-        )
-        .and_then(|of_type| {
-          let mut updated_base_field = base_field;
-          let resolver = Lambda::context_path(path.clone());
-          if has_index {
-            updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-          } else {
-            updated_base_field.of_type = of_type;
-          }
-
-          updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-          Valid::succeed(updated_base_field)
-        });
-      } else {
-        Valid::succeed(base_field)
-      }
-    },
+fn update_added_field<'a>(
+  config: &Config,
+  field: &Field,
+  type_info: &config::Type,
+  base_field: blueprint::FieldDefinition,
+  added_field_path: Vec<String>,
+) -> Valid<blueprint::FieldDefinition, String> {
+  let handle_invalid_path = |_field_name: &str, _added_field_path: &[String]| -> Valid<Type, String> {
+    Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
+  };
+  let path_resolver_error_handler = |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
+    Valid::<Type, String>::fail(format!(
+      "Add field can't be done because of {} resolver at [{}.{}]",
+      resolver_name, field_type, field_name
+    ))
+  };
+  let has_index = added_field_path.iter().any(|s| {
+    let re = Regex::new(r"^\d+$").unwrap();
+    re.is_match(s)
+  });
+  process_path(
+    &added_field_path,
+    field,
+    type_info,
+    false,
+    config,
+    &handle_invalid_path,
+    &path_resolver_error_handler,
   )
+  .and_then(|of_type| {
+    let mut updated_base_field = base_field;
+    let resolver = Lambda::context_path(added_field_path.clone());
+    if has_index {
+      updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+    } else {
+      updated_base_field.of_type = of_type;
+    }
+
+    updated_base_field =
+      updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(added_field_path.clone()));
+    Valid::succeed(updated_base_field)
+  })
 }
 fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, name), _| {

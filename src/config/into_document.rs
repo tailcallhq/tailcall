@@ -165,7 +165,7 @@ fn config_document(config: &Config) -> ServiceDocument {
       directives: type_def
         .added_fields
         .iter()
-        .map(|added_field| pos(added_field.field_info.to_directive("field".to_string())))
+        .map(|added_field| pos(added_field.to_directive("field".to_string())))
         .collect::<Vec<_>>(),
       kind,
     })));

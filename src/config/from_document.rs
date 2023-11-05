@@ -134,16 +134,12 @@ fn to_object_type(
   implements: &[Positioned<Name>],
   directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String> {
-  to_fields(fields)
-    .and_then(|fields| {
-      let added_fields = to_added_fields(directives, fields.clone());
-      added_fields.map(|added_fields| (fields, added_fields))
-    })
-    .map(|(fields, added_fields)| {
-      let doc = description.as_ref().map(|pos| pos.node.clone());
-      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-      config::Type { fields, added_fields: added_fields, doc, interface, implements, ..Default::default() }
-    })
+  to_fields(fields).map(|fields| {
+    let doc = description.as_ref().map(|pos| pos.node.clone());
+    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields: added_fields, doc, interface, implements, ..Default::default() }
+  })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -222,7 +218,6 @@ fn to_common_field(
       doc,
       modify,
       inline,
-      added_field: None,
       http,
       unsafe_operation,
       const_field,
@@ -326,48 +321,6 @@ fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> V
       }
     })
     .collect::<Vec<_>>()
-}
-
-fn to_added_fields(
-  directives: &[Positioned<ConstDirective>],
-  fields: BTreeMap<String, config::Field>,
-) -> Valid<Vec<config::AddedField>, String> {
-  let add_fields = to_add_fields_from_directives(directives);
-  Valid::succeed(
-    add_fields
-      .iter()
-      .filter_map(|add_field| {
-        let source_field = fields
-          .iter()
-          .find(|&(field_name, _)| field_name.to_owned() == add_field.path[0]);
-
-        match source_field {
-          Some((_, source_field)) => {
-            let path = match source_field.http {
-              Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
-              None => add_field.path.clone(),
-            };
-            let new_field = config::Field {
-              type_of: source_field.type_of.clone(),
-              list: source_field.list,
-              required: source_field.required,
-              list_type_required: source_field.list_type_required,
-              args: source_field.args.clone(),
-              doc: None,
-              modify: source_field.modify.clone(),
-              inline: None,
-              added_field: Some(config::AddedFieldType { path }),
-              http: source_field.http.clone(),
-              unsafe_operation: source_field.unsafe_operation.clone(),
-              const_field: source_field.const_field.clone(),
-            };
-            Some(config::AddedField { field_info: add_field.clone(), field: new_field })
-          }
-          None => None,
-        }
-      })
-      .collect::<Vec<_>>(),
-  )
 }
 
 trait HasName {
