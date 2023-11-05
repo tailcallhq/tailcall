@@ -37,10 +37,14 @@ async function genServerPackage(buildDefinitions) {
     return deps;
   }, {});
 
+  const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
+  const basePackage = JSON.parse(packageJson);
+  delete basePackage['dependencies']
+  
   const tailcallPackage = {
+    ...basePackage,
     name: "@tailcallhq/tailcall",
     version: packageVersion,
-    description: "Tailcall: Zero Code GraphQL Backend",
     optionalDependencies,
     scripts: {
       postinstall: "node ./scripts/installOptionalDeps.js"
@@ -83,6 +87,12 @@ Object.entries(optionalDependencies).forEach(([pkg, version]) => {
     JSON.stringify(tailcallPackage, null, 2),
     "utf8"
   );
+
+  await fs.copyFile(
+    resolve(__dirname, "../README.md"),
+    resolve(directoryPath, "./README.md")
+  );
+
 }
 
 // Execute the script with the provided version argument from CLI
