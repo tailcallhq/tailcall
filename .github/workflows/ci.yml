@@ -120,7 +120,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build]
+    needs: [draft_release, check_if_build]
     #    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
