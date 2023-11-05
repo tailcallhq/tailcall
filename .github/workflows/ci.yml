@@ -137,7 +137,6 @@ jobs:
             windows-x86_64-msvc,
             windows-x86_64-gnu,
             windows-aarch64-msvc,
-            windows-i686-gnu,
           ]
         include:
           - build: linux-x86_64-gnu
@@ -195,11 +194,6 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-
-          - build: windows-i686-gnu
-            os: windows-latest
-            rust: stable
-            target: i686-pc-windows-gnu
     permissions:
       contents: write
       pull-requests: write
@@ -302,7 +296,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/server
+          package: npm/@tailcallhq/tailcall
           access: public
 
         env:
