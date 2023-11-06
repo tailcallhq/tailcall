@@ -134,6 +134,10 @@ jobs:
             linux-i686-gnu,
             apple-arm64,
             apple-x86_64,
+            windows-x86_64-msvc,
+            windows-x86_64-gnu,
+            windows-aarch64-msvc,
+            windows-i686-gnu,
           ]
         include:
           - build: linux-x86_64-gnu
@@ -176,6 +180,31 @@ jobs:
             rust: stable
             target: x86_64-apple-darwin
             cross: false
+
+          - build: windows-x86_64-msvc
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
+
+          - build: windows-x86_64-gnu
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-gnu
+            ext: ".exe"
+
+          - build: windows-aarch64-msvc
+            os: windows-latest
+            rust: stable
+            target: aarch64-pc-windows-msvc
+            ext: ".exe"
+
+          - build: windows-i686-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: i686-pc-windows-gnu
+            cross: true
+            ext: ".exe"
     permissions:
       contents: write
       pull-requests: write
@@ -188,15 +217,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Correct Toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
 
       - name: Build
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name}}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
@@ -221,7 +249,7 @@ jobs:
         if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}}
+          npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}} --ext ${{ matrix.ext || '' }}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
@@ -237,14 +265,14 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           pwd
-          cp target/${{ matrix.target }}/release/tailcall target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+          cp target/${{ matrix.target }}/release/tailcall${{ matrix.ext }} target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
 
       - name: Upload ${{ matrix.target }} Binary
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}
+          file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
   publish_npm_root:
     name: Publish NPM main package
