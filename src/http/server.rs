@@ -75,14 +75,16 @@ pub async fn start_server(config: Config) -> Result<()> {
     builder = builder.worker_threads(blueprint.server.worker);
   }
   let rt = builder.enable_all().build().unwrap();
-  let _ = rt.spawn(async move {
-    let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
-    log::info!("🚀 Tailcall launched at [{}]", addr);
-    if blueprint.server.enable_graphiql {
-      log::info!("🌍 Playground: http://{}", addr);
-    }
-    server.await.map_err(CLIError::from)
-  }).await?;
+  let _ = rt
+    .spawn(async move {
+      let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+      log::info!("🚀 Tailcall launched at [{}]", addr);
+      if blueprint.server.enable_graphiql {
+        log::info!("🌍 Playground: http://{}", addr);
+      }
+      server.await.map_err(CLIError::from)
+    })
+    .await?;
 
   Ok(())
 }
