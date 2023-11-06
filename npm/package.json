@@ -10,8 +10,17 @@
   },
   "homepage": "https://tailcall.run/",
   "keywords": [
-    "GraphQL",
-    "GraphQL Proxy"
+    "graphql",
+    "proxy",
+    "api-gateway",
+    "rust",
+    "http",
+    "grpc",
+    "bff",
+    "backend-for-frontend",
+    "microservices",
+    "high-performance",
+    "edge"
   ],
   "scripts": {
     "gen": "node ./generate.js",
