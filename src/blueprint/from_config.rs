@@ -122,7 +122,7 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       let dbl_usage = input_types.contains(name) && output_types.contains(name);
       if let Some(variants) = &type_.variants {
         if !variants.is_empty() {
-          to_enum_type_definition(name, type_, &variants).trace(name)
+          to_enum_type_definition(name, type_, variants).trace(name)
         } else {
           Valid::fail("No variants found for enum".to_string())
         }
@@ -265,7 +265,7 @@ struct MustachePartsValidator<'a> {
 
 impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
-    return Self { type_of, config, field };
+    Self { type_of, config, field }
   }
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
     let type_of = self.type_of;
@@ -550,6 +550,7 @@ fn is_scalar(type_name: &str) -> bool {
 type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
 
 // Helper function to recursively process the path and return the corresponding type
+#[allow(clippy::too_many_arguments)]
 fn process_path(
   path: &[String],
   field: &config::Field,
@@ -594,6 +595,7 @@ fn process_path(
   Valid::succeed(to_type(field, Some(is_required)))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_field_within_type(
   field: &config::Field,
   field_name: &str,
