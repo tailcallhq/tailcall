@@ -75,32 +75,32 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 
 fn to_type(type_definition: &Positioned<TypeDefinition>) -> Valid<Option<config::Type>, String> {
-    match type_definition.node.kind.clone() {
-        TypeKind::Object(object_type) => to_object_type(
-            &object_type.fields,
-            &type_definition.node.description,
-            false,
-            &object_type.implements,
-            )
-            .some(),
-        TypeKind::Interface(interface_type) => to_object_type(
-            &interface_type.fields,
-            &type_definition.node.description,
-            true,
-            &interface_type.implements,
-            )
-            .some(),
-        TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-        TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
-        TypeKind::Union(_) => Valid::none(),
-        TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
-    }
+  match type_definition.node.kind.clone() {
+    TypeKind::Object(object_type) => to_object_type(
+      &object_type.fields,
+      &type_definition.node.description,
+      false,
+      &object_type.implements,
+    )
+    .some(),
+    TypeKind::Interface(interface_type) => to_object_type(
+      &interface_type.fields,
+      &type_definition.node.description,
+      true,
+      &interface_type.implements,
+    )
+    .some(),
+    TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
+    TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
+    TypeKind::Union(_) => Valid::none(),
+    TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+  }
 }
 
 fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
-    to_type(&type_definition).map(|option| (type_name, option))
+    to_type(type_definition).map(|option| (type_name, option))
   })
   .map(|vec| {
     BTreeMap::from_iter(
@@ -179,7 +179,7 @@ fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<confi
 }
 fn to_common_field<F>(field: &F, args: BTreeMap<String, config::Arg>) -> Valid<config::Field, String>
 where
-  F: Fieldlike
+  F: Fieldlike,
 {
   let type_ = field.ty();
   let base = &type_.base;
@@ -322,29 +322,29 @@ impl TryFrom<ServiceDocument> for Config {
 }
 
 trait Fieldlike {
-    fn ty(&self) -> &Type;
-    fn description(&self) -> &Option<Positioned<String>>;
-    fn directives(&self) -> &[Positioned<ConstDirective>];
+  fn ty(&self) -> &Type;
+  fn description(&self) -> &Option<Positioned<String>>;
+  fn directives(&self) -> &[Positioned<ConstDirective>];
 }
 impl Fieldlike for FieldDefinition {
-    fn ty(&self) -> &Type {
-        &self.ty.node
-    }
-    fn description(&self) -> &Option<Positioned<String>> {
-        &self.description
-    }
-    fn directives(&self) -> &[Positioned<ConstDirective>] {
-        &self.directives
-    }
+  fn ty(&self) -> &Type {
+    &self.ty.node
+  }
+  fn description(&self) -> &Option<Positioned<String>> {
+    &self.description
+  }
+  fn directives(&self) -> &[Positioned<ConstDirective>] {
+    &self.directives
+  }
 }
 impl Fieldlike for InputValueDefinition {
-    fn ty(&self) -> &Type {
-        &self.ty.node
-    }
-    fn description(&self) -> &Option<Positioned<String>> {
-        &self.description
-    }
-    fn directives(&self) -> &[Positioned<ConstDirective>] {
-        &self.directives
-    }
+  fn ty(&self) -> &Type {
+    &self.ty.node
+  }
+  fn description(&self) -> &Option<Positioned<String>> {
+    &self.description
+  }
+  fn directives(&self) -> &[Positioned<ConstDirective>] {
+    &self.directives
+  }
 }
