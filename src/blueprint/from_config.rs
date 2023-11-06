@@ -222,6 +222,21 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+  let to_field = |name: &String, field: &Field| {
+    let directives = field.resolvable_directives();
+    if directives.len() > 1 {
+      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+    }
+
+    update_args()
+      .and(update_http().trace("@http"))
+      .and(update_unsafe().trace("@unsafe"))
+      .and(update_const_field().trace("@const"))
+      .and(update_inline_field().trace("@inline"))
+      .and(update_modify().trace("@modify"))
+      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+  };
+
   Valid::from_iter(
     type_of
       .fields
@@ -229,7 +244,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
     |(name, field)| {
       validate_field_type_exist(config, field)
-        .and(to_field(type_of, config, name, field))
+        .and(to_field(name, field))
         .trace(name)
     },
   )
@@ -237,14 +252,8 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
   if let Some(field) = type_of.fields.get(value) {
-    return Some(to_type(
-      &field.type_of,
-      field.list,
-      field.required,
-      field.list_type_required,
-    ));
+    return Some(to_type(field, None));
   }
-
   None
 }
 
@@ -348,27 +357,19 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   }
 }
 
-fn to_field(
-  type_of: &config::Type,
-  config: &Config,
-  name: &str,
-  field: &Field,
-) -> Valid<blueprint::FieldDefinition, String> {
-  let directives = field.resolvable_directives();
-  if directives.len() > 1 {
-    return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
-  }
+fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
+where
+  T: TypeLike,
+{
+  let name = field.name();
+  let list = field.list();
+  let list_type_required = field.list_type_required();
+  let non_null = if let Some(non_null) = override_non_null {
+    non_null
+  } else {
+    field.non_null()
+  };
 
-  update_args()
-    .and(update_http().trace("@http"))
-    .and(update_unsafe().trace("@unsafe"))
-    .and(update_const_field().trace("@const"))
-    .and(update_inline_field().trace("@inline"))
-    .and(update_modify().trace("@modify"))
-    .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-}
-
-fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> Type {
   if list {
     Type::ListType {
       of_type: Box::new(Type::NamedType { name: name.to_string(), non_null: list_type_required }),
@@ -590,12 +591,7 @@ fn process_path(
     return invalid_path_handler(field_name, path);
   }
 
-  Valid::succeed(to_type(
-    &field.type_of,
-    field.list,
-    is_required,
-    field.list_type_required,
-  ))
+  Valid::succeed(to_type(field, Some(is_required)))
 }
 
 fn process_field_within_type(
@@ -708,7 +704,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       Valid::succeed(InputFieldDefinition {
         name: name.clone(),
         description: arg.doc.clone(),
-        of_type: to_type(&arg.type_of, arg.list, arg.required, false),
+        of_type: to_type(arg, None),
         default_value: arg.default_value.clone(),
       })
     })
@@ -716,12 +712,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       name: name.to_string(),
       description: field.doc.clone(),
       args,
-      of_type: to_type(
-        field.type_of.as_str(),
-        field.list,
-        field.required,
-        field.list_type_required,
-      ),
+      of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
     })
@@ -779,5 +770,47 @@ impl TryFrom<&Config> for Blueprint {
 
   fn try_from(config: &Config) -> Result<Self, Self::Error> {
     config_blueprint().try_fold(config, Blueprint::default()).to_result()
+  }
+}
+
+trait TypeLike {
+  fn name(&self) -> &str;
+  fn list(&self) -> bool;
+  fn non_null(&self) -> bool;
+  fn list_type_required(&self) -> bool;
+}
+
+impl TypeLike for Field {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    self.list_type_required
+  }
+}
+impl TypeLike for Arg {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    false
   }
 }
