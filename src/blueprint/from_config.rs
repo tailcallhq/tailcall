@@ -719,19 +719,22 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
   })
 }
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-  to_json_schema(&field.type_of, field.required, field.list, config)
+  to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
   let mut schema_fields = HashMap::new();
   for (name, arg) in args.iter() {
-    schema_fields.insert(
-      name.clone(),
-      to_json_schema(&arg.type_of, arg.required, arg.list, config),
-    );
+    schema_fields.insert(name.clone(), to_json_schema(arg, config));
   }
   JsonSchema::Obj(schema_fields)
 }
-pub fn to_json_schema(type_of: &str, required: bool, list: bool, config: &Config) -> JsonSchema {
+fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
+where
+  T: TypeLike,
+{
+  let type_of = field.name();
+  let list = field.list();
+  let required = field.non_null();
   let type_ = config.find_type(type_of);
   let schema = match type_ {
     Some(type_) => {
