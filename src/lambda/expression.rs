@@ -41,6 +41,7 @@ pub enum Unsafe {
     Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
   ),
   JS(Box<Expression>, String),
+  SyncFunction(Arc<dyn Fn() -> Result<async_graphql::Value>>)
 }
 
 impl Debug for Unsafe {
