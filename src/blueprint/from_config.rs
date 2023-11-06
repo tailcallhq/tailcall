@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
@@ -124,7 +122,7 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       let dbl_usage = input_types.contains(name) && output_types.contains(name);
       if let Some(variants) = &type_.variants {
         if !variants.is_empty() {
-          to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+          to_enum_type_definition(name, type_, &variants).trace(name)
         } else {
           Valid::fail("No variants found for enum".to_string())
         }
@@ -178,12 +176,7 @@ fn to_union_type_definition((name, u): (&String, &config::Union)) -> UnionTypeDe
     types: u.types.clone(),
   }
 }
-fn to_enum_type_definition(
-  name: &str,
-  type_: &config::Type,
-  _config: &Config,
-  variants: BTreeSet<String>,
-) -> Valid<Definition, String> {
+fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet<String>) -> Valid<Definition, String> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
     directives: Vec::new(),
@@ -255,68 +248,77 @@ fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
   None
 }
 
-fn validate_mustache_parts(
-  type_of: &config::Type,
-  config: &Config,
-  is_query: bool,
-  parts: &[String],
-  args: &[InputFieldDefinition],
-) -> Valid<(), String> {
-  if parts.len() < 2 {
-    return Valid::fail("too few parts in template".to_string());
+struct MustachePartsValidator<'a> {
+  type_of: &'a config::Type,
+  config: &'a Config,
+  field: &'a FieldDefinition,
+}
+
+impl<'a> MustachePartsValidator<'a> {
+  fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
+    return Self { type_of, config, field };
   }
+  fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
+    let type_of = self.type_of;
+    let config = self.config;
+    let args = &self.field.args;
 
-  let head = parts[0].as_str();
-  let tail = parts[1].as_str();
+    if parts.len() < 2 {
+      return Valid::fail("too few parts in template".to_string());
+    }
 
-  match head {
-    "value" => {
-      if let Some(val_type) = get_value_type(type_of, tail) {
-        if !is_scalar(val_type.name()) {
-          return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+    let head = parts[0].as_str();
+    let tail = parts[1].as_str();
+
+    match head {
+      "value" => {
+        if let Some(val_type) = get_value_type(type_of, tail) {
+          if !is_scalar(val_type.name()) {
+            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+          }
+
+          // Queries can use optional values
+          if !is_query && val_type.is_nullable() {
+            return Valid::fail(format!("value '{tail}' is a nullable type"));
+          }
+        } else {
+          return Valid::fail(format!("no value '{tail}' found"));
         }
+      }
+      "args" => {
+        // XXX this is a linear search but it's cost is less than that of
+        // constructing a HashMap since we'd have 3-4 arguments at max in
+        // most cases
+        if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+          if let Type::ListType { .. } = arg.of_type {
+            return Valid::fail(format!("can't use list type '{tail}' here"));
+          }
 
-        // Queries can use optional values
-        if !is_query && val_type.is_nullable() {
-          return Valid::fail(format!("value '{tail}' is a nullable type"));
+          // we can use non-scalar types in args
+
+          if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
+            return Valid::fail(format!("argument '{tail}' is a nullable type"));
+          }
+        } else {
+          return Valid::fail(format!("no argument '{tail}' found"));
         }
-      } else {
-        return Valid::fail(format!("no value '{tail}' found"));
+      }
+      "vars" => {
+        if config.server.vars.get(tail).is_none() {
+          return Valid::fail(format!("var '{tail}' is not set in the server config"));
+        }
+      }
+      "headers" => {
+        // "headers" refers to the header values known at runtime, which we can't
+        // validate here
+      }
+      _ => {
+        return Valid::fail(format!("unknown template directive '{head}'"));
       }
     }
-    "args" => {
-      // XXX this is a linear search but it's cost is less than that of
-      // constructing a HashMap since we'd have 3-4 arguments at max in
-      // most cases
-      if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-        if let Type::ListType { .. } = arg.of_type {
-          return Valid::fail(format!("can't use list type '{tail}' here"));
-        }
 
-        // we can use non-scalar types in args
-
-        if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-          return Valid::fail(format!("argument '{tail}' is a nullable type"));
-        }
-      } else {
-        return Valid::fail(format!("no argument '{tail}' found"));
-      }
-    }
-    "vars" => {
-      if config.server.vars.get(tail).is_none() {
-        return Valid::fail(format!("var '{tail}' is not set in the server config"));
-      }
-    }
-    "headers" => {
-      // "headers" refers to the header values known at runtime, which we can't
-      // validate here
-    }
-    _ => {
-      return Valid::fail(format!("unknown template directive '{head}'"));
-    }
+    Valid::succeed(())
   }
-
-  Valid::succeed(())
 }
 
 fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> Valid<(), String> {
@@ -326,15 +328,18 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   // type if it doesn't exist, so we wouldn't be able to get enough
   // context from that method alone
   // So we must duplicate some of that logic here :(
+
+  let parts_validator = MustachePartsValidator::new(type_of, config, field);
+
   if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
     Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-      validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")
+      parts_validator.validate(parts, false).trace("path")
     })
     .and(Valid::from_iter(req_template.query.clone(), |query| {
       let (_, mustache) = query;
 
       Valid::from_iter(mustache.expression_segments(), |parts| {
-        validate_mustache_parts(type_of, config, true, parts, &field.args).trace("query")
+        parts_validator.validate(parts, true).trace("query")
       })
     }))
     .unit()
