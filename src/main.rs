@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use anyhow::Result;
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;

@@ -1,7 +1,7 @@
 use crate::config::Config;
 
 pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
-  #![allow(clippy::too_many_arguments)]
+  #[allow(clippy::too_many_arguments)]
   fn find_fan_out(
     config: &Config,
     type_name: &String,
