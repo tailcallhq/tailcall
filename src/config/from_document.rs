@@ -1,10 +1,8 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
-  BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, SchemaDefinition,
-  ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
+  BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType,
+  ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
@@ -77,20 +75,8 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     match type_definition.node.kind.clone() {
-      TypeKind::Object(object_type) => to_object_type(
-        &object_type.fields,
-        &type_definition.node.description,
-        false,
-        &object_type.implements,
-      )
-      .some(),
-      TypeKind::Interface(interface_type) => to_object_type(
-        &interface_type.fields,
-        &type_definition.node.description,
-        true,
-        &interface_type.implements,
-      )
-      .some(),
+      TypeKind::Object(object_type) => to_object_type(&object_type, &type_definition.node.description).some(),
+      TypeKind::Interface(interface_type) => to_object_type(&interface_type, &type_definition.node.description).some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
       TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
       TypeKind::Union(_) => Valid::none(),
@@ -124,12 +110,14 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
-fn to_object_type(
-  fields: &Vec<Positioned<FieldDefinition>>,
-  description: &Option<Positioned<String>>,
-  interface: bool,
-  implements: &[Positioned<Name>],
-) -> Valid<config::Type, String> {
+fn to_object_type<T>(object: &T, description: &Option<Positioned<String>>) -> Valid<config::Type, String>
+where
+  T: ObjectLike,
+{
+  let fields = object.fields();
+  let implements = object.implements();
+  let interface = object.is_interface();
+
   to_fields(fields).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
@@ -342,5 +330,33 @@ impl Fieldlike for InputValueDefinition {
   }
   fn directives(&self) -> &[Positioned<ConstDirective>] {
     &self.directives
+  }
+}
+
+trait ObjectLike {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>>;
+  fn implements(&self) -> &Vec<Positioned<Name>>;
+  fn is_interface(&self) -> bool;
+}
+impl ObjectLike for ObjectType {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
+    &self.fields
+  }
+  fn implements(&self) -> &Vec<Positioned<Name>> {
+    &self.implements
+  }
+  fn is_interface(&self) -> bool {
+    false
+  }
+}
+impl ObjectLike for InterfaceType {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
+    &self.fields
+  }
+  fn implements(&self) -> &Vec<Positioned<Name>> {
+    &self.implements
+  }
+  fn is_interface(&self) -> bool {
+    true
   }
 }
