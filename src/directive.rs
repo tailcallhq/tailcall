@@ -83,3 +83,33 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
     ConstDirective { name: pos(Name::new(name)), arguments }
   }
 }
+
+#[cfg(test)]
+mod tests {
+
+  use async_graphql::parser::types::ConstDirective;
+  use async_graphql_value::Name;
+  use pretty_assertions::assert_eq;
+
+  use crate::blueprint::Directive;
+  use crate::directive::{pos, to_const_directive};
+
+  #[test]
+  fn test_to_const_directive() {
+    let directive = Directive {
+      name: "test".to_string(),
+      arguments: vec![("a".to_string(), serde_json::json!(1.0))].into_iter().collect(),
+      index: 0,
+    };
+
+    let const_directive: ConstDirective = to_const_directive(&directive).to_result().unwrap();
+    let expected_directive: ConstDirective = ConstDirective {
+      name: pos(Name::new("test")),
+      arguments: vec![(pos(Name::new("a")), pos(async_graphql::Value::from(1.0)))]
+        .into_iter()
+        .collect(),
+    };
+
+    assert_eq!(format!("{:?}", const_directive), format!("{:?}", expected_directive));
+  }
+}
