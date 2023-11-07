@@ -22,4 +22,8 @@ type User {
 
 #> client-sdl
 type Failure
-  @error(message: "Add field can't be done because of const resolver at [Post.user]", trace: ["Query", "@addField"])
+  @error(
+    message: "Cannot add field"
+    description: "Path: [post, user, name] contains resolver const at [Post.user]"
+    trace: ["Query", "@addField"]
+  )
