@@ -549,28 +549,35 @@ fn is_scalar(type_name: &str) -> bool {
 
 type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
 
-// Helper function to recursively process the path and return the corresponding type
-#[allow(clippy::too_many_arguments)]
-fn process_path(
-  path: &[String],
-  field: &config::Field,
-  type_info: &config::Type,
+struct ProcessPathContext<'a> {
+  path: &'a [String],
+  field: &'a config::Field,
+  type_info: &'a config::Type,
   is_required: bool,
-  config: &Config,
-  invalid_path_handler: &InvalidPathHandler,
-) -> Valid<Type, String> {
+  config: &'a Config,
+  invalid_path_handler: &'a InvalidPathHandler,
+}
+
+// Helper function to recursively process the path and return the corresponding type
+fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
+  let path = context.path;
+  let field = context.field;
+  let type_info = context.type_info;
+  let is_required = context.is_required;
+  let config = context.config;
+  let invalid_path_handler = context.invalid_path_handler;
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
       let mut modified_field = field.clone();
       modified_field.list = false;
-      return process_path(
-        remaining_path,
-        &modified_field,
-        type_info,
-        false,
+      return process_path(ProcessPathContext {
         config,
+        type_info,
         invalid_path_handler,
-      );
+        path: remaining_path,
+        field: &modified_field,
+        is_required: false,
+      });
     }
     let target_type_info = type_info
       .fields
@@ -579,7 +586,7 @@ fn process_path(
       .or_else(|| config.find_type(&field.type_of));
 
     if let Some(type_info) = target_type_info {
-      return process_field_within_type(
+      return process_field_within_type(ProcessFieldWithinTypeContext {
         field,
         field_name,
         remaining_path,
@@ -587,7 +594,7 @@ fn process_path(
         is_required,
         config,
         invalid_path_handler,
-      );
+      });
     }
     return invalid_path_handler(field_name, path);
   }
@@ -595,16 +602,25 @@ fn process_path(
   Valid::succeed(to_type(field, Some(is_required)))
 }
 
-#[allow(clippy::too_many_arguments)]
-fn process_field_within_type(
-  field: &config::Field,
-  field_name: &str,
-  remaining_path: &[String],
-  type_info: &config::Type,
+struct ProcessFieldWithinTypeContext<'a> {
+  field: &'a config::Field,
+  field_name: &'a str,
+  remaining_path: &'a [String],
+  type_info: &'a config::Type,
   is_required: bool,
-  config: &Config,
-  invalid_path_handler: &InvalidPathHandler,
-) -> Valid<Type, String> {
+  config: &'a Config,
+  invalid_path_handler: &'a InvalidPathHandler,
+}
+
+fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Type, String> {
+  let field = context.field;
+  let field_name = context.field_name;
+  let remaining_path = context.remaining_path;
+  let type_info = context.type_info;
+  let is_required = context.is_required;
+  let config = context.config;
+  let invalid_path_handler = context.invalid_path_handler;
+
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
       return Valid::<Type, String>::fail(format!(
@@ -617,37 +633,37 @@ fn process_field_within_type(
         field.type_of,
         field_name
       ))
-      .and(process_path(
-        remaining_path,
-        next_field,
+      .and(process_path(ProcessPathContext {
         type_info,
         is_required,
         config,
         invalid_path_handler,
-      ));
+        path: remaining_path,
+        field: next_field,
+      }));
     }
 
     let next_is_required = is_required && next_field.required;
     if is_scalar(&next_field.type_of) {
-      return process_path(
-        remaining_path,
-        next_field,
+      return process_path(ProcessPathContext {
         type_info,
-        next_is_required,
         config,
         invalid_path_handler,
-      );
+        path: remaining_path,
+        field: next_field,
+        is_required: next_is_required,
+      });
     }
 
     if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-      return process_path(
-        remaining_path,
-        next_field,
-        next_type_info,
-        next_is_required,
+      return process_path(ProcessPathContext {
         config,
         invalid_path_handler,
-      )
+        path: remaining_path,
+        field: next_field,
+        type_info: next_type_info,
+        is_required: next_is_required,
+      })
       .and_then(|of_type| {
         if next_field.list {
           Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
@@ -658,7 +674,14 @@ fn process_field_within_type(
     }
   } else if let Some((head, tail)) = remaining_path.split_first() {
     if let Some(field) = type_info.fields.get(head) {
-      return process_path(tail, field, type_info, is_required, config, invalid_path_handler);
+      return process_path(ProcessPathContext {
+        path: tail,
+        field,
+        type_info,
+        is_required,
+        config,
+        invalid_path_handler,
+      });
     }
   }
 
@@ -679,20 +702,26 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
         re.is_match(s)
       });
       if let Some(InlineType { path }) = &field.inline {
-        return process_path(&inlined_path, field, type_info, false, config, &handle_invalid_path).and_then(
-          |of_type| {
-            let mut updated_base_field = base_field;
-            let resolver = Lambda::context_path(path.clone());
-            if has_index {
-              updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
-            } else {
-              updated_base_field.of_type = of_type;
-            }
+        return process_path(ProcessPathContext {
+          path: &inlined_path,
+          field,
+          type_info,
+          is_required: false,
+          config,
+          invalid_path_handler: &handle_invalid_path,
+        })
+        .and_then(|of_type| {
+          let mut updated_base_field = base_field;
+          let resolver = Lambda::context_path(path.clone());
+          if has_index {
+            updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
+          } else {
+            updated_base_field.of_type = of_type;
+          }
 
-            updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
-            Valid::succeed(updated_base_field)
-          },
-        );
+          updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.clone()));
+          Valid::succeed(updated_base_field)
+        });
       } else {
         Valid::succeed(base_field)
       }

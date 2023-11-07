@@ -1,35 +1,45 @@
 use crate::config::Config;
 
-pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
-  #[allow(clippy::too_many_arguments)]
-  fn find_fan_out(
-    config: &Config,
-    type_name: &String,
-    path: Vec<(String, String)>,
-    is_list: bool,
-  ) -> Vec<Vec<(String, String)>> {
-    match config.find_type(type_name) {
-      Some(type_) => type_
-        .fields
-        .iter()
-        .flat_map(|(field_name, field)| {
-          let mut new_path = path.clone();
-          new_path.push((type_name.clone(), field_name.clone()));
-          if path.iter().any(|item| &item.0 == type_name && &item.1 == field_name) {
-            Vec::new()
-          } else if field.has_resolver() && !field.has_batched_resolver() && is_list {
-            vec![new_path]
-          } else {
-            find_fan_out(config, &field.type_of, new_path, field.list || is_list)
-          }
-        })
-        .collect(),
-      None => Vec::new(),
-    }
-  }
+struct FindFanOutContext<'a> {
+  config: &'a Config,
+  type_name: &'a String,
+  path: Vec<(String, String)>,
+  is_list: bool,
+}
 
+fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
+  let config = context.config;
+  let type_name = context.type_name;
+  let path = context.path;
+  let is_list = context.is_list;
+  match config.find_type(type_name) {
+    Some(type_) => type_
+      .fields
+      .iter()
+      .flat_map(|(field_name, field)| {
+        let mut new_path = path.clone();
+        new_path.push((type_name.clone(), field_name.clone()));
+        if path.iter().any(|item| &item.0 == type_name && &item.1 == field_name) {
+          Vec::new()
+        } else if field.has_resolver() && !field.has_batched_resolver() && is_list {
+          vec![new_path]
+        } else {
+          find_fan_out(FindFanOutContext {
+            config,
+            type_name: &field.type_of,
+            path: new_path,
+            is_list: field.list || is_list,
+          })
+        }
+      })
+      .collect(),
+    None => Vec::new(),
+  }
+}
+
+pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
   if let Some(query) = &config.graphql.schema.query {
-    find_fan_out(config, query, Vec::new(), false)
+    find_fan_out(FindFanOutContext { config, type_name: query, path: Vec::new(), is_list: false })
   } else {
     Vec::new()
   }
