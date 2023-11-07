@@ -216,12 +216,12 @@ pub struct Field {
   #[serde(default)]
   pub args: BTreeMap<String, Arg>,
   pub doc: Option<String>,
-  pub modify: Option<ModifyField>,
-  pub inline: Option<InlineType>,
+  pub modify: Option<Modify>,
+  pub inline: Option<Inline>,
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
-  pub const_field: Option<ConstField>,
+  pub const_field: Option<Const>,
 }
 
 impl Field {
@@ -256,7 +256,7 @@ pub struct Unsafe {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ModifyField {
+pub struct Modify {
   pub name: Option<String>,
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
@@ -264,7 +264,7 @@ pub struct ModifyField {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct InlineType {
+pub struct Inline {
   pub path: Vec<String>,
 }
 
@@ -276,7 +276,7 @@ pub struct Arg {
   #[serde(default)]
   pub required: bool,
   pub doc: Option<String>,
-  pub modify: Option<ModifyField>,
+  pub modify: Option<Modify>,
   pub default_value: Option<Value>,
 }
 
@@ -316,7 +316,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ConstField {
+pub struct Const {
   pub data: Value,
 }
 

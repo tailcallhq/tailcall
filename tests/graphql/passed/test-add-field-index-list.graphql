@@ -7,7 +7,7 @@ type User {
   name: String
 }
 
-type Query @field(name: "username", path: ["users", "0", "name"]) {
+type Query @addField(name: "username", path: ["users", "0", "name"]) {
   users: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com")
 }
 

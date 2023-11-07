@@ -12,10 +12,7 @@ fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
   let schema_definition = SchemaDefinition {
     extend: false,
-    directives: vec![
-      pos(config.server.to_directive("server".to_string())),
-      pos(config.upstream.to_directive("upstream".to_string())),
-    ],
+    directives: vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())],
     query: config.graphql.schema.query.clone().map(|name| pos(Name::new(name))),
     mutation: config.graphql.schema.mutation.clone().map(|name| pos(Name::new(name))),
     subscription: config
@@ -165,7 +162,7 @@ fn config_document(config: &Config) -> ServiceDocument {
       directives: type_def
         .added_fields
         .iter()
-        .map(|added_field| pos(added_field.to_directive("field".to_string())))
+        .map(|added_field| pos(added_field.to_directive()))
         .collect::<Vec<_>>(),
       kind,
     })));
@@ -188,23 +185,23 @@ fn config_document(config: &Config) -> ServiceDocument {
 fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective>> {
   let mut directives = Vec::new();
   if let Some(http) = field.clone().http {
-    let http_dir = http.to_directive("http".to_string());
+    let http_dir = http.to_directive();
     directives.push(pos(http_dir));
   }
   if let Some(us) = field.clone().unsafe_operation {
-    let us_dir = us.to_directive("unsafe".to_string());
+    let us_dir = us.to_directive();
     directives.push(pos(us_dir));
   }
   if let Some(const_field) = field.clone().const_field {
-    let us_dir = const_field.to_directive("const".to_string());
+    let us_dir = const_field.to_directive();
     directives.push(pos(us_dir));
   }
   if let Some(inline) = field.clone().inline {
-    let il_dir = inline.to_directive("inline".to_string());
+    let il_dir = inline.to_directive();
     directives.push(pos(il_dir));
   }
   if let Some(modify) = field.clone().modify {
-    let dir = modify.to_directive("modify".to_string());
+    let dir = modify.to_directive();
     directives.push(pos(dir));
   }
   directives

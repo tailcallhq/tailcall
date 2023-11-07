@@ -3,7 +3,7 @@ schema {
   query: Query
 }
 
-type User @field(name: "lat", path: ["address", "geo", "lat"]) {
+type User @addField(name: "lat", path: ["address", "geo", "lat"]) {
   address: Address
 }
 

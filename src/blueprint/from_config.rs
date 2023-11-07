@@ -14,13 +14,13 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, InlineType, Upstream};
+use crate::config::{Arg, Batch, Config, Field, Inline, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::lambda::Expression::Literal;
-use crate::lambda::{Expression, Lambda, Operation};
+use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::request_template::RequestTemplate;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -72,7 +72,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   for def in blueprint.definitions.iter() {
     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
       for field in object_type_definition.fields.iter() {
-        if let Some(Expression::Unsafe(Operation::Endpoint(_request_template, Some(_), _dl))) = field.resolver.clone() {
+        if let Some(Expression::Unsafe(Unsafe::Http(_request_template, Some(_), _dl))) = field.resolver.clone() {
           blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
           return blueprint;
         }
@@ -107,7 +107,7 @@ fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
         config.graphql.schema.query.as_ref(),
         "Query root is missing".to_owned(),
       ))
-      .zip(to_directive(config.server.to_directive("server".to_string())))
+      .zip(to_directive(config.server.to_directive()))
       .map(|(query_type_name, directive)| SchemaDefinition {
         query: query_type_name.to_owned(),
         mutation: config.graphql.schema.mutation.clone(),
@@ -281,7 +281,7 @@ fn to_added_field_definition(
           };
           update_added_field(config, source_field, type_of, field_definition, added_field_path)
         })
-        .trace("@field")
+        .trace(config::AddField::trace_name().as_str())
     }
     None => Valid::fail(format!(
       "Could not find field {} in path {}",
@@ -375,7 +375,7 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   // type if it doesn't exist, so we wouldn't be able to get enough
   // context from that method alone
   // So we must duplicate some of that logic here :(
-  if let Some(Expression::Unsafe(Operation::Endpoint(req_template, _, _))) = &field.resolver {
+  if let Some(Expression::Unsafe(Unsafe::Http(req_template, _, _))) = &field.resolver {
     Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
       validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")
     })
@@ -404,11 +404,11 @@ fn to_field(
   }
 
   update_args()
-    .and(update_http().trace("@http"))
-    .and(update_unsafe().trace("@unsafe"))
-    .and(update_const_field().trace("@const"))
-    .and(update_inline_field().trace("@inline"))
-    .and(update_modify().trace("@modify"))
+    .and(update_http().trace(config::Http::trace_name().as_str()))
+    .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
+    .and(update_const_field().trace(config::Const::trace_name().as_str()))
+    .and(update_inline_field().trace(config::Inline::trace_name().as_str()))
+    .and(update_modify().trace(config::Modify::trace_name().as_str()))
     .try_fold(&(config, field, type_of, name), FieldDefinition::default())
 }
 
@@ -523,7 +523,7 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
             })
             .map(|req_template| {
               if !http.group_by.is_empty() && http.method == Method::GET {
-                b_field.resolver(Some(Expression::Unsafe(Operation::Endpoint(
+                b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
                   req_template,
                   Some(GroupBy::new(http.group_by.clone())),
                   None,
@@ -780,7 +780,7 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
             resolver_name, field_type, field_name
           ))
         };
-      if let Some(InlineType { path }) = &field.inline {
+      if let Some(Inline { path }) = &field.inline {
         update_resolver_from_path(
           path,
           field,
