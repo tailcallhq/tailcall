@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
-use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
+use hashbrown::HashMap as BrownHashMap;
 
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
@@ -32,6 +33,12 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
   }
 }
 
+fn sorted_key_loader(keys: &[DataLoaderRequest]) -> Vec<DataLoaderRequest> {
+  let mut keys: Vec<DataLoaderRequest> = keys.to_vec();
+  keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+  keys
+}
+
 #[async_trait::async_trait]
 impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> for HttpDataLoader<C> {
   type Value = Response;
@@ -42,57 +49,95 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     if let Some(group_by) = self.batched.clone() {
-      let mut keys = keys.to_vec();
-      keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+      // store the preused length of our keys.
+      let original_key_length = keys.len();
 
       let mut request = keys[0].to_request();
+
       let first_url = request.url_mut();
 
-      for key in &keys[1..] {
-        let request = key.to_request();
-        let url = request.url();
+      let urls = keys[1..].iter().map(|key: &DataLoaderRequest| {
+        let key_request_result = key.to_request();
+        tokio::task::spawn(async move {
+          let url = key_request_result.url().to_owned();
+          url
+        })
+      });
+
+      for url_handle in urls {
+        //TODO: replace this unsafe unwrap, and handle the error
+        let url = url_handle.await.unwrap();
         first_url.query_pairs_mut().extend_pairs(url.query_pairs());
       }
 
       let res = self.client.execute(request).await?;
-      #[allow(clippy::mutable_key_type)]
-      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
-      let path = &group_by.path();
-      let body_value = res.body.group_by(path);
 
-      for key in &keys {
+      #[allow(clippy::mutable_key_type)]
+      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(original_key_length);
+
+      //TODO: figure out something lifetime elision raised here due to 'life0 mismatch
+      let group_key = group_by.clone().key().to_string();
+      let path = group_by.path();
+      let body_value = res.body.group_by(&path[..]);
+
+      let mut res_handle = Vec::with_capacity(original_key_length);
+
+      for key in keys.iter() {
         let req = key.to_request();
-        let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
-        let id = query_set
-          .get(group_by.key())
-          .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
+        let key_cloned = key.clone();
+        let group_key_clone = group_key.clone();
+
+        res_handle.push(tokio::task::spawn(async move {
+          let query_set: HashMap<_, _> = req.url().query_pairs().collect();
+          //TODO: replace this unsafe unwrap, and handle the error.
+
+          let id = query_set
+            .get(group_key_clone.as_str())
+            .ok_or(anyhow::anyhow!(
+              "Unable to find key {} in query params",
+              group_key_clone
+            ))
+            .unwrap()
+            .deref()
+            .to_owned();
+          (key_cloned, id)
+        }))
+      }
+
+      for set in res_handle {
+        //TODO: replace this unsafe unwrap, and handle the error.
+        let (key, id) = set.await.unwrap();
         hashmap.insert(
           key.clone(),
           res.clone().body(
             body_value
-              .get(id.as_ref())
+              .get(&id)
               .and_then(|a| a.first().cloned().cloned())
               .unwrap_or(ConstValue::Null),
           ),
         );
       }
-
       Ok(hashmap)
     } else {
-      let results = keys.iter().map(|key| async {
-        let result = self.client.execute(key.to_request()).await;
-        (key.clone(), result)
+      let results = keys.iter().map(|key| {
+        let cloned_client = self.client.clone();
+        let key_request = key.to_request();
+        let key_cloned = key.clone();
+        tokio::task::spawn(async move {
+          let query_result = cloned_client.execute(key_request).await;
+          (key_cloned, query_result)
+        })
       });
 
-      let results = join_all(results).await;
-
-      #[allow(clippy::mutable_key_type)]
       let mut hashmap = HashMap::new();
-      for (key, value) in results {
+
+      for val in results {
+        //TODO: replace this unsafe unwrap
+        let (key, value) = val.await.unwrap();
         hashmap.insert(key, value?);
       }
 
-      Ok(hashmap)
+      Ok(HashMap::from_iter(hashmap))
     }
   }
 }
@@ -101,6 +146,8 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
 mod tests {
   use std::collections::BTreeSet;
   use std::sync::atomic::{AtomicUsize, Ordering};
+
+  use async_graphql::futures_util::future::join_all;
 
   use super::*;
   use crate::http::DataLoaderRequest;
