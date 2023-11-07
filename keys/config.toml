@@ -1,0 +1,7 @@
+#TODO: add script to generate TLS cert and key; for development purposes run the following command:
+# openssl req -x509 -newkey rsa:4096 -keyout keys/key.pem -out keys/cert.pem -days 365 -nodes -subj "/CN=localhost"
+[grpc_server]
+host = "127.0.0.1"
+port = 50051
+tls_cert_file = "cert.pem"
+tls_key_file = "key.pem"

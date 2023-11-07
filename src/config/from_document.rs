@@ -214,6 +214,7 @@ fn to_common_field(
       modify,
       inline,
       http,
+      grpc: None,
       unsafe_operation,
       const_field,
     }
@@ -288,6 +289,15 @@ fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Ht
   }
   Valid::succeed(None)
 }
+fn to_grpc(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Grpc>, String> {
+  for directive in directives {
+    if directive.node.name.node == "grpc" {
+      return config::Grpc::from_directive(&directive.node).map(Some);
+    }
+  }
+  Valid::succeed(None)
+}
+
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members

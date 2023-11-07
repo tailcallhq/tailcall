@@ -11,3 +11,5 @@
 
 npm/@tailcallhq
 npm/node_modules
+
+/keys/*.pem

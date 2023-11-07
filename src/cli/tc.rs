@@ -13,6 +13,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
+use crate::grpc::start_grpc_server;
 use crate::http::start_server;
 use crate::print_schema;
 
@@ -25,7 +26,12 @@ pub async fn run() -> Result<()> {
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config = Config::from_file_paths(file_path.iter()).await?;
-      start_server(config).await?;
+      if config.server.enable_grpc.is_some() {
+        // TODO: load config.toml for tls-based auth then start grpc server
+        start_grpc_server(&config).await?;
+      } else {
+        start_server(config).await?;
+      }
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

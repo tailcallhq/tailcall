@@ -7,8 +7,10 @@ pub mod config;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod grpc;
 pub mod has_headers;
 pub mod http;
+
 #[cfg(feature = "unsafe-js")]
 pub mod javascript;
 pub mod json;

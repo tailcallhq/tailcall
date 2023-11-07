@@ -1,0 +1,33 @@
+schema
+  @server(port: 8000, enableGraphiql: "/graphiql", enableQueryValidation: false, enableGrpc: true, hostname: "0.0.0.0")
+  @upstream {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @grpc(
+    service: "PostService",
+    method: "GetPosts"
+ )
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @grpc(
+    service: "UserService",
+    method: "GetUsers",
+    request: [{key: "id", value: "{{args.id}}"}]
+  )
+}

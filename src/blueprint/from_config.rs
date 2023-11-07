@@ -1,3 +1,7 @@
+/*!
+* Parse configurations into an internal representation.
+* transform the application's configuration into a blueprint for the GraphQL schema.
+*/
 #![allow(clippy::too_many_arguments)]
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -56,6 +60,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     .update(super::compress::compress)
 }
 
+///  parses and validates the upstream configuration,
+/// such as the base URL for HTTP connections.
 fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
   TryFoldConfig::<Upstream>::new(|config, up| {
     let upstream = up.merge_right(config.upstream.clone());
@@ -82,6 +88,8 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   blueprint
 }
 
+///  converts GraphQL directives from the configuration
+/// into a valid Directive structure that can be used by the application.
 fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
   const_directive
     .arguments
@@ -99,6 +107,8 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
     .into()
 }
 
+/// transforms the GraphQL schema configuration into a SchemaDefinition,
+/// validating the presence of the query root and handling server directives.
 fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
   TryFoldConfig::new(|config, _| {
     validate_query(config)

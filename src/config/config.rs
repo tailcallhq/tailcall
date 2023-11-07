@@ -218,6 +218,7 @@ pub struct Field {
   pub modify: Option<ModifyField>,
   pub inline: Option<InlineType>,
   pub http: Option<Http>,
+  pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
   pub const_field: Option<ConstField>,
@@ -225,12 +226,15 @@ pub struct Field {
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.grpc.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<&str> {
     let mut directives = Vec::with_capacity(3);
     if self.http.is_some() {
       directives.push("@http")
+    }
+    if self.grpc.is_some() {
+      directives.push("@grpc")
     }
     if self.unsafe_operation.is_some() {
       directives.push("@unsafe")
@@ -312,6 +316,19 @@ pub struct Http {
   #[serde(default)]
   #[serde(rename = "groupBy", skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+}
+
+/// grpc definition in graphql schema config.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Grpc {
+  /// The name of a grpc service.
+  pub service: String,
+  /// The name of a grpc method.
+  pub method: String,
+  /// grpc query args.
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub request: KeyValues,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

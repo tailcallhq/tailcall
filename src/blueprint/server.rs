@@ -1,3 +1,6 @@
+/*!
+* relate to server configuration or server-specific aspects of the blueprint.
+*/
 use std::collections::BTreeMap;
 use std::net::{AddrParseError, IpAddr};
 

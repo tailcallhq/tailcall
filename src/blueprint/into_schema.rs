@@ -1,3 +1,8 @@
+/*!
+ *
+ * This module is responsible for converting configuration into a GraphQL schema.
+ *
+*/
 use std::borrow::Cow;
 use std::sync::Arc;
 

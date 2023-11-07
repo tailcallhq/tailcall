@@ -22,6 +22,7 @@ pub struct Server {
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
+  pub enable_grpc: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
