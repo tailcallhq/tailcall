@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
