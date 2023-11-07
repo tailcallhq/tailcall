@@ -9,6 +9,10 @@ impl<A, E> Valid<A, E> {
     Valid(Err((vec![Cause::new(e)]).into()))
   }
 
+  pub fn fail_with(message: E, description: E) -> Valid<A, E> {
+    Valid(Err((vec![Cause::new(message).description(description)]).into()))
+  }
+
   pub fn from_validation_err(error: ValidationError<E>) -> Self {
     Valid(Err(error))
   }
