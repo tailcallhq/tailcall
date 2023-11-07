@@ -75,8 +75,18 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     match type_definition.node.kind.clone() {
-      TypeKind::Object(object_type) => to_object_type(&object_type, &type_definition.node.description, &type_definition.node.directives).some(),
-      TypeKind::Interface(interface_type) => to_object_type(&interface_type, &type_definition.node.description, &type_definition.node.directives).some(),
+      TypeKind::Object(object_type) => to_object_type(
+        &object_type,
+        &type_definition.node.description,
+        &type_definition.node.directives,
+      )
+      .some(),
+      TypeKind::Interface(interface_type) => to_object_type(
+        &interface_type,
+        &type_definition.node.description,
+        &type_definition.node.directives,
+      )
+      .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
       TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
       TypeKind::Union(_) => Valid::none(),
@@ -110,7 +120,11 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
-fn to_object_type<T>(object: &T, description: &Option<Positioned<String>>, directives: &[Positioned<ConstDirective>]) -> Valid<config::Type, String>
+fn to_object_type<T>(
+  object: &T,
+  description: &Option<Positioned<String>>,
+  directives: &[Positioned<ConstDirective>],
+) -> Valid<config::Type, String>
 where
   T: ObjectLike,
 {

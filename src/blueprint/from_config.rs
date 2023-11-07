@@ -249,70 +249,73 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
     },
   );
 
+  let to_added_field =
+    |add_field: &config::AddField, type_of: &config::Type| -> Valid<blueprint::FieldDefinition, String> {
+      let source_field = type_of
+        .fields
+        .iter()
+        .find(|&(field_name, _)| *field_name == add_field.path[0]);
+      match source_field {
+        Some((_, source_field)) => {
+          let new_field = config::Field {
+            type_of: source_field.type_of.clone(),
+            list: source_field.list,
+            required: source_field.required,
+            list_type_required: source_field.list_type_required,
+            args: source_field.args.clone(),
+            doc: None,
+            modify: source_field.modify.clone(),
+            inline: None,
+            http: source_field.http.clone(),
+            unsafe_operation: source_field.unsafe_operation.clone(),
+            const_field: source_field.const_field.clone(),
+          };
+          to_field(&add_field.name, &new_field)
+            .and_then(|field_definition| {
+              let added_field_path = match source_field.http {
+                Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
+                None => add_field.path.clone(),
+              };
+              let invalid_path_handler = |_field_name: &str, _added_field_path: &[String]| -> Valid<Type, String> {
+                Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
+              };
+              let path_resolver_error_handler =
+                |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
+                  Valid::<Type, String>::fail(format!(
+                    "Add field can't be done because of {} resolver at [{}.{}]",
+                    resolver_name, field_type, field_name
+                  ))
+                };
+              update_resolver_from_path(
+                ProcessPathContext {
+                  path: &added_field_path,
+                  field: source_field,
+                  type_info: type_of,
+                  is_required: false,
+                  config,
+                  invalid_path_handler: &invalid_path_handler,
+                  path_resolver_error_handler: &path_resolver_error_handler,
+                },
+                field_definition,
+              )
+            })
+            .trace(config::AddField::trace_name().as_str())
+        }
+        None => Valid::fail(format!(
+          "Could not find field {} in path {}",
+          add_field.path[0],
+          add_field.path.join(",")
+        )),
+      }
+    };
+
   let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
-    to_added_field_definition(added_field.clone(), type_of.fields.clone(), config, type_of)
+    to_added_field(added_field, type_of)
   });
   fields.zip(added_fields).map(|(mut fields, added_fields)| {
     fields.extend(added_fields);
     fields
   })
-}
-
-
-fn to_added_field_definition(
-  add_field: config::AddField,
-  fields: BTreeMap<String, config::Field>,
-  config: &Config,
-  type_of: &config::Type,
-) -> Valid<FieldDefinition, String> {
-  let to_field = |name: &String, field: &Field| {
-    let directives = field.resolvable_directives();
-    if directives.len() > 1 {
-      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
-    }
-
-    update_args()
-      .and(update_http().trace("@http"))
-      .and(update_unsafe().trace("@unsafe"))
-      .and(update_const_field().trace("@const"))
-      .and(update_inline_field().trace("@inline"))
-      .and(update_modify().trace("@modify"))
-      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-  };
-
-  let source_field = fields.iter().find(|&(field_name, _)| *field_name == add_field.path[0]);
-
-  match source_field {
-    Some((_, source_field)) => {
-      let new_field = config::Field {
-        type_of: source_field.type_of.clone(),
-        list: source_field.list,
-        required: source_field.required,
-        list_type_required: source_field.list_type_required,
-        args: source_field.args.clone(),
-        doc: None,
-        modify: source_field.modify.clone(),
-        inline: None,
-        http: source_field.http.clone(),
-        unsafe_operation: source_field.unsafe_operation.clone(),
-        const_field: source_field.const_field.clone(),
-      };
-      to_field(&add_field.name, &new_field)
-        .and_then(|field_definition| {
-          let added_field_path = match source_field.http {
-            Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
-            None => add_field.path.clone(),
-          };
-          update_added_field(config, source_field, type_of, field_definition, added_field_path)
-        })
-        .trace(config::AddField::trace_name().as_str())
-    }
-    None => Valid::fail(format!(
-      "Could not find field {} in path {}",
-      add_field.path[0],
-      add_field.path.join(",")
-    )),
-  }
 }
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
@@ -615,6 +618,7 @@ fn is_scalar(type_name: &str) -> bool {
 type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str) -> Valid<Type, String>;
 
+#[derive(Clone)]
 struct ProcessPathContext<'a> {
   path: &'a [String],
   field: &'a config::Field,
@@ -769,35 +773,21 @@ fn item_is_numberic(list: &[String]) -> bool {
 }
 
 fn update_resolver_from_path(
-  path: &[String],
-  field: &config::Field,
-  type_info: &config::Type,
-  config: &Config,
-  handle_invalid_path: &InvalidPathHandler,
-  handle_path_resolver_error: &PathResolverErrorHandler,
+  context: ProcessPathContext,
   base_field: blueprint::FieldDefinition,
 ) -> Valid<blueprint::FieldDefinition, String> {
-  let has_index = item_is_numberic(path);
+  let has_index = item_is_numberic(context.path);
 
-  process_path(ProcessPathContext {
-    path,
-    field,
-    type_info,
-    is_required: false,
-    config,
-    invalid_path_handler: handle_invalid_path,
-    path_resolver_error_handler: handle_path_resolver_error,
-})
-  .and_then(|of_type| {
+  process_path(context.clone()).and_then(|of_type| {
     let mut updated_base_field = base_field;
-    let resolver = Lambda::context_path(path.to_owned());
+    let resolver = Lambda::context_path(context.path.to_owned());
     if has_index {
       updated_base_field.of_type = Type::NamedType { name: of_type.name().to_string(), non_null: false }
     } else {
       updated_base_field.of_type = of_type;
     }
 
-    updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(path.to_owned()));
+    updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(context.path.to_owned()));
     Valid::succeed(updated_base_field)
   })
 }
@@ -807,10 +797,10 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
 {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
     |(config, field, type_info, _), base_field| {
-      let handle_invalid_path = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
+      let invalid_path_handler = |_field_name: &str, _inlined_path: &[String]| -> Valid<Type, String> {
         Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
       };
-      let handle_path_resolver_error =
+      let path_resolver_error_handler =
         |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
           Valid::<Type, String>::fail(format!(
             "Inline can't be done because of {} resolver at [{}.{}]",
@@ -820,45 +810,21 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
 
       if let Some(Inline { path }) = &field.inline {
         update_resolver_from_path(
-          path,
-          field,
-          type_info,
-          config,
-          &handle_invalid_path,
-          &handle_path_resolver_error,
+          ProcessPathContext {
+            path,
+            field,
+            type_info,
+            is_required: false,
+            config,
+            invalid_path_handler: &invalid_path_handler,
+            path_resolver_error_handler: &path_resolver_error_handler,
+          },
           base_field,
         )
       } else {
         Valid::succeed(base_field)
       }
     },
-  )
-}
-
-fn update_added_field(
-  config: &Config,
-  field: &Field,
-  type_info: &config::Type,
-  base_field: blueprint::FieldDefinition,
-  added_field_path: Vec<String>,
-) -> Valid<blueprint::FieldDefinition, String> {
-  let handle_invalid_path = |_field_name: &str, _added_field_path: &[String]| -> Valid<Type, String> {
-    Valid::fail("Adding a field can't be done because provided path doesn't exist".to_string())
-  };
-  let handle_path_resolver_error = |resolver_name: &str, field_type: &str, field_name: &str| -> Valid<Type, String> {
-    Valid::<Type, String>::fail(format!(
-      "Add field can't be done because of {} resolver at [{}.{}]",
-      resolver_name, field_type, field_name
-    ))
-  };
-  update_resolver_from_path(
-    &added_field_path,
-    field,
-    type_info,
-    config,
-    &handle_invalid_path,
-    &handle_path_resolver_error,
-    base_field,
   )
 }
 
