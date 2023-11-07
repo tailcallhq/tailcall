@@ -1,0 +1,61 @@
+{
+  "config": "tests/graphql_mock/test-custom-headers.graphql",
+  "name": "Example API",
+  "description": "This is a sample API specification.",
+  "upstream_mocks": [
+    [
+      {
+        "method": "GET",
+        "url": "https://upstream-service.example.com/resource",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null
+      },
+      {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "message": "Response from upstream service"
+        }
+      }
+    ]
+  ],
+  "expected_upstream_requests": [
+    {
+      "method": "POST",
+      "url": "https://upstream-service.example.com/resource",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "key1": "value1",
+        "key2": "value2"
+      }
+    }
+  ],
+  "downstream_assertions": [
+    {
+      "request": {
+        "method": "GET",
+        "url": "https://downstream-service.example.com/resource",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "ok",
+          "message": "Data processed correctly"
+        }
+      }
+    }
+  ]
+}
