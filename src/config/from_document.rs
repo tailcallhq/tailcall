@@ -42,8 +42,8 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
   )
 }
 
-fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
-  schema_definition: &'a SchemaDefinition,
+fn process_schema_directives<T: DirectiveCodec<T> + Default>(
+  schema_definition: &SchemaDefinition,
   directive_name: &str,
 ) -> Valid<T, String> {
   let mut res = Valid::succeed(T::default());
@@ -239,19 +239,19 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   };
   config::Arg { type_of, list, required, doc, modify, default_value }
 }
-fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::ModifyField> {
+fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "modify" {
-      config::ModifyField::from_directive(&directive.node).to_result().ok()
+      config::Modify::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
   })
 }
-fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::InlineType> {
+fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::Inline> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "inline" {
-      config::InlineType::from_directive(&directive.node).to_result().ok()
+      config::Inline::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -273,10 +273,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .collect();
   Union { types, doc: doc.clone() }
 }
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "const" {
-      config::ConstField::from_directive(&directive.node).to_result().ok()
+      config::Const::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }

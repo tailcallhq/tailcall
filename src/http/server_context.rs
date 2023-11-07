@@ -5,7 +5,7 @@ use derive_setters::Setters;
 
 use crate::blueprint::{Blueprint, Definition};
 use crate::http::{DefaultHttpClient, HttpDataLoader};
-use crate::lambda::{Expression, Operation};
+use crate::lambda::{Expression, Unsafe};
 
 #[derive(Setters, Clone)]
 pub struct ServerContext {
@@ -18,10 +18,10 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: DefaultHttpClient
   for def in blueprint.definitions.iter_mut() {
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &mut def.fields {
-        if let Some(Expression::Unsafe(Operation::Endpoint(req_template, group_by, _))) = &mut field.resolver {
+        if let Some(Expression::Unsafe(Unsafe::Http(req_template, group_by, _))) = &mut field.resolver {
           let data_loader = HttpDataLoader::new(http_client.clone(), group_by.clone())
             .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
-          field.resolver = Some(Expression::Unsafe(Operation::Endpoint(
+          field.resolver = Some(Expression::Unsafe(Unsafe::Http(
             req_template.clone(),
             group_by.clone(),
             Some(Arc::new(data_loader)),
