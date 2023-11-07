@@ -2,7 +2,6 @@ mod client;
 mod data_loader;
 
 mod data_loader_request;
-mod memo_client;
 mod method;
 mod request_context;
 mod response;
