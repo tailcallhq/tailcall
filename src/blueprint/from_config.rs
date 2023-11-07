@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
@@ -124,7 +122,7 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       let dbl_usage = input_types.contains(name) && output_types.contains(name);
       if let Some(variants) = &type_.variants {
         if !variants.is_empty() {
-          to_enum_type_definition(name, type_, config, variants.clone()).trace(name)
+          to_enum_type_definition(name, type_, variants).trace(name)
         } else {
           Valid::fail("No variants found for enum".to_string())
         }
@@ -178,12 +176,7 @@ fn to_union_type_definition((name, u): (&String, &config::Union)) -> UnionTypeDe
     types: u.types.clone(),
   }
 }
-fn to_enum_type_definition(
-  name: &str,
-  type_: &config::Type,
-  _config: &Config,
-  variants: BTreeSet<String>,
-) -> Valid<Definition, String> {
+fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet<String>) -> Valid<Definition, String> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
     directives: Vec::new(),
@@ -229,6 +222,21 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+  let to_field = |name: &String, field: &Field| {
+    let directives = field.resolvable_directives();
+    if directives.len() > 1 {
+      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+    }
+
+    update_args()
+      .and(update_http().trace("@http"))
+      .and(update_unsafe().trace("@unsafe"))
+      .and(update_const_field().trace("@const"))
+      .and(update_inline_field().trace("@inline"))
+      .and(update_modify().trace("@modify"))
+      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+  };
+
   let fields = Valid::from_iter(
     type_of
       .fields
@@ -236,7 +244,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
     |(name, field)| {
       validate_field_type_exist(config, field)
-        .and(to_field(type_of, config, name, field))
+        .and(to_field(name, field))
         .trace(name)
     },
   );
@@ -250,12 +258,28 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
   })
 }
 
+
 fn to_added_field_definition(
   add_field: config::AddField,
   fields: BTreeMap<String, config::Field>,
   config: &Config,
   type_of: &config::Type,
 ) -> Valid<FieldDefinition, String> {
+  let to_field = |name: &String, field: &Field| {
+    let directives = field.resolvable_directives();
+    if directives.len() > 1 {
+      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+    }
+
+    update_args()
+      .and(update_http().trace("@http"))
+      .and(update_unsafe().trace("@unsafe"))
+      .and(update_const_field().trace("@const"))
+      .and(update_inline_field().trace("@inline"))
+      .and(update_modify().trace("@modify"))
+      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+  };
+
   let source_field = fields.iter().find(|&(field_name, _)| *field_name == add_field.path[0]);
 
   match source_field {
@@ -273,7 +297,7 @@ fn to_added_field_definition(
         unsafe_operation: source_field.unsafe_operation.clone(),
         const_field: source_field.const_field.clone(),
       };
-      to_field(type_of, config, add_field.name.as_str(), &new_field)
+      to_field(&add_field.name, &new_field)
         .and_then(|field_definition| {
           let added_field_path = match source_field.http {
             Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
@@ -293,79 +317,82 @@ fn to_added_field_definition(
 
 fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
   if let Some(field) = type_of.fields.get(value) {
-    return Some(to_type(
-      &field.type_of,
-      field.list,
-      field.required,
-      field.list_type_required,
-    ));
+    return Some(to_type(field, None));
   }
-
   None
 }
 
-fn validate_mustache_parts(
-  type_of: &config::Type,
-  config: &Config,
-  is_query: bool,
-  parts: &[String],
-  args: &[InputFieldDefinition],
-) -> Valid<(), String> {
-  if parts.len() < 2 {
-    return Valid::fail("too few parts in template".to_string());
+struct MustachePartsValidator<'a> {
+  type_of: &'a config::Type,
+  config: &'a Config,
+  field: &'a FieldDefinition,
+}
+
+impl<'a> MustachePartsValidator<'a> {
+  fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
+    Self { type_of, config, field }
   }
+  fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
+    let type_of = self.type_of;
+    let config = self.config;
+    let args = &self.field.args;
 
-  let head = parts[0].as_str();
-  let tail = parts[1].as_str();
+    if parts.len() < 2 {
+      return Valid::fail("too few parts in template".to_string());
+    }
 
-  match head {
-    "value" => {
-      if let Some(val_type) = get_value_type(type_of, tail) {
-        if !is_scalar(val_type.name()) {
-          return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+    let head = parts[0].as_str();
+    let tail = parts[1].as_str();
+
+    match head {
+      "value" => {
+        if let Some(val_type) = get_value_type(type_of, tail) {
+          if !is_scalar(val_type.name()) {
+            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+          }
+
+          // Queries can use optional values
+          if !is_query && val_type.is_nullable() {
+            return Valid::fail(format!("value '{tail}' is a nullable type"));
+          }
+        } else {
+          return Valid::fail(format!("no value '{tail}' found"));
         }
+      }
+      "args" => {
+        // XXX this is a linear search but it's cost is less than that of
+        // constructing a HashMap since we'd have 3-4 arguments at max in
+        // most cases
+        if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+          if let Type::ListType { .. } = arg.of_type {
+            return Valid::fail(format!("can't use list type '{tail}' here"));
+          }
 
-        // Queries can use optional values
-        if !is_query && val_type.is_nullable() {
-          return Valid::fail(format!("value '{tail}' is a nullable type"));
+          // we can use non-scalar types in args
+
+          if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
+            return Valid::fail(format!("argument '{tail}' is a nullable type"));
+          }
+        } else {
+          return Valid::fail(format!("no argument '{tail}' found"));
         }
-      } else {
-        return Valid::fail(format!("no value '{tail}' found"));
+      }
+      "vars" => {
+        if config.server.vars.get(tail).is_none() {
+          return Valid::fail(format!("var '{tail}' is not set in the server config"));
+        }
+      }
+      "headers" => {
+        // "headers" refers to the header values known at runtime, which we can't
+        // validate here
+      }
+      _ => {
+        return Valid::fail(format!("unknown template directive '{head}'"));
       }
     }
-    "args" => {
-      // XXX this is a linear search but it's cost is less than that of
-      // constructing a HashMap since we'd have 3-4 arguments at max in
-      // most cases
-      if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-        if let Type::ListType { .. } = arg.of_type {
-          return Valid::fail(format!("can't use list type '{tail}' here"));
-        }
 
-        // we can use non-scalar types in args
-
-        if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-          return Valid::fail(format!("argument '{tail}' is a nullable type"));
-        }
-      } else {
-        return Valid::fail(format!("no argument '{tail}' found"));
-      }
-    }
-    "vars" => {
-      if config.server.vars.get(tail).is_none() {
-        return Valid::fail(format!("var '{tail}' is not set in the server config"));
-      }
-    }
-    "headers" => {
-      // "headers" refers to the header values known at runtime, which we can't
-      // validate here
-    }
-    _ => {
-      return Valid::fail(format!("unknown template directive '{head}'"));
-    }
+    Valid::succeed(())
   }
-
-  Valid::succeed(())
 }
 
 fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefinition) -> Valid<(), String> {
@@ -375,15 +402,18 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   // type if it doesn't exist, so we wouldn't be able to get enough
   // context from that method alone
   // So we must duplicate some of that logic here :(
+
+  let parts_validator = MustachePartsValidator::new(type_of, config, field);
+
   if let Some(Expression::Unsafe(Unsafe::Http(req_template, _, _))) = &field.resolver {
     Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-      validate_mustache_parts(type_of, config, false, parts, &field.args).trace("path")
+      parts_validator.validate(parts, false).trace("path")
     })
     .and(Valid::from_iter(req_template.query.clone(), |query| {
       let (_, mustache) = query;
 
       Valid::from_iter(mustache.expression_segments(), |parts| {
-        validate_mustache_parts(type_of, config, true, parts, &field.args).trace("query")
+        parts_validator.validate(parts, true).trace("query")
       })
     }))
     .unit()
@@ -392,27 +422,19 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
   }
 }
 
-fn to_field(
-  type_of: &config::Type,
-  config: &Config,
-  name: &str,
-  field: &Field,
-) -> Valid<blueprint::FieldDefinition, String> {
-  let directives = field.resolvable_directives();
-  if directives.len() > 1 {
-    return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
-  }
+fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
+where
+  T: TypeLike,
+{
+  let name = field.name();
+  let list = field.list();
+  let list_type_required = field.list_type_required();
+  let non_null = if let Some(non_null) = override_non_null {
+    non_null
+  } else {
+    field.non_null()
+  };
 
-  update_args()
-    .and(update_http().trace(config::Http::trace_name().as_str()))
-    .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
-    .and(update_const_field().trace(config::Const::trace_name().as_str()))
-    .and(update_inline_field().trace(config::Inline::trace_name().as_str()))
-    .and(update_modify().trace(config::Modify::trace_name().as_str()))
-    .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-}
-
-fn to_type(name: &str, list: bool, non_null: bool, list_type_required: bool) -> Type {
   if list {
     Type::ListType {
       of_type: Box::new(Type::NamedType { name: name.to_string(), non_null: list_type_required }),
@@ -593,29 +615,38 @@ fn is_scalar(type_name: &str) -> bool {
 type InvalidPathHandler = dyn Fn(&str, &[String]) -> Valid<Type, String>;
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str) -> Valid<Type, String>;
 
-// Helper function to recursively process the path and return the corresponding type
-fn process_path(
-  path: &[String],
-  field: &config::Field,
-  type_info: &config::Type,
+struct ProcessPathContext<'a> {
+  path: &'a [String],
+  field: &'a config::Field,
+  type_info: &'a config::Type,
   is_required: bool,
-  config: &Config,
-  invalid_path_handler: &InvalidPathHandler,
-  path_resolver_error_handler: &PathResolverErrorHandler,
-) -> Valid<Type, String> {
+  config: &'a Config,
+  invalid_path_handler: &'a InvalidPathHandler,
+  path_resolver_error_handler: &'a PathResolverErrorHandler,
+}
+
+// Helper function to recursively process the path and return the corresponding type
+fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
+  let path = context.path;
+  let field = context.field;
+  let type_info = context.type_info;
+  let is_required = context.is_required;
+  let config = context.config;
+  let invalid_path_handler = context.invalid_path_handler;
+  let path_resolver_error_handler = context.path_resolver_error_handler;
   if let Some((field_name, remaining_path)) = path.split_first() {
     if field_name.parse::<usize>().is_ok() {
       let mut modified_field = field.clone();
       modified_field.list = false;
-      return process_path(
-        remaining_path,
-        &modified_field,
-        type_info,
-        false,
+      return process_path(ProcessPathContext {
         config,
+        type_info,
         invalid_path_handler,
         path_resolver_error_handler,
-      );
+        path: remaining_path,
+        field: &modified_field,
+        is_required: false,
+      });
     }
     let target_type_info = type_info
       .fields
@@ -624,7 +655,7 @@ fn process_path(
       .or_else(|| config.find_type(&field.type_of));
 
     if let Some(type_info) = target_type_info {
-      return process_field_within_type(
+      return process_field_within_type(ProcessFieldWithinTypeContext {
         field,
         field_name,
         remaining_path,
@@ -633,29 +664,35 @@ fn process_path(
         config,
         invalid_path_handler,
         path_resolver_error_handler,
-      );
+      });
     }
     return invalid_path_handler(field_name, path);
   }
 
-  Valid::succeed(to_type(
-    &field.type_of,
-    field.list,
-    is_required,
-    field.list_type_required,
-  ))
+  Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn process_field_within_type(
-  field: &config::Field,
-  field_name: &str,
-  remaining_path: &[String],
-  type_info: &config::Type,
+struct ProcessFieldWithinTypeContext<'a> {
+  field: &'a config::Field,
+  field_name: &'a str,
+  remaining_path: &'a [String],
+  type_info: &'a config::Type,
   is_required: bool,
-  config: &Config,
-  invalid_path_handler: &InvalidPathHandler,
-  path_resolver_error_handler: &PathResolverErrorHandler,
-) -> Valid<Type, String> {
+  config: &'a Config,
+  invalid_path_handler: &'a InvalidPathHandler,
+  path_resolver_error_handler: &'a PathResolverErrorHandler,
+}
+
+fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Type, String> {
+  let field = context.field;
+  let field_name = context.field_name;
+  let remaining_path = context.remaining_path;
+  let type_info = context.type_info;
+  let is_required = context.is_required;
+  let config = context.config;
+  let invalid_path_handler = context.invalid_path_handler;
+  let path_resolver_error_handler = context.path_resolver_error_handler;
+
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
       let next_dir_http = next_field.http.as_ref().map(|_| "http");
@@ -665,40 +702,40 @@ fn process_field_within_type(
         &field.type_of,
         field_name,
       )
-      .and(process_path(
-        remaining_path,
-        next_field,
+      .and(process_path(ProcessPathContext {
         type_info,
         is_required,
         config,
         invalid_path_handler,
         path_resolver_error_handler,
-      ));
+        path: remaining_path,
+        field: next_field,
+      }));
     }
 
     let next_is_required = is_required && next_field.required;
     if is_scalar(&next_field.type_of) {
-      return process_path(
-        remaining_path,
-        next_field,
+      return process_path(ProcessPathContext {
         type_info,
-        next_is_required,
         config,
         invalid_path_handler,
         path_resolver_error_handler,
-      );
+        path: remaining_path,
+        field: next_field,
+        is_required: next_is_required,
+      });
     }
 
     if let Some(next_type_info) = config.find_type(&next_field.type_of) {
-      return process_path(
-        remaining_path,
-        next_field,
-        next_type_info,
-        next_is_required,
+      return process_path(ProcessPathContext {
         config,
         invalid_path_handler,
         path_resolver_error_handler,
-      )
+        path: remaining_path,
+        field: next_field,
+        type_info: next_type_info,
+        is_required: next_is_required,
+      })
       .and_then(|of_type| {
         if next_field.list {
           Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
@@ -709,15 +746,15 @@ fn process_field_within_type(
     }
   } else if let Some((head, tail)) = remaining_path.split_first() {
     if let Some(field) = type_info.fields.get(head) {
-      return process_path(
-        tail,
+      return process_path(ProcessPathContext {
+        path: tail,
         field,
         type_info,
         is_required,
         config,
         invalid_path_handler,
         path_resolver_error_handler,
-      );
+      });
     }
   }
 
@@ -742,15 +779,15 @@ fn update_resolver_from_path(
 ) -> Valid<blueprint::FieldDefinition, String> {
   let has_index = item_is_numberic(path);
 
-  process_path(
+  process_path(ProcessPathContext {
     path,
     field,
     type_info,
-    false,
+    is_required: false,
     config,
-    handle_invalid_path,
-    handle_path_resolver_error,
-  )
+    invalid_path_handler: handle_invalid_path,
+    path_resolver_error_handler: handle_path_resolver_error,
+})
   .and_then(|of_type| {
     let mut updated_base_field = base_field;
     let resolver = Lambda::context_path(path.to_owned());
@@ -780,6 +817,7 @@ fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::
             resolver_name, field_type, field_name
           ))
         };
+
       if let Some(Inline { path }) = &field.inline {
         update_resolver_from_path(
           path,
@@ -831,7 +869,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       Valid::succeed(InputFieldDefinition {
         name: name.clone(),
         description: arg.doc.clone(),
-        of_type: to_type(&arg.type_of, arg.list, arg.required, false),
+        of_type: to_type(arg, None),
         default_value: arg.default_value.clone(),
       })
     })
@@ -839,31 +877,29 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       name: name.to_string(),
       description: field.doc.clone(),
       args,
-      of_type: to_type(
-        field.type_of.as_str(),
-        field.list,
-        field.required,
-        field.list_type_required,
-      ),
+      of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
     })
   })
 }
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-  to_json_schema(&field.type_of, field.required, field.list, config)
+  to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
   let mut schema_fields = HashMap::new();
   for (name, arg) in args.iter() {
-    schema_fields.insert(
-      name.clone(),
-      to_json_schema(&arg.type_of, arg.required, arg.list, config),
-    );
+    schema_fields.insert(name.clone(), to_json_schema(arg, config));
   }
   JsonSchema::Obj(schema_fields)
 }
-pub fn to_json_schema(type_of: &str, required: bool, list: bool, config: &Config) -> JsonSchema {
+fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
+where
+  T: TypeLike,
+{
+  let type_of = field.name();
+  let list = field.list();
+  let required = field.non_null();
   let type_ = config.find_type(type_of);
   let schema = match type_ {
     Some(type_) => {
@@ -902,5 +938,47 @@ impl TryFrom<&Config> for Blueprint {
 
   fn try_from(config: &Config) -> Result<Self, Self::Error> {
     config_blueprint().try_fold(config, Blueprint::default()).to_result()
+  }
+}
+
+trait TypeLike {
+  fn name(&self) -> &str;
+  fn list(&self) -> bool;
+  fn non_null(&self) -> bool;
+  fn list_type_required(&self) -> bool;
+}
+
+impl TypeLike for Field {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    self.list_type_required
+  }
+}
+impl TypeLike for Arg {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    false
   }
 }
