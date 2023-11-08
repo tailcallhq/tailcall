@@ -61,21 +61,24 @@ impl APISpecification {
 
     spec.ok()
   }
-  async fn run(&self, query: String) {
-    let config = read_config_from_path(self.config.clone().as_str()).await.unwrap();
-    let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
-    let server_context = ServerContext::new(blueprint, client);
-    let state = Arc::new(server_context);
+  async fn status(&self, query: String) {
+    let state = self.setup().await;
     let req = Request::builder()
       .method(Method::POST)
       .uri("http://localhost:8080/graphql")
       .body(Body::from(query))
       .unwrap();
     let response = graphql_request(req, state.as_ref()).await.unwrap();
-    for assertion in self.downstream_assertions.iter() {
-      assert_eq!(response.status().as_u16(), assertion.response.0.status);
-    }
+    assert_eq!(response.status().as_u16(), 200);
+  }
+
+  async fn setup(&self) -> Arc<ServerContext> {
+    let config = read_config_from_path(self.config.clone().as_str()).await.unwrap();
+    let blueprint = Blueprint::try_from(&config).unwrap();
+    let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
+    let server_context = ServerContext::new(blueprint, client);
+    let state = Arc::new(server_context);
+    state
   }
 }
 
@@ -115,6 +118,6 @@ mod test {
     let spec = APISpecification::read("tests/data/sample.json").unwrap();
     let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
 
-    spec.run(query_string).await;
+    spec.status(query_string).await;
   }
 }
