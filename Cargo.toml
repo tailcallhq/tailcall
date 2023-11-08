@@ -31,7 +31,7 @@ async-graphql = { version = "6.0", features = [
    "dynamic-schema",
    "dataloader",
    "apollo_tracing", 
-   "hashbrown"
+   "log"
 ] }
 async-graphql-value = "6.0"
 base64 = "0.21"
@@ -44,7 +44,7 @@ regex = "1.10.2"
 http-cache-reqwest = { version = "0.12.0", features = [
    "manager-moka"
 ], default-features = false }
-hashbrown = "0.14.2"
+dashmap = "5.5.3"
 reqwest-middleware = "0.2.4"
 async-trait = "0.1.74"
 serde_path_to_error = "0.1.14"

@@ -1,12 +1,15 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::anyhow;
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql_value::ConstValue;
-use hashbrown::HashMap as BrownHashMap;
+use dashmap::DashMap;
+use tokio::sync::RwLock;
 
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
@@ -33,10 +36,14 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
   }
 }
 
-fn sorted_key_loader(keys: &[DataLoaderRequest]) -> Vec<DataLoaderRequest> {
-  let mut keys: Vec<DataLoaderRequest> = keys.to_vec();
-  keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
-  keys
+// fn sorted_key_loader(keys: &[DataLoaderRequest]) -> Vec<DataLoaderRequest> {
+//   let mut keys: Vec<DataLoaderRequest> = keys.to_vec();
+//   keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+//   keys
+// }
+
+fn return_request(keys: &[DataLoaderRequest]) -> Vec<reqwest::Request> {
+  keys.iter().map(|key| key.to_request()).collect()
 }
 
 #[async_trait::async_trait]
@@ -49,95 +56,120 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     if let Some(group_by) = self.batched.clone() {
+
+      /*
+      From the &[DataLoaderRequest]
+      Create a Vec<Request> of same length
+      */
+
       // store the preused length of our keys.
       let original_key_length = keys.len();
 
-      let mut request = keys[0].to_request();
+      log::info!("Original key length: {}", original_key_length);
+      println!("Original key length: {}", original_key_length);
 
-      let first_url = request.url_mut();
+      let request_keys = return_request(keys);
 
-      let urls = keys[1..].iter().map(|key: &DataLoaderRequest| {
-        let key_request_result = key.to_request();
-        tokio::task::spawn(async move {
-          let url = key_request_result.url().to_owned();
-          url
-        })
-      });
+      //TODO: sorting is yet to be tested 
+      // request_keys.sort_by(|a, b| a.url().cmp(b.url()));
+      
+      let mut request = request_keys[0].try_clone()
+        .unwrap();
 
-      for url_handle in urls {
-        //TODO: replace this unsafe unwrap, and handle the error
-        let url = url_handle.await.unwrap();
-        first_url.query_pairs_mut().extend_pairs(url.query_pairs());
+      // the serializer by default implements the auto not marker traits for the types
+      let first_url = request
+        .url_mut();
+
+      // perform this under single iteration on the current thread runtime !
+      for key in request_keys[1..].iter() {
+        let key_url = key.url();
+        let url = key_url.query_pairs();
+        //TODO: The following method `query_pairs_mut()` is a expensive operation, requires a better approach if possible.
+        first_url.query_pairs_mut().extend_pairs(url);
       }
 
-      let res = self.client.execute(request).await?;
-
+      let client_res = self.client.execute(request).await?;
+    
       #[allow(clippy::mutable_key_type)]
-      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(original_key_length);
+      let hashmap: Arc<DashMap<DataLoaderRequest, Response>> = Arc::new(DashMap::with_capacity(original_key_length));
 
-      //TODO: figure out something lifetime elision raised here due to 'life0 mismatch
-      let group_key = group_by.clone().key().to_string();
       let path = group_by.path();
-      let body_value = res.body.group_by(&path[..]);
+      let group_key = group_by.key();
+
+      let body_value = client_res.body.group_by(&path[..]);
 
       let mut res_handle = Vec::with_capacity(original_key_length);
 
-      for key in keys.iter() {
-        let req = key.to_request();
-        let key_cloned = key.clone();
-        let group_key_clone = group_key.clone();
+      //TODO: This will fail if sorting procedure is not done. 
+      for (req, dataloader) in request_keys.into_iter().zip(keys) {
+        
+        let key_cloned = dataloader.to_owned();
+        let group_key_clone = group_key;
+        let query_url = req.url();
 
-        res_handle.push(tokio::task::spawn(async move {
-          let query_set: HashMap<_, _> = req.url().query_pairs().collect();
-          //TODO: replace this unsafe unwrap, and handle the error.
+        let query_set: HashMap<Cow<'_, str>, Cow<'_, str>> = query_url.query_pairs().collect();
 
-          let id = query_set
-            .get(group_key_clone.as_str())
-            .ok_or(anyhow::anyhow!(
-              "Unable to find key {} in query params",
-              group_key_clone
-            ))
-            .unwrap()
-            .deref()
-            .to_owned();
-          (key_cloned, id)
-        }))
-      }
-
-      for set in res_handle {
         //TODO: replace this unsafe unwrap, and handle the error.
-        let (key, id) = set.await.unwrap();
-        hashmap.insert(
-          key.clone(),
-          res.clone().body(
-            body_value
-              .get(&id)
-              .and_then(|a| a.first().cloned().cloned())
-              .unwrap_or(ConstValue::Null),
-          ),
-        );
+        let id = query_set
+          .get(group_key_clone)
+          .ok_or(anyhow::anyhow!(
+            "Unable to find key {} in query params",
+            group_key_clone
+          ))
+          .unwrap()
+          .deref()
+          .to_owned();
+
+        let body_key = body_value
+          .get(&id)
+          .and_then(|a| a.first().cloned().cloned())
+          .unwrap_or(ConstValue::Null);
+        
+        let client_key = client_res.clone().body(body_key);
+        
+        let hm_handle = Arc::clone(&hashmap);
+
+        let sub_task = tokio::task::spawn(async move {
+
+          hm_handle.insert(
+            key_cloned, 
+            client_key
+          )
+
+        });
+        res_handle.push(sub_task);
       }
-      Ok(hashmap)
+
+      for task in res_handle { 
+        if let Err(e) = task.await {
+          return Err(Arc::new(anyhow!("Task failed: {:?}", e)));
+        };
+      }
+      //todo: replace this unsafe unwrap
+      let hashmap = Arc::into_inner(hashmap).unwrap();
+    
+      Ok(HashMap::from_iter(hashmap))
+    
     } else {
-      let results = keys.iter().map(|key| {
+      let results = keys.into_iter().map(|key| {
         let cloned_client = self.client.clone();
         let key_request = key.to_request();
-        let key_cloned = key.clone();
-        tokio::task::spawn(async move {
+        let key_cloned = key.to_owned();
+        (key_cloned, tokio::task::spawn(async move {
           let query_result = cloned_client.execute(key_request).await;
-          (key_cloned, query_result)
-        })
+           query_result
+        }))
       });
 
       let mut hashmap = HashMap::new();
 
-      for val in results {
+      for (key, task) in results {
         //TODO: replace this unsafe unwrap
-        let (key, value) = val.await.unwrap();
+        let value = task.await.unwrap();
         hashmap.insert(key, value?);
       }
 
-      Ok(HashMap::from_iter(hashmap))
+      Ok(hashmap)
     }
   }
 }
