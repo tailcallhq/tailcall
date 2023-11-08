@@ -16,6 +16,12 @@ mod test {
   use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
   use url::Url;
 
+  #[derive(Deserialize, Clone, Debug)]
+  pub enum Annotation {
+    Skip,
+    Only,
+    Fail,
+  }
   #[derive(Deserialize, Clone, Debug, Default)]
   pub struct APIRequest {
     method: Option<Method>,
@@ -41,6 +47,7 @@ mod test {
   pub struct DownstreamAssertion {
     pub request: DownstreamRequest,
     pub response: DownstreamResponse,
+    pub annotation: Option<Annotation>,
   }
 
   #[derive(Default, Deserialize, Clone)]
@@ -51,10 +58,6 @@ mod test {
     pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
     pub expected_upstream_requests: Vec<UpstreamRequest>,
     pub downstream_assertions: Vec<DownstreamAssertion>,
-  }
-
-  async fn read_config_from_path(config_path: &str) -> Option<Config> {
-    Config::from_file_paths([config_path.to_string()].iter()).await.ok()
   }
 
   impl HttpSpec {
@@ -81,7 +84,10 @@ mod test {
       spec.ok()
     }
     async fn setup(&self) -> Arc<ServerContext> {
-      let config = read_config_from_path(self.config.clone().as_str()).await.unwrap();
+      let config = Config::from_file_paths([self.config.clone()].iter())
+        .await
+        .ok()
+        .unwrap();
       let blueprint = Blueprint::try_from(&config).unwrap();
       let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
       let server_context = ServerContext::new(blueprint, client);
@@ -131,30 +137,65 @@ mod test {
   #[tokio::test]
   async fn test_body_yaml() {
     let spec = HttpSpec::read("tests/data/sample.yaml").unwrap();
+    assert_downstream(spec).await;
+  }
+
+  async fn assert_downstream(spec: HttpSpec) {
     for downstream_assertion in spec.clone().downstream_assertions.iter() {
-      let response = run(spec.clone(), &downstream_assertion).await;
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      );
+      if let Some(annotation) = downstream_assertion.annotation.clone() {
+        match annotation {
+          Annotation::Skip => {
+            let request_details = format!(
+              "Method: {:?}, Path: {}, Body: {}",
+              downstream_assertion.request.0.method.clone().unwrap_or_default(),
+              downstream_assertion
+                .request
+                .0
+                .url
+                .clone()
+                .unwrap_or(Url::parse("http://localhost:8080/graphql").unwrap()),
+              downstream_assertion
+                .request
+                .0
+                .body
+                .clone()
+                .unwrap_or(serde_json::Value::Null)
+            );
+            println!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details);
+            continue;
+          }
+          Annotation::Only => {
+            let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+            let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+            assert_eq!(
+              body,
+              serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+            );
+            break;
+          }
+          Annotation::Fail => {
+            let response = run(spec.clone(), &downstream_assertion).await;
+            assert!(response.is_err());
+          }
+        }
+      } else {
+        let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        assert_eq!(
+          body,
+          serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+        );
+      }
     }
   }
 
   #[tokio::test]
   async fn test_body_json() {
     let spec = HttpSpec::read("tests/data/sample.json").unwrap();
-    for downstream_assertion in spec.clone().downstream_assertions.iter() {
-      let response = run(spec.clone(), &downstream_assertion).await;
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      );
-    }
+    assert_downstream(spec).await;
   }
 
-  async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> hyper::Response<Body> {
+  async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&downstream_assertion.request.0.body).unwrap();
     let method = downstream_assertion.request.0.method.clone().unwrap_or_default();
     let url = downstream_assertion
@@ -169,6 +210,6 @@ mod test {
       .uri(url.as_str())
       .body(Body::from(query_string))
       .unwrap();
-    graphql_request(req, state.as_ref()).await.unwrap()
+    Ok(graphql_request(req, state.as_ref()).await?)
   }
 }
