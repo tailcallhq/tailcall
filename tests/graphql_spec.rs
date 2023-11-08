@@ -39,40 +39,25 @@ struct GraphQLSpec {
 
 impl GraphQLSpec {
   fn client_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source {
-      sdl,
-      tag: CLIENT_SDL.to_string(),
-    });
+    self.sources.push(Source { sdl, tag: CLIENT_SDL.to_string() });
     self
   }
 
   fn server_sdl(mut self, sdl: Vec<String>) -> Self {
     for s in sdl {
-      self.sources.push(Source {
-        sdl: s,
-        tag: SERVER_SDL.to_string(),
-      });
+      self.sources.push(Source { sdl: s, tag: SERVER_SDL.to_string() });
     }
     self
   }
 
   fn merged_server_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source {
-      sdl,
-      tag: MERGED_SDL.to_string(),
-    });
+    self.sources.push(Source { sdl, tag: MERGED_SDL.to_string() });
 
     self
   }
 
   fn find_source(&self, tag: &str) -> String {
-    self
-      .sources
-      .clone()
-      .into_iter()
-      .find(|s| s.tag == tag)
-      .unwrap()
-      .sdl
+    self.sources.clone().into_iter().find(|s| s.tag == tag).unwrap().sdl
   }
 
   fn get_sources(&self, tag: &str) -> Vec<String> {
@@ -274,7 +259,9 @@ async fn test_execution() -> std::io::Result<()> {
     .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
-        let mut config = Config::from_sdl(spec.find_source(SERVER_SDL).as_str()).to_result().unwrap();
+        let mut config = Config::from_sdl(spec.find_source(SERVER_SDL).as_str())
+          .to_result()
+          .unwrap();
         config.server.enable_query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))
