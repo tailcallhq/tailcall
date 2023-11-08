@@ -23,7 +23,7 @@ type User {
 #> client-sdl
 type Failure
   @error(
-    message: "Cannot add field",
-    trace: ["Query", "@addField"],
+    message: "Cannot add field"
+    trace: ["Query", "@addField"]
     description: "Path: [post, user, name] contains resolver http at [Post.user]"
   )

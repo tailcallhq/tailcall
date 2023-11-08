@@ -21,8 +21,4 @@ type User {
 }
 
 #> client-sdl
-type Failure
-  @error(
-    message: "Could not find field user in path user,name",
-    trace: ["Query"]
-  )
+type Failure @error(message: "Could not find field user in path user,name", trace: ["Query"])

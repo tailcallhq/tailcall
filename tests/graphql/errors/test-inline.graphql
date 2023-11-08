@@ -18,7 +18,7 @@ type Query @addField(name: "street", path: ["user", "address", "street"]) {
 #> client-sdl
 type Failure
   @error(
-    message: "Cannot add field",
-    trace: ["Query", "@addField", "street"],
+    message: "Cannot add field"
+    trace: ["Query", "@addField", "street"]
     description: "Path [user, address, street] does not exist"
   )
