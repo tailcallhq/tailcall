@@ -196,10 +196,6 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     let us_dir = const_field.to_directive();
     directives.push(pos(us_dir));
   }
-  if let Some(inline) = field.clone().inline {
-    let il_dir = inline.to_directive();
-    directives.push(pos(il_dir));
-  }
   if let Some(modify) = field.clone().modify {
     let dir = modify.to_directive();
     directives.push(pos(dir));

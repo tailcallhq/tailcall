@@ -232,7 +232,6 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .and(update_http().trace("@http"))
       .and(update_unsafe().trace("@unsafe"))
       .and(update_const_field().trace("@const"))
-      .and(update_inline_field().trace("@inline"))
       .and(update_modify().trace("@modify"))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
@@ -265,7 +264,6 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
             args: source_field.args.clone(),
             doc: None,
             modify: source_field.modify.clone(),
-            inline: None,
             http: source_field.http.clone(),
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
@@ -814,44 +812,6 @@ fn update_resolver_from_path(
     updated_base_field = updated_base_field.resolver_or_default(resolver, |r| r.to_input_path(context.path.to_owned()));
     Valid::succeed(updated_base_field)
   })
-}
-
-// Main function to update an inline field
-fn update_inline_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-    |(config, field, type_info, _), base_field| {
-      let invalid_path_handler =
-        |_field_name: &str, _inlined_path: &[String], _original_path: &[String]| -> Valid<Type, String> {
-          Valid::fail("Inline can't be done because provided path doesn't exist".to_string())
-        };
-      let path_resolver_error_handler =
-        |resolver_name: &str, field_type: &str, field_name: &str, _original_path: &[String]| -> Valid<Type, String> {
-          Valid::<Type, String>::fail(format!(
-            "Inline can't be done because of {} resolver at [{}.{}]",
-            resolver_name, field_type, field_name
-          ))
-        };
-
-      if let Some(Inline { path }) = &field.inline {
-        update_resolver_from_path(
-          &ProcessPathContext {
-            path,
-            field,
-            type_info,
-            is_required: false,
-            config,
-            invalid_path_handler: &invalid_path_handler,
-            path_resolver_error_handler: &path_resolver_error_handler,
-            original_path: path,
-          },
-          base_field,
-        )
-      } else {
-        Valid::succeed(base_field)
-      }
-    },
-  )
 }
 
 fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
