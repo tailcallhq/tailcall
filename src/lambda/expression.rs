@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{max_age, DefaultHttpClient, HttpDataLoader};
+use crate::http::{max_age, HttpClient, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -38,7 +38,7 @@ pub enum Unsafe {
   Http(
     RequestTemplate,
     Option<GroupBy>,
-    Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
+    Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
   JS(Box<Expression>, String),
 }
