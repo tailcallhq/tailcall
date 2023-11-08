@@ -77,8 +77,7 @@ impl APISpecification {
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
     let server_context = ServerContext::new(blueprint, client);
-    let state = Arc::new(server_context);
-    state
+    Arc::new(server_context)
   }
 }
 
