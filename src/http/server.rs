@@ -66,7 +66,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  // FIXME: create client from blueprint.upstream
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let make_svc = make_service_fn(move |_conn| {
