@@ -58,9 +58,25 @@ mod test {
 
   impl APISpecification {
     fn read(spec: &str) -> Option<Self> {
+      spec
+        .split('.')
+        .last()
+        .and_then(|ext| match ext.to_lowercase().as_str() {
+          "json" => Self::read_json(spec),
+          "yaml" => Self::read_yaml(spec),
+          _ => None,
+        })
+    }
+    fn read_json(spec: &str) -> Option<Self> {
       let contents = fs::read_to_string(spec).ok()?;
       let spec = serde_json::from_str(&contents);
 
+      spec.ok()
+    }
+
+    fn read_yaml(spec: &str) -> Option<Self> {
+      let contents = fs::read_to_string(spec).ok()?;
+      let spec = serde_yaml::from_str(&contents);
       spec.ok()
     }
     async fn status(&self, query: String) {
@@ -112,8 +128,16 @@ mod test {
   }
 
   #[tokio::test]
-  async fn test_status_code() {
+  async fn test_status_code_json() {
     let spec = APISpecification::read("tests/data/sample.json").unwrap();
+    let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
+
+    spec.status(query_string).await;
+  }
+
+  #[tokio::test]
+  async fn test_status_code_yaml() {
+    let spec = APISpecification::read("tests/data/sample.yaml").unwrap();
     let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
 
     spec.status(query_string).await;
