@@ -50,3 +50,20 @@ impl From<&Method> for reqwest::Method {
     }
   }
 }
+
+#[cfg(test)]
+mod test {
+  #[test]
+  fn test_method_as_str() {
+    use super::Method;
+    assert_eq!(Method::GET.as_str(), "GET");
+    assert_eq!(Method::POST.as_str(), "POST");
+    assert_eq!(Method::PUT.as_str(), "PUT");
+    assert_eq!(Method::PATCH.as_str(), "PATCH");
+    assert_eq!(Method::DELETE.as_str(), "DELETE");
+    assert_eq!(Method::HEAD.as_str(), "HEAD");
+    assert_eq!(Method::OPTIONS.as_str(), "OPTIONS");
+    assert_eq!(Method::CONNECT.as_str(), "CONNECT");
+    assert_eq!(Method::TRACE.as_str(), "TRACE");
+  }
+}
