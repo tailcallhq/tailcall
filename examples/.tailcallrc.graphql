@@ -1,7 +1,7 @@
 directive @server(
   enableApolloTracing: Boolean
   enableCacheControlHeader: Boolean
-  enableGraphiql: true
+  enableGraphiql: Boolean
   enableIntrospection: Boolean
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
