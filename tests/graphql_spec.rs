@@ -37,17 +37,26 @@ struct GraphQLSpec {
 struct SDLError {
   message: String,
   trace: Vec<String>,
+  description: Option<String>,
 }
 
 impl<'a> From<Cause<&'a str>> for SDLError {
   fn from(value: Cause<&'a str>) -> Self {
-    SDLError { message: value.message.to_string(), trace: value.trace.iter().map(|e| e.to_string()).collect() }
+    SDLError {
+      message: value.message.to_string(),
+      trace: value.trace.iter().map(|e| e.to_string()).collect(),
+      description: None,
+    }
   }
 }
 
 impl From<Cause<String>> for SDLError {
   fn from(value: Cause<String>) -> Self {
-    SDLError { message: value.message.to_string(), trace: value.trace.iter().map(|e| e.to_string()).collect() }
+    SDLError {
+      message: value.message.to_string(),
+      trace: value.trace.iter().map(|e| e.to_string()).collect(),
+      description: value.description,
+    }
   }
 }
 

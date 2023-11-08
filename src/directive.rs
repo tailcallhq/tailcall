@@ -32,6 +32,9 @@ pub trait DirectiveCodec<A> {
     to_const_directive(directive).and_then(|a| Self::from_directive(&a))
   }
   fn to_directive(&self) -> ConstDirective;
+  fn trace_name() -> String {
+    format!("@{}", Self::directive_name())
+  }
 }
 
 impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {

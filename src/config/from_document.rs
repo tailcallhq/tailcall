@@ -75,8 +75,18 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     match type_definition.node.kind.clone() {
-      TypeKind::Object(object_type) => to_object_type(&object_type, &type_definition.node.description).some(),
-      TypeKind::Interface(interface_type) => to_object_type(&interface_type, &type_definition.node.description).some(),
+      TypeKind::Object(object_type) => to_object_type(
+        &object_type,
+        &type_definition.node.description,
+        &type_definition.node.directives,
+      )
+      .some(),
+      TypeKind::Interface(interface_type) => to_object_type(
+        &interface_type,
+        &type_definition.node.description,
+        &type_definition.node.directives,
+      )
+      .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
       TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
       TypeKind::Union(_) => Valid::none(),
@@ -110,7 +120,11 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
-fn to_object_type<T>(object: &T, description: &Option<Positioned<String>>) -> Valid<config::Type, String>
+fn to_object_type<T>(
+  object: &T,
+  description: &Option<Positioned<String>>,
+  directives: &[Positioned<ConstDirective>],
+) -> Valid<config::Type, String>
 where
   T: ObjectLike,
 {
@@ -121,7 +135,8 @@ where
   to_fields(fields).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-    config::Type { fields, doc, interface, implements, ..Default::default() }
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -281,6 +296,18 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
       None
     }
   })
+}
+fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {
+  directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node == config::AddField::directive_name() {
+        config::AddField::from_directive(&directive.node).to_result().ok()
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>()
 }
 
 trait HasName {

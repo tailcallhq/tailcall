@@ -118,6 +118,7 @@ impl Config {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
+  pub added_fields: Vec<AddField>,
   pub doc: Option<String>,
   #[serde(default)]
   pub interface: bool,
@@ -317,6 +318,12 @@ pub struct Http {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Const {
   pub data: Value,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AddField {
+  pub name: String,
+  pub path: Vec<String>,
 }
 
 impl Config {

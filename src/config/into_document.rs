@@ -159,7 +159,11 @@ fn config_document(config: &Config) -> ServiceDocument {
       extend: false,
       description: None,
       name: pos(Name::new(type_name.clone())),
-      directives: Vec::new(),
+      directives: type_def
+        .added_fields
+        .iter()
+        .map(|added_field| pos(added_field.to_directive()))
+        .collect::<Vec<_>>(),
       kind,
     })));
   }
