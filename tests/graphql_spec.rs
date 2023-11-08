@@ -16,7 +16,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{RequestContext, ServerContext};
+use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 mod graphql_mock;
@@ -223,7 +223,8 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let server_ctx = ServerContext::new(blueprint);
+        let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
+        let server_ctx = ServerContext::new(blueprint, client);
         let schema = server_ctx.schema.clone();
 
         for q in spec.test_queries {
