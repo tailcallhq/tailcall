@@ -16,7 +16,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{DefaultHttpClient, HttpClient, RequestContext, ServerContext};
+use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 mod graphql_mock;

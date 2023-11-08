@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{max_age, HttpClient, HttpDataLoader};
+use crate::http::{max_age, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
