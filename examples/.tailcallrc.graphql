@@ -36,6 +36,7 @@ directive @http(
   baseURL: String
   headers: [KeyValue]
 ) on FIELD_DEFINITION
+directive @addField(name: String, path: [String]!) on FIELD_DEFINITION
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
