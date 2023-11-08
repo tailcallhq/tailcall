@@ -3,8 +3,7 @@ config: tests/graphql_mock/test-custom-headers.graphql
 name: Example API
 description: This is a sample API specification.
 upstream_mocks:
-  - - method: GET
-      url: http://jsonplaceholder.typicode.com//users/1
+  - - url: http://jsonplaceholder.typicode.com/users/1
       headers:
         Accept: application/json
         test: test
@@ -13,42 +12,26 @@ upstream_mocks:
         Content-Type: application/json
       body:
         id: 1
-        name: Leanne Graham
-        username: Bret
-        email: Sincere@april.biz
-        address:
-          street: Kulas Light
-          suite: Apt. 556
-          city: Gwenborough
-          zipcode: 92998-3874
-          geo:
-            lat: "-37.3159"
-            lng: '81.1496'
-        phone: 1-770-736-8031 x56442
-        website: hildegard.org
-        company:
-          name: Romaguera-Crona
-          catchPhrase: Multi-layered client-server neural-net
-          bs: harness real-time e-markets
+        name: foo
 expected_upstream_requests:
-  - method: POST
-    url: https://upstream-service.example.com/resource
+  - url: http://jsonplaceholder.typicode.com/users/1
     headers:
-      Content-Type: application/json
-    body:
-      key1: value1
-      key2: value2
+      Accept: application/json
+      test: test
 downstream_assertions:
   - request:
-      method: GET
-      url: https://downstream-service.example.com/resource
+      method: POST
+      url: http://localhost:8080/graphql
       headers:
         Accept: application/json
+        test: test
       body:
+        query: query { user { name } }
     response:
       status: 200
       headers:
         Content-Type: application/json
       body:
-        status: ok
-        message: Data processed correctly
+        data:
+          user:
+            name: foo

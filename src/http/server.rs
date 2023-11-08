@@ -29,7 +29,6 @@ pub async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> 
   let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
   let req_ctx = Arc::new(RequestContext::from(server_ctx).req_headers(headers));
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
-
   if server_ctx.blueprint.server.enable_cache_control_header {
     if let Some(ttl) = req_ctx.get_min_max_age() {
       response = response.set_cache_control(ttl as i32);

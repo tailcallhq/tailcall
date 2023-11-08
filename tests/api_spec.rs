@@ -5,20 +5,21 @@ mod test {
   use std::str::FromStr;
   use std::sync::Arc;
 
-  use async_graphql::InputType;
+  use async_graphql_value::ConstValue;
   use http_cache_semantics::RequestLike;
   use hyper::{Body, Request};
   use reqwest::header::{HeaderName, HeaderValue};
   use serde::Deserialize;
+  use serde_json::Value;
   use tailcall::blueprint::Blueprint;
   use tailcall::config::Config;
   use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
   use url::Url;
 
-  #[derive(Deserialize, Clone, Debug)]
+  #[derive(Deserialize, Clone, Debug, Default)]
   pub struct APIRequest {
-    method: Method,
-    pub url: Url,
+    method: Option<Method>,
+    pub url: Option<Url>,
     pub headers: Option<BTreeMap<String, String>>,
     pub body: Option<serde_json::Value>,
   }
@@ -32,18 +33,18 @@ mod test {
   pub struct UpstreamRequest(pub APIRequest);
   #[derive(Deserialize, Clone, Debug)]
   pub struct UpstreamResponse(APIResponse);
-  #[derive(Deserialize)]
+  #[derive(Deserialize, Clone)]
   pub struct DownstreamRequest(pub APIRequest);
-  #[derive(Deserialize)]
+  #[derive(Deserialize, Clone)]
   pub struct DownstreamResponse(pub APIResponse);
-  #[derive(Deserialize)]
+  #[derive(Deserialize, Clone)]
   pub struct DownstreamAssertion {
     pub request: DownstreamRequest,
     pub response: DownstreamResponse,
   }
 
-  #[derive(Default, Deserialize)]
-  pub struct APISpecification {
+  #[derive(Default, Deserialize, Clone)]
+  pub struct HttpSpec {
     pub config: String,
     pub name: String,
     pub description: Option<String>,
@@ -56,7 +57,7 @@ mod test {
     Config::from_file_paths([config_path.to_string()].iter()).await.ok()
   }
 
-  impl APISpecification {
+  impl HttpSpec {
     fn read(spec: &str) -> Option<Self> {
       spec
         .split('.')
@@ -79,17 +80,6 @@ mod test {
       let spec = serde_yaml::from_str(&contents);
       spec.ok()
     }
-    async fn status(&self, query: String) {
-      let state = self.setup().await;
-      let req = Request::builder()
-        .method(Method::POST)
-        .uri("http://localhost:8080/graphql")
-        .body(Body::from(query))
-        .unwrap();
-      let response = graphql_request(req, state.as_ref()).await.unwrap();
-      assert_eq!(response.status().as_u16(), 200);
-    }
-
     async fn setup(&self) -> Arc<ServerContext> {
       let config = read_config_from_path(self.config.clone().as_str()).await.unwrap();
       let blueprint = Blueprint::try_from(&config).unwrap();
@@ -108,7 +98,11 @@ mod test {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
       let upstream_mocks = self.upstream_mocks.clone();
       let upstream_mock = upstream_mocks.iter().find(|(upstream_request, _res)| {
-        let method_match = req.method().as_str() == upstream_request.0.method.as_str();
+        let method_match = req.method().as_str()
+          == serde_json::to_string(&upstream_request.0.method.clone().unwrap_or_default())
+            .unwrap()
+            .as_str()
+            .trim_matches('"');
         let url_match = req.url().as_str() == req.uri().to_string().as_str();
         method_match && url_match
       });
@@ -122,24 +116,59 @@ mod test {
           HeaderValue::from_str(v.as_str()).unwrap(),
         );
       }
-      response.body = upstream_response.0.body.unwrap_or_default().to_value();
+      match upstream_response.0.body {
+        None => {
+          response.body = ConstValue::Null;
+        }
+        Some(a) => {
+          response.body = ConstValue::try_from(serde_json::from_value::<Value>(a).unwrap())?;
+        }
+      }
       Ok(response)
     }
   }
 
   #[tokio::test]
-  async fn test_status_code_json() {
-    let spec = APISpecification::read("tests/data/sample.json").unwrap();
-    let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
-
-    spec.status(query_string).await;
+  async fn test_body_yaml() {
+    let spec = HttpSpec::read("tests/data/sample.yaml").unwrap();
+    for downstream_assertion in spec.clone().downstream_assertions.iter() {
+      let response = run(spec.clone(), &downstream_assertion).await;
+      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      assert_eq!(
+        body,
+        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+      );
+    }
   }
 
   #[tokio::test]
-  async fn test_status_code_yaml() {
-    let spec = APISpecification::read("tests/data/sample.yaml").unwrap();
-    let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
+  async fn test_body_json() {
+    let spec = HttpSpec::read("tests/data/sample.json").unwrap();
+    for downstream_assertion in spec.clone().downstream_assertions.iter() {
+      let response = run(spec.clone(), &downstream_assertion).await;
+      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      assert_eq!(
+        body,
+        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+      );
+    }
+  }
 
-    spec.status(query_string).await;
+  async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> hyper::Response<Body> {
+    let query_string = serde_json::to_string(&downstream_assertion.request.0.body).unwrap();
+    let method = downstream_assertion.request.0.method.clone().unwrap_or_default();
+    let url = downstream_assertion
+      .request
+      .0
+      .url
+      .clone()
+      .unwrap_or(Url::parse("http://localhost:8080/graphql").unwrap());
+    let state = spec.setup().await;
+    let req = Request::builder()
+      .method(method)
+      .uri(url.as_str())
+      .body(Body::from(query_string))
+      .unwrap();
+    graphql_request(req, state.as_ref()).await.unwrap()
   }
 }
