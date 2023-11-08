@@ -217,7 +217,6 @@ pub struct Field {
   pub args: BTreeMap<String, Arg>,
   pub doc: Option<String>,
   pub modify: Option<Modify>,
-  pub inline: Option<Inline>,
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,

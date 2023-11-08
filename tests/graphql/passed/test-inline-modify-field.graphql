@@ -3,11 +3,12 @@ schema {
   query: Query
 }
 
-type User {
+type User
+  @addField(name: "street", path: ["address", "street"])
+  @addField(name: "city", path: ["address", "city"])
+  @addField(name: "zipcode", path: ["address", "zipcode"]) {
   name: String
-  street: Address @inline(path: ["address", "street"])
-  city: Address @inline(path: ["address", "city"])
-  zipcode: Address @inline(path: ["address", "zipcode"])
+  address: Address
 }
 
 type Address {

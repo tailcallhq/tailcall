@@ -8,7 +8,9 @@
     {
       "files": [
         "add-field-many-list.graphql",
-        "add-field-many.graphql"
+        "add-field-many.graphql",
+        "inline-many.graphql",
+        "inline-many-list.graphql"
       ],
       "options": {
         "printWidth": 200
