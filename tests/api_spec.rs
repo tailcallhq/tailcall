@@ -1,53 +1,53 @@
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::Read;
-use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use derive_setters::Setters;
-use hyper::{Body, Request, StatusCode, Uri};
-use reqwest::header::HeaderMap;
+use async_graphql::InputType;
+use http_cache_semantics::RequestLike;
+use hyper::{Body, Request};
+use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
-use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
-use tailcall::http::{graphql_request, Method, ServerContext};
+use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
-#[derive(Deserialize)]
-struct APIRequest {
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct APIRequest {
   method: Method,
-  url: Url,
-  headers: Option<BTreeMap<String, String>>,
-  body: Option<serde_json::Value>,
+  pub url: Url,
+  pub headers: Option<BTreeMap<String, String>>,
+  pub body: Option<serde_json::Value>,
 }
-#[derive(Deserialize)]
-struct APIResponse {
-  status: u16,
-  headers: Option<BTreeMap<String, String>>,
-  body: Option<serde_json::Value>,
+#[derive(Deserialize, Clone, Debug)]
+pub struct APIResponse {
+  pub status: u16,
+  pub headers: Option<BTreeMap<String, String>>,
+  pub body: Option<serde_json::Value>,
 }
+#[derive(Deserialize, Clone, Debug)]
+pub struct UpstreamRequest(pub APIRequest);
+#[derive(Deserialize, Clone, Debug)]
+pub struct UpstreamResponse(APIResponse);
 #[derive(Deserialize)]
-struct UpstreamRequest(APIRequest);
+pub struct DownstreamRequest(pub APIRequest);
 #[derive(Deserialize)]
-struct UpstreamResponse(APIResponse);
+pub struct DownstreamResponse(pub APIResponse);
 #[derive(Deserialize)]
-struct DownstreamRequest(APIRequest);
-#[derive(Deserialize)]
-struct DownstreamResponse(APIResponse);
-#[derive(Deserialize)]
-struct DownstreamAssertion {
-  request: DownstreamRequest,
-  response: DownstreamResponse,
+pub struct DownstreamAssertion {
+  pub request: DownstreamRequest,
+  pub response: DownstreamResponse,
 }
 
 #[derive(Default, Deserialize)]
-struct APISpecification {
-  config: String,
-  name: String,
-  description: Option<String>,
-  upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
-  expected_upstream_requests: Vec<UpstreamRequest>,
-  downstream_assertions: Vec<DownstreamAssertion>,
+pub struct APISpecification {
+  pub config: String,
+  pub name: String,
+  pub description: Option<String>,
+  pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  pub expected_upstream_requests: Vec<UpstreamRequest>,
+  pub downstream_assertions: Vec<DownstreamAssertion>,
 }
 
 async fn read_config_from_path(config_path: &str) -> Option<Config> {
@@ -61,35 +61,57 @@ impl APISpecification {
 
     spec.ok()
   }
-  async fn run(&self, query: String) -> () {
-    println!("config{:?}", self.config);
+  async fn run(&self, query: String) {
     let config = read_config_from_path(self.config.clone().as_str()).await.unwrap();
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let server_context = ServerContext::new(blueprint);
+    let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
+    let server_context = ServerContext::new(blueprint, client);
     let state = Arc::new(server_context);
     let req = Request::builder()
       .method(Method::POST)
       .uri("http://localhost:8080/graphql")
       .body(Body::from(query))
       .unwrap();
-    let response = graphql_request(req, state.as_ref())
-      .await
-      .map_err(|e| println!("{}", e))
-      .unwrap();
-    println!("{:?}", response);
+    let response = graphql_request(req, state.as_ref()).await.unwrap();
     for assertion in self.downstream_assertions.iter() {
-      println!("here");
       assert_eq!(response.status().as_u16(), assertion.response.0.status);
     }
   }
 }
 
+#[derive(Clone)]
+struct MockHttpClient {
+  upstream_mocks: Arc<Vec<(UpstreamRequest, UpstreamResponse)>>,
+}
+#[async_trait::async_trait]
+impl HttpClient for MockHttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+    let upstream_mocks = self.upstream_mocks.clone();
+    let upstream_mock = upstream_mocks.iter().find(|(upstream_request, _res)| {
+      let method_match = req.method().as_str() == upstream_request.0.method.as_str();
+      let url_match = req.url().as_str() == req.uri().to_string().as_str();
+      method_match && url_match
+    });
+    let upstream_response = upstream_mock.unwrap().clone().1.clone();
+    let mut response =
+      Response { status: reqwest::StatusCode::from_u16(upstream_response.0.status).unwrap(), ..Default::default() };
+    let headers = upstream_response.0.headers.unwrap_or_default();
+    for (k, v) in headers.iter() {
+      response.headers.insert(
+        HeaderName::from_str(k.as_str()).unwrap(),
+        HeaderValue::from_str(v.as_str()).unwrap(),
+      );
+    }
+    response.body = upstream_response.0.body.unwrap_or_default().to_value();
+    Ok(response)
+  }
+}
 #[cfg(test)]
 mod test {
   use crate::APISpecification;
 
   #[tokio::test]
-  async fn upstream_request_headers() {
+  async fn test_status_code() {
     let spec = APISpecification::read("tests/data/sample.json").unwrap();
     let query_string = "{\"operationName\":null,\"variables\":{},\"query\":\"{user {name}}\"}".to_string();
 

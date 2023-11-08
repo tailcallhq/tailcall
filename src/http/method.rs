@@ -13,6 +13,22 @@ pub enum Method {
   TRACE,
 }
 
+impl Method {
+  pub fn as_str(&self) -> &str {
+    match self {
+      Method::GET => "GET",
+      Method::POST => "POST",
+      Method::PUT => "PUT",
+      Method::PATCH => "PATCH",
+      Method::DELETE => "DELETE",
+      Method::HEAD => "HEAD",
+      Method::OPTIONS => "OPTIONS",
+      Method::CONNECT => "CONNECT",
+      Method::TRACE => "TRACE",
+    }
+  }
+}
+
 impl From<Method> for reqwest::Method {
   fn from(method: Method) -> Self {
     (&method).into()
