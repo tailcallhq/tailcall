@@ -6,6 +6,8 @@ schema {
 type User {
   name: String
 }
+
+# not sure what we should do with this test
 type Query {
   person1: User @const(data: {name: "person1"}) @modify(name: "user1") @inline(path: ["name"])
   person2: User @modify(name: "user2") @inline(path: ["name"]) @const(data: {name: "person2"})

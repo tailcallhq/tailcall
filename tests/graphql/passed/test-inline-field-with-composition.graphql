@@ -17,13 +17,8 @@ type Geo {
   lng: String
 }
 
-type Query {
-  lat: User
-    @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
-    @inline(path: ["address", "geo", "lat"])
-  lng: User
-    @inline(path: ["address", "geo", "lng"])
-    @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+type Query @addField(name: "lat", path: ["user", "address", "geo", "lat"]) @addField(name: "lng", path: ["user", "address", "geo", "lng"]) {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 #> client-query
