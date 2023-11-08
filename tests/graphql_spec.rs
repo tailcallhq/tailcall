@@ -57,7 +57,7 @@ impl GraphQLSpec {
   }
 
   fn find_source(&self, tag: &str) -> String {
-    self.sources.clone().into_iter().find(|s| s.tag == tag).unwrap().sdl
+    self.get_sources(tag).first().unwrap().to_string()
   }
 
   fn get_sources(&self, tag: &str) -> Vec<String> {
