@@ -359,7 +359,7 @@ impl Config {
     if first_path.starts_with("http://") || first_path.starts_with("https://") {
       let resp = reqwest::get(first_path).await?;
       let server_sdl = resp.text().await?;
-      let config = Config::from_sdl(&server_sdl).to_result()?;
+      let config = Config::from_source(Source::try_parse_and_detect(&server_sdl)?,&server_sdl)?; // needs improvement
       Ok((config, Some(first_path.to_string())))
     } else {
       let config = Config::from_file_paths(file_paths).await?;
