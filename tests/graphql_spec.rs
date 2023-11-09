@@ -225,7 +225,7 @@ async fn test_execution() -> std::io::Result<()> {
           .unwrap();
         let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
         let server_ctx = ServerContext::new(blueprint, client);
-        let schema = server_ctx.schema.clone();
+        let schema = server_ctx.schema.get_schema().unwrap();
 
         for q in spec.test_queries {
           let mut headers = HeaderMap::new();
