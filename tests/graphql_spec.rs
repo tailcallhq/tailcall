@@ -239,9 +239,9 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let expected = spec.find_source(Tag::ServerSDL);
+    let expected = spec.find_source(Tag::ClientSDL);
     let expected = expected.as_str();
-    let content = spec.find_source(Tag::ClientSDL);
+    let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
     // error is on the line below
