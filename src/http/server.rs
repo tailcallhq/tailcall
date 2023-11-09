@@ -1,4 +1,6 @@
 use std::collections::BTreeSet;
+use std::convert::Infallible;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -6,6 +8,7 @@ use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use simple_hyper_server_tls::{hyper_from_pem_files, Protocols};
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -64,31 +67,52 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
-pub async fn start_server(config: Config) -> Result<()> {
+pub async fn start_server(config: Config, cert_path: Option<String>, key_path: Option<String>) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
-  let make_svc = make_service_fn(move |_conn| {
-    let state = Arc::clone(&state);
-    async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
-  });
-  let addr = (blueprint.server.hostname, blueprint.server.port).into();
-  log::info!("HTTP version: {:?}", blueprint.server.http_version);
+  let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
-  let server = match blueprint.server.http_version {
-    HttpVersion::HTTP2 => hyper::Server::try_bind(&addr)
-      .map_err(CLIError::from)?
-      .http2_only(true)
-      .serve(make_svc),
-    _ => hyper::Server::try_bind(&addr)
-      .map_err(CLIError::from)?
-      .http1_only(true)
-      .serve(make_svc),
-  };
-  log::info!("🚀 Tailcall launched at [{}]", addr);
-  if blueprint.server.enable_graphiql {
-    log::info!("🌍 Playground: http://{}", addr);
+  if blueprint.server.http_version == HttpVersion::HTTP2 && (cert_path.is_none() || key_path.is_none()) {
+    return Err(anyhow::anyhow!(CLIError::new("HTTP/2 protocol requires both certificate and key paths. Please provide them using --cert-path and --key-path options.")));
   }
 
-  Ok(server.await.map_err(CLIError::from)?)
+  match blueprint.server.http_version {
+    HttpVersion::HTTP2 => {
+      let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
+      let make_svc = make_service_fn(move |_conn| {
+        let state = Arc::clone(&state);
+        async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
+      });
+
+      let server_result = hyper_from_pem_files(
+        cert_path.unwrap().as_str(),
+        key_path.unwrap().as_str(),
+        Protocols::ALL,
+        &addr,
+      )
+      .unwrap();
+
+      let server = server_result.serve(make_svc);
+
+      log::info!("🚀 Tailcall launched at [{}]", addr);
+      if blueprint.server.enable_graphiql {
+        log::info!("🌍 Playground: https://{}", addr);
+      }
+      Ok(server.await.map_err(CLIError::from)?)
+    }
+    _ => {
+      let make_svc = make_service_fn(move |_conn| {
+        let state = Arc::clone(&state);
+        async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
+      });
+
+      let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+      log::info!("🚀 Tailcall launched at [{}]", addr);
+      if blueprint.server.enable_graphiql {
+        log::info!("🌍 Playground: http://{}", addr);
+      }
+      Ok(server.await.map_err(CLIError::from)?)
+    }
+  }
 }

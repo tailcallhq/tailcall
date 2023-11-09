@@ -57,6 +57,7 @@ env_logger = "0.10.0"
 stripmargin = "0.1.1"
 convert_case = "0.6.0"
 ring = "0.17.5"
+simple-hyper-server-tls = { version= "0.3.2", features = ["tls-rustls"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
