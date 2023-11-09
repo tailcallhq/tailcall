@@ -4,7 +4,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
-use http_cache_semantics::RequestLike;
 use hyper::{Body, Request};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
@@ -99,35 +98,46 @@ struct MockHttpClient {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-    let upstream_mocks = self.upstream_mocks.clone();
-    let upstream_mock = upstream_mocks.iter().find(|(upstream_request, _res)| {
-      let method_match = req.method().as_str()
-        == serde_json::to_string(&upstream_request.0.method.clone().unwrap_or_default())
-          .unwrap()
-          .as_str()
-          .trim_matches('"');
-      let url_match = req.url().as_str() == req.uri().to_string().as_str();
-      method_match && url_match
-    });
-    let upstream_response = upstream_mock.unwrap().clone().1.clone();
-    let mut response =
-      Response { status: reqwest::StatusCode::from_u16(upstream_response.0.status).unwrap(), ..Default::default() };
-    let headers = upstream_response.0.headers.unwrap_or_default();
-    for (k, v) in headers.iter() {
-      response.headers.insert(
-        HeaderName::from_str(k.as_str()).unwrap(),
-        HeaderValue::from_str(v.as_str()).unwrap(),
-      );
-    }
-    match upstream_response.0.body {
-      None => {
-        response.body = ConstValue::Null;
+  async fn execute(&self, req: reqwest::Request) -> Result<Response, anyhow::Error> {
+    // Clone the mocks to allow iteration without borrowing issues.
+    let mocks = self.upstream_mocks.clone();
+
+    // Try to find a matching mock for the incoming request.
+    let mock = mocks
+      .iter()
+      .find(|(mock_req, _)| {
+        let method_match = req.method().as_str()
+          == serde_json::to_string(&mock_req.0.method.clone().unwrap_or_default())
+            .unwrap()
+            .as_str()
+            .trim_matches('"');
+        let url_match = req.url().as_str() == mock_req.0.url.clone().unwrap().as_str();
+        method_match && url_match
+      })
+      .expect("Mock not found");
+
+    // Clone the response from the mock to avoid borrowing issues.
+    let mock_response = mock.1.clone();
+
+    // Build the response with the status code from the mock.
+    let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+    let mut response = Response { status: status_code, ..Default::default() };
+
+    // Insert headers from the mock into the response.
+    if let Some(headers) = mock_response.0.headers {
+      for (key, value) in headers {
+        let header_name = HeaderName::from_str(&key)?;
+        let header_value = HeaderValue::from_str(&value)?;
+        response.headers.insert(header_name, header_value);
       }
-      Some(a) => {
-        response.body = ConstValue::try_from(serde_json::from_value::<Value>(a).unwrap())?;
-      }
     }
+
+    // Set the body of the response.
+    response.body = match mock_response.0.body {
+      Some(body) => ConstValue::try_from(serde_json::from_value::<Value>(body)?)?,
+      None => ConstValue::Null,
+    };
+
     Ok(response)
   }
 }
@@ -139,52 +149,45 @@ async fn test_body_yaml() {
 }
 
 async fn assert_downstream(spec: HttpSpec) {
-  for downstream_assertion in spec.clone().downstream_assertions.iter() {
-    if let Some(annotation) = downstream_assertion.annotation.clone() {
-      match annotation {
-        Annotation::Skip => {
-          let request_details = format!(
-            "Method: {:?}, Path: {}, Body: {}",
-            downstream_assertion.request.0.method.clone().unwrap_or_default(),
-            downstream_assertion
-              .request
-              .0
-              .url
-              .clone()
-              .unwrap_or(Url::parse("http://localhost:8080/graphql").unwrap()),
-            downstream_assertion
-              .request
-              .0
-              .body
-              .clone()
-              .unwrap_or(serde_json::Value::Null)
-          );
-          println!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details);
-          continue;
-        }
-        Annotation::Only => {
-          let response = run(spec.clone(), &downstream_assertion).await.unwrap();
-          let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-          assert_eq!(
-            body,
-            serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-          );
-          break;
-        }
-        Annotation::Fail => {
-          let response = run(spec.clone(), &downstream_assertion).await;
-          assert!(response.is_err());
-        }
+  let has_only_annotation = spec
+    .downstream_assertions
+    .iter()
+    .any(|assertion| matches!(assertion.annotation, Some(Annotation::Only)));
+
+  for downstream_assertion in spec.downstream_assertions.iter() {
+    match &downstream_assertion.annotation {
+      Some(Annotation::Skip) if !has_only_annotation => {
+        let request_details = format_request_details(&downstream_assertion.request.0);
+        println!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details);
+        continue;
       }
-    } else {
-      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      );
+      Some(Annotation::Only) | None
+        if !has_only_annotation || matches!(downstream_assertion.annotation, Some(Annotation::Only)) =>
+      {
+        let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        assert_eq!(
+          body,
+          serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+        );
+      }
+      Some(Annotation::Fail) if !has_only_annotation => {
+        let response = run(spec.clone(), &downstream_assertion).await;
+        assert!(response.is_err());
+      }
+      _ => {} // Skip other cases if "Only" is present in any assertion
     }
   }
+}
+
+// Helper function to format request details for printing.
+fn format_request_details(request: &APIRequest) -> String {
+  format!(
+    "Method: {:?}, Path: {}, Body: {}",
+    request.method.clone().unwrap_or_default(),
+    request.url.clone().expect("url is required"),
+    request.body.clone().unwrap_or(serde_json::Value::Null)
+  )
 }
 
 #[tokio::test]
