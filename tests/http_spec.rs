@@ -1,19 +1,22 @@
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, Once};
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
+use derive_setters::Setters;
 use hyper::{Body, Request};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
+use tailcall::config::{Config};
 use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
+
+static INIT: Once = Once::new();
 
 #[derive(Deserialize, Clone, Debug)]
 pub enum Annotation {
@@ -54,9 +57,11 @@ pub struct DownstreamAssertion {
   pub annotation: Option<Annotation>,
 }
 
-#[derive(Default, Deserialize, Clone)]
+#[derive(Default, Deserialize, Clone, Setters)]
 pub struct HttpSpec {
   pub config: String,
+  #[serde(skip)]
+  path: PathBuf,
   pub name: String,
   pub description: Option<String>,
   pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
@@ -65,7 +70,34 @@ pub struct HttpSpec {
 }
 
 impl HttpSpec {
+  fn cargo_read(path: &str) -> anyhow::Result<Vec<HttpSpec>> {
+    let mut dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    dir_path.push(path);
+    let entries = fs::read_dir(dir_path.clone())?;
+    let mut files = Vec::new();
+    for entry in entries {
+      let path = entry?.path();
+      if path.is_file()
+        && (path.extension().unwrap_or_default() == "json" || path.extension().unwrap_or_default() == "yaml")
+      {
+        let spec = HttpSpec::read(path.clone())?.path(path.clone());
+        files.push(spec);
+      }
+    }
+
+    assert!(
+      !files.is_empty(),
+      "No files found in {}",
+      dir_path.to_str().unwrap_or_default()
+    );
+    Ok(files)
+  }
   fn read<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    INIT.call_once(|| {
+      env_logger::builder()
+        .filter(Some("http_spec"), log::LevelFilter::Info)
+        .init();
+    });
     let path = path.as_ref();
     let contents = fs::read_to_string(path)?;
     let extension = path
@@ -149,12 +181,6 @@ impl HttpClient for MockHttpClient {
   }
 }
 
-#[tokio::test]
-async fn test_body_yaml() {
-  let spec = HttpSpec::read("tests/data/sample.yaml").unwrap();
-  assert_downstream(spec).await;
-}
-
 async fn assert_downstream(spec: HttpSpec) {
   let has_only_annotation = spec
     .downstream_assertions
@@ -165,7 +191,10 @@ async fn assert_downstream(spec: HttpSpec) {
     match &downstream_assertion.annotation {
       Some(Annotation::Skip) if !has_only_annotation => {
         let request_details = format_request_details(&downstream_assertion.request.0);
-        println!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details);
+        log::warn!(
+          "{}",
+          format!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details)
+        );
         continue;
       }
       Some(Annotation::Only) | None
@@ -185,6 +214,7 @@ async fn assert_downstream(spec: HttpSpec) {
       _ => {} // Skip other cases if "Only" is present in any assertion
     }
   }
+  log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 
 // Helper function to format request details for printing.
@@ -196,11 +226,17 @@ fn format_request_details(request: &APIRequest) -> String {
     request.body.clone()
   )
 }
-
 #[tokio::test]
-async fn test_body_json() {
-  let spec = HttpSpec::read("tests/data/sample.json").unwrap();
-  assert_downstream(spec).await;
+async fn test_body() -> std::io::Result<()> {
+  let spec = HttpSpec::cargo_read("tests/http").unwrap();
+  let tasks: Vec<_> = spec
+    .into_iter()
+    .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
+    .collect();
+  for task in tasks {
+    task.await?;
+  }
+  Ok(())
 }
 
 async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {

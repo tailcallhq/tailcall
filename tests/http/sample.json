@@ -1,6 +1,6 @@
 {
   "config": "tests/graphql_mock/test-custom-headers.graphql",
-  "name": "Example API",
+  "name": "Simple GraphQL Request",
   "description": "This is a sample API specification.",
   "upstream_mocks": [
     [
