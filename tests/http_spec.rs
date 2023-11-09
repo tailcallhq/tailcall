@@ -87,7 +87,7 @@ impl HttpSpec {
       if path.is_file() && (source.ext() == "json" || source.ext() == "yml") {
         let contents = fs::read_to_string(&path)?;
         let spec: HttpSpec = Self::from_source(source, contents)?;
-        files.push(spec);
+        files.push(spec.path(path));
       }
     }
 
