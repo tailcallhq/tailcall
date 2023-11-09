@@ -12,7 +12,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config};
+use tailcall::config::Config;
 use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
@@ -54,7 +54,6 @@ pub struct DownstreamResponse(pub APIResponse);
 pub struct DownstreamAssertion {
   pub request: DownstreamRequest,
   pub response: DownstreamResponse,
-  pub annotation: Option<Annotation>,
 }
 
 #[derive(Default, Deserialize, Clone, Setters)]
@@ -63,10 +62,13 @@ pub struct HttpSpec {
   #[serde(skip)]
   path: PathBuf,
   pub name: String,
+  #[serde(default)]
   pub description: Option<String>,
   pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  #[serde(default)]
   pub expected_upstream_requests: Vec<UpstreamRequest>,
   pub downstream_assertions: Vec<DownstreamAssertion>,
+  pub annotation: Option<Annotation>,
 }
 
 impl HttpSpec {
@@ -75,13 +77,29 @@ impl HttpSpec {
     dir_path.push(path);
     let entries = fs::read_dir(dir_path.clone())?;
     let mut files = Vec::new();
+    let mut has_only_annotation = false;
     for entry in entries {
       let path = entry?.path();
       if path.is_file()
         && (path.extension().unwrap_or_default() == "json" || path.extension().unwrap_or_default() == "yaml")
       {
         let spec = HttpSpec::read(path.clone())?.path(path.clone());
+        match spec.annotation {
+          Some(Annotation::Skip) => {
+            // Log a warning and continue
+            log::warn!("{} {} ... skipped", spec.name, spec.path.display());
+            continue;
+          }
+          Some(Annotation::Only) => {
+            has_only_annotation = true;
+          }
+          _ => (),
+        }
         files.push(spec);
+        if has_only_annotation {
+          // Filter files to include only those with Annotation::Only
+          files.retain(|spec| matches!(spec.annotation, Some(Annotation::Only)))
+        }
       }
     }
 
@@ -122,6 +140,7 @@ impl HttpSpec {
     let client = Arc::new(MockHttpClient {
       upstream_mocks: self.upstream_mocks.to_vec(),
       expected_upstream_requests: self.expected_upstream_requests.to_vec(),
+      annotation: self.annotation.clone(),
     });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
@@ -132,6 +151,7 @@ impl HttpSpec {
 struct MockHttpClient {
   upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
   expected_upstream_requests: Vec<UpstreamRequest>,
+  annotation: Option<Annotation>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
@@ -154,11 +174,15 @@ impl HttpClient for MockHttpClient {
       .expect("Mock not found");
     // Assert upstream request
     let upstream_request = mock.0.clone();
-    assert!(
-      self.expected_upstream_requests.contains(&upstream_request),
-      "Unexpected upstream request: {:?}",
-      upstream_request
-    );
+    if let Some(Annotation::Fail) = self.annotation {
+      assert!(!self.expected_upstream_requests.contains(&upstream_request));
+    } else {
+      assert!(
+        self.expected_upstream_requests.contains(&upstream_request),
+        "Unexpected upstream request: {:?}",
+        upstream_request
+      );
+    }
 
     // Clone the response from the mock to avoid borrowing issues.
     let mock_response = mock.1.clone();
@@ -182,49 +206,19 @@ impl HttpClient for MockHttpClient {
 }
 
 async fn assert_downstream(spec: HttpSpec) {
-  let has_only_annotation = spec
-    .downstream_assertions
-    .iter()
-    .any(|assertion| matches!(assertion.annotation, Some(Annotation::Only)));
-
   for downstream_assertion in spec.downstream_assertions.iter() {
-    match &downstream_assertion.annotation {
-      Some(Annotation::Skip) if !has_only_annotation => {
-        let request_details = format_request_details(&downstream_assertion.request.0);
-        log::warn!(
-          "{}",
-          format!("Skipping test in: {}\nRequest Details: {}", spec.name, request_details)
-        );
-        continue;
-      }
-      Some(Annotation::Only) | None
-        if !has_only_annotation || matches!(downstream_assertion.annotation, Some(Annotation::Only)) =>
-      {
-        let response = run(spec.clone(), &downstream_assertion).await.unwrap();
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        assert_eq!(
-          body,
-          serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-        );
-      }
-      Some(Annotation::Fail) if !has_only_annotation => {
-        let response = run(spec.clone(), &downstream_assertion).await;
-        assert!(response.is_err());
-      }
-      _ => {} // Skip other cases if "Only" is present in any assertion
+    if let Some(Annotation::Fail) = spec.annotation {
+      let _ = run(spec.clone(), &downstream_assertion).await;
+    } else {
+      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      assert_eq!(
+        body,
+        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+      )
     }
   }
   log::info!("{} {} ... ok", spec.name, spec.path.display());
-}
-
-// Helper function to format request details for printing.
-fn format_request_details(request: &APIRequest) -> String {
-  format!(
-    "Method: {:?}, Path: {}, Body: {}",
-    request.method.clone(),
-    request.url.clone(),
-    request.body.clone()
-  )
 }
 #[tokio::test]
 async fn test_body() -> std::io::Result<()> {
