@@ -31,6 +31,14 @@ struct GraphQLSpec {
   merged_server_sdl: String,
   sdl_errors: Vec<SDLError>,
   test_queries: Vec<GraphQLQuerySpec>,
+  annotation: Option<Annotation>,
+}
+
+#[derive(Debug)]
+enum Annotation {
+  Skip,
+  Only,
+  Fail,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -82,6 +90,15 @@ impl GraphQLSpec {
     let mut spec = GraphQLSpec::default().path(path);
     let mut server_sdl = Vec::new();
     for component in content.split("#>") {
+      if component.contains(SPEC_ONLY) {
+        spec = spec.annotation(Some(Annotation::Only));
+      }
+      if component.contains(SPEC_SKIP) {
+        spec = spec.annotation(Some(Annotation::Skip));
+      }
+      if component.contains(SPEC_FAIL) {
+        spec = spec.annotation(Some(Annotation::Fail));
+      }
       if component.contains(CLIENT_SDL) {
         let trimmed = component.replace(CLIENT_SDL, "").trim().to_string();
 
@@ -151,7 +168,15 @@ impl GraphQLSpec {
       if path.is_file() && path.extension().unwrap_or_default() == "graphql" {
         let contents = fs::read_to_string(path.clone())?;
         let path_buf = path.clone();
-        files.push(GraphQLSpec::new(path_buf, contents.as_str()));
+        let spec = GraphQLSpec::new(path_buf, contents.as_str());
+
+        match spec.annotation {
+          Some(Annotation::Only) | None => files.push(spec),
+          Some(Annotation::Skip) => {
+            log::warn!("Skipping spec: {}", spec.path.display());
+          }
+          Some(Annotation::Fail) => {}
+        }
       }
     }
 
@@ -168,6 +193,9 @@ const CLIENT_SDL: &str = "client-sdl";
 const SERVER_SDL: &str = "server-sdl";
 const CLIENT_QUERY: &str = "client-query";
 const MERGED_SDL: &str = "merged-sdl";
+const SPEC_ONLY: &str = "spec-only";
+const SPEC_SKIP: &str = "spec-skip";
+const SPEC_FAIL: &str = "spec-fail";
 
 // Check if SDL -> Config -> SDL is identity
 #[test]
