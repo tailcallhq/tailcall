@@ -35,20 +35,17 @@ impl Source {
       .find(|format| format.ends_with(name))
       .ok_or_else(|| UnsupportedFileFormat(name.to_string()))
   }
-  pub fn try_parse_and_detect(val: &str) -> anyhow::Result<Self>{ // needs improvement
+  pub fn try_parse_and_detect(val: &str) -> anyhow::Result<Self> {
+    // needs improvement
     match serde_json::from_str::<serde_json::Value>(val) {
       Ok(_) => Ok(Self::Json),
-      Err(_) => {
-        match serde_yaml::from_str::<serde_yaml::Value>(val) {
-          Ok(_) => Ok(Self::Yml),
-          Err(_) => {
-            match async_graphql::parser::parse_schema(val) {
-              Ok(_) => Ok(Self::GraphQL),
-              Err(e) => Err(anyhow!(e))
-            }
-          }
-        }
-      }
+      Err(_) => match serde_yaml::from_str::<serde_yaml::Value>(val) {
+        Ok(_) => Ok(Self::Yml),
+        Err(_) => match async_graphql::parser::parse_schema(val) {
+          Ok(_) => Ok(Self::GraphQL),
+          Err(e) => Err(anyhow!(e)),
+        },
+      },
     }
   }
 }
