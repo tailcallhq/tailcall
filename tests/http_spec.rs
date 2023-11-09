@@ -19,10 +19,11 @@ pub enum Annotation {
   Only,
   Fail,
 }
-#[derive(Deserialize, Clone, Debug, Default)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct APIRequest {
-  method: Option<Method>,
-  pub url: Option<Url>,
+  #[serde(default)]
+  method: Method,
+  pub url: Url,
   pub headers: Option<BTreeMap<String, String>>,
   pub body: Option<serde_json::Value>,
 }
@@ -107,11 +108,11 @@ impl HttpClient for MockHttpClient {
       .iter()
       .find(|(mock_req, _)| {
         let method_match = req.method().as_str()
-          == serde_json::to_string(&mock_req.0.method.clone().unwrap_or_default())
-            .unwrap()
+          == serde_json::to_string(&mock_req.0.method.clone())
+            .expect("provided method is not valid")
             .as_str()
             .trim_matches('"');
-        let url_match = req.url().as_str() == mock_req.0.url.clone().unwrap().as_str();
+        let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
         method_match && url_match
       })
       .expect("Mock not found");
@@ -184,8 +185,8 @@ async fn assert_downstream(spec: HttpSpec) {
 fn format_request_details(request: &APIRequest) -> String {
   format!(
     "Method: {:?}, Path: {}, Body: {}",
-    request.method.clone().unwrap_or_default(),
-    request.url.clone().expect("url is required"),
+    request.method.clone(),
+    request.url.clone(),
     request.body.clone().unwrap_or(serde_json::Value::Null)
   )
 }
@@ -198,8 +199,8 @@ async fn test_body_json() {
 
 async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
-  let method = downstream_assertion.request.0.method.clone().unwrap_or_default();
-  let url = downstream_assertion.request.0.url.clone().expect("url is required");
+  let method = downstream_assertion.request.0.method.clone();
+  let url = downstream_assertion.request.0.url.clone();
   let state = spec.setup().await;
   let req = Request::builder()
     .method(method)
