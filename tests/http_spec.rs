@@ -1,6 +1,8 @@
+extern crate core;
+
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 
@@ -12,7 +14,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
+use tailcall::config::{Config, Source};
 use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
@@ -73,33 +75,16 @@ pub struct HttpSpec {
 
 impl HttpSpec {
   fn cargo_read(path: &str) -> anyhow::Result<Vec<HttpSpec>> {
-    let mut dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    dir_path.push(path);
-    let entries = fs::read_dir(dir_path.clone())?;
+    let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
     let mut files = Vec::new();
-    let mut has_only_annotation = false;
-    for entry in entries {
+
+    for entry in fs::read_dir(&dir_path)? {
       let path = entry?.path();
-      if path.is_file()
-        && (path.extension().unwrap_or_default() == "json" || path.extension().unwrap_or_default() == "yaml")
-      {
-        let spec = HttpSpec::read(path.clone())?.path(path.clone());
-        match spec.annotation {
-          Some(Annotation::Skip) => {
-            // Log a warning and continue
-            log::warn!("{} {} ... skipped", spec.name, spec.path.display());
-            continue;
-          }
-          Some(Annotation::Only) => {
-            has_only_annotation = true;
-          }
-          _ => (),
-        }
+      let source = Source::detect(path.to_str().unwrap_or_default())?;
+      if path.is_file() && (source.ext() == "json" || source.ext() == "yml") {
+        let contents = fs::read_to_string(&path)?;
+        let spec: HttpSpec = Self::from_source(source, contents)?;
         files.push(spec);
-        if has_only_annotation {
-          // Filter files to include only those with Annotation::Only
-          files.retain(|spec| matches!(spec.annotation, Some(Annotation::Only)))
-        }
       }
     }
 
@@ -110,23 +95,37 @@ impl HttpSpec {
     );
     Ok(files)
   }
-  fn read<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+
+  fn filter_specs(specs: Vec<HttpSpec>) -> Vec<HttpSpec> {
+    let mut only_specs = Vec::new();
+    let mut filtered_specs = Vec::new();
+
+    for spec in specs {
+      match spec.annotation {
+        Some(Annotation::Skip) => log::warn!("{} {} ... skipped", spec.name, spec.path.display()),
+        Some(Annotation::Only) => only_specs.push(spec),
+        Some(Annotation::Fail) => filtered_specs.push(spec),
+        None => filtered_specs.push(spec),
+      }
+    }
+
+    // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+    if !only_specs.is_empty() {
+      only_specs
+    } else {
+      filtered_specs
+    }
+  }
+  fn from_source(source: Source, contents: String) -> anyhow::Result<Self> {
     INIT.call_once(|| {
       env_logger::builder()
         .filter(Some("http_spec"), log::LevelFilter::Info)
         .init();
     });
-    let path = path.as_ref();
-    let contents = fs::read_to_string(path)?;
-    let extension = path
-      .extension()
-      .ok_or(anyhow!("not a valid extension"))?
-      .to_str()
-      .ok_or(anyhow!("not a valid Unicode"))?;
 
-    let spec = match extension.to_lowercase().as_str() {
-      "json" => anyhow::Ok(serde_json::from_str(&contents)?),
-      "yaml" => anyhow::Ok(serde_yaml::from_str(&contents)?),
+    let spec = match source {
+      Source::Json => anyhow::Ok(serde_json::from_str(&contents)?),
+      Source::Yml => anyhow::Ok(serde_yaml::from_str(&contents)?),
       _ => Err(anyhow!("only json and yaml are supported")),
     };
     anyhow::Ok(spec?)
@@ -223,6 +222,7 @@ async fn assert_downstream(spec: HttpSpec) {
 #[tokio::test]
 async fn test_body() -> std::io::Result<()> {
   let spec = HttpSpec::cargo_read("tests/http").unwrap();
+  let spec = HttpSpec::filter_specs(spec);
   let tasks: Vec<_> = spec
     .into_iter()
     .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
