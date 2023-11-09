@@ -142,7 +142,6 @@ impl HttpSpec {
     let client = Arc::new(MockHttpClient {
       upstream_mocks: self.upstream_mocks.to_vec(),
       expected_upstream_requests: self.expected_upstream_requests.to_vec(),
-      annotation: self.annotation.clone(),
     });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
@@ -153,7 +152,6 @@ impl HttpSpec {
 struct MockHttpClient {
   upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
   expected_upstream_requests: Vec<UpstreamRequest>,
-  annotation: Option<Annotation>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
@@ -176,15 +174,11 @@ impl HttpClient for MockHttpClient {
       .expect("Mock not found");
     // Assert upstream request
     let upstream_request = mock.0.clone();
-    if let Some(Annotation::Fail) = self.annotation {
-      assert!(!self.expected_upstream_requests.contains(&upstream_request));
-    } else {
-      assert!(
-        self.expected_upstream_requests.contains(&upstream_request),
-        "Unexpected upstream request: {:?}",
-        upstream_request
-      );
-    }
+    assert!(
+      self.expected_upstream_requests.contains(&upstream_request),
+      "Unexpected upstream request: {:?}",
+      upstream_request
+    );
 
     // Clone the response from the mock to avoid borrowing issues.
     let mock_response = mock.1.clone();
@@ -210,7 +204,12 @@ impl HttpClient for MockHttpClient {
 async fn assert_downstream(spec: HttpSpec) {
   for downstream_assertion in spec.downstream_assertions.iter() {
     if let Some(Annotation::Fail) = spec.annotation {
-      let _ = run(spec.clone(), &downstream_assertion).await;
+      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      assert_ne!(
+        body,
+        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
+      )
     } else {
       let response = run(spec.clone(), &downstream_assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
