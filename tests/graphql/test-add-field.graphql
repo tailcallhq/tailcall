@@ -15,17 +15,26 @@ type Foo {
   a: A
 }
 
-type Query @addField(name: "foo", path: ["foo", "a", "0", "b"]) {
-  foo: [Foo] @http(path: "/foo") @modify(omit: true)
+type Query @addField(name: "b", path: ["foo", "a", "b"]) {
+  foo: Foo @http(path: "/foo")
 }
 
 #> client-sdl
+type A {
+  b: B
+}
+
 type B {
   c: String
 }
 
+type Foo {
+  a: A
+}
+
 type Query {
-  foo: B
+  b: B
+  foo: Foo
 }
 
 schema {

@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
+use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
@@ -12,6 +13,7 @@ use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
 use crate::config::Config;
+use crate::http::client;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -64,7 +66,8 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let state = Arc::new(ServerContext::new(blueprint.clone()));
+  let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
+  let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }

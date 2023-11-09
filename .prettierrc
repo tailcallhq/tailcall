@@ -3,5 +3,18 @@
   "singleQuote": false,
   "printWidth": 120,
   "tabWidth": 2,
-  "bracketSpacing": false
+  "bracketSpacing": false,
+  "overrides": [
+    {
+      "files": [
+        "add-field-many-list.graphql",
+        "add-field-many.graphql",
+        "inline-many.graphql",
+        "inline-many-list.graphql"
+      ],
+      "options": {
+        "printWidth": 200
+      }
+    }
+  ]
 }

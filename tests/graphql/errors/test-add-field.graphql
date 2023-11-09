@@ -19,6 +19,6 @@ type Query @addField(name: "street", path: ["user", "address", "street"]) {
 type Failure
   @error(
     message: "Cannot add field"
-    trace: ["Query", "@addField", "street"]
     description: "Path [user, address, street] does not exist"
+    trace: ["Query", "@addField", "street"]
   )

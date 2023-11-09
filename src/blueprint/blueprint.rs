@@ -175,11 +175,6 @@ pub struct UnionTypeDefinition {
   pub types: BTreeSet<String>,
 }
 impl Blueprint {
-  #[allow(clippy::too_many_arguments)]
-  pub fn new(schema: SchemaDefinition, definitions: Vec<Definition>, server: Server, upstream: Upstream) -> Self {
-    Self { schema, definitions, server, upstream }
-  }
-
   pub fn query(&self) -> String {
     self.schema.query.clone()
   }

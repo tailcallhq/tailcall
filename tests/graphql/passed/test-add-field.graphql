@@ -3,8 +3,8 @@ schema {
   query: Query
 }
 
-type User @addField(name: "address", path: ["address", "geo", "lat"]) {
-  address: Address @modify(omit: true)
+type User @addField(name: "lat", path: ["address", "geo", "lat"]) {
+  address: Address
 }
 
 type Address {
@@ -20,8 +20,8 @@ type Query {
 }
 
 #> client-query
-query @expect(json: {data: {user: {address: "-37.3159"}}}) {
+query @expect(json: {data: {user: {lat: "-37.3159"}}}) {
   user {
-    address
+    lat
   }
 }

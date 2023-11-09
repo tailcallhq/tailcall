@@ -3,16 +3,16 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query @addField(name: "username", path: ["post", "user", "name"]) {
-  post: Post @http(path: "/posts/1") @http(path: "/users/{{value.userId}}")
+type Query @addField(name: "name", path: ["post", "user", "name"]) {
+  post: Post @http(path: "/posts/1")
 }
 
 type Post {
   id: Int
   title: String
   body: String
-  userId: Int!
-  user: User @http(path: "/users/{{value.userId}}")
+  userId: Int
+  user: User @const(data: {id: 1, name: "user1"})
 }
 
 type User {
@@ -24,6 +24,6 @@ type User {
 type Failure
   @error(
     message: "Cannot add field"
+    description: "Path: [post, user, name] contains resolver const at [Post.user]"
     trace: ["Query", "@addField"]
-    description: "Path: [post, user, name] contains resolver http at [Post.user]"
   )
