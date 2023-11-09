@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
+use crate::blueprint::js_plugin::JsPluginWrapper;
 use crate::request_template::RequestTemplate;
 
 #[derive(Clone)]
@@ -22,8 +23,8 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), script)))
+  pub fn to_unsafe_js(self, js_executor: JsPluginWrapper, script: String) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), js_executor, script)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
@@ -116,13 +117,5 @@ mod tests {
     let result = Lambda::from_request_template(endpoint).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
-  }
-
-  #[cfg(feature = "unsafe-js")]
-  #[tokio::test]
-  async fn test_unsafe_js() {
-    let result = Lambda::from(1.0).to_unsafe_js("ctx + 100".to_string()).eval().await;
-    let f64 = result.unwrap().as_f64().unwrap();
-    assert_eq!(f64, 101.0)
   }
 }

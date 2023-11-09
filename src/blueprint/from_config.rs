@@ -8,6 +8,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
 
+use super::js_plugin::JsPluginWrapper;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
@@ -224,15 +225,26 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
   }))
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+  // TODO: remove unwrap
+  let js_executor = config
+    .js_plugin
+    .as_ref()
+    .map(|js_plugin| JsPluginWrapper::new(&js_plugin.src))
+    .transpose()
+    .unwrap();
+
   let to_field = |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
+    // TODO: clone?
+    let js_executor = js_executor.clone();
+
     update_args()
       .and(update_http().trace("@http"))
-      .and(update_unsafe().trace("@unsafe"))
+      .and(update_js(js_executor).trace("@js"))
       .and(update_const_field().trace("@const"))
       .and(update_modify().trace("@modify"))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
@@ -267,7 +279,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
             doc: None,
             modify: source_field.modify.clone(),
             http: source_field.http.clone(),
-            unsafe_operation: source_field.unsafe_operation.clone(),
+            js: source_field.js.clone(),
             const_field: source_field.const_field.clone(),
           };
           to_field(&add_field.name, &new_field)
@@ -506,12 +518,16 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, _), b_field| {
+fn update_js<'a>(js_executor: Option<JsPluginWrapper>) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, _), b_field| {
     let mut updated_b_field = b_field;
-    if let Some(op) = &field.unsafe_operation {
-      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(op.script.clone()), |r| {
-        r.to_unsafe_js(op.script.clone())
+    if let Some(op) = &field.js {
+      let Some(js_executor) = &js_executor else {
+        return Valid::fail("Js plugin is not enabled".to_owned());
+      };
+
+      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(js_executor.clone(), op.script.clone()), |r| {
+        r.to_unsafe_js(js_executor.clone(),op.script.clone())
       });
     }
     Valid::succeed(updated_b_field)
@@ -859,7 +875,7 @@ where
     Some(type_) => {
       let mut schema_fields = HashMap::new();
       for (name, field) in type_.fields.iter() {
-        if field.unsafe_operation.is_none() && field.http.is_none() {
+        if field.js.is_none() && field.http.is_none() {
           schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
         }
       }

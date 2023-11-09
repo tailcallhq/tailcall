@@ -10,10 +10,9 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use crate::blueprint::js_plugin::JsPluginWrapper;
 use crate::config::group_by::GroupBy;
 use crate::http::{max_age, HttpDataLoader};
-#[cfg(feature = "unsafe-js")]
-use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
@@ -40,7 +39,7 @@ pub enum Unsafe {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
-  JS(Box<Expression>, String),
+  JS(Box<Expression>, JsPluginWrapper, String),
 }
 
 impl Debug for Unsafe {
@@ -52,7 +51,7 @@ impl Debug for Unsafe {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Unsafe::JS(input, script) => f
+      Unsafe::JS(input, _, script) => f
         .debug_struct("JS")
         .field("input", input)
         .field("script", script)
@@ -149,21 +148,18 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Unsafe::JS(input, script) => {
+            Unsafe::JS(input, js_executor, script) => {
               let result;
-              #[cfg(not(feature = "unsafe-js"))]
-              {
-                let _ = script;
-                let _ = input;
-                result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
-              }
 
-              #[cfg(feature = "unsafe-js")]
-              {
-                let input = input.eval(ctx).await?;
-                result = javascript::execute_js(script, input, Some(ctx.timeout))
-                  .map_err(|e| EvaluationError::JSException(e.to_string()).into());
-              }
+              let input = input.eval(ctx).await?;
+
+              dbg!(&input);
+
+              result = js_executor.eval(script, input.to_string().as_str())
+                .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+
+              dbg!(&result);
+
               result
             }
           }

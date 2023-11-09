@@ -9,7 +9,7 @@ use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-use super::{Server, Upstream};
+use super::{Server, Upstream, JsPlugin};
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -21,6 +21,7 @@ use crate::valid::Valid;
 pub struct Config {
   pub server: Server,
   pub upstream: Upstream,
+  pub js_plugin: Option<JsPlugin>,
   pub graphql: GraphQL,
 }
 
@@ -111,7 +112,8 @@ impl Config {
     let server = self.server.merge_right(other.server.clone());
     let graphql = self.graphql.merge_right(other.graphql.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    Self { server, upstream, graphql }
+    let js_plugin = self.js_plugin.or(other.js_plugin.clone());
+    Self { server, upstream, js_plugin, graphql }
   }
 }
 
@@ -219,22 +221,21 @@ pub struct Field {
   pub doc: Option<String>,
   pub modify: Option<Modify>,
   pub http: Option<Http>,
-  #[serde(rename = "unsafe")]
-  pub unsafe_operation: Option<Unsafe>,
+  pub js: Option<JSExecution>,
   pub const_field: Option<Const>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+    self.http.is_some() || self.js.is_some() || self.const_field.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<&str> {
     let mut directives = Vec::with_capacity(3);
     if self.http.is_some() {
       directives.push("@http")
     }
-    if self.unsafe_operation.is_some() {
-      directives.push("@unsafe")
+    if self.js.is_some() {
+      directives.push("@js")
     }
     if self.const_field.is_some() {
       directives.push("@const")
@@ -251,7 +252,7 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Unsafe {
+pub struct JSExecution {
   pub script: String,
 }
 

@@ -188,7 +188,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     let http_dir = http.to_directive();
     directives.push(pos(http_dir));
   }
-  if let Some(us) = field.clone().unsafe_operation {
+  if let Some(us) = field.clone().js {
     let us_dir = us.to_directive();
     directives.push(pos(us_dir));
   }

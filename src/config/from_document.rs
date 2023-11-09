@@ -11,10 +11,12 @@ use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upst
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
 
+use super::js_plugin::JsPlugin;
+
 fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
-    .map(|((server, upstream), graphql)| Config { server, upstream, graphql })
+    .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)).zip(js_plugin(sd)))
+    .map(|(((server, upstream), graphql), js_plugin)| Config { server, upstream, graphql, js_plugin })
 }
 
 fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> Valid<GraphQL, String> {
@@ -60,6 +62,9 @@ fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, "upstream")
+}
+fn js_plugin(schema_definition: &SchemaDefinition) -> Valid<Option<JsPlugin>, String> {
+  process_schema_directives(schema_definition, "js_plugin")
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
@@ -193,7 +198,7 @@ where
   let modify = to_modify(directives);
 
   to_http(directives).map(|http| {
-    let unsafe_operation = to_unsafe_operation(directives);
+    let js = to_js_operation(directives);
     let const_field = to_const_field(directives);
     config::Field {
       type_of,
@@ -204,15 +209,15 @@ where
       doc,
       modify,
       http,
-      unsafe_operation,
+      js,
       const_field,
     }
   })
 }
-fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
+fn to_js_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::JSExecution> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "unsafe" {
-      config::Unsafe::from_directive(&directive.node).to_result().ok()
+    if directive.node.name.node == "js" {
+      config::JSExecution::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
