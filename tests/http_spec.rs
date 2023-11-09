@@ -196,20 +196,14 @@ mod test {
   }
 
   async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
-    let query_string = serde_json::to_string(&downstream_assertion.request.0.body).unwrap();
+    let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
     let method = downstream_assertion.request.0.method.clone().unwrap_or_default();
-    let url = downstream_assertion
-      .request
-      .0
-      .url
-      .clone()
-      .unwrap_or(Url::parse("http://localhost:8080/graphql").unwrap());
+    let url = downstream_assertion.request.0.url.clone().expect("url is required");
     let state = spec.setup().await;
     let req = Request::builder()
       .method(method)
       .uri(url.as_str())
-      .body(Body::from(query_string))
-      .unwrap();
-    Ok(graphql_request(req, state.as_ref()).await?)
+      .body(Body::from(query_string));
+    graphql_request(req?, state.as_ref()).await
   }
 }
