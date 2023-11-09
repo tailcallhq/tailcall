@@ -80,6 +80,9 @@ impl HttpSpec {
 
     for entry in fs::read_dir(&dir_path)? {
       let path = entry?.path();
+      if path.is_dir() {
+        continue;
+      }
       let source = Source::detect(path.to_str().unwrap_or_default())?;
       if path.is_file() && (source.ext() == "json" || source.ext() == "yml") {
         let contents = fs::read_to_string(&path)?;

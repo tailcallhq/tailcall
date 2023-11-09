@@ -1,0 +1,18 @@
+schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
+  query: Query
+}
+
+type Query {
+  foos: [Foo] @http(path: "/foos")
+}
+
+type Foo {
+  id: Int!
+  name: String!
+  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{value.id}}"}], groupBy: ["fooId"])
+}
+
+type Bar {
+  id: Int!
+  fooId: Int!
+}

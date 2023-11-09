@@ -1,5 +1,5 @@
 ---
-config: tests/graphql_mock/test-custom-headers.graphql
+config: tests/http/config/simple.graphql
 name: Skip file
 description: This is a sample API specification.
 annotation: Skip
