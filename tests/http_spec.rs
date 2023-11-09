@@ -19,7 +19,7 @@ pub enum Annotation {
   Only,
   Fail,
 }
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct APIRequest {
   #[serde(default)]
   method: Method,
@@ -37,7 +37,7 @@ pub struct APIResponse {
   #[serde(default)]
   pub body: serde_json::Value,
 }
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct UpstreamRequest(pub APIRequest);
 #[derive(Deserialize, Clone, Debug)]
 pub struct UpstreamResponse(APIResponse);
@@ -91,7 +91,10 @@ impl HttpSpec {
       .ok()
       .unwrap();
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient { upstream_mocks: Arc::new(self.upstream_mocks.to_vec()) });
+    let client = Arc::new(MockHttpClient {
+      upstream_mocks: self.upstream_mocks.to_vec(),
+      expected_upstream_requests: self.expected_upstream_requests.to_vec(),
+    });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
   }
@@ -99,7 +102,8 @@ impl HttpSpec {
 
 #[derive(Clone)]
 struct MockHttpClient {
-  upstream_mocks: Arc<Vec<(UpstreamRequest, UpstreamResponse)>>,
+  upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  expected_upstream_requests: Vec<UpstreamRequest>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
@@ -120,6 +124,13 @@ impl HttpClient for MockHttpClient {
         method_match && url_match
       })
       .expect("Mock not found");
+    // Assert upstream request
+    let upstream_request = mock.0.clone();
+    assert!(
+      self.expected_upstream_requests.contains(&upstream_request),
+      "Unexpected upstream request: {:?}",
+      upstream_request
+    );
 
     // Clone the response from the mock to avoid borrowing issues.
     let mock_response = mock.1.clone();
