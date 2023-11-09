@@ -24,14 +24,18 @@ pub struct APIRequest {
   #[serde(default)]
   method: Method,
   pub url: Url,
-  pub headers: Option<BTreeMap<String, String>>,
-  pub body: Option<serde_json::Value>,
+  #[serde(default)]
+  pub headers: BTreeMap<String, String>,
+  #[serde(default)]
+  pub body: serde_json::Value,
 }
 #[derive(Deserialize, Clone, Debug)]
 pub struct APIResponse {
   pub status: u16,
-  pub headers: Option<BTreeMap<String, String>>,
-  pub body: Option<serde_json::Value>,
+  #[serde(default)]
+  pub headers: BTreeMap<String, String>,
+  #[serde(default)]
+  pub body: serde_json::Value,
 }
 #[derive(Deserialize, Clone, Debug)]
 pub struct UpstreamRequest(pub APIRequest);
@@ -125,19 +129,14 @@ impl HttpClient for MockHttpClient {
     let mut response = Response { status: status_code, ..Default::default() };
 
     // Insert headers from the mock into the response.
-    if let Some(headers) = mock_response.0.headers {
-      for (key, value) in headers {
-        let header_name = HeaderName::from_str(&key)?;
-        let header_value = HeaderValue::from_str(&value)?;
-        response.headers.insert(header_name, header_value);
-      }
+    for (key, value) in mock_response.0.headers {
+      let header_name = HeaderName::from_str(&key)?;
+      let header_value = HeaderValue::from_str(&value)?;
+      response.headers.insert(header_name, header_value);
     }
 
     // Set the body of the response.
-    response.body = match mock_response.0.body {
-      Some(body) => ConstValue::try_from(serde_json::from_value::<Value>(body)?)?,
-      None => ConstValue::Null,
-    };
+    response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
 
     Ok(response)
   }
@@ -187,7 +186,7 @@ fn format_request_details(request: &APIRequest) -> String {
     "Method: {:?}, Path: {}, Body: {}",
     request.method.clone(),
     request.url.clone(),
-    request.body.clone().unwrap_or(serde_json::Value::Null)
+    request.body.clone()
   )
 }
 
