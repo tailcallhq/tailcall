@@ -118,6 +118,7 @@ impl Config {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
+  #[serde(default)]
   pub added_fields: Vec<AddField>,
   pub doc: Option<String>,
   #[serde(default)]
