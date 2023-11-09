@@ -10,7 +10,7 @@ directive @server(
   vars: [KeyValue]
   responseHeaders: [KeyValue]
   hostname: String
-  httpVersion: HttpVersion
+  version: HttpVersion
 ) on SCHEMA
 
 enum HttpVersion {

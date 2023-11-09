@@ -28,7 +28,7 @@ pub struct Server {
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
-  pub http_version: HttpVersion, // Add the http_version field
+  pub version: HttpVersion, // Add the version field
 }
 
 impl Default for Server {
@@ -69,7 +69,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_query_validation: (config_server).enable_query_validation(),
         enable_response_validation: (config_server).enable_http_validation(),
         global_response_timeout: (config_server).get_global_response_timeout(),
-        http_version: (config_server.get_http_version()),
+        version: (config_server.get_http_version()),
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),

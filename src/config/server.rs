@@ -16,7 +16,7 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
-  pub http_version: Option<HttpVersion>,
+  pub version: Option<HttpVersion>,
   #[serde(skip_serializing_if = "is_default")]
   pub hostname: Option<String>,
   pub port: Option<u16>,
@@ -51,7 +51,7 @@ impl Server {
   }
 
   pub fn get_http_version(&self) -> HttpVersion {
-    self.http_version.clone().unwrap_or(HttpVersion::HTTP1)
+    self.version.clone().unwrap_or(HttpVersion::HTTP1)
   }
 
   pub fn get_port(&self) -> u16 {
@@ -92,7 +92,7 @@ impl Server {
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);
-    self.http_version = other.http_version.or(self.http_version);
+    self.version = other.version.or(self.version);
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);

@@ -73,11 +73,11 @@ pub async fn start_server(config: Config, cert_path: Option<String>, key_path: O
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
-  if blueprint.server.http_version == HttpVersion::HTTP2 && (cert_path.is_none() || key_path.is_none()) {
+  if blueprint.server.version == HttpVersion::HTTP2 && (cert_path.is_none() || key_path.is_none()) {
     return Err(anyhow::anyhow!(CLIError::new("HTTP/2 protocol requires both certificate and key paths. Please provide them using --cert-path and --key-path options.")));
   }
 
-  match blueprint.server.http_version {
+  match blueprint.server.version {
     HttpVersion::HTTP2 => {
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
@@ -95,7 +95,7 @@ pub async fn start_server(config: Config, cert_path: Option<String>, key_path: O
 
       let server = server_result.serve(make_svc);
 
-      log::info!("🚀 Tailcall launched at [{}]", addr);
+      log::info!("🚀 Tailcall launched at [{}] over {}", addr, "HTTP/2.0");
       if blueprint.server.enable_graphiql {
         log::info!("🌍 Playground: https://{}", addr);
       }
