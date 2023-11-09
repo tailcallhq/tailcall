@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 use std::fs;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use async_graphql_value::ConstValue;
 use hyper::{Body, Request};
 use reqwest::header::{HeaderName, HeaderValue};
@@ -63,27 +65,21 @@ pub struct HttpSpec {
 }
 
 impl HttpSpec {
-  fn read(spec: &str) -> Option<Self> {
-    spec
-      .split('.')
-      .last()
-      .and_then(|ext| match ext.to_lowercase().as_str() {
-        "json" => Self::read_json(spec),
-        "yaml" => Self::read_yaml(spec),
-        _ => None,
-      })
-  }
-  fn read_json(spec: &str) -> Option<Self> {
-    let contents = fs::read_to_string(spec).ok()?;
-    let spec = serde_json::from_str(&contents);
+  fn read<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    let path = path.as_ref();
+    let contents = fs::read_to_string(path)?;
+    let extension = path
+      .extension()
+      .ok_or(anyhow!("not a valid extension"))?
+      .to_str()
+      .ok_or(anyhow!("not a valid Unicode"))?;
 
-    spec.ok()
-  }
-
-  fn read_yaml(spec: &str) -> Option<Self> {
-    let contents = fs::read_to_string(spec).ok()?;
-    let spec = serde_yaml::from_str(&contents);
-    spec.ok()
+    let spec = match extension.to_lowercase().as_str() {
+      "json" => anyhow::Ok(serde_json::from_str(&contents)?),
+      "yaml" => anyhow::Ok(serde_yaml::from_str(&contents)?),
+      _ => Err(anyhow!("only json and yaml are supported")),
+    };
+    anyhow::Ok(spec?)
   }
   async fn setup(&self) -> Arc<ServerContext> {
     let config = Config::from_file_paths([self.config.clone()].iter())
