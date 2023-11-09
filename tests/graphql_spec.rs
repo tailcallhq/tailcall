@@ -23,10 +23,17 @@ mod graphql_mock;
 
 static INIT: Once = Once::new();
 
+#[derive(Debug, Clone, PartialEq)]
+enum Tag {
+  ClientSDL,
+  ServerSDL,
+  MergedSDL,
+}
+
 #[derive(Debug, Clone)]
 struct Source {
   sdl: String,
-  tag: String,
+  tag: Tag,
 }
 
 #[derive(Debug, Default, Setters)]
@@ -39,28 +46,28 @@ struct GraphQLSpec {
 
 impl GraphQLSpec {
   fn client_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source { sdl, tag: CLIENT_SDL.to_string() });
+    self.sources.push(Source { sdl, tag: Tag::ClientSDL });
     self
   }
 
   fn server_sdl(mut self, sdl: Vec<String>) -> Self {
     for s in sdl {
-      self.sources.push(Source { sdl: s, tag: SERVER_SDL.to_string() });
+      self.sources.push(Source { sdl: s, tag: Tag::ServerSDL });
     }
     self
   }
 
   fn merged_server_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source { sdl, tag: MERGED_SDL.to_string() });
+    self.sources.push(Source { sdl, tag: Tag::MergedSDL });
 
     self
   }
 
-  fn find_source(&self, tag: &str) -> String {
+  fn find_source(&self, tag: Tag) -> String {
     self.get_sources(tag).first().unwrap().to_string()
   }
 
-  fn get_sources(&self, tag: &str) -> Vec<String> {
+  fn get_sources(&self, tag: Tag) -> Vec<String> {
     self
       .sources
       .clone()
@@ -213,7 +220,7 @@ fn test_config_identity() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let content = spec.find_source(SERVER_SDL);
+    let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let expected = content;
 
@@ -232,9 +239,9 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let expected = spec.find_source(SERVER_SDL);
+    let expected = spec.find_source(Tag::ServerSDL);
     let expected = expected.as_str();
-    let content = spec.find_source(CLIENT_SDL);
+    let content = spec.find_source(Tag::ClientSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
     // error is on the line below
@@ -259,7 +266,7 @@ async fn test_execution() -> std::io::Result<()> {
     .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
-        let mut config = Config::from_sdl(spec.find_source(SERVER_SDL).as_str())
+        let mut config = Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str())
           .to_result()
           .unwrap();
         config.server.enable_query_validation = Some(false);
@@ -299,7 +306,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
 
   for spec in specs? {
-    let content = spec.find_source(SERVER_SDL);
+    let content = spec.find_source(Tag::ServerSDL);
     let expected = spec.sdl_errors;
     let content = content.as_str();
     let config = Config::from_sdl(content);
@@ -325,10 +332,10 @@ fn test_merge_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {
-    let expected = spec.find_source(MERGED_SDL);
+    let expected = spec.find_source(Tag::MergedSDL);
     let expected = expected.as_str();
     let content = spec
-      .get_sources(SERVER_SDL)
+      .get_sources(Tag::ServerSDL)
       .iter()
       .map(|s| Config::from_sdl(s.as_str()).to_result().unwrap())
       .collect::<Vec<_>>();
