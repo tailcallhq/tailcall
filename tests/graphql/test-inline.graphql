@@ -15,8 +15,8 @@ type Foo {
   a: A
 }
 
-type Query {
-  foo: Foo @http(path: "/foo") @inline(path: ["a", "b"])
+type Query @addField(name: "foo", path: ["foo", "a", "b"]) {
+  foo: Foo @http(path: "/foo") @modify(omit: true)
 }
 
 #> client-sdl

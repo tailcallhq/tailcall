@@ -191,7 +191,6 @@ where
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
-  let inline = to_inline(directives);
 
   to_http(directives).map(|http| {
     let unsafe_operation = to_unsafe_operation(directives);
@@ -204,7 +203,6 @@ where
       args,
       doc,
       modify,
-      inline,
       http,
       unsafe_operation,
       const_field,
@@ -258,15 +256,6 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "modify" {
       config::Modify::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
-}
-fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::Inline> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == "inline" {
-      config::Inline::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }

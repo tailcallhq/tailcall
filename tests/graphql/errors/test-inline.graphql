@@ -11,10 +11,14 @@ type Address {
   city: String
 }
 
-type Query {
-  user: User @http(path: "/user/1", baseURL: "http://localhost:8000") @inline(path: ["address", "street"])
+type Query @addField(name: "street", path: ["user", "address", "street"]) {
+  user: User @http(path: "/user/1", baseURL: "http://localhost:8000")
 }
 
 #> client-sdl
 type Failure
-  @error(message: "Inline can't be done because provided path doesn't exist", trace: ["Query", "user", "@inline"])
+  @error(
+    message: "Cannot add field"
+    trace: ["Query", "@addField", "street"]
+    description: "Path [user, address, street] does not exist"
+  )

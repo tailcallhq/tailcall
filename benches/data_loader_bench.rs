@@ -25,7 +25,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
   c.bench_function("test_data_loader", |b| {
     b.iter(|| {
       tokio::runtime::Runtime::new().unwrap().spawn(async {
-        let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
+        let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
         let loader = HttpDataLoader { client: client.clone(), batched: None };
         let loader = loader.to_data_loader(Batch::default().delay(1));
 
