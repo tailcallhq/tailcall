@@ -27,6 +27,7 @@
     "gen-root": "node ./generate-root.js"
   },
   "dependencies": {
+    "@scarf/scarf": "^1.3.0",
     "yaml": "^2.3.3",
     "yml": "^1.0.0"
   }

@@ -37,6 +37,9 @@ async function genServerPackage(buildDefinitions) {
     return deps;
   }, {});
 
+  // Adding scarf to optionalDependencies
+  optionalDependencies["@scarf/scarf"] = packageVersion;
+
   const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
   const basePackage = JSON.parse(packageJson);
   const { description, license, repository, homepage, keywords } = basePackage
