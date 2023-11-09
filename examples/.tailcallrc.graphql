@@ -10,7 +10,14 @@ directive @server(
   vars: [KeyValue]
   responseHeaders: [KeyValue]
   hostname: String
+  httpVersion: HttpVersion
 ) on SCHEMA
+
+enum HttpVersion {
+  HTTP1
+  HTTP2
+}
+
 directive @upstream(
   allowedHeaders: [String]
   connectTimeout: Int

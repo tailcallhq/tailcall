@@ -10,7 +10,7 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
-use crate::blueprint::Blueprint;
+use crate::blueprint::{Blueprint, HttpVersion};
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::client;
@@ -73,7 +73,18 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
   });
   let addr = (blueprint.server.hostname, blueprint.server.port).into();
-  let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+  log::info!("HTTP version: {:?}", blueprint.server.http_version);
+
+  let server = match blueprint.server.http_version {
+    HttpVersion::HTTP2 => hyper::Server::try_bind(&addr)
+      .map_err(CLIError::from)?
+      .http2_only(true)
+      .serve(make_svc),
+    _ => hyper::Server::try_bind(&addr)
+      .map_err(CLIError::from)?
+      .http1_only(true)
+      .serve(make_svc),
+  };
   log::info!("🚀 Tailcall launched at [{}]", addr);
   if blueprint.server.enable_graphiql {
     log::info!("🌍 Playground: http://{}", addr);

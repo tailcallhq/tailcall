@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use crate::blueprint::HttpVersion;
 use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -15,6 +16,7 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
+  pub http_version: Option<HttpVersion>,
   #[serde(skip_serializing_if = "is_default")]
   pub hostname: Option<String>,
   pub port: Option<u16>,
@@ -47,6 +49,11 @@ impl Server {
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
   }
+
+  pub fn get_http_version(&self) -> HttpVersion {
+    self.http_version.clone().unwrap_or(HttpVersion::HTTP1)
+  }
+
   pub fn get_port(&self) -> u16 {
     self.port.unwrap_or(8000)
   }
@@ -85,6 +92,7 @@ impl Server {
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);
+    self.http_version = other.http_version.or(self.http_version);
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);
