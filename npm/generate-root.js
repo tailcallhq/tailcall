@@ -51,7 +51,8 @@ async function genServerPackage(buildDefinitions) {
     version: packageVersion,
     optionalDependencies,
     scripts: {
-      postinstall: "node ./scripts/installOptionalDeps.js"
+      postinstall: "node ./scripts/installOptionalDeps.js",
+      preinstall: "node ./scripts/preinstall.js",
     }
   };
 
@@ -76,12 +77,48 @@ Object.entries(optionalDependencies).forEach(([pkg, version]) => {
 });
   `.trim();
 
+  const preinstallScriptContent = `
+const {platform, arch} = process;
+const optionalDependencies = ${JSON.stringify(optionalDependencies)};
+const getArchitecture = () => {
+  if (arch === "x64") {
+    return "x86_64"
+  } else if (arch === "arm64") {
+    return "[arm64|aarch64]"
+  } else if (arch === "ia32") {
+    return "i686"
+  }
+  return arch;
+}
+const getPlatform = () => {
+  if (platform === 'win32') {
+    return 'windows';
+  } else if (platform === 'darwin') {
+    return 'apple';
+  }
+  return platform;
+}
+const isSuppot = () => {
+  const names = ['@tailcallhq/core', getPlatform(), getArchitecture()];
+  return Object.keys(optionalDependencies).some(key => new RegExp(names.join('-')).test(key))
+}
+if (!isSuppot()) {
+  throw new Error(\`Unsupported platform \${platform} arch \${arch}. Feedback: ${repository.url}\`);
+}
+  `.trim();
+
   // Ensure the directory exists
   await fs.mkdir(directoryPath, { recursive: true });
 
   await fs.writeFile(
     resolve(scriptsPath, "installOptionalDeps.js"),
     installScriptContent,
+    "utf8"
+  );
+
+  await fs.writeFile(
+    resolve(scriptsPath, "preinstall.js"),
+    preinstallScriptContent,
     "utf8"
   );
 
