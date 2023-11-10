@@ -173,7 +173,7 @@ impl GraphQLSpec {
         match spec.annotation {
           Some(Annotation::Only) | None => files.push(spec),
           Some(Annotation::Skip) => {
-            log::warn!("Skipping spec: {}", spec.path.display());
+            log::warn!("{} ... skipped", spec.path.display());
           }
           Some(Annotation::Fail) => {}
         }
