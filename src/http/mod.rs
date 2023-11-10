@@ -18,8 +18,8 @@ use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
 pub use response::*;
-pub use server::{graphql_request, start_server};
-pub use server_context::ServerContext;
+pub use server::{graphql_request, start_server, start_server_with_polling};
+pub use server_context::{SchemaLoader, ServerContext};
 
 pub fn max_age(res: &Response) -> Option<Duration> {
   let header = res.headers.get(CACHE_CONTROL)?;
