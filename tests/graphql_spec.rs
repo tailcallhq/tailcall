@@ -66,8 +66,7 @@ impl GraphQLSpec {
   fn find_source(&self, tag: Tag) -> String {
     self
       .get_sources(tag)
-      .collect::<Vec<String>>()
-      .first()
+      .next()
       .unwrap()
       .to_string()
   }
