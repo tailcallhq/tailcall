@@ -5,11 +5,13 @@ mod integration_tests {
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String, poll_interval: Option<u64>) -> &'static str {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path].iter())
-        .await
-        .unwrap();
+      .await
+      .unwrap();
     match (poll_interval, config.1) {
       (Some(poll_interval), Some(file_path)) => {
-        start_server_with_polling(config.0, file_path, poll_interval).await.unwrap();
+        start_server_with_polling(config.0, file_path, poll_interval)
+          .await
+          .unwrap();
       }
       _ => {
         start_server(config.0).await.unwrap();
@@ -29,9 +31,9 @@ mod integration_tests {
     let query_data = "{\"query\":\"query { item { id name } }\"}";
 
     let api_request = http_client
-        .post("http://localhost:8000/graphql")
-        .header("Content-Type", "application/json")
-        .body(query_data);
+      .post("http://localhost:8000/graphql")
+      .header("Content-Type", "application/json")
+      .body(query_data);
 
     let response = api_request.send().await.expect("Failed to send request");
 
@@ -48,7 +50,8 @@ mod integration_tests {
 
   #[tokio::test]
   async fn test_verify_response_headers_over_http() {
-    let schema_path = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tests/graphql_mock/test-custom-headers.graphql";
+    let schema_path =
+      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tests/graphql_mock/test-custom-headers.graphql";
     let poll_interval = 10;
     verify_response_headers(schema_path, Some(poll_interval)).await;
   }
