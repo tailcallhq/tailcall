@@ -37,9 +37,6 @@ async function genServerPackage(buildDefinitions) {
     return deps;
   }, {});
 
-  // Adding scarf to optionalDependencies
-  optionalDependencies["@scarf/scarf"] = packageVersion;
-
   const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
   const basePackage = JSON.parse(packageJson);
   const { description, license, repository, homepage, keywords } = basePackage
@@ -76,6 +73,17 @@ Object.entries(optionalDependencies).forEach(([pkg, version]) => {
       console.log(\`Successfully installed optional dependency: \${pkg}\`, stdout);
     }
   });
+});
+
+// Install Scarf SDK
+exec('npm install @scarf/scarf --save', (err, stdout, stderr) => {
+  if (err) {
+    console.error(\`Error installing Scarf SDK: \${err}\`);
+    return;
+  }
+  console.log(\`Scarf SDK installed successfully: \${stdout}\`);
+
+  // Additional Scarf integration steps here
 });
   `.trim();
 

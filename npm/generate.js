@@ -67,6 +67,16 @@ async function genPlatformPackage() {
         "utf8"
     );
 
+    // Install the Scarf SDK
+
+    exec('npm install @scarf/scarf --save', (err, stdout, stderr) => {
+        if (err) {
+          console.error(`Error installing Scarf SDK: ${err}`);
+          return;
+        }
+        console.log(`Scarf SDK installed successfully: ${stdout}`);
+    });
+
     // Copy the executable to the bin directory
     await fs.copyFile(
         resolve(__dirname, `../target`, name, `release/tailcall${ext ? ext : ''}`),
