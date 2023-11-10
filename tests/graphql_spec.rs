@@ -163,6 +163,8 @@ impl GraphQLSpec {
 
     let entries = fs::read_dir(dir_path.clone())?;
     let mut files = Vec::new();
+    let mut only_files = Vec::new();
+    let mut fail_files = Vec::new();
     for entry in entries {
       let path = entry?.path();
       if path.is_file() && path.extension().unwrap_or_default() == "graphql" {
@@ -171,21 +173,29 @@ impl GraphQLSpec {
         let spec = GraphQLSpec::new(path_buf, contents.as_str());
 
         match spec.annotation {
-          Some(Annotation::Only) | None => files.push(spec),
+          Some(Annotation::Only) => only_files.push(spec),
+          Some(Annotation::Fail) => fail_files.push(spec),
           Some(Annotation::Skip) => {
             log::warn!("{} ... skipped", spec.path.display());
           }
-          Some(Annotation::Fail) => {}
+          None => files.push(spec),
         }
       }
     }
 
     assert!(
-      !files.is_empty(),
+      !files.is_empty() || !only_files.is_empty() || !fail_files.is_empty(),
       "No files found in {}",
       dir_path.to_str().unwrap_or_default()
     );
-    Ok(files)
+
+    if !only_files.is_empty() {
+      only_files.extend(fail_files);
+      Ok(only_files)
+    } else {
+      files.extend(fail_files);
+      Ok(files)
+    }
   }
 }
 
