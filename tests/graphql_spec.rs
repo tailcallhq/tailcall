@@ -34,7 +34,7 @@ struct GraphQLSpec {
   annotation: Option<Annotation>,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 enum Annotation {
   Skip,
   Only,
@@ -164,7 +164,7 @@ impl GraphQLSpec {
     let entries = fs::read_dir(dir_path.clone())?;
     let mut files = Vec::new();
     let mut only_files = Vec::new();
-    let mut fail_files = Vec::new();
+
     for entry in entries {
       let path = entry?.path();
       if path.is_file() && path.extension().unwrap_or_default() == "graphql" {
@@ -174,26 +174,23 @@ impl GraphQLSpec {
 
         match spec.annotation {
           Some(Annotation::Only) => only_files.push(spec),
-          Some(Annotation::Fail) => fail_files.push(spec),
+          Some(Annotation::Fail) | None => files.push(spec),
           Some(Annotation::Skip) => {
             log::warn!("{} ... skipped", spec.path.display());
           }
-          None => files.push(spec),
         }
       }
     }
 
     assert!(
-      !files.is_empty() || !only_files.is_empty() || !fail_files.is_empty(),
+      !files.is_empty() || !only_files.is_empty(),
       "No files found in {}",
       dir_path.to_str().unwrap_or_default()
     );
 
     if !only_files.is_empty() {
-      only_files.extend(fail_files);
       Ok(only_files)
     } else {
-      files.extend(fail_files);
       Ok(files)
     }
   }
@@ -219,6 +216,10 @@ fn test_config_identity() -> std::io::Result<()> {
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+      panic!("{} ... expected to fail", spec.path.display());
+    }
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
   }
 
@@ -236,6 +237,10 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
     assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+      panic!("{} ... expected to fail", spec.path.display());
+    }
     log::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
@@ -274,6 +279,10 @@ async fn test_execution() -> std::io::Result<()> {
           let json = serde_json::to_string(&res).unwrap();
           let expected = serde_json::to_string(&q.expected).unwrap();
           assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+
+          if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+            panic!("{} ... expected to fail", spec.path.display());
+          }
           log::info!("QueryExecution: {} ... ok", spec.path.display());
         }
       })
@@ -304,6 +313,10 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
         assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+
+        if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+          panic!("{} ... expected to fail", spec.path.display());
+        }
         log::info!("ClientSDLError: {} ... ok", spec.path.display());
       }
       _ => panic!("ClientSDLError: {}", spec.path.display()),
@@ -327,6 +340,10 @@ fn test_merge_sdl() -> std::io::Result<()> {
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+      panic!("{} ... expected to fail", spec.path.display());
+    }
     log::info!("SDLMerge: {} ... ok", spec.path.display());
   }
 
