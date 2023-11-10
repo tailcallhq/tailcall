@@ -8,7 +8,7 @@ use super::Response;
 use crate::config::{self, Upstream};
 
 #[async_trait::async_trait]
-pub trait HttpClient {
+pub trait HttpClient: Sync + Send {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
 }
 
@@ -29,12 +29,12 @@ impl Default for DefaultHttpClient {
   fn default() -> Self {
     let upstream = config::Upstream::default();
     //TODO: default is used only in tests. Drop default and move it to test.
-    DefaultHttpClient::new(upstream)
+    DefaultHttpClient::new(&upstream)
   }
 }
 
 impl DefaultHttpClient {
-  pub fn new(upstream: Upstream) -> Self {
+  pub fn new(upstream: &Upstream) -> Self {
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
       .timeout(Duration::from_secs(upstream.get_timeout()))

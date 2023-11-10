@@ -1,10 +1,8 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
-  BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, SchemaDefinition,
-  ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
+  BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType,
+  ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
@@ -58,8 +56,8 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
   )
 }
 
-fn process_schema_directives<'a, T: DirectiveCodec<'a, T> + Default>(
-  schema_definition: &'a SchemaDefinition,
+fn process_schema_directives<T: DirectiveCodec<T> + Default>(
+  schema_definition: &SchemaDefinition,
   directive_name: &str,
 ) -> Valid<T, String> {
   let mut res = Valid::succeed(T::default());
@@ -92,17 +90,15 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
     let type_name = pos_name_to_string(&type_definition.node.name);
     match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => to_object_type(
-        &object_type.fields,
+        &object_type,
         &type_definition.node.description,
-        false,
-        &object_type.implements,
+        &type_definition.node.directives,
       )
       .some(),
       TypeKind::Interface(interface_type) => to_object_type(
-        &interface_type.fields,
+        &interface_type,
         &type_definition.node.description,
-        true,
-        &interface_type.implements,
+        &type_definition.node.directives,
       )
       .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
@@ -138,16 +134,23 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
   }
   unions
 }
-fn to_object_type(
-  fields: &Vec<Positioned<FieldDefinition>>,
+fn to_object_type<T>(
+  object: &T,
   description: &Option<Positioned<String>>,
-  interface: bool,
-  implements: &[Positioned<Name>],
-) -> Valid<config::Type, String> {
+  directives: &[Positioned<ConstDirective>],
+) -> Valid<config::Type, String>
+where
+  T: ObjectLike,
+{
+  let fields = object.fields();
+  let implements = object.implements();
+  let interface = object.is_interface();
+
   to_fields(fields).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-    config::Type { fields, doc, interface, implements, ..Default::default() }
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -182,39 +185,27 @@ fn to_input_object_fields(
   to_fields_inner(input_object_fields, to_input_object_field)
 }
 fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
-  to_common_field(
-    &field_definition.ty.node,
-    &field_definition.ty.node.base,
-    field_definition.ty.node.nullable,
-    to_args(field_definition),
-    &field_definition.description,
-    &field_definition.directives,
-  )
+  to_common_field(field_definition, to_args(field_definition))
 }
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
-  to_common_field(
-    &field_definition.ty.node,
-    &field_definition.ty.node.base,
-    field_definition.ty.node.nullable,
-    BTreeMap::new(),
-    &field_definition.description,
-    &field_definition.directives,
-  )
+  to_common_field(field_definition, BTreeMap::new())
 }
-fn to_common_field(
-  type_: &Type,
-  base: &BaseType,
-  nullable: bool,
-  args: BTreeMap<String, config::Arg>,
-  description: &Option<Positioned<String>>,
-  directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Field, String> {
+fn to_common_field<F>(field: &F, args: BTreeMap<String, config::Arg>) -> Valid<config::Field, String>
+where
+  F: Fieldlike,
+{
+  let type_ = field.ty();
+  let base = &type_.base;
+  let nullable = &type_.nullable;
+  let description = field.description();
+  let directives = field.directives();
+
   let type_of = to_type_of(type_);
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
-  let inline = to_inline(directives);
+
   to_http(directives)
     .zip(to_graphqlsource(directives))
     .map(|(http, graphql_source)| {
@@ -228,8 +219,7 @@ fn to_common_field(
         args,
         doc,
         modify,
-        inline,
-        http,
+          http,
         unsafe_operation,
         const_field,
         graphql_source,
@@ -279,19 +269,10 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   };
   config::Arg { type_of, list, required, doc, modify, default_value }
 }
-fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::ModifyField> {
+fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "modify" {
-      config::ModifyField::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
-}
-fn to_inline(directives: &[Positioned<ConstDirective>]) -> Option<config::InlineType> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == "inline" {
-      config::InlineType::from_directive(&directive.node).to_result().ok()
+      config::Modify::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -313,10 +294,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .collect();
   Union { types, doc: doc.clone() }
 }
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::ConstField> {
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == "const" {
-      config::ConstField::from_directive(&directive.node).to_result().ok()
+      config::Const::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
@@ -325,7 +306,7 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
 
 fn to_graphqlsource(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::GraphQLSource>, String> {
   for directive in directives {
-    if directive.node.name.node == "graphql" {
+    if directive.node.name.node == "graphQlSource" {
       return GraphQLSource::from_directive(&directive.node).map(Some);
     }
   }
@@ -381,6 +362,18 @@ async fn update_introspection(
     None => Valid::fail("No base url found for graphql directive".to_string()).trace("introspection"),
   }
 }
+fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {
+  directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node == config::AddField::directive_name() {
+        config::AddField::from_directive(&directive.node).to_result().ok()
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>()
+}
 
 trait HasName {
   fn name(&self) -> &Positioned<Name>;
@@ -393,5 +386,61 @@ impl HasName for FieldDefinition {
 impl HasName for InputValueDefinition {
   fn name(&self) -> &Positioned<Name> {
     &self.name
+  }
+}
+
+trait Fieldlike {
+  fn ty(&self) -> &Type;
+  fn description(&self) -> &Option<Positioned<String>>;
+  fn directives(&self) -> &[Positioned<ConstDirective>];
+}
+impl Fieldlike for FieldDefinition {
+  fn ty(&self) -> &Type {
+    &self.ty.node
+  }
+  fn description(&self) -> &Option<Positioned<String>> {
+    &self.description
+  }
+  fn directives(&self) -> &[Positioned<ConstDirective>] {
+    &self.directives
+  }
+}
+impl Fieldlike for InputValueDefinition {
+  fn ty(&self) -> &Type {
+    &self.ty.node
+  }
+  fn description(&self) -> &Option<Positioned<String>> {
+    &self.description
+  }
+  fn directives(&self) -> &[Positioned<ConstDirective>] {
+    &self.directives
+  }
+}
+
+trait ObjectLike {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>>;
+  fn implements(&self) -> &Vec<Positioned<Name>>;
+  fn is_interface(&self) -> bool;
+}
+impl ObjectLike for ObjectType {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
+    &self.fields
+  }
+  fn implements(&self) -> &Vec<Positioned<Name>> {
+    &self.implements
+  }
+  fn is_interface(&self) -> bool {
+    false
+  }
+}
+impl ObjectLike for InterfaceType {
+  fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
+    &self.fields
+  }
+  fn implements(&self) -> &Vec<Positioned<Name>> {
+    &self.implements
+  }
+  fn is_interface(&self) -> bool {
+    true
   }
 }

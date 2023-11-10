@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use async_graphql::{Name, SelectionField, Value};
 use derive_setters::Setters;
+use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
 use super::{EmptyResolverContext, ResolverContextLike};
@@ -18,9 +19,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
   pub timeout: Duration,
 }
 
-lazy_static::lazy_static! {
-  static ref REQUEST_CTX: RequestContext = RequestContext::default();
-}
+static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(RequestContext::default);
 
 impl Default for EvaluationContext<'static, EmptyResolverContext> {
   fn default() -> Self {

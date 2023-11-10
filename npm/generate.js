@@ -1,7 +1,9 @@
 import * as fs from "fs/promises";
 import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = dirname(new URL(import.meta.url).pathname);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function getArguments() {
     const args = {};
@@ -13,7 +15,7 @@ function getArguments() {
     return args;
 }
 
-const { target, build, version } = getArguments();
+const { target, build, version, ext } = getArguments();
 
 if (!target || !build || !version) {
     console.error('Usage: node <script.js> --target <target> --build <build> --version <version>');
@@ -39,18 +41,25 @@ async function genPlatformPackage() {
     } else {
         name = `${cpu}-${os}`;
     }
+
+    const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8");
+    const basePackage = JSON.parse(packageJson);
+    const { description, license, repository, homepage, keywords } = basePackage
+
     const platformPackage = {
+        description,
+        license,
+        repository,
+        homepage,
+        keywords,
         name: `@tailcallhq/core-${build}`,
         version,
-        description: `Tailcall core-${build} Platform`,
-        bin: {
-            "tc": "./bin/tailcall" // Command 'tc' points to the executable 'tailcall'
-        },
+        directories: { bin: "bin" },
         os: [os],
         cpu: [processor],
     };
 
-    const filePath = resolve(__dirname, `@tailcallhq/core-${build}/bin`);
+    const filePath = resolve(__dirname, `@tailcallhq/core-${build}`, 'bin');
     await fs.mkdir(filePath, { recursive: true });
     await fs.writeFile(
         resolve(filePath, "../package.json"),
@@ -60,9 +69,15 @@ async function genPlatformPackage() {
 
     // Copy the executable to the bin directory
     await fs.copyFile(
-        resolve(__dirname, "../target", name, "release/tailcall"),
-        resolve(filePath, "tailcall")
+        resolve(__dirname, `../target`, name, `release/tailcall${ext ? ext : ''}`),
+        resolve(filePath, `tc${ext ? ext : ''}`)
     );
+
+    await fs.copyFile(
+        resolve(__dirname, "../README.md"),
+        resolve(filePath, "../README.md")
+    );
+
 }
 
 await genPlatformPackage();

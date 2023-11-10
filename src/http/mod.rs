@@ -3,7 +3,6 @@ mod data_loader;
 
 mod data_loader_request;
 mod graphql_data_loader;
-mod memo_client;
 mod method;
 mod request_context;
 mod response;
@@ -21,7 +20,7 @@ use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
 pub use response::*;
-pub use server::start_server;
+pub use server::{graphql_request, start_server};
 pub use server_context::ServerContext;
 
 pub fn max_age(res: &Response) -> Option<Duration> {

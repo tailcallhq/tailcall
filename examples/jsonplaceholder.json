@@ -1,12 +1,13 @@
 {
   "server": {
     "port": 8000,
-    "upstream": {
-      "baseURL": "http://jsonplaceholder.typicode.com",
-      "enableHttpCache": true
-    },
     "enableGraphiql": true,
-    "enableQueryValidation": false
+    "enableQueryValidation": false,
+    "hostname": "0.0.0.0"
+  },
+  "upstream": {
+    "baseURL": "http://jsonplaceholder.typicode.com",
+    "enableHttpCache": true
   },
   "graphql": {
     "schema": {

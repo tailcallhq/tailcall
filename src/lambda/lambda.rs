@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::expression;
-use super::expression::{Context, Expression, Operation};
+use super::expression::{Context, Expression, Unsafe};
 use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::request_template::RequestTemplate;
 
@@ -24,7 +24,7 @@ impl<A> Lambda<A> {
   }
 
   pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::JS(self.box_expr(), script)))
+    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), script)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
@@ -46,19 +46,20 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::Endpoint(req_template, None, None)))
+    Lambda::new(Expression::Unsafe(Unsafe::Http(req_template, None, None)))
   }
 
   pub fn from_graphql_request_template(
     req_template: GraphqlRequestTemplate,
     field_name: String,
   ) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Operation::GraphQLEndpoint(
+    Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint(
       req_template,
       field_name,
       None,
     )))
   }
+
 }
 
 impl<A> From<A> for Lambda<A>

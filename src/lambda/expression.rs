@@ -13,7 +13,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{max_age, DefaultHttpClient, GraphqlDataLoader, HttpDataLoader};
+use crate::http::{max_age, GraphqlDataLoader, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -26,7 +26,7 @@ pub enum Expression {
   Context(Context),
   Literal(Value), // TODO: this should async_graphql::Value
   EqualTo(Box<Expression>, Box<Expression>),
-  Unsafe(Operation),
+  Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
 }
 
@@ -37,35 +37,35 @@ pub enum Context {
 }
 
 #[derive(Clone)]
-pub enum Operation {
-  Endpoint(
+pub enum Unsafe {
+  Http(
     RequestTemplate,
     Option<GroupBy>,
-    Option<Arc<DataLoader<HttpDataLoader<DefaultHttpClient>, NoCache>>>,
+    Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
   GraphQLEndpoint(
     GraphqlRequestTemplate,
     String,
-    Option<Arc<DataLoader<GraphqlDataLoader<DefaultHttpClient>, NoCache>>>,
+    Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
   ),
   JS(Box<Expression>, String),
 }
 
-impl Debug for Operation {
+impl Debug for Unsafe {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Operation::Endpoint(req_template, group_by, dl) => f
-        .debug_struct("Endpoint")
+      Unsafe::Http(req_template, group_by, dl) => f
+        .debug_struct("Http")
         .field("req_template", req_template)
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Operation::GraphQLEndpoint(req_template, field_name, _dl) => f
+      Unsafe::GraphQLEndpoint(req_template, field_name, _dl) => f
         .debug_struct("GraphQLEndpoint")
         .field("req_template", req_template)
         .field("field_name", field_name)
         .finish(),
-      Operation::JS(input, script) => f
+      Unsafe::JS(input, script) => f
         .debug_struct("JS")
         .field("input", input)
         .field("script", script)
@@ -113,7 +113,7 @@ impl Expression {
         )),
         Expression::Unsafe(operation) => {
           match operation {
-            Operation::Endpoint(req_template, _, dl) => {
+            Unsafe::Http(req_template, _, dl) => {
               let req = req_template.to_request(ctx)?;
               let is_get = req.method() == reqwest::Method::GET;
               // Attempt to short circuit GET request
@@ -162,7 +162,7 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Operation::GraphQLEndpoint(req_template, field_name, dl) => {
+            Unsafe::GraphQLEndpoint(req_template, field_name, dl) => {
               let req = req_template.to_request(ctx)?;
 
               if ctx.req_ctx.upstream.batch.is_some() {
@@ -199,7 +199,7 @@ impl Expression {
               let v = get_path_value(&res.body, &path);
               Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null))
             }
-            Operation::JS(input, script) => {
+            Unsafe::JS(input, script) => {
               let result;
               #[cfg(not(feature = "unsafe-js"))]
               {

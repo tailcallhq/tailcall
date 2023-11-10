@@ -10,18 +10,17 @@ use reqwest::Url;
 use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
-pub struct GraphqlDataLoader<C>
-where
-  C: HttpClient + Send + Sync + 'static + Clone,
+#[derive(Clone)]
+pub struct GraphqlDataLoader
 {
-  pub client: C,
+  pub client: Arc<dyn HttpClient>,
 }
-impl<C: HttpClient + Send + Sync + 'static + Clone> GraphqlDataLoader<C> {
-  pub fn new(client: C) -> Self {
+impl GraphqlDataLoader {
+  pub fn new(client: Arc<dyn HttpClient>) -> Self {
     GraphqlDataLoader { client }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader<C>, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader, NoCache> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
@@ -29,7 +28,7 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> GraphqlDataLoader<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> for GraphqlDataLoader<C> {
+impl Loader<DataLoaderRequest> for GraphqlDataLoader {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
@@ -196,7 +195,7 @@ mod tests {
   async fn test_load_function() {
     let client =
       MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
-    let loader = GraphqlDataLoader { client: client.clone() };
+    let loader = GraphqlDataLoader { client: Arc::new(client.clone()) };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let url = Url::parse("http://example.com").unwrap();
@@ -216,7 +215,7 @@ mod tests {
   async fn test_load_many_function() {
     let client =
       MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
-    let loader = GraphqlDataLoader { client: client.clone() };
+    let loader = GraphqlDataLoader { client: Arc::new(client.clone()) };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let url = Url::parse("http://example.com").unwrap();

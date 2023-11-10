@@ -1,7 +1,27 @@
 {
   "name": "tailcall-npm-generator",
   "type": "module",
+  "description": "A high-performance GraphQL proxy, optimized for cloud-native environments, covering edge, middle, and service layers.",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tailcallhq/tailcall"
+  },
+  "homepage": "https://tailcall.run/",
+  "keywords": [
+    "graphql",
+    "proxy",
+    "api-gateway",
+    "rust",
+    "http",
+    "grpc",
+    "bff",
+    "backend-for-frontend",
+    "microservices",
+    "high-performance",
+    "edge"
+  ],
   "scripts": {
     "gen": "node ./generate.js",
     "gen-root": "node ./generate-root.js"
@@ -9,8 +29,5 @@
   "dependencies": {
     "yaml": "^2.3.3",
     "yml": "^1.0.0"
-  },
-  "workspaces": [
-    "@tailcallhq/*"
-  ]
+  }
 }

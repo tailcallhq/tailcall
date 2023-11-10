@@ -5,7 +5,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 
 type Post {
   id: Int!
-  user: User @graphql(baseURL: "http://localhost:8000/graphql", query: {args: [{key: "id", value: "{{value.userId}}"}], name: "user"})
+  user: User @graphQlSource(baseURL: "http://localhost:8000/graphql", query: {args: [{key: "id", value: "{{value.userId}}"}], name: "user"})
 }
 
 type Query {

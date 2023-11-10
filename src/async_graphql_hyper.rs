@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -85,9 +86,7 @@ impl GraphQLQuery {
   }
 }
 
-lazy_static::lazy_static! {
-  static ref APPLICATION_JSON:HeaderValue = HeaderValue::from_static("application/json");
-}
+static APPLICATION_JSON: Lazy<HeaderValue> = Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
   pub fn to_response(self) -> Result<Response<hyper::Body>> {

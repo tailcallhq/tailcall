@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use std::fs;
 
 use anyhow::Result;
@@ -30,13 +28,16 @@ pub async fn run() -> Result<()> {
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
       let config = Config::from_file_paths(file_path.iter()).await?;
-      let blueprint = Ok(Blueprint::try_from(&config)?);
+      let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
-          display_details(&config, blueprint, &n_plus_one_queries, &schema)?;
+          display_config(&config, n_plus_one_queries);
+          if schema {
+            display_schema(&blueprint);
+          }
           Ok(())
         }
-        Err(e) => Err(e),
+        Err(e) => Err(e.into()),
       }
     }
     Command::Init { file_path } => Ok(init(&file_path).await?),
@@ -92,15 +93,14 @@ pub async fn init(file_path: &str) -> Result<()> {
   Ok(())
 }
 
-pub fn display_details(config: &Config, blueprint: Blueprint, n_plus_one_queries: &bool, schema: &bool) -> Result<()> {
-  Fmt::display(Fmt::success(&"No errors found".to_string()));
-  let seq = vec![Fmt::n_plus_one_data(*n_plus_one_queries, config)];
-  Fmt::display(Fmt::table(seq));
+pub fn display_schema(blueprint: &Blueprint) {
+  Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
+  let sdl = blueprint.to_schema();
+  Fmt::display(print_schema::print_schema(sdl));
+}
 
-  if *schema {
-    Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
-    let sdl = blueprint.to_schema();
-    Fmt::display(print_schema::print_schema(sdl));
-  }
-  Ok(())
+fn display_config(config: &Config, n_plus_one_queries: bool) {
+  Fmt::display(Fmt::success(&"No errors found".to_string()));
+  let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
+  Fmt::display(Fmt::table(seq));
 }

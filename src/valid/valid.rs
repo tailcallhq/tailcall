@@ -9,6 +9,13 @@ impl<A, E> Valid<A, E> {
     Valid(Err((vec![Cause::new(e)]).into()))
   }
 
+  pub fn fail_with(message: E, description: E) -> Valid<A, E>
+  where
+    E: std::fmt::Debug,
+  {
+    Valid(Err((vec![Cause::new(message).description(description)]).into()))
+  }
+
   pub fn from_validation_err(error: ValidationError<E>) -> Self {
     Valid(Err(error))
   }
@@ -19,6 +26,19 @@ impl<A, E> Valid<A, E> {
 
   pub fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
     Valid(self.0.map(f))
+  }
+
+  pub fn foreach(self, mut f: impl FnMut(A)) -> Valid<A, E>
+  where
+    A: Clone,
+  {
+    match self.0 {
+      Ok(a) => {
+        f(a.clone());
+        Valid::succeed(a)
+      }
+      Err(e) => Valid(Err(e)),
+    }
   }
 
   pub fn succeed(a: A) -> Valid<A, E> {
@@ -271,5 +291,21 @@ mod tests {
   fn test_and_then_fail() {
     let result = Valid::<i32, i32>::succeed(1).and_then(|a| Valid::<i32, i32>::fail(a + 1));
     assert_eq!(result, Valid::fail(2));
+  }
+
+  #[test]
+  fn test_foreach_succeed() {
+    let mut a = 0;
+    let result = Valid::<i32, i32>::succeed(1).foreach(|v| a = v);
+    assert_eq!(result, Valid::succeed(1));
+    assert_eq!(a, 1);
+  }
+
+  #[test]
+  fn test_foreach_fail() {
+    let mut a = 0;
+    let result = Valid::<i32, i32>::fail(1).foreach(|v| a = v);
+    assert_eq!(result, Valid::fail(1));
+    assert_eq!(a, 0);
   }
 }

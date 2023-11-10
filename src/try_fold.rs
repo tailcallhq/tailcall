@@ -4,7 +4,9 @@ use crate::valid::Valid;
 ///
 /// `TryFolding` describes a composable folding operation that can potentially fail.
 /// It can optionally consume an input to transform the provided value.
-pub struct TryFold<'a, I: 'a, O: 'a, E: 'a>(Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>);
+type TryFoldFn<'a, I, O, E> = Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>;
+
+pub struct TryFold<'a, I: 'a, O: 'a, E: 'a>(TryFoldFn<'a, I, O, E>);
 
 impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// Try to fold the value with the input.
