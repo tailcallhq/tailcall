@@ -518,7 +518,9 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn update_js<'a>(js_executor: Option<JsPluginWrapper>) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+fn update_js<'a>(
+  js_executor: Option<JsPluginWrapper>,
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, _), b_field| {
     let mut updated_b_field = b_field;
     if let Some(op) = &field.js {
@@ -526,9 +528,10 @@ fn update_js<'a>(js_executor: Option<JsPluginWrapper>) -> TryFold<'a, (&'a Confi
         return Valid::fail("Js plugin is not enabled".to_owned());
       };
 
-      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(js_executor.clone(), op.script.clone()), |r| {
-        r.to_unsafe_js(js_executor.clone(),op.script.clone())
-      });
+      updated_b_field = updated_b_field.resolver_or_default(
+        Lambda::context().to_unsafe_js(js_executor.clone(), op.script.clone()),
+        |r| r.to_unsafe_js(js_executor.clone(), op.script.clone()),
+      );
     }
     Valid::succeed(updated_b_field)
   })

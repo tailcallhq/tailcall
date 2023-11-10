@@ -40,6 +40,7 @@ pub enum Unsafe {
     Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
   JS(Box<Expression>, JsPluginWrapper, String),
+  JSOld(Box<Expression>, String),
 }
 
 impl Debug for Unsafe {
@@ -53,6 +54,11 @@ impl Debug for Unsafe {
         .finish(),
       Unsafe::JS(input, _, script) => f
         .debug_struct("JS")
+        .field("input", input)
+        .field("script", script)
+        .finish(),
+      Unsafe::JSOld(input, script) => f
+        .debug_struct("JSOld")
         .field("input", input)
         .field("script", script)
         .finish(),
@@ -153,14 +159,15 @@ impl Expression {
 
               let input = input.eval(ctx).await?;
 
-              dbg!(&input);
-
               result = js_executor.eval(script, input.to_string().as_str())
                 .map_err(|e| EvaluationError::JSException(e.to_string()).into());
 
-              dbg!(&result);
-
               result
+            },
+            Unsafe::JSOld(input, script) => {
+              let input = input.eval(ctx).await?;
+              crate::javascript::execute_js(script, input, Some(ctx.timeout))
+                .map_err(|e| EvaluationError::JSException(e.to_string()).into())
             }
           }
         }

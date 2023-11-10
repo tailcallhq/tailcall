@@ -12,13 +12,11 @@ pub static _TYPE_CHECK: JsExecutor = eval;
 
 #[no_mangle]
 pub fn eval(source: &str, input: &str) -> Result<String, String> {
-  // TODO: has problems with string return
   let source = format!(
-    "((ctx) => {})({})",
+    "JSON.stringify(((ctx) => {})({}))",
     source,
     input
   );
-  dbg!(&source);
   let v8 = MiniV8::new();
 
   // TODO: fix options

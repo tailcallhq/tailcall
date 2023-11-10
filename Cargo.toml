@@ -66,8 +66,10 @@ ring = "0.17.5"
 libloading = "0.8.1"
 js_executor_interface = { path = "plugins/js_executor_interface" }
 
+mini-v8 = "0.4.1"
+
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = { version = "0.5.1", features = ["async_tokio"] }
 httpmock = "0.6"
 mockito = "1.2.0"
 pretty_assertions = "1.4.0"
@@ -96,4 +98,8 @@ harness = false
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
+harness = false
+
+[[bench]]
+name = "expression"
 harness = false
