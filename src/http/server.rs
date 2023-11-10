@@ -66,17 +66,18 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
-pub async fn start_server(config: Config, cert_path: Option<String>, key_path: Option<String>) -> Result<()> {
+pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
-  if blueprint.server.version == HttpVersion::HTTP2 && (cert_path.is_none() || key_path.is_none()) {
+  if blueprint.server.http.version == HttpVersion::HTTP2
+    && (blueprint.server.http.cert_path.is_none() || blueprint.server.http.key_path.is_none())
+  {
     return Err(anyhow::anyhow!(CLIError::new("HTTP/2 protocol requires both certificate and key paths. Please provide them using --cert-path and --key-path options.")));
   }
-
-  match blueprint.server.version {
+  match blueprint.server.http.version {
     HttpVersion::HTTP2 => {
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
@@ -84,9 +85,17 @@ pub async fn start_server(config: Config, cert_path: Option<String>, key_path: O
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
+      if !std::path::Path::new(blueprint.server.http.cert_path.as_ref().unwrap()).exists() {
+        return Err(anyhow::anyhow!(CLIError::new("Invalid Certificate path.")));
+      }
+
+      if !std::path::Path::new(blueprint.server.http.key_path.as_ref().unwrap()).exists() {
+        return Err(anyhow::anyhow!(CLIError::new("Invalid Key path.")));
+      }
+
       let server_result = hyper_from_pem_files(
-        cert_path.unwrap().as_str(),
-        key_path.unwrap().as_str(),
+        blueprint.server.http.cert_path.unwrap().as_str(),
+        blueprint.server.http.key_path.unwrap().as_str(),
         Protocols::ALL,
         &addr,
       )

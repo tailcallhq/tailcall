@@ -27,10 +27,6 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
-    #[arg(long)]
-    cert_path: Option<String>,
-    #[arg(long)]
-    key_path: Option<String>,
   },
 
   /// Validate a composition spec

@@ -9,6 +9,20 @@ use serde::{Deserialize, Serialize};
 use crate::config;
 use crate::valid::{Valid, ValidationError};
 
+#[derive(Deserialize, Serialize, Clone, Debug, Setters)]
+#[serde(rename_all = "camelCase", default)]
+pub struct HttpOptions {
+  pub version: HttpVersion,
+  pub cert_path: Option<String>,
+  pub key_path: Option<String>,
+}
+
+impl Default for HttpOptions {
+  fn default() -> Self {
+    HttpOptions { version: HttpVersion::HTTP1, cert_path: None, key_path: None }
+  }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub enum HttpVersion {
   HTTP1,
@@ -28,7 +42,7 @@ pub struct Server {
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
-  pub version: HttpVersion, // Add the version field
+  pub http: HttpOptions,
 }
 
 impl Default for Server {
@@ -69,7 +83,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_query_validation: (config_server).enable_query_validation(),
         enable_response_validation: (config_server).enable_http_validation(),
         global_response_timeout: (config_server).get_global_response_timeout(),
-        version: (config_server.get_http_version()),
+        http: (config_server.get_http_options()),
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),

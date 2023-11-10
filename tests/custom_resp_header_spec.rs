@@ -6,7 +6,7 @@ mod integration_tests {
     let config = tailcall::config::Config::from_file_paths([mock_schema_path].iter())
       .await
       .unwrap();
-    tailcall::http::start_server(config, None, None)
+    tailcall::http::start_server(config)
       .await
       .expect("Server failed to start");
     "Success"

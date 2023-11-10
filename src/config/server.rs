@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::blueprint::HttpVersion;
+use crate::blueprint::{HttpOptions, HttpVersion};
 use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -16,7 +16,7 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
-  pub version: Option<HttpVersion>,
+  pub http: Option<HttpOptions>,
   #[serde(skip_serializing_if = "is_default")]
   pub hostname: Option<String>,
   pub port: Option<u16>,
@@ -50,8 +50,9 @@ impl Server {
     self.global_response_timeout.unwrap_or(0)
   }
 
-  pub fn get_http_version(&self) -> HttpVersion {
-    self.version.clone().unwrap_or(HttpVersion::HTTP1)
+  pub fn get_http_options(&self) -> HttpOptions {
+    let default_http_options = HttpOptions { version: HttpVersion::HTTP1, cert_path: None, key_path: None };
+    self.http.clone().unwrap_or(default_http_options)
   }
 
   pub fn get_port(&self) -> u16 {
@@ -92,7 +93,13 @@ impl Server {
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);
-    self.version = other.version.or(self.version);
+    self.http = other.http.map(|other| {
+      let mut http = self.http.unwrap_or_default();
+      http.version = other.version;
+      http.cert_path = other.cert_path.or(http.cert_path);
+      http.key_path = other.key_path.or(http.key_path);
+      http
+    });
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);
