@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::clone;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -9,8 +8,8 @@ use anyhow::anyhow;
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql_value::ConstValue;
-use dashmap::DashMap;
 use reqwest::Request;
+use tokio::task::JoinHandle;
 
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
@@ -66,6 +65,7 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
     if let Some(group_by) = self.batched.clone() {
       // store the preused length of our keys.
       let original_key_length = keys.len();
+      log::info!("batching selected keys len: {:?}", original_key_length);
 
       let request_keys = return_request(keys);
 
@@ -75,92 +75,88 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> fo
       let mut request = request_keys[0]
         .try_clone()
         .ok_or(Arc::new(anyhow::anyhow!("Unable to clone Request")))?;
-        
+
       aggregate_urls(&mut request, &request_keys[..]);
 
       let client_res = self.client.execute(request).await?;
 
       #[allow(clippy::mutable_key_type)]
-      let hashmap: Arc<DashMap<DataLoaderRequest, Response>> = Arc::new(DashMap::with_capacity(original_key_length));
+      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(original_key_length);
 
-      let (group_key, path) = (group_by.key(), group_by.path());
+      let (group_key, path) = (group_by.key().to_string(), group_by.clone().path());
 
-      let body_value = client_res.body.group_by(&path[..]);
+      let body_value = client_res.body.group_by(&path.as_slice());
 
       let mut res_handle = Vec::with_capacity(original_key_length);
 
       //TODO: This will fail if sorting procedure is not done.
-      for (req, dataloader) in request_keys.into_iter().zip(keys) {
-        let key_cloned = dataloader.to_owned();
-        let group_key_clone = group_key;
-        let query_url = req.url();
+      for req in request_keys.into_iter() {
+        let group_key_clone = group_key.clone();
+        let query_url = req.url().to_owned();
 
-        let query_set: HashMap<Cow<'_, str>, Cow<'_, str>> = query_url.query_pairs().collect();
+        let sub_task: JoinHandle<Result<String, anyhow::Error>> = tokio::task::spawn(async move {
+          let query_set: HashMap<Cow<'_, str>, Cow<'_, str>> = query_url.query_pairs().collect();
 
-        let id = query_set
-          .get(group_key_clone)
-          .ok_or(anyhow::anyhow!(
-            "Unable to find key {} in query params",
-            group_key_clone
-          ))?
-          .deref()
-          .to_owned();
+          let id = query_set
+            .get(group_key_clone.as_str())
+            .ok_or(anyhow::anyhow!(
+              "Unable to find key {} in query params",
+              group_key_clone
+            ))?
+            .deref()
+            .to_owned();
 
-        let body_key = body_value
-          .get(&id)
-          .and_then(|a| a.first().cloned().cloned())
-          .unwrap_or(ConstValue::Null);
+          Ok(id)
+        });
 
-        let client_key = client_res.clone().body(body_key);
-
-        let hm_handle = Arc::clone(&hashmap);
-
-        let sub_task = tokio::task::spawn(async move { hm_handle.insert(key_cloned, client_key) });
         res_handle.push(sub_task);
       }
 
-      for task in res_handle {
-        if let Err(e) = task.await {
-          return Err(Arc::new(anyhow!("Task failed: {:?}", e)));
+      for (task, key) in res_handle.into_iter().zip(keys) {
+        match task.await {
+          Ok(body_key_result) => match body_key_result {
+            Ok(id) => {
+              let key_cloned = key.to_owned();
+
+              let body_key = body_value
+                .get(&id)
+                .and_then(|a| a.first().cloned().cloned())
+                .unwrap_or(ConstValue::Null);
+
+              let client_key = client_res.clone().body(body_key);
+              hashmap.insert(key_cloned, client_key);
+            }
+            Err(e) => {
+              return Err(Arc::new(anyhow!("Task computation failed: {:?}", e)));
+            }
+          },
+          Err(e) => return Err(Arc::new(anyhow!("Tokio thread failed: {:?}", e))),
         };
       }
 
-      let hashmap = Arc::into_inner(hashmap)
-        .ok_or(Arc::new(anyhow::anyhow!("Hashmap Already Dropped")))?;
-
-      Ok(HashMap::from_iter(hashmap))
+      Ok(hashmap)
     } else {
-
-      let hashmap = Arc::new(DashMap::with_capacity(keys.len()));
+      let mut hashmap = HashMap::with_capacity(keys.len());
       let arc_client = Arc::new(self.client.clone());
 
       let results = keys.into_iter().map(|key| {
-
         let key_request = key.to_request();
         let key_cloned = key.to_owned();
-        let hm_clone = Arc::clone(&hashmap);
         let cloned_client = Arc::clone(&arc_client);
-        
+
         let task = tokio::task::spawn(async move {
-            let query_result = cloned_client.execute(key_request).await;
-            if let Err(e) = query_result {
-              return Err(Arc::new(anyhow!("Task failed: {:?}", e)));
-            };
-            hm_clone.insert(key_cloned, query_result.unwrap());
-            Ok(())
+          let query_result = cloned_client.execute(key_request).await;
+          query_result
         });
-        task
+        (key_cloned, task)
       });
 
-      for task in results {
-        let _a = task.await.unwrap().unwrap();
+      for (key, task) in results {
+        let response = task.await.unwrap()?;
+        hashmap.insert(key, response);
       }
 
-      // release all the references to the Arc<DashMap<..>> to own it again. 
-      let hashmap = Arc::into_inner(hashmap)
-        .ok_or(Arc::new(anyhow::anyhow!("Hashmap dropped already")))?;
-
-      Ok(HashMap::from_iter(hashmap))
+      Ok(hashmap)
     }
   }
 }
