@@ -34,7 +34,7 @@ struct GraphQLSpec {
   annotation: Option<Annotation>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 enum Annotation {
   Skip,
   Only,
@@ -217,7 +217,7 @@ fn test_config_identity() -> std::io::Result<()> {
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
 
-    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
       panic!("{} ... expected to fail", spec.path.display());
     }
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
@@ -238,7 +238,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
     assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
 
-    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
       panic!("{} ... expected to fail", spec.path.display());
     }
     log::info!("ClientSDL: {} ... ok", spec.path.display());
@@ -280,7 +280,7 @@ async fn test_execution() -> std::io::Result<()> {
           let expected = serde_json::to_string(&q.expected).unwrap();
           assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
 
-          if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+          if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
             panic!("{} ... expected to fail", spec.path.display());
           }
           log::info!("QueryExecution: {} ... ok", spec.path.display());
@@ -314,7 +314,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
         assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
 
-        if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+        if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
           panic!("{} ... expected to fail", spec.path.display());
         }
         log::info!("ClientSDLError: {} ... ok", spec.path.display());
@@ -341,7 +341,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
     let actual = config.to_sdl();
     assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
 
-    if spec.annotation.as_ref().is_some_and(|a| a == &Annotation::Fail) {
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
       panic!("{} ... expected to fail", spec.path.display());
     }
     log::info!("SDLMerge: {} ... ok", spec.path.display());
