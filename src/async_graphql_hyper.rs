@@ -7,43 +7,56 @@ use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+#[async_trait::async_trait]
+pub trait GraphQLRequestLike {
+  fn data<D: Any + Clone + Send + Sync>(self, data: D) -> Self;
+  async fn execute<E>(self, executor: &E) -> GraphQLResponse
+  where
+    E: Executor;
+}
+
 #[derive(Debug, Deserialize)]
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
-impl GraphQLBatchRequest {
-  /// Shortcut method to execute the request on the executor.
-  pub async fn execute<E>(self, executor: &E) -> GraphQLResponse
-  where
-    E: Executor,
-  {
-    GraphQLResponse(executor.execute_batch(self.0).await)
-  }
+impl GraphQLBatchRequest {}
 
-  pub fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
+#[async_trait::async_trait]
+impl GraphQLRequestLike for GraphQLBatchRequest {
+  fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
     for request in self.0.iter_mut() {
       request.data.insert(data.clone());
     }
     self
   }
+  /// Shortcut method to execute the request on the executor.
+  async fn execute<E>(self, executor: &E) -> GraphQLResponse
+  where
+    E: Executor,
+  {
+    GraphQLResponse(executor.execute_batch(self.0).await)
+  }
 }
+
 #[derive(Debug, Deserialize)]
 pub struct GraphQLRequest(pub async_graphql::Request);
 
-impl GraphQLRequest {
+impl GraphQLRequest {}
+
+#[async_trait::async_trait]
+impl GraphQLRequestLike for GraphQLRequest {
+  #[must_use]
+  fn data<D: Any + Send + Sync>(mut self, data: D) -> Self {
+    self.0.data.insert(data);
+    self
+  }
   /// Shortcut method to execute the request on the schema.
-  pub async fn execute<E>(self, executor: &E) -> GraphQLResponse
+  async fn execute<E>(self, executor: &E) -> GraphQLResponse
   where
     E: Executor,
   {
     GraphQLResponse(executor.execute(self.0).await.into())
   }
-
-  /// Insert some data for this request.
-  #[must_use]
-  pub fn data<D: Any + Send + Sync>(mut self, data: D) -> Self {
-    self.0.data.insert(data);
-    self
-  }
 }
+
 #[derive(Debug, Serialize)]
 pub struct GraphQLResponse(pub async_graphql::BatchResponse);
 impl From<async_graphql::BatchResponse> for GraphQLResponse {

@@ -7,10 +7,11 @@ use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
-use crate::async_graphql_hyper::{self, GraphQLResponse};
+use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
 use crate::config::Config;
@@ -53,11 +54,13 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
       .extend(server_ctx.blueprint.server.response_headers.clone());
   }
 }
-
-pub async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
+  req: Request<Body>,
+  server_ctx: &ServerContext,
+) -> Result<Response<Body>> {
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
-  let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
+  let request: T = serde_json::from_slice(&bytes)?;
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
   response = update_cache_control_header(response, server_ctx, req_ctx);
   let mut resp = response.to_response()?;
@@ -65,15 +68,12 @@ pub async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerConte
   Ok(resp)
 }
 
+pub async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
+  graphql_request::<GraphQLRequest>(req, server_ctx).await
+}
+
 pub async fn graphql_batch_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  let req_ctx = Arc::new(create_request_context(&req, server_ctx));
-  let bytes = hyper::body::to_bytes(req.into_body()).await?;
-  let request: async_graphql_hyper::GraphQLBatchRequest = serde_json::from_slice(&bytes)?;
-  let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
-  response = update_cache_control_header(response, server_ctx, req_ctx);
-  let mut resp = response.to_response()?;
-  update_response_headers(&mut resp, server_ctx);
-  Ok(resp)
+  graphql_request::<GraphQLBatchRequest>(req, server_ctx).await
 }
 
 async fn handle_single_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
