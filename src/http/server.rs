@@ -6,6 +6,7 @@ use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use tokio::sync::Notify;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -77,6 +78,25 @@ pub async fn start_server(config: Config) -> Result<()> {
   if blueprint.server.enable_graphiql {
     log::info!("🌍 Playground: http://{}", addr);
   }
+  let shutdown_notify = Arc::new(Notify::new());
+  let shutdown_signal = shutdown_notify.clone();
 
-  Ok(server.await.map_err(CLIError::from)?)
+  // Set up CTRL+C signal handling
+  ctrlc::set_handler(move || {
+    shutdown_signal.notify_one();
+  })
+  .expect("Error setting Ctrl-C handler");
+
+  // Start the server as an asynchronous task
+  let server = tokio::spawn(async move { server.await.map_err(CLIError::from).unwrap() });
+
+  // Wait for the shutdown signal
+  shutdown_notify.notified().await;
+
+  // Initiate server shutdown
+  server.abort();
+
+  log::info!("Server gracefully shut down");
+
+  Ok(())
 }
