@@ -46,6 +46,7 @@ pub enum Unsafe {
   GraphQLEndpoint(
     GraphqlRequestTemplate,
     String,
+    bool,
     Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
   ),
   JS(Box<Expression>, String),
@@ -60,10 +61,11 @@ impl Debug for Unsafe {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Unsafe::GraphQLEndpoint(req_template, field_name, _dl) => f
+      Unsafe::GraphQLEndpoint(req_template, field_name, use_batch_request, _dl) => f
         .debug_struct("GraphQLEndpoint")
         .field("req_template", req_template)
         .field("field_name", field_name)
+        .field("use_batch_request", use_batch_request)
         .finish(),
       Unsafe::JS(input, script) => f
         .debug_struct("JS")
@@ -162,7 +164,7 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Unsafe::GraphQLEndpoint(req_template, field_name, dl) => {
+            Unsafe::GraphQLEndpoint(req_template, field_name, _, dl) => {
               let req = req_template.to_request(ctx)?;
 
               if ctx.req_ctx.upstream.batch.is_some() {
@@ -195,6 +197,12 @@ impl Expression {
                 .execute(req)
                 .await
                 .map_err(|e| EvaluationError::IOException(e.to_string()))?;
+              if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
+                if let Some(max_age) = max_age(&res) {
+                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                }
+              }
+
               let path = ["data", field_name];
               let v = get_path_value(&res.body, &path);
               Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null))

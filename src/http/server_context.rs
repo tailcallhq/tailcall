@@ -28,12 +28,15 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClien
             Some(Arc::new(data_loader)),
           )));
         }
-        if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint(req_template, field_name, _))) = &mut field.resolver {
-          let graphql_data_loader = GraphqlDataLoader::new(http_client.clone())
+        if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint(req_template, field_name, use_batch_request, _))) =
+          &mut field.resolver
+        {
+          let graphql_data_loader = GraphqlDataLoader::new(http_client.clone(), *use_batch_request)
             .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
           field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint(
             req_template.clone(),
             field_name.clone(),
+            *use_batch_request,
             Some(Arc::new(graphql_data_loader)),
           )))
         }

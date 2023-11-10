@@ -219,7 +219,7 @@ where
         args,
         doc,
         modify,
-          http,
+        http,
         unsafe_operation,
         const_field,
         graphql_source,

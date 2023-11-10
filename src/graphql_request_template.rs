@@ -68,9 +68,19 @@ impl GraphqlRequestTemplate {
       .collect::<Vec<_>>()
       .join(",");
     let selection_set = self.selection_set.render(ctx);
+    let operation = if self.variable_definitions.is_empty() {
+      "query".to_string()
+    } else {
+      format!("query({})", self.variable_definitions)
+    };
+    let query_name = if self.query_arguments.is_empty() {
+      self.query_name.to_string()
+    } else {
+      format!("{}({})", self.query_name, self.query_arguments)
+    };
     let graphql_query = format!(
-      r#"{{ "query": "query({}) {{ {}({}) {{ {} }} }}", "variables": {{ {} }} }}"#,
-      self.variable_definitions, self.query_name, self.query_arguments, selection_set, variable_values
+      r#"{{ "query": "{} {{ {} {{ {} }} }}", "variables": {{ {} }} }}"#,
+      operation, query_name, selection_set, variable_values
     );
     req.body_mut().replace(graphql_query.into());
     req

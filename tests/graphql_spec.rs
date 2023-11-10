@@ -233,9 +233,9 @@ async fn test_execution() -> std::io::Result<()> {
     .map(|spec| {
       tokio::spawn(async move {
         let mut config = Config::from_sdl(&spec.server_sdl[0], Some(GraphQLSpec::mock_introspection_cache))
-      .await
-      .to_result()
-      .unwrap();
+          .await
+          .to_result()
+          .unwrap();
         config.server.enable_query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))

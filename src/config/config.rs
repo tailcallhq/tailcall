@@ -237,7 +237,10 @@ pub struct Field {
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+    self.http.is_some()
+      || self.unsafe_operation.is_some()
+      || self.const_field.is_some()
+      || self.graphql_source.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<&str> {
     let mut directives = Vec::with_capacity(3);
@@ -337,6 +340,9 @@ pub struct GraphQLSource {
   #[serde(default)]
   #[serde(skip_serializing)]
   pub introspection: Option<IntrospectionResult>,
+  #[serde(default)]
+  #[serde(rename = "useBatchRequest", skip_serializing_if = "is_default")]
+  pub use_batch_request: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

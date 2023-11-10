@@ -11,13 +11,13 @@ use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
 #[derive(Clone)]
-pub struct GraphqlDataLoader
-{
+pub struct GraphqlDataLoader {
   pub client: Arc<dyn HttpClient>,
+  pub use_batch_request: bool,
 }
 impl GraphqlDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>) -> Self {
-    GraphqlDataLoader { client }
+  pub fn new(client: Arc<dyn HttpClient>, use_batch_request: bool) -> Self {
+    GraphqlDataLoader { client, use_batch_request }
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader, NoCache> {
@@ -37,18 +37,33 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    let request_groups = group_requests_by_url(keys);
+    if self.use_batch_request {
+      let request_groups = group_requests_by_url(keys);
 
-    let results = request_groups.iter().map(|(group_key, requests_in_group)| async move {
-      let batched_req = create_batched_request(requests_in_group);
-      let result = self.client.execute(batched_req).await;
-      (group_key.clone(), result)
-    });
-    let results = join_all(results).await;
+      let results = request_groups.iter().map(|(group_key, requests_in_group)| async move {
+        let batched_req = create_batched_request(requests_in_group);
+        let result = self.client.execute(batched_req).await;
+        (group_key.clone(), result)
+      });
+      let results = join_all(results).await;
 
-    #[allow(clippy::mutable_key_type)]
-    let hashmap = extract_individual_responses(results, request_groups);
-    Ok(hashmap)
+      #[allow(clippy::mutable_key_type)]
+      let hashmap = extract_individual_responses(results, request_groups);
+      Ok(hashmap)
+    } else {
+      let results = keys.iter().map(|key| async {
+        let result = self.client.execute(key.to_request()).await;
+        (key.clone(), result)
+      });
+      let results = join_all(results).await;
+      #[allow(clippy::mutable_key_type)]
+      let mut hashmap = HashMap::new();
+      for (key, value) in results {
+        hashmap.insert(key, value?);
+      }
+
+      Ok(hashmap)
+    }
   }
 }
 
@@ -195,7 +210,7 @@ mod tests {
   async fn test_load_function() {
     let client =
       MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
-    let loader = GraphqlDataLoader { client: Arc::new(client.clone()) };
+    let loader = GraphqlDataLoader { client: Arc::new(client.clone()), use_batch_request: true };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let url = Url::parse("http://example.com").unwrap();
@@ -215,7 +230,7 @@ mod tests {
   async fn test_load_many_function() {
     let client =
       MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
-    let loader = GraphqlDataLoader { client: Arc::new(client.clone()) };
+    let loader = GraphqlDataLoader { client: Arc::new(client.clone()), use_batch_request: true };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let url = Url::parse("http://example.com").unwrap();

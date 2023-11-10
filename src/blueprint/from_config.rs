@@ -645,7 +645,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
             .map(|req_template| {
               let field_name = b_field.name.clone();
               b_field.resolver(Some(
-                Lambda::from_graphql_request_template(req_template, field_name).expression,
+                Lambda::from_graphql_request_template(req_template, field_name, graphql.use_batch_request).expression,
               ))
             })
         }
