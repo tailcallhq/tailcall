@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql::dynamic;
-use derive_setters::Setters;
 
 use super::HttpClient;
 use crate::blueprint::{Blueprint, Definition};
@@ -10,7 +9,6 @@ use crate::config::config_poll::ConfigLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{Expression, Unsafe};
 
-#[derive(Setters)]
 pub struct ServerContext {
   pub schema: SchemaLoader,
   pub http_client: Arc<dyn HttpClient>,
