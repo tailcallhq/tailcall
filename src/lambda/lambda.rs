@@ -27,10 +27,6 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), js_executor, script)))
   }
 
-  pub fn to_unsafe_js_old(self, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::JSOld(self.box_expr(), script)))
-  }
-
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Input(self.box_expr(), path))
   }

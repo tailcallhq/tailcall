@@ -42,50 +42,9 @@ static TEST_UNSAFE_JS: Lazy<Vec<Expression>> = Lazy::new(|| {
   ]
 });
 
-static TEST_UNSAFE_JS_DEBUG: Lazy<Vec<Expression>> = Lazy::new(|| {
-  let js_executor = JsPluginWrapper::new("target/debug").unwrap();
-
-  vec![
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(js_executor.clone(), "58".to_owned())
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(js_executor.clone(), "'js_debug'".to_owned())
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(
-        js_executor.clone(),
-        "Array(111).fill(0).reduce((acc, el, i) => acc + i, 0)".to_owned(),
-      )
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(json!("{a: 23, b: 58}")))
-      .to_unsafe_js(js_executor.clone(), "ctx.a + ctx.b".to_owned())
-      .expression,
-  ]
-});
-
-static TEST_UNSAFE_JS_OLD: Lazy<Vec<Expression>> = Lazy::new(|| {
-  vec![
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js_old("59".to_owned())
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js_old("'js_old'".to_owned())
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js_old("Array(111).fill(0).reduce((acc, el, i) => acc + i, 0)".to_owned())
-      .expression,
-    Lambda::<Value>::new(Expression::Literal(json!("{a: 23, b: 58}")))
-      .to_unsafe_js_old("ctx.a + ctx.b".to_owned())
-      .expression,
-  ]
-});
-
 static TESTS: &[(&str, &Lazy<Vec<Expression>>)] = &[
   ("literal", &TEST_LITERAL),
   ("unsafe-js", &TEST_UNSAFE_JS),
-  ("unsafe-js-debug", &TEST_UNSAFE_JS_DEBUG),
-  ("unsafe-js-old", &TEST_UNSAFE_JS_OLD),
 ];
 
 fn to_bench_id(name: &str, input: &Expression) -> BenchmarkId {

@@ -3066,7 +3066,6 @@ dependencies = [
  "libloading",
  "log",
  "mimalloc",
- "mini-v8",
  "mockito",
  "moka",
  "nom",
