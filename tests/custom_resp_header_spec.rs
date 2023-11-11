@@ -4,17 +4,20 @@ mod integration_tests {
 
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String, poll_interval: Option<u64>) -> &'static str {
-    let config = tailcall::config::Config::from_file_or_url([mock_schema_path].iter())
+    let config = tailcall::config::Config::from_file_or_url([mock_schema_path.clone()].iter())
       .await
       .unwrap();
-    match (poll_interval, config.1) {
-      (Some(poll_interval), Some(file_path)) => {
-        start_server_with_polling(config.0, file_path, poll_interval)
-          .await
-          .unwrap();
+    match poll_interval {
+      Some(poll_interval) => {
+        match start_server_with_polling(&config, [mock_schema_path].to_vec(), poll_interval).await {
+          Ok(_) => {}
+          Err(_) => {
+            start_server(config).await.unwrap();
+          }
+        }
       }
       _ => {
-        start_server(config.0).await.unwrap();
+        start_server(config).await.unwrap();
       }
     }
     "Success"

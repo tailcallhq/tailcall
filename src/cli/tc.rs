@@ -24,14 +24,12 @@ pub async fn run() -> Result<()> {
         .init();
       let config = Config::from_file_or_url(file_path.iter()).await?;
       match poll_interval {
-        Some(poll_interval) => {
-          match start_server_with_polling(&config, file_path, poll_interval).await {
-            Ok(_) => {}
-            Err(_) => {
-              start_server(config).await?;
-            }
+        Some(poll_interval) => match start_server_with_polling(&config, file_path, poll_interval).await {
+          Ok(_) => {}
+          Err(_) => {
+            start_server(config).await?;
           }
-        }
+        },
         _ => {
           start_server(config).await?;
         }
