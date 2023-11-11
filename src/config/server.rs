@@ -49,7 +49,7 @@ impl Server {
     self.global_response_timeout.unwrap_or(0)
   }
   pub fn get_worker(&self) -> usize {
-    self.worker.unwrap_or(0)
+    self.worker.unwrap_or(num_cpus::get() * 2)
   }
   pub fn get_port(&self) -> u16 {
     self.port.unwrap_or(8000)

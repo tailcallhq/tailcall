@@ -73,11 +73,11 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
   });
   let addr = (blueprint.server.hostname, blueprint.server.port).into();
-  let mut builder = &mut tokio::runtime::Builder::new_multi_thread();
-  if blueprint.server.worker != 0 {
-    builder = builder.worker_threads(blueprint.server.worker);
-  }
-  let rt = builder.enable_all().build().unwrap();
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(blueprint.server.worker)
+    .enable_all()
+    .build()
+    .unwrap();
   let _ = rt
     .spawn(async move {
       let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
