@@ -36,4 +36,3 @@ for bench in "${benchmarks[@]}"; do
 done
 
 exit $fail_ci
-
