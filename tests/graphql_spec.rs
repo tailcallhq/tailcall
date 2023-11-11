@@ -320,7 +320,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
         if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-          assert_ne!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+          assert_ne!(actual, expected, "Server SDL failure match: {}", spec.path.display());
         } else {
           assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
         }
