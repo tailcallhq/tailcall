@@ -1,0 +1,36 @@
+name: build time degradation
+
+on:
+  push:
+    branches:
+      - "**"
+
+  release:
+    types: [published]
+
+jobs:
+  benchmark:
+    name: Benchmarking
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install iai-callgrind-runner
+        run: cargo install --version 0.7.3 iai-callgrind-runner
+
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install valgrind
+
+      - name: Run Benchmarks
+        run: |
+          cargo bench --bench json_like_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench data_loader_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench impl_path_string_for_evaluation_context_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench request_template_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+
+      - name: Manipulate Benchmark File
+        run: sed -i 's/ \([0-9]\)/\1/g' benches/iai-callgrind/benchmarks.txt
+
+      - name: Execute build_time_compare.sh
+        run: bash .github/scripts/build_time_compare.sh
