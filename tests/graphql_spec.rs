@@ -9,7 +9,7 @@ use async_graphql::Request;
 use derive_setters::Setters;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use pretty_assertions::assert_eq;
+use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -215,11 +215,13 @@ fn test_config_identity() -> std::io::Result<()> {
 
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-      panic!("{} ... expected to fail", spec.path.display());
+      assert_ne!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
     }
+
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
   }
 
@@ -236,11 +238,13 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
-    assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-      panic!("{} ... expected to fail", spec.path.display());
+      assert_ne!(actual, expected, "ClientSDL: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     }
+
     log::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
@@ -278,11 +282,13 @@ async fn test_execution() -> std::io::Result<()> {
           let res = schema.execute(req).await;
           let json = serde_json::to_string(&res).unwrap();
           let expected = serde_json::to_string(&q.expected).unwrap();
-          assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
 
           if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-            panic!("{} ... expected to fail", spec.path.display());
+            assert_ne!(json, expected, "QueryExecution: {}", spec.path.display());
+          } else {
+            assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
           }
+
           log::info!("QueryExecution: {} ... ok", spec.path.display());
         }
       })
@@ -312,11 +318,13 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
-        assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
 
         if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-          panic!("{} ... expected to fail", spec.path.display());
+          assert_ne!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+        } else {
+          assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
         }
+
         log::info!("ClientSDLError: {} ... ok", spec.path.display());
       }
       _ => panic!("ClientSDLError: {}", spec.path.display()),
@@ -339,11 +347,13 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .collect::<Vec<_>>();
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-      panic!("{} ... expected to fail", spec.path.display());
+      assert_ne!(actual, expected, "SDLMerge: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
     }
+
     log::info!("SDLMerge: {} ... ok", spec.path.display());
   }
 
