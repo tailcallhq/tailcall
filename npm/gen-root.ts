@@ -51,7 +51,7 @@ async function genServerPackage(buildDefinitions: string[]) {
             "detect-libc": "^2.0.2",
         },
         scripts: {
-            preinstall: "node ./scripts/installOptionalDeps.js",
+            postinstall: "node ./scripts/installOptionalDeps.js",
         },
     }
 
