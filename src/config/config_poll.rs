@@ -108,7 +108,7 @@ fn update_schema(state: &mut ServerContext, config: Config) -> anyhow::Result<()
       let old_schema_str = state.schema.get_schema()?.sdl();
       let new_schema_str = new_schema.get_schema()?.sdl();
       state.schema = new_schema;
-      log::info!("{}", compare_schemas(new_schema_str, old_schema_str));
+      log::debug!("{}", compare_schemas(new_schema_str, old_schema_str));
       Ok(())
     }
     Err(e) => {
