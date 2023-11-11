@@ -10,7 +10,6 @@ use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::{SchemaLoader, ServerContext};
 use crate::valid::Valid;
-#[derive(Clone)]
 pub struct ConfigLoader {
   file_path: String,
   refresh_interval: u64,

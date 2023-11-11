@@ -10,14 +10,13 @@ use crate::config::config_poll::ConfigLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{Expression, Unsafe};
 
-#[derive(Setters, Clone)]
+#[derive(Setters)]
 pub struct ServerContext {
   pub schema: SchemaLoader,
   pub http_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
 }
 
-#[derive(Clone)]
 pub enum SchemaLoader {
   Static(dynamic::Schema),
   Dynamic(ConfigLoader),
