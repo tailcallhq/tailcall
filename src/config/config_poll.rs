@@ -132,7 +132,7 @@ fn compare_schemas(new_schema_str: String, old_schema_str: String) -> String {
     } else {
         let input = InternedInput::new(old_schema_str.as_str(), new_schema_str.as_str());
         let diff = diff(Algorithm::Myers, &input, imara_diff::UnifiedDiffBuilder::new(&input));
-        log::info!("{diff}");
+        log::debug!("{diff}");
         "Successfully updated schema".to_string()
     };
 }
