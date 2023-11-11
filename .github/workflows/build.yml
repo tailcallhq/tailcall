@@ -30,7 +30,7 @@ jobs:
           cargo bench --bench request_template_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
 
       - name: Manipulate Benchmark File
-        run: sed -i 's/ \([0-9]\)/\1/g' benches/iai-callgrind/benchmarks.txt
+        run: sed -i 's/ \{1,\}\([0-9]\)/\1/g' benches/iai-callgrind/benchmarks.txt
 
       - name: Execute build_time_compare.sh
         run: bash .github/scripts/build_time_compare.sh

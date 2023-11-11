@@ -1,7 +1,7 @@
 #!/bin/bash
 
 file1_url="https://raw.githubusercontent.com/alankritdabral/tailcall/main/benches/iai-callgrind/benchmarks.txt"
-file2="benchmarks.txt"
+file2="benches/iai-callgrind/benchmarks.txt"
 
 # Fetching file1 from the specified URL
 curl -s "$file1_url" > file1.txt || { echo "Failed to download file from $file1_url"; exit 1; }
