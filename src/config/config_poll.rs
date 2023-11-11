@@ -59,7 +59,7 @@ async fn make_request(state: &Arc<AtomicPtr<ServerContext>>, client: &Client, fi
         };
 
         if !resp.status().is_success() {
-            log::error!("Unknown error.");
+            log::error!("Unknown error. Exited with status code: {}", resp.status().as_u16());
             return;
         }
         let updated_txt = match resp.text().await {
