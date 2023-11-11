@@ -89,8 +89,8 @@ pub async fn start_server(config: Config) -> Result<()> {
   Ok(server.await.map_err(CLIError::from)?)
 }
 
-pub async fn start_server_with_polling(config: Config, file_path: String, poll_interval: u64) -> Result<()> {
-  let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+pub async fn start_server_with_polling(config: &Config, file_path: Vec<String>, poll_interval: u64) -> Result<()> {
+  let blueprint = Blueprint::try_from(config).map_err(CLIError::from)?;
   let blueprint_clone = blueprint.clone();
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
   let state = Arc::new(AtomicPtr::new(Box::into_raw(Box::new(ServerContext::new(

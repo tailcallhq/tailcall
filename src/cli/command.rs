@@ -27,6 +27,7 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
+    /// Specifies the duration (in seconds) after which the program should fetch the file over http
     #[arg(long)]
     poll_interval: Option<u64>,
   },

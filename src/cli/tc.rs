@@ -23,12 +23,17 @@ pub async fn run() -> Result<()> {
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config = Config::from_file_or_url(file_path.iter()).await?;
-      match (poll_interval, config.1) {
-        (Some(poll_interval), Some(file_path)) => {
-          start_server_with_polling(config.0, file_path, poll_interval).await?;
+      match poll_interval {
+        Some(poll_interval) => {
+          match start_server_with_polling(&config, file_path, poll_interval).await {
+            Ok(_) => {}
+            Err(_) => {
+              start_server(config).await?;
+            }
+          }
         }
         _ => {
-          start_server(config.0).await?;
+          start_server(config).await?;
         }
       }
       Ok(())

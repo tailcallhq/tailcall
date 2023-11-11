@@ -23,7 +23,6 @@ pub struct Config {
   pub upstream: Upstream,
   pub graphql: GraphQL,
 }
-
 impl Config {
   pub fn port(&self) -> u16 {
     self.server.port.unwrap_or(8000)
@@ -354,17 +353,30 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<(Config, Option<String>)> {
-    let first_path = file_paths.clone().next().unwrap();
-    if first_path.starts_with("http://") || first_path.starts_with("https://") {
-      let resp = reqwest::get(first_path).await?;
-      let server_sdl = resp.text().await?;
-      let config = Config::from_source(Source::try_parse_and_detect(&server_sdl)?, &server_sdl)?; // needs improvement
-      Ok((config, Some(first_path.to_string())))
-    } else {
-      let config = Config::from_file_paths(file_paths).await?;
-      Ok((config, None))
+  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+    let mut config = Config::default();
+    let fp = file_paths.clone();
+    for file_path in fp {
+      if file_path.starts_with("http://") || file_path.starts_with("https://") {
+        let resp = reqwest::get(file_path).await?;
+        let server_sdl = resp.text().await?;
+        let conf = Config::from_source(Source::try_parse_and_detect(&server_sdl)?, &server_sdl)?; // needs improvement
+        config = config.clone().merge_right(&conf);
+      } else {
+        let conf = Config::from_file_path(file_path).await?;
+        config = config.clone().merge_right(&conf);
+      }
     }
+    Ok(config)
+  }
+
+  async fn from_file_path(file_path: &String) -> Result<Config> {
+    let source = Source::detect(file_path)?;
+    let mut f = File::open(file_path).await?;
+    let mut buffer = Vec::new();
+    f.read_to_end(&mut buffer).await?;
+    let server_sdl = String::from_utf8(buffer)?;
+    Config::from_source(source, &server_sdl)
   }
 
   pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
