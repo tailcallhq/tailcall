@@ -1,0 +1,85 @@
+name: Benchmarks and build time
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  release:
+    types: [published]
+
+jobs:
+  benchmarks_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run json_like_bench
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: json_like_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run impl_path_string_for_evaluation_context
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: impl_path_string_for_evaluation_context
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run data_loader_bench
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: data_loader_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run request_template_bench
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: request_template_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Add a step to analyze benchmark percentage differences
+      - name: Check Benchmark Changes
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published') }}
+        run: |
+          # Run the critcmp command and capture its output
+          output=$(/home/runner/.cargo/bin/critcmp base changes)
+
+          # Print the captured output
+          echo "$output"
+
+          # Use awk to calculate percentage differences and fail the CI if the difference is more than 10%
+          awk 'NR > 2 {
+              group=$1
+              base=$7
+              changes=$3
+
+              gsub(/[^\-0-9\.]/, "", changes)  # Extract only numerical values
+              gsub(/[^\-0-9\.]/, "", base)     # Extract only numerical values
+
+              # Ensure changes and base values are not empty
+              if (changes != "" && base != "") {
+                  diff = changes - base  # Calculate the absolute difference
+                  percentage = (diff / base) * 100  # Calculate the percentage difference
+
+                  if (percentage > 10) {
+                      printf "Percentage change for %s exceeds 10%%: %.2f%%\n", group, percentage
+                      exit 1  # Exit script to indicate CI failure
+                  }
+              }
+          }' <<< "$output"
