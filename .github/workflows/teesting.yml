@@ -42,6 +42,8 @@ jobs:
                     if (( $(awk -v pc="$percent_change" 'BEGIN { print (pc > 10) }') )); then
                         echo "$bench $attribute has a change of $percent_change%, failing CI."
                         fail_ci=1
+                    else
+                        echo "$bench $attribute has a change of $percent_change%, within CI limits."
                     fi
                 else
                     echo "Values not found for $bench $attribute"
