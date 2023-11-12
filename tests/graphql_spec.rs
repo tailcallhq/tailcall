@@ -9,7 +9,7 @@ use async_graphql::Request;
 use derive_setters::Setters;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use pretty_assertions::assert_eq;
+use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -31,6 +31,14 @@ struct GraphQLSpec {
   merged_server_sdl: String,
   sdl_errors: Vec<SDLError>,
   test_queries: Vec<GraphQLQuerySpec>,
+  annotation: Option<Annotation>,
+}
+
+#[derive(Debug)]
+enum Annotation {
+  Skip,
+  Only,
+  Fail,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -82,6 +90,15 @@ impl GraphQLSpec {
     let mut spec = GraphQLSpec::default().path(path);
     let mut server_sdl = Vec::new();
     for component in content.split("#>") {
+      if component.contains(SPEC_ONLY) {
+        spec = spec.annotation(Some(Annotation::Only));
+      }
+      if component.contains(SPEC_SKIP) {
+        spec = spec.annotation(Some(Annotation::Skip));
+      }
+      if component.contains(SPEC_FAIL) {
+        spec = spec.annotation(Some(Annotation::Fail));
+      }
       if component.contains(CLIENT_SDL) {
         let trimmed = component.replace(CLIENT_SDL, "").trim().to_string();
 
@@ -146,21 +163,36 @@ impl GraphQLSpec {
 
     let entries = fs::read_dir(dir_path.clone())?;
     let mut files = Vec::new();
+    let mut only_files = Vec::new();
+
     for entry in entries {
       let path = entry?.path();
       if path.is_file() && path.extension().unwrap_or_default() == "graphql" {
         let contents = fs::read_to_string(path.clone())?;
         let path_buf = path.clone();
-        files.push(GraphQLSpec::new(path_buf, contents.as_str()));
+        let spec = GraphQLSpec::new(path_buf, contents.as_str());
+
+        match spec.annotation {
+          Some(Annotation::Only) => only_files.push(spec),
+          Some(Annotation::Fail) | None => files.push(spec),
+          Some(Annotation::Skip) => {
+            log::warn!("{} ... skipped", spec.path.display());
+          }
+        }
       }
     }
 
     assert!(
-      !files.is_empty(),
+      !files.is_empty() || !only_files.is_empty(),
       "No files found in {}",
       dir_path.to_str().unwrap_or_default()
     );
-    Ok(files)
+
+    if !only_files.is_empty() {
+      Ok(only_files)
+    } else {
+      Ok(files)
+    }
   }
 }
 
@@ -168,6 +200,9 @@ const CLIENT_SDL: &str = "client-sdl";
 const SERVER_SDL: &str = "server-sdl";
 const CLIENT_QUERY: &str = "client-query";
 const MERGED_SDL: &str = "merged-sdl";
+const SPEC_ONLY: &str = "spec-only";
+const SPEC_SKIP: &str = "spec-skip";
+const SPEC_FAIL: &str = "spec-fail";
 
 // Check if SDL -> Config -> SDL is identity
 #[test]
@@ -180,7 +215,13 @@ fn test_config_identity() -> std::io::Result<()> {
 
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+      assert_ne!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
+    }
+
     log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
   }
 
@@ -197,7 +238,13 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.server_sdl[0].as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
-    assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+      assert_ne!(actual, expected, "ClientSDL: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
+    }
+
     log::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
@@ -235,7 +282,13 @@ async fn test_execution() -> std::io::Result<()> {
           let res = schema.execute(req).await;
           let json = serde_json::to_string(&res).unwrap();
           let expected = serde_json::to_string(&q.expected).unwrap();
-          assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+
+          if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+            assert_ne!(json, expected, "QueryExecution: {}", spec.path.display());
+          } else {
+            assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+          }
+
           log::info!("QueryExecution: {} ... ok", spec.path.display());
         }
       })
@@ -265,7 +318,13 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
-        assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+
+        if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+          assert_ne!(actual, expected, "Server SDL failure match: {}", spec.path.display());
+        } else {
+          assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
+        }
+
         log::info!("ClientSDLError: {} ... ok", spec.path.display());
       }
       _ => panic!("ClientSDLError: {}", spec.path.display()),
@@ -288,7 +347,13 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .collect::<Vec<_>>();
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
-    assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
+
+    if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+      assert_ne!(actual, expected, "SDLMerge: {}", spec.path.display());
+    } else {
+      assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
+    }
+
     log::info!("SDLMerge: {} ... ok", spec.path.display());
   }
 
