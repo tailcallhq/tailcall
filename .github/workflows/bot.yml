@@ -2,7 +2,7 @@ name: Benchmark
 
 on:
   pull_request:
-    types: [opened, synchronize, labeled]
+    types: [opened, synchronize, labeled, reopened]
     branches:
       - main
 
@@ -148,3 +148,100 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: apply lint fixes"
+
+  Criterion_benchmarks:
+    name: Performance degradation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'benchmark')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run json_like_bench
+        if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: json_like_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run impl_path_string_for_evaluation_context
+        if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: impl_path_string_for_evaluation_context
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run data_loader_bench
+        if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: data_loader_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run request_template_bench
+        if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+        uses: boa-dev/criterion-compare-action@v3.2.4
+        with:
+          benchName: request_template_bench
+          defaultFeatures: false
+          branchName: ${{ github.base_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Benchmark Changes
+        if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+        run: |
+          output=$(/home/runner/.cargo/bin/critcmp base changes)
+          echo "$output"
+          awk 'NR > 2 {
+              group=$1
+              base=$7
+              changes=$3
+              gsub(/[^\-0-9\.]/, "", changes)
+              gsub(/[^\-0-9\.]/, "", base)
+              if (changes != "" && base != "") {
+                  diff = changes - base
+                  percentage = (diff / base) * 100
+                  if (percentage > 10) {
+                      printf "Percentage change for %s exceeds 10%%: %.2f%%\n", group, percentage
+                      exit 1
+                  }
+              }
+          }' <<< "$output"
+
+  build_time_check:
+    name: Build time check
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, ':benchmark')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install iai-callgrind-runner
+        run: cargo install --version 0.7.3 iai-callgrind-runner
+
+      - name: Install Valgrind
+        run: |
+          sudo apt-get update
+          sudo apt-get install valgrind
+
+      - name: Run Benchmarks
+        run: |
+          echo -n > benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench json_like_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench data_loader_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench impl_path_string_for_evaluation_context_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+          cargo bench --bench request_template_bench_iai-callgrind -- --save-baseline change >> benches/iai-callgrind/benchmarks.txt
+
+      - name: Manipulate Benchmark File
+        run: sed -i 's/ \{1,\}\([0-9]\)/\1/g' benches/iai-callgrind/benchmarks.txt
+
+      - name: Execute build_time_compare.sh
+        run: |
+          chmod +x .github/scripts/build_time_compare.sh
+          ./.github/scripts/build_time_compare.sh
