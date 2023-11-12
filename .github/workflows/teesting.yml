@@ -1,6 +1,6 @@
 name: Check Benchmark Changes
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   check_benchmark_changes:
