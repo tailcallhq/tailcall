@@ -1,6 +1,6 @@
 json_like_bench_iai_callgrind::batched_body::benchmark_batched_body
   Instructions:10798 
-  L1 Hits:15602 
+  L1 Hits:634565734 
   L2 Hits:1 
   RAM Hits:140 
   Total read+write:231423 
