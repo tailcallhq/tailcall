@@ -51,7 +51,8 @@ async function genServerPackage(buildDefinitions: string[]) {
             "detect-libc": "^2.0.2",
         },
         scripts: {
-            postinstall: "node ./scripts/installOptionalDeps.js",
+            postinstall: "node ./scripts/post-install.js",
+            preinstall: "node ./scripts/pre-install.js",
         },
     }
 
@@ -63,10 +64,14 @@ async function genServerPackage(buildDefinitions: string[]) {
     await fs.mkdir(directoryPath, { recursive: true })
 
     const postInstallScript = await fs.readFile(resolve(__dirname, "./post-install.js"), "utf8")
+    const preInstallScript = await fs.readFile(resolve(__dirname, "./pre-install.js"), "utf8")
 
-    const installScriptContent = `const version = "${packageVersion}";\n${postInstallScript}`
+    const postInstallScriptContent = `const version = "${packageVersion}";\n${postInstallScript}`
+    const preInstallScriptContent = `const optionalDependencies = ${JSON.stringify(optionalDependencies)};\n${preInstallScript}`
 
-    await fs.writeFile(resolve(scriptsPath, "installOptionalDeps.js"), installScriptContent, "utf8")
+
+    await fs.writeFile(resolve(scriptsPath, "post-install.js"), postInstallScriptContent, "utf8")
+    await fs.writeFile(resolve(scriptsPath, "pre-install.js"), preInstallScriptContent, "utf8")
     await fs.writeFile(resolve(directoryPath, "./package.json"), JSON.stringify(tailcallPackage, null, 2), "utf8")
 
     await fs.copyFile(resolve(__dirname, "../README.md"), resolve(directoryPath, "./README.md"))
