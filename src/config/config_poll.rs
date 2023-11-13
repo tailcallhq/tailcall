@@ -35,19 +35,19 @@ impl ConfigLoader {
     let fp = self.file_path.clone();
     let duration = Duration::from_secs(self.refresh_interval);
     let mut interval = time::interval(duration);
-
     tokio::spawn(async move {
       loop {
-        interval.tick().await;
+        println!("{}", interval.period().as_secs());
         if make_request(&state, &client, &fp).await {
           interval = time::interval(interval.period().add(duration));
-          log::debug!("The refresh interval is doubled.");
-        } else {
+        }else {
           interval = time::interval(duration);
-          log::debug!(
-            "The refresh was successful. The polling interval has been reset, otherwise it remains constant."
-          );
         }
+        if interval.period().as_secs() > 99 {
+          interval = time::interval(duration);
+        }
+        interval.reset();
+        interval.tick().await;
       }
     });
   }
