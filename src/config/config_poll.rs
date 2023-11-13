@@ -39,8 +39,12 @@ impl ConfigLoader {
       loop {
         if make_request(&state, &client, &fp).await {
           interval = time::interval(interval.period().add(duration));
-        }else {
+          log::debug!("The refresh interval is doubled.");
+        } else {
           interval = time::interval(duration);
+          log::debug!(
+            "The refresh was successful. The polling interval has been reset, otherwise it remains constant."
+          );
         }
         if interval.period().as_secs() > 99 {
           interval = time::interval(duration);
