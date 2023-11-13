@@ -18,7 +18,7 @@ const options = parse<ICLI>({
     target: { type: String },
     build: { type: String },
     version: { type: String },
-    ext: { type: String, defaultValue: '', optional: true },
+    ext: { type: String, optional: true},
 })
 
 async function genPlatformPackage() {
@@ -45,9 +45,8 @@ async function genPlatformPackage() {
     const packagePath = `@tailcallhq/core-${build}`
     const binPath = `${packagePath}/bin`
 
-    const targetPath = `../target/${target}/release/tailcall${ext}`
-    const tcPath = `${binPath}/tc${ext}`
-
+    const targetPath = ext ? `../target/${target}/release/tailcall${ext}` : `../target/${target}/release/tailcall`
+    const tcPath = ext ? `${binPath}/tc${ext}` : `${binPath}/tc`
     const packageJsonPath = `${packagePath}/package.json`
     const readmePath = "../README.md"
 
