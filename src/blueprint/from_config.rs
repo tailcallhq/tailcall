@@ -66,6 +66,8 @@ fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
   })
 }
 
+// Apply batching if any of the fields have a @http directive with groupBy field
+
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   for def in blueprint.definitions.iter() {
     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
