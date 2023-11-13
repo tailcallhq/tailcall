@@ -11,14 +11,14 @@ interface ICLI {
     target: string
     build: string
     version: string
-    ext: string
+    ext?: string
 }
 
 const options = parse<ICLI>({
     target: { type: String },
     build: { type: String },
     version: { type: String },
-    ext: { type: String, defaultValue: '' },
+    ext: { type: String, defaultValue: '', optional: true },
 })
 
 async function genPlatformPackage() {
