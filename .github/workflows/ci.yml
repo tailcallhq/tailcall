@@ -121,7 +121,7 @@ jobs:
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
-    #    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -233,28 +233,28 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Install Node.js
-        # if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && github.event.action == 'published'
         uses: actions/setup-node@v4
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        # if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
           npm install
 
       - name: Run generate.js script
-        # if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && github.event.action == 'published'
         run: |
           cd npm
-          npm run gen -- --target ${{matrix.target}} --version 0.15.0 --build ${{matrix.build}} --ext ${{ matrix.ext || '' }}
+          npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}} --ext ${{ matrix.ext || '' }}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
       - name: NPM Publish
-        #        if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && github.event.action == 'published'
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
@@ -277,7 +277,7 @@ jobs:
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
-    #    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Current Branch (Fast)
@@ -296,7 +296,7 @@ jobs:
           APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name}}
         run: |
           cd npm
-          npm run gen-root -- --version 0.15.0
+          npm run gen-root -- --version ${{ env.APP_VERSION }}
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
