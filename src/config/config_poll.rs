@@ -37,7 +37,6 @@ impl ConfigLoader {
     let mut interval = time::interval(duration);
     tokio::spawn(async move {
       loop {
-        println!("{}", interval.period().as_secs());
         if make_request(&state, &client, &fp).await {
           interval = time::interval(interval.period().add(duration));
         }else {
