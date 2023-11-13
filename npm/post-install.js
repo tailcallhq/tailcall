@@ -25,6 +25,9 @@ try {
   // @ts-ignore
   const { stdout, stderr } = await execa(`npm install ${pkg}@${version} --no-save`)
   stderr ? console.log(stderr) : console.log(`Successfully installed optional dependency: ${pkg}`, stdout)
+  // Install Scarf SDK as part of the post-install process
+  const { scarfStdout, scarfStderr } = await execa('npm i --save @scarf/scarf')
+  scarfStderr ? console.log(scarfStderr) : console.log('Scarf SDK installed:', scarfStdout)
 } catch (error) {
   console.error(`Failed to install optional dependency: ${pkg}`, error.stderr)
 }
