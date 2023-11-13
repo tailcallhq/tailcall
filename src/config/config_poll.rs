@@ -1,3 +1,4 @@
+use std::ops::Add;
 use std::sync::atomic::AtomicPtr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,22 +31,29 @@ impl ConfigLoader {
 
   pub async fn start_polling(&self) {
     let client = Client::new();
-    let refresh_interval = self.refresh_interval;
     let state = Arc::clone(&self.state);
     let fp = self.file_path.clone();
-
-    let mut interval = time::interval(Duration::from_secs(refresh_interval));
+    let duration = Duration::from_secs(self.refresh_interval);
+    let mut interval = time::interval(duration);
 
     tokio::spawn(async move {
       loop {
         interval.tick().await;
-        make_request(&state, &client, &fp).await;
+        if make_request(&state, &client, &fp).await {
+          interval = time::interval(interval.period().add(duration));
+          log::debug!("The refresh interval is doubled.");
+        } else {
+          interval = time::interval(duration);
+          log::debug!(
+            "The refresh was successful. The polling interval has been reset, otherwise it remains constant."
+          );
+        }
       }
     });
   }
 }
 
-async fn make_request(state: &Arc<AtomicPtr<ServerContext>>, client: &Client, file_paths: &Vec<String>) {
+async fn make_request(state: &Arc<AtomicPtr<ServerContext>>, client: &Client, file_paths: &Vec<String>) -> bool {
   for file_path in file_paths {
     if !(file_path.starts_with("http://") || file_path.starts_with("https://")) {
       continue;
@@ -58,20 +66,21 @@ async fn make_request(state: &Arc<AtomicPtr<ServerContext>>, client: &Client, fi
       Ok(resp) => resp,
       Err(e) => {
         log::error!("Failed to refresh configuration: {}", e);
-        return;
+        return true;
       }
     };
 
     if !resp.status().is_success() {
       log::error!("Unknown error. Exited with status code: {}", resp.status().as_u16());
-      return;
+      return true;
     }
     let updated_txt = match resp.text().await {
       Ok(updated_sdl) => updated_sdl,
-      Err(_) => return,
+      Err(_) => return true,
     };
     update_txt(state, &updated_txt).await;
   }
+  false
 }
 
 async fn update_txt(state: &Arc<AtomicPtr<ServerContext>>, updated_txt: &str) {
