@@ -127,79 +127,79 @@ jobs:
       matrix:
         build:
           [
-            linux-x86_64-gnu,
-            linux-x86_64-musl,
-            linux-aarch64-gnu,
-            linux-aarch64-musl,
-            linux-i686-gnu,
-            apple-arm64,
-            apple-x86_64,
-            windows-x86_64-msvc,
-            windows-x86_64-gnu,
-            windows-aarch64-msvc,
-            windows-i686-gnu,
+            linux-x64-gnu,
+            linux-x64-musl,
+            linux-arm64-gnu,
+            linux-arm64-musl,
+            linux-ia32-gnu,
+            darwin-arm64,
+            darwin-x64,
+            win32-x64-msvc,
+            win32-x64-gnu,
+            win32-arm64-msvc,
+            win32-ia32-gnu,
           ]
         include:
-          - build: linux-x86_64-gnu
+          - build: linux-x64-gnu
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
 
-          - build: linux-x86_64-musl
+          - build: linux-x64-musl
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
             cross: true
 
-          - build: linux-aarch64-gnu
+          - build: linux-arm64-gnu
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-gnu
             cross: true
 
-          - build: linux-aarch64-musl
+          - build: linux-arm64-musl
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
             cross: true
 
-          - build: linux-i686-gnu
+          - build: linux-ia32-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
             cross: true
 
-          - build: apple-arm64
+          - build: darwin-arm64
             os: macos-latest
             rust: stable
             target: aarch64-apple-darwin
 
-          - build: apple-x86_64
+          - build: darwin-x64
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
             cross: false
 
-          - build: windows-x86_64-msvc
+          - build: win32-x64-msvc
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-msvc
             ext: ".exe"
 
-          - build: windows-x86_64-gnu
+          - build: win32-x64-gnu
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
             ext: ".exe"
 
-          - build: windows-aarch64-msvc
+          - build: win32-arm64-msvc
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
             ext: ".exe"
 
-          - build: windows-i686-gnu
+          - build: win32-ia32-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
