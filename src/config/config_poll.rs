@@ -30,60 +30,55 @@ impl ConfigLoader {
   }
 
   pub async fn start_polling(&self) {
-    let client = Client::new();
-    let state = Arc::clone(&self.state);
-    let fp = self.file_path.clone();
+    let state = &self.state;
+    let fp = &self.file_path;
     let duration = Duration::from_secs(self.refresh_interval);
-    let mut interval = time::interval(duration);
-    tokio::spawn(async move {
-      loop {
-        if make_request(&state, &client, &fp).await {
-          interval = time::interval(interval.period().add(duration));
-          log::debug!("The refresh interval is doubled.");
-        } else {
-          interval = time::interval(duration);
-          log::debug!(
-            "The refresh was successful. The polling interval has been reset, otherwise it remains constant."
-          );
-        }
-        if interval.period().as_secs() > 99 {
-          interval = time::interval(duration);
-        }
-        interval.reset();
-        interval.tick().await;
+    for f in fp {
+      if !(f.starts_with("http://") || f.starts_with("https://")) {
+        continue;
       }
-    });
+      make_request(Arc::clone(&state), f.clone(), duration).await;
+    }
   }
 }
 
-async fn make_request(state: &Arc<AtomicPtr<ServerContext>>, client: &Client, file_paths: &Vec<String>) -> bool {
-  for file_path in file_paths {
-    if !(file_path.starts_with("http://") || file_path.starts_with("https://")) {
-      continue;
-    }
-    let request = client.get(file_path).build().unwrap();
+async fn make_request(state: Arc<AtomicPtr<ServerContext>>, file_path: String, duration: Duration) {
+  let client = Client::new();
+  let mut interval = time::interval(duration);
+  tokio::spawn(async move {
+    loop {
+      let request = client.get(&file_path).build().unwrap();
 
-    let resp = client.execute(request).await;
+      let resp = client.execute(request).await;
 
-    let resp = match resp {
-      Ok(resp) => resp,
-      Err(e) => {
-        log::error!("Failed to refresh configuration: {}", e);
-        return true;
+      match resp {
+        Ok(resp) => {
+          if !resp.status().is_success() {
+            log::error!("Unknown error. Exited with status code: {}", resp.status().as_u16());
+            log::debug!("Doubled the poll interval");
+            interval = time::interval(interval.period().add(duration));
+          } else if let Ok(updated_txt) = resp.text().await {
+            update_txt(&state, &updated_txt).await;
+            interval = time::interval(duration);
+          } else {
+            log::error!("Unknown error. Unable to read response.");
+            log::debug!("Doubled the poll interval");
+            interval = time::interval(interval.period().add(duration));
+          }
+        }
+        Err(e) => {
+          log::error!("Failed to refresh configuration: {}", e);
+          log::debug!("Doubled the poll interval");
+          interval = time::interval(interval.period().add(duration));
+        }
+      };
+      if interval.period().as_secs() > 99 {
+        interval = time::interval(duration);
       }
-    };
-
-    if !resp.status().is_success() {
-      log::error!("Unknown error. Exited with status code: {}", resp.status().as_u16());
-      return true;
+      interval.reset();
+      interval.tick().await;
     }
-    let updated_txt = match resp.text().await {
-      Ok(updated_sdl) => updated_sdl,
-      Err(_) => return true,
-    };
-    update_txt(state, &updated_txt).await;
-  }
-  false
+  });
 }
 
 async fn update_txt(state: &Arc<AtomicPtr<ServerContext>>, updated_txt: &str) {
