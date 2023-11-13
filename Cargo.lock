@@ -1756,9 +1756,12 @@ dependencies = [
 name = "js_executor"
 version = "0.1.0"
 dependencies = [
+ "async-graphql-value",
  "js_executor_interface",
  "mimalloc",
  "mini-v8",
+ "once_cell",
+ "serde",
 ]
 
 [[package]]

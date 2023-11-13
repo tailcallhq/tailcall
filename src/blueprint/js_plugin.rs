@@ -5,7 +5,7 @@ use libloading::{library_filename, Library, Symbol};
 
 use js_executor_interface::JsExecutor;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct JsPluginWrapper {
   library: Arc<Library>,
 }
@@ -25,15 +25,10 @@ impl JsPluginWrapper {
     Ok(Self { library: Arc::new(library) })
   }
 
-  pub fn eval(&self, source: &str, input: &str) -> Result<async_graphql::Value> {
-    let executor = unsafe {
-      let executor: Symbol<JsExecutor> = self.library.get(b"eval")?;
+  pub fn create_executor(&self, source: String) -> Result<Box<dyn JsExecutor>> {
+    let create_executor: Symbol<fn(source: &str) -> Box<dyn JsExecutor>> =
+      unsafe { self.library.get(b"create_executor")? };
 
-      executor
-    };
-
-    let result = executor(source, input).unwrap();
-
-    Ok(serde_json::from_str(result.as_str())?)
+    Ok(create_executor(&source))
   }
 }

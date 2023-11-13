@@ -1,8 +1,9 @@
 use std::marker::PhantomData;
 
+use tokio::sync::{mpsc, oneshot};
+
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::blueprint::js_plugin::JsPluginWrapper;
 use crate::request_template::RequestTemplate;
 
 #[derive(Clone)]
@@ -23,8 +24,8 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_unsafe_js(self, js_executor: JsPluginWrapper, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), js_executor, script)))
+  pub fn to_unsafe_js(self, sender: mpsc::UnboundedSender<(oneshot::Sender<String>, String)>) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), sender)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {

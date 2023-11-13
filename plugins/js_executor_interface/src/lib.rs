@@ -1,1 +1,3 @@
-pub type JsExecutor = fn(source: &str, input: &str) -> Result<String, String>;
+pub trait JsExecutor {
+  fn eval(&self, input: &str) -> Result<String, String>;
+}

@@ -8,9 +8,9 @@ use async_graphql::dataloader::{DataLoader, NoCache};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
+use tokio::sync::{mpsc, oneshot};
 
 use super::ResolverContextLike;
-use crate::blueprint::js_plugin::JsPluginWrapper;
 use crate::config::group_by::GroupBy;
 use crate::http::{max_age, HttpDataLoader};
 use crate::json::JsonLike;
@@ -39,7 +39,10 @@ pub enum Unsafe {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
-  JS(Box<Expression>, JsPluginWrapper, String),
+  JS(
+    Box<Expression>,
+    mpsc::UnboundedSender<(oneshot::Sender<String>, String)>,
+  ),
 }
 
 impl Debug for Unsafe {
@@ -51,11 +54,7 @@ impl Debug for Unsafe {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Unsafe::JS(input, _, script) => f
-        .debug_struct("JS")
-        .field("input", input)
-        .field("script", script)
-        .finish(),
+      Unsafe::JS(input, _) => f.debug_struct("JS").field("input", input).finish(),
     }
   }
 }
@@ -148,16 +147,17 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Unsafe::JS(input, js_executor, script) => {
-              let result;
-
+            Unsafe::JS(input, sender) => {
               let input = input.eval(ctx).await?;
 
-              result = js_executor.eval(script, input.to_string().as_str())
-                .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+              let (tx, rx) = oneshot::channel::<String>();
 
-              result
-            },
+              sender.send((tx, input.to_string()))?;
+
+              let result = rx.await.map_err(|e| EvaluationError::JSException(e.to_string()))?;
+
+              Ok(serde_json::from_str(result.as_str())?)
+            }
           }
         }
       }

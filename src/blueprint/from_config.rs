@@ -7,6 +7,8 @@ use async_graphql_value::ConstValue;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
+use tokio::sync::{mpsc, oneshot};
+use tokio::task::LocalSet;
 
 use super::js_plugin::JsPluginWrapper;
 use super::UnionTypeDefinition;
@@ -240,11 +242,11 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
     }
 
     // TODO: clone?
-    let js_executor = js_executor.clone();
+    // let js_executor = js_executor.clone();
 
     update_args()
       .and(update_http().trace("@http"))
-      .and(update_js(js_executor).trace("@js"))
+      .and(update_js(&js_executor).trace("@js"))
       .and(update_const_field().trace("@const"))
       .and(update_modify().trace("@modify"))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
@@ -519,7 +521,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 }
 
 fn update_js<'a>(
-  js_executor: Option<JsPluginWrapper>,
+  js_executor: &'a Option<JsPluginWrapper>,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, _), b_field| {
     let mut updated_b_field = b_field;
@@ -528,10 +530,35 @@ fn update_js<'a>(
         return Valid::fail("Js plugin is not enabled".to_owned());
       };
 
-      updated_b_field = updated_b_field.resolver_or_default(
-        Lambda::context().to_unsafe_js(js_executor.clone(), op.script.clone()),
-        |r| r.to_unsafe_js(js_executor.clone(), op.script.clone()),
-      );
+      let js_executor_s = js_executor.clone();
+      let script = op.script.to_owned();
+      let (sender, mut recv) = mpsc::unbounded_channel::<(oneshot::Sender<String>, String)>();
+
+      // TODO: Called too many times
+      dbg!(&script);
+
+      std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+          .enable_all()
+          .build()
+          .unwrap();
+        let local = LocalSet::new();
+
+        local.spawn_local(async move {
+          let executor = js_executor_s.create_executor(script).unwrap();
+
+          while let Some((response, input)) = recv.recv().await {
+            let result = executor.eval(&input);
+
+            response.send(result.unwrap()).unwrap();
+          }
+        });
+        rt.block_on(local);
+      });
+
+      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(sender.clone()), |r| {
+        r.to_unsafe_js(sender.clone())
+      });
     }
     Valid::succeed(updated_b_field)
   })

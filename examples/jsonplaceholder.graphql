@@ -7,8 +7,11 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
+  value_const: String @const(data: "str")
+  value_js: String @js(script: "'str'")
   test_js_float: Float @js(script: "0.1 + 0.2")
   test_js_string: String @js(script: "'hello world'")
+  test_js_random: Float @js(script: "Math.random()")
 }
 
 type User {
