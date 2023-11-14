@@ -127,22 +127,14 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_batch_request(req, state.clone()))) }
   });
 
-  match blueprint.server.enable_batch_requests {
-    true => {
-      let server = hyper::Server::try_bind(&addr)
-        .map_err(CLIError::from)?
-        .serve(make_svc_batch_req);
-      log_startup_messages(&addr, blueprint.server.enable_graphiql);
-
-      Ok(server.await.map_err(CLIError::from)?)
+  let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
+  log_startup_messages(&addr, blueprint.server.enable_graphiql);
+  Ok(
+    if blueprint.server.enable_batch_requests {
+      builder.serve(make_svc_batch_req).await
+    } else {
+      builder.serve(make_svc_single_req).await
     }
-    false => {
-      let server = hyper::Server::try_bind(&addr)
-        .map_err(CLIError::from)?
-        .serve(make_svc_single_req);
-      log_startup_messages(&addr, blueprint.server.enable_graphiql);
-
-      Ok(server.await.map_err(CLIError::from)?)
-    }
-  }
+    .map_err(CLIError::from)?,
+  )
 }
