@@ -37,7 +37,7 @@ impl ConfigLoader {
       if !(f.starts_with("http://") || f.starts_with("https://")) {
         continue;
       }
-      make_request(Arc::clone(&state), f.clone(), duration).await;
+      make_request(Arc::clone(state), f.clone(), duration).await;
     }
   }
 }
