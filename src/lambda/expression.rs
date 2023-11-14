@@ -51,7 +51,11 @@ impl Debug for Unsafe {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Unsafe::JS(input, _) => f.debug_struct("JS").field("input", input).finish(),
+      Unsafe::JS(input, js_executor) => f
+        .debug_struct("JS")
+        .field("input", input)
+        .field("script", &js_executor.source())
+        .finish(),
     }
   }
 }

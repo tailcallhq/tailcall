@@ -15,9 +15,14 @@ type ChannelMessage = (oneshot::Sender<String>, String);
 #[derive(Clone)]
 pub struct JsPluginExecutor {
   sender: mpsc::UnboundedSender<ChannelMessage>,
+  source: String,
 }
 
 impl JsPluginExecutor {
+  pub fn source(&self) -> &str {
+    &self.source
+  }
+
   pub async fn call(&self, input: &str) -> Result<async_graphql::Value> {
     let (tx, rx) = oneshot::channel::<String>();
 
@@ -86,8 +91,8 @@ impl JsPluginWrapper {
   pub fn create_executor(&self, source: String) -> JsPluginExecutor {
     let (sender, receiver) = mpsc::unbounded_channel::<ChannelMessage>();
 
-    self.executors.borrow_mut().push((receiver, source));
+    self.executors.borrow_mut().push((receiver, source.clone()));
 
-    JsPluginExecutor { sender }
+    JsPluginExecutor { sender, source }
   }
 }
