@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::blueprint::{HttpOptions, HttpVersion};
+use crate::blueprint::HttpOptions;
 use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -51,8 +51,7 @@ impl Server {
   }
 
   pub fn get_http_options(&self) -> HttpOptions {
-    let default_http_options = HttpOptions { version: HttpVersion::HTTP1, cert_path: None, key_path: None };
-    self.http.clone().unwrap_or(default_http_options)
+    self.http.clone().unwrap_or_default()
   }
 
   pub fn get_port(&self) -> u16 {

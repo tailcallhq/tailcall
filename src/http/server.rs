@@ -72,26 +72,37 @@ pub async fn start_server(config: Config) -> Result<()> {
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
-  if blueprint.server.http.version == HttpVersion::HTTP2
-    && (blueprint.server.http.cert_path.is_none() || blueprint.server.http.key_path.is_none())
-  {
-    return Err(anyhow::anyhow!(CLIError::new("HTTP/2 protocol requires both certificate and key paths. Please provide them using --cert-path and --key-path options.")));
-  }
   match blueprint.server.http.version {
     HttpVersion::HTTP2 => {
+      let error_message = "HTTP/2 protocol requires certificate and key paths. Please provide them in the GraphQL schema under http directive.";
+
+      let cert_path = Blueprint::try_from(&config)
+        .map_err(CLIError::from)?
+        .server
+        .http
+        .cert_path
+        .ok_or_else(|| anyhow::anyhow!(CLIError::new(error_message)))?;
+
+      let key_path = Blueprint::try_from(&config)
+        .map_err(CLIError::from)?
+        .server
+        .http
+        .key_path
+        .ok_or_else(|| anyhow::anyhow!(CLIError::new(error_message)))?;
+
+      if !std::path::Path::new(&cert_path).exists() {
+        return Err(anyhow::anyhow!(CLIError::new("Invalid Certificate path.")));
+      }
+
+      if !std::path::Path::new(&key_path).exists() {
+        return Err(anyhow::anyhow!(CLIError::new("Invalid Key path.")));
+      }
+
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
-
-      if !std::path::Path::new(blueprint.server.http.cert_path.as_ref().unwrap()).exists() {
-        return Err(anyhow::anyhow!(CLIError::new("Invalid Certificate path.")));
-      }
-
-      if !std::path::Path::new(blueprint.server.http.key_path.as_ref().unwrap()).exists() {
-        return Err(anyhow::anyhow!(CLIError::new("Invalid Key path.")));
-      }
 
       let server_result = hyper_from_pem_files(
         blueprint.server.http.cert_path.unwrap().as_str(),
