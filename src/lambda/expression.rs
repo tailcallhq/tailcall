@@ -8,9 +8,9 @@ use async_graphql::dataloader::{DataLoader, NoCache};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
-use tokio::sync::{mpsc, oneshot};
 
 use super::ResolverContextLike;
+use crate::blueprint::js_plugin::JsPluginExecutor;
 use crate::config::group_by::GroupBy;
 use crate::http::{max_age, HttpDataLoader};
 use crate::json::JsonLike;
@@ -39,10 +39,7 @@ pub enum Unsafe {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
-  JS(
-    Box<Expression>,
-    mpsc::UnboundedSender<(oneshot::Sender<String>, String)>,
-  ),
+  JS(Box<Expression>, JsPluginExecutor),
 }
 
 impl Debug for Unsafe {
@@ -147,16 +144,14 @@ impl Expression {
               }
               Ok(res.body)
             }
-            Unsafe::JS(input, sender) => {
+            Unsafe::JS(input, executor) => {
               let input = input.eval(ctx).await?;
 
-              let (tx, rx) = oneshot::channel::<String>();
-
-              sender.send((tx, input.to_string()))?;
-
-              let result = rx.await.map_err(|e| EvaluationError::JSException(e.to_string()))?;
-
-              Ok(serde_json::from_str(result.as_str())?)
+              executor
+                .call(&input.to_string())
+                .await
+                // TODO: error handling?
+                .map_err(|e| EvaluationError::JSException(e.to_string()).into())
             }
           }
         }

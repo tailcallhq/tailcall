@@ -7,8 +7,6 @@ use async_graphql_value::ConstValue;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
-use tokio::sync::{mpsc, oneshot};
-use tokio::task::LocalSet;
 
 use super::js_plugin::JsPluginWrapper;
 use super::UnionTypeDefinition;
@@ -228,7 +226,7 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
 }
 fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
   // TODO: remove unwrap
-  let js_executor = config
+  let js_plugin = config
     .js_plugin
     .as_ref()
     .map(|js_plugin| JsPluginWrapper::new(&js_plugin.src))
@@ -241,12 +239,9 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
-    // TODO: clone?
-    // let js_executor = js_executor.clone();
-
     update_args()
       .and(update_http().trace("@http"))
-      .and(update_js(&js_executor).trace("@js"))
+      .and(update_js(&js_plugin).trace("@js"))
       .and(update_const_field().trace("@const"))
       .and(update_modify().trace("@modify"))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
@@ -341,6 +336,11 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
   let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
     to_added_field(added_field, type_of)
   });
+
+  if let Some(js_plugin) = js_plugin {
+    js_plugin.start().unwrap();
+  }
+
   fields.zip(added_fields).map(|(mut fields, added_fields)| {
     fields.extend(added_fields);
     fields
@@ -521,43 +521,19 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 }
 
 fn update_js<'a>(
-  js_executor: &'a Option<JsPluginWrapper>,
+  js_plugin: &'a Option<JsPluginWrapper>,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, _), b_field| {
     let mut updated_b_field = b_field;
     if let Some(op) = &field.js {
-      let Some(js_executor) = &js_executor else {
+      let Some(js_plugin) = &js_plugin else {
         return Valid::fail("Js plugin is not enabled".to_owned());
       };
 
-      let js_executor_s = js_executor.clone();
-      let script = op.script.to_owned();
-      let (sender, mut recv) = mpsc::unbounded_channel::<(oneshot::Sender<String>, String)>();
+      let js_executor = js_plugin.create_executor(op.script.to_owned());
 
-      // TODO: Called too many times
-      dbg!(&script);
-
-      std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-          .enable_all()
-          .build()
-          .unwrap();
-        let local = LocalSet::new();
-
-        local.spawn_local(async move {
-          let executor = js_executor_s.create_executor(script).unwrap();
-
-          while let Some((response, input)) = recv.recv().await {
-            let result = executor.eval(&input);
-
-            response.send(result.unwrap()).unwrap();
-          }
-        });
-        rt.block_on(local);
-      });
-
-      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(sender.clone()), |r| {
-        r.to_unsafe_js(sender.clone())
+      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(js_executor.clone()), |r| {
+        r.to_unsafe_js(js_executor.clone())
       });
     }
     Valid::succeed(updated_b_field)
