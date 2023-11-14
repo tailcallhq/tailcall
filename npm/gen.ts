@@ -46,7 +46,7 @@ async function genPlatformPackage() {
     const binPath = `${packagePath}/bin`
 
     const targetPath = ext ? `../target/${target}/release/tailcall${ext}` : `../target/${target}/release/tailcall`
-    const tcPath = ext ? `${binPath}/tc${ext}` : `${binPath}/tc`
+    const tcPath = ext ? `${binPath}/tailcall${ext}` : `${binPath}/tailcall`
     const packageJsonPath = `${packagePath}/package.json`
     const readmePath = "../README.md"
 
