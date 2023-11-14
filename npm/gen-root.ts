@@ -63,14 +63,11 @@ async function genServerPackage(buildDefinitions: string[]) {
     await fs.mkdir(scriptsPath, { recursive: true })
     await fs.mkdir(directoryPath, { recursive: true })
 
-    const postInstallScript = await fs.readFile(resolve(__dirname, "./post-install.js"), "utf8")
     const preInstallScript = await fs.readFile(resolve(__dirname, "./pre-install.js"), "utf8")
 
-    const postInstallScriptContent = `const version = "${packageVersion}";\n${postInstallScript}`
     const preInstallScriptContent = `const optionalDependencies = ${JSON.stringify(optionalDependencies)};\n${preInstallScript}`
 
 
-    await fs.writeFile(resolve(scriptsPath, "post-install.js"), postInstallScriptContent, "utf8")
     await fs.writeFile(resolve(scriptsPath, "pre-install.js"), preInstallScriptContent, "utf8")
     await fs.writeFile(resolve(directoryPath, "./package.json"), JSON.stringify(tailcallPackage, null, 2), "utf8")
 
