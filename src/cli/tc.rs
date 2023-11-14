@@ -37,7 +37,7 @@ pub async fn run() -> Result<()> {
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = Config::from_file_paths(file_path.iter()).await?;
+      let config = Config::from_file_or_url(file_path.iter()).await?;
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
