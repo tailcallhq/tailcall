@@ -45,24 +45,6 @@ struct GraphQLSpec {
 }
 
 impl GraphQLSpec {
-  fn client_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source { sdl, tag: Tag::ClientSDL });
-    self
-  }
-
-  fn server_sdl(mut self, sdl: Vec<String>) -> Self {
-    for s in sdl {
-      self.sources.push(Source { sdl: s, tag: Tag::ServerSDL });
-    }
-    self
-  }
-
-  fn merged_server_sdl(mut self, sdl: String) -> Self {
-    self.sources.push(Source { sdl, tag: Tag::MergedSDL });
-
-    self
-  }
-
   fn find_source(&self, tag: Tag) -> String {
     self
       .get_sources(tag)
@@ -149,14 +131,17 @@ impl GraphQLSpec {
           }
         }
 
-        spec = spec.client_sdl(trimmed);
+        spec.sources.push(Source { sdl: trimmed.clone(), tag: Tag::ClientSDL });
       }
       if component.contains(SERVER_SDL) {
         server_sdl.push(component.replace(SERVER_SDL, "").trim().to_string());
-        spec = spec.server_sdl(server_sdl.clone());
+        for s in &server_sdl {
+          spec.sources.push(Source { sdl: s.to_string(), tag: Tag::ServerSDL })
+        }
       }
       if component.contains(MERGED_SDL) {
-        spec = spec.merged_server_sdl(component.replace(MERGED_SDL, "").trim().to_string());
+        let sdl = component.replace(MERGED_SDL, "").trim().to_string();
+        spec.sources.push(Source { sdl, tag: Tag::MergedSDL });
       }
       if component.contains(CLIENT_QUERY) {
         let regex = Regex::new(r"@expect.*\) ").unwrap();
