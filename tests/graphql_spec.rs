@@ -54,11 +54,7 @@ enum Annotation {
 
 impl GraphQLSpec {
   fn find_source(&self, tag: Tag) -> String {
-    self
-      .get_sources(tag)
-      .next()
-      .unwrap()
-      .to_string()
+    self.get_sources(tag).next().unwrap().to_string()
   }
 
   fn get_sources(&self, tag: Tag) -> impl Iterator<Item = String> {
