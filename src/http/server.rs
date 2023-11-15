@@ -20,7 +20,10 @@ use crate::http::client;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
-    GraphiQLSource::build().endpoint("/graphql").finish(),
+    GraphiQLSource::build()
+      .title("Tailcall - GraphQL IDE")
+      .endpoint("/graphql")
+      .finish(),
   )))
 }
 
