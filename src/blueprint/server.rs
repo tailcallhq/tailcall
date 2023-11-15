@@ -11,15 +11,15 @@ use crate::valid::{Valid, ValidationError};
 
 #[derive(Deserialize, Serialize, Clone, Debug, Setters)]
 #[serde(rename_all = "camelCase", default)]
-pub struct HttpOptions {
+pub struct Http {
   pub version: HttpVersion,
   pub cert_path: Option<String>,
   pub key_path: Option<String>,
 }
 
-impl Default for HttpOptions {
+impl Default for Http {
   fn default() -> Self {
-    HttpOptions { version: HttpVersion::HTTP1, cert_path: None, key_path: None }
+    Http { version: HttpVersion::HTTP1, cert_path: None, key_path: None }
   }
 }
 
@@ -42,7 +42,7 @@ pub struct Server {
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
-  pub http: HttpOptions,
+  pub http: Http,
 }
 
 impl Default for Server {
