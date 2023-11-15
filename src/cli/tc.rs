@@ -11,7 +11,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::{start_server_with_url};
+use crate::http::start_server_with_url;
 use crate::print_schema;
 
 pub async fn run() -> Result<()> {
