@@ -9,12 +9,12 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
 use super::request_context::RequestContext;
-use super::{SchemaLoader, ServerContext};
+use super::ServerContext;
+use crate::async_graphql_hyper;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::client;
-use crate::{async_graphql_hyper, config};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -89,7 +89,7 @@ pub async fn start_server(config: Config) -> Result<()> {
   Ok(server.await.map_err(CLIError::from)?)
 }
 
-pub async fn start_server_with_polling(config: &Config, file_path: Vec<String>, poll_interval: u64) -> Result<()> {
+pub async fn start_server_with_url(config: &Config) -> Result<()> {
   let blueprint = Blueprint::try_from(config).map_err(CLIError::from)?;
   let blueprint_clone = blueprint.clone();
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
@@ -97,7 +97,6 @@ pub async fn start_server_with_polling(config: &Config, file_path: Vec<String>, 
     blueprint.clone(),
     http_client,
   )))));
-  let state_clone = Arc::clone(&state);
 
   let make_svc = make_service_fn(move |_conn| {
     let state = Arc::clone(&state);
@@ -110,13 +109,6 @@ pub async fn start_server_with_polling(config: &Config, file_path: Vec<String>, 
   if blueprint_clone.server.enable_graphiql {
     log::info!("🌍 Playground: http://{}", addr);
   }
-
-  let config_loader = SchemaLoader::new_config(config::config_poll::ConfigLoader::new(
-    file_path,
-    poll_interval,
-    Arc::clone(&state_clone),
-  )?);
-  config_loader.get_conf()?.start_polling().await;
 
   Ok(server.await.map_err(CLIError::from)?)
 }

@@ -1,31 +1,21 @@
 // Integration tests for the API server.
 mod integration_tests {
-  use tailcall::http::{start_server, start_server_with_polling};
+  use tailcall::http::{start_server, start_server_with_url};
 
   // Helper function to start the test server.
-  async fn initiate_test_server(mock_schema_path: String, poll_interval: Option<u64>) -> &'static str {
+  async fn initiate_test_server(mock_schema_path: String) -> &'static str {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path.clone()].iter())
       .await
       .unwrap();
-    match poll_interval {
-      Some(poll_interval) => {
-        match start_server_with_polling(&config, [mock_schema_path].to_vec(), poll_interval).await {
-          Ok(_) => {}
-          Err(_) => {
-            start_server(config).await.unwrap();
-          }
-        }
-      }
-      _ => {
-        start_server(config).await.unwrap();
-      }
+    if start_server_with_url(&config).await.is_err() {
+      start_server(config).await.unwrap();
     }
     "Success"
   }
 
-  async fn verify_response_headers(schema_path: &str, poll_interval: Option<u64>) {
+  async fn verify_response_headers(schema_path: &str) {
     // Start the background server with the provided schema.
-    tokio::spawn(initiate_test_server(schema_path.into(), poll_interval));
+    tokio::spawn(initiate_test_server(schema_path.into()));
 
     // Provide a small delay to ensure the server has started.
     tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await; // need to provide a bit of delay depending upon internet speed and response time
@@ -48,14 +38,13 @@ mod integration_tests {
   #[tokio::test]
   async fn test_verify_response_headers() {
     let schema_path = "tests/graphql_mock/test-custom-headers.graphql";
-    verify_response_headers(schema_path, None).await;
+    verify_response_headers(schema_path).await;
   }
 
   #[tokio::test]
   async fn test_verify_response_headers_over_http() {
     let schema_path =
       "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tests/graphql_mock/test-custom-headers.graphql";
-    let poll_interval = 10;
-    verify_response_headers(schema_path, Some(poll_interval)).await;
+    verify_response_headers(schema_path).await;
   }
 }

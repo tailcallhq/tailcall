@@ -11,28 +11,20 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::{start_server, start_server_with_polling};
+use crate::http::{start_server, start_server_with_url};
 use crate::print_schema;
 
 pub async fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level, poll_interval } => {
+    Command::Start { file_path, log_level } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config = Config::from_file_or_url(file_path.iter()).await?;
-      match poll_interval {
-        Some(poll_interval) => match start_server_with_polling(&config, file_path, poll_interval).await {
-          Ok(_) => {}
-          Err(_) => {
-            start_server(config).await?;
-          }
-        },
-        _ => {
-          start_server(config).await?;
-        }
+      if start_server_with_url(&config).await.is_err() {
+        start_server(config).await?;
       }
       Ok(())
     }

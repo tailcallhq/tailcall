@@ -355,8 +355,7 @@ impl Config {
 
   pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
     let mut config = Config::default();
-    let fp = file_paths.clone();
-    for file_path in fp {
+    for file_path in file_paths {
       if file_path.starts_with("http://") || file_path.starts_with("https://") {
         let resp = reqwest::get(file_path).await?;
         let server_sdl = resp.text().await?;

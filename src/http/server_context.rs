@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use async_graphql::dynamic;
 
 use super::HttpClient;
 use crate::blueprint::{Blueprint, Definition};
-use crate::config::config_poll::ConfigLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{Expression, Unsafe};
 
@@ -17,29 +15,17 @@ pub struct ServerContext {
 
 pub enum SchemaLoader {
   Static(dynamic::Schema),
-  Dynamic(ConfigLoader),
+  // Dynamic(ConfigLoader),
 }
+
 impl SchemaLoader {
   pub fn new_schema(schema: dynamic::Schema) -> Self {
     Self::Static(schema)
   }
-  pub fn new_config(config: ConfigLoader) -> Self {
-    Self::Dynamic(config)
-  }
 
   pub fn get_schema(&self) -> anyhow::Result<&dynamic::Schema> {
-    if let SchemaLoader::Static(schema) = self {
-      Ok(schema)
-    } else {
-      Err(anyhow!("Not a static schema"))
-    }
-  }
-
-  pub fn get_conf(&self) -> anyhow::Result<&ConfigLoader> {
-    if let SchemaLoader::Dynamic(conf) = self {
-      Ok(conf)
-    } else {
-      Err(anyhow!("Not a static schema"))
+    match self {
+      SchemaLoader::Static(s) => Ok(s),
     }
   }
 }
