@@ -1,7 +1,6 @@
 ---
 config: tests/http/config/n-plus-one.graphql
 name: n + 1 Request List
-annotation: Fail
 upstream_mocks:
   - - url: http://example.com/bars
       headers:
