@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,17 +12,17 @@ use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
-fn get_body_value_single(body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>) -> ConstValue {
+fn get_body_value_single(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   body_value
-    .get(id.as_ref())
+    .get(id)
     .and_then(|a| a.first().cloned().cloned())
     .unwrap_or(ConstValue::Null)
 }
 
-fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>) -> ConstValue {
+fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   ConstValue::List(
     body_value
-      .get(id.as_ref())
+      .get(id)
       .unwrap_or(&Vec::new())
       .iter()
       .map(|&o| o.to_owned())
@@ -36,11 +35,19 @@ pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
   #[allow(clippy::type_complexity)]
-  pub get_body_value: fn(HashMap<String, Vec<&ConstValue>>, &Cow<str>) -> ConstValue,
+  pub get_body_value: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
   pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>, is_list: bool) -> Self {
-    HttpDataLoader { client, batched, get_body_value: if is_list {get_body_value_list} else {get_body_value_single} }
+    HttpDataLoader {
+      client,
+      batched,
+      get_body_value: if is_list {
+        get_body_value_list
+      } else {
+        get_body_value_single
+      },
+    }
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader, NoCache> {
