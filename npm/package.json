@@ -23,11 +23,16 @@
     "edge"
   ],
   "scripts": {
-    "gen": "node ./generate.js",
-    "gen-root": "node ./generate-root.js"
+    "gen": "tsx ./gen.ts",
+    "gen-root": "tsx ./gen-root.ts"
   },
   "dependencies": {
+    "ts-command-line-args": "^2.5.1",
+    "type-fest": "^4.7.1",
     "yaml": "^2.3.3",
     "yml": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.1.0"
   }
 }

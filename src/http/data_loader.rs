@@ -12,20 +12,17 @@ use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
-#[derive(Default, Clone, Debug)]
-pub struct HttpDataLoader<C>
-where
-  C: HttpClient + Send + Sync + 'static + Clone,
-{
-  pub client: C,
+#[derive(Clone)]
+pub struct HttpDataLoader {
+  pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
 }
-impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
-  pub fn new(client: C, batched: Option<GroupBy>) -> Self {
+impl HttpDataLoader {
+  pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>) -> Self {
     HttpDataLoader { client, batched }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader<C>, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader, NoCache> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
@@ -33,7 +30,7 @@ impl<C: HttpClient + Send + Sync + 'static + Clone> HttpDataLoader<C> {
 }
 
 #[async_trait::async_trait]
-impl<C: HttpClient + Send + Sync + 'static + Clone> Loader<DataLoaderRequest> for HttpDataLoader<C> {
+impl Loader<DataLoaderRequest> for HttpDataLoader {
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 
@@ -123,7 +120,7 @@ mod tests {
   async fn test_load_function() {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
-    let loader = HttpDataLoader { client: client.clone(), batched: None };
+    let loader = HttpDataLoader { client: Arc::new(client.clone()), batched: None };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
@@ -141,7 +138,7 @@ mod tests {
   async fn test_load_function_many() {
     let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
 
-    let loader = HttpDataLoader { client: client.clone(), batched: None };
+    let loader = HttpDataLoader { client: Arc::new(client.clone()), batched: None };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());

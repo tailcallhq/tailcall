@@ -15,8 +15,8 @@ type Foo {
   a: [A]
 }
 
-type Query {
-  foo: Foo @http(path: "/inlineWithList", baseURL: "https://foo.com") @inline(path: ["a", "b"])
+type Query @addField(name: "foo", path: ["foo", "a", "b"]) {
+  foo: Foo @http(path: "/inlineWithList", baseURL: "https://foo.com") @modify(omit: true)
 }
 
 #> client-query

@@ -3,8 +3,8 @@ schema {
   query: Query
 }
 
-type User {
-  address: Address @inline(path: ["address", "geo", "lat"])
+type User @addField(name: "address", path: ["address", "geo", "lat"]) {
+  address: Address @modify(omit: true)
 }
 
 type Address {

@@ -1,7 +1,7 @@
 directive @server(
   enableApolloTracing: Boolean
   enableCacheControlHeader: Boolean
-  enableGraphiql: true
+  enableGraphiql: Boolean
   enableIntrospection: Boolean
   enableQueryValidation: Boolean
   enableResponseValidation: Boolean
@@ -35,8 +35,9 @@ directive @http(
   body: String
   baseURL: String
   headers: [KeyValue]
+  groupBy: [String!]
 ) on FIELD_DEFINITION
-directive @inline(path: [String]!) on FIELD_DEFINITION
+directive @addField(name: String, path: [String]!) on OBJECT
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
