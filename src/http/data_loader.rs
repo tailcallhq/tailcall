@@ -13,34 +13,34 @@ use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
+fn get_body_value_single(body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>) -> ConstValue {
+  body_value
+    .get(id.as_ref())
+    .and_then(|a| a.first().cloned().cloned())
+    .unwrap_or(ConstValue::Null)
+}
+
+fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>) -> ConstValue {
+  ConstValue::List(
+    body_value
+      .get(id.as_ref())
+      .unwrap_or(&Vec::new())
+      .iter()
+      .map(|&o| o.to_owned())
+      .collect::<Vec<_>>(),
+  )
+}
+
 #[derive(Clone)]
 pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
   #[allow(clippy::type_complexity)]
-  pub get_body_value: Arc<dyn Fn(HashMap<String, Vec<&ConstValue>>, &Cow<str>) -> ConstValue + Send + Sync>,
+  pub get_body_value: fn(HashMap<String, Vec<&ConstValue>>, &Cow<str>) -> ConstValue,
 }
 impl HttpDataLoader {
   pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>, is_list: bool) -> Self {
-    let get_body_value: fn(HashMap<String, Vec<&ConstValue>>, &Cow<str>) -> ConstValue = match is_list {
-      true => |body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>| {
-        ConstValue::List(
-          body_value
-            .get(id.as_ref())
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|&o| o.to_owned())
-            .collect::<Vec<_>>(),
-        )
-      },
-      false => |body_value: HashMap<String, Vec<&ConstValue>>, id: &Cow<str>| {
-        body_value
-          .get(id.as_ref())
-          .and_then(|a| a.first().cloned().cloned())
-          .unwrap_or(ConstValue::Null)
-      },
-    };
-    HttpDataLoader { client, batched, get_body_value: Arc::new(get_body_value) }
+    HttpDataLoader { client, batched, get_body_value: if is_list {get_body_value_list} else {get_body_value_single} }
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader, NoCache> {
