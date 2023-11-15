@@ -5,7 +5,7 @@ use std::sync::Arc;
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
+use tailcall::http::{DataLoaderRequest, HttpClient, HttpObjectDataLoader, Response};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -26,7 +26,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
     b.iter(|| {
       tokio::runtime::Runtime::new().unwrap().spawn(async {
         let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
-        let loader = HttpDataLoader { client: client.clone(), batched: None };
+        let loader = HttpObjectDataLoader { client: client.clone(), batched: None };
         let loader = loader.to_data_loader(Batch::default().delay(1));
 
         let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());

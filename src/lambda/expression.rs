@@ -4,14 +4,13 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::dataloader::{DataLoader, NoCache};
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{max_age, HttpDataLoader};
+use crate::http::{max_age, DataLoaderType};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -35,11 +34,7 @@ pub enum Context {
 
 #[derive(Clone)]
 pub enum Unsafe {
-  Http(
-    RequestTemplate,
-    Option<GroupBy>,
-    Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
-  ),
+  Http(RequestTemplate, Option<GroupBy>, Option<Arc<DataLoaderType>>),
   JS(Box<Expression>, String),
 }
 
@@ -50,7 +45,13 @@ impl Debug for Unsafe {
         .debug_struct("Http")
         .field("req_template", req_template)
         .field("group_by", group_by)
-        .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
+        .field(
+          "dl",
+          &dl.clone().map(|a| match a.as_ref() {
+            DataLoaderType::Object(dl) => dl.loader().batched.clone(),
+            DataLoaderType::List(dl) => dl.loader().batched.clone(),
+          }),
+        )
         .finish(),
       Unsafe::JS(input, script) => f
         .debug_struct("JS")
@@ -113,13 +114,18 @@ impl Expression {
                   .map(|s| s.headers)
                   .unwrap_or_default();
                 let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = dl
-                  .as_ref()
-                  .unwrap()
-                  .load_one(endpoint_key)
-                  .await
-                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
-                  .unwrap_or_default();
+                let resp = match dl.as_ref().unwrap().as_ref() {
+                  DataLoaderType::Object(dl) => dl
+                    .load_one(endpoint_key)
+                    .await
+                    .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                    .unwrap_or_default(),
+                  DataLoaderType::List(dl) => dl
+                    .load_one(endpoint_key)
+                    .await
+                    .map_err(|e| EvaluationError::IOException(e.to_string()))?
+                    .unwrap_or_default(),
+                };
                 if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
                   if let Some(max_age) = max_age(&resp) {
                     ctx.req_ctx.set_min_max_age(max_age.as_secs());

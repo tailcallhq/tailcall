@@ -1,5 +1,7 @@
 mod client;
 mod data_loader;
+mod http_list_data_loader;
+mod http_object_data_loader;
 
 mod data_loader_request;
 mod method;
@@ -14,6 +16,8 @@ use cache_control::CacheControl;
 pub use client::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
+pub use http_list_data_loader::*;
+pub use http_object_data_loader::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
