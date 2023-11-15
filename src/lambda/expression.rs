@@ -152,7 +152,7 @@ impl Expression {
               let input = input.eval(ctx).await?;
 
               executor
-                .call(&input.to_string())
+                .call(input)
                 .await
                 // TODO: error handling?
                 .map_err(|e| EvaluationError::JSException(e.to_string()).into())

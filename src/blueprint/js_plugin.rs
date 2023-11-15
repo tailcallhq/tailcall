@@ -1,5 +1,6 @@
 use std::{cell::RefCell, path::PathBuf};
 
+use async_graphql_value::ConstValue;
 use anyhow::Result;
 use libloading::{library_filename, Library};
 use tokio::{
@@ -10,7 +11,7 @@ use tokio::{
 use js_executor_interface::JsExecutor;
 
 type CreateExecutor = fn(source: &str) -> Box<dyn JsExecutor>;
-type ChannelMessage = (oneshot::Sender<String>, String);
+type ChannelMessage = (oneshot::Sender<ConstValue>, ConstValue);
 
 #[derive(Clone)]
 pub struct JsPluginExecutor {
@@ -23,14 +24,12 @@ impl JsPluginExecutor {
     &self.source
   }
 
-  pub async fn call(&self, input: &str) -> Result<async_graphql::Value> {
-    let (tx, rx) = oneshot::channel::<String>();
+  pub async fn call(&self, input: ConstValue) -> Result<ConstValue> {
+    let (tx, rx) = oneshot::channel::<ConstValue>();
 
-    self.sender.send((tx, input.to_string()))?;
+    self.sender.send((tx, input))?;
 
-    let result = rx.await?;
-
-    Ok(serde_json::from_str(result.as_str())?)
+    Ok(rx.await?)
   }
 }
 
@@ -75,7 +74,7 @@ impl JsPluginWrapper {
 
         local.spawn_local(async move {
           while let Some((response, input)) = receiver.recv().await {
-            let result = executor.eval(&input);
+            let result = executor.eval(input);
 
             response.send(result.unwrap()).unwrap();
           }

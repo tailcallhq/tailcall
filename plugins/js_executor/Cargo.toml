@@ -9,6 +9,7 @@ crate-type = ["dylib"]
 [dependencies]
 async-graphql-value = { workspace = true }
 js_executor_interface = { path = "../js_executor_interface" }
+log = { workspace = true }
 mimalloc = { workspace = true }
 mini-v8 = "0.4.1"
 once_cell = { workspace = true }

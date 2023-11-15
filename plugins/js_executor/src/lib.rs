@@ -1,9 +1,14 @@
+mod conversion;
+
 use std::time::Duration;
 
+use async_graphql_value::ConstValue;
 use mini_v8::{Function, MiniV8, Script};
 use once_cell::sync::Lazy;
 
 use js_executor_interface::JsExecutor;
+
+use conversion::ValueWrapper;
 
 use mimalloc::MiMalloc;
 #[global_allocator]
@@ -19,18 +24,23 @@ struct JsPlugin {
 }
 
 impl JsExecutor for JsPlugin {
-  fn eval(&self, input: &str) -> Result<String, String> {
-    let result: String = self.func.call((input,)).unwrap();
+  fn eval(&self, input: ConstValue) -> Result<ConstValue, String> {
+    let result: mini_v8::Result<ValueWrapper> = self.func.call((ValueWrapper::from(input),));
 
-    Ok(result)
+    match result {
+      Ok(v) => Ok(v.into()),
+      Err(err) => {
+        log::warn!("Error while executing js: {err}");
+        Ok(ConstValue::Null)
+      }
+    }
   }
 }
 
 #[no_mangle]
 pub fn create_executor(source: &str) -> Box<dyn JsExecutor> {
   let source = format!(
-    // TODO: JSON.stringify?
-    "(ctx) => JSON.stringify({})",
+    "((ctx) => {})",
     source,
   );
   let script = Script { source: source, timeout: Some(Duration::from_secs(2)), origin: None };
