@@ -57,13 +57,12 @@ impl GraphQLSpec {
     self.get_sources(tag).next().unwrap().to_string()
   }
 
-  fn get_sources(&self, tag: Tag) -> impl Iterator<Item = String> {
+  fn get_sources(&self, tag: Tag) -> impl Iterator<Item = &str> {
     self
       .sources
-      .clone()
-      .into_iter()
+      .iter()
       .filter(move |s| s.tag == tag)
-      .map(|s| s.sdl)
+      .map(|s| s.sdl.as_str())
   }
 }
 
@@ -379,7 +378,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
     let expected = expected.as_str();
     let content = spec
       .get_sources(Tag::ServerSDL)
-      .map(|s| Config::from_sdl(s.as_str()).to_result().unwrap())
+      .map(|s| Config::from_sdl(s).to_result().unwrap())
       .collect::<Vec<_>>();
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
