@@ -1,17 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
-use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
+use crate::config::read::ConfigReader;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
@@ -353,53 +351,19 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
-    let mut config = Config::default();
+  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<ConfigReader> {
+    // maintaining config reader will help to implement poll intervals in future
+    let mut config_reader = ConfigReader::init();
     for file_path in file_paths {
-      if file_path.starts_with("http://") || file_path.starts_with("https://") {
-        let resp = reqwest::get(file_path).await?;
-        let server_sdl = resp.text().await?;
-        let conf = Config::from_source(Source::try_parse_and_detect(&server_sdl)?, &server_sdl)?; // needs improvement
-        config = config.clone().merge_right(&conf);
-      } else {
-        let conf = Config::from_file_path(file_path).await?;
-        config = config.clone().merge_right(&conf);
-      }
+      config_reader.serialize_config(file_path).await?;
     }
-    Ok(config)
+    Ok(config_reader)
   }
 
-  async fn from_file_path(file_path: &String) -> Result<Config> {
+  pub async fn from_file_path(file_path: &String) -> Result<Config> {
     let source = Source::detect(file_path)?;
-    let mut f = File::open(file_path).await?;
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer).await?;
-    let server_sdl = String::from_utf8(buffer)?;
-    Config::from_source(source, &server_sdl)
-  }
-
-  pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
-    let mut config = Config::default();
-    let futures: Vec<_> = file_paths
-      .map(|file_path| async move {
-        let source = Source::detect(file_path)?;
-        let mut f = File::open(file_path).await?;
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).await?;
-
-        let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl)
-      })
-      .collect();
-
-    for res in join_all(futures).await {
-      match res {
-        Ok(conf) => config = config.clone().merge_right(&conf),
-        Err(e) => return Err(e), // handle error
-      }
-    }
-
-    Ok(config)
+    let server_sdl = ConfigReader::read_file(file_path).await;
+    Config::from_source(source, &server_sdl?)
   }
 }
 

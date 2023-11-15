@@ -11,7 +11,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::{start_server, start_server_with_url};
+use crate::http::{start_server_with_url};
 use crate::print_schema;
 
 pub async fn run() -> Result<()> {
@@ -22,18 +22,16 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config = Config::from_file_or_url(file_path.iter()).await?;
-      if start_server_with_url(&config).await.is_err() {
-        start_server(config).await?;
-      }
+      let config_loader = Config::from_file_or_url(file_path.iter()).await?;
+      start_server_with_url(config_loader.get_config()).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = Config::from_file_or_url(file_path.iter()).await?;
-      let blueprint = Blueprint::try_from(&config);
+      let config_loader = Config::from_file_or_url(file_path.iter()).await?;
+      let blueprint = Blueprint::try_from(config_loader.get_config());
       match blueprint {
         Ok(blueprint) => {
-          display_config(&config, n_plus_one_queries);
+          display_config(config_loader.get_config(), n_plus_one_queries);
           if schema {
             display_schema(&blueprint);
           }

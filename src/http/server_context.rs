@@ -8,26 +8,9 @@ use crate::http::HttpDataLoader;
 use crate::lambda::{Expression, Unsafe};
 
 pub struct ServerContext {
-  pub schema: SchemaLoader,
+  pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
-}
-
-pub enum SchemaLoader {
-  Static(dynamic::Schema),
-  // Dynamic(ConfigLoader),
-}
-
-impl SchemaLoader {
-  pub fn new_schema(schema: dynamic::Schema) -> Self {
-    Self::Static(schema)
-  }
-
-  pub fn get_schema(&self) -> anyhow::Result<&dynamic::Schema> {
-    match self {
-      SchemaLoader::Static(s) => Ok(s),
-    }
-  }
 }
 
 fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClient>) -> &Blueprint {
@@ -51,7 +34,7 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClien
 
 impl ServerContext {
   pub fn new(blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
-    let schema = SchemaLoader::new_schema(assign_data_loaders(&mut blueprint.clone(), http_client.clone()).to_schema());
+    let schema = assign_data_loaders(&mut blueprint.clone(), http_client.clone()).to_schema();
     ServerContext { schema, http_client, blueprint }
   }
 }

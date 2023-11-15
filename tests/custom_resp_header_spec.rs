@@ -1,15 +1,13 @@
 // Integration tests for the API server.
 mod integration_tests {
-  use tailcall::http::{start_server, start_server_with_url};
+  use tailcall::http::{start_server_with_url};
 
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String) -> &'static str {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path.clone()].iter())
       .await
       .unwrap();
-    if start_server_with_url(&config).await.is_err() {
-      start_server(config).await.unwrap();
-    }
+    start_server_with_url(config.get_config().clone()).await.is_err()?;
     "Success"
   }
 
