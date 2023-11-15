@@ -12,8 +12,8 @@ impl ConfigReader {
     }
     pub async fn serialize_config(&mut self, path: &String) -> anyhow::Result<()> {
         let conf = if path.starts_with("http://") || path.starts_with("https://") {
-            let server_sdl = Self::read_over_url(path).await?;
-            Config::from_source(Source::try_parse_and_detect(&server_sdl)?, &server_sdl)? // needs improvement
+            let (st, source) = Self::read_over_url(path).await?;
+            Config::from_source(source, &st)? // needs improvement
         } else {
             Config::from_file_path(path).await?
         };
@@ -26,9 +26,19 @@ impl ConfigReader {
         f.read_to_end(&mut buffer).await?;
         Ok(String::from_utf8(buffer)?)
     }
-    async fn read_over_url(path: &String) -> anyhow::Result<String> {
+    async fn read_over_url(path: &String) -> anyhow::Result<(String, Source)> {
         let resp = reqwest::get(path).await?;
-        Ok(resp.text().await?)
+        let source = if let Some(v) = resp.headers().get("content-type") {
+            if let Ok(s) = Source::detect(v.to_str()?) {
+                s
+            }else {
+                Source::detect(path)?
+            }
+        }else {
+            Source::detect(path)?
+        };
+        let txt = resp.text().await?;
+        Ok((txt,source))
     }
     pub fn get_config(&self) -> &Config {
         &self.config
