@@ -12,11 +12,7 @@ pub struct ConfigReader {
 
 impl ConfigReader {
   pub fn init(file_paths: Iter<String>) -> Self {
-    let mut v = vec![];
-    for i in file_paths {
-      v.push(i.clone());
-    }
-    Self { config: Config::default(), file_paths: v }
+    Self { config: Config::default(), file_paths: file_paths.cloned().collect() }
   }
   pub async fn read(&mut self) -> anyhow::Result<Config> {
     for path in &self.file_paths {
