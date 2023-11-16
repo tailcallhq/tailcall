@@ -24,7 +24,7 @@ pub async fn run() -> Result<()> {
         .init();
       let config = Config::from_file_paths(file_path.iter()).await?;
 
-      if log_level.unwrap_or(Level::Info) == Level::Info {
+      if log_level.unwrap_or(Level::Info) <= Level::Info {
         let seq = vec![Fmt::n_plus_one_data(true, &config)];
         Fmt::display(Fmt::table(seq));
       }
