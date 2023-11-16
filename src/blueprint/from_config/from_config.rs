@@ -7,7 +7,6 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
 
-use crate::blueprint::UnionTypeDefinition;
 use crate::blueprint::compress::compress;
 use super::Server;
 use crate::blueprint::Type::ListType;
@@ -109,7 +108,6 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
           .unions
           .iter()
           .map(to_union_type_definition)
-          .map(Definition::UnionTypeDefinition),
       );
       types
     })
@@ -122,14 +120,6 @@ fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     directive: Vec::new(),
     description: None,
   }))
-}
-fn to_union_type_definition((name, u): (&String, &config::Union)) -> UnionTypeDefinition {
-  UnionTypeDefinition {
-    name: name.to_owned(),
-    description: u.doc.clone(),
-    directives: Vec::new(),
-    types: u.types.clone(),
-  }
 }
 fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet<String>) -> Valid<Definition, String> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
