@@ -75,6 +75,12 @@ pub async fn start_server(config: Config) -> Result<()> {
   let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
   let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(blueprint.server.worker)
+    .enable_all()
+    .build()
+    .unwrap();
+
   match blueprint.server.http.version {
     HttpVersion::HTTP2 { cert_path, key_path } => {
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
@@ -91,7 +97,8 @@ pub async fn start_server(config: Config) -> Result<()> {
       if blueprint.server.enable_graphiql {
         log::info!("🌍 Playground: https://{}", addr);
       }
-      Ok(server.await.map_err(CLIError::from)?)
+
+      Ok(rt.spawn(async move { server.await.map_err(CLIError::from) }).await??)
     }
     _ => {
       let make_svc = make_service_fn(move |_conn| {
@@ -99,12 +106,18 @@ pub async fn start_server(config: Config) -> Result<()> {
         async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-      let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
       log::info!("🚀 Tailcall launched at [{}]", addr);
       if blueprint.server.enable_graphiql {
         log::info!("🌍 Playground: http://{}", addr);
       }
-      Ok(server.await.map_err(CLIError::from)?)
+
+      Ok(
+        rt.spawn(async move {
+          let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
+          server.await.map_err(CLIError::from)
+        })
+        .await??,
+      )
     }
   }
 }
