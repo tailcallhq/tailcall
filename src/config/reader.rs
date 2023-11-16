@@ -1,6 +1,6 @@
 use std::slice::Iter;
-use anyhow::anyhow;
 
+use anyhow::anyhow;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
@@ -58,7 +58,7 @@ impl ConfigReader {
   }
 }
 #[cfg(test)]
-mod reader_tests{
+mod reader_tests {
   use crate::config::reader::ConfigReader;
   static TEST_GQL_BODY: &str = r#"
         schema @server(port: 8000) {
@@ -73,20 +73,23 @@ mod reader_tests{
     mockito::Server::new_with_port(3080)
   }
   #[tokio::test]
-  async fn test_all(){
+  async fn test_all() {
     let mut server = start_mock_server();
-    server.mock("GET", "/")
-        .with_status(200)
-        .with_header("content-type", "application/graphql")
-        .with_body(TEST_GQL_BODY)
-        .create();
+    server
+      .mock("GET", "/")
+      .with_status(200)
+      .with_header("content-type", "application/graphql")
+      .with_body(TEST_GQL_BODY)
+      .create();
     let files: Vec<String> = [
       "examples/jsonplaceholder.yml", // from file
-      "http://localhost:3080/", // with content-type header
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.json" // with url extension
-    ].iter().map(|x|x.to_string()).collect();
+      "http://localhost:3080/",       // with content-type header
+      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.json", // with url extension
+    ]
+    .iter()
+    .map(|x| x.to_string())
+    .collect();
     let cr = ConfigReader::init(files.iter());
     let _ = cr.read().await.unwrap();
   }
 }
-
