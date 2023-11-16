@@ -106,7 +106,7 @@ fn collect_request_bodies(dataloader_requests: &[DataLoaderRequest]) -> String {
 fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest::Request {
   let batched_query = collect_request_bodies(dataloader_requests);
 
-  let first_req = dataloader_requests.get(0).unwrap(); // TODO fix!
+  let first_req = dataloader_requests.first().unwrap();
   let mut batched_req = first_req.to_request();
   batched_req.body_mut().replace(reqwest::Body::from(batched_query));
   batched_req
