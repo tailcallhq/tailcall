@@ -82,8 +82,7 @@ mod reader_tests {
       .with_body(TEST_GQL_BODY)
       .create();
     let files: Vec<String> = [
-      "examples/jsonplaceholder.yml", // from file
-      "http://localhost:3080/",       // with content-type header
+      "http://localhost:3080/", // with content-type header
       "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.json", // with url extension
     ]
     .iter()

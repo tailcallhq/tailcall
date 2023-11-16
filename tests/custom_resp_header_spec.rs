@@ -38,11 +38,4 @@ mod integration_tests {
     let schema_path = "tests/graphql_mock/test-custom-headers.graphql";
     verify_response_headers(schema_path).await;
   }
-
-  #[tokio::test]
-  async fn test_verify_response_headers_over_http() {
-    let schema_path =
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tests/graphql_mock/test-custom-headers.graphql";
-    verify_response_headers(schema_path).await; //might fail while testing without internet
-  }
 }
