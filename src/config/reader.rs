@@ -3,6 +3,7 @@ use std::slice::Iter;
 use anyhow::anyhow;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+use url::Url;
 
 use crate::config::{Config, Source};
 
@@ -18,8 +19,7 @@ impl ConfigReader {
     let mut config = Config::default();
     for path in &self.file_paths {
       let conf = if let Ok(url) = reqwest::Url::parse(path) {
-        let (st, source) = Self::read_over_url(url).await?;
-        Config::from_source(source, &st)?
+        Self::from_url(url).await?
       } else {
         let path = path.trim_end_matches('/');
         Self::from_file_path(path).await?
@@ -56,10 +56,15 @@ impl ConfigReader {
     let txt = resp.text().await?;
     Ok((txt, source))
   }
+  async fn from_url(url: Url) -> anyhow::Result<Config> {
+    let (st, source) = Self::read_over_url(url).await?;
+    Config::from_source(source, &st)
+  }
 }
 #[cfg(test)]
 mod reader_tests {
   use crate::config::reader::ConfigReader;
+
   static TEST_GQL_BODY: &str = r#"
         schema @server(port: 8000) {
         query: Query
@@ -161,19 +166,20 @@ mod reader_tests {
   #[tokio::test]
   async fn test_all() {
     let mut server = start_mock_server(3080);
-    server
+    let header_serv = server
       .mock("GET", "/")
       .with_status(200)
       .with_header("content-type", "application/graphql")
       .with_body(TEST_GQL_BODY)
       .create();
-    server
+    let foo_json_serv = server
       .mock("GET", "/foo.json")
       .with_status(200)
       .with_body(TEST_JSON_BODY)
       .create();
 
     let files: Vec<String> = [
+      "examples/jsonplaceholder.yml",   // config from local file
       "http://localhost:3080/",         // with content-type header
       "http://localhost:3080/foo.json", // with url extension
     ]
@@ -182,7 +188,6 @@ mod reader_tests {
     .collect();
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
-    println!("{:#?}", c.graphql);
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()
@@ -190,5 +195,7 @@ mod reader_tests {
         .collect::<Vec<String>>(),
       c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
+    foo_json_serv.assert();
+    header_serv.assert();
   }
 }
