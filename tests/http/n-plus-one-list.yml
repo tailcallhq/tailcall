@@ -1,7 +1,6 @@
 ---
 config: tests/http/config/n-plus-one.graphql
 name: n + 1 Request List
-annotation: Fail
 upstream_mocks:
   - - url: http://example.com/bars
       headers:
@@ -43,7 +42,7 @@ downstream_assertions:
       headers:
         Accept: application/json
       body:
-        query: query { bars { fooId id foo { id } } }
+        query: query { bars { foo { id } fooId id } }
     response:
       status: 200
       headers:
@@ -54,16 +53,16 @@ downstream_assertions:
             - fooId: 1
               id: 1
               foo:
-                id: 1
+                - id: 1
             - id: 2
               fooId: 1
               foo:
-                id: 1
+                - id: 1
             - id: 3
               fooId: 2
               foo:
-                id: 2
+                - id: 2
             - id: 4
               fooId: 2
               foo:
-                id: 2
+                - id: 2

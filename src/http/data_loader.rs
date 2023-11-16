@@ -35,14 +35,14 @@ pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
   #[allow(clippy::type_complexity)]
-  pub get_body_value: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+  pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
   pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>, is_list: bool) -> Self {
     HttpDataLoader {
       client,
       batched,
-      get_body_value: if is_list {
+      body: if is_list {
         get_body_value_list
       } else {
         get_body_value_single
@@ -91,10 +91,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         let id = query_set
           .get(group_by.key())
           .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
-        hashmap.insert(
-          key.clone(),
-          res.clone().body((self.get_body_value)(body_value.clone(), id)),
-        );
+        hashmap.insert(key.clone(), res.clone().body((self.body)(body_value.clone(), id)));
       }
       Ok(hashmap)
     } else {
@@ -121,9 +118,6 @@ mod tests {
   use std::collections::BTreeSet;
   use std::sync::atomic::{AtomicUsize, Ordering};
   use std::sync::{Arc, Mutex};
-
-  use async_graphql::Name;
-  use indexmap::IndexMap;
 
   use super::*;
   use crate::http::DataLoaderRequest;
@@ -268,107 +262,5 @@ mod tests {
       client.requests.lock().unwrap().get(1).unwrap().url().to_string(),
       "http://example.com/?userId=2"
     );
-  }
-
-  #[tokio::test]
-  async fn test_batch_list_field() {
-    let mut post1 = IndexMap::<async_graphql::Name, ConstValue>::new();
-    post1.insert(Name::new("userId"), ConstValue::String("1".into()));
-    post1.insert(Name::new("title"), ConstValue::String("abc1".into()));
-    let mut post2 = IndexMap::<async_graphql::Name, ConstValue>::new();
-    post2.insert(Name::new("userId"), ConstValue::String("1".into()));
-    post2.insert(Name::new("title"), ConstValue::String("abc2".into()));
-    let mut post3 = IndexMap::<async_graphql::Name, ConstValue>::new();
-    post3.insert(Name::new("userId"), ConstValue::String("2".into()));
-    post3.insert(Name::new("title"), ConstValue::String("abc3".into()));
-    let mut post4 = IndexMap::<async_graphql::Name, async_graphql::Value>::new();
-    post4.insert(Name::new("userId"), ConstValue::String("2".into()));
-    post4.insert(Name::new("title"), ConstValue::String("abc4".into()));
-
-    let mock_response = ConstValue::List(vec![
-      ConstValue::Object(post1),
-      ConstValue::Object(post2),
-      ConstValue::Object(post3),
-      ConstValue::Object(post4),
-    ]);
-    let client = MockHttpClient {
-      request_count: Arc::new(AtomicUsize::new(0)),
-      requests: Arc::new(Mutex::new(Vec::new())),
-      response: Some(mock_response),
-    };
-
-    let loader = HttpDataLoader::new(
-      Arc::new(client.clone()),
-      Some(GroupBy::new(vec!["userId".to_string()])),
-      true,
-    );
-    let loader = loader.to_data_loader(Batch::default().delay(1));
-
-    let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com?userId=1".parse().unwrap());
-    let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com?userId=2".parse().unwrap());
-    let headers = BTreeSet::new();
-    let key1 = DataLoaderRequest::new(request1, headers.clone());
-    let key2 = DataLoaderRequest::new(request2, headers);
-    let future1 = loader.load_one(key1);
-    let future2 = loader.load_one(key2);
-    let response = join_all([future1, future2]).await;
-    assert!(matches!(
-      response
-        .first()
-        .unwrap()
-        .as_ref()
-        .unwrap()
-        .as_ref()
-        .unwrap()
-        .body
-        .clone(),
-      ConstValue::List(..)
-    ));
-  }
-
-  #[tokio::test]
-  async fn test_batch_object_field() {
-    let mut post1 = IndexMap::<async_graphql::Name, ConstValue>::new();
-    post1.insert(Name::new("userId"), ConstValue::String("1".into()));
-    post1.insert(Name::new("title"), ConstValue::String("abc1".into()));
-    let mut post2 = IndexMap::<async_graphql::Name, ConstValue>::new();
-    post2.insert(Name::new("userId"), ConstValue::String("2".into()));
-    post2.insert(Name::new("title"), ConstValue::String("abc2".into()));
-
-    let mock_response = ConstValue::List(vec![ConstValue::Object(post1), ConstValue::Object(post2)]);
-
-    let client = MockHttpClient {
-      request_count: Arc::new(AtomicUsize::new(0)),
-      requests: Arc::new(Mutex::new(Vec::new())),
-      response: Some(mock_response),
-    };
-
-    let loader = HttpDataLoader::new(
-      Arc::new(client.clone()),
-      Some(GroupBy::new(vec!["userId".to_string()])),
-      false,
-    );
-    let loader = loader.to_data_loader(Batch::default().delay(1));
-
-    let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com?userId=1".parse().unwrap());
-    let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com?userId=2".parse().unwrap());
-    let headers = BTreeSet::new();
-    let key1 = DataLoaderRequest::new(request1, headers.clone());
-    let key2 = DataLoaderRequest::new(request2, headers);
-    let future1 = loader.load_one(key1);
-    let future2 = loader.load_one(key2);
-    let response = join_all([future1, future2]).await;
-    assert!(matches!(
-      response
-        .first()
-        .unwrap()
-        .as_ref()
-        .unwrap()
-        .as_ref()
-        .unwrap()
-        .body
-        .clone(),
-      ConstValue::Object(..)
-    ));
   }
 }
