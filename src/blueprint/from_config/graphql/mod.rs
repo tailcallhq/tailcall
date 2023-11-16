@@ -1,7 +1,7 @@
 mod schema;
-mod union;
 mod types;
+mod definitions;
 
 pub use schema::*;
-pub use union::*;
 pub use types::*;
+pub use definitions::*;

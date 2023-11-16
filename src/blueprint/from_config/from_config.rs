@@ -107,13 +107,6 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
   })
 }
 
-fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
-  Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
-    name: name.to_string(),
-    directive: Vec::new(),
-    description: None,
-  }))
-}
 fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet<String>) -> Valid<Definition, String> {
   let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
     name: name.to_string(),
@@ -126,6 +119,7 @@ fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet
   });
   Valid::succeed(enum_type_definition)
 }
+
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition, String> {
   to_fields(type_of, config).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
@@ -136,30 +130,8 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
     })
   })
 }
-fn to_input_object_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
-  Valid::succeed(Definition::InputObjectTypeDefinition(InputObjectTypeDefinition {
-    name: definition.name,
-    fields: definition
-      .fields
-      .iter()
-      .map(|field| InputFieldDefinition {
-        name: field.name.clone(),
-        description: field.description.clone(),
-        default_value: None,
-        of_type: field.of_type.clone(),
-      })
-      .collect(),
-    description: definition.description,
-  }))
-}
-fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
-  Valid::succeed(Definition::InterfaceTypeDefinition(InterfaceTypeDefinition {
-    name: definition.name,
-    fields: definition.fields,
-    description: definition.description,
-  }))
-}
-fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+
+fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
   let to_field = |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
