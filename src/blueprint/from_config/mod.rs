@@ -3,6 +3,7 @@ mod server;
 mod graphql;
 mod types;
 mod upstream;
+mod common;
 
 pub use server::*;
 pub use from_config::*;
