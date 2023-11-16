@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[allow(unused_imports)]
 use async_graphql::InputType;
-use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::blueprint::compress::compress;
@@ -13,7 +12,6 @@ use crate::blueprint::*;
 use crate::config::{Arg, Batch, Config, Field};
 use crate::directive::DirectiveCodec;
 use crate::json::JsonSchema;
-use crate::lambda::Expression::Literal;
 use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -314,28 +312,6 @@ fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, 
       Valid::succeed(b_field)
     },
   )
-}
-fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(config, field, _, _), b_field| {
-    let mut updated_b_field = b_field;
-    match field.const_field.as_ref() {
-      Some(const_field) => {
-        let data = const_field.data.to_owned();
-        match ConstValue::from_json(data.to_owned()) {
-          Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
-            Ok(_) => {
-              updated_b_field.resolver = Some(Literal(data));
-              Valid::succeed(updated_b_field)
-            }
-            Err(err) => Valid::from_validation_err(err.transform(&|a| a.to_owned())),
-          },
-          Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
-        }
-      }
-      None => Valid::succeed(updated_b_field),
-    }
-  })
 }
 
 pub fn is_scalar(type_name: &str) -> bool {
