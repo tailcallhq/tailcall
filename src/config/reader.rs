@@ -45,7 +45,7 @@ impl ConfigReader {
       return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
     }
     let source = if let Some(v) = resp.headers().get("content-type") {
-      if let Ok(s) = Source::detect(v.to_str()?) {
+      if let Ok(s) = Source::detect_content_type(v.to_str()?) {
         s
       } else {
         Source::detect(path.trim_end_matches('/'))?
