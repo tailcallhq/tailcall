@@ -8,8 +8,9 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use regex::Regex;
 
-use super::UnionTypeDefinition;
-use super::from_config_cp::Server;
+use crate::blueprint::UnionTypeDefinition;
+use crate::blueprint::compress::compress;
+use super::Server;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
@@ -52,7 +53,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     .and(definitions)
     .and(upstream)
     .update(apply_batching)
-    .update(super::compress::compress)
+    .update(compress)
 }
 
 fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
