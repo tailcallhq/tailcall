@@ -360,10 +360,9 @@ impl Config {
     Ok(config_reader)
   }
 
-  pub async fn from_file_path(file_path: &String) -> Result<Config> {
-    let source = Source::detect(file_path)?;
-    let server_sdl = ConfigReader::read_file(file_path).await;
-    Config::from_source(source, &server_sdl?)
+  pub async fn from_file_path(file_path: &str) -> Result<Config> {
+    let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
+    Config::from_source(source, &server_sdl)
   }
 }
 

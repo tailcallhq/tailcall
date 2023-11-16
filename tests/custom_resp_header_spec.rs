@@ -1,13 +1,13 @@
 // Integration tests for the API server.
 mod integration_tests {
-  use tailcall::http::start_server_with_url;
+  use tailcall::http::start_server;
 
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String) -> &'static str {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path.clone()].iter())
       .await
       .unwrap();
-    start_server_with_url(config.get_config()).await.unwrap();
+    start_server(config.get_config()).await.unwrap();
     "Success"
   }
 
@@ -43,6 +43,6 @@ mod integration_tests {
   async fn test_verify_response_headers_over_http() {
     let schema_path =
       "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tests/graphql_mock/test-custom-headers.graphql";
-    verify_response_headers(schema_path).await;
+    verify_response_headers(schema_path).await; //might fail while testing without internet
   }
 }

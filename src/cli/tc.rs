@@ -11,7 +11,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::start_server_with_url;
+use crate::http::start_server;
 use crate::print_schema;
 
 pub async fn run() -> Result<()> {
@@ -23,7 +23,7 @@ pub async fn run() -> Result<()> {
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config_loader = Config::from_file_or_url(file_path.iter()).await?;
-      start_server_with_url(config_loader.get_config()).await?;
+      start_server(config_loader.get_config()).await?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

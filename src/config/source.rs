@@ -29,14 +29,9 @@ impl Source {
   }
 
   pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
-    let re = regex::Regex::new(r"\.(graphql|yml|yaml|json)$").unwrap();
-    if let Some(mat) = re.captures(name) {
-      ALL
-        .into_iter()
-        .find(|format| format.ends_with(&mat[0]))
-        .ok_or(UnsupportedFileFormat(name.to_string()))
-    } else {
-      Err(UnsupportedFileFormat(name.to_string()))
-    }
+    ALL
+      .into_iter()
+      .find(|format| format.ends_with(name))
+      .ok_or(UnsupportedFileFormat(name.to_string()))
   }
 }
