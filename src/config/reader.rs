@@ -66,12 +66,18 @@ mod reader_tests {
   use crate::config::reader::ConfigReader;
 
   static TEST_GQL_BODY: &str = r#"
-        schema @server(port: 8000) {
-        query: Query
+        schema
+        @server(port: 8000, enableGraphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
+        @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
+        query: Test
       }
-
-      type Query {
-        hello: String! @const(data: "world")
+      type Test {
+        id: Int!
+        name: String!
+        username: String!
+        email: String!
+        phone: String
+        website: String
       }
   "#;
 
@@ -189,13 +195,33 @@ mod reader_tests {
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
     assert_eq!(
+      ["Post", "Query", "Test", "User"]
+        .iter()
+        .map(|i| i.to_string())
+        .collect::<Vec<String>>(),
+      c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
+    );
+    foo_json_serv.assert(); // checks if the request was actually made
+    header_serv.assert();
+  }
+  #[tokio::test]
+  async fn test_local_files() {
+    let files: Vec<String> = [
+      "examples/jsonplaceholder.yml",
+      "examples/jsonplaceholder.graphql",
+      "examples/jsonplaceholder.json",
+    ]
+    .iter()
+    .map(|x| x.to_string())
+    .collect();
+    let cr = ConfigReader::init(files.iter());
+    let c = cr.read().await.unwrap();
+    assert_eq!(
       ["Post", "Query", "User"]
         .iter()
         .map(|i| i.to_string())
         .collect::<Vec<String>>(),
       c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
-    foo_json_serv.assert();
-    header_serv.assert();
   }
 }
