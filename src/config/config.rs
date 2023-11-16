@@ -353,7 +353,7 @@ impl Config {
 
   pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
     let mut config_reader = ConfigReader::init(file_paths);
-    Ok(config_reader.read().await?)
+    config_reader.read().await
   }
 }
 

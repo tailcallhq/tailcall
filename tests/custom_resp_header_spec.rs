@@ -7,7 +7,7 @@ mod integration_tests {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path.clone()].iter())
       .await
       .unwrap();
-    start_server(config.get_config()).await.unwrap();
+    start_server(config).await.unwrap();
     "Success"
   }
 

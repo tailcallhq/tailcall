@@ -138,7 +138,7 @@ impl HttpSpec {
       .await
       .ok()
       .unwrap();
-    let blueprint = Blueprint::try_from(config.get_config()).unwrap();
+    let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient {
       upstream_mocks: self.upstream_mocks.to_vec(),
       expected_upstream_requests: self.expected_upstream_requests.to_vec(),

@@ -1,4 +1,5 @@
 use std::slice::Iter;
+
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
@@ -6,15 +7,19 @@ use crate::config::{Config, Source};
 
 pub struct ConfigReader {
   config: Config,
-  file_paths: Iter<'_,String>
+  file_paths: Vec<String>,
 }
 
 impl ConfigReader {
   pub fn init(file_paths: Iter<String>) -> Self {
-    Self { config: Config::default(), file_paths }
+    let mut v = vec![];
+    for i in file_paths {
+      v.push(i.clone());
+    }
+    Self { config: Config::default(), file_paths: v }
   }
   pub async fn read(&mut self) -> anyhow::Result<Config> {
-    for path in self.file_paths {
+    for path in &self.file_paths {
       let conf = if let Ok(url) = reqwest::Url::parse(path) {
         let (st, source) = Self::read_over_url(url).await?;
         Config::from_source(source, &st)?
@@ -50,8 +55,5 @@ impl ConfigReader {
     };
     let txt = resp.text().await?;
     Ok((txt, source))
-  }
-  pub fn get_config(&self) -> &Config {
-    &self.config
   }
 }
