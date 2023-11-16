@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::config;
 use crate::valid::{Valid, ValidationError};
 
-#[derive(Deserialize, Serialize, Clone, Debug, Setters)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Http {
   pub version: HttpVersion,
