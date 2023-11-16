@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{Server, Upstream};
-use crate::config::read::ConfigReader;
+use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -351,18 +351,9 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<ConfigReader> {
-    // maintaining config reader will help to implement poll intervals in future
-    let mut config_reader = ConfigReader::init();
-    for file_path in file_paths {
-      config_reader.serialize_config(file_path).await?;
-    }
-    Ok(config_reader)
-  }
-
-  pub async fn from_file_path(file_path: &str) -> Result<Config> {
-    let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
-    Config::from_source(source, &server_sdl)
+  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+    let mut config_reader = ConfigReader::init(file_paths);
+    Ok(config_reader.read().await?)
   }
 }
 

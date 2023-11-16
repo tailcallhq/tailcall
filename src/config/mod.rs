@@ -4,7 +4,7 @@ pub mod group_by;
 mod into_document;
 mod key_values;
 mod n_plus_one;
-mod read;
+mod reader;
 mod server;
 mod source;
 
