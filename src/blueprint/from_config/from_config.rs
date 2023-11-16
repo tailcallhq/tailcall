@@ -13,7 +13,7 @@ use super::Server;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Arg, Batch, Config, Field, Upstream};
+use crate::config::{Arg, Batch, Config, Field};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::http::Method;
@@ -51,18 +51,6 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     .and(upstream)
     .update(apply_batching)
     .update(compress)
-}
-
-fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
-  TryFoldConfig::<Upstream>::new(|config, up| {
-    let upstream = up.merge_right(config.upstream.clone());
-    if let Some(ref base_url) = upstream.base_url {
-      Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
-        .map_to(upstream.clone())
-    } else {
-      Valid::succeed(upstream.clone())
-    }
-  })
 }
 
 // Apply batching if any of the fields have a @http directive with groupBy field
