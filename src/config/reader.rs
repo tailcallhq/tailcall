@@ -167,16 +167,15 @@ mod reader_tests {
       .with_header("content-type", "application/graphql")
       .with_body(TEST_GQL_BODY)
       .create();
-
-    let mut server = start_mock_server(3081);
     server
       .mock("GET", "/foo.json")
       .with_status(200)
       .with_body(TEST_JSON_BODY)
       .create();
+
     let files: Vec<String> = [
       "http://localhost:3080/",         // with content-type header
-      "http://localhost:3081/foo.json", // with url extension
+      "http://localhost:3080/foo.json", // with url extension
     ]
     .iter()
     .map(|x| x.to_string())
