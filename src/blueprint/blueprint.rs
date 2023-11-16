@@ -7,10 +7,9 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::blueprint::server::Server;
+use crate::blueprint::from_config_cp::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
-
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
 /// It allows us to choose a different GraphQL Backend, without re-writing all orchestration logic.

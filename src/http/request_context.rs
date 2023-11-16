@@ -4,8 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, HttpClient, Response, ServerContext};
-use crate::blueprint::Server;
-use crate::config::{self, Upstream};
+use crate::{config::{self, Upstream}, blueprint::Server};
 
 #[derive(Setters)]
 pub struct RequestContext {
