@@ -26,7 +26,7 @@ pub async fn run() -> Result<()> {
 
       if log_level.unwrap_or(Level::Info) <= Level::Info {
         let seq = vec![Fmt::n_plus_one_data(true, &config)];
-        Fmt::display(Fmt::table(seq));
+        log::info!("{}", Fmt::table(seq));
       }
 
       start_server(config).await?;
