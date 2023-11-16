@@ -29,7 +29,7 @@ pub async fn run() -> Result<()> {
       } else {
         display_config(&config, false);
       }
-      
+
       start_server(config).await?;
       Ok(())
     }
