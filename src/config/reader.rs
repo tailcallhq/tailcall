@@ -69,21 +69,114 @@ mod reader_tests {
         hello: String! @const(data: "world")
       }
   "#;
-  fn start_mock_server() -> mockito::Server {
-    mockito::Server::new_with_port(3080)
+
+  static TEST_JSON_BODY: &str = r#"
+  {
+  "server": {
+    "port": 8000,
+    "enableGraphiql": true,
+    "enableQueryValidation": false,
+    "hostname": "0.0.0.0"
+  },
+  "upstream": {
+    "baseURL": "http://jsonplaceholder.typicode.com",
+    "enableHttpCache": true
+  },
+  "graphql": {
+    "schema": {
+      "query": "Query"
+    },
+    "types": {
+      "Post": {
+        "fields": {
+          "body": {
+            "type_of": "String",
+            "required": true
+          },
+          "id": {
+            "type_of": "Int",
+            "required": true
+          },
+          "title": {
+            "type_of": "String",
+            "required": true
+          },
+          "user": {
+            "type_of": "User",
+            "http": {
+              "path": "/users/{{value.userId}}"
+            }
+          },
+          "userId": {
+            "type_of": "Int",
+            "required": true
+          }
+        }
+      },
+      "Query": {
+        "fields": {
+          "posts": {
+            "type_of": "Post",
+            "list": true,
+            "http": {
+              "path": "/posts"
+            }
+          }
+        }
+      },
+      "User": {
+        "fields": {
+          "email": {
+            "type_of": "String",
+            "required": true
+          },
+          "id": {
+            "type_of": "Int",
+            "required": true
+          },
+          "name": {
+            "type_of": "String",
+            "required": true
+          },
+          "phone": {
+            "type_of": "String"
+          },
+          "username": {
+            "type_of": "String",
+            "required": true
+          },
+          "website": {
+            "type_of": "String"
+          }
+        }
+      }
+    },
+    "unions": {}
+  }
+}
+  "#;
+  fn start_mock_server(port: u16) -> mockito::Server {
+    mockito::Server::new_with_port(port)
   }
   #[tokio::test]
   async fn test_all() {
-    let mut server = start_mock_server();
+    let mut server = start_mock_server(3080);
     server
       .mock("GET", "/")
       .with_status(200)
       .with_header("content-type", "application/graphql")
       .with_body(TEST_GQL_BODY)
       .create();
+
+    let mut server = start_mock_server(3081);
+    server
+      .mock("GET", "/foo.json")
+      .with_status(200)
+      .with_body(TEST_JSON_BODY)
+      .create();
     let files: Vec<String> = [
-      "http://localhost:3080/", // with content-type header
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.json", // with url extension
+      "http://localhost:3080/",         // with content-type header
+      "http://localhost:3081/foo.json", // with url extension
     ]
     .iter()
     .map(|x| x.to_string())
