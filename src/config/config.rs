@@ -253,7 +253,9 @@ impl Field {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JSExecution {
-  pub script: String,
+  pub inline: String,
+  #[serde(default, rename = "withContext")]
+  pub with_context: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

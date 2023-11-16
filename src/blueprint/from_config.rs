@@ -530,7 +530,7 @@ fn update_js<'a>(
         return Valid::fail("Js plugin is not enabled".to_owned());
       };
 
-      let js_executor = js_plugin.create_executor(op.script.to_owned());
+      let js_executor = js_plugin.create_executor(op.inline.to_owned(), op.with_context);
 
       updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(js_executor.clone()), |r| {
         r.to_unsafe_js(js_executor.clone())

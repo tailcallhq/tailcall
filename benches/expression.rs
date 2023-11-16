@@ -25,16 +25,19 @@ static TEST_UNSAFE_JS: Lazy<Vec<Expression>> = Lazy::new(|| {
 
   let result = vec![
     Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(js_plugin.create_executor("57".to_owned()))
+      .to_unsafe_js(js_plugin.create_executor("57".to_owned(), false))
       .expression,
     Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(js_plugin.create_executor("'unsafe_js'".to_owned()))
+      .to_unsafe_js(js_plugin.create_executor("'unsafe_js'".to_owned(), false))
       .expression,
     Lambda::<Value>::new(Expression::Literal(Value::Null))
-      .to_unsafe_js(js_plugin.create_executor("Array(111).fill(0).reduce((acc, el, i) => acc + i, 0)".to_owned()))
+      .to_unsafe_js(js_plugin.create_executor("Array(111).fill(0).reduce((acc, el, i) => acc + i, 0)".to_owned(), false))
       .expression,
-    Lambda::<Value>::new(Expression::Literal(json!("{a: 23, b: 58}")))
-      .to_unsafe_js(js_plugin.create_executor("ctx.a + ctx.b".to_owned()))
+      Lambda::<Value>::new(Expression::Literal(json!("{ a: 'string', b: [1, 2, 3], c: { d: 546 } }")))
+      .to_unsafe_js(js_plugin.create_executor("0.1 + 0.2".to_owned(), false))
+      .expression,
+    Lambda::<Value>::new(Expression::Literal(json!("{ a: 23, b: 58 }")))
+      .to_unsafe_js(js_plugin.create_executor("ctx.a + ctx.b".to_owned(), true))
       .expression,
   ];
 

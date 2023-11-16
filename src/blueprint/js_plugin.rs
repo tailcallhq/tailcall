@@ -10,7 +10,7 @@ use tokio::{
 
 use js_executor_interface::JsExecutor;
 
-type CreateExecutor = fn(source: &str) -> Box<dyn JsExecutor>;
+type CreateExecutor = fn(source: &str, with_input: bool) -> Box<dyn JsExecutor>;
 type ChannelMessage = (oneshot::Sender<ConstValue>, ConstValue);
 
 #[derive(Clone)]
@@ -35,7 +35,7 @@ impl JsPluginExecutor {
 
 pub struct JsPluginWrapper {
   library: Library,
-  executors: RefCell<Vec<(mpsc::UnboundedReceiver<ChannelMessage>, String)>>,
+  executors: RefCell<Vec<(mpsc::UnboundedReceiver<ChannelMessage>, String, bool)>>,
 }
 
 impl JsPluginWrapper {
@@ -69,8 +69,8 @@ impl JsPluginWrapper {
 
       let create_executor = unsafe { self.library.get::<CreateExecutor>(b"create_executor").expect("create_executor symbol should be defined in plugin") };
 
-      for (mut receiver, script) in executors {
-        let executor = create_executor(&script);
+      for (mut receiver, script, with_input) in executors {
+        let executor = create_executor(&script, with_input);
 
         local.spawn_local(async move {
           while let Some((response, input)) = receiver.recv().await {
@@ -87,10 +87,10 @@ impl JsPluginWrapper {
     Ok(())
   }
 
-  pub fn create_executor(&self, source: String) -> JsPluginExecutor {
+  pub fn create_executor(&self, source: String, with_input: bool) -> JsPluginExecutor {
     let (sender, receiver) = mpsc::unbounded_channel::<ChannelMessage>();
 
-    self.executors.borrow_mut().push((receiver, source.clone()));
+    self.executors.borrow_mut().push((receiver, source.clone(), with_input));
 
     JsPluginExecutor { sender, source }
   }

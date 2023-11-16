@@ -8,10 +8,10 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   value_const: String @const(data: "str")
-  value_js: String @js(script: "'str'")
-  test_js_float: Float @js(script: "0.1 + 0.2")
-  test_js_string: String @js(script: "'hello world'")
-  test_js_random: Float @js(script: "Math.random()")
+  value_js: String @js(inline: "'str'")
+  test_js_float: Float @js(inline: "0.1 + 0.2")
+  test_js_string: String @js(inline: "'hello world'")
+  test_js_random: Float @js(inline: "Math.random()")
 }
 
 type User {
@@ -24,7 +24,7 @@ type User {
 }
 
 type Post {
-  id: Int! @js(script: "ctx.id + 500")
+  id: Int! @js(inline: "ctx.id + 500", withContext: true)
   userId: Int!
   title: String!
   body: String!
