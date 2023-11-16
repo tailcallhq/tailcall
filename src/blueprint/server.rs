@@ -62,7 +62,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_query_validation: (config_server).enable_query_validation(),
         enable_response_validation: (config_server).enable_http_validation(),
         global_response_timeout: (config_server).get_global_response_timeout(),
-        worker: (config_server).get_worker(),
+        worker: (config_server).get_workers(),
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),
