@@ -16,16 +16,11 @@ impl ConfigReader {
       let (st, source) = Self::read_over_url(url).await?;
       Config::from_source(source, &st)?
     } else {
-      let path = source_form(path);
+      let path = path.trim_end_matches('/');
       Config::from_file_path(path).await?
     };
     self.config = self.config.clone().merge_right(&conf);
     Ok(())
-  }
-  fn rem_last_char(value: &str) -> &str {
-    let mut chars = value.chars();
-    chars.next_back();
-    chars.as_str()
   }
   pub async fn read_file(file_path: &str) -> anyhow::Result<(String, Source)> {
     let mut f = File::open(file_path).await?;
@@ -40,23 +35,15 @@ impl ConfigReader {
       if let Ok(s) = Source::detect(v.to_str()?) {
         s
       } else {
-        Source::detect(source_form(&path))?
+        Source::detect(path.trim_end_matches('/'))?
       }
     } else {
-      Source::detect(source_form(&path))?
+      Source::detect(path.trim_end_matches('/'))?
     };
     let txt = resp.text().await?;
     Ok((txt, source))
   }
   pub fn get_config(&self) -> &Config {
     &self.config
-  }
-}
-
-fn source_form(path: &str) -> &str {
-  if path.ends_with('/') {
-    ConfigReader::rem_last_char(path)
-  } else {
-    path
   }
 }
