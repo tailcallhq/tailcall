@@ -25,7 +25,7 @@ impl Source {
   }
 
   fn ends_with(&self, file: &str) -> bool {
-    file.ends_with(&format!(".{}", self.ext()))
+    file.ends_with(&format!(".{}", self.ext())) || file.ends_with(&format!("application/{}", self.ext()))
   }
 
   pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
