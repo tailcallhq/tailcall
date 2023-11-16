@@ -12,15 +12,16 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 ## Setting Up the Development Environment
 
-1. **Install Rust:** If you haven't already, install Rust using [rustup](https://rustup.rs/).
-2. **Build the Application:** Navigate to the project directory and build the application.
+1. **Install Rust:** If you haven't already, install Rust using [rustup](https://rustup.rs/). Install the `nightly` toolchain as well, as it's used for linting.
+2. **Install Prettier:** Install [Prettier](https://prettier.io/) too as this is also used for linting.
+3. **Build the Application:** Navigate to the project directory and build the application.
 
    ```bash
    cd tailcall
    cargo build
    ```
 
-3. **Start the Server:** To start the server, use the following command:
+4. **Start the Server:** To start the server, use the following command:
    ```bash
    cargo run -- start ./examples/jsonplaceholder.graphql
    ```
