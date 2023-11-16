@@ -150,8 +150,8 @@ impl HttpSpec {
 
 #[derive(Clone)]
 struct MockHttpClient {
-  upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
-  expected_upstream_requests: Vec<UpstreamRequest>,
+  pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  pub expected_upstream_requests: Vec<UpstreamRequest>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {

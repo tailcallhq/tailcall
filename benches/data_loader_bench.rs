@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use crate::http::MockHttpClient;
+
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use tailcall::config::Batch;

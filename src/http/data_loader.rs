@@ -11,6 +11,7 @@ use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
+use crate::http::MockHttpClient;
 
 #[derive(Clone)]
 pub struct HttpDataLoader {
