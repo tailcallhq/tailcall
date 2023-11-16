@@ -67,7 +67,7 @@ impl JsonSchema {
               if let Some(field_value) = map.get(&key) {
                 schema.validate(field_value).trace(name)
               } else {
-                Valid::fail("expected field to be non-nullable")
+                Valid::fail("expected field to be non-nullable").trace(name)
               }
             } else if let Some(field_value) = map.get(&key) {
               schema.validate(field_value).trace(name)
