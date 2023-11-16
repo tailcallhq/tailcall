@@ -13,20 +13,22 @@ use crate::valid::{Valid, ValidationError};
 #[serde(rename_all = "camelCase", default)]
 pub struct Http {
   pub version: HttpVersion,
-  pub cert_path: Option<String>,
-  pub key_path: Option<String>,
 }
 
 impl Default for Http {
   fn default() -> Self {
-    Http { version: HttpVersion::HTTP1, cert_path: None, key_path: None }
+    Http { version: HttpVersion::HTTP1 }
   }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub enum HttpVersion {
   HTTP1,
-  HTTP2,
+  #[serde(rename_all = "camelCase")]
+  HTTP2 {
+    cert_path: String,
+    key_path: String,
+  },
 }
 
 #[derive(Clone, Debug, Setters)]
@@ -74,8 +76,13 @@ impl TryFrom<crate::config::Server> for Server {
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
     validate_hostname((config_server).get_hostname().to_lowercase())
+      .zip(match (config_server).get_http_options().version {
+        HttpVersion::HTTP2 { cert_path: cert, key_path: key } => validate_cert_and_key(&cert, &key)
+          .map(|_| Http { version: HttpVersion::HTTP2 { cert_path: cert, key_path: key } }),
+        _ => Valid::succeed(Http::default()),
+      })
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .map(|(hostname, response_headers)| Server {
+      .map(|((hostname, http), response_headers)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
         enable_graphiql: (config_server).enable_graphiql(),
@@ -83,7 +90,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_query_validation: (config_server).enable_query_validation(),
         enable_response_validation: (config_server).enable_http_validation(),
         global_response_timeout: (config_server).get_global_response_timeout(),
-        http: (config_server.get_http_options()),
+        http,
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),
@@ -106,6 +113,17 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     .trace("@server")
     .trace("schema")
   }
+}
+
+fn validate_cert_and_key(cert: &str, key: &str) -> Valid<(), String> {
+  let validate_path = |path: &str, error_msg: &str| {
+    if !std::path::Path::new(path).exists() {
+      return Valid::from(Err(ValidationError::new(error_msg.to_string())));
+    }
+    Valid::succeed(())
+  };
+
+  validate_path(cert, "Invalid Certificate path.").and_then(|_| validate_path(key, "Invalid Key path."))
 }
 
 fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {

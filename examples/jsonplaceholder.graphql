@@ -4,7 +4,7 @@ schema
     enableGraphiql: true
     enableQueryValidation: false
     hostname: "0.0.0.0"
-    http: {version: HTTP2, certPath: "./cert.pem", keyPath: "./key.pem"}
+    http: {version: {HTTP2: {certPath: "./cert.pem", keyPath: "./key.pem"}}}
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query

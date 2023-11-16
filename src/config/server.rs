@@ -95,8 +95,6 @@ impl Server {
     self.http = other.http.map(|other| {
       let mut http = self.http.unwrap_or_default();
       http.version = other.version;
-      http.cert_path = other.cert_path.or(http.cert_path);
-      http.key_path = other.key_path.or(http.key_path);
       http
     });
     let mut vars = self.vars.0.clone();

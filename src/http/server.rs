@@ -76,44 +76,14 @@ pub async fn start_server(config: Config) -> Result<()> {
   let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
 
   match blueprint.server.http.version {
-    HttpVersion::HTTP2 => {
-      let error_message = "HTTP/2 protocol requires certificate and key paths. Please provide them in the GraphQL schema under http directive.";
-
-      let cert_path = Blueprint::try_from(&config)
-        .map_err(CLIError::from)?
-        .server
-        .http
-        .cert_path
-        .ok_or_else(|| anyhow::anyhow!(CLIError::new(error_message)))?;
-
-      let key_path = Blueprint::try_from(&config)
-        .map_err(CLIError::from)?
-        .server
-        .http
-        .key_path
-        .ok_or_else(|| anyhow::anyhow!(CLIError::new(error_message)))?;
-
-      if !std::path::Path::new(&cert_path).exists() {
-        return Err(anyhow::anyhow!(CLIError::new("Invalid Certificate path.")));
-      }
-
-      if !std::path::Path::new(&key_path).exists() {
-        return Err(anyhow::anyhow!(CLIError::new("Invalid Key path.")));
-      }
-
+    HttpVersion::HTTP2 { cert_path, key_path } => {
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-      let server_result = hyper_from_pem_files(
-        blueprint.server.http.cert_path.unwrap().as_str(),
-        blueprint.server.http.key_path.unwrap().as_str(),
-        Protocols::ALL,
-        &addr,
-      )
-      .unwrap();
+      let server_result = hyper_from_pem_files(cert_path, key_path, Protocols::ALL, &addr).unwrap();
 
       let server = server_result.serve(make_svc);
 
