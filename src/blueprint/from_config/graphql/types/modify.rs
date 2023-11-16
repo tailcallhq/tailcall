@@ -1,9 +1,9 @@
 use crate::blueprint::*;
+use crate::config;
 use crate::config::{Config, Field};
 use crate::lambda::Lambda;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
-use crate::config;
 
 pub fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(

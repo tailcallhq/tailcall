@@ -3,14 +3,14 @@ use async_graphql::InputType;
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::*;
+use crate::config;
 use crate::config::{Config, Field};
 use crate::lambda::Expression::Literal;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
-use crate::config;
 
-pub fn update_const_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
+pub fn update_const_field<'a>(
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(config, field, _, _), b_field| {
     let mut updated_b_field = b_field;
     match field.const_field.as_ref() {

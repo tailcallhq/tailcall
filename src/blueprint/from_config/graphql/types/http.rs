@@ -3,8 +3,9 @@ use async_graphql::InputType;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::blueprint::*;
 use crate::blueprint::from_config::common::to_type;
+use crate::blueprint::*;
+use crate::config;
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
@@ -13,7 +14,6 @@ use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::request_template::RequestTemplate;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
-use crate::config;
 
 struct MustachePartsValidator<'a> {
   type_of: &'a config::Type,

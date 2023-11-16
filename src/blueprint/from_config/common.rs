@@ -1,7 +1,5 @@
 use crate::blueprint::Type;
 
-
-
 pub(crate) trait TypeLike {
   fn name(&self) -> &str;
   fn list(&self) -> bool;

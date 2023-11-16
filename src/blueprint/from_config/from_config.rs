@@ -4,9 +4,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use async_graphql::InputType;
 use regex::Regex;
 
-use crate::blueprint::compress::compress;
+use super::common::{to_type, TypeLike};
 use super::Server;
-use super::common::{TypeLike, to_type};
+use crate::blueprint::compress::compress;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::{Arg, Batch, Config, Field};
@@ -95,13 +95,7 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       }
     })
     .map(|mut types| {
-      types.extend(
-        config
-          .graphql
-          .unions
-          .iter()
-          .map(to_union_type_definition)
-      );
+      types.extend(config.graphql.unions.iter().map(to_union_type_definition));
       types
     })
   })
