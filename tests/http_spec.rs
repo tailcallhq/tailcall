@@ -15,7 +15,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::http::{graphql_single_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{graphql_batch_request, graphql_single_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -239,10 +239,16 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
   let method = downstream_assertion.request.0.method.clone();
   let url = downstream_assertion.request.0.url.clone();
-  let state = spec.setup().await;
+  let server_context = spec.setup().await;
   let req = Request::builder()
     .method(method)
     .uri(url.as_str())
-    .body(Body::from(query_string));
-  graphql_single_request(req?, state.as_ref()).await
+    .body(Body::from(query_string))?;
+
+  // TODO: reuse logic from server.rs to select the correct handler
+  if server_context.blueprint.server.enable_batch_requests {
+    graphql_batch_request(req, server_context.as_ref()).await
+  } else {
+    graphql_single_request(req, server_context.as_ref()).await
+  }
 }
