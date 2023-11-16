@@ -16,6 +16,7 @@ pub struct Server {
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
   #[serde(skip_serializing_if = "is_default")]
+  pub workers: Option<usize>,
   pub hostname: Option<String>,
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -46,6 +47,9 @@ impl Server {
   }
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
+  }
+  pub fn get_workers(&self) -> usize {
+    self.workers.unwrap_or(num_cpus::get())
   }
   pub fn get_port(&self) -> u16 {
     self.port.unwrap_or(8000)
@@ -83,6 +87,7 @@ impl Server {
     self.enable_query_validation = other.enable_query_validation.or(self.enable_query_validation);
     self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
+    self.workers = other.workers.or(self.workers);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);
     let mut vars = self.vars.0.clone();
