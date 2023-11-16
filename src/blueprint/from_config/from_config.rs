@@ -278,18 +278,6 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, _), b_field| {
-    let mut updated_b_field = b_field;
-    if let Some(op) = &field.unsafe_operation {
-      updated_b_field = updated_b_field.resolver_or_default(Lambda::context().to_unsafe_js(op.script.clone()), |r| {
-        r.to_unsafe_js(op.script.clone())
-      });
-    }
-    Valid::succeed(updated_b_field)
-  })
-}
-
 fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, type_of, _), mut b_field| {
