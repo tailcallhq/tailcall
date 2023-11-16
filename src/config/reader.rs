@@ -181,6 +181,14 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(files.iter());
-    let _ = cr.read().await.unwrap();
+    let c = cr.read().await.unwrap();
+    println!("{:#?}", c.graphql);
+    assert_eq!(
+      ["Post", "Query", "User"]
+        .iter()
+        .map(|i| i.to_string())
+        .collect::<Vec<String>>(),
+      c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
+    );
   }
 }
