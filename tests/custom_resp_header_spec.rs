@@ -4,11 +4,11 @@ mod integration_tests {
   // Helper function to start the test server.
   async fn initiate_test_server(mock_schema_path: String) -> &'static str {
     let config = tailcall::config::Config::from_file_or_url([mock_schema_path].iter())
-        .await
-        .unwrap();
+      .await
+      .unwrap();
     tailcall::http::start_server(config)
-        .await
-        .expect("Server failed to start");
+      .await
+      .expect("Server failed to start");
     "Success"
   }
 
@@ -27,9 +27,9 @@ mod integration_tests {
     let query_data = "{\"query\":\"query { item { id name } }\"}";
 
     let api_request = http_client
-        .post("http://localhost:8000/graphql")
-        .header("Content-Type", "application/json")
-        .body(query_data);
+      .post("http://localhost:8000/graphql")
+      .header("Content-Type", "application/json")
+      .body(query_data);
 
     let response = api_request.send().await.expect("Failed to send request");
 
