@@ -43,6 +43,13 @@ directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
 
+directive @graphQlSource(
+  query: GraphQLQuery
+  baseURL: String
+  headers: [KeyValue]
+  useBatchRequest: Boolean
+) on FIELD_DEFINITION
+
 enum Method {
   GET
   POST
@@ -66,6 +73,11 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
+}
+
+input GraphQLQuery {
+  name: String
+  args: KeyValues
 }
 
 scalar JSON

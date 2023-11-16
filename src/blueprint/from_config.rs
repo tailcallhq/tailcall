@@ -622,6 +622,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
             )
           })
           .map(|variable_definitions| variable_definitions.join(","));
+
           let args = graphql
             .query
             .args

@@ -317,7 +317,12 @@ async fn update_introspection_results(mut config: Config) -> Valid<Config, Strin
     for field in type_.fields.values_mut() {
       match &field.graphql_source {
         Some(graphql_source) => {
-          let updated = update_introspection(graphql_source, &mut config.introspection_cache).await;
+          let updated = update_introspection(
+            graphql_source,
+            &mut config.introspection_cache,
+            &config.upstream.base_url,
+          )
+          .await;
           match &updated {
             Valid(Ok(source)) => {
               field.graphql_source = Some(source.clone());
@@ -336,9 +341,14 @@ async fn update_introspection_results(mut config: Config) -> Valid<Config, Strin
 async fn update_introspection(
   graphqlsource: &config::GraphQLSource,
   introspection_cache: &mut BTreeMap<String, IntrospectionResult>,
+  upstream_base_url: &Option<String>,
 ) -> Valid<config::GraphQLSource, String> {
   let mut updated: GraphQLSource = graphqlsource.clone();
-  match &graphqlsource.base_url {
+  match graphqlsource
+    .base_url
+    .as_ref()
+    .map_or_else(|| upstream_base_url.as_ref(), Some)
+  {
     Some(base_url) => {
       let introspection_result = introspection_cache.get(base_url);
       match introspection_result {
