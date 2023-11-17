@@ -206,10 +206,16 @@ async fn assert_downstream(spec: HttpSpec) {
     if let Some(Annotation::Fail) = spec.annotation {
       let response = run(spec.clone(), &downstream_assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_ne!(
+      assert_eq!(
         body,
         serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      )
+      );
+      log::error!("{} {} ... failed", spec.name, spec.path.display());
+      panic!(
+        "Expected spec: {} {} to fail but it passed",
+        spec.name,
+        spec.path.display()
+      );
     } else {
       let response = run(spec.clone(), &downstream_assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
