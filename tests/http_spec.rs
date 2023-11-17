@@ -162,7 +162,7 @@ impl HttpSpec {
   }
   async fn setup(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::from_file_paths([file].iter()).await.ok().unwrap(),
+      ConfigSource::File(file) => Config::from_file_or_url([file].iter()).await.ok().unwrap(),
       ConfigSource::Inline(config) => config,
     };
 
