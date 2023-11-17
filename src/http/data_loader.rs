@@ -34,7 +34,6 @@ fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) 
 pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
-  #[allow(clippy::type_complexity)]
   pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
