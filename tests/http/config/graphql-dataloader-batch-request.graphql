@@ -1,6 +1,5 @@
 schema @upstream(batch: {delay: 1}) {
   query: Query
-  
 }
 
 type Post {

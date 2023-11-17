@@ -27,8 +27,9 @@ mock:
             user:
               name: "Leanne Graham"
         - data:
-            user: 
+            user:
               name: "Ervin Howell"
+  # request order in the load method can vary so the additional case below matches if the second request is first
   - request:
       url: http://upstream/graphql
       method: POST
@@ -36,7 +37,7 @@ mock:
     response:
       body:
         - data:
-            user: 
+            user:
               name: "Ervin Howell"
         - data:
             user:
