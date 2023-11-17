@@ -23,6 +23,7 @@ pub async fn run() -> Result<()> {
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config = Config::from_file_paths(file_path.iter()).await?;
+      log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       start_server(config).await?;
       Ok(())
     }

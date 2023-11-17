@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -19,7 +18,10 @@ use crate::http::client;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
-    GraphiQLSource::build().endpoint("/graphql").finish(),
+    GraphiQLSource::build()
+      .title("Tailcall - GraphQL IDE")
+      .endpoint("/graphql")
+      .finish(),
   )))
 }
 
@@ -103,13 +105,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
-fn log_startup_messages(addr: &SocketAddr, enable_graphiql: bool) {
-  log::info!("🚀 Tailcall launched at [{}]", addr);
-  if enable_graphiql {
-    log::info!("🌍 Playground: http://{}", addr);
-  }
-}
-
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
@@ -127,14 +122,29 @@ pub async fn start_server(config: Config) -> Result<()> {
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_batch_request(req, state.clone()))) }
   });
 
-  let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
-  log_startup_messages(&addr, blueprint.server.enable_graphiql);
-  Ok(
-    if blueprint.server.enable_batch_requests {
-      builder.serve(make_svc_batch_req).await
-    } else {
-      builder.serve(make_svc_single_req).await
-    }
-    .map_err(CLIError::from)?,
-  )
+  let _ = tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(blueprint.server.worker)
+    .enable_all()
+    .build()
+    .unwrap()
+    .spawn(async move {
+      let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
+
+      let enable_graphiql = blueprint.server.enable_graphiql;
+      log::info!("🚀 Tailcall launched at [{}]", addr);
+      if enable_graphiql {
+        log::info!("🌍 Playground: http://{}", addr);
+      }
+
+      let r = if blueprint.server.enable_batch_requests {
+        builder.serve(make_svc_batch_req).await
+      } else {
+        builder.serve(make_svc_single_req).await
+      };
+
+      r.map_err(CLIError::from)
+    })
+    .await?;
+
+  Ok(())
 }
