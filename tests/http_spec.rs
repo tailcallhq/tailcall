@@ -11,7 +11,7 @@ use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use hyper::{Body, Request};
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
@@ -20,13 +20,15 @@ use url::Url;
 
 static INIT: Once = Once::new();
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum Annotation {
   Skip,
   Only,
   Fail,
 }
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct APIRequest {
   #[serde(default)]
   method: Method,
@@ -36,7 +38,9 @@ pub struct APIRequest {
   #[serde(default)]
   pub body: serde_json::Value,
 }
-#[derive(Deserialize, Clone, Debug)]
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct APIResponse {
   pub status: u16,
   #[serde(default)]
@@ -44,30 +48,36 @@ pub struct APIResponse {
   #[serde(default)]
   pub body: serde_json::Value,
 }
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct UpstreamRequest(pub APIRequest);
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UpstreamResponse(APIResponse);
-#[derive(Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DownstreamRequest(pub APIRequest);
-#[derive(Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DownstreamResponse(pub APIResponse);
-#[derive(Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DownstreamAssertion {
   pub request: DownstreamRequest,
   pub response: DownstreamResponse,
 }
 
-#[derive(Default, Deserialize, Clone, Setters)]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum ConfigSource {
+  File(String),
+  Inline(Config),
+}
+
+#[derive(Serialize, Deserialize, Clone, Setters)]
+#[serde(rename_all = "camelCase")]
 pub struct HttpSpec {
-  pub config: String,
+  pub config: ConfigSource,
   #[serde(skip)]
   path: PathBuf,
   pub name: String,
-  #[serde(default)]
   pub description: Option<String>,
   pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
-  #[serde(default)]
   pub expected_upstream_requests: Vec<UpstreamRequest>,
   pub downstream_assertions: Vec<DownstreamAssertion>,
   pub annotation: Option<Annotation>,
@@ -134,10 +144,11 @@ impl HttpSpec {
     anyhow::Ok(spec?)
   }
   async fn setup(&self) -> Arc<ServerContext> {
-    let config = Config::from_file_paths([self.config.clone()].iter())
-      .await
-      .ok()
-      .unwrap();
+    let config = match self.config.clone() {
+      ConfigSource::File(file) => Config::from_file_paths([file].iter()).await.ok().unwrap(),
+      ConfigSource::Inline(config) => config,
+    };
+
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient {
       upstream_mocks: self.upstream_mocks.to_vec(),
@@ -228,7 +239,7 @@ async fn assert_downstream(spec: HttpSpec) {
   log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 #[tokio::test]
-async fn test_body() -> std::io::Result<()> {
+async fn http_spec_e2e() -> std::io::Result<()> {
   let spec = HttpSpec::cargo_read("tests/http").unwrap();
   let spec = HttpSpec::filter_specs(spec);
   let tasks: Vec<_> = spec
