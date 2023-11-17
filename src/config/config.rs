@@ -382,9 +382,17 @@ impl Config {
     }
   }
 
-  pub async fn from_source(source: Source, schema: &str) -> Result<Self> {
+  pub async fn from_source(
+    source: Source,
+    schema: &str,
+    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
+  ) -> Result<Self> {
     match source {
-      Source::GraphQL => Ok(Config::from_sdl(schema, None).await.to_result()?),
+      Source::GraphQL => Ok(
+        Config::from_sdl(schema, initialize_introspection_cache)
+          .await
+          .to_result()?,
+      ),
       Source::Json => Ok(Config::from_json(schema)?),
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
@@ -394,7 +402,10 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+  pub async fn from_file_paths(
+    file_paths: std::slice::Iter<'_, String>,
+    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
+  ) -> Result<Config> {
     let mut config = Config::default();
     let futures: Vec<_> = file_paths
       .map(|file_path| async move {
@@ -404,7 +415,7 @@ impl Config {
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl).await
+        Config::from_source(source, &server_sdl, initialize_introspection_cache).await
       })
       .collect();
 

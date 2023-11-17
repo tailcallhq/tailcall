@@ -14,6 +14,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
+use tailcall::config::introspection::IntrospectionResult;
 use tailcall::config::{Config, Source};
 use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
@@ -162,14 +163,24 @@ impl HttpSpec {
   }
   async fn setup(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::from_file_paths([file].iter()).await.ok().unwrap(),
+      ConfigSource::File(file) => Config::from_file_paths([file].iter(), Some(HttpSpec::mock_introspection_cache))
+        .await
+        .ok()
+        .unwrap(),
       ConfigSource::Inline(config) => config,
     };
-
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { mocks: self.mock.to_vec() });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
+  }
+
+  fn mock_introspection_cache() -> BTreeMap<String, IntrospectionResult> {
+    let contents = fs::read_to_string("tests/data/introspection-result.json").unwrap();
+    let introspection_result: IntrospectionResult = serde_json::from_str(contents.as_str()).unwrap();
+    let mut cache = BTreeMap::new();
+    cache.insert("http://upstream/graphql".to_string(), introspection_result);
+    cache
   }
 }
 
@@ -193,7 +204,22 @@ impl HttpClient for MockHttpClient {
             .as_str()
             .trim_matches('"');
         let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-        method_match && url_match
+        let req_body = match req.body() {
+          Some(body) => {
+            if let Some(bytes) = body.as_bytes() {
+              if let Ok(body_str) = std::str::from_utf8(bytes) {
+                Value::from(body_str)
+              } else {
+                Value::Null
+              }
+            } else {
+              Value::Null
+            }
+          }
+          None => Value::Null,
+        };
+        let body_match = req_body == mock_req.0.body;
+        method_match && url_match && body_match
       })
       .unwrap_or_else(|| panic!("Unexpected upstream request: {:?}", req));
 
