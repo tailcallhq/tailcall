@@ -1,5 +1,5 @@
 // @ts-check
-import { family, GLIBC, MUSL } from "detect-libc"
+import { familySync, GLIBC, MUSL } from "detect-libc"
 import { exec } from 'child_process'
 import util from 'util'
 
@@ -7,11 +7,7 @@ const execa = util.promisify(exec)
 const platform = process.platform
 const arch = process.arch
 
-let libcFamily
-family().then((fam) => {
-  libcFamily = fam
-})
-
+const libcFamily = familySync()
 let libc
 if (platform === "win32") {
   libc = "-msvc"
