@@ -26,7 +26,7 @@ reqwest = { version = "0.11", features = [
    "json",
    "rustls-tls"
 ], default-features = false }
-hyper = { version = "0.14", features = ["full"], default-features = false }
+hyper = { version = "1.0", features = ["full"], default-features = false }
 async-graphql = { version = "6.0", features = [
    "dynamic-schema",
    "dataloader",
