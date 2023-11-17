@@ -170,9 +170,6 @@ impl Upstream {
   pub fn get_enable_http_cache(&self) -> bool {
     self.enable_http_cache.unwrap_or(false)
   }
-  pub fn get_allowed_headers(&self) -> BTreeSet<String> {
-    self.allowed_headers.clone().unwrap_or_default()
-  }
 
   pub fn merge_right(mut self, other: Self) -> Self {
     self.allowed_headers = other.allowed_headers.map(|other| {

@@ -1,11 +1,13 @@
 use std::collections::BTreeSet;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
+use hyper::body::Buf;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{Body, HeaderMap, Method, Request, Response, StatusCode};
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -24,13 +26,16 @@ fn graphiql() -> Result<Response<Body>> {
   )))
 }
 
-pub async fn graphql_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  let upstream = server_ctx.blueprint.upstream.clone();
-  let allowed = upstream.get_allowed_headers();
-  let headers = create_allowed_headers(req.headers(), &allowed);
-  let bytes = hyper::body::to_bytes(req.into_body()).await?;
-  let request: async_graphql_hyper::GraphQLRequest = serde_json::from_slice(&bytes)?;
-  let req_ctx = Arc::new(RequestContext::from(server_ctx).req_headers(headers));
+pub async fn graphql_request(req: Request<Body>, server_ctx: Arc<ServerContext>) -> Result<Response<Body>> {
+  let mut headers = HeaderMap::new();
+  if req.headers().len() > 0 {
+    let upstream = server_ctx.blueprint.upstream.clone();
+    let allowed = upstream.allowed_headers.unwrap_or_default();
+    headers = create_allowed_headers(req.headers(), &allowed);
+  }
+  let whole_body = hyper::body::aggregate(req).await?;
+  let request: async_graphql_hyper::GraphQLRequest = serde_json::from_reader(whole_body.reader())?;
+  let req_ctx = Arc::new(RequestContext::from(server_ctx.clone()).req_headers(headers));
   let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
   if server_ctx.blueprint.server.enable_cache_control_header {
     if let Some(ttl) = req_ctx.get_min_max_age() {
@@ -50,9 +55,9 @@ fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
 async fn handle_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
-  match *req.method() {
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request(req, state.as_ref()).await,
+  match (req.method(), req.uri().path()) {
+    (&Method::GET, "/") => graphiql(),
+    (&Method::POST, "/graphql") => graphql_request(req, state).await,
     _ => not_found(),
   }
 }

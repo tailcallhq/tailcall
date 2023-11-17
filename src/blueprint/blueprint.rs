@@ -208,6 +208,6 @@ impl Blueprint {
 
     // We should safely assume the blueprint is correct and,
     // generation of schema cannot fail.
-    schema.finish().unwrap()
+    schema.disable_suggestions().finish().unwrap()
   }
 }

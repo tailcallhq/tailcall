@@ -13,7 +13,7 @@ use crate::lambda::{Expression, Unsafe};
 pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
-  pub blueprint: Blueprint,
+  pub blueprint: Arc<Blueprint>,
 }
 
 fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClient>) -> &Blueprint {
@@ -42,6 +42,6 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClien
 impl ServerContext {
   pub fn new(blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
     let schema = assign_data_loaders(&mut blueprint.clone(), http_client.clone()).to_schema();
-    ServerContext { schema, http_client, blueprint }
+    ServerContext { schema, http_client, blueprint: Arc::new(blueprint) }
   }
 }

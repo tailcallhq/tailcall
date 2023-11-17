@@ -54,8 +54,8 @@ impl RequestContext {
   }
 }
 
-impl From<&ServerContext> for RequestContext {
-  fn from(server_ctx: &ServerContext) -> Self {
+impl From<Arc<ServerContext>> for RequestContext {
+  fn from(server_ctx: Arc<ServerContext>) -> Self {
     Self {
       http_client: server_ctx.http_client.clone(),
       server: server_ctx.blueprint.server.clone(),
