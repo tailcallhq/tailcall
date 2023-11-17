@@ -10,7 +10,6 @@ use reqwest::Url;
 use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
-#[derive(Clone)]
 pub struct GraphqlDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub use_batch_request: bool,
@@ -211,6 +210,26 @@ mod tests {
     let client =
       MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
     let loader = GraphqlDataLoader { client: Arc::new(client.clone()), use_batch_request: true };
+    let loader = loader.to_data_loader(Batch::default().delay(1));
+
+    let url = Url::parse("http://example.com").unwrap();
+    let mut request = reqwest::Request::new(reqwest::Method::GET, url.clone());
+    request.body_mut().replace(reqwest::Body::from("a".to_string()));
+    let key = DataLoaderRequest::new(request, BTreeSet::new());
+    let futures: Vec<_> = (0..100).map(|_| loader.load_one(key.clone())).collect();
+    let _ = join_all(futures).await;
+    assert_eq!(
+      client.request_count.load(Ordering::SeqCst),
+      1,
+      "Only one request should be made for the same key"
+    );
+  }
+
+  #[tokio::test]
+  async fn test_load_function_no_batch() {
+    let client =
+      MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)), request_bodies: Arc::new(Mutex::new(Vec::new())) };
+    let loader = GraphqlDataLoader { client: Arc::new(client.clone()), use_batch_request: false };
     let loader = loader.to_data_loader(Batch::default().delay(1));
 
     let url = Url::parse("http://example.com").unwrap();
