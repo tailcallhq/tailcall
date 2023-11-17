@@ -54,7 +54,7 @@ The below file is a standard `.graphQL` file, with a few additions such as `@ser
 Now, run the following command to start the server with the full path to the jsonplaceholder.graphql file that you created above.
 
 ```bash
-tc start ./jsonplaceholder.graphql
+tailcall start ./jsonplaceholder.graphql
 ```
 
 Head out to [docs] to learn about other powerful tailcall features.

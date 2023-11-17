@@ -51,7 +51,7 @@ chmod +x "$INSTALL_DIR/tailcall-${OS}-${ARCH}"
 
 # Create symlinks in ~/.tailcall/bin
 mkdir -p "$HOME/.tailcall/bin"
-ln -sf "$INSTALL_DIR/tailcall-${OS}-${ARCH}" "$HOME/.tailcall/bin/tc"
+ln -sf "$INSTALL_DIR/tailcall-${OS}-${ARCH}" "$HOME/.tailcall/bin/tailcall"
 
 # Determine which shell the user is running and which profile file to update
 if [[ "$SHELL" == *"zsh"* ]]; then
