@@ -6,17 +6,19 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
+use hyper::body::Bytes;
 use hyper::{Body, Request};
+use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::introspection::IntrospectionResult;
 use tailcall::config::{Config, Source};
-use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{graphql_batch_request, graphql_single_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -67,7 +69,7 @@ struct DownstreamAssertion {
   response: DownstreamResponse,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 enum ConfigSource {
   File(String),
@@ -161,7 +163,8 @@ impl HttpSpec {
     };
     anyhow::Ok(spec?)
   }
-  async fn setup(&self) -> Arc<ServerContext> {
+
+  async fn server_context(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
       ConfigSource::File(file) => Config::from_file_paths([file].iter(), Some(HttpSpec::mock_introspection_cache))
         .await
@@ -245,14 +248,11 @@ impl HttpClient for MockHttpClient {
 }
 
 async fn assert_downstream(spec: HttpSpec) {
-  for downstream_assertion in spec.assert.iter() {
+  for assertion in spec.assert.iter() {
     if let Some(Annotation::Fail) = spec.runner {
-      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+      let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      );
+      assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
       log::error!("{} {} ... failed", spec.name, spec.path.display());
       panic!(
         "Expected spec: {} {} to fail but it passed",
@@ -260,16 +260,38 @@ async fn assert_downstream(spec: HttpSpec) {
         spec.path.display()
       );
     } else {
-      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      let response = run(spec.clone(), &assertion)
+        .await
+        .context(spec.path.to_str().unwrap().to_string())
+        .unwrap();
+      let actual_status = response.status().clone().as_u16();
+      let actual_headers = assertion.response.0.headers.clone();
+      let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+
+      // Assert Status
+      assert_eq!(actual_status, assertion.response.0.status);
+
+      // Assert Body
       assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      )
+        to_json_pretty(actual_body).unwrap(),
+        serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
+      );
+
+      // Assert Headers
+      for (key, value) in assertion.response.0.headers.iter() {
+        assert_eq!(actual_headers.get(key), Some(value));
+      }
     }
   }
   log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
+
+fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
+  let body_str = String::from_utf8(bytes.to_vec())?;
+  let json: Value = serde_json::from_str(&body_str)?;
+  Ok(serde_json::to_string_pretty(&json)?)
+}
+
 #[tokio::test]
 async fn http_spec_e2e() -> std::io::Result<()> {
   let spec = HttpSpec::cargo_read("tests/http").unwrap();
@@ -288,10 +310,16 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
   let method = downstream_assertion.request.0.method.clone();
   let url = downstream_assertion.request.0.url.clone();
-  let state = spec.setup().await;
+  let server_context = spec.server_context().await;
   let req = Request::builder()
     .method(method)
     .uri(url.as_str())
-    .body(Body::from(query_string));
-  graphql_request(req?, state.as_ref()).await
+    .body(Body::from(query_string))?;
+
+  // TODO: reuse logic from server.rs to select the correct handler
+  if server_context.blueprint.server.enable_batch_requests {
+    graphql_batch_request(req, server_context.as_ref()).await
+  } else {
+    graphql_single_request(req, server_context.as_ref()).await
+  }
 }
