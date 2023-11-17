@@ -1,13 +1,11 @@
 config: !file tests/http/config/simple.graphql
 name: Simple GraphQL Request
 mock:
-  - - url: http://jsonplaceholder.typicode.com/users/1
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
       headers:
-        Accept: application/json
         test: test
-    - status: 200
-      headers:
-        Content-Type: application/json
+    response:
       body:
         id: 1
         name: foo
@@ -16,14 +14,10 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       headers:
-        Accept: application/json
         test: test
       body:
         query: query { user { name } }
     response:
-      status: 200
-      headers:
-        Content-Type: application/json
       body:
         data:
           user:

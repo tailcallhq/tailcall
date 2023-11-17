@@ -22,71 +22,81 @@ static INIT: Once = Once::new();
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub enum Annotation {
+enum Annotation {
   Skip,
   Only,
   Fail,
 }
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct APIRequest {
+struct APIRequest {
   #[serde(default)]
   method: Method,
-  pub url: Url,
+  url: Url,
   #[serde(default)]
-  pub headers: BTreeMap<String, String>,
+  headers: BTreeMap<String, String>,
   #[serde(default)]
-  pub body: serde_json::Value,
+  body: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct APIResponse {
-  pub status: u16,
+struct APIResponse {
+  #[serde(default = "default_status")]
+  status: u16,
   #[serde(default)]
-  pub headers: BTreeMap<String, String>,
+  headers: BTreeMap<String, String>,
   #[serde(default)]
-  pub body: serde_json::Value,
+  body: serde_json::Value,
+}
+fn default_status() -> u16 {
+  200
 }
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct UpstreamRequest(pub APIRequest);
+struct UpstreamRequest(APIRequest);
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UpstreamResponse(APIResponse);
+struct UpstreamResponse(APIResponse);
 #[derive(Serialize, Deserialize, Clone)]
-pub struct DownstreamRequest(pub APIRequest);
+struct DownstreamRequest(APIRequest);
 #[derive(Serialize, Deserialize, Clone)]
-pub struct DownstreamResponse(pub APIResponse);
+struct DownstreamResponse(APIResponse);
 #[derive(Serialize, Deserialize, Clone)]
-pub struct DownstreamAssertion {
-  pub request: DownstreamRequest,
-  pub response: DownstreamResponse,
+struct DownstreamAssertion {
+  request: DownstreamRequest,
+  response: DownstreamResponse,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub enum ConfigSource {
+enum ConfigSource {
   File(String),
   Inline(Config),
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+struct Mock {
+  request: UpstreamRequest,
+  response: UpstreamResponse,
+}
+
 #[derive(Serialize, Deserialize, Clone, Setters)]
 #[serde(rename_all = "camelCase")]
-pub struct HttpSpec {
-  pub config: ConfigSource,
+struct HttpSpec {
+  config: ConfigSource,
   #[serde(skip)]
   path: PathBuf,
-  pub name: String,
-  pub description: Option<String>,
+  name: String,
+  description: Option<String>,
 
   #[serde(default)]
-  pub mock: Vec<(UpstreamRequest, UpstreamResponse)>,
+  mock: Vec<Mock>,
 
   #[serde(default)]
-  pub expected_upstream_requests: Vec<UpstreamRequest>,
-  pub assert: Vec<DownstreamAssertion>,
+  expected_upstream_requests: Vec<UpstreamRequest>,
+  assert: Vec<DownstreamAssertion>,
 
   // Annotations for the runner
-  pub runner: Option<Annotation>,
+  runner: Option<Annotation>,
 }
 
 impl HttpSpec {
@@ -102,7 +112,8 @@ impl HttpSpec {
       let source = Source::detect(path.to_str().unwrap_or_default())?;
       if path.is_file() && (source.ext() == "json" || source.ext() == "yml") {
         let contents = fs::read_to_string(&path)?;
-        let spec: HttpSpec = Self::from_source(source, contents)?;
+        let spec: HttpSpec =
+          Self::from_source(source, contents).map_err(|err| err.context(format!("{}", path.to_str().unwrap())))?;
         files.push(spec.path(path));
       }
     }
@@ -164,7 +175,7 @@ impl HttpSpec {
 
 #[derive(Clone)]
 struct MockHttpClient {
-  mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  mocks: Vec<Mock>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
@@ -175,7 +186,7 @@ impl HttpClient for MockHttpClient {
     // Try to find a matching mock for the incoming request.
     let mock = mocks
       .iter()
-      .find(|(mock_req, _)| {
+      .find(|Mock { request: mock_req, response: _ }| {
         let method_match = req.method().as_str()
           == serde_json::to_string(&mock_req.0.method.clone())
             .expect("provided method is not valid")
@@ -187,7 +198,7 @@ impl HttpClient for MockHttpClient {
       .unwrap_or_else(|| panic!("Unexpected upstream request: {:?}", req));
 
     // Clone the response from the mock to avoid borrowing issues.
-    let mock_response = mock.1.clone();
+    let mock_response = mock.response.clone();
 
     // Build the response with the status code from the mock.
     let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;

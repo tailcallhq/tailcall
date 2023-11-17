@@ -1,23 +1,17 @@
 config: !file tests/http/config/n-plus-one.graphql
 name: n + 1 Request
 mock:
-  - - url: http://example.com/foos
-      headers:
-        Accept: application/json
-    - status: 200
-      headers:
-        Content-Type: application/json
+  - request:
+      url: http://example.com/foos
+    response:
       body:
         - id: 1
           name: foo1
         - id: 2
           name: foo2
-  - - url: http://example.com/bars?fooId=1&fooId=2
-      headers:
-        Accept: application/json
-    - status: 200
-      headers:
-        Content-Type: application/json
+  - request:
+      url: http://example.com/bars?fooId=1&fooId=2
+    response:
       body:
         - id: 1
           fooId: "1"
@@ -27,14 +21,9 @@ assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
-      headers:
-        Accept: application/json
       body:
         query: query { foos { bar {fooId id} id name} }
     response:
-      status: 200
-      headers:
-        Content-Type: application/json
       body:
         data:
           foos:
