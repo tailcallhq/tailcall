@@ -138,31 +138,9 @@ fn extract_individual_responses(
 #[cfg(test)]
 mod tests {
   use std::collections::BTreeSet;
-  use std::sync::atomic::{AtomicUsize, Ordering};
-  use std::sync::{Arc, Mutex};
 
   use super::*;
   use crate::http::DataLoaderRequest;
-
-  #[derive(Clone)]
-  struct MockHttpClient {
-    // To keep track of number of times execute is called
-    request_count: Arc<AtomicUsize>,
-    request_bodies: Arc<Mutex<Vec<String>>>,
-  }
-
-  #[async_trait::async_trait]
-  impl HttpClient for MockHttpClient {
-    async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-      self.request_count.fetch_add(1, Ordering::SeqCst);
-      let body_str = std::str::from_utf8(req.body().unwrap().as_bytes().unwrap())
-        .unwrap()
-        .to_string();
-      self.request_bodies.lock().unwrap().push(body_str);
-      // You can mock the actual response as per your need
-      Ok(Response::default())
-    }
-  }
 
   #[test]
   fn test_group_requests_by_url() {
