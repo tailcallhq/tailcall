@@ -1,5 +1,4 @@
 // @ts-check
-// @ts-ignore
 import { familySync, GLIBC, MUSL } from "detect-libc"
 import { exec } from 'child_process'
 import util from 'util'
