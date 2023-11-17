@@ -4,10 +4,9 @@ use async_graphql::parser::types::ConstDirective;
 #[allow(unused_imports)]
 use async_graphql::InputType;
 use async_graphql_value::ConstValue;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
 use regex::Regex;
 
+use super::converters::convert_headers;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
@@ -524,137 +523,107 @@ fn update_unsafe<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, 
 
 fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, type_of, _), b_field| match field.http.as_ref() {
-      Some(http) => match http
-        .base_url
-        .as_ref()
-        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
-      {
-        Some(base_url) => {
-          let mut base_url = base_url.clone();
-          if base_url.ends_with('/') {
-            base_url.pop();
+    |(config, field, type_of, _), b_field| {
+      let Some(http) = &field.http else {
+        return Valid::succeed(b_field);
+      };
+
+      let Some(base_url) = http.base_url.as_ref().or(config.upstream.base_url.as_ref()) else {
+        return Valid::fail("No base URL defined".to_string());
+      };
+
+      let mut base_url = base_url.trim_end_matches('/').to_owned();
+      base_url.push_str(http.path.clone().as_str());
+
+      let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+      let output_schema = to_json_schema_for_field(field, config);
+      let input_schema = to_json_schema_for_args(&field.args, config);
+
+      Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
+        .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .and(convert_headers(&http.headers))
+        .and_then(|header_map| {
+          RequestTemplate::try_from(
+            Endpoint::new(base_url.to_string())
+              .method(http.method.clone())
+              .query(query)
+              .output(output_schema)
+              .input(input_schema)
+              .body(http.body.clone())
+              .headers(header_map),
+          )
+          .map_err(|e| ValidationError::new(e.to_string()))
+          .into()
+        })
+        .map(|req_template| {
+          if !http.group_by.is_empty() && http.method == Method::GET {
+            b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
+              req_template,
+              Some(GroupBy::new(http.group_by.clone())),
+              None,
+            ))))
+          } else {
+            b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
           }
-          base_url.push_str(http.path.clone().as_str());
-          let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-          let output_schema = to_json_schema_for_field(field, config);
-          let input_schema = to_json_schema_for_args(&field.args, config);
-
-          Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-            .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-            .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
-              let name =
-                Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
-
-              let value =
-                Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
-
-              name.zip(value).map(|(name, value)| (name, value))
-            }))
-            .map(HeaderMap::from_iter)
-            .and_then(|header_map| {
-              RequestTemplate::try_from(
-                Endpoint::new(base_url.to_string())
-                  .method(http.method.clone())
-                  .query(query)
-                  .output(output_schema)
-                  .input(input_schema)
-                  .body(http.body.clone())
-                  .headers(header_map),
-              )
-              .map_err(|e| ValidationError::new(e.to_string()))
-              .into()
-            })
-            .map(|req_template| {
-              if !http.group_by.is_empty() && http.method == Method::GET {
-                b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
-                  req_template,
-                  Some(GroupBy::new(http.group_by.clone())),
-                  None,
-                ))))
-              } else {
-                b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
-              }
-            })
-            .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
-        }
-        None => Valid::fail("No base URL defined".to_string()),
-      },
-      None => Valid::succeed(b_field),
+        })
+        .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
     },
   )
 }
 fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _, _), b_field| match field.graphql_source.as_ref() {
-      Some(graphql) => match graphql
-        .base_url
-        .as_ref()
-        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
-      {
-        Some(base_url) => {
-          let mut base_url = base_url.clone();
-          if base_url.ends_with('/') {
-            base_url.pop();
+    |(config, field, _, _), b_field| {
+      let Some(graphql) = &field.graphql_source else {
+        return Valid::succeed(b_field);
+      };
+
+      let Some(base_url) = graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()) else {
+        return Valid::fail("No base URL defined".to_string());
+      };
+
+      let variable_definitions = Valid::from_iter(graphql.query.args.iter(), |(arg_name, _)| {
+        Valid::from(
+          if let Some(introspection_result) = &graphql.introspection {
+            get_arg_type(introspection_result, &graphql.query.name, arg_name)
+          } else {
+            None
           }
+          .ok_or(ValidationError::new(format!(
+            "Could not find argument type for {} from introspection",
+            arg_name
+          )))
+          .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
+        )
+      })
+      .map(|variable_definitions| variable_definitions.join(","));
 
-          let introspection_result = graphql.introspection.clone();
+      let args = graphql
+        .query
+        .args
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
 
-          let header_map = Valid::from_iter(graphql.headers.iter(), |(k, v)| {
-            let name =
-              Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
-            let value = Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
-            name.zip(value).map(|(name, value)| (name, value))
-          })
-          .map(HeaderMap::from_iter);
-
-          let variable_definitions = Valid::from_iter(graphql.query.args.iter(), |(arg_name, _)| {
-            Valid::from(
-              match &introspection_result {
-                Some(introspection_result) => get_arg_type(introspection_result, &graphql.query.name, arg_name),
-                _ => None,
-              }
-              .ok_or(ValidationError::new(format!(
-                "Could not find argument type for {} from introspection",
-                arg_name
-              )))
-              .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
+      convert_headers(&graphql.headers)
+        .zip(variable_definitions)
+        .and_then(|(header_map, variable_definitions)| {
+          Valid::from(
+            GraphqlRequestTemplate::new(
+              base_url.to_owned(),
+              graphql.query.name.clone(),
+              args,
+              variable_definitions,
+              header_map,
             )
-          })
-          .map(|variable_definitions| variable_definitions.join(","));
-
-          let args = graphql
-            .query
-            .args
-            .clone()
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect::<Vec<_>>();
-
-          header_map
-            .zip(variable_definitions)
-            .and_then(|(header_map, variable_definitions)| {
-              Valid::from(
-                GraphqlRequestTemplate::new(
-                  base_url.clone(),
-                  graphql.query.name.clone(),
-                  args.clone(),
-                  variable_definitions,
-                  header_map,
-                )
-                .map_err(|e| ValidationError::new(e.to_string())),
-              )
-            })
-            .map(|req_template| {
-              let field_name = b_field.name.clone();
-              b_field.resolver(Some(
-                Lambda::from_graphql_request_template(req_template, field_name, graphql.use_batch_request).expression,
-              ))
-            })
-        }
-        None => Valid::fail("No base URL defined".to_string()),
-      },
-      None => Valid::succeed(b_field),
+            .map_err(|e| ValidationError::new(e.to_string())),
+          )
+        })
+        .map(|req_template| {
+          let field_name = b_field.name.clone();
+          b_field.resolver(Some(
+            Lambda::from_graphql_request_template(req_template, field_name, graphql.use_batch_request).expression,
+          ))
+        })
     },
   )
 }
