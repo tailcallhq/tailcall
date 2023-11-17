@@ -3,11 +3,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
+use async_graphql::ServerError;
 use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
-use serde_json::json;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -77,15 +77,12 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         "Failed to parse request: {}",
         String::from_utf8(bytes.to_vec()).unwrap()
       );
-      let mut resp = Response::new(Body::from(
-        json!({
-          "error": "Unexpected graphQL request",
-          "message": err.to_string()
-        })
-        .to_string(),
-      ));
-      *resp.status_mut() = StatusCode::BAD_REQUEST;
-      Ok(resp)
+
+      let mut response = async_graphql::Response::default();
+      let server_error = ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
+      response.errors = vec![server_error];
+
+      Ok(GraphQLResponse::from(response).to_response()?)
     }
   }
 }
