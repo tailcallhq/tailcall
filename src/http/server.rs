@@ -7,6 +7,7 @@ use client::DefaultHttpClient;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
+use serde_json::json;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -62,12 +63,31 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
-  let request: T = serde_json::from_slice(&bytes)?;
-  let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
-  response = update_cache_control_header(response, server_ctx, req_ctx);
-  let mut resp = response.to_response()?;
-  update_response_headers(&mut resp, server_ctx);
-  Ok(resp)
+  let request = serde_json::from_slice::<T>(&bytes);
+  match request {
+    Ok(request) => {
+      let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
+      response = update_cache_control_header(response, server_ctx, req_ctx);
+      let mut resp = response.to_response()?;
+      update_response_headers(&mut resp, server_ctx);
+      Ok(resp)
+    }
+    Err(err) => {
+      log::error!(
+        "Failed to parse request: {}",
+        String::from_utf8(bytes.to_vec()).unwrap()
+      );
+      let mut resp = Response::new(Body::from(
+        json!({
+          "error": "Unexpected graphQL request",
+          "message": err.to_string()
+        })
+        .to_string(),
+      ));
+      *resp.status_mut() = StatusCode::BAD_REQUEST;
+      Ok(resp)
+    }
+  }
 }
 
 pub async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
@@ -88,8 +108,8 @@ async fn handle_single_request(req: Request<Body>, state: Arc<ServerContext>) ->
 
 async fn handle_batch_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_batch_request(req, state.as_ref()).await,
+    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     _ => not_found(),
   }
 }
