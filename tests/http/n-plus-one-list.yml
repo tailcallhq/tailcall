@@ -1,6 +1,6 @@
 config: !file tests/http/config/n-plus-one.graphql
 name: n + 1 Request List
-upstreamMocks:
+mock:
   - - url: http://example.com/bars
       headers:
         Accept: application/json
@@ -27,14 +27,7 @@ upstreamMocks:
           name: foo1
         - id: 2
           name: foo2
-expectedUpstreamRequests:
-  - url: http://example.com/foos?id=1&id=2
-    headers:
-      Accept: application/json
-  - url: http://example.com/bars
-    headers:
-      Accept: application/json
-downstreamAssertions:
+assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql

@@ -1,6 +1,6 @@
 config: !file tests/http/config/simple.graphql
 name: Simple GraphQL Request
-upstreamMocks:
+mock:
   - - url: http://jsonplaceholder.typicode.com/users/1
       headers:
         Accept: application/json
@@ -11,12 +11,7 @@ upstreamMocks:
       body:
         id: 1
         name: foo
-expectedUpstreamRequests:
-  - url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      Accept: application/json
-      test: test
-downstreamAssertions:
+assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql

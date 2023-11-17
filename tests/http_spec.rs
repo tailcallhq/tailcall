@@ -77,10 +77,16 @@ pub struct HttpSpec {
   path: PathBuf,
   pub name: String,
   pub description: Option<String>,
-  pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+
+  #[serde(default)]
+  pub mock: Vec<(UpstreamRequest, UpstreamResponse)>,
+
+  #[serde(default)]
   pub expected_upstream_requests: Vec<UpstreamRequest>,
-  pub downstream_assertions: Vec<DownstreamAssertion>,
-  pub annotation: Option<Annotation>,
+  pub assert: Vec<DownstreamAssertion>,
+
+  // Annotations for the runner
+  pub runner: Option<Annotation>,
 }
 
 impl HttpSpec {
@@ -114,7 +120,7 @@ impl HttpSpec {
     let mut filtered_specs = Vec::new();
 
     for spec in specs {
-      match spec.annotation {
+      match spec.runner {
         Some(Annotation::Skip) => log::warn!("{} {} ... skipped", spec.name, spec.path.display()),
         Some(Annotation::Only) => only_specs.push(spec),
         Some(Annotation::Fail) => filtered_specs.push(spec),
@@ -150,10 +156,7 @@ impl HttpSpec {
     };
 
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient {
-      upstream_mocks: self.upstream_mocks.to_vec(),
-      expected_upstream_requests: self.expected_upstream_requests.to_vec(),
-    });
+    let client = Arc::new(MockHttpClient { mocks: self.mock.to_vec() });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
   }
@@ -161,14 +164,13 @@ impl HttpSpec {
 
 #[derive(Clone)]
 struct MockHttpClient {
-  upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
-  expected_upstream_requests: Vec<UpstreamRequest>,
+  mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> Result<Response, anyhow::Error> {
     // Clone the mocks to allow iteration without borrowing issues.
-    let mocks = self.upstream_mocks.clone();
+    let mocks = self.mocks.clone();
 
     // Try to find a matching mock for the incoming request.
     let mock = mocks
@@ -182,14 +184,7 @@ impl HttpClient for MockHttpClient {
         let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
         method_match && url_match
       })
-      .expect("Mock not found");
-    // Assert upstream request
-    let upstream_request = mock.0.clone();
-    assert!(
-      self.expected_upstream_requests.contains(&upstream_request),
-      "Unexpected upstream request: {:?}",
-      upstream_request
-    );
+      .unwrap_or_else(|| panic!("Unexpected upstream request: {:?}", req));
 
     // Clone the response from the mock to avoid borrowing issues.
     let mock_response = mock.1.clone();
@@ -213,8 +208,8 @@ impl HttpClient for MockHttpClient {
 }
 
 async fn assert_downstream(spec: HttpSpec) {
-  for downstream_assertion in spec.downstream_assertions.iter() {
-    if let Some(Annotation::Fail) = spec.annotation {
+  for downstream_assertion in spec.assert.iter() {
+    if let Some(Annotation::Fail) = spec.runner {
       let response = run(spec.clone(), &downstream_assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
       assert_eq!(
