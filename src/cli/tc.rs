@@ -2,7 +2,7 @@ use std::fs;
 
 use anyhow::Result;
 use clap::Parser;
-use inquire::Confirm;
+// use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
@@ -47,23 +47,32 @@ pub async fn run() -> Result<()> {
 
 pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+  let ans = dialoguer::Confirm::new()
+    .with_prompt("Do you want to add a file to the project?")
+    .wait_for_newline(true)
+    .interact()
+    .unwrap();
 
-  let ans = Confirm::new("Do you want to add a file to the project?")
-    .with_default(false)
-    .prompt();
+  if ans {
+    let file_name = inquire::Text::new("Enter the file name:")
+      .with_default(".graphql")
+      .prompt()
+      .unwrap_or_else(|_| String::from(".graphql"));
+    // let file_name = dialoguer::Input::new()
+//       .with_initial_text(".graphql")
+//       .with_prompt("Enter the file name:")
+//       .interact()
+//       .unwrap_or_else(|_| String::from(".graphql"));
 
-  match ans {
-    Ok(true) => {
-      let file_name = inquire::Text::new("Enter the file name:")
-        .with_default(".graphql")
-        .prompt()
-        .unwrap_or_else(|_| String::from(".graphql"));
+    let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
 
-      let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
-
-      let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
-        .with_default(false)
-        .prompt();
+    let confirm = inquire::Confirm::new(&format!("Do you want to create the file {}?", file_name))
+      .with_default(false)
+      .prompt();
+//     let confirm = dialoguer::Confirm::new()
+//       .with_prompt(&format!("Do you want to create the file {}?", file_name))
+//       .interact()
+//       .unwrap();
 
       match confirm {
         Ok(true) => {
@@ -83,9 +92,7 @@ pub async fn init(file_path: &str) -> Result<()> {
         Err(e) => return Err(e.into()),
       }
     }
-    Ok(false) => (),
-    Err(e) => return Err(e.into()),
-  }
+    
 
   fs::write(
     format!("{}/.tailcallrc.graphql", file_path),
@@ -93,6 +100,55 @@ pub async fn init(file_path: &str) -> Result<()> {
   )?;
   Ok(())
 }
+
+// pub async fn init(file_path: &str) -> Result<()> {
+//   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+
+//   let ans = Confirm::new("Do you want to add a file to the project?")
+//     .with_default(false)
+//     .prompt();
+
+//   match ans {
+//     Ok(true) => {
+//       let file_name = inquire::Text::new("Enter the file name:")
+//         .with_default(".graphql")
+//         .prompt()
+//         .unwrap_or_else(|_| String::from(".graphql"));
+
+//       let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
+
+//       let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
+//         .with_default(false)
+//         .prompt();
+
+//       match confirm {
+//         Ok(true) => {
+//           fs::write(format!("{}/{}", file_path, &file_name), "")?;
+
+//           let graphqlrc = format!(
+//             r#"|schema:
+//                |- './{}'
+//                |- './.tailcallrc.graphql'
+//           "#,
+//             &file_name
+//           )
+//           .strip_margin();
+//           fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
+//         }
+//         Ok(false) => (),
+//         Err(e) => return Err(e.into()),
+//       }
+//     }
+//     Ok(false) => (),
+//     Err(e) => return Err(e.into()),
+//   }
+
+//   fs::write(
+//     format!("{}/.tailcallrc.graphql", file_path),
+//     tailcallrc.as_ref().as_bytes(),
+//   )?;
+//   Ok(())
+// }
 
 pub fn display_schema(blueprint: &Blueprint) {
   Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));

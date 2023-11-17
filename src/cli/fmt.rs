@@ -93,3 +93,19 @@ impl Fmt {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test]
+  fn test_format_n_plus_one_queries() {
+    let n_plus_one_info = vec![vec![
+      ("Field 1".to_string(), "Field 2".to_string()),
+      ("Field 3".to_string(), "Field 4".to_string()),
+    ]];
+
+    let expected = "  query { Field 2 { Field 4 } }";
+    let formatted = Fmt::format_n_plus_one_queries(n_plus_one_info);
+    assert!(formatted.contains(expected));
+  }
+}
