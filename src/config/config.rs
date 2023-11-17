@@ -29,6 +29,8 @@ pub struct Config {
 
   #[serde(default)]
   pub graphql: GraphQL,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
   pub introspection_cache: BTreeMap<String, IntrospectionResult>,
 }
 

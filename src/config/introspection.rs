@@ -5,28 +5,28 @@ use reqwest;
 use serde_json::json;
 
 // GraphQL introspection response types.
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct IntrospectionResult {
   pub data: Option<IntrospectionData>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct IntrospectionData {
   pub __schema: IntrospectionSchema,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct IntrospectionSchema {
   #[serde(rename = "queryType")]
   pub query_type: IntrospectionType,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct IntrospectionType {
   pub fields: Vec<Field>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Field {
   pub name: String,
   pub args: Option<Vec<Arg>>,
@@ -34,14 +34,14 @@ pub struct Field {
   pub type_: Option<Type_>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Arg {
   pub name: String,
   #[serde(rename = "type")]
   pub type_: Type_,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Type_ {
   pub name: Option<String>,
   pub kind: Option<String>,
@@ -50,7 +50,7 @@ pub struct Type_ {
   pub fields: Option<Vec<Field>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TypeKind {
   Scalar,
@@ -63,7 +63,7 @@ pub enum TypeKind {
   NonNull,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, Eq, PartialEq)]
 pub struct IntrospectionResults(pub BTreeMap<String, IntrospectionResult>);
 
 impl IntrospectionResults {
