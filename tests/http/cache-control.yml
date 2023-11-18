@@ -1,0 +1,44 @@
+config: !file tests/http/config/simple.graphql
+name: Cache Control Header Test
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+      headers:
+        Cache-Control: "max-age=3600, public"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/2
+    response:
+      body:
+        id: 2
+        name: bar
+      headers:
+        Cache-Control: "max-age=7200, public"
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data:
+          user:
+            name: foo
+      headers:
+        Cache-Control: "max-age=3600, public"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data:
+          user:
+            name: foo
+      headers:
+        Cache-Control: "max-age=7200, public"
