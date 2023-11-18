@@ -17,7 +17,8 @@ jobs:
   benchmark:
     name: Macro Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark')
-    runs-on: benchmarking-runner
+    runs-on: 
+      group: benchmarking-runner
     permissions:
       pull-requests: write
       contents: write
