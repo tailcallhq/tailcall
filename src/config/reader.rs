@@ -64,9 +64,9 @@ impl ConfigReader {
 #[cfg(test)]
 mod reader_tests {
   use tokio::io::AsyncReadExt;
-  use crate::config::{Config, Type};
 
   use crate::config::reader::ConfigReader;
+  use crate::config::{Config, Type};
 
   fn start_mock_server(port: u16) -> mockito::Server {
     mockito::Server::new_with_port(port)
