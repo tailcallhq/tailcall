@@ -64,35 +64,25 @@ impl ConfigReader {
 #[cfg(test)]
 mod reader_tests {
   use tokio::io::AsyncReadExt;
+  use crate::config::{Config, Type};
 
   use crate::config::reader::ConfigReader;
 
-  static TEST_GQL_BODY: &str = r#"
-        schema
-        @server(port: 8000, enableGraphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
-        @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
-        query: Test
-      }
-      type Test {
-        id: Int!
-        name: String!
-        username: String!
-        email: String!
-        phone: String
-        website: String
-      }
-  "#;
   fn start_mock_server(port: u16) -> mockito::Server {
     mockito::Server::new_with_port(port)
   }
   #[tokio::test]
   async fn test_all() {
+    let mut cfg = Config::default();
+    cfg.graphql.schema.query = Some("Test".to_string());
+    cfg = cfg.types([("Test", Type::default())].to_vec());
+
     let mut server = start_mock_server(3080);
     let header_serv = server
       .mock("GET", "/")
       .with_status(200)
       .with_header("content-type", "application/graphql")
-      .with_body(TEST_GQL_BODY)
+      .with_body(cfg.to_sdl())
       .create();
     let mut json = String::new();
     tokio::fs::File::open("examples/jsonplaceholder.json")
