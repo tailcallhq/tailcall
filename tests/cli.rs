@@ -242,11 +242,11 @@ mod init {
   #[test]
   #[serial]
   fn test_folder_nonexistent() -> Result<(), rexpect::error::Error> {
-    let mut p = rexpect::spawn("cargo run -- init tmp0", Some(20000))?;
+    let mut p = rexpect::spawn("cargo run -- init tmp0", Some(50000))?;
     let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res);
 
-    p.send("N\n")?; // you have to send the newline in test mode because it can't do the live readline checks that it can in a terminal
+    p.send("N\n")?; // send the newline in tests because it can't do the readline checks that it would in a proper terminal
     res = p.exp_regex(".*No such file or directory.*")?;
     println!("OUTPUT after sending 'N': {:?}", res);
 

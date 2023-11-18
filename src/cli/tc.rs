@@ -2,7 +2,6 @@ use std::fs;
 
 use anyhow::Result;
 use clap::Parser;
-// use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
@@ -49,16 +48,13 @@ pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
   let ans = dialoguer::Confirm::new()
     .with_prompt("Do you want to add a file to the project?")
-    // .wait_for_newline(true)
     .interact()
     .unwrap();
 
   if ans {
     let file_name = dialoguer::Input::new()
-      // .with_initial_text(".graphql")
       .show_default(true)
       .with_prompt("Enter the file name")
-      // .interact_text()
       .interact()
       .unwrap_or_else(|_| String::from(".graphql"));
 
