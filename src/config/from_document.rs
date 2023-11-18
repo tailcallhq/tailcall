@@ -20,14 +20,15 @@ pub async fn from_document(
   let config = schema_definition(&doc)
     .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
     .map(|((server, upstream), graphql)| Config { server, upstream, graphql, introspection_cache: BTreeMap::new() });
-  match config {
-    Valid(Ok(mut config)) => {
+
+  match config.to_result() {
+    Ok(mut config) => {
       if let Some(initialize_introspection_cache) = initialize_introspection_cache {
         config.introspection_cache = initialize_introspection_cache()
       }
       update_introspection_results(config).await
     }
-    Valid(Err(e)) => Valid(Err(e)),
+    Err(error) => Valid::from_validation_err(error),
   }
 }
 
@@ -313,63 +314,56 @@ fn to_graphqlsource(directives: &[Positioned<ConstDirective>]) -> Valid<Option<c
   Valid::succeed(None)
 }
 async fn update_introspection_results(mut config: Config) -> Valid<Config, String> {
+  let mut validations = Vec::new();
+
   for type_ in config.graphql.types.values_mut() {
     for field in type_.fields.values_mut() {
-      match &field.graphql_source {
-        Some(graphql_source) => {
-          let updated = update_introspection(
-            graphql_source,
-            &mut config.introspection_cache,
-            &config.upstream.base_url,
-          )
-          .await;
-          match &updated {
-            Valid(Ok(source)) => {
-              field.graphql_source = Some(source.clone());
-            }
-            Valid(Err(e)) => {
-              return Valid(Err(e.clone()));
-            }
-          }
-        }
-        None => {}
+      if let Some(graphql_source) = &field.graphql_source {
+        // TODO: run it in parallel
+        let update = update_introspection(
+          graphql_source,
+          &mut config.introspection_cache,
+          &config.upstream.base_url,
+        )
+        .await
+        .map(|source| {
+          field.graphql_source = Some(source.clone());
+        });
+
+        validations.push(update);
       }
     }
   }
-  Valid::succeed(config)
+
+  Valid::from_iter(validations, |validation| validation).and(Valid::succeed(config))
 }
 async fn update_introspection(
   graphqlsource: &config::GraphQLSource,
   introspection_cache: &mut BTreeMap<String, IntrospectionResult>,
   upstream_base_url: &Option<String>,
 ) -> Valid<config::GraphQLSource, String> {
+  let Some(base_url) = graphqlsource.base_url.as_ref().or(upstream_base_url.as_ref()) else {
+    return Valid::fail("No base url found for graphql directive".to_string()).trace("introspection");
+  };
+
   let mut updated: GraphQLSource = graphqlsource.clone();
-  match graphqlsource
-    .base_url
-    .as_ref()
-    .map_or_else(|| upstream_base_url.as_ref(), Some)
-  {
-    Some(base_url) => {
-      let introspection_result = introspection_cache.get(base_url);
+  let introspection_result = introspection_cache.get(base_url);
+  match introspection_result {
+    Some(introspection) => {
+      updated.introspection = Some(introspection.clone());
+      Valid::succeed(updated)
+    }
+    None => {
+      let introspection_result = introspect_endpoint(base_url).await;
       match introspection_result {
-        Some(introspection) => {
+        Ok(introspection) => {
           updated.introspection = Some(introspection.clone());
+          introspection_cache.insert(base_url.clone(), introspection);
           Valid::succeed(updated)
         }
-        None => {
-          let introspection_result = introspect_endpoint(base_url).await;
-          match introspection_result {
-            Ok(introspection) => {
-              updated.introspection = Some(introspection.clone());
-              introspection_cache.insert(base_url.clone(), introspection.clone());
-              Valid::succeed(updated)
-            }
-            Err(e) => Valid::fail(e.to_string()),
-          }
-        }
+        Err(e) => Valid::fail(e.to_string()),
       }
     }
-    None => Valid::fail("No base url found for graphql directive".to_string()).trace("introspection"),
   }
 }
 fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {

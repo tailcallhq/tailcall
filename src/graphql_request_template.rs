@@ -79,8 +79,7 @@ impl GraphqlRequestTemplate {
       format!("{}({})", self.query_name, self.query_arguments)
     };
     let graphql_query = format!(
-      r#"{{ "query": "{} {{ {} {{ {} }} }}", "variables": {{ {} }} }}"#,
-      operation, query_name, selection_set, variable_values
+      r#"{{ "query": "{operation} {{ {query_name} {{ {selection_set} }} }}", "variables": {{ {variable_values} }} }}"#,
     );
     req.body_mut().replace(graphql_query.into());
     req
@@ -94,12 +93,10 @@ impl GraphqlRequestTemplate {
     headers: HeaderMap<HeaderValue>,
   ) -> anyhow::Result<Self> {
     let variable_values = args
-      .clone()
       .iter()
       .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
     let arguments = args
-      .clone()
       .iter()
       .map(|(k, _)| format!("{}: ${}", k, k))
       .collect::<Vec<_>>()

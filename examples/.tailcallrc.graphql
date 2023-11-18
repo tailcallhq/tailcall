@@ -77,7 +77,7 @@ input Batch {
 
 input GraphQLQuery {
   name: String
-  args: KeyValues
+  args: [KeyValue]
 }
 
 scalar JSON
