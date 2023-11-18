@@ -42,6 +42,10 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Operations to check
+    #[arg(short, long)]
+    operations: Vec<String>,
   },
   /// Initialize a new project
   Init { file_path: String },
