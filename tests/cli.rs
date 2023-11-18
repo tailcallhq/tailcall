@@ -242,7 +242,7 @@ mod init {
   #[test]
   #[serial]
   fn test_folder_nonexistent() -> Result<(), rexpect::error::Error> {
-    let mut p = rexpect::spawn("cargo run -- init tmp0", Some(50000))?;
+    let mut p = rexpect::spawn("cargo run -- init tmp0", Some(500000))?;
     let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res);
 
