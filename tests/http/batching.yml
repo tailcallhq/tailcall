@@ -4,23 +4,22 @@ config: !inline
   upstream: {}
   server:
     enableBatchRequests: true
-  graphql:
-    schema:
-      query: Query
-    types:
-      Query:
-        fields:
-          user:
-            type: User
-            http:
-              path: /users/1
-              baseURL: http://jsonplaceholder.typicode.com
-      User:
-        fields:
-          id:
-            type: Int
-          name:
-            type: String
+  schema:
+    query: Query
+  types:
+    Query:
+      fields:
+        user:
+          type: User
+          http:
+            path: /users/1
+            baseURL: http://jsonplaceholder.typicode.com
+    User:
+      fields:
+        id:
+          type: Int
+        name:
+          type: String
 mock:
   - request:
       url: http://jsonplaceholder.typicode.com/users/1
@@ -35,8 +34,6 @@ assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
-      headers:
-        content-type: application/json
       body:
         - query: "query { user { id } }"
         - query: "query { user { name } }"
@@ -53,8 +50,6 @@ assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
-      headers:
-        content-type: application/json
       body:
         query: "query { user { id } }"
     response:

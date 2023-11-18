@@ -74,7 +74,7 @@ mod reader_tests {
   #[tokio::test]
   async fn test_all() {
     let mut cfg = Config::default();
-    cfg.graphql.schema.query = Some("Test".to_string());
+    cfg.schema.query = Some("Test".to_string());
     cfg = cfg.types([("Test", Type::default())].to_vec());
 
     let mut server = start_mock_server(3080);
@@ -112,7 +112,7 @@ mod reader_tests {
         .iter()
         .map(|i| i.to_string())
         .collect::<Vec<String>>(),
-      c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
+      c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
     foo_json_serv.assert(); // checks if the request was actually made
     header_serv.assert();
@@ -134,7 +134,7 @@ mod reader_tests {
         .iter()
         .map(|i| i.to_string())
         .collect::<Vec<String>>(),
-      c.graphql.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
+      c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
   }
 }

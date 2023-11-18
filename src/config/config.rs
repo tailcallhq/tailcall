@@ -19,12 +19,14 @@ use crate::valid::Valid;
 pub struct Config {
   #[serde(default)]
   pub server: Server,
-
   #[serde(default)]
   pub upstream: Upstream,
-
+  pub schema: RootSchema,
   #[serde(default)]
-  pub graphql: GraphQL,
+  #[setters(skip)]
+  pub types: BTreeMap<String, Type>,
+  #[serde(default)]
+  pub unions: BTreeMap<String, Union>,
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -34,15 +36,15 @@ impl Config {
   pub fn output_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
 
-    if let Some(ref query) = &self.graphql.schema.query {
+    if let Some(ref query) = &self.schema.query {
       types.insert(query);
     }
 
-    if let Some(ref mutation) = &self.graphql.schema.mutation {
+    if let Some(ref mutation) = &self.schema.mutation {
       types.insert(mutation);
     }
 
-    for (_, type_of) in self.graphql.types.iter() {
+    for (_, type_of) in self.types.iter() {
       if type_of.interface || !type_of.fields.is_empty() {
         for (_, field) in type_of.fields.iter() {
           types.insert(&field.type_of);
@@ -54,7 +56,7 @@ impl Config {
 
   pub fn input_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
-    for (_, type_of) in self.graphql.types.iter() {
+    for (_, type_of) in self.types.iter() {
       if !type_of.interface {
         for (_, field) in type_of.fields.iter() {
           for (_, arg) in field.args.iter() {
@@ -67,11 +69,11 @@ impl Config {
   }
 
   pub fn find_type(&self, name: &str) -> Option<&Type> {
-    self.graphql.types.get(name)
+    self.types.get(name)
   }
 
   pub fn find_union(&self, name: &str) -> Option<&Union> {
-    self.graphql.unions.get(name)
+    self.unions.get(name)
   }
 
   pub fn to_yaml(&self) -> Result<String> {
@@ -92,7 +94,7 @@ impl Config {
   }
 
   pub fn query(mut self, query: &str) -> Self {
-    self.graphql.schema.query = Some(query.to_string());
+    self.schema.query = Some(query.to_string());
     self
   }
 
@@ -101,19 +103,22 @@ impl Config {
     for (name, type_) in types {
       graphql_types.insert(name.to_string(), type_);
     }
-    self.graphql.types = graphql_types;
+    self.types = graphql_types;
     self
   }
 
   pub fn contains(&self, name: &str) -> bool {
-    self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
+    self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
   pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
-    let graphql = self.graphql.merge_right(other.graphql.clone());
+    let types = merge_types(self.types, other.types.clone());
+    let unions = merge_unions(self.unions, other.unions.clone());
+    let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    Self { server, upstream, graphql }
+
+    Self { server, upstream, types, schema, unions }
   }
 }
 
@@ -157,36 +162,28 @@ impl Type {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct GraphQL {
-  pub schema: RootSchema,
-  #[serde(default)]
-  pub types: BTreeMap<String, Type>,
-  #[serde(default)]
-  pub unions: BTreeMap<String, Union>,
+fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
+  for (name, mut other_type) in other_types {
+    if let Some(self_type) = self_types.remove(&name) {
+      other_type = self_type.merge_right(&other_type)
+    };
+
+    self_types.insert(name, other_type);
+  }
+  self_types
 }
 
-impl GraphQL {
-  pub fn merge_right(mut self, other: Self) -> Self {
-    for (name, mut other_type) in other.types {
-      if let Some(self_type) = self.types.remove(&name) {
-        other_type = self_type.merge_right(&other_type)
-      };
-
-      self.types.insert(name, other_type);
+fn merge_unions(
+  mut self_unions: BTreeMap<String, Union>,
+  other_unions: BTreeMap<String, Union>,
+) -> BTreeMap<String, Union> {
+  for (name, mut other_union) in other_unions {
+    if let Some(self_union) = self_unions.remove(&name) {
+      other_union = self_union.merge_right(other_union);
     }
-
-    for (name, mut other_union) in other.unions {
-      if let Some(self_union) = self.unions.remove(&name) {
-        other_union = self_union.merge_right(other_union);
-      }
-      self.unions.insert(name, other_union);
-    }
-
-    self.schema = self.schema.merge_right(other.schema);
-
-    self
+    self_unions.insert(name, other_union);
   }
+  self_unions
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -226,6 +223,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
+
+  #[serde(rename = "const")]
   pub const_field: Option<Const>,
 }
 
