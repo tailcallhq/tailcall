@@ -3043,6 +3043,7 @@ dependencies = [
  "mockito",
  "moka",
  "nom",
+ "num_cpus",
  "once_cell",
  "pretty_assertions",
  "regex",

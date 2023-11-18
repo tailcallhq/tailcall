@@ -17,25 +17,25 @@
       "Post": {
         "fields": {
           "body": {
-            "type_of": "String",
+            "type": "String",
             "required": true
           },
           "id": {
-            "type_of": "Int",
+            "type": "Int",
             "required": true
           },
           "title": {
-            "type_of": "String",
+            "type": "String",
             "required": true
           },
           "user": {
-            "type_of": "User",
+            "type": "User",
             "http": {
               "path": "/users/{{value.userId}}"
             }
           },
           "userId": {
-            "type_of": "Int",
+            "type": "Int",
             "required": true
           }
         }
@@ -43,7 +43,7 @@
       "Query": {
         "fields": {
           "posts": {
-            "type_of": "Post",
+            "type": "Post",
             "list": true,
             "http": {
               "path": "/posts"
@@ -54,26 +54,26 @@
       "User": {
         "fields": {
           "email": {
-            "type_of": "String",
+            "type": "String",
             "required": true
           },
           "id": {
-            "type_of": "Int",
+            "type": "Int",
             "required": true
           },
           "name": {
-            "type_of": "String",
+            "type": "String",
             "required": true
           },
           "phone": {
-            "type_of": "String"
+            "type": "String"
           },
           "username": {
-            "type_of": "String",
+            "type": "String",
             "required": true
           },
           "website": {
-            "type_of": "String"
+            "type": "String"
           }
         }
       }
