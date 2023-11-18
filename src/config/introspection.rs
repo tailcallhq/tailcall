@@ -219,4 +219,57 @@ mod tests {
       2
     );
   }
+
+  #[tokio::test]
+  async fn test_introspect_endpoints() {
+    let result = load_mock_introspection_result();
+    let server1 = MockServer::start();
+    server1.mock(|when, then| {
+      when.method(POST).path("/graphql");
+      then
+        .status(200)
+        .header("content-type", "application/json")
+        .body(result.clone());
+    });
+    let server2 = MockServer::start();
+    server2.mock(|when, then| {
+      when.method(POST).path("/graphql");
+      then.status(200).header("content-type", "application/json").body(result);
+    });
+
+    let url1 = server1.url("/graphql");
+    let url2 = server2.url("/graphql");
+    let graphql_urls = vec![url1.clone(), url2.clone()];
+
+    let introspect_results = introspect_endpoints(graphql_urls).await;
+    assert_eq!(introspect_results.0.len(), 2);
+    assert_eq!(
+      introspect_results
+        .0
+        .get(&url1)
+        .unwrap()
+        .to_owned()
+        .data
+        .unwrap()
+        .__schema
+        .query_type
+        .fields
+        .len(),
+      2
+    );
+    assert_eq!(
+      introspect_results
+        .0
+        .get(&url2)
+        .unwrap()
+        .to_owned()
+        .data
+        .unwrap()
+        .__schema
+        .query_type
+        .fields
+        .len(),
+      2
+    );
+  }
 }
