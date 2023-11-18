@@ -1,0 +1,20 @@
+schema
+  @server(
+    port: 8000
+    enableGraphiql: true
+    enableQueryValidation: false
+    hostname: "0.0.0.0"
+    enableBatchRequests: true
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
+  query: Query
+}
+
+type Query {
+  post(id: Int!): Post @http(path: "/posts/{{args.id}}")
+}
+
+type Post {
+  id: Int!
+  title: String!
+}

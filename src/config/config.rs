@@ -17,8 +17,13 @@ use crate::valid::Valid;
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+  #[serde(default)]
   pub server: Server,
+
+  #[serde(default)]
   pub upstream: Upstream,
+
+  #[serde(default)]
   pub graphql: GraphQL,
 }
 impl Config {
@@ -155,7 +160,9 @@ impl Type {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct GraphQL {
   pub schema: RootSchema,
+  #[serde(default)]
   pub types: BTreeMap<String, Type>,
+  #[serde(default)]
   pub unions: BTreeMap<String, Union>,
 }
 
@@ -204,6 +211,7 @@ impl RootSchema {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[setters(strip_option)]
 pub struct Field {
+  #[serde(rename = "type")]
   pub type_of: String,
   #[serde(default)]
   pub list: bool,
