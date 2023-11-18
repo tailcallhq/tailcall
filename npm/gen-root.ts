@@ -48,7 +48,8 @@ async function genServerPackage(buildDefinitions: string[]) {
         version: packageVersion,
         optionalDependencies,
         scarfSettings: {
-            defaultOptIn: true
+            defaultOptIn: true,
+            allowTopLevel: true
         }
     },
         dependencies: {
