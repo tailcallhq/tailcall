@@ -1,0 +1,29 @@
+config: tests/http/config/custom_headers.graphql
+name: Verify Response Headers
+upstream_mocks:
+  - - url: http://localhost:8000/graphql
+      method: POST
+      headers:
+        Content-Type: application/json
+    - status: 200
+      headers:
+        x-id: '1'
+        x-value: 'value'
+expected_upstream_requests:
+  - url: http://localhost:8000/graphql
+    method: POST
+    headers:
+      Content-Type: application/json
+downstream_assertions:
+  - request:
+      method: POST
+      url: http://localhost:8000/graphql
+      headers:
+        Content-Type: application/json
+      body:
+        query: query { item { id name } }
+    response:
+      status: 200
+      headers:
+        x-id: '1'
+        x-value: 'value'
