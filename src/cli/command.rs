@@ -42,6 +42,14 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Path of the file to save final configuration in
+    #[arg(short, long("out"))]
+    out_file_path: Option<String>,
+
+    /// Operations to check
+    #[arg(short, long)]
+    operations: Vec<String>,
   },
 
   /// Merge multiple configuration file into one

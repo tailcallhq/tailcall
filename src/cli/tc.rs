@@ -37,7 +37,7 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
+    Command::Check { file_path, n_plus_one_queries, schema, operations, out_file_path  } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
