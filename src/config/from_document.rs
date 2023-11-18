@@ -7,28 +7,27 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
 
-fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
-  schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(graphql(&doc, sd)))
-    .map(|((server, upstream), graphql)| Config { server, upstream, graphql })
-}
-
-fn graphql(doc: &ServiceDocument, sd: &SchemaDefinition) -> Valid<GraphQL, String> {
+pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let type_definitions: Vec<_> = doc
     .definitions
     .iter()
     .filter_map(|def| match def {
-      TypeSystemDefinition::Type(type_definition) => Some(type_definition),
+      TypeSystemDefinition::Type(td) => Some(td),
       _ => None,
     })
     .collect();
 
-  to_types(&type_definitions)
-    .map(|types| (GraphQL { schema: to_root_schema(sd), types, unions: to_union_types(&type_definitions) }))
+  let types = to_types(&type_definitions);
+  let unions = to_union_types(&type_definitions);
+  let schema = schema_definition(&doc).map(to_root_schema);
+
+  schema_definition(&doc)
+    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema))
+    .map(|((((server, upstream), types), unions), schema)| Config { server, upstream, types, unions, schema })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -105,7 +104,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
 fn to_scalar_type() -> config::Type {
   config::Type { scalar: true, ..Default::default() }
 }
-fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeMap<String, Union> {
+fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, Union>, String> {
   let mut unions = BTreeMap::new();
   for type_definition in type_definitions {
     let type_name = pos_name_to_string(&type_definition.node.name);
@@ -118,7 +117,8 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> BTreeM
     };
     unions.insert(type_name, type_opt);
   }
-  unions
+
+  Valid::succeed(unions)
 }
 fn to_object_type<T>(
   object: &T,
