@@ -5,7 +5,6 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
-use reqwest::Url;
 
 use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
@@ -37,17 +36,9 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     if self.use_batch_request {
-      let request_groups = group_requests_by_url(keys);
-
-      let results = request_groups.iter().map(|(group_key, requests_in_group)| async move {
-        let batched_req = create_batched_request(requests_in_group);
-        let result = self.client.execute(batched_req).await;
-        (group_key.clone(), result)
-      });
-      let results = join_all(results).await;
-
-      #[allow(clippy::mutable_key_type)]
-      let hashmap = extract_individual_responses(results, request_groups);
+      let batched_req = create_batched_request(keys);
+      let result = self.client.execute(batched_req).await;
+      let hashmap = extract_responses(result, keys);
       Ok(hashmap)
     } else {
       let results = keys.iter().map(|key| async {
@@ -64,19 +55,6 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
       Ok(hashmap)
     }
   }
-}
-
-fn group_requests_by_url(dataloader_requests: &[DataLoaderRequest]) -> HashMap<Url, Vec<DataLoaderRequest>> {
-  let mut batch_key_groups: HashMap<Url, Vec<DataLoaderRequest>> = HashMap::new();
-  for dataloader_req in dataloader_requests.iter() {
-    if let Some(mut group) = batch_key_groups.get(dataloader_req.to_request().url()).cloned() {
-      group.push(dataloader_req.clone());
-      batch_key_groups.insert(dataloader_req.to_request().url().clone(), group);
-    } else {
-      batch_key_groups.insert(dataloader_req.to_request().url().clone(), vec![dataloader_req.clone()]);
-    }
-  }
-  batch_key_groups
 }
 
 fn collect_request_bodies(dataloader_requests: &[DataLoaderRequest]) -> String {
@@ -112,23 +90,19 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 }
 
 #[allow(clippy::mutable_key_type)]
-fn extract_individual_responses(
-  results: Vec<(Url, Result<Response, anyhow::Error>)>,
-  request_groups: HashMap<Url, Vec<DataLoaderRequest>>,
+fn extract_responses(
+  result: Result<Response, anyhow::Error>,
+  keys: &[DataLoaderRequest],
 ) -> HashMap<DataLoaderRequest, Response> {
-  #[allow(clippy::mutable_key_type)]
   let mut hashmap = HashMap::new();
-  for (key, result) in results {
-    let group = request_groups.get(&key);
-    if let Ok(res) = result {
-      if let async_graphql_value::ConstValue::List(values) = res.body {
-        for (i, request) in group.unwrap_or(&Vec::new()).iter().enumerate() {
-          let value = values.get(i).unwrap_or(&async_graphql_value::ConstValue::Null);
-          hashmap.insert(
-            request.clone(),
-            Response { status: res.status, headers: res.headers.clone(), body: value.clone() },
-          );
-        }
+  if let Ok(res) = result {
+    if let async_graphql_value::ConstValue::List(values) = res.body {
+      for (i, request) in keys.iter().enumerate() {
+        let value = values.get(i).unwrap_or(&async_graphql_value::ConstValue::Null);
+        hashmap.insert(
+          request.clone(),
+          Response { status: res.status, headers: res.headers.clone(), body: value.clone() },
+        );
       }
     }
   }
@@ -139,31 +113,10 @@ fn extract_individual_responses(
 mod tests {
   use std::collections::BTreeSet;
 
+  use reqwest::Url;
+
   use super::*;
   use crate::http::DataLoaderRequest;
-
-  #[test]
-  fn test_group_requests_by_url() {
-    let url1 = Url::parse("http://example1.com").unwrap();
-    let url2 = Url::parse("http://example2.com").unwrap();
-
-    let mut request1 = reqwest::Request::new(reqwest::Method::GET, url1.clone());
-    request1.body_mut().replace(reqwest::Body::from("a".to_string()));
-    let mut request2 = reqwest::Request::new(reqwest::Method::GET, url1.clone());
-    request2.body_mut().replace(reqwest::Body::from("b".to_string()));
-    let mut request3 = reqwest::Request::new(reqwest::Method::GET, url2.clone());
-    request3.body_mut().replace(reqwest::Body::from("c".to_string()));
-
-    let dl_req1 = DataLoaderRequest::new(request1, BTreeSet::new());
-    let dl_req2 = DataLoaderRequest::new(request2, BTreeSet::new());
-    let dl_req3 = DataLoaderRequest::new(request3, BTreeSet::new());
-
-    let grouped = group_requests_by_url(&[dl_req1, dl_req2, dl_req3]);
-
-    assert_eq!(grouped.keys().len(), 2);
-    assert_eq!(grouped.get(&url1.clone()).unwrap().len(), 2);
-    assert_eq!(grouped.get(&url2.clone()).unwrap().len(), 1);
-  }
 
   #[test]
   fn test_collect_request_bodies() {
