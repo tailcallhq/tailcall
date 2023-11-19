@@ -9,6 +9,7 @@ use serde_json::Value;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
+use super::introspection::GraphqlConfigValidator;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::introspection::IntrospectionResult;
@@ -17,6 +18,11 @@ use crate::config::{is_default, KeyValues};
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
+
+#[async_trait::async_trait]
+pub trait ConfigValidator {
+  async fn validate(&mut self, config: Config) -> Valid<Config, String>;
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -29,9 +35,6 @@ pub struct Config {
 
   #[serde(default)]
   pub graphql: GraphQL,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
-  pub introspection_cache: BTreeMap<String, IntrospectionResult>,
 }
 
 impl Config {
@@ -121,13 +124,8 @@ impl Config {
     let server = self.server.merge_right(other.server.clone());
     let graphql = self.graphql.merge_right(other.graphql.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let mut introspection_cache = self.introspection_cache.clone();
 
-    other.introspection_cache.iter().for_each(|(k, v)| {
-      introspection_cache.insert(k.clone(), v.clone());
-    });
-
-    Self { server, upstream, graphql, introspection_cache }
+    Self { server, upstream, graphql }
   }
 }
 
@@ -380,28 +378,17 @@ impl Config {
     Ok(serde_yaml::from_str(yaml)?)
   }
 
-  pub async fn from_sdl(
-    sdl: &str,
-    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
-  ) -> Valid<Self, String> {
+  pub async fn from_sdl(sdl: &str) -> Valid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => from_document(doc, initialize_introspection_cache).await,
+      Ok(doc) => from_document(doc).await,
       Err(e) => Valid::fail(e.to_string()),
     }
   }
 
-  pub async fn from_source(
-    source: Source,
-    schema: &str,
-    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
-  ) -> Result<Self> {
+  pub async fn from_source(source: Source, schema: &str) -> Result<Self> {
     match source {
-      Source::GraphQL => Ok(
-        Config::from_sdl(schema, initialize_introspection_cache)
-          .await
-          .to_result()?,
-      ),
+      Source::GraphQL => Ok(Config::from_sdl(schema).await.to_result()?),
       Source::Json => Ok(Config::from_json(schema)?),
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
@@ -411,20 +398,32 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_paths(
-    file_paths: std::slice::Iter<'_, String>,
-    initialize_introspection_cache: Option<fn() -> BTreeMap<String, IntrospectionResult>>,
-  ) -> Result<Config> {
+  pub async fn from_file_paths<Iter>(file_paths: Iter) -> Result<Config>
+  where
+    Iter: Iterator,
+    Iter::Item: AsRef<str>,
+  {
+    Config::from_file_paths_with_validator(file_paths, GraphqlConfigValidator::default()).await
+  }
+
+  pub async fn from_file_paths_with_validator<Iter>(
+    file_paths: Iter,
+    mut validator: impl ConfigValidator,
+  ) -> Result<Config>
+  where
+    Iter: Iterator,
+    Iter::Item: AsRef<str>,
+  {
     let mut config = Config::default();
     let futures: Vec<_> = file_paths
       .map(|file_path| async move {
-        let source = Source::detect(file_path)?;
-        let mut f = File::open(file_path).await?;
+        let source = Source::detect(file_path.as_ref())?;
+        let mut f = File::open(file_path.as_ref()).await?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer).await?;
 
         let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl, initialize_introspection_cache).await
+        Config::from_source(source, &server_sdl).await
       })
       .collect();
 
@@ -435,7 +434,7 @@ impl Config {
       }
     }
 
-    Ok(config)
+    Ok(validator.validate(config).await.to_result()?)
   }
 }
 

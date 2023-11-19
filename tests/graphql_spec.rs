@@ -16,8 +16,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::introspection::IntrospectionResult;
-use tailcall::config::Config;
+use tailcall::config::introspection::{GraphqlConfigValidator, IntrospectionResult};
+use tailcall::config::{Config, ConfigValidator};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
@@ -198,12 +198,13 @@ impl GraphQLSpec {
     }
   }
 
-  fn mock_introspection_cache() -> BTreeMap<String, IntrospectionResult> {
+  fn mock_graphql_config_validator() -> GraphqlConfigValidator {
     let contents = fs::read_to_string("tests/data/introspection-result.json").unwrap();
     let introspection_result: IntrospectionResult = serde_json::from_str(contents.as_str()).unwrap();
     let mut cache = BTreeMap::new();
     cache.insert("http://localhost:8000/graphql".to_string(), introspection_result);
-    cache
+
+    GraphqlConfigValidator::with_values(cache)
   }
 }
 
@@ -223,7 +224,9 @@ async fn test_config_identity() -> std::io::Result<()> {
   for spec in specs? {
     let content = spec.server_sdl[0].as_str();
     let expected = content;
-    let config = Config::from_sdl(content, Some(GraphQLSpec::mock_introspection_cache))
+    let config = Config::from_sdl(content).await.to_result().unwrap();
+    let config = GraphQLSpec::mock_graphql_config_validator()
+      .validate(config)
       .await
       .to_result()
       .unwrap();
@@ -249,7 +252,9 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
   for spec in specs? {
     let expected = spec.client_sdl;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content, Some(GraphQLSpec::mock_introspection_cache))
+    let config = Config::from_sdl(content).await.to_result().unwrap();
+    let config = GraphQLSpec::mock_graphql_config_validator()
+      .validate(config)
       .await
       .to_result()
       .unwrap();
@@ -279,10 +284,7 @@ async fn test_execution() -> std::io::Result<()> {
     .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
-        let mut config = Config::from_sdl(&spec.server_sdl[0], Some(GraphQLSpec::mock_introspection_cache))
-          .await
-          .to_result()
-          .unwrap();
+        let mut config = Config::from_sdl(&spec.server_sdl[0]).await.to_result().unwrap();
         config.server.enable_query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))
@@ -329,11 +331,17 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   for spec in specs? {
     let expected = spec.sdl_errors;
     let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content, Some(GraphQLSpec::mock_introspection_cache)).await;
+    let config = Config::from_sdl(content).await.to_result();
+    let config = match config {
+      Ok(config) => GraphQLSpec::mock_graphql_config_validator()
+        .validate(config)
+        .await
+        .to_result(),
+      error => error,
+    };
 
-    let actual = config
-      .and_then(|config| Valid::from(Blueprint::try_from(&config)))
-      .to_result();
+    let actual = config.and_then(|config| Blueprint::try_from(&config));
+
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
@@ -362,7 +370,7 @@ async fn test_merge_sdl() -> std::io::Result<()> {
     let futures = spec
       .server_sdl
       .iter()
-      .map(|s| async { Config::from_sdl(s.as_str(), None).await.to_result().unwrap() })
+      .map(|s| async { Config::from_sdl(s.as_str()).await.to_result().unwrap() })
       .collect::<Vec<_>>();
     let content = join_all(futures).await;
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));

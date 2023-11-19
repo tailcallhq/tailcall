@@ -4,6 +4,9 @@ use async_graphql::futures_util::future::join_all;
 use reqwest;
 use serde_json::json;
 
+use super::{Config, ConfigValidator, GraphQLSource};
+use crate::valid::Valid;
+
 // GraphQL introspection response types.
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct IntrospectionResult {
@@ -144,6 +147,72 @@ fn format_name(name: &String, kind: &String) -> String {
     format!("{}!", name)
   } else {
     name.clone()
+  }
+}
+
+#[derive(Default)]
+pub struct GraphqlConfigValidator {
+  introspection_cache: BTreeMap<String, IntrospectionResult>,
+}
+
+#[async_trait::async_trait]
+impl ConfigValidator for GraphqlConfigValidator {
+  async fn validate(&mut self, mut config: Config) -> Valid<Config, String> {
+    let mut validations = Vec::new();
+
+    for type_ in config.graphql.types.values_mut() {
+      for field in type_.fields.values_mut() {
+        if let Some(graphql_source) = &field.graphql_source {
+          // TODO: run it in parallel
+          let update = self
+            .update_introspection(graphql_source, &config.upstream.base_url)
+            .await
+            .map(|source| {
+              field.graphql_source = Some(source.clone());
+            });
+
+          validations.push(update);
+        }
+      }
+    }
+
+    Valid::from_iter(validations, |validation| validation).and(Valid::succeed(config))
+  }
+}
+
+impl GraphqlConfigValidator {
+  pub fn with_values(values: BTreeMap<String, IntrospectionResult>) -> Self {
+    Self { introspection_cache: values }
+  }
+
+  async fn update_introspection(
+    &mut self,
+    graphqlsource: &GraphQLSource,
+    upstream_base_url: &Option<String>,
+  ) -> Valid<GraphQLSource, String> {
+    let Some(base_url) = graphqlsource.base_url.as_ref().or(upstream_base_url.as_ref()) else {
+      return Valid::fail("No base url found for graphql directive".to_string()).trace("introspection");
+    };
+
+    let mut updated: GraphQLSource = graphqlsource.clone();
+    let introspection_result = self.introspection_cache.get(base_url);
+    match introspection_result {
+      Some(introspection) => {
+        updated.introspection = Some(introspection.clone());
+        Valid::succeed(updated)
+      }
+      None => {
+        let introspection_result = introspect_endpoint(base_url).await;
+        match introspection_result {
+          Ok(introspection) => {
+            updated.introspection = Some(introspection.clone());
+            self.introspection_cache.insert(base_url.clone(), introspection);
+            Valid::succeed(updated)
+          }
+          Err(e) => Valid::fail(e.to_string()),
+        }
+      }
+    }
   }
 }
 
