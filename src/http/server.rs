@@ -1,14 +1,18 @@
 use std::collections::BTreeSet;
 use std::convert::Infallible;
+use std::fs::File;
+use std::io::BufReader;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
+use hyper::server::conn::AddrIncoming;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
-use simple_hyper_server_tls::{hyper_from_pem_files, Protocols};
+use hyper::{Body, HeaderMap, Request, Response, StatusCode, Server};
+use hyper_rustls::TlsAcceptor;
+use rustls::PrivateKey;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -70,6 +74,36 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
+fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>> {
+  let file = File::open(filename).map_err(CLIError::from)?;
+  let mut file = BufReader::new(file);
+
+  let certificates = rustls_pemfile::certs(&mut file)
+    .map_err(CLIError::from)?;
+
+  Ok(
+    certificates.into_iter()
+      .map(rustls::Certificate)
+      .collect()
+  )
+}
+
+fn load_private_key(filename: &str) -> Result<PrivateKey> {
+  println!("before reading the file");
+  let file = File::open(filename).map_err(CLIError::from)?;
+  println!("after reading the file");
+  let mut file = BufReader::new(file);
+
+  let keys = rustls_pemfile::rsa_private_keys(&mut file)
+    .map_err(CLIError::from)?;
+
+  if keys.len() != 1 {
+    return Err(CLIError::new("Expected a single private key").into());
+  }
+  
+  Ok(PrivateKey(keys[0].clone()))
+}
+
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
@@ -89,9 +123,24 @@ pub async fn start_server(config: Config) -> Result<()> {
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-      let server_result = hyper_from_pem_files(cert, key, Protocols::ALL, &addr).map_err(CLIError::from)?;
 
-      let server = server_result.serve(make_svc);
+      // error logged:
+      // thread 'main' panicked at 'Cannot drop a runtime in a context where blocking is not allowed.
+      // This happens when a runtime is dropped from within an asynchronous context.'
+      // the error is caused by the following line
+      let cert_chain = rt.spawn_blocking(move || load_cert(&cert)).await??;
+      let key = rt.spawn_blocking(move || load_private_key(&key)).await??;
+
+      let incoming = AddrIncoming::bind(&addr)?;
+      let acceptor = TlsAcceptor::builder()
+        .with_single_cert(cert_chain, key)
+        .map_err(CLIError::from)?
+        .with_all_versions_alpn()
+        .with_incoming(incoming);
+      
+      let server = Server::builder(acceptor)
+        .http2_only(true)
+        .serve(make_svc);
 
       log::info!("🚀 Tailcall launched at [{}] over {}", addr, "HTTP/2.0");
       if blueprint.server.enable_graphiql {
