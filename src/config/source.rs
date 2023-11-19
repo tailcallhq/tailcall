@@ -32,6 +32,13 @@ impl Source {
     ALL
       .into_iter()
       .find(|format| format.ends_with(name))
-      .ok_or_else(|| UnsupportedFileFormat(name.to_string()))
+      .ok_or(UnsupportedFileFormat(name.to_string()))
+  }
+  pub fn detect_content_type(content_type: &str) -> Result<Source, UnsupportedFileFormat> {
+    let content_type = content_type.split('/').last().unwrap();
+    ALL
+      .into_iter()
+      .find(|format| format.ext().eq(content_type))
+      .ok_or(UnsupportedFileFormat(content_type.to_string()))
   }
 }

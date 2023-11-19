@@ -2,7 +2,7 @@ mod integration_tests {
   use serde::{Deserialize, Serialize};
 
   async fn initiate_test_server(mock_schema_path: String) -> &'static str {
-    let config = tailcall::config::Config::from_file_paths([mock_schema_path].iter())
+    let config = tailcall::config::Config::from_file_or_url([mock_schema_path].iter())
       .await
       .unwrap();
     tailcall::http::start_server(config)

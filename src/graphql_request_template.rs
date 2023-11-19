@@ -53,7 +53,7 @@ impl GraphqlRequestTemplate {
   }
 
   pub fn to_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    let mut req = reqwest::Request::new(POST.into(), url::Url::parse(self.url.as_str())?);
+    let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
     req = self.set_headers(req, ctx);
     req = self.set_body(req, ctx);
     Ok(req)

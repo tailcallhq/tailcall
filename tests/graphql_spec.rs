@@ -5,7 +5,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
 
-use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
@@ -26,12 +25,23 @@ mod graphql_mock;
 
 static INIT: Once = Once::new();
 
+#[derive(Debug, Clone, PartialEq)]
+enum Tag {
+  ClientSDL,
+  ServerSDL,
+  MergedSDL,
+}
+
+#[derive(Debug, Clone)]
+struct Source {
+  sdl: String,
+  tag: Tag,
+}
+
 #[derive(Debug, Default, Setters)]
 struct GraphQLSpec {
   path: PathBuf,
-  client_sdl: String,
-  server_sdl: Vec<String>,
-  merged_server_sdl: String,
+  sources: Vec<Source>,
   sdl_errors: Vec<SDLError>,
   test_queries: Vec<GraphQLQuerySpec>,
   annotation: Option<Annotation>,
@@ -42,6 +52,20 @@ enum Annotation {
   Skip,
   Only,
   Fail,
+}
+
+impl GraphQLSpec {
+  fn find_source(&self, tag: Tag) -> String {
+    self.get_sources(tag).next().unwrap().to_string()
+  }
+
+  fn get_sources(&self, tag: Tag) -> impl Iterator<Item = &str> {
+    self
+      .sources
+      .iter()
+      .filter(move |s| s.tag == tag)
+      .map(|s| s.sdl.as_str())
+  }
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -121,14 +145,17 @@ impl GraphQLSpec {
           }
         }
 
-        spec = spec.client_sdl(trimmed);
+        spec.sources.push(Source { sdl: trimmed.clone(), tag: Tag::ClientSDL });
       }
       if component.contains(SERVER_SDL) {
         server_sdl.push(component.replace(SERVER_SDL, "").trim().to_string());
-        spec = spec.server_sdl(server_sdl.clone());
+        for s in &server_sdl {
+          spec.sources.push(Source { sdl: s.to_string(), tag: Tag::ServerSDL })
+        }
       }
       if component.contains(MERGED_SDL) {
-        spec = spec.merged_server_sdl(component.replace(MERGED_SDL, "").trim().to_string());
+        let sdl = component.replace(MERGED_SDL, "").trim().to_string();
+        spec.sources.push(Source { sdl, tag: Tag::MergedSDL });
       }
       if component.contains(CLIENT_QUERY) {
         let regex = Regex::new(r"@expect.*\) ").unwrap();
@@ -222,9 +249,10 @@ async fn test_config_identity() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let content = spec.server_sdl[0].as_str();
+    let content = spec.find_source(Tag::ServerSDL);
+    let content = content.as_str();
     let expected = content;
-    let config = Config::from_sdl(content).await.to_result().unwrap();
+    let config = Config::from_sdl(content).to_result().unwrap();
     let config = GraphQLSpec::mock_graphql_config_validator()
       .validate(config)
       .await
@@ -250,9 +278,12 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let expected = spec.client_sdl;
-    let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content).await.to_result().unwrap();
+    let expected = spec.find_source(Tag::ClientSDL);
+    let expected = expected.as_str();
+    let content = spec.find_source(Tag::ServerSDL);
+    let content = content.as_str();
+    let config = Config::from_sdl(content).to_result().unwrap();
+    // error is on the line below
     let config = GraphQLSpec::mock_graphql_config_validator()
       .validate(config)
       .await
@@ -284,7 +315,9 @@ async fn test_execution() -> std::io::Result<()> {
     .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
-        let mut config = Config::from_sdl(&spec.server_sdl[0]).await.to_result().unwrap();
+        let mut config = Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str())
+          .to_result()
+          .unwrap();
         config.server.enable_query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))
@@ -293,7 +326,7 @@ async fn test_execution() -> std::io::Result<()> {
           .unwrap();
         let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
         let server_ctx = ServerContext::new(blueprint, client);
-        let schema = server_ctx.schema.clone();
+        let schema = &server_ctx.schema;
 
         for q in spec.test_queries {
           let mut headers = HeaderMap::new();
@@ -329,9 +362,10 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
 
   for spec in specs? {
+    let content = spec.find_source(Tag::ServerSDL);
     let expected = spec.sdl_errors;
-    let content = spec.server_sdl[0].as_str();
-    let config = Config::from_sdl(content).await.to_result();
+    let content = content.as_str();
+    let config = Config::from_sdl(content).to_result();
     let config = match config {
       Ok(config) => GraphQLSpec::mock_graphql_config_validator()
         .validate(config)
@@ -366,13 +400,12 @@ async fn test_merge_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {
-    let expected = spec.merged_server_sdl;
-    let futures = spec
-      .server_sdl
-      .iter()
-      .map(|s| async { Config::from_sdl(s.as_str()).await.to_result().unwrap() })
+    let expected = spec.find_source(Tag::MergedSDL);
+    let expected = expected.as_str();
+    let content = spec
+      .get_sources(Tag::ServerSDL)
+      .map(|s| Config::from_sdl(s).to_result().unwrap())
       .collect::<Vec<_>>();
-    let content = join_all(futures).await;
     let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let actual = config.to_sdl();
 

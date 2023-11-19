@@ -160,7 +160,7 @@ impl ConfigValidator for GraphqlConfigValidator {
   async fn validate(&mut self, mut config: Config) -> Valid<Config, String> {
     let mut validations = Vec::new();
 
-    for type_ in config.graphql.types.values_mut() {
+    for type_ in config.types.values_mut() {
       for field in type_.fields.values_mut() {
         if let Some(graphql_source) = &field.graphql_source {
           // TODO: run it in parallel

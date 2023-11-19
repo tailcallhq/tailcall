@@ -13,17 +13,12 @@ fn config_document(config: &Config) -> ServiceDocument {
   let schema_definition = SchemaDefinition {
     extend: false,
     directives: vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())],
-    query: config.graphql.schema.query.clone().map(|name| pos(Name::new(name))),
-    mutation: config.graphql.schema.mutation.clone().map(|name| pos(Name::new(name))),
-    subscription: config
-      .graphql
-      .schema
-      .subscription
-      .clone()
-      .map(|name| pos(Name::new(name))),
+    query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+    mutation: config.schema.mutation.clone().map(|name| pos(Name::new(name))),
+    subscription: config.schema.subscription.clone().map(|name| pos(Name::new(name))),
   };
   definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-  for (type_name, type_def) in config.graphql.types.iter() {
+  for (type_name, type_def) in config.types.iter() {
     let kind = if type_def.interface {
       TypeKind::Interface(InterfaceType {
         implements: type_def
@@ -167,7 +162,7 @@ fn config_document(config: &Config) -> ServiceDocument {
       kind,
     })));
   }
-  for (name, union) in config.graphql.unions.iter() {
+  for (name, union) in config.unions.iter() {
     definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
       extend: false,
       description: None,

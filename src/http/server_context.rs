@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic;
-use derive_setters::Setters;
 
 use super::HttpClient;
 use crate::blueprint::Type::ListType;
@@ -9,7 +8,6 @@ use crate::blueprint::{Blueprint, Definition};
 use crate::http::{GraphqlDataLoader, HttpDataLoader};
 use crate::lambda::{Expression, Unsafe};
 
-#[derive(Setters, Clone)]
 pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
