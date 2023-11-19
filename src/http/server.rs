@@ -84,7 +84,6 @@ pub async fn start_server(config: Config) -> Result<()> {
 
   match blueprint.server.http {
     Http::HTTP2 { cert, key } => {
-      let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
