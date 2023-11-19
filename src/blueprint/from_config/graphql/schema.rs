@@ -8,7 +8,7 @@ use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
-  Valid::from_option(config.graphql.schema.query.clone(), "Query root is missing".to_owned())
+  Valid::from_option(config.schema.query.clone(), "Query root is missing".to_owned())
     .and_then(|ref query_type_name| {
       let Some(query) = config.find_type(query_type_name) else {
         return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
@@ -25,7 +25,7 @@ fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<(), St
     .trace(name)
 }
 
-fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
+pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
   const_directive
     .arguments
     .into_iter()
@@ -43,7 +43,7 @@ fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
 }
 
 fn validate_mutation(config: &Config) -> Valid<(), String> {
-  let mutation_type_name = config.graphql.schema.mutation.as_ref();
+  let mutation_type_name = config.schema.mutation.as_ref();
 
   if let Some(mutation_type_name) = mutation_type_name {
     let Some(mutation) = config.find_type(mutation_type_name) else {
@@ -63,13 +63,13 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
     validate_query(config)
       .and(validate_mutation(config))
       .and(Valid::from_option(
-        config.graphql.schema.query.as_ref(),
+        config.schema.query.as_ref(),
         "Query root is missing".to_owned(),
       ))
       .zip(to_directive(config.server.to_directive()))
       .map(|(query_type_name, directive)| SchemaDefinition {
         query: query_type_name.to_owned(),
-        mutation: config.graphql.schema.mutation.clone(),
+        mutation: config.schema.mutation.clone(),
         directives: vec![directive],
       })
   })

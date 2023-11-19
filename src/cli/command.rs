@@ -12,7 +12,7 @@ const ABOUT: &str = r"
 \__/\__,_/_/_/\___/\__,_/_/_/";
 
 #[derive(Parser)]
-#[command(name ="tc",author, version = VERSION, about, long_about = Some(ABOUT))]
+#[command(name ="tailcall",author, version = VERSION, about, long_about = Some(ABOUT))]
 pub struct Cli {
   #[command(subcommand)]
   pub command: Command,
@@ -22,7 +22,7 @@ pub struct Cli {
 pub enum Command {
   /// Starts the GraphQL server on the configured port
   Start {
-    /// Path for the configuration files separated by spaces if more than one
+    /// Path for the configuration files or http(s) link to config files separated by spaces if more than one
     #[arg(required = true)]
     file_path: Vec<String>,
     #[arg(long)]

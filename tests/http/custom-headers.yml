@@ -1,0 +1,30 @@
+name: Custom Headers
+config: !inline
+  server:
+    responseHeaders:
+      - key: x-id
+        value: 1
+      - key: x-name
+        value: John Doe
+  schema:
+    query: Query
+  types:
+    Query:
+      fields:
+        greet:
+          type: String
+          const:
+            data: Hello World!
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { greet }"
+    response:
+      headers:
+        x-id: 1
+        x-name: John Doe
+      body:
+        data:
+          greet: Hello World!

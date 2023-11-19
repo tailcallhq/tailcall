@@ -61,11 +61,28 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   blueprint
 }
 
+fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
+  TryFoldConfig::new(|config, _| {
+    validate_query(config)
+      .and(validate_mutation(config))
+      .and(Valid::from_option(
+        config.schema.query.as_ref(),
+        "Query root is missing".to_owned(),
+      ))
+      .zip(to_directive(config.server.to_directive()))
+      .map(|(query_type_name, directive)| SchemaDefinition {
+        query: query_type_name.to_owned(),
+        mutation: config.schema.mutation.clone(),
+        directives: vec![directive],
+      })
+  })
+}
+
 fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
   TryFold::<Config, Vec<Definition>, String>::new(|config, _| {
     let output_types = config.output_types();
     let input_types = config.input_types();
-    Valid::from_iter(config.graphql.types.iter(), |(name, type_)| {
+    Valid::from_iter(config.types.iter(), |(name, type_)| {
       let dbl_usage = input_types.contains(name) && output_types.contains(name);
       if let Some(variants) = &type_.variants {
         if !variants.is_empty() {
@@ -95,7 +112,12 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       }
     })
     .map(|mut types| {
-      types.extend(config.graphql.unions.iter().map(to_union_type_definition));
+      types.extend(
+        config
+          .unions
+          .iter()
+          .map(to_union_type_definition),
+      );
       types
     })
   })
@@ -233,6 +255,40 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefiniti
     fields.extend(added_fields);
     fields
   })
+}
+
+fn validate_query(config: &Config) -> Valid<(), String> {
+  Valid::from_option(config.schema.query.clone(), "Query root is missing".to_owned())
+    .and_then(|ref query_type_name| {
+      let Some(query) = config.find_type(query_type_name) else {
+        return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+      };
+
+      Valid::from_iter(query.fields.iter(), validate_field_has_resolver).trace(query_type_name)
+    })
+    .unit()
+}
+
+fn validate_mutation(config: &Config) -> Valid<(), String> {
+  let mutation_type_name = config.schema.mutation.as_ref();
+
+  if let Some(mutation_type_name) = mutation_type_name {
+    let Some(mutation) = config.find_type(mutation_type_name) else {
+      return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
+    };
+
+    Valid::from_iter(mutation.fields.iter(), validate_field_has_resolver)
+      .trace(mutation_type_name)
+      .unit()
+  } else {
+    Valid::succeed(())
+  }
+}
+
+fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<(), String> {
+  Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
+    .when(|| !field.has_resolver())
+    .trace(name)
 }
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
