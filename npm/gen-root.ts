@@ -49,9 +49,8 @@ async function genServerPackage(buildDefinitions: string[]) {
         optionalDependencies,
         scarfSettings: {
             defaultOptIn: true,
-            allowTopLevel: true
-        }
-    },
+            allowTopLevel: true,
+        },
         dependencies: {
             "detect-libc": "^2.0.2",
             "@scarf/scarf": "^1.3.0",
