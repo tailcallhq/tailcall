@@ -189,6 +189,12 @@ impl From<ValidationError<String>> for CLIError {
   }
 }
 
+impl From<Box<dyn std::error::Error>> for CLIError {
+  fn from(value: Box<dyn std::error::Error>) -> Self {
+    CLIError::new(value.to_string().as_str())
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::collections::VecDeque;

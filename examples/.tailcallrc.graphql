@@ -11,14 +11,10 @@ directive @server(
   vars: [KeyValue]
   responseHeaders: [KeyValue]
   hostname: String
-  http: HttpOptions
-) on SCHEMA
-
-input HttpOptions {
   version: HttpVersion
-  certPath: String
-  keyPath: String
-}
+  cert: String
+  key: String
+) on SCHEMA
 
 enum HttpVersion {
   HTTP1

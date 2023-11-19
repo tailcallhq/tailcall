@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::blueprint::Http;
 use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -16,7 +15,6 @@ pub struct Server {
   pub enable_query_validation: Option<bool>,
   pub enable_response_validation: Option<bool>,
   pub global_response_timeout: Option<i64>,
-  pub http: Option<Http>,
   #[serde(skip_serializing_if = "is_default")]
   pub workers: Option<usize>,
   pub hostname: Option<String>,
@@ -25,6 +23,16 @@ pub struct Server {
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
+  pub version: Option<HttpVersion>,
+  pub cert: Option<String>,
+  pub key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
+pub enum HttpVersion {
+  #[default]
+  HTTP1,
+  HTTP2,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
@@ -49,10 +57,6 @@ impl Server {
   }
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
-  }
-
-  pub fn get_http_options(&self) -> Http {
-    self.http.clone().unwrap_or_default()
   }
 
   pub fn get_workers(&self) -> usize {
@@ -87,6 +91,10 @@ impl Server {
     self.response_headers.clone()
   }
 
+  pub fn get_version(self) -> HttpVersion {
+    self.version.unwrap_or(HttpVersion::HTTP1)
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
     self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
@@ -98,17 +106,15 @@ impl Server {
     self.workers = other.workers.or(self.workers);
     self.port = other.port.or(self.port);
     self.hostname = other.hostname.or(self.hostname);
-    self.http = other.http.map(|other| {
-      let mut http = self.http.unwrap_or_default();
-      http.version = other.version;
-      http
-    });
     let mut vars = self.vars.0.clone();
     vars.extend(other.vars.0);
     self.vars = KeyValues(vars);
     let mut response_headers = self.response_headers.0.clone();
     response_headers.extend(other.response_headers.0);
     self.response_headers = KeyValues(response_headers);
+    self.version = other.version.or(self.version);
+    self.cert = other.cert.or(self.cert);
+    self.key = other.key.or(self.key);
     self
   }
 }

@@ -13,7 +13,7 @@ use simple_hyper_server_tls::{hyper_from_pem_files, Protocols};
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper;
-use crate::blueprint::{Blueprint, HttpVersion};
+use crate::blueprint::{Blueprint, HttpServer};
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::client;
@@ -82,15 +82,15 @@ pub async fn start_server(config: Config) -> Result<()> {
     .build()
     .unwrap();
 
-  match blueprint.server.http.version {
-    HttpVersion::HTTP2 { cert_path, key_path } => {
+  match blueprint.server.http {
+    HttpServer::HTTP2 { cert, key } => {
       let addr = SocketAddr::from((blueprint.server.hostname, blueprint.server.port));
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-      let server_result = hyper_from_pem_files(cert_path, key_path, Protocols::ALL, &addr).unwrap();
+      let server_result = hyper_from_pem_files(cert, key, Protocols::ALL, &addr).map_err(CLIError::from)?;
 
       let server = server_result.serve(make_svc);
 
@@ -101,7 +101,7 @@ pub async fn start_server(config: Config) -> Result<()> {
 
       Ok(rt.spawn(async move { server.await.map_err(CLIError::from) }).await??)
     }
-    _ => {
+    HttpServer::HTTP1 => {
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
         async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
