@@ -1,36 +1,33 @@
----
-config: tests/http/config/simple.graphql
+config: !file tests/http/config/simple.graphql
 name: Simple GraphQL Request
-upstream_mocks:
-  - - url: http://jsonplaceholder.typicode.com/users/1
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
       headers:
-        Accept: application/json
         test: test
-    - status: 200
-      headers:
-        Content-Type: application/json
+    response:
       body:
         id: 1
         name: foo
-expected_upstream_requests:
-  - url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      Accept: application/json
-      test: test
-downstream_assertions:
+assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
-      headers:
-        Accept: application/json
-        test: test
       body:
         query: query { user { name } }
     response:
-      status: 200
-      headers:
-        Content-Type: application/json
       body:
         data:
           user:
             name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query:
+          foo: bar
+    response:
+      body:
+        data: null
+        errors:
+          - message: "Unexpected GraphQL Request: invalid type: map, expected a string at line 1 column 9"

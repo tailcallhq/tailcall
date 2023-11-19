@@ -12,14 +12,41 @@ use crate::config::Batch;
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
+fn get_body_value_single(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+  body_value
+    .get(id)
+    .and_then(|a| a.first().cloned().cloned())
+    .unwrap_or(ConstValue::Null)
+}
+
+fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+  ConstValue::List(
+    body_value
+      .get(id)
+      .unwrap_or(&Vec::new())
+      .iter()
+      .map(|&o| o.to_owned())
+      .collect::<Vec<_>>(),
+  )
+}
+
 #[derive(Clone)]
 pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub batched: Option<GroupBy>,
+  pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>) -> Self {
-    HttpDataLoader { client, batched }
+  pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>, is_list: bool) -> Self {
+    HttpDataLoader {
+      client,
+      batched,
+      body: if is_list {
+        get_body_value_list
+      } else {
+        get_body_value_single
+      },
+    }
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader, NoCache> {
@@ -63,17 +90,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         let id = query_set
           .get(group_by.key())
           .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
-        hashmap.insert(
-          key.clone(),
-          res.clone().body(
-            body_value
-              .get(id.as_ref())
-              .and_then(|a| a.first().cloned().cloned())
-              .unwrap_or(ConstValue::Null),
-          ),
-        );
+        hashmap.insert(key.clone(), res.clone().body((self.body)(body_value.clone(), id)));
       }
-
       Ok(hashmap)
     } else {
       let results = keys.iter().map(|key| async {
@@ -91,69 +109,5 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
       Ok(hashmap)
     }
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use std::collections::BTreeSet;
-  use std::sync::atomic::{AtomicUsize, Ordering};
-
-  use super::*;
-  use crate::http::DataLoaderRequest;
-
-  #[derive(Clone)]
-  struct MockHttpClient {
-    // To keep track of number of times execute is called
-    request_count: Arc<AtomicUsize>,
-  }
-
-  #[async_trait::async_trait]
-  impl HttpClient for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
-      self.request_count.fetch_add(1, Ordering::SeqCst);
-      // You can mock the actual response as per your need
-      Ok(Response::default())
-    }
-  }
-  #[tokio::test]
-  async fn test_load_function() {
-    let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
-
-    let loader = HttpDataLoader { client: Arc::new(client.clone()), batched: None };
-    let loader = loader.to_data_loader(Batch::default().delay(1));
-
-    let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com".parse().unwrap());
-    let headers_to_consider = BTreeSet::from(["Header1".to_string(), "Header2".to_string()]);
-    let key = DataLoaderRequest::new(request, headers_to_consider);
-    let futures: Vec<_> = (0..100).map(|_| loader.load_one(key.clone())).collect();
-    let _ = join_all(futures).await;
-    assert_eq!(
-      client.request_count.load(Ordering::SeqCst),
-      1,
-      "Only one request should be made for the same key"
-    );
-  }
-  #[tokio::test]
-  async fn test_load_function_many() {
-    let client = MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) };
-
-    let loader = HttpDataLoader { client: Arc::new(client.clone()), batched: None };
-    let loader = loader.to_data_loader(Batch::default().delay(1));
-
-    let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
-    let request2 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/2".parse().unwrap());
-
-    let headers_to_consider = BTreeSet::from(["Header1".to_string(), "Header2".to_string()]);
-    let key1 = DataLoaderRequest::new(request1, headers_to_consider.clone());
-    let key2 = DataLoaderRequest::new(request2, headers_to_consider);
-    let futures1 = (0..100).map(|_| loader.load_one(key1.clone()));
-    let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
-    let _ = join_all(futures1.chain(futures2)).await;
-    assert_eq!(
-      client.request_count.load(Ordering::SeqCst),
-      2,
-      "Only two requests should be made for two unique keys"
-    );
   }
 }

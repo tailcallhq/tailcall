@@ -1,15 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::Result;
-use async_graphql::futures_util::future::join_all;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 
 use super::{Server, Upstream};
+use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
 use crate::http::Method;
@@ -19,11 +17,17 @@ use crate::valid::Valid;
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+  #[serde(default)]
   pub server: Server,
+  #[serde(default)]
   pub upstream: Upstream,
-  pub graphql: GraphQL,
+  pub schema: RootSchema,
+  #[serde(default)]
+  #[setters(skip)]
+  pub types: BTreeMap<String, Type>,
+  #[serde(default)]
+  pub unions: BTreeMap<String, Union>,
 }
-
 impl Config {
   pub fn port(&self) -> u16 {
     self.server.port.unwrap_or(8000)
@@ -32,15 +36,15 @@ impl Config {
   pub fn output_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
 
-    if let Some(ref query) = &self.graphql.schema.query {
+    if let Some(ref query) = &self.schema.query {
       types.insert(query);
     }
 
-    if let Some(ref mutation) = &self.graphql.schema.mutation {
+    if let Some(ref mutation) = &self.schema.mutation {
       types.insert(mutation);
     }
 
-    for (_, type_of) in self.graphql.types.iter() {
+    for (_, type_of) in self.types.iter() {
       if type_of.interface || !type_of.fields.is_empty() {
         for (_, field) in type_of.fields.iter() {
           types.insert(&field.type_of);
@@ -52,7 +56,7 @@ impl Config {
 
   pub fn input_types(&self) -> HashSet<&String> {
     let mut types = HashSet::new();
-    for (_, type_of) in self.graphql.types.iter() {
+    for (_, type_of) in self.types.iter() {
       if !type_of.interface {
         for (_, field) in type_of.fields.iter() {
           for (_, arg) in field.args.iter() {
@@ -65,11 +69,11 @@ impl Config {
   }
 
   pub fn find_type(&self, name: &str) -> Option<&Type> {
-    self.graphql.types.get(name)
+    self.types.get(name)
   }
 
   pub fn find_union(&self, name: &str) -> Option<&Union> {
-    self.graphql.unions.get(name)
+    self.unions.get(name)
   }
 
   pub fn to_yaml(&self) -> Result<String> {
@@ -90,7 +94,7 @@ impl Config {
   }
 
   pub fn query(mut self, query: &str) -> Self {
-    self.graphql.schema.query = Some(query.to_string());
+    self.schema.query = Some(query.to_string());
     self
   }
 
@@ -99,19 +103,22 @@ impl Config {
     for (name, type_) in types {
       graphql_types.insert(name.to_string(), type_);
     }
-    self.graphql.types = graphql_types;
+    self.types = graphql_types;
     self
   }
 
   pub fn contains(&self, name: &str) -> bool {
-    self.graphql.types.contains_key(name) || self.graphql.unions.contains_key(name)
+    self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
   pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
-    let graphql = self.graphql.merge_right(other.graphql.clone());
+    let types = merge_types(self.types, other.types.clone());
+    let unions = merge_unions(self.unions, other.unions.clone());
+    let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    Self { server, upstream, graphql }
+
+    Self { server, upstream, types, schema, unions }
   }
 }
 
@@ -155,34 +162,28 @@ impl Type {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct GraphQL {
-  pub schema: RootSchema,
-  pub types: BTreeMap<String, Type>,
-  pub unions: BTreeMap<String, Union>,
+fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
+  for (name, mut other_type) in other_types {
+    if let Some(self_type) = self_types.remove(&name) {
+      other_type = self_type.merge_right(&other_type)
+    };
+
+    self_types.insert(name, other_type);
+  }
+  self_types
 }
 
-impl GraphQL {
-  pub fn merge_right(mut self, other: Self) -> Self {
-    for (name, mut other_type) in other.types {
-      if let Some(self_type) = self.types.remove(&name) {
-        other_type = self_type.merge_right(&other_type)
-      };
-
-      self.types.insert(name, other_type);
+fn merge_unions(
+  mut self_unions: BTreeMap<String, Union>,
+  other_unions: BTreeMap<String, Union>,
+) -> BTreeMap<String, Union> {
+  for (name, mut other_union) in other_unions {
+    if let Some(self_union) = self_unions.remove(&name) {
+      other_union = self_union.merge_right(other_union);
     }
-
-    for (name, mut other_union) in other.unions {
-      if let Some(self_union) = self.unions.remove(&name) {
-        other_union = self_union.merge_right(other_union);
-      }
-      self.unions.insert(name, other_union);
-    }
-
-    self.schema = self.schema.merge_right(other.schema);
-
-    self
+    self_unions.insert(name, other_union);
   }
+  self_unions
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
@@ -207,6 +208,7 @@ impl RootSchema {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[setters(strip_option)]
 pub struct Field {
+  #[serde(rename = "type")]
   pub type_of: String,
   #[serde(default)]
   pub list: bool,
@@ -221,6 +223,8 @@ pub struct Field {
   pub http: Option<Http>,
   #[serde(rename = "unsafe")]
   pub unsafe_operation: Option<Unsafe>,
+
+  #[serde(rename = "const")]
   pub const_field: Option<Const>,
 }
 
@@ -350,33 +354,13 @@ impl Config {
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
   }
-
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_paths(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
-    let mut config = Config::default();
-    let futures: Vec<_> = file_paths
-      .map(|file_path| async move {
-        let source = Source::detect(file_path)?;
-        let mut f = File::open(file_path).await?;
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).await?;
-
-        let server_sdl = String::from_utf8(buffer)?;
-        Config::from_source(source, &server_sdl)
-      })
-      .collect();
-
-    for res in join_all(futures).await {
-      match res {
-        Ok(conf) => config = config.clone().merge_right(&conf),
-        Err(e) => return Err(e), // handle error
-      }
-    }
-
-    Ok(config)
+  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+    let config_reader = ConfigReader::init(file_paths);
+    config_reader.read().await
   }
 }
 

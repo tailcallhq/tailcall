@@ -12,17 +12,19 @@ interface ICLI {
     build: string
     version: string
     ext?: string
+    libc?: string
 }
 
 const options = parse<ICLI>({
     target: { type: String },
     build: { type: String },
     version: { type: String },
-    ext: { type: String, defaultValue: '', optional: true },
+    ext: { type: String, optional: true },
+    libc: { type: String, optional: true }
 })
 
 async function genPlatformPackage() {
-    const { target, build, version, ext } = options
+    const { target, build, version, libc, ext } = options
     const [os, cpu] = build.split("-")
     
     const packageJson = await fs.readFile(resolve(__dirname, "./package.json"), "utf8")
@@ -42,12 +44,13 @@ async function genPlatformPackage() {
         cpu: [cpu]
     }
 
+    if (libc) platformPackage.libc = [libc]
+
     const packagePath = `@tailcallhq/core-${build}`
     const binPath = `${packagePath}/bin`
 
-    const targetPath = `../target/${target}/release/tailcall${ext}`
-    const tcPath = `${binPath}/tc${ext}`
-
+    const targetPath = ext ? `../target/${target}/release/tailcall${ext}` : `../target/${target}/release/tailcall`
+    const tcPath = ext ? `${binPath}/tailcall${ext}` : `${binPath}/tailcall`
     const packageJsonPath = `${packagePath}/package.json`
     const readmePath = "../README.md"
 
