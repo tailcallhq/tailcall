@@ -408,7 +408,6 @@ impl Config {
     Iter: Iterator,
     Iter::Item: AsRef<str>,
   {
-
     let config_reader = ConfigReader::init(file_paths);
     let config = config_reader.read().await?;
 

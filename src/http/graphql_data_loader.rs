@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -60,20 +61,13 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
 fn collect_request_bodies(dataloader_requests: &[DataLoaderRequest]) -> String {
   let batched_query = dataloader_requests
     .iter()
-    .map(|dataloader_req| {
-      if let Some(body) = dataloader_req.to_request().body() {
-        if let Some(bytes) = body.as_bytes() {
-          if let Ok(body_str) = std::str::from_utf8(bytes) {
-            body_str.to_string().clone()
-          } else {
-            "".to_string()
-          }
-        } else {
-          "".to_string()
-        }
-      } else {
-        "".to_string()
-      }
+    .filter_map(|dataloader_req| {
+      dataloader_req
+        .body()
+        .and_then(|body| body.as_bytes())
+        // PERF: conversion from bytes to string with utf8 validation
+        .and_then(|body| from_utf8(body).ok())
+        .or(Some(""))
     })
     .collect::<Vec<_>>()
     .join(",");

@@ -1,15 +1,19 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct DataLoaderRequest(reqwest::Request, BTreeSet<String>);
 
 impl DataLoaderRequest {
   pub fn new(req: reqwest::Request, headers: BTreeSet<String>) -> Self {
+    // TODO: req should already have headers builtin, no?
     DataLoaderRequest(req, headers)
   }
   pub fn to_request(&self) -> reqwest::Request {
+    // TODO: excessive clone for the whole structure instead of cloning only part of it
+    // check if we really need to clone anything at all or just pass references?
     self.clone().0
   }
   pub fn headers(&self) -> &BTreeSet<String> {
@@ -45,6 +49,8 @@ impl PartialEq for DataLoaderRequest {
   }
 }
 
+impl Eq for DataLoaderRequest {}
+
 impl Clone for DataLoaderRequest {
   fn clone(&self) -> Self {
     let req = self.0.try_clone().unwrap_or_else(|| {
@@ -57,7 +63,13 @@ impl Clone for DataLoaderRequest {
   }
 }
 
-impl Eq for DataLoaderRequest {}
+impl Deref for DataLoaderRequest {
+    type Target = reqwest::Request;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[cfg(test)]
 mod tests {
