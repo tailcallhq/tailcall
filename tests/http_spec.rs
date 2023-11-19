@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::http::{graphql_batch_request, graphql_single_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{handle_batch_request, handle_single_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -170,7 +170,7 @@ impl HttpSpec {
     };
 
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient { mocks: self.mock.to_vec() });
+    let client = Arc::new(MockHttpClient { spec: self.clone() });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
   }
@@ -178,27 +178,29 @@ impl HttpSpec {
 
 #[derive(Clone)]
 struct MockHttpClient {
-  mocks: Vec<Mock>,
+  spec: HttpSpec,
 }
+
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> Result<Response, anyhow::Error> {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     // Clone the mocks to allow iteration without borrowing issues.
-    let mocks = self.mocks.clone();
+    let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.
     let mock = mocks
       .iter()
       .find(|Mock { request: mock_req, response: _ }| {
-        let method_match = req.method().as_str()
-          == serde_json::to_string(&mock_req.0.method.clone())
-            .expect("provided method is not valid")
-            .as_str()
-            .trim_matches('"');
+        let method_match = req.method() == mock_req.0.method.clone().to_hyper();
         let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
         method_match && url_match
       })
-      .unwrap_or_else(|| panic!("Unexpected upstream request: {:?}", req));
+      .ok_or(anyhow!(
+        "No mock found for request: {:?} {} in {}",
+        req.method(),
+        req.url(),
+        format!("{}", self.spec.path.to_str().unwrap())
+      ))?;
 
     // Clone the response from the mock to avoid borrowing issues.
     let mock_response = mock.response.clone();
@@ -267,8 +269,8 @@ fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
 }
 
 #[tokio::test]
-async fn http_spec_e2e() -> std::io::Result<()> {
-  let spec = HttpSpec::cargo_read("tests/http").unwrap();
+async fn http_spec_e2e() -> anyhow::Result<()> {
+  let spec = HttpSpec::cargo_read("tests/http")?;
   let spec = HttpSpec::filter_specs(spec);
   let tasks: Vec<_> = spec
     .into_iter()
@@ -286,14 +288,14 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
   let url = downstream_assertion.request.0.url.clone();
   let server_context = spec.server_context().await;
   let req = Request::builder()
-    .method(method)
+    .method(method.to_hyper())
     .uri(url.as_str())
     .body(Body::from(query_string))?;
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    graphql_batch_request(req, server_context.as_ref()).await
+    handle_batch_request(req, server_context).await
   } else {
-    graphql_single_request(req, server_context.as_ref()).await
+    handle_single_request(req, server_context).await
   }
 }
