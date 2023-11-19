@@ -22,11 +22,11 @@ pub struct Server {
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
-  pub http: HttpServer,
+  pub http: Http,
 }
 
 #[derive(Clone, Debug)]
-pub enum HttpServer {
+pub enum Http {
   HTTP1,
   HTTP2 { cert: String, key: String },
 }
@@ -64,9 +64,9 @@ impl TryFrom<crate::config::Server> for Server {
         let cert = Valid::from_option(server.cert.clone(), "Certificate is required for HTTP2".to_string());
         let key = Valid::from_option(server.key.clone(), "Key is required for HTTP2".to_string());
 
-        cert.zip(key).map(|(cert, key)| HttpServer::HTTP2 { cert, key })
+        cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
       }
-      _ => Valid::succeed(HttpServer::HTTP1),
+      _ => Valid::succeed(Http::HTTP1),
     };
 
     validate_hostname(server.clone().get_hostname().to_lowercase())
