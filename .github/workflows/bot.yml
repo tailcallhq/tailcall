@@ -148,3 +148,50 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: apply lint fixes"
+
+  Micro-benchmarks:
+    name: criterion_benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Critcmp
+        run: cargo install critcmp
+
+      - name: Benchmark changes
+        run: |
+          cargo bench --bench impl_path_string_for_evaluation_context -- --save-baseline new_branch
+          cargo bench --bench data_loader_bench -- --save-baseline new_branch
+          cargo bench --bench request_template_bench -- --save-baseline new_branch
+          cargo bench --bench json_like_bench -- --save-baseline new_branch
+
+      - name: Fetch base branch
+        run: git fetch
+
+      - name: Checkout base branch
+        run: git checkout ${{ github.base_ref }}
+
+      - name: Benchmark base
+        run: |
+          cargo bench --bench impl_path_string_for_evaluation_context -- --save-baseline main_branch
+          cargo bench --bench data_loader_bench -- --save-baseline main_branch
+          cargo bench --bench request_template_bench -- --save-baseline main_branch
+          cargo bench --bench json_like_bench -- --save-baseline main_branch
+
+      - name: Run shell script
+        run: |
+          critcmp main_branch new_branch | awk 'NR>2 {
+           item = $1
+           before = $7
+           after = $3
+           before_val = ($7 ~ /ns/) ? $7 : ($7 ~ /µs/) ? $7 * 1000 : ($7 ~ /ms/) ? $7 * 1000000 : "invalid"
+           after_val = ($3 ~ /ns/) ? $3 : ($3 ~ /µs/) ? $3 * 1000 : ($3 ~ /ms/) ? $3 * 1000000 : "invalid"
+           temp1 = before_val
+           temp2 = after_val
+           if (before_val != "invalid" && after_val != "invalid") {
+               change = ((after_val - before_val) / before_val) * 100
+               gsub("%", "", change)  # Remove '%' symbol
+               printf "| %-30s |
