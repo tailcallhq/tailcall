@@ -26,7 +26,8 @@ impl HttpClient for MockHttpClient {
 async fn benchmark_data_loader() {
   let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
 
-  let loader = HttpDataLoader { client: client.clone(), batched: None };
+  let loader = HttpDataLoader { client: client.clone(), batched: None, body: |_, _| async_graphql::Value::Null };
+
   let loader = loader.to_data_loader(Batch::default().delay(1));
 
   let request1 = reqwest::Request::new(reqwest::Method::GET, "http://example.com/1".parse().unwrap());
