@@ -112,12 +112,7 @@ fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
       }
     })
     .map(|mut types| {
-      types.extend(
-        config
-          .unions
-          .iter()
-          .map(to_union_type_definition),
-      );
+      types.extend(config.unions.iter().map(to_union_type_definition));
       types
     })
   })
