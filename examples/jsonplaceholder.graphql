@@ -5,8 +5,8 @@ schema
     enableQueryValidation: false
     hostname: "0.0.0.0"
     version: HTTP2
-    cert: "./cert.pem"
-    key: "./key.pem"
+    cert: "./examples/example.crt"
+    key: "./examples/example.key"
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query
