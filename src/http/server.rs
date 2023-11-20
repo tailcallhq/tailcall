@@ -10,7 +10,7 @@ use async_graphql::http::GraphiQLSource;
 use client::DefaultHttpClient;
 use hyper::server::conn::AddrIncoming;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, HeaderMap, Request, Response, StatusCode, Server};
+use hyper::{Body, HeaderMap, Request, Response, Server, StatusCode};
 use hyper_rustls::TlsAcceptor;
 use rustls::PrivateKey;
 
@@ -74,34 +74,44 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
-fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>> {
-  let file = File::open(filename).map_err(CLIError::from)?;
+fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error> {
+  let file = File::open(filename)?;
   let mut file = BufReader::new(file);
 
-  let certificates = rustls_pemfile::certs(&mut file)
-    .map_err(CLIError::from)?;
+  let certificates = rustls_pemfile::certs(&mut file)?;
 
-  Ok(
-    certificates.into_iter()
-      .map(rustls::Certificate)
-      .collect()
-  )
+  Ok(certificates.into_iter().map(rustls::Certificate).collect())
 }
 
 fn load_private_key(filename: &str) -> Result<PrivateKey> {
-  println!("before reading the file");
   let file = File::open(filename).map_err(CLIError::from)?;
-  println!("after reading the file");
   let mut file = BufReader::new(file);
 
-  let keys = rustls_pemfile::rsa_private_keys(&mut file)
-    .map_err(CLIError::from)?;
+  let keys = rustls_pemfile::read_all(&mut file).map_err(CLIError::from)?;
 
   if keys.len() != 1 {
     return Err(CLIError::new("Expected a single private key").into());
   }
-  
-  Ok(PrivateKey(keys[0].clone()))
+
+  let key = keys.into_iter().find(|key| {
+    matches!(
+      key,
+      rustls_pemfile::Item::RSAKey(_) | rustls_pemfile::Item::ECKey(_) | rustls_pemfile::Item::PKCS8Key(_)
+    )
+  });
+
+  if let Some(key) = key {
+    log::info!("🔑 Loaded private key");
+
+    Ok(match key {
+      rustls_pemfile::Item::RSAKey(key) => PrivateKey(key),
+      rustls_pemfile::Item::ECKey(key) => PrivateKey(key),
+      rustls_pemfile::Item::PKCS8Key(key) => PrivateKey(key),
+      _ => unreachable!(),
+    })
+  } else {
+    Err(CLIError::new("No private key found").into())
+  }
 }
 
 pub async fn start_server(config: Config) -> Result<()> {
@@ -123,24 +133,17 @@ pub async fn start_server(config: Config) -> Result<()> {
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-
-      // error logged:
-      // thread 'main' panicked at 'Cannot drop a runtime in a context where blocking is not allowed.
-      // This happens when a runtime is dropped from within an asynchronous context.'
-      // the error is caused by the following line
-      let cert_chain = rt.spawn_blocking(move || load_cert(&cert)).await??;
-      let key = rt.spawn_blocking(move || load_private_key(&key)).await??;
+      let cert_chain = load_cert(&cert).expect("Failed to load certificate");
+      let key = load_private_key(&key).expect("Failed to load private key");
 
       let incoming = AddrIncoming::bind(&addr)?;
       let acceptor = TlsAcceptor::builder()
         .with_single_cert(cert_chain, key)
         .map_err(CLIError::from)?
-        .with_all_versions_alpn()
+        .with_http2_alpn()
         .with_incoming(incoming);
-      
-      let server = Server::builder(acceptor)
-        .http2_only(true)
-        .serve(make_svc);
+
+      let server = Server::builder(acceptor).http2_only(true).serve(make_svc);
 
       log::info!("🚀 Tailcall launched at [{}] over {}", addr, "HTTP/2.0");
       if blueprint.server.enable_graphiql {
@@ -152,7 +155,7 @@ pub async fn start_server(config: Config) -> Result<()> {
     Http::HTTP1 => {
       let make_svc = make_service_fn(move |_conn| {
         let state = Arc::clone(&state);
-        async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_request(req, state.clone()))) }
+        async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
       log::info!("🚀 Tailcall launched at [{}]", addr);
