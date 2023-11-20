@@ -81,18 +81,43 @@ overflow-checks = false
 [features]
 unsafe-js = ["dep:mini-v8"]
 
+
 [[bench]]
 name = "json_like_bench"
 harness = false
+path = "benches/criterion/json_like_bench.rs"
 
 [[bench]]
 name = "request_template_bench"
 harness = false
+path = "benches/criterion/request_template_bench.rs"
 
 [[bench]]
 name = "data_loader_bench"
 harness = false
+path = "benches/criterion/data_loader_bench.rs"
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
 harness = false
+path = "benches/criterion/impl_path_string_for_evaluation_context.rs"
+
+[[bench]]
+name = "data_loader_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/data_loader_bench_iai-callgrind.rs"
+
+[[bench]]
+name = "json_like_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/json_like_bench_iai-callgrind.rs"
+
+[[bench]]
+name = "impl_path_string_for_evaluation_context_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/impl_path_string_for_evaluation_context_iai-callgrind.rs"
+
+[[bench]]
+name = "request_template_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/request_template_bench_iai-callgrind.rs"
