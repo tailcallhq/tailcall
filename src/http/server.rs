@@ -101,7 +101,7 @@ fn load_private_key(filename: &str) -> Result<PrivateKey> {
   });
 
   if let Some(key) = key {
-    log::info!("🔑 Loaded private key");
+    log::debug!("🔑 Loaded private key");
 
     Ok(match key {
       rustls_pemfile::Item::RSAKey(key) => PrivateKey(key),
