@@ -1,16 +1,16 @@
 {
   "server": {
     "port": 8000,
-    "upstream": {
-      "baseURL": "http://jsonplaceholder.typicode.com",
-      "enableHttpCache": true,
-      "batch": {
-        "maxSize": 1000,
-        "delay": 1,
-        "headers": []
-      }
-    },
-    "enableGraphiql": true
+    "graphiql": true
+  },
+  "upstream": {
+    "baseURL": "http://jsonplaceholder.typicode.com",
+    "httpCache": true,
+    "batch": {
+      "maxSize": 1000,
+      "delay": 1,
+      "headers": []
+    }
   },
   "schema": {
     "query": "Query"

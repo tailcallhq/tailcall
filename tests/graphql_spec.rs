@@ -298,7 +298,7 @@ async fn test_execution() -> std::io::Result<()> {
         let mut config = Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str())
           .to_result()
           .unwrap();
-        config.server.enable_query_validation = Some(false);
+        config.server.query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))
           .trace(spec.path.to_str().unwrap_or_default())

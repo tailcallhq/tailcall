@@ -3,7 +3,7 @@ name: Sending a batched graphql request
 config: !inline
   upstream: {}
   server:
-    enableBatchRequests: true
+    batchRequests: true
   schema:
     query: Query
   types:
