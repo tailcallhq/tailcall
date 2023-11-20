@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 use std::convert::Infallible;
-use std::fs::File;
 use std::io::BufReader;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -13,6 +12,7 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, Server, StatusCode};
 use hyper_rustls::TlsAcceptor;
 use rustls::PrivateKey;
+use tokio::fs::File;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -74,8 +74,9 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
-fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error> {
-  let file = File::open(filename)?;
+async fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error> {
+  let file = File::open(filename).await?;
+  let file = file.into_std().await;
   let mut file = BufReader::new(file);
 
   let certificates = rustls_pemfile::certs(&mut file)?;
@@ -83,8 +84,9 @@ fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error>
   Ok(certificates.into_iter().map(rustls::Certificate).collect())
 }
 
-fn load_private_key(filename: &str) -> Result<PrivateKey> {
-  let file = File::open(filename).map_err(CLIError::from)?;
+async fn load_private_key(filename: &str) -> Result<PrivateKey> {
+  let file = File::open(filename).await?;
+  let file = file.into_std().await;
   let mut file = BufReader::new(file);
 
   let keys = rustls_pemfile::read_all(&mut file).map_err(CLIError::from)?;
@@ -133,8 +135,8 @@ pub async fn start_server(config: Config) -> Result<()> {
         async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
       });
 
-      let cert_chain = load_cert(&cert).expect("Failed to load certificate");
-      let key = load_private_key(&key).expect("Failed to load private key");
+      let cert_chain = load_cert(&cert).await.expect("Failed to load certificate");
+      let key = load_private_key(&key).await.expect("Failed to load private key");
 
       let incoming = AddrIncoming::bind(&addr)?;
       let acceptor = TlsAcceptor::builder()
