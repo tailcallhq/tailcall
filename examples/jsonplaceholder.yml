@@ -1,11 +1,11 @@
 server:
   port: 8000
-  enableGraphiql: true
-  enableQueryValidation: false
+  graphiql: true
+  queryValidation: false
   hostname: "0.0.0.0"
 upstream:
   baseURL: "http://jsonplaceholder.typicode.com"
-  enableHttpCache: true
+  httpCache: true
 schema:
   query: Query
 types:
