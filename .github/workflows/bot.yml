@@ -153,7 +153,6 @@ jobs:
     name: criterion_benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'benchmark')
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -194,4 +193,64 @@ jobs:
            if (before_val != "invalid" && after_val != "invalid") {
                change = ((after_val - before_val) / before_val) * 100
                gsub("%", "", change)  # Remove '%' symbol
-               printf "| %-30s |
+               printf "| %-30s | %-20s | %-20s | %-10.2f |\n", item, before, after, change >> "output_file.txt"
+               if (change > 10) {
+                   echo "Percentage change exceeds 10%. Failing the workflow."
+                   exit 1
+               }
+           }
+           else {
+               echo "Invalid units detected for %s. Failing the workflow."
+               exit 1
+           }
+          }'
+
+      - name: Debug Info
+        run: |
+          echo "Owner: ${{ github.repository_owner }}"
+          echo "Repo: ${{ github.repository }}"
+          echo "Issue Number: ${{ github.event.number }}"
+
+      - name: Comment PR
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const fileContent = fs.readFileSync('output_file.txt', 'utf8');
+            const issue_number = context.issue.number;
+            const comment = `
+            <details>
+            <summary>Benchmark Results</summary>
+
+            | Test                          | Base         | PR               | % change   |
+            |-------------------------------|--------------|------------------|------------|
+            ${fileContent}
+
+            </details>
+            `;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue_number,
+              body: comment
+            });
+
+  Build_time_compare:
+    name: iai_callgrind_benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install iai-callgrind-runner
+        run: cargo install --version 0.7.3 iai-callgrind-runner
+
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install valgrind
+
+      - name: Execute build_time_compare.sh
+        run: |
+          chmod +x .github/scripts/compare_build_time.sh
+          bash .github/scripts/compare_build_time.sh
