@@ -138,30 +138,17 @@ pub async fn start_server(config: Config) -> Result<()> {
     let state = Arc::clone(&state_clone);
     async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_batch_request(req, state.clone()))) }
   });
+  let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
+  log::info!("🚀 Tailcall launched at [{}]", addr);
+  if blueprint.server.enable_graphiql {
+    log::info!("🌍 Playground: http://{}", addr);
+  }
 
-  let _ = tokio::runtime::Builder::new_multi_thread()
-    .worker_threads(blueprint.server.worker)
-    .enable_all()
-    .build()
-    .unwrap()
-    .spawn(async move {
-      let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
+  let r = if blueprint.server.enable_batch_requests {
+    builder.serve(make_svc_batch_req).await
+  } else {
+    builder.serve(make_svc_single_req).await
+  };
 
-      let enable_graphiql = blueprint.server.enable_graphiql;
-      log::info!("🚀 Tailcall launched at [{}]", addr);
-      if enable_graphiql {
-        log::info!("🌍 Playground: http://{}", addr);
-      }
-
-      let r = if blueprint.server.enable_batch_requests {
-        builder.serve(make_svc_batch_req).await
-      } else {
-        builder.serve(make_svc_single_req).await
-      };
-
-      r.map_err(CLIError::from)
-    })
-    .await?;
-
-  Ok(())
+  Ok(r.map_err(CLIError::from)?)
 }
