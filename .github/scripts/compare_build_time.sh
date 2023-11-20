@@ -71,7 +71,10 @@ for bench in "${benchmarks[@]}"; do
         ram_hits=$(grep -A5 "$bench" "$file" | grep -Po "RAM Hits:\K\d+")
 
         if [ "$x" -ne 0 ]; then
-            p1=$(( ((l1_hits + l2_hits + ram_hits - x) * 100) / x ))
+            total_read_write=$((l1_hits + l2_hits + ram_hits))
+            estimated_cycles=$((l1_hits + 5 * l2_hits + 35 * ram_hits))
+
+            p1=$(( ((total_read_write - x) * 100) / x ))
             echo "$bench Total read+write has a change of $p1%"
 
             if ((p1 > 10)); then
@@ -79,7 +82,7 @@ for bench in "${benchmarks[@]}"; do
                 fail_ci=1
             fi
 
-            p2=$(( ((l1_hits + 5 * l2_hits + 35 * ram_hits - y) * 100) / y ))
+            p2=$(( ((estimated_cycles - y) * 100) / y ))
             echo "$bench Estimated Cycles has a change of $p2%"
 
             if ((p2 > 10)); then
