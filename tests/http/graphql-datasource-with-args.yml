@@ -1,4 +1,4 @@
-config: !file tests/http/config/simple-graphql-datasource.graphql
+config: !file tests/http/config/graphql-datasource-with-args.graphql
 name: Graphql datasource
 mock:
   - request:

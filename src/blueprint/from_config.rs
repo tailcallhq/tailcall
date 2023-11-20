@@ -580,28 +580,28 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
         return Valid::fail("No base URL defined".to_string());
       };
 
-      let variable_definitions = Valid::from_iter(graphql.query.args.iter(), |(arg_name, _)| {
-        Valid::from(
-          if let Some(introspection_result) = &graphql.introspection {
-            get_arg_type(introspection_result, &graphql.query.name, arg_name)
-          } else {
-            None
-          }
-          .ok_or(ValidationError::new(format!(
-            "Could not find argument type for {} from introspection",
-            arg_name
-          )))
-          .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
-        )
-      })
-      .map(|variable_definitions| variable_definitions.join(","));
+      let args = graphql.query.args.as_ref();
 
-      let args = graphql
-        .query
-        .args
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect::<Vec<_>>();
+      let variable_definitions = args.map_or_else(
+        || Valid::succeed(None),
+        |args| {
+          Valid::from_iter(args.iter(), |(arg_name, _)| {
+            Valid::from(
+              if let Some(introspection_result) = &graphql.introspection {
+                get_arg_type(introspection_result, &graphql.query.name, arg_name)
+              } else {
+                None
+              }
+              .ok_or(ValidationError::new(format!(
+                "Could not find argument type for {} from introspection",
+                arg_name
+              )))
+              .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
+            )
+          })
+          .map(|variable_definitions| Some(variable_definitions.join(",")))
+        },
+      );
 
       convert_headers(&graphql.headers)
         .zip(variable_definitions)

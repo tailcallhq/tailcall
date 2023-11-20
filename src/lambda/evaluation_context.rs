@@ -62,12 +62,12 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     vars.get(key).map(|v| v.as_str())
   }
 
-  pub fn field(&self, key: &str) -> String {
+  pub fn field(&self, key: &str) -> Option<String> {
     if key == "selectionSet" {
-      let selection_set = self.graphql_ctx.field().unwrap().selection_set();
-      format_selection_set(selection_set)
+      let selection_set = self.graphql_ctx.field()?.selection_set();
+      Some(format_selection_set(selection_set))
     } else {
-      "".to_string()
+      Some("".to_string())
     }
   }
 }

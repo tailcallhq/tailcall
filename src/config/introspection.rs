@@ -129,24 +129,26 @@ pub fn get_arg_type(
     .and_then(|arg| {
       arg.type_.name.as_ref().map_or_else(
         || {
-          let kind = arg.type_.kind.clone().unwrap_or_default();
-          match &arg.type_.of_type {
-            Some(type_) => type_.name.as_ref().map(|name| format_name(name, &kind)),
-            None => None,
-          }
+          let kind = arg.type_.kind.as_deref().unwrap_or_default();
+
+          arg
+            .type_
+            .of_type
+            .as_ref()
+            .and_then(|type_| type_.name.as_ref().map(|name| format_name(name, kind)))
         },
         |name| Some(name.clone()),
       )
     })
 }
 
-fn format_name(name: &String, kind: &String) -> String {
+fn format_name(name: &str, kind: &str) -> String {
   if kind == "LIST" {
     format!("[{}]", name)
   } else if kind == "NON_NULL" {
     format!("{}!", name)
   } else {
-    name.clone()
+    name.to_owned()
   }
 }
 

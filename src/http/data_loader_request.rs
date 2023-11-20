@@ -64,11 +64,11 @@ impl Clone for DataLoaderRequest {
 }
 
 impl Deref for DataLoaderRequest {
-    type Target = reqwest::Request;
+  type Target = reqwest::Request;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
 }
 
 #[cfg(test)]

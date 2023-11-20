@@ -350,7 +350,7 @@ pub struct GraphQLSource {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct GraphQLQuery {
   pub name: String,
-  pub args: KeyValues,
+  pub args: Option<KeyValues>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

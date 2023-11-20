@@ -4,6 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
+use crate::config::KeyValues;
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::mustache::Mustache;
@@ -15,11 +16,11 @@ use crate::path_string::PathString;
 pub struct GraphqlRequestTemplate {
   pub url: String,
   pub query_name: String,
-  pub query_arguments: String,
-  pub variable_definitions: String,
+  pub query_arguments: Option<String>,
+  pub variable_definitions: Option<String>,
   pub variable_values: Vec<(String, Mustache)>,
   pub selection_set: Mustache,
-  pub headers: Vec<(String, Mustache)>,
+  pub headers: Vec<(HeaderName, Mustache)>,
 }
 
 impl GraphqlRequestTemplate {
@@ -27,10 +28,8 @@ impl GraphqlRequestTemplate {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
-      if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
-        if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-          header_map.insert(header_name, header_value);
-        }
+      if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+        header_map.insert(k, header_value);
       }
     }
 
@@ -38,12 +37,12 @@ impl GraphqlRequestTemplate {
   }
 
   fn set_headers<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
-    let headers = self.create_headers(ctx);
-    if !headers.is_empty() {
-      req.headers_mut().extend(headers);
-    }
-
     let headers = req.headers_mut();
+    let config_headers = self.create_headers(ctx);
+
+    if !config_headers.is_empty() {
+      headers.extend(config_headers);
+    }
     headers.insert(
       reqwest::header::CONTENT_TYPE,
       HeaderValue::from_static("application/json"),
@@ -68,19 +67,20 @@ impl GraphqlRequestTemplate {
       .collect::<Vec<_>>()
       .join(",");
     let selection_set = self.selection_set.render(ctx);
-    let operation = if self.variable_definitions.is_empty() {
-      "query".to_string()
-    } else {
-      format!("query({})", self.variable_definitions)
-    };
-    let query_name = if self.query_arguments.is_empty() {
-      self.query_name.to_string()
-    } else {
-      format!("{}({})", self.query_name, self.query_arguments)
-    };
+    let operation = self
+      .variable_definitions
+      .as_ref()
+      .map(|defs| format!("query({})", defs))
+      .unwrap_or("query".to_owned());
+    let query_name = self
+      .query_arguments
+      .as_ref()
+      .map(|args| format!("{}({})", self.query_name, args))
+      .unwrap_or(self.query_name.clone());
     let graphql_query = format!(
       r#"{{ "query": "{operation} {{ {query_name} {{ {selection_set} }} }}", "variables": {{ {variable_values} }} }}"#,
     );
+
     req.body_mut().replace(graphql_query.into());
     req
   }
@@ -88,33 +88,33 @@ impl GraphqlRequestTemplate {
   pub fn new(
     url: String,
     query_name: String,
-    args: Vec<(String, String)>,
-    variable_definitions: String,
+    args: Option<&KeyValues>,
+    variable_definitions: Option<String>,
     headers: HeaderMap<HeaderValue>,
   ) -> anyhow::Result<Self> {
-    let variable_values = args
-      .iter()
-      .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
-      .collect::<anyhow::Result<Vec<_>>>()?;
-    let arguments = args
-      .iter()
-      .map(|(k, _)| format!("{}: ${}", k, k))
-      .collect::<Vec<_>>()
-      .join(",");
+    let mut variable_values = Vec::new();
+    let mut query_arguments = None;
+
+    if let Some(args) = args {
+      variable_values = args
+        .iter()
+        .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+      query_arguments = Some(
+        args
+          .iter()
+          .map(|(k, _)| format!("{}: ${}", k, k))
+          .collect::<Vec<_>>()
+          .join(","),
+      );
+    }
+
     let selection_set = Mustache::parse("{{field.selectionSet}}")?;
     let headers = headers
       .iter()
-      .map(|(k, v)| Ok((k.as_str().into(), Mustache::parse(v.to_str()?)?)))
+      .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
-    Ok(Self {
-      url,
-      query_name,
-      query_arguments: arguments,
-      variable_definitions,
-      variable_values,
-      selection_set,
-      headers,
-    })
+    Ok(Self { url, query_name, query_arguments, variable_definitions, variable_values, selection_set, headers })
   }
 }
 
@@ -152,12 +152,41 @@ mod tests {
   }
 
   #[test]
-  fn test_graphql_query() {
+  fn test_query_without_args() {
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
       "myQuery".to_string(),
-      vec![("id".to_string(), "{{foo.bar}}".to_string())],
-      "$id: Int".to_string(),
+      None,
+      None,
+      HeaderMap::new(),
+    )
+    .unwrap();
+    let ctx = Context::default().value(json!({
+      "foo": {
+        "bar": "baz",
+        "header": "abc"
+      },
+      "field": {
+        "selectionSet": "a,b,c"
+      }
+    }));
+
+    let req = tmpl.to_request(&ctx).unwrap();
+    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+
+    assert_eq!(
+      std::str::from_utf8(&body).unwrap(),
+      r#"{ "query": "query { myQuery { a,b,c } }", "variables": {  } }"#
+    );
+  }
+
+  #[test]
+  fn test_query_with_args() {
+    let tmpl = GraphqlRequestTemplate::new(
+      "http://localhost:3000".to_string(),
+      "myQuery".to_string(),
+      Some(&serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()),
+      Some("$id: Int".to_string()),
       HeaderMap::new(),
     )
     .unwrap();

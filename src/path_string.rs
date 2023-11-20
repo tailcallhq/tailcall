@@ -44,7 +44,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
       "args" => convert_value(ctx.arg(tail)?),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-      "field" => Some(Cow::Owned(ctx.field(tail[0].as_ref()))),
+      "field" => Some(Cow::Owned(ctx.field(tail[0].as_ref())?)),
       _ => None,
     })
   }
