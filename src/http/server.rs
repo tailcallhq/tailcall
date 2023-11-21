@@ -84,94 +84,131 @@ async fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::
   Ok(certificates.into_iter().map(rustls::Certificate).collect())
 }
 
-async fn load_private_key(filename: &str) -> Result<PrivateKey> {
+async fn load_private_key(filename: &str) -> anyhow::Result<PrivateKey> {
   let file = File::open(filename).await?;
   let file = file.into_std().await;
   let mut file = BufReader::new(file);
 
-  let keys = rustls_pemfile::read_all(&mut file).map_err(CLIError::from)?;
+  let keys = rustls_pemfile::read_all(&mut file)?;
 
   if keys.len() != 1 {
     return Err(CLIError::new("Expected a single private key").into());
   }
 
-  let key = keys.into_iter().find(|key| {
-    matches!(
-      key,
-      rustls_pemfile::Item::RSAKey(_) | rustls_pemfile::Item::ECKey(_) | rustls_pemfile::Item::PKCS8Key(_)
-    )
+  let key = keys.into_iter().find_map(|key| match key {
+    rustls_pemfile::Item::RSAKey(key) => Some(PrivateKey(key)),
+    rustls_pemfile::Item::ECKey(key) => Some(PrivateKey(key)),
+    rustls_pemfile::Item::PKCS8Key(key) => Some(PrivateKey(key)),
+    _ => None,
   });
 
-  if let Some(key) = key {
-    log::debug!("🔑 Loaded private key");
+  key.ok_or(CLIError::new("Invalid private key").into())
+}
 
-    Ok(match key {
-      rustls_pemfile::Item::RSAKey(key) => PrivateKey(key),
-      rustls_pemfile::Item::ECKey(key) => PrivateKey(key),
-      rustls_pemfile::Item::PKCS8Key(key) => PrivateKey(key),
-      _ => unreachable!(),
-    })
-  } else {
-    Err(CLIError::new("No private key found").into())
+struct ServerConfig {
+  blueprint: Blueprint,
+  server_context: Arc<ServerContext>,
+}
+
+impl ServerConfig {
+  fn new(blueprint: Blueprint) -> Self {
+    let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
+    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client)), blueprint }
+  }
+
+  fn addr(&self) -> SocketAddr {
+    (self.blueprint.server.hostname, self.blueprint.server.port).into()
+  }
+
+  fn workers(&self) -> usize {
+    self.blueprint.server.worker
+  }
+
+  fn tokio_runtime(&self) -> anyhow::Result<tokio::runtime::Runtime> {
+    let workers = self.workers();
+
+    Ok(
+      tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(workers)
+        .enable_all()
+        .build()?,
+    )
+  }
+
+  fn http_version(&self) -> String {
+    match self.blueprint.server.http {
+      Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
+      _ => "HTTP/1.1".to_string(),
+    }
+  }
+
+  fn graphiql(&self) -> bool {
+    self.blueprint.server.enable_graphiql
   }
 }
 
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
-  let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-  let state = Arc::new(ServerContext::new(blueprint.clone(), http_client));
-  let addr: SocketAddr = (blueprint.server.hostname, blueprint.server.port).into();
+  let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
-  let rt = tokio::runtime::Builder::new_multi_thread()
-    .worker_threads(blueprint.server.worker)
-    .enable_all()
-    .build()
-    .unwrap();
-
-  match blueprint.server.http {
-    Http::HTTP2 { cert, key } => {
-      let make_svc = make_service_fn(move |_conn| {
-        let state = Arc::clone(&state);
-        async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
-      });
-
-      let cert_chain = load_cert(&cert).await.expect("Failed to load certificate");
-      let key = load_private_key(&key).await.expect("Failed to load private key");
-
-      let incoming = AddrIncoming::bind(&addr)?;
-      let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert_chain, key)
-        .map_err(CLIError::from)?
-        .with_http2_alpn()
-        .with_incoming(incoming);
-
-      let server = Server::builder(acceptor).http2_only(true).serve(make_svc);
-
-      log::info!("🚀 Tailcall launched at [{}] over {}", addr, "HTTP/2.0");
-      if blueprint.server.enable_graphiql {
-        log::info!("🌍 Playground: https://{}", addr);
-      }
-
-      Ok(rt.spawn(async move { server.await.map_err(CLIError::from) }).await??)
-    }
-    Http::HTTP1 => {
-      let make_svc = make_service_fn(move |_conn| {
-        let state = Arc::clone(&state);
-        async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, state.clone()))) }
-      });
-
-      log::info!("🚀 Tailcall launched at [{}]", addr);
-      if blueprint.server.enable_graphiql {
-        log::info!("🌍 Playground: http://{}", addr);
-      }
-
-      Ok(
-        rt.spawn(async move {
-          let server = hyper::Server::try_bind(&addr).map_err(CLIError::from)?.serve(make_svc);
-          server.await.map_err(CLIError::from)
-        })
-        .await??,
-      )
-    }
+  match blueprint.server.http.clone() {
+    Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key).await,
+    Http::HTTP1 => start_http_1(server_config).await,
   }
+}
+
+async fn start_http_2(sc: Arc<ServerConfig>, cert: String, key: String) -> std::prelude::v1::Result<(), anyhow::Error> {
+  let addr = sc.addr();
+  let cert_chain = load_cert(&cert).await?;
+  let key = load_private_key(&key).await?;
+  let incoming = AddrIncoming::bind(&addr)?;
+  let rt = sc.tokio_runtime()?;
+  let acceptor = TlsAcceptor::builder()
+    .with_single_cert(cert_chain, key)?
+    .with_http2_alpn()
+    .with_incoming(incoming);
+
+  let sc_cloned = sc.clone();
+  let server = Server::builder(acceptor).http2_only(true).serve(make_service_fn({
+    move |_conn| {
+      let sc = sc_cloned.clone();
+      async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, sc.server_context.clone()))) }
+    }
+  }));
+
+  Ok(
+    rt.spawn(async move {
+      log_launch(sc.as_ref());
+      server.await.map_err(CLIError::from)
+    })
+    .await??,
+  )
+}
+
+fn log_launch(sc: &ServerConfig) {
+  let addr = sc.addr().to_string();
+  log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());
+  if sc.graphiql() {
+    log::info!("🌍 Playground: https://{}", addr);
+  }
+}
+
+async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(), anyhow::Error> {
+  let addr = sc.addr();
+  let sc_cloned = sc.clone();
+  Ok(
+    sc.tokio_runtime()?
+      .spawn(async move {
+        let server = hyper::Server::try_bind(&addr)
+          .map_err(CLIError::from)?
+          .serve(make_service_fn(move |_conn| {
+            let sc = sc_cloned.clone();
+            async move { Ok::<_, Infallible>(service_fn(move |req| handle_request(req, sc.server_context.clone()))) }
+          }));
+
+        log_launch(sc.as_ref());
+        server.await.map_err(CLIError::from)
+      })
+      .await??,
+  )
 }
