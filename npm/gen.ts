@@ -40,6 +40,7 @@ async function genPlatformPackage() {
         name: `@tailcallhq/core-${build}`,
         version,
         directories: { bin: "bin" },
+        bin: { tailcall: ext ? `./bin/tailcall${ext}` : `./bin/tailcall`},
         os: [os],
         cpu: [cpu]
     }
