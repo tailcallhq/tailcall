@@ -18,4 +18,4 @@ type User {
 }
 
 #> client-sdl
-type Failure @error(message: "No base url found for graphql directive", trace: ["introspection"])
+type Failure @error(message: "No base URL defined", trace: ["Post", "user", "@graphql"])

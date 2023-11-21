@@ -7,10 +7,8 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::introspection::GraphqlConfigValidator;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::introspection::IntrospectionResult;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
@@ -18,11 +16,6 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
-
-#[async_trait::async_trait]
-pub trait ConfigValidator {
-  async fn validate(&mut self, config: Config) -> Valid<Config, String>;
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -344,9 +337,6 @@ pub struct Graphql {
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   #[serde(default)]
-  #[serde(skip_serializing)]
-  pub introspection: Option<IntrospectionResult>,
-  #[serde(default)]
   #[serde(rename = "batch", skip_serializing_if = "is_default")]
   pub use_batch_request: bool,
 }
@@ -412,21 +402,9 @@ impl Config {
     Iter: Iterator,
     Iter::Item: AsRef<str>,
   {
-    Config::from_file_or_url_with_validator(file_paths, GraphqlConfigValidator::default()).await
-  }
-
-  pub async fn from_file_or_url_with_validator<Iter>(
-    file_paths: Iter,
-    mut validator: impl ConfigValidator,
-  ) -> Result<Config>
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
     let config_reader = ConfigReader::init(file_paths);
-    let config = config_reader.read().await?;
 
-    Ok(validator.validate(config).await.to_result()?)
+    config_reader.read().await
   }
 }
 

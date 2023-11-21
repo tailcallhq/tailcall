@@ -2,7 +2,6 @@ mod config;
 mod from_document;
 pub mod group_by;
 mod into_document;
-pub mod introspection;
 mod key_values;
 mod n_plus_one;
 mod reader;

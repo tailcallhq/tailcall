@@ -15,7 +15,6 @@ pub fn setup_mocks(mock_server: &mut mockito::Server) {
   let user_posts: serde_json::Value = serde_json::from_str(users_posts_json.as_str()).unwrap();
   let user_posts_2: serde_json::Value = serde_json::from_str(users_posts_json.as_str()).unwrap();
   let posts_json = fs::read_to_string("tests/data/posts.json").unwrap();
-  let introspection_result = fs::read_to_string("tests/data/introspection-result.json").unwrap();
 
   mock_server
     .mock("GET", "/users")
@@ -88,13 +87,6 @@ pub fn setup_mocks(mock_server: &mut mockito::Server) {
     .with_status(200)
     .with_header("content-type", "application/json")
     .with_body(r#"{"a": 1}"#)
-    .create();
-
-  mock_server
-    .mock("POST", "/graphql")
-    .with_status(200)
-    .with_header("content-type", "application/json")
-    .with_body(introspection_result)
     .create();
 }
 

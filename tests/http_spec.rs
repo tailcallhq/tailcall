@@ -16,7 +16,6 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::introspection::{GraphqlConfigValidator, IntrospectionResult};
 use tailcall::config::{Config, Source};
 use tailcall::http::{handle_batch_request, handle_single_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
@@ -166,26 +165,13 @@ impl HttpSpec {
 
   async fn server_context(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
-      ConfigSource::File(file) => {
-        Config::from_file_or_url_with_validator([file].iter(), HttpSpec::mock_graphql_config_validator())
-          .await
-          .unwrap()
-      }
+      ConfigSource::File(file) => Config::from_file_or_url([file].iter()).await.unwrap(),
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let server_context = ServerContext::new(blueprint, client);
     Arc::new(server_context)
-  }
-
-  fn mock_graphql_config_validator() -> GraphqlConfigValidator {
-    let contents = fs::read_to_string("tests/data/introspection-result.json").unwrap();
-    let introspection_result: IntrospectionResult = serde_json::from_str(contents.as_str()).unwrap();
-    let mut cache = BTreeMap::new();
-    cache.insert("http://upstream/graphql".to_string(), introspection_result);
-
-    GraphqlConfigValidator::with_values(cache)
   }
 }
 

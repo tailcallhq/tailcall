@@ -4,7 +4,7 @@ mock:
   - request:
       url: http://upstream/graphql
       method: POST
-      body: '{ "query": "query { users { name  } }", "variables": {  } }'
+      body: '{ "query": "query { users { name  } }" }'
     response:
       body:
         data:

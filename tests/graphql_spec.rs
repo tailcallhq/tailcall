@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
@@ -15,8 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::introspection::{GraphqlConfigValidator, IntrospectionResult};
-use tailcall::config::{Config, ConfigValidator};
+use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
@@ -224,15 +222,6 @@ impl GraphQLSpec {
       Ok(files)
     }
   }
-
-  fn mock_graphql_config_validator() -> GraphqlConfigValidator {
-    let contents = fs::read_to_string("tests/data/introspection-result.json").unwrap();
-    let introspection_result: IntrospectionResult = serde_json::from_str(contents.as_str()).unwrap();
-    let mut cache = BTreeMap::new();
-    cache.insert("http://localhost:8000/graphql".to_string(), introspection_result);
-
-    GraphqlConfigValidator::with_values(cache)
-  }
 }
 
 const CLIENT_SDL: &str = "client-sdl";
@@ -253,11 +242,6 @@ async fn test_config_identity() -> std::io::Result<()> {
     let content = content.as_str();
     let expected = content;
     let config = Config::from_sdl(content).to_result().unwrap();
-    let config = GraphQLSpec::mock_graphql_config_validator()
-      .validate(config)
-      .await
-      .to_result()
-      .unwrap();
     let actual = config.to_sdl();
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
@@ -283,12 +267,6 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
-    // error is on the line below
-    let config = GraphQLSpec::mock_graphql_config_validator()
-      .validate(config)
-      .await
-      .to_result()
-      .unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
@@ -366,13 +344,6 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let expected = spec.sdl_errors;
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result();
-    let config = match config {
-      Ok(config) => GraphQLSpec::mock_graphql_config_validator()
-        .validate(config)
-        .await
-        .to_result(),
-      error => error,
-    };
 
     let actual = config.and_then(|config| Blueprint::try_from(&config));
 

@@ -10,7 +10,6 @@ use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::introspection::get_arg_type;
 use crate::config::{Arg, Batch, Config, Field, GraphQLOperationType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
@@ -593,40 +592,11 @@ fn update_graphql<'a>(
 
       let args = graphql.args.as_ref();
 
-      let variable_definitions = args.map_or_else(
-        || Valid::succeed(None),
-        |args| {
-          Valid::from_iter(args.iter(), |(arg_name, _)| {
-            Valid::from(
-              if let Some(introspection_result) = &graphql.introspection {
-                get_arg_type(introspection_result, operation_type, &graphql.name, arg_name)
-              } else {
-                None
-              }
-              .ok_or(ValidationError::new(format!(
-                "Could not find argument type for {} from introspection",
-                arg_name
-              )))
-              .map(|arg_type| format!("${}: {}", arg_name, arg_type)),
-            )
-          })
-          .map(|variable_definitions| Some(variable_definitions.join(",")))
-        },
-      );
-
       helpers::headers::to_headermap(&graphql.headers)
-        .zip(variable_definitions)
-        .and_then(|(header_map, variable_definitions)| {
+        .and_then(|header_map| {
           Valid::from(
-            GraphqlRequestTemplate::new(
-              base_url.to_owned(),
-              operation_type,
-              &graphql.name,
-              args,
-              variable_definitions,
-              header_map,
-            )
-            .map_err(|e| ValidationError::new(e.to_string())),
+            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
+              .map_err(|e| ValidationError::new(e.to_string())),
           )
         })
         .map(|req_template| {
