@@ -1,0 +1,3 @@
+schema:
+  - "./examples/jsonplaceholder.graphql"
+  - "./examples/.tailcallrc.graphql"

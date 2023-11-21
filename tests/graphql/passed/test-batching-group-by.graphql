@@ -1,12 +1,7 @@
 #> server-sdl
 schema
-  @server(port: 8000, enableGraphiql: true)
-  @upstream(
-    baseURL: "http://jsonplaceholder.typicode.com"
-    enableQueryValidation: false
-    enableHttpCache: true
-    batch: {delay: 1, maxSize: 1000}
-  ) {
+  @server(port: 8000, graphiql: true, queryValidation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

@@ -1,17 +1,27 @@
 directive @server(
-  enableApolloTracing: Boolean
-  enableCacheControlHeader: Boolean
-  enableGraphiql: Boolean
-  enableIntrospection: Boolean
-  enableQueryValidation: Boolean
-  enableResponseValidation: Boolean
+  apolloTracing: Boolean
+  cacheControlHeader: Boolean
+  graphiql: Boolean
+  introspection: Boolean
+  queryValidation: Boolean
+  responseValidation: Boolean
+  batchRequests: Boolean
   globalResponseTimeout: Int
   workers: Int
   port: Int
   vars: [KeyValue]
   responseHeaders: [KeyValue]
   hostname: String
+  version: HttpVersion
+  cert: String
+  key: String
 ) on SCHEMA
+
+enum HttpVersion {
+  HTTP1
+  HTTP2
+}
+
 directive @upstream(
   allowedHeaders: [String]
   connectTimeout: Int
@@ -25,7 +35,7 @@ directive @upstream(
   timeout: Int
   userAgent: String
   baseURL: String
-  enableHttpCache: Boolean
+  httpCache: Boolean
   batch: Batch
 ) on SCHEMA
 

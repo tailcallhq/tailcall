@@ -8,13 +8,13 @@ use crate::config::{is_default, KeyValues};
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
-  pub enable_apollo_tracing: Option<bool>,
-  pub enable_cache_control_header: Option<bool>,
-  pub enable_graphiql: Option<bool>,
-  pub enable_introspection: Option<bool>,
-  pub enable_query_validation: Option<bool>,
-  pub enable_response_validation: Option<bool>,
-  pub enable_batch_requests: Option<bool>,
+  pub apollo_tracing: Option<bool>,
+  pub cache_control_header: Option<bool>,
+  pub graphiql: Option<bool>,
+  pub introspection: Option<bool>,
+  pub query_validation: Option<bool>,
+  pub response_validation: Option<bool>,
+  pub batch_requests: Option<bool>,
   pub global_response_timeout: Option<i64>,
   #[serde(skip_serializing_if = "is_default")]
   pub workers: Option<usize>,
@@ -24,6 +24,16 @@ pub struct Server {
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
+  pub version: Option<HttpVersion>,
+  pub cert: Option<String>,
+  pub key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
+pub enum HttpVersion {
+  #[default]
+  HTTP1,
+  HTTP2,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
@@ -41,34 +51,36 @@ impl Default for Batch {
 
 impl Server {
   pub fn enable_apollo_tracing(&self) -> bool {
-    self.enable_apollo_tracing.unwrap_or(false)
+    self.apollo_tracing.unwrap_or(false)
   }
   pub fn enable_graphiql(&self) -> bool {
-    self.enable_graphiql.unwrap_or(false)
+    self.graphiql.unwrap_or(false)
   }
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
   }
+
   pub fn get_workers(&self) -> usize {
     self.workers.unwrap_or(num_cpus::get())
   }
+
   pub fn get_port(&self) -> u16 {
     self.port.unwrap_or(8000)
   }
   pub fn enable_http_validation(&self) -> bool {
-    self.enable_response_validation.unwrap_or(false)
+    self.response_validation.unwrap_or(false)
   }
   pub fn enable_cache_control(&self) -> bool {
-    self.enable_cache_control_header.unwrap_or(false)
+    self.cache_control_header.unwrap_or(false)
   }
   pub fn enable_introspection(&self) -> bool {
-    self.enable_introspection.unwrap_or(true)
+    self.introspection.unwrap_or(true)
   }
   pub fn enable_query_validation(&self) -> bool {
-    self.enable_query_validation.unwrap_or(true)
+    self.query_validation.unwrap_or(false)
   }
   pub fn enable_batch_requests(&self) -> bool {
-    self.enable_batch_requests.unwrap_or(false)
+    self.batch_requests.unwrap_or(false)
   }
 
   pub fn get_hostname(&self) -> String {
@@ -83,14 +95,18 @@ impl Server {
     self.response_headers.clone()
   }
 
+  pub fn get_version(self) -> HttpVersion {
+    self.version.unwrap_or(HttpVersion::HTTP1)
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
-    self.enable_apollo_tracing = other.enable_apollo_tracing.or(self.enable_apollo_tracing);
-    self.enable_cache_control_header = other.enable_cache_control_header.or(self.enable_cache_control_header);
-    self.enable_graphiql = other.enable_graphiql.or(self.enable_graphiql);
-    self.enable_introspection = other.enable_introspection.or(self.enable_introspection);
-    self.enable_query_validation = other.enable_query_validation.or(self.enable_query_validation);
-    self.enable_response_validation = other.enable_response_validation.or(self.enable_response_validation);
-    self.enable_batch_requests = other.enable_batch_requests.or(self.enable_batch_requests);
+    self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
+    self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
+    self.graphiql = other.graphiql.or(self.graphiql);
+    self.introspection = other.introspection.or(self.introspection);
+    self.query_validation = other.query_validation.or(self.query_validation);
+    self.response_validation = other.response_validation.or(self.response_validation);
+    self.batch_requests = other.batch_requests.or(self.batch_requests);
     self.global_response_timeout = other.global_response_timeout.or(self.global_response_timeout);
     self.workers = other.workers.or(self.workers);
     self.port = other.port.or(self.port);
@@ -101,6 +117,9 @@ impl Server {
     let mut response_headers = self.response_headers.0.clone();
     response_headers.extend(other.response_headers.0);
     self.response_headers = KeyValues(response_headers);
+    self.version = other.version.or(self.version);
+    self.cert = other.cert.or(self.cert);
+    self.key = other.key.or(self.key);
     self
   }
 }
@@ -139,7 +158,7 @@ pub struct Upstream {
   #[serde(skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(skip_serializing_if = "is_default")]
-  pub enable_http_cache: Option<bool>,
+  pub http_cache: Option<bool>,
   #[serde(skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
 }
@@ -173,7 +192,7 @@ impl Upstream {
     self.user_agent.clone().unwrap_or("Tailcall/1.0".to_string())
   }
   pub fn get_enable_http_cache(&self) -> bool {
-    self.enable_http_cache.unwrap_or(false)
+    self.http_cache.unwrap_or(false)
   }
   pub fn get_allowed_headers(&self) -> BTreeSet<String> {
     self.allowed_headers.clone().unwrap_or_default()
@@ -190,7 +209,7 @@ impl Upstream {
     });
     self.base_url = other.base_url.or(self.base_url);
     self.connect_timeout = other.connect_timeout.or(self.connect_timeout);
-    self.enable_http_cache = other.enable_http_cache.or(self.enable_http_cache);
+    self.http_cache = other.http_cache.or(self.http_cache);
     self.keep_alive_interval = other.keep_alive_interval.or(self.keep_alive_interval);
     self.keep_alive_timeout = other.keep_alive_timeout.or(self.keep_alive_timeout);
     self.keep_alive_while_idle = other.keep_alive_while_idle.or(self.keep_alive_while_idle);
