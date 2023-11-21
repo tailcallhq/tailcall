@@ -230,18 +230,19 @@ impl Parser {
         ' ' => {
           if let Some(x) = hm.get(&stk) {
             if let Some(v) = x.get(&p) {
-              s.insert(pos, '(');
-              pos += 1;
-              for (k, v) in v {
-                let m = format!("{k}: {v},");
-                s.insert_str(pos, &m);
-                pos += m.len();
-                s.insert_str(pos, ") ");
+              if !v.is_empty() {
+                s.insert(pos, '(');
+                pos += 1;
+                for (k, v) in v {
+                  let m = format!("{k}: {v},");
+                  s.insert_str(pos, &m);
+                  pos += m.len();
+                  s.insert_str(pos, ") ");
+                }
+                pos += 2;
               }
-              pos += 2;
             }
           }
-          // hm.remove(&stk);
           p = String::new();
         }
         _ => {

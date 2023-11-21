@@ -309,10 +309,10 @@ mod parser_tests {
 
   #[test]
   fn t1_url_qry_parser() {
-    let parser = Parser::from_path("api/user?id=123&$=name,age,address{city,state}");
+    let parser = Parser::from_path("api/user?$=name,age,address{city,state}");
     assert_eq!(
       parser.unwrap().parse::<GraphQLRequest>().unwrap().0.query,
-      "{user (id: 123,) { address {city state} age name}}"
+      "{user { address {city state} age name}}"
     );
   }
   #[test]
