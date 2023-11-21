@@ -78,6 +78,8 @@ pub async fn start_http_2(
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
+  
+  log_launch(sc.as_ref());
 
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
@@ -87,7 +89,6 @@ pub async fn start_http_2(
 
   Ok(
     rt.spawn(async move {
-      log_launch(sc.as_ref());
       server.map_err(CLIError::from)
     })
     .await??,

@@ -32,13 +32,13 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
         });
         let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
 
+        log_launch(sc.as_ref());
+
         let server: std::prelude::v1::Result<(), hyper::Error> = if sc_cloned.blueprint.server.enable_batch_requests {
           builder.serve(make_svc_batch_req).await
         } else {
           builder.serve(make_svc_single_req).await
         };
-
-        log_launch(sc.as_ref());
         server.map_err(CLIError::from)
       })
       .await??,
