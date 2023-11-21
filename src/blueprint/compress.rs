@@ -5,7 +5,19 @@ use super::{Blueprint, Definition};
 // compress() takes a Blueprint and returns a compressed Blueprint. So that unused types are removed.
 pub fn compress(mut blueprint: Blueprint) -> Blueprint {
   let graph = build_dependency_graph(&blueprint);
-  let mut referenced_types = identify_referenced_types(&graph, vec!["Query", "Mutation", "Subscription"]);
+
+  // Pre-defined root-types for graphql
+  let mut root_type = vec!["Query", "Mutation", "Subscription"];
+
+  // User-might create custom root-types other than default i.e non-default types for root-definitions.
+  let defined_query_type = blueprint.query().clone();
+  let mutation = blueprint.mutation().unwrap_or("Mutation".to_string());
+
+  // Push to root-types
+  root_type.push(defined_query_type.as_str());
+  root_type.push(mutation.as_str());
+
+  let mut referenced_types = identify_referenced_types(&graph, root_type);
   referenced_types.insert("Query".to_string());
   referenced_types.insert("Mutation".to_string());
   referenced_types.insert("Subscription".to_string());

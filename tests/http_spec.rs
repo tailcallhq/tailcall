@@ -241,7 +241,7 @@ async fn assert_downstream(spec: HttpSpec) {
         .context(spec.path.to_str().unwrap().to_string())
         .unwrap();
       let actual_status = response.status().clone().as_u16();
-      let actual_headers = assertion.response.0.headers.clone();
+      let actual_headers = response.headers().clone();
       let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
 
       // Assert Status
@@ -255,7 +255,10 @@ async fn assert_downstream(spec: HttpSpec) {
 
       // Assert Headers
       for (key, value) in assertion.response.0.headers.iter() {
-        assert_eq!(actual_headers.get(key), Some(value));
+        match actual_headers.get(key) {
+          None => panic!("Expected header {} to be present", key),
+          Some(actual_value) => assert_eq!(actual_value, value),
+        }
       }
     }
   }
