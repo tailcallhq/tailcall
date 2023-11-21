@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, Graphql, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -194,7 +194,7 @@ where
 
   to_http(directives)
     .zip(to_graphql(directives))
-    .map(|(http, graphql_source)| {
+    .map(|(http, graphql)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {
@@ -208,7 +208,7 @@ where
         http,
         unsafe_operation,
         const_field,
-        graphql_source,
+        graphql,
       }
     })
 }
@@ -287,10 +287,10 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
   })
 }
 
-fn to_graphql(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::GraphQL>, String> {
+fn to_graphql(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Graphql>, String> {
   for directive in directives {
-    if directive.node.name.node == GraphQL::directive_name() {
-      return GraphQL::from_directive(&directive.node).map(Some);
+    if directive.node.name.node == Graphql::directive_name() {
+      return Graphql::from_directive(&directive.node).map(Some);
     }
   }
   Valid::succeed(None)

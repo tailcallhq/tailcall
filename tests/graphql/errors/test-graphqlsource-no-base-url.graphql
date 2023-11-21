@@ -5,7 +5,7 @@ schema {
 
 type Post {
   id: Int!
-  user: User @graphql(query: {args: [{key: "id", value: "{{value.userId}}"}], name: "user"})
+  user: User @graphql(operation: {args: [{key: "id", value: "{{value.userId}}"}], name: "user"})
 }
 
 type Query {

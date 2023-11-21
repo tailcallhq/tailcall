@@ -230,11 +230,11 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
     }
 
     update_args()
-      .and(update_http().trace(config::Http::directive_name().as_str()))
-      .and(update_unsafe().trace(config::Unsafe::directive_name().as_str()))
-      .and(update_const_field().trace(config::Const::directive_name().as_str()))
-      .and(update_graphql().trace(config::GraphQL::directive_name().as_str()))
-      .and(update_modify().trace(config::Modify::directive_name().as_str()))
+      .and(update_http().trace(config::Http::trace_name().as_str()))
+      .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
+      .and(update_const_field().trace(config::Const::trace_name().as_str()))
+      .and(update_graphql().trace(config::Graphql::trace_name().as_str()))
+      .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
@@ -269,7 +269,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
             http: source_field.http.clone(),
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
-            graphql_source: source_field.graphql_source.clone(),
+            graphql: source_field.graphql.clone(),
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {
@@ -571,7 +571,7 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
 fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, _, _), b_field| {
-      let Some(graphql) = &field.graphql_source else {
+      let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };
 

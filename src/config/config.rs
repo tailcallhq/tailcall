@@ -234,7 +234,7 @@ pub struct Field {
 
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
-  pub graphql_source: Option<GraphQL>,
+  pub graphql: Option<Graphql>,
 }
 
 impl Field {
@@ -242,7 +242,7 @@ impl Field {
     self.http.is_some()
       || self.unsafe_operation.is_some()
       || self.const_field.is_some()
-      || self.graphql_source.is_some()
+      || self.graphql.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<&str> {
     let mut directives = Vec::with_capacity(3);
@@ -333,7 +333,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct GraphQL {
+pub struct Graphql {
   pub operation: GraphQLOperation,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,

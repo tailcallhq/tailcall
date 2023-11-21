@@ -4,7 +4,7 @@ use async_graphql::futures_util::future::join_all;
 use reqwest;
 use serde_json::json;
 
-use super::{Config, ConfigValidator, GraphQL};
+use super::{Config, ConfigValidator, Graphql};
 use crate::valid::Valid;
 
 // GraphQL introspection response types.
@@ -164,13 +164,13 @@ impl ConfigValidator for GraphqlConfigValidator {
 
     for type_ in config.types.values_mut() {
       for field in type_.fields.values_mut() {
-        if let Some(graphql_source) = &field.graphql_source {
+        if let Some(graphql_source) = &field.graphql {
           // TODO: run it in parallel
           let update = self
             .update_introspection(graphql_source, &config.upstream.base_url)
             .await
             .map(|source| {
-              field.graphql_source = Some(source.clone());
+              field.graphql = Some(source.clone());
             });
 
           validations.push(update);
@@ -189,14 +189,14 @@ impl GraphqlConfigValidator {
 
   async fn update_introspection(
     &mut self,
-    graphql: &GraphQL,
+    graphql: &Graphql,
     upstream_base_url: &Option<String>,
-  ) -> Valid<GraphQL, String> {
+  ) -> Valid<Graphql, String> {
     let Some(base_url) = graphql.base_url.as_ref().or(upstream_base_url.as_ref()) else {
       return Valid::fail("No base url found for graphql directive".to_string()).trace("introspection");
     };
 
-    let mut updated: GraphQL = graphql.clone();
+    let mut updated: Graphql = graphql.clone();
     let introspection_result = self.introspection_cache.get(base_url);
     match introspection_result {
       Some(introspection) => {
