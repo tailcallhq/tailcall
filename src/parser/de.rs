@@ -15,6 +15,7 @@ pub struct Parser {
 }
 impl Parser {
   pub fn from_path(path: &str) -> anyhow::Result<Parser> {
+    let path = urlencoding::decode(path).unwrap().replace('\\', "");
     let mut root = String::new();
     let split = path.split('?').collect::<Vec<&str>>();
     let path = split.last().unwrap();
@@ -206,13 +207,11 @@ impl Parser {
       }
     }
     curhm.insert(p, Value::from(p1));
-    println!("{:?}", hm);
     Ok(Value::from(hm))
   }
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
     let mut hm = HashMap::new();
     to_json(&v, &mut hm, (None, &self.root.clone().unwrap(), 0));
-    println!("{:?}", hm);
     let mut s = format!("{{{} {sx}}}", self.root.clone().unwrap());
     let mut pos = 0;
     let mut stk = 0usize;
