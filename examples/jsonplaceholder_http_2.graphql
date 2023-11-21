@@ -1,6 +1,14 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  @server(
+    port: 3000
+    enableGraphiql: true
+    enableQueryValidation: false
+    hostname: "0.0.0.0"
+    version: HTTP2
+    cert: "./examples/example.crt"
+    key: "./examples/example.key"
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query
 }
 
