@@ -303,18 +303,24 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 }
 
 #[cfg(test)]
-mod parser_tests{
+mod parser_tests {
   use tailcall::async_graphql_hyper::GraphQLRequest;
   use tailcall::parser::de::Parser;
 
   #[test]
-  fn t1_url_qry_parser(){
+  fn t1_url_qry_parser() {
     let parser = Parser::from_path("api/user?id=123&$=name,age,address.city,address.state");
-    assert_eq!(parser.unwrap().parse::<GraphQLRequest>().unwrap().0.query, "{user (id: 123,) {address {city state} age name}}");
+    assert_eq!(
+      parser.unwrap().parse::<GraphQLRequest>().unwrap().0.query,
+      "{user (id: 123,) {address {city state} age name}}"
+    );
   }
   #[test]
   fn t2_url_nested_qry_parser() {
     let parser = Parser::from_path("api/user?id=123,address.country=India&$=name,age,address.city,address.state");
-    assert_eq!(parser.unwrap().parse::<GraphQLRequest>().unwrap().0.query, "{user (id: 123,) {address (country: India,) {city state} age name}}");
+    assert_eq!(
+      parser.unwrap().parse::<GraphQLRequest>().unwrap().0.query,
+      "{user (id: 123,) {address (country: India,) {city state} age name}}"
+    );
   }
 }
