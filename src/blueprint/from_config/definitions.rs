@@ -4,13 +4,14 @@ use std::collections::BTreeSet;
 use async_graphql::InputType;
 use regex::Regex;
 
+use crate::blueprint::Type::ListType;
+use crate::blueprint::*;
+use crate::config;
+use crate::config::{Config, Field, Union};
+use crate::directive::DirectiveCodec;
 use crate::lambda::Lambda;
-use crate::{blueprint::*, config};
-use crate::config::{Union, Config, Field};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
-use crate::blueprint::Type::ListType;
-use crate::directive::DirectiveCodec;
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
   Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
