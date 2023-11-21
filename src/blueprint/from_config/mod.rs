@@ -1,20 +1,20 @@
 mod from_config;
+mod operators;
 mod server;
-mod types;
 mod upstream;
 
 pub use from_config::*;
+pub use operators::*;
 pub use server::*;
-pub use types::*;
 pub use upstream::*;
 
 mod definitions;
 mod schema;
 
 pub use definitions::*;
+pub use operators::*;
 pub use schema::*;
 pub use server::*;
-pub use types::*;
 
 use super::Type;
 use crate::config::Config;
