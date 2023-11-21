@@ -22,7 +22,6 @@ impl Parser {
       Ok(p) => {
         let mut s = Self::default();
         let rc = split.first().unwrap();
-        println!("{rc}");
         for c in rc.chars().skip(4) {
           match c {
             '/' => (),
@@ -334,20 +333,5 @@ fn get_cur(k: &String, v: &Value) -> String {
     k.clone()
   } else {
     format!("{} {}", k, s)
-  }
-}
-
-#[cfg(test)]
-mod de_tests {
-  use crate::async_graphql_hyper::GraphQLRequest;
-  use crate::parser::de::Parser;
-
-  #[test]
-  fn parse_t() {
-    let parser = Parser::from_path("api/user?id=123&$=name,age,address.city,address.state");
-    println!("{parser:?}");
-    let x = parser.unwrap().parse::<GraphQLRequest>().unwrap();
-    println!("{:?}", x);
-    // assert_eq!(x.into::<serde_json::Value>(), );
   }
 }
