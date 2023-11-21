@@ -16,6 +16,7 @@ pub struct Server {
   pub enable_introspection: bool,
   pub enable_query_validation: bool,
   pub enable_response_validation: bool,
+  pub enable_batch_requests: bool,
   pub global_response_timeout: i64,
   pub worker: usize,
   pub port: u16,
@@ -58,33 +59,35 @@ impl Server {
 impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
-  fn try_from(server: config::Server) -> Result<Self, Self::Error> {
-    let http_server = match server.clone().get_version() {
+  fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
+    let http_server = match config_server.clone().get_version() {
       HttpVersion::HTTP2 => {
-        let cert = Valid::from_option(server.cert.clone(), "Certificate is required for HTTP2".to_string());
-        let key = Valid::from_option(server.key.clone(), "Key is required for HTTP2".to_string());
+        let cert = Valid::from_option(config_server.cert.clone(), "Certificate is required for HTTP2".to_string());
+        let key = Valid::from_option(config_server.key.clone(), "Key is required for HTTP2".to_string());
 
         cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
       }
       _ => Valid::succeed(Http::HTTP1),
     };
 
-    validate_hostname(server.clone().get_hostname().to_lowercase())
+
+    validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
-      .zip(handle_response_headers((server).get_response_headers().0))
+      .zip(handle_response_headers((config_server).get_response_headers().0))
       .map(|((hostname, http), response_headers)| Server {
-        enable_apollo_tracing: (server).enable_apollo_tracing(),
-        enable_cache_control_header: (server).enable_cache_control(),
-        enable_graphiql: (server).enable_graphiql(),
-        enable_introspection: (server).enable_introspection(),
-        enable_query_validation: (server).enable_query_validation(),
-        enable_response_validation: (server).enable_http_validation(),
-        global_response_timeout: (server).get_global_response_timeout(),
+        enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+        enable_cache_control_header: (config_server).enable_cache_control(),
+        enable_graphiql: (config_server).enable_graphiql(),
+        enable_introspection: (config_server).enable_introspection(),
+        enable_query_validation: (config_server).enable_query_validation(),
+        enable_response_validation: (config_server).enable_http_validation(),
+        enable_batch_requests: (config_server).enable_batch_requests(),
+        global_response_timeout: (config_server).get_global_response_timeout(),
         http,
-        worker: (server).get_workers(),
-        port: (server).get_port(),
+        worker: (config_server).get_workers(),
+        port: (config_server).get_port(),
         hostname,
-        vars: (server).get_vars(),
+        vars: (config_server).get_vars(),
         response_headers,
       })
       .to_result()

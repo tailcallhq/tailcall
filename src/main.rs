@@ -8,9 +8,8 @@ use tailcall::cli::CLIError;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-  let result = tailcall::cli::run().await;
+fn main() -> Result<()> {
+  let result = tailcall::cli::run();
   match result {
     Ok(_) => {}
     Err(error) => {
