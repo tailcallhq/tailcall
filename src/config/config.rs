@@ -334,7 +334,7 @@ pub struct Http {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct GraphQL {
-  pub query: GraphQLQuery,
+  pub operation: GraphQLOperation,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
@@ -344,12 +344,12 @@ pub struct GraphQL {
   #[serde(skip_serializing)]
   pub introspection: Option<IntrospectionResult>,
   #[serde(default)]
-  #[serde(rename = "useBatchRequest", skip_serializing_if = "is_default")]
+  #[serde(rename = "batch", skip_serializing_if = "is_default")]
   pub use_batch_request: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct GraphQLQuery {
+pub struct GraphQLOperation {
   pub name: String,
   pub args: Option<KeyValues>,
 }

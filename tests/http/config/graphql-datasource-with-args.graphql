@@ -9,5 +9,5 @@ type User {
 
 type Query {
   user(id: Int): User
-    @graphql(baseURL: "http://upstream/graphql", query: {name: "user", args: [{key: "id", value: "{{args.id}}"}]})
+    @graphql(baseURL: "http://upstream/graphql", operation: {name: "user", args: [{key: "id", value: "{{args.id}}"}]})
 }

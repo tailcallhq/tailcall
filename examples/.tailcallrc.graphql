@@ -42,12 +42,11 @@ directive @addField(name: String, path: [String]!) on OBJECT
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
-
 directive @graphql(
-  query: GraphQLQuery
+  operation: GraphQLOperation
   baseURL: String
   headers: [KeyValue]
-  useBatchRequest: Boolean
+  batch: Boolean
 ) on FIELD_DEFINITION
 
 enum Method {
@@ -75,7 +74,7 @@ input Batch {
   headers: [String]
 }
 
-input GraphQLQuery {
+input GraphQLOperation {
   name: String
   args: [KeyValue]
 }
