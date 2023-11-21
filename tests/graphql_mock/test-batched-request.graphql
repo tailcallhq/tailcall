@@ -1,7 +1,7 @@
 schema
   @server(
     port: 8000
-    enableGraphiql: true
+    graphiql: true
     enableQueryValidation: false
     hostname: "0.0.0.0"
     enableBatchRequests: true

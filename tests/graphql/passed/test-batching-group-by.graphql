@@ -1,6 +1,6 @@
 #> server-sdl
 schema
-  @server(port: 8000, enableGraphiql: true)
+  @server(port: 8000, graphiql: true)
   @upstream(
     baseURL: "http://jsonplaceholder.typicode.com"
     enableQueryValidation: false

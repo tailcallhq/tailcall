@@ -1,6 +1,6 @@
 #> server-sdl
 schema
-  @server(port: 8000, enableGraphiql: true, enableQueryValidation: false)
+  @server(port: 8000, graphiql: true, enableQueryValidation: false)
   @upstream(
     enableHttpCache: true
     batch: {maxSize: 1000, delay: 0, headers: []}
