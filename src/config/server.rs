@@ -24,6 +24,16 @@ pub struct Server {
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
+  pub version: Option<HttpVersion>,
+  pub cert: Option<String>,
+  pub key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
+pub enum HttpVersion {
+  #[default]
+  HTTP1,
+  HTTP2,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
@@ -49,9 +59,11 @@ impl Server {
   pub fn get_global_response_timeout(&self) -> i64 {
     self.global_response_timeout.unwrap_or(0)
   }
+
   pub fn get_workers(&self) -> usize {
     self.workers.unwrap_or(num_cpus::get())
   }
+
   pub fn get_port(&self) -> u16 {
     self.port.unwrap_or(8000)
   }
@@ -83,6 +95,10 @@ impl Server {
     self.response_headers.clone()
   }
 
+  pub fn get_version(self) -> HttpVersion {
+    self.version.unwrap_or(HttpVersion::HTTP1)
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
     self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
@@ -101,6 +117,9 @@ impl Server {
     let mut response_headers = self.response_headers.0.clone();
     response_headers.extend(other.response_headers.0);
     self.response_headers = KeyValues(response_headers);
+    self.version = other.version.or(self.version);
+    self.cert = other.cert.or(self.cert);
+    self.key = other.key.or(self.key);
     self
   }
 }

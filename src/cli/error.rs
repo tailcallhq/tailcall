@@ -159,6 +159,24 @@ impl From<hyper::Error> for CLIError {
   }
 }
 
+impl From<rustls::Error> for CLIError {
+  fn from(error: rustls::Error) -> Self {
+    let cli_error = CLIError::new("Failed to create TLS Acceptor");
+    let message = error.to_string();
+
+    cli_error.description(message)
+  }
+}
+
+impl From<std::io::Error> for CLIError {
+  fn from(error: std::io::Error) -> Self {
+    let cli_error = CLIError::new("IO Error");
+    let message = error.to_string();
+
+    cli_error.description(message)
+  }
+}
+
 impl<'a> From<ValidationError<&'a str>> for CLIError {
   fn from(error: ValidationError<&'a str>) -> Self {
     CLIError::new("Invalid Configuration").caused_by(
@@ -186,6 +204,12 @@ impl From<ValidationError<String>> for CLIError {
         .map(|cause| CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone())))
         .collect(),
     )
+  }
+}
+
+impl From<Box<dyn std::error::Error>> for CLIError {
+  fn from(value: Box<dyn std::error::Error>) -> Self {
+    CLIError::new(value.to_string().as_str())
   }
 }
 

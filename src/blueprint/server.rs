@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config;
+use crate::config::{self, HttpVersion};
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
@@ -23,6 +23,13 @@ pub struct Server {
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
+  pub http: Http,
+}
+
+#[derive(Clone, Debug)]
+pub enum Http {
+  HTTP1,
+  HTTP2 { cert: String, key: String },
 }
 
 impl Default for Server {
@@ -53,9 +60,23 @@ impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
+    let http_server = match config_server.clone().get_version() {
+      HttpVersion::HTTP2 => {
+        let cert = Valid::from_option(
+          config_server.cert.clone(),
+          "Certificate is required for HTTP2".to_string(),
+        );
+        let key = Valid::from_option(config_server.key.clone(), "Key is required for HTTP2".to_string());
+
+        cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
+      }
+      _ => Valid::succeed(Http::HTTP1),
+    };
+
     validate_hostname((config_server).get_hostname().to_lowercase())
+      .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .map(|(hostname, response_headers)| Server {
+      .map(|((hostname, http), response_headers)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
         enable_graphiql: (config_server).enable_graphiql(),
@@ -64,6 +85,7 @@ impl TryFrom<crate::config::Server> for Server {
         enable_response_validation: (config_server).enable_http_validation(),
         enable_batch_requests: (config_server).enable_batch_requests(),
         global_response_timeout: (config_server).get_global_response_timeout(),
+        http,
         worker: (config_server).get_workers(),
         port: (config_server).get_port(),
         hostname,
