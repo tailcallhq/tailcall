@@ -12,13 +12,13 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, HeaderMap, Request, Response, Server, StatusCode};
 use hyper_rustls::TlsAcceptor;
 use rustls::PrivateKey;
-use tokio::fs::File;
 use serde::de::DeserializeOwned;
+use tokio::fs::File;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
-use crate::blueprint::{Blueprint, Http};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::client;
@@ -201,7 +201,6 @@ impl ServerConfig {
   }
 }
 
-
 pub async fn start_server(config: Config) -> Result<()> {
   let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
   let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
@@ -225,12 +224,20 @@ async fn start_http_2(sc: Arc<ServerConfig>, cert: String, key: String) -> std::
 
   let make_svc_single_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
-    async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_single_request(req, state.server_context.clone()))) }
+    async move {
+      Ok::<_, anyhow::Error>(service_fn(move |req| {
+        handle_single_request(req, state.server_context.clone())
+      }))
+    }
   });
 
   let make_svc_batch_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
-    async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_batch_request(req, state.server_context.clone()))) }
+    async move {
+      Ok::<_, anyhow::Error>(service_fn(move |req| {
+        handle_batch_request(req, state.server_context.clone())
+      }))
+    }
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
@@ -267,12 +274,20 @@ async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(), any
 
         let make_svc_single_req = make_service_fn(|_conn| {
           let state = Arc::clone(&sc_cloned);
-          async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_single_request(req, state.server_context.clone()))) }
+          async move {
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+              handle_single_request(req, state.server_context.clone())
+            }))
+          }
         });
-      
+
         let make_svc_batch_req = make_service_fn(|_conn| {
           let state = Arc::clone(&sc_cloned);
-          async move { Ok::<_, anyhow::Error>(service_fn(move |req| handle_batch_request(req, state.server_context.clone()))) }
+          async move {
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+              handle_batch_request(req, state.server_context.clone())
+            }))
+          }
         });
         let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
 
