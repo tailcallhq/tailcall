@@ -11,7 +11,7 @@ use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
 use crate::config::introspection::get_arg_type;
-use crate::config::{Arg, Batch, Config, Field, Upstream};
+use crate::config::{Arg, Batch, Config, Field, GraphQLOperationType, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::endpoint::Endpoint;
 use crate::graphql_request_template::GraphqlRequestTemplate;
@@ -190,7 +190,7 @@ fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet
   Valid::succeed(enum_type_definition)
 }
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition, String> {
-  to_fields(type_of, config).map(|fields| {
+  to_fields(name, type_of, config).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
@@ -222,8 +222,18 @@ fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Defin
     description: definition.description,
   }))
 }
-fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::FieldDefinition>, String> {
-  let to_field = |name: &String, field: &Field| {
+fn to_fields(
+  object_name: &str,
+  type_of: &config::Type,
+  config: &Config,
+) -> Valid<Vec<blueprint::FieldDefinition>, String> {
+  let operation_type = if config.schema.mutation.as_deref().eq(&Some(object_name)) {
+    GraphQLOperationType::Mutation
+  } else {
+    GraphQLOperationType::Query
+  };
+
+  let to_field = move |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
@@ -233,7 +243,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
-      .and(update_graphql().trace(config::Graphql::trace_name().as_str()))
+      .and(update_graphql(&operation_type).trace(config::Graphql::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
@@ -568,7 +578,9 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
     },
   )
 }
-fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+fn update_graphql<'a>(
+  operation_type: &'a GraphQLOperationType,
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, _, _), b_field| {
       let Some(graphql) = &field.graphql else {
@@ -588,12 +600,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
           Valid::from_iter(args.iter(), |(arg_name, _)| {
             Valid::from(
               if let Some(introspection_result) = &graphql.introspection {
-                get_arg_type(
-                  introspection_result,
-                  &operation.operation_type,
-                  &operation.name,
-                  arg_name,
-                )
+                get_arg_type(introspection_result, operation_type, &operation.name, arg_name)
               } else {
                 None
               }
@@ -614,6 +621,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
           Valid::from(
             GraphqlRequestTemplate::new(
               base_url.to_owned(),
+              operation_type,
               &graphql.operation,
               variable_definitions,
               header_map,

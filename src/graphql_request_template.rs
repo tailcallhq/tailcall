@@ -15,9 +15,9 @@ use crate::path_string::PathString;
 #[derive(Setters, Debug, Clone)]
 pub struct GraphqlRequestTemplate {
   pub url: String,
-  pub query_type: GraphQLOperationType,
-  pub query_name: String,
-  pub query_arguments: Option<String>,
+  pub operation_type: GraphQLOperationType,
+  pub operation_name: String,
+  pub operation_arguments: Option<String>,
   pub variable_definitions: Option<String>,
   pub variable_values: Vec<(String, Mustache)>,
   pub selection_set: Mustache,
@@ -72,13 +72,13 @@ impl GraphqlRequestTemplate {
     let operation = self
       .variable_definitions
       .as_ref()
-      .map(|defs| format!("{}({})", self.query_type, defs))
-      .unwrap_or(self.query_type.to_string());
+      .map(|defs| format!("{}({})", self.operation_type, defs))
+      .unwrap_or(self.operation_type.to_string());
     let query_name = self
-      .query_arguments
+      .operation_arguments
       .as_ref()
-      .map(|args| format!("{}({})", self.query_name, args))
-      .unwrap_or(self.query_name.clone());
+      .map(|args| format!("{}({})", self.operation_name, args))
+      .unwrap_or(self.operation_name.clone());
     let graphql_query = format!(
       r#"{{ "query": "{operation} {{ {query_name} {{ {selection_set} }} }}", "variables": {{ {variable_values} }} }}"#,
     );
@@ -89,6 +89,7 @@ impl GraphqlRequestTemplate {
 
   pub fn new(
     url: String,
+    operation_type: &GraphQLOperationType,
     operation: &GraphQLOperation,
     variable_definitions: Option<String>,
     headers: HeaderMap<HeaderValue>,
@@ -118,9 +119,9 @@ impl GraphqlRequestTemplate {
 
     Ok(Self {
       url,
-      query_type: operation.operation_type.to_owned(),
-      query_name: operation.name.to_owned(),
-      query_arguments,
+      operation_type: operation_type.to_owned(),
+      operation_name: operation.name.to_owned(),
+      operation_arguments: query_arguments,
       variable_definitions,
       variable_values,
       selection_set,
@@ -165,10 +166,15 @@ mod tests {
 
   #[test]
   fn test_query_without_args() {
-    let operation =
-      GraphQLOperation { operation_type: GraphQLOperationType::Query, name: "myQuery".to_owned(), args: None };
-    let tmpl =
-      GraphqlRequestTemplate::new("http://localhost:3000".to_string(), &operation, None, HeaderMap::new()).unwrap();
+    let operation = GraphQLOperation { name: "myQuery".to_owned(), args: None };
+    let tmpl = GraphqlRequestTemplate::new(
+      "http://localhost:3000".to_string(),
+      &GraphQLOperationType::Query,
+      &operation,
+      None,
+      HeaderMap::new(),
+    )
+    .unwrap();
     let ctx = Context::default().value(json!({
       "foo": {
         "bar": "baz",
@@ -191,12 +197,12 @@ mod tests {
   #[test]
   fn test_query_with_args() {
     let operation = GraphQLOperation {
-      operation_type: GraphQLOperationType::Mutation,
       name: "create".to_owned(),
       args: Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()),
     };
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
+      &GraphQLOperationType::Mutation,
       &operation,
       Some("$id: Int".to_string()),
       HeaderMap::new(),

@@ -150,6 +150,7 @@ pub async fn introspect_endpoints(graphql_urls: Vec<String>) -> IntrospectionRes
   IntrospectionResults(results)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn get_arg_type(
   introspection_result: &IntrospectionResult,
   query_type: &GraphQLOperationType,

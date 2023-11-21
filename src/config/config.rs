@@ -367,18 +367,10 @@ impl Display for GraphQLOperationType {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Default, Deserialize, Clone, Debug)]
 pub struct GraphQLOperation {
-  #[serde(rename = "type", default, skip_serializing_if = "is_default")]
-  pub operation_type: GraphQLOperationType,
   pub name: String,
   pub args: Option<KeyValues>,
-}
-
-impl Default for GraphQLOperation {
-  fn default() -> Self {
-    Self { operation_type: GraphQLOperationType::Query, name: String::new(), args: None }
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
