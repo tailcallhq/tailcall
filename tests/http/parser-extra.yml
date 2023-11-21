@@ -1,0 +1,102 @@
+---
+name: Testing a GraphQL query
+
+config: !inline
+  upstream: {}
+  server:
+    port: 8080
+  schema:
+    query: Query
+  types:
+    User:
+      fields:
+        id:
+          type: Int
+        name:
+          type: String
+    Post:
+      fields:
+        id:
+          type: Int
+        user:
+          type: User
+          http:
+            path: "/users/1"
+            baseURL: "http://jsonplaceholder.typicode.com"
+
+    Query:
+      fields:
+        helloQry:
+          type: String
+          const:
+            data: "World!"
+        alwF:
+          type: Boolean
+          const:
+            data: false
+        num:
+          type: Int
+          const:
+            data: 7
+        nested:
+          type: Post
+          http:
+            path: "/posts/1"
+            baseURL: "http://jsonplaceholder.typicode.com"
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts/1
+    response:
+      body:
+        id: 1
+
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts/2
+    response:
+      body:
+        id: 2
+
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: "bar"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/2
+    response:
+      body:
+        id: 2
+        name: "foo"
+
+assert:
+  - request:
+      method: GET
+      url: http://localhost:8080/api/hello-qry
+    response:
+      body:
+        data:
+          helloQry: "World!"
+  - request:
+      method: GET
+      url: http://localhost:8080/api/alw-f
+    response:
+      body:
+        data:
+          alwF: false
+  - request:
+      method: GET
+      url: http://localhost:8080/api/num
+    response:
+      body:
+        data:
+          num: 7
+  - request:
+      method: GET
+      url: http://localhost:8080/api/nested\?\$\=user\{name\}
+    response:
+      body:
+        data:
+          nested:
+            user:
+              name: "bar"

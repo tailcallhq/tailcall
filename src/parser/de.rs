@@ -26,9 +26,6 @@ impl Parser {
         for c in rc.chars().skip(4) {
           match c {
             '/' => (),
-            '?' => {
-              break;
-            }
             ' ' => (),
             _ => {
               root.push(c);
@@ -221,7 +218,11 @@ impl Parser {
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
     let mut hm = HashMap::new();
     to_json(&v, &mut hm, (None, &self.root.clone().unwrap(), 0));
-    let mut s = format!("{{{} {sx}}}", self.root.clone().unwrap());
+    let mut s = if sx.eq("{}") {
+      format!("{{{}}}", self.root.clone().unwrap())
+    } else {
+      format!("{{{} {sx}}}", self.root.clone().unwrap())
+    };
     let mut pos = 0;
     let mut stk = 0usize;
     let mut p = String::new();
