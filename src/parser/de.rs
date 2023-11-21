@@ -63,13 +63,11 @@ impl Parser {
             }
             _ => {}
         }
-        let x =Self {
+        Self {
             root,
             matches,
             input: sel,
-        };
-        println!("{:?}", x);
-        x
+        }
     }
     pub fn parse<T: DeserializeOwned + GraphQLRequestLike>(&mut self) -> Result<T, serde_json::Error> {
         let s = self.parse_qry()?;

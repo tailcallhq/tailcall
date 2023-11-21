@@ -94,7 +94,6 @@ async fn url_req<T: DeserializeOwned + GraphQLRequestLike + std::fmt::Debug>( re
    if let Some(q) =  req.uri().query() {
        let mut parser = Parser::from_qry(q);
        let request = parser.parse::<T>();
-       println!("{:?}",request);
        return match request {
            Ok(request) => {
                let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
