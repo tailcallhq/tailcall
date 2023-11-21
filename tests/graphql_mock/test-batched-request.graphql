@@ -1,11 +1,5 @@
 schema
-  @server(
-    port: 8000
-    graphiql: true
-    enableQueryValidation: false
-    hostname: "0.0.0.0"
-    enableBatchRequests: true
-  )
+  @server(port: 8000, graphiql: true, enableQueryValidation: false, hostname: "0.0.0.0", enableBatchRequests: true)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query
 }
