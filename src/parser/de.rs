@@ -7,48 +7,80 @@ use crate::async_graphql_hyper::GraphQLRequestLike;
 
 type PosValHolder = HashMap<String, Vec<(String, String)>>;
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize, Default)]
 pub struct Parser {
-  root: String,
-  matches: String,
-  input: String,
+  root: Option<String>,
+  m: Option<String>,
+  q: Option<String>,
 }
-
 impl Parser {
-  pub fn from_path(path: &str) -> Parser {
-    let qry = path.split("api/").last().unwrap();
+  pub fn from_path(path: &str) -> anyhow::Result<Parser> {
+    let mut root = String::new();
+    let split = path.split('?').collect::<Vec<&str>>();
+    let path = split.last().unwrap();
+    match serde_qs::from_str::<Map<String, Value>>(path) {
+      Ok(p) => {
+        let mut s = Self::default();
+        let rc = split.first().unwrap();
+        println!("{rc}");
+        for c in rc.chars().skip(4) {
+          match c {
+            '?' => {
+              break;
+            }
+            _ => {
+              root.push(c);
+            }
+          }
+        }
+        s.root = Some(de_kebab(&root));
+        if let Some(q) = p.get("$") {
+          if let Some(q) = q.as_str() {
+            s.q = Some(q.to_string());
+          }
+        }
+        let x = p
+          .iter()
+          .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
+          .map(|(k, v)| format!("{k}={}", v.as_str().unwrap()))
+          .collect::<Vec<String>>()
+          .join(",");
+        s.m = Some(x);
+        Ok(s)
+      }
+      Err(_) => Err(anyhow::anyhow!("Unable to parse query")),
+    }
+    /*    let qry = path.split("api/").last().unwrap();
     let qry = de_kebab(qry);
     let mut root = String::new();
     let mut sel = String::new();
     let mut matches = String::new();
     let mut pr = String::new();
-    let chars = qry.as_bytes();
     let mut i = 0;
-    for _ in 0..chars.len() {
-      let c = chars[i];
+    for c in qry.chars() {
       i += 1;
       match c {
-        b'?' => {
+        '?' => {
           break;
         }
         _ => {
-          root.push(c as char);
+          root.push(c);
         }
       }
     }
     let mut cur = 0usize;
-    for c in chars.iter().skip(i) {
+    for c in qry.chars().skip(i) {
       match c {
-        b'=' => {
+        '=' => {
           if pr.eq("$") {
             cur = 1;
             pr = String::new();
           } else {
             cur = 2;
-            pr.push(*c as char);
+            pr.push(c);
           }
         }
-        b'&' => {
+        '&' => {
           match cur {
             1 => {
               sel = pr.clone();
@@ -61,7 +93,7 @@ impl Parser {
           pr = String::new();
         }
         _ => {
-          pr.push(*c as char);
+          pr.push(c);
         }
       }
     }
@@ -74,7 +106,7 @@ impl Parser {
       }
       _ => {}
     }
-    Self { root, matches, input: sel }
+    Self { root, matches, input: sel }*/
   }
   pub fn parse<T: DeserializeOwned + GraphQLRequestLike>(&mut self) -> Result<T, serde_json::Error> {
     let s = self.parse_qry()?;
@@ -88,7 +120,12 @@ impl Parser {
     let mut hm = Map::new();
     let mut p = String::new();
     let mut curhm = &mut hm;
-    for c in self.input.chars() {
+    let input = match &self.q {
+      None => "",
+      Some(s) => s,
+    };
+
+    for c in input.chars() {
       match c {
         '.' => {
           if let Some(s) = curhm
@@ -122,7 +159,11 @@ impl Parser {
     let mut p1 = String::new();
     let mut curhm = &mut hm;
     let mut b = false;
-    for c in self.matches.chars() {
+    let matches = match &self.m {
+      None => "",
+      Some(s) => s,
+    };
+    for c in matches.chars() {
       match c {
         '.' => {
           curhm = curhm
@@ -156,8 +197,8 @@ impl Parser {
   }
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
     let mut hm = HashMap::new();
-    to_json(&v, &mut hm, (None, &self.root, 0));
-    let mut s = format!("{{{} {sx}}}", self.root);
+    to_json(&v, &mut hm, (None, &self.root.clone().unwrap(), 0));
+    let mut s = format!("{{{} {sx}}}", self.root.clone().unwrap());
     let mut pos = 0;
     let mut stk = 0usize;
     let mut p = String::new();
@@ -302,8 +343,10 @@ mod de_tests {
 
   #[test]
   fn parse_t() {
-    let mut parser = Parser::from_path("https://example.com/api/user?id=123&$=name,age,address.city,address.state");
-    let x = parser.parse::<GraphQLRequest>();
+    let parser = Parser::from_path("api/user?id=123&$=name,age,address.city,address.state");
+    println!("{parser:?}");
+    let x = parser.unwrap().parse::<GraphQLRequest>().unwrap();
     println!("{:?}", x);
+    // assert_eq!(x.into::<serde_json::Value>(), );
   }
 }

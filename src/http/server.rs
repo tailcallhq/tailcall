@@ -96,7 +96,7 @@ async fn url_req<T: DeserializeOwned + GraphQLRequestLike + std::fmt::Debug>(
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
   if let Some(q) = req.uri().path_and_query() {
     let q = q.as_str();
-    let mut parser = Parser::from_path(q);
+    let mut parser = Parser::from_path(q)?;
     let request = parser.parse::<T>();
     match request {
       Ok(request) => {
