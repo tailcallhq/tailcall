@@ -1,7 +1,7 @@
 ---
 name: Sending a batched graphql request
 config: !inline
-  upstream: {}
+  upstream: { }
   server:
     batchRequests: true
   schema:
@@ -80,3 +80,15 @@ assert:
               - column: 1
                 line: 1
             message: " --> 1:1\n  |\n1 | FOO\n  | ^---\n  |\n  = expected executable_definition"
+  # Sending a bad request
+  - request:
+      method: GET
+      url: http://localhost:8080/api/posts\?\$\=title,user{name}\}
+    response:
+      status: 200
+      body:
+        data: null
+        errors:
+          - message: "Unexpected GraphQL Request: Unexpected token }"
+
+
