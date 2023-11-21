@@ -28,6 +28,7 @@ impl Parser {
             '?' => {
               break;
             }
+            ' ' => (),
             _ => {
               root.push(c);
             }
@@ -124,10 +125,14 @@ impl Parser {
       None => "",
       Some(s) => s,
     };
-
     for c in input.chars() {
       match c {
-        '.' => {
+        '}' => {
+          curhm.insert(p.clone(), Value::Null);
+          curhm = &mut hm;
+          p.clear();
+        }
+        '{' => {
           if let Some(s) = curhm
             .entry(p.clone())
             .or_insert_with(|| Value::Object(Map::new()))
@@ -141,9 +146,9 @@ impl Parser {
         }
         ',' => {
           curhm.insert(p.clone(), Value::Null);
-          curhm = &mut hm;
           p.clear();
         }
+        ' ' => (),
         _ => {
           p.push(c);
         }
@@ -165,24 +170,32 @@ impl Parser {
     };
     for c in matches.chars() {
       match c {
-        '.' => {
+        '}' => {
+          curhm.insert(p.clone(), Value::from(p1.clone()));
+          curhm = &mut hm;
+          p.clear();
+          p1.clear();
+        }
+        '{' => {
           curhm = curhm
             .entry(p.clone())
             .or_insert_with(|| Value::Object(Map::new()))
             .as_object_mut()
             .expect("Expected Object");
           p.clear();
+          b = false;
         }
         ',' => {
           b = false;
           curhm.insert(p.clone(), Value::from(p1.clone()));
-          curhm = &mut hm;
+          // curhm = &mut hm;
           p.clear();
           p1.clear();
         }
         '=' => {
           b = true;
         }
+        ' ' => (),
         _ => {
           if b {
             p1.push(c);
@@ -193,11 +206,13 @@ impl Parser {
       }
     }
     curhm.insert(p, Value::from(p1));
+    println!("{:?}", hm);
     Ok(Value::from(hm))
   }
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
     let mut hm = HashMap::new();
     to_json(&v, &mut hm, (None, &self.root.clone().unwrap(), 0));
+    println!("{:?}", hm);
     let mut s = format!("{{{} {sx}}}", self.root.clone().unwrap());
     let mut pos = 0;
     let mut stk = 0usize;
@@ -216,20 +231,15 @@ impl Parser {
         ' ' => {
           if let Some(x) = hm.get(&stk) {
             if let Some(v) = x.get(&p) {
-              if !v.is_empty() {
-                if v.first().unwrap().1.is_empty() {
-                  break;
-                }
-                s.insert(pos, '(');
-                pos += 1;
-                for (k, v) in v {
-                  let m = format!("{k}: {v},");
-                  s.insert_str(pos, &m);
-                  pos += m.len();
-                  s.insert_str(pos, ") ");
-                }
-                pos += 2;
+              s.insert(pos, '(');
+              pos += 1;
+              for (k, v) in v {
+                let m = format!("{k}: {v},");
+                s.insert_str(pos, &m);
+                pos += m.len();
+                s.insert_str(pos, ") ");
               }
+              pos += 2;
             }
           }
           // hm.remove(&stk);
@@ -249,6 +259,7 @@ fn de_kebab(qry: &str) -> String {
   let mut b = false;
   for c in qry.chars() {
     match c {
+      ' ' => (),
       '-' => {
         b = true;
       }
@@ -271,12 +282,10 @@ fn to_json(value: &Value, result: &mut HashMap<usize, PosValHolder>, prl: (Optio
     Value::String(s) => {
       let (parent_key, root_node, level) = prl;
       let y = parent_key.unwrap_or_default();
-      result
-        .entry(level)
-        .or_default()
-        .entry(root_node.clone())
-        .or_default()
-        .push((y, s.clone()));
+      let v = result.entry(level).or_default().entry(root_node.clone()).or_default();
+      if !y.is_empty() {
+        v.push((y, s.clone()));
+      }
     }
     Value::Array(arr) => {
       let (parent_key, root_node, level) = prl;
