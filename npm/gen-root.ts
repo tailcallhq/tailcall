@@ -47,8 +47,13 @@ async function genServerPackage(buildDefinitions: string[]) {
         type: 'module',
         version: packageVersion,
         optionalDependencies,
+        scarfSettings: {
+            defaultOptIn: true,
+            allowTopLevel: true,
+        },
         dependencies: {
             "detect-libc": "^2.0.2",
+            "@scarf/scarf": "^1.3.0",
         },
         scripts: {
             postinstall: "node ./scripts/post-install.js",

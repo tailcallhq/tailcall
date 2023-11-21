@@ -1,10 +1,10 @@
 directive @server(
-  enableApolloTracing: Boolean
-  enableCacheControlHeader: Boolean
-  enableGraphiql: Boolean
-  enableIntrospection: Boolean
-  enableQueryValidation: Boolean
-  enableResponseValidation: Boolean
+  apolloTracing: Boolean
+  cacheControlHeader: Boolean
+  graphiql: Boolean
+  introspection: Boolean
+  queryValidation: Boolean
+  responseValidation: Boolean
   globalResponseTimeout: Int
   workers: Int
   port: Int
@@ -25,7 +25,7 @@ directive @upstream(
   timeout: Int
   userAgent: String
   baseURL: String
-  enableHttpCache: Boolean
+  httpCache: Boolean
   batch: Batch
 ) on SCHEMA
 

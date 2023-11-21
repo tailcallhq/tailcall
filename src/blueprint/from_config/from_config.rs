@@ -4,8 +4,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use async_graphql::InputType;
 use regex::Regex;
 
-use super::common::{to_type, TypeLike};
-use super::Server;
+use super::{to_type, Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
