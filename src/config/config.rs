@@ -14,6 +14,7 @@ use crate::config::introspection::IntrospectionResult;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
+use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
@@ -242,19 +243,19 @@ impl Field {
   pub fn has_resolver(&self) -> bool {
     self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.graphql.is_some()
   }
-  pub fn resolvable_directives(&self) -> Vec<&str> {
+  pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
     if self.http.is_some() {
-      directives.push("@http")
+      directives.push(Http::directive_name())
     }
     if self.graphql.is_some() {
-      directives.push("@graphql")
+      directives.push(Graphql::directive_name())
     }
     if self.unsafe_operation.is_some() {
-      directives.push("@unsafe")
+      directives.push(Unsafe::directive_name())
     }
     if self.const_field.is_some() {
-      directives.push("@const")
+      directives.push(Const::directive_name())
     }
     directives
   }
