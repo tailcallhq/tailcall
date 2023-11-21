@@ -29,6 +29,15 @@ impl ServerConfig {
     }
   }
 
+  pub fn graphiql_url(&self) -> String {
+    let protocol = match self.http_version().as_str() {
+      "HTTP/2" => "https",
+      _ => "http",
+    };
+    let addr = self.addr().to_string();
+    format!("{}://{}", protocol, addr)
+  }
+
   pub fn graphiql(&self) -> bool {
     self.blueprint.server.enable_graphiql
   }
