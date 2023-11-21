@@ -235,6 +235,11 @@ impl HttpClient for MockHttpClient {
 
     // Build the response with the status code from the mock.
     let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+
+    if status_code.is_client_error() || status_code.is_server_error() {
+      return Err(anyhow::format_err!("Status code error"));
+    }
+
     let mut response = Response { status: status_code, ..Default::default() };
 
     // Insert headers from the mock into the response.
