@@ -8,10 +8,8 @@ use crate::cli::CLIError;
 
 pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(), anyhow::Error> {
   let addr = sc.addr();
-  let sc_cloned = sc.clone();
-
   let make_svc_single_req = make_service_fn(|_conn| {
-    let state = Arc::clone(&sc_cloned);
+    let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
         handle_single_request(req, state.server_context.clone())
@@ -20,7 +18,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
   });
 
   let make_svc_batch_req = make_service_fn(|_conn| {
-    let state = Arc::clone(&sc_cloned);
+    let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
         handle_batch_request(req, state.server_context.clone())
@@ -29,7 +27,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
   });
   let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
   log_launch(sc.as_ref());
-  let server: std::prelude::v1::Result<(), hyper::Error> = if sc_cloned.blueprint.server.enable_batch_requests {
+  let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
   } else {
     builder.serve(make_svc_single_req).await
