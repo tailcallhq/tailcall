@@ -1,7 +1,7 @@
 ---
 name: Sending a batched graphql request
 config: !inline
-  upstream: { }
+  upstream: {}
   server:
     batchRequests: true
   schema:
@@ -90,5 +90,3 @@ assert:
         data: null
         errors:
           - message: "Unexpected GraphQL Request: Unexpected token }"
-
-
