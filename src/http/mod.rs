@@ -2,9 +2,9 @@ mod client;
 mod data_loader;
 
 mod data_loader_request;
+mod graphql_data_loader;
 mod http_1;
 mod http_2;
-mod graphql_data_loader;
 mod method;
 mod request_context;
 mod request_handler;
