@@ -4,7 +4,7 @@ use hyper::HeaderMap;
 use crate::config::KeyValues;
 use crate::valid::{Valid, ValidationError};
 
-pub fn convert_headers(headers: &KeyValues) -> Valid<HeaderMap, String> {
+pub fn to_headermap(headers: &KeyValues) -> Valid<HeaderMap, String> {
   Valid::from_iter(headers.iter(), |(k, v)| {
     let name =
       Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))).trace(k);
@@ -23,14 +23,14 @@ mod tests {
   use hyper::header::{HeaderName, HeaderValue};
   use hyper::HeaderMap;
 
-  use super::convert_headers;
+  use super::to_headermap;
   use crate::config::KeyValues;
 
   #[test]
   fn valid_headers() -> Result<()> {
     let input: KeyValues = serde_json::from_str(r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#)?;
 
-    let headers = convert_headers(&input).to_result()?;
+    let headers = to_headermap(&input).to_result()?;
 
     assert_eq!(
       headers,
@@ -47,7 +47,7 @@ mod tests {
   fn not_valid_due_to_utf8() {
     let input: KeyValues =
       serde_json::from_str(r#"[{"key": "😅", "value": "str"}, {"key": "b", "value": "🦀"}]"#).unwrap();
-    let error = convert_headers(&input).to_result().unwrap_err();
+    let error = to_headermap(&input).to_result().unwrap_err();
 
     // HeaderValue should be parsed just fine despite non-visible ascii symbols range
     // see https://github.com/hyperium/http/issues/519

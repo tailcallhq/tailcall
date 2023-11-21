@@ -9,6 +9,7 @@ pub mod document;
 pub mod endpoint;
 pub mod graphql_request_template;
 pub mod has_headers;
+pub mod helpers;
 pub mod http;
 #[cfg(feature = "unsafe-js")]
 pub mod javascript;

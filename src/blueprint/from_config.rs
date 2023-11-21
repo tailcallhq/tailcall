@@ -6,7 +6,6 @@ use async_graphql::InputType;
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
-use super::converters::convert_headers;
 use super::UnionTypeDefinition;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
@@ -23,7 +22,7 @@ use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::request_template::RequestTemplate;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
-use crate::{blueprint, config};
+use crate::{blueprint, config, helpers};
 
 type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 
@@ -540,7 +539,7 @@ fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
 
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-        .and(convert_headers(&http.headers))
+        .and(helpers::headers::to_headermap(&http.headers))
         .and_then(|header_map| {
           RequestTemplate::try_from(
             Endpoint::new(base_url.to_string())
@@ -603,7 +602,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
         },
       );
 
-      convert_headers(&graphql.headers)
+      helpers::headers::to_headermap(&graphql.headers)
         .zip(variable_definitions)
         .and_then(|(header_map, variable_definitions)| {
           Valid::from(
