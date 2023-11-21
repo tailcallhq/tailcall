@@ -5,7 +5,7 @@ schema @server @upstream(baseURL: "http://localhost:8000/graphql") {
 
 type Post {
   id: Int!
-  user: User @graphQlSource(query: {args: [{key: "iddoesntexist", value: "{{value.userId}}"}], name: "user"})
+  user: User @graphql(query: {args: [{key: "iddoesntexist", value: "{{value.userId}}"}], name: "user"})
 }
 
 type Query {
@@ -21,5 +21,5 @@ type User {
 type Failure
   @error(
     message: "Could not find argument type for iddoesntexist from introspection"
-    trace: ["Post", "user", "@graphQlSource"]
+    trace: ["Post", "user", "@graphql"]
   )

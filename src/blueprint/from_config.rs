@@ -231,11 +231,11 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<blueprint::Fi
     }
 
     update_args()
-      .and(update_http().trace("@http"))
-      .and(update_unsafe().trace("@unsafe"))
-      .and(update_const_field().trace("@const"))
-      .and(update_graphql().trace("@graphQlSource"))
-      .and(update_modify().trace("@modify"))
+      .and(update_http().trace(config::Http::directive_name().as_str()))
+      .and(update_unsafe().trace(config::Unsafe::directive_name().as_str()))
+      .and(update_const_field().trace(config::Const::directive_name().as_str()))
+      .and(update_graphql().trace(config::GraphQL::directive_name().as_str()))
+      .and(update_modify().trace(config::Modify::directive_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 

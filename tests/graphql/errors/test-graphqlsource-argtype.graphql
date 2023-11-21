@@ -6,7 +6,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 type Post {
   id: Int!
   user: User
-    @graphQlSource(
+    @graphql(
       baseURL: "http://localhost:8000/graphql"
       query: {args: [{key: "pid", value: "{{value.userId}}"}], name: "user"}
     )
@@ -23,4 +23,4 @@ type User {
 
 #> client-sdl
 type Failure
-  @error(message: "Could not find argument type for pid from introspection", trace: ["Post", "user", "@graphQlSource"])
+  @error(message: "Could not find argument type for pid from introspection", trace: ["Post", "user", "@graphql"])

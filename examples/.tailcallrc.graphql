@@ -43,7 +43,7 @@ directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
 
-directive @graphQlSource(
+directive @graphql(
   query: GraphQLQuery
   baseURL: String
   headers: [KeyValue]

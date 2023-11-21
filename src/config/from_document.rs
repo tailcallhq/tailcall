@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, GraphQLSource, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, GraphQL, Http, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -55,10 +55,10 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 }
 
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
-  process_schema_directives(schema_definition, "server")
+  process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
-  process_schema_directives(schema_definition, "upstream")
+  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
@@ -193,7 +193,7 @@ where
   let modify = to_modify(directives);
 
   to_http(directives)
-    .zip(to_graphqlsource(directives))
+    .zip(to_graphql(directives))
     .map(|(http, graphql_source)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
@@ -214,7 +214,7 @@ where
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "unsafe" {
+    if directive.node.name.node == config::Unsafe::directive_name() {
       config::Unsafe::from_directive(&directive.node).to_result().ok()
     } else {
       None
@@ -224,10 +224,7 @@ fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<conf
 fn to_type_of(type_: &Type) -> String {
   match &type_.base {
     BaseType::Named(name) => name.to_string(),
-    BaseType::List(ty) => match &ty.base {
-      BaseType::Named(name) => name.to_string(),
-      _ => "".to_string(),
-    },
+    BaseType::List(ty) => to_type_of(ty),
   }
 }
 fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
@@ -257,7 +254,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
 }
 fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "modify" {
+    if directive.node.name.node == config::Modify::directive_name() {
       config::Modify::from_directive(&directive.node).to_result().ok()
     } else {
       None
@@ -266,7 +263,7 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
 }
 fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>, String> {
   for directive in directives {
-    if directive.node.name.node == "http" {
+    if directive.node.name.node == config::Http::directive_name() {
       return Http::from_directive(&directive.node).map(Some);
     }
   }
@@ -282,7 +279,7 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "const" {
+    if directive.node.name.node == config::Const::directive_name() {
       config::Const::from_directive(&directive.node).to_result().ok()
     } else {
       None
@@ -290,10 +287,10 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
   })
 }
 
-fn to_graphqlsource(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::GraphQLSource>, String> {
+fn to_graphql(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::GraphQL>, String> {
   for directive in directives {
-    if directive.node.name.node == "graphQlSource" {
-      return GraphQLSource::from_directive(&directive.node).map(Some);
+    if directive.node.name.node == GraphQL::directive_name() {
+      return GraphQL::from_directive(&directive.node).map(Some);
     }
   }
   Valid::succeed(None)

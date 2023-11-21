@@ -234,7 +234,7 @@ pub struct Field {
 
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
-  pub graphql_source: Option<GraphQLSource>,
+  pub graphql_source: Option<GraphQL>,
 }
 
 impl Field {
@@ -333,7 +333,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct GraphQLSource {
+pub struct GraphQL {
   pub query: GraphQLQuery,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,

@@ -53,9 +53,9 @@ mod tests {
     // see https://github.com/hyperium/http/issues/519
     assert_eq!(
       error.to_string(),
-      r#"Validation Error
+      r"Validation Error
 • invalid HTTP header name [😅]
-"#
+"
     );
   }
 }
