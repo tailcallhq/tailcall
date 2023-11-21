@@ -1,0 +1,21 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type Query {
+  users: [User] @graphql(baseURL: "http://upstream/graphql", operation: {name: "users"})
+}
+
+type Mutation {
+  createUser(name: String!): User
+    @graphql(
+      baseURL: "http://upstream/graphql"
+      operation: {type: "mutation", name: "createUser", args: [{key: "name", value: "{{args.name}}"}]}
+    )
+}

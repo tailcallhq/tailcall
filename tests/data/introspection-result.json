@@ -59,6 +59,26 @@
             }
           }
         ]
+      },
+      "mutationType": {
+        "name": "Mutation",
+        "fields": [
+          {
+            "name": "createUser",
+            "args": [
+              {
+                "name": "name",
+                "type": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "String"
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     }
   }

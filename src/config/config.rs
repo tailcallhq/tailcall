@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::fmt::{self, Display};
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -239,15 +240,15 @@ pub struct Field {
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some()
-      || self.unsafe_operation.is_some()
-      || self.const_field.is_some()
-      || self.graphql.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.graphql.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<&str> {
-    let mut directives = Vec::with_capacity(3);
+    let mut directives = Vec::with_capacity(4);
     if self.http.is_some() {
       directives.push("@http")
+    }
+    if self.graphql.is_some() {
+      directives.push("@graphql")
     }
     if self.unsafe_operation.is_some() {
       directives.push("@unsafe")
@@ -348,10 +349,35 @@ pub struct Graphql {
   pub use_batch_request: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GraphQLOperationType {
+  #[default]
+  Query,
+  Mutation,
+}
+
+impl Display for GraphQLOperationType {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    f.write_str(match self {
+      Self::Query => "query",
+      Self::Mutation => "mutation",
+    })
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GraphQLOperation {
+  #[serde(rename = "type", default, skip_serializing_if = "is_default")]
+  pub operation_type: GraphQLOperationType,
   pub name: String,
   pub args: Option<KeyValues>,
+}
+
+impl Default for GraphQLOperation {
+  fn default() -> Self {
+    Self { operation_type: GraphQLOperationType::Query, name: String::new(), args: None }
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

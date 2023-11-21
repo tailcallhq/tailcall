@@ -169,7 +169,6 @@ impl HttpSpec {
       ConfigSource::File(file) => {
         Config::from_file_or_url_with_validator([file].iter(), HttpSpec::mock_graphql_config_validator())
           .await
-          .ok()
           .unwrap()
       }
       ConfigSource::Inline(config) => config,

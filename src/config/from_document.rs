@@ -192,25 +192,23 @@ where
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
 
-  to_http(directives)
-    .zip(to_graphql(directives))
-    .map(|(http, graphql)| {
-      let unsafe_operation = to_unsafe_operation(directives);
-      let const_field = to_const_field(directives);
-      config::Field {
-        type_of,
-        list,
-        required: !nullable,
-        list_type_required,
-        args,
-        doc,
-        modify,
-        http,
-        unsafe_operation,
-        const_field,
-        graphql,
-      }
-    })
+  to_http(directives).zip(to_graphql(directives)).map(|(http, graphql)| {
+    let unsafe_operation = to_unsafe_operation(directives);
+    let const_field = to_const_field(directives);
+    config::Field {
+      type_of,
+      list,
+      required: !nullable,
+      list_type_required,
+      args,
+      doc,
+      modify,
+      http,
+      unsafe_operation,
+      const_field,
+      graphql,
+    }
+  })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {

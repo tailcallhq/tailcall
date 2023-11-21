@@ -4,7 +4,7 @@ use async_graphql::futures_util::future::join_all;
 use reqwest;
 use serde_json::json;
 
-use super::{Config, ConfigValidator, Graphql};
+use super::{Config, ConfigValidator, GraphQLOperationType, Graphql};
 use crate::valid::Valid;
 
 // GraphQL introspection response types.
@@ -22,6 +22,8 @@ pub struct IntrospectionData {
 pub struct IntrospectionSchema {
   #[serde(rename = "queryType")]
   pub query_type: IntrospectionType,
+  #[serde(rename = "mutationType")]
+  pub mutation_type: Option<IntrospectionType>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -81,8 +83,48 @@ impl IntrospectionResults {
 }
 
 pub async fn introspect_endpoint(graphql_url: &String) -> Result<IntrospectionResult, Box<dyn std::error::Error>> {
-  let introspection_query: String =
-  json!({"query": "query { __schema { queryType { name fields { name args { name type { name kind ofType {name }}} type { name kind ofType { name fields {name} } fields { name }}  } } } }"}).to_string();
+  let introspection_query: String = json!({
+    "query": "query {
+      __schema {
+        queryType {
+          ...infoFields
+        }
+        mutationType {
+          ...infoFields
+        }
+      }
+    }
+    fragment infoFields on __Type {
+      name
+      fields {
+        name
+        args {
+          name
+          type {
+            name
+            kind
+            ofType {
+              name
+            }
+          }
+        }
+        type {
+          name
+          kind
+          ofType {
+            name
+            fields {
+              name
+            }
+          }
+          fields {
+            name
+          }
+        }
+      }
+    }"
+  })
+  .to_string();
 
   let result = reqwest::Client::new()
     .post(graphql_url)
@@ -110,20 +152,18 @@ pub async fn introspect_endpoints(graphql_urls: Vec<String>) -> IntrospectionRes
 
 pub fn get_arg_type(
   introspection_result: &IntrospectionResult,
+  query_type: &GraphQLOperationType,
   query_name: &String,
   arg_name: &String,
 ) -> Option<String> {
   introspection_result
     .data
     .as_ref()
-    .and_then(|data| {
-      data
-        .__schema
-        .query_type
-        .fields
-        .iter()
-        .find(|field| field.name == *query_name)
+    .and_then(|data| match query_type {
+      GraphQLOperationType::Query => Some(&data.__schema.query_type),
+      GraphQLOperationType::Mutation => data.__schema.mutation_type.as_ref(),
     })
+    .and_then(|operation| operation.fields.iter().find(|field| field.name == *query_name))
     .and_then(|field| field.args.as_ref())
     .and_then(|args| args.iter().find(|arg| arg.name == *arg_name))
     .and_then(|arg| {
@@ -248,20 +288,51 @@ mod tests {
       .get(&"http://localhost:8000/graphql".to_string())
       .unwrap();
     assert_eq!(
-      get_arg_type(introspection_result, &"user".to_string(), &"id".to_string()).unwrap(),
+      get_arg_type(
+        introspection_result,
+        &GraphQLOperationType::Query,
+        &"user".to_string(),
+        &"id".to_string()
+      )
+      .unwrap(),
       "Int"
     );
     assert_eq!(
-      get_arg_type(introspection_result, &"post".to_string(), &"id".to_string()).unwrap(),
+      get_arg_type(
+        introspection_result,
+        &GraphQLOperationType::Query,
+        &"post".to_string(),
+        &"id".to_string()
+      )
+      .unwrap(),
       "Int!"
     );
     assert_eq!(
-      get_arg_type(introspection_result, &"post".to_string(), &"doesntexist".to_string()),
+      get_arg_type(
+        introspection_result,
+        &GraphQLOperationType::Query,
+        &"post".to_string(),
+        &"doesntexist".to_string()
+      ),
       None
     );
     assert_eq!(
-      get_arg_type(introspection_result, &"doesntexist".to_string(), &"id".to_string()),
+      get_arg_type(
+        introspection_result,
+        &GraphQLOperationType::Query,
+        &"doesntexist".to_string(),
+        &"id".to_string()
+      ),
       None
+    );
+    assert_eq!(
+      get_arg_type(
+        introspection_result,
+        &GraphQLOperationType::Mutation,
+        &"createUser".to_string(),
+        &"name".to_string()
+      ),
+      Some("String!".to_owned())
     );
   }
 
@@ -278,17 +349,10 @@ mod tests {
     let graphql_url = server.url("/graphql");
 
     let introspect_result = introspect_endpoint(&graphql_url).await;
-    assert_eq!(
-      introspect_result
-        .unwrap()
-        .data
-        .unwrap()
-        .__schema
-        .query_type
-        .fields
-        .len(),
-      2
-    );
+    let schema = introspect_result.unwrap().data.unwrap().__schema;
+
+    assert_eq!(schema.query_type.fields.len(), 2);
+    assert_eq!(schema.mutation_type.unwrap().fields.len(), 1);
   }
 
   #[tokio::test]

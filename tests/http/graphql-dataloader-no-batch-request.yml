@@ -20,7 +20,7 @@ mock:
   - request:
       url: http://upstream/graphql
       method: POST
-      body: '{ "query": "query($id: Int) { user(id: $id) { name  } }", "variables": { "id": 1 } }'
+      body: '{ "query": "query($id: Int) { user(id: $id) { name  } }", "variables": { "id": "1" } }'
     response:
       body:
         data:
@@ -29,7 +29,7 @@ mock:
   - request:
       url: http://upstream/graphql
       method: POST
-      body: '{ "query": "query($id: Int) { user(id: $id) { name  } }", "variables": { "id": 2 } }'
+      body: '{ "query": "query($id: Int) { user(id: $id) { name  } }", "variables": { "id": "2" } }'
     response:
       body:
         data:

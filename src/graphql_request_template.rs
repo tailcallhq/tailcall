@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::KeyValues;
+use crate::config::{GraphQLOperation, GraphQLOperationType};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::mustache::Mustache;
@@ -15,6 +15,7 @@ use crate::path_string::PathString;
 #[derive(Setters, Debug, Clone)]
 pub struct GraphqlRequestTemplate {
   pub url: String,
+  pub query_type: GraphQLOperationType,
   pub query_name: String,
   pub query_arguments: Option<String>,
   pub variable_definitions: Option<String>,
@@ -63,15 +64,16 @@ impl GraphqlRequestTemplate {
       .variable_values
       .iter()
       .map(|(k, v)| (k, v.render(ctx)))
-      .map(|(k, v)| format!(r#""{}": {}"#, k, v))
+      // TODO: proper conversion from mustache to JSON value that will put quotes only when needed for JSON
+      .map(|(k, v)| format!(r#""{}": "{}""#, k, v))
       .collect::<Vec<_>>()
       .join(",");
     let selection_set = self.selection_set.render(ctx);
     let operation = self
       .variable_definitions
       .as_ref()
-      .map(|defs| format!("query({})", defs))
-      .unwrap_or("query".to_owned());
+      .map(|defs| format!("{}({})", self.query_type, defs))
+      .unwrap_or(self.query_type.to_string());
     let query_name = self
       .query_arguments
       .as_ref()
@@ -87,15 +89,14 @@ impl GraphqlRequestTemplate {
 
   pub fn new(
     url: String,
-    query_name: String,
-    args: Option<&KeyValues>,
+    operation: &GraphQLOperation,
     variable_definitions: Option<String>,
     headers: HeaderMap<HeaderValue>,
   ) -> anyhow::Result<Self> {
     let mut variable_values = Vec::new();
     let mut query_arguments = None;
 
-    if let Some(args) = args {
+    if let Some(args) = operation.args.as_ref() {
       variable_values = args
         .iter()
         .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
@@ -114,7 +115,17 @@ impl GraphqlRequestTemplate {
       .iter()
       .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
-    Ok(Self { url, query_name, query_arguments, variable_definitions, variable_values, selection_set, headers })
+
+    Ok(Self {
+      url,
+      query_type: operation.operation_type.to_owned(),
+      query_name: operation.name.to_owned(),
+      query_arguments,
+      variable_definitions,
+      variable_values,
+      selection_set,
+      headers,
+    })
   }
 }
 
@@ -127,6 +138,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
+  use crate::config::{GraphQLOperation, GraphQLOperationType};
   use crate::graphql_request_template::GraphqlRequestTemplate;
 
   #[derive(Setters)]
@@ -153,14 +165,10 @@ mod tests {
 
   #[test]
   fn test_query_without_args() {
-    let tmpl = GraphqlRequestTemplate::new(
-      "http://localhost:3000".to_string(),
-      "myQuery".to_string(),
-      None,
-      None,
-      HeaderMap::new(),
-    )
-    .unwrap();
+    let operation =
+      GraphQLOperation { operation_type: GraphQLOperationType::Query, name: "myQuery".to_owned(), args: None };
+    let tmpl =
+      GraphqlRequestTemplate::new("http://localhost:3000".to_string(), &operation, None, HeaderMap::new()).unwrap();
     let ctx = Context::default().value(json!({
       "foo": {
         "bar": "baz",
@@ -182,10 +190,14 @@ mod tests {
 
   #[test]
   fn test_query_with_args() {
+    let operation = GraphQLOperation {
+      operation_type: GraphQLOperationType::Mutation,
+      name: "create".to_owned(),
+      args: Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()),
+    };
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
-      "myQuery".to_string(),
-      Some(&serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()),
+      &operation,
       Some("$id: Int".to_string()),
       HeaderMap::new(),
     )
@@ -205,7 +217,7 @@ mod tests {
 
     assert_eq!(
       std::str::from_utf8(&body).unwrap(),
-      r#"{ "query": "query($id: Int) { myQuery(id: $id) { a,b,c } }", "variables": { "id": baz } }"#
+      r#"{ "query": "mutation($id: Int) { create(id: $id) { a,b,c } }", "variables": { "id": "baz" } }"#
     );
   }
 }

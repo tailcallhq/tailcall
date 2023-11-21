@@ -579,7 +579,8 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
         return Valid::fail("No base URL defined".to_string());
       };
 
-      let args = graphql.operation.args.as_ref();
+      let operation = &graphql.operation;
+      let args = operation.args.as_ref();
 
       let variable_definitions = args.map_or_else(
         || Valid::succeed(None),
@@ -587,7 +588,12 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
           Valid::from_iter(args.iter(), |(arg_name, _)| {
             Valid::from(
               if let Some(introspection_result) = &graphql.introspection {
-                get_arg_type(introspection_result, &graphql.operation.name, arg_name)
+                get_arg_type(
+                  introspection_result,
+                  &operation.operation_type,
+                  &operation.name,
+                  arg_name,
+                )
               } else {
                 None
               }
@@ -608,8 +614,7 @@ fn update_graphql<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type,
           Valid::from(
             GraphqlRequestTemplate::new(
               base_url.to_owned(),
-              graphql.operation.name.clone(),
-              args,
+              &graphql.operation,
               variable_definitions,
               header_map,
             )
