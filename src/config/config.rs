@@ -286,6 +286,7 @@ pub struct Inline {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Arg {
+  #[serde(rename = "type")]
   pub type_of: String,
   #[serde(default)]
   pub list: bool,

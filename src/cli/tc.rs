@@ -6,6 +6,7 @@ use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
+use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -14,7 +15,7 @@ use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
 
-pub async fn run() -> Result<()> {
+pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
@@ -22,13 +23,19 @@ pub async fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config = Config::from_file_or_url(file_path.iter()).await?;
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      start_server(config).await?;
+      let runtime = Builder::new_multi_thread()
+        .worker_threads(config.server.get_workers())
+        .enable_all()
+        .build()?;
+      runtime.block_on(start_server(config))?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = Config::from_file_or_url(file_path.iter()).await?;
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
@@ -41,7 +48,7 @@ pub async fn run() -> Result<()> {
         Err(e) => Err(e.into()),
       }
     }
-    Command::Init { file_path } => Ok(init(&file_path).await?),
+    Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
 }
 
