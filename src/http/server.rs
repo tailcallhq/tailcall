@@ -89,7 +89,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   }
 }
 
-async fn url_req<T: DeserializeOwned + GraphQLRequestLike + std::fmt::Debug>(
+async fn url_req<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   server_ctx: &ServerContext,
 ) -> Result<Response<Body>> {

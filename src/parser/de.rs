@@ -25,6 +25,7 @@ impl Parser {
         println!("{rc}");
         for c in rc.chars().skip(4) {
           match c {
+            '/' => (),
             '?' => {
               break;
             }
