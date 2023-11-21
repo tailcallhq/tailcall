@@ -21,9 +21,16 @@ pub use response::*;
 pub use server::{handle_batch_request, handle_single_request, start_server};
 pub use server_context::ServerContext;
 
-pub fn max_age(res: &Response) -> Option<Duration> {
+pub fn cache_control_value(res: &Response) -> Option<&str> {
   let header = res.headers.get(CACHE_CONTROL)?;
-  let value = header.to_str().ok()?;
+  header.to_str().ok()
+}
+
+pub fn max_age(res: &Response) -> Option<Duration> {
+    let value = cache_control_value(res)?;
+    if value.to_lowercase().contains("no-store") {
+        return None; // Return None for 'no-store'
+    }
   let policy = CacheControl::from_value(value)?;
   policy.max_age
 }
@@ -66,7 +73,7 @@ mod tests {
 
   #[test]
   fn test_max_age_some() {
-    let headers = cache_control_header(3600);
+    let headers = cache_control_header("no-store");
     let response = Response::default().headers(headers);
 
     assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
