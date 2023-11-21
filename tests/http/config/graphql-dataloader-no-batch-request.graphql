@@ -6,11 +6,7 @@ type Post {
   id: Int
   title: String
   userId: Int
-  user: User
-    @graphql(
-      baseURL: "http://upstream/graphql"
-      operation: {name: "user", args: [{key: "id", value: "{{value.userId}}"}]}
-    )
+  user: User @graphql(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{value.userId}}"}])
 }
 
 type User {

@@ -9,7 +9,8 @@ type Post {
   user: User
     @graphql(
       baseURL: "http://upstream/graphql"
-      operation: {name: "user", args: [{key: "id", value: "{{value.userId}}"}]}
+      name: "user"
+      args: [{key: "id", value: "{{value.userId}}"}]
       batch: true
     )
 }

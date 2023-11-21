@@ -246,16 +246,16 @@ impl Field {
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
     if self.http.is_some() {
-      directives.push(Http::directive_name())
+      directives.push(Http::trace_name())
     }
     if self.graphql.is_some() {
-      directives.push(Graphql::directive_name())
+      directives.push(Graphql::trace_name())
     }
     if self.unsafe_operation.is_some() {
-      directives.push(Unsafe::directive_name())
+      directives.push(Unsafe::trace_name())
     }
     if self.const_field.is_some() {
-      directives.push(Const::directive_name())
+      directives.push(Const::trace_name())
     }
     directives
   }
@@ -336,7 +336,8 @@ pub struct Http {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Graphql {
-  pub operation: GraphQLOperation,
+  pub name: String,
+  pub args: Option<KeyValues>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
   #[serde(default)]
@@ -365,12 +366,6 @@ impl Display for GraphQLOperationType {
       Self::Mutation => "mutation",
     })
   }
-}
-
-#[derive(Serialize, Default, Deserialize, Clone, Debug)]
-pub struct GraphQLOperation {
-  pub name: String,
-  pub args: Option<KeyValues>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

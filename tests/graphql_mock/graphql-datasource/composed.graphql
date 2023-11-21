@@ -14,10 +14,7 @@ type Post {
   title: String!
   body: String!
   user: User
-    @graphql(
-      baseURL: "http://localhost:8000/graphql"
-      operation: {name: "user", args: [{key: "id", value: "{{value.userId}}"}]}
-    )
+    @graphql(baseURL: "http://localhost:8000/graphql", name: "user", args: [{key: "id", value: "{{value.userId}}"}])
 }
 
 type User {

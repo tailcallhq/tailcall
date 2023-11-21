@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::{GraphQLOperation, GraphQLOperationType};
+use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::mustache::Mustache;
@@ -90,14 +90,15 @@ impl GraphqlRequestTemplate {
   pub fn new(
     url: String,
     operation_type: &GraphQLOperationType,
-    operation: &GraphQLOperation,
+    operation_name: &str,
+    args: Option<&KeyValues>,
     variable_definitions: Option<String>,
     headers: HeaderMap<HeaderValue>,
   ) -> anyhow::Result<Self> {
     let mut variable_values = Vec::new();
     let mut query_arguments = None;
 
-    if let Some(args) = operation.args.as_ref() {
+    if let Some(args) = args.as_ref() {
       variable_values = args
         .iter()
         .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
@@ -120,7 +121,7 @@ impl GraphqlRequestTemplate {
     Ok(Self {
       url,
       operation_type: operation_type.to_owned(),
-      operation_name: operation.name.to_owned(),
+      operation_name: operation_name.to_owned(),
       operation_arguments: query_arguments,
       variable_definitions,
       variable_values,
@@ -139,7 +140,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::config::{GraphQLOperation, GraphQLOperationType};
+  use crate::config::GraphQLOperationType;
   use crate::graphql_request_template::GraphqlRequestTemplate;
 
   #[derive(Setters)]
@@ -166,11 +167,11 @@ mod tests {
 
   #[test]
   fn test_query_without_args() {
-    let operation = GraphQLOperation { name: "myQuery".to_owned(), args: None };
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Query,
-      &operation,
+      "myQuery",
+      None,
       None,
       HeaderMap::new(),
     )
@@ -196,14 +197,11 @@ mod tests {
 
   #[test]
   fn test_query_with_args() {
-    let operation = GraphQLOperation {
-      name: "create".to_owned(),
-      args: Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()),
-    };
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Mutation,
-      &operation,
+      "create",
+      Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
       Some("$id: Int".to_string()),
       HeaderMap::new(),
     )

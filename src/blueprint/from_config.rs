@@ -591,8 +591,7 @@ fn update_graphql<'a>(
         return Valid::fail("No base URL defined".to_string());
       };
 
-      let operation = &graphql.operation;
-      let args = operation.args.as_ref();
+      let args = graphql.args.as_ref();
 
       let variable_definitions = args.map_or_else(
         || Valid::succeed(None),
@@ -600,7 +599,7 @@ fn update_graphql<'a>(
           Valid::from_iter(args.iter(), |(arg_name, _)| {
             Valid::from(
               if let Some(introspection_result) = &graphql.introspection {
-                get_arg_type(introspection_result, operation_type, &operation.name, arg_name)
+                get_arg_type(introspection_result, operation_type, &graphql.name, arg_name)
               } else {
                 None
               }
@@ -622,7 +621,8 @@ fn update_graphql<'a>(
             GraphqlRequestTemplate::new(
               base_url.to_owned(),
               operation_type,
-              &graphql.operation,
+              &graphql.name,
+              args,
               variable_definitions,
               header_map,
             )
