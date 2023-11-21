@@ -256,7 +256,7 @@ async fn assert_downstream(spec: HttpSpec) {
       // Assert Headers
       for (key, value) in assertion.response.0.headers.iter() {
         match actual_headers.get(key) {
-          None => panic!("Expected header {} to be present. But not found", key),
+          None => panic!("Expected header {} to be present", key),
           Some(actual_value) => assert_eq!(actual_value, value),
         }
       }
