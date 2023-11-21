@@ -5,8 +5,9 @@ use super::{Blueprint, Definition};
 // compress() takes a Blueprint and returns a compressed Blueprint. So that unused types are removed.
 pub fn compress(mut blueprint: Blueprint) -> Blueprint {
   let graph = build_dependency_graph(&blueprint);
-  let mut referenced_types = identify_referenced_types(&graph, vec!["Query", "Mutation", "Subscription"]);
-  referenced_types.insert("Query".to_string());
+  let query = blueprint.query().clone();
+  let mut referenced_types = identify_referenced_types(&graph, vec![&query, "Mutation", "Subscription"]);
+  referenced_types.insert(query.to_string());
   referenced_types.insert("Mutation".to_string());
   referenced_types.insert("Subscription".to_string());
   referenced_types.insert("__Schema".to_string());
