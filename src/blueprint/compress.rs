@@ -14,7 +14,7 @@ pub fn compress(mut blueprint: Blueprint) -> Blueprint {
   let mutation = blueprint.mutation().unwrap_or("Mutation".to_string());
 
   // Push to root-types
-  root_type.push(&defined_query_type.as_str());
+  root_type.push(defined_query_type.as_str());
   root_type.push(mutation.as_str());
 
   let mut referenced_types = identify_referenced_types(&graph, root_type);
