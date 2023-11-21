@@ -3,7 +3,7 @@ use async_graphql::InputType;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::blueprint::from_config::common::to_type;
+use crate::blueprint::from_config::to_type;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::group_by::GroupBy;
