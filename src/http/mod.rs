@@ -54,7 +54,7 @@ fn log_launch(sc: &ServerConfig) {
   let addr = sc.addr().to_string();
   log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());
   if sc.graphiql() {
-    log::info!("🌍 Playground: https://{}", addr);
+    log::info!("🌍 Playground: {}", sc.graphiql_url());
   }
 }
 
