@@ -9,6 +9,10 @@ pub trait PathString {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
 }
 
+pub trait PathGraphql {
+  fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String>;
+}
+
 impl PathString for serde_json::Value {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     self.get_path(path).and_then(|a| match a {
@@ -16,6 +20,15 @@ impl PathString for serde_json::Value {
       serde_json::Value::Number(n) => Some(Cow::Owned(n.to_string())),
       serde_json::Value::Bool(b) => Some(Cow::Owned(b.to_string())),
       _ => None,
+    })
+  }
+}
+
+impl PathGraphql for serde_json::Value {
+  fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
+    self.get_path(path).and_then(|v| match path[0].as_ref() {
+      "field" => v.as_str().map(|s| s.to_owned()),
+      _ => async_graphql::Value::from_json(v.clone()).ok().map(|v| v.to_string()),
     })
   }
 }
@@ -47,5 +60,189 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
       "field" => Some(Cow::Owned(ctx.field(tail[0].as_ref())?)),
       _ => None,
     })
+  }
+}
+
+impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx> {
+  fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
+    let ctx = self;
+
+    if path.len() < 2 {
+      return None;
+    }
+
+    path.split_first().and_then(|(head, tail)| match head.as_ref() {
+      "value" => Some(ctx.path_value(tail)?.to_string()),
+      "args" => Some(ctx.arg(tail)?.to_string()),
+      "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+      "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+      "field" => ctx.field(tail[0].as_ref()),
+      _ => None,
+    })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  mod evaluation_context {
+    use std::borrow::Cow;
+    use std::collections::BTreeMap;
+
+    use async_graphql::SelectionField;
+    use async_graphql_value::{ConstValue as Value, Name, Number};
+    use hyper::header::HeaderValue;
+    use hyper::HeaderMap;
+    use indexmap::IndexMap;
+    use once_cell::sync::Lazy;
+
+    use crate::http::RequestContext;
+    use crate::lambda::{EvaluationContext, ResolverContextLike};
+    use crate::path_string::{PathGraphql, PathString};
+
+    static TEST_VALUES: Lazy<Value> = Lazy::new(|| {
+      let mut root = IndexMap::new();
+      let mut nested = IndexMap::new();
+
+      nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
+
+      root.insert(Name::new("str"), Value::String("str-test".to_owned()));
+      root.insert(Name::new("number"), Value::Number(Number::from(2)));
+      root.insert(Name::new("bool"), Value::Boolean(true));
+      root.insert(Name::new("nested"), Value::Object(nested));
+
+      Value::Object(root)
+    });
+
+    static TEST_ARGS: Lazy<IndexMap<Name, Value>> = Lazy::new(|| {
+      let mut root = IndexMap::new();
+      let mut nested = IndexMap::new();
+
+      nested.insert(Name::new("existing"), Value::String("nested-test".to_owned()));
+
+      root.insert(Name::new("root"), Value::String("root-test".to_owned()));
+      root.insert(Name::new("nested"), Value::Object(nested));
+
+      root
+    });
+
+    static TEST_HEADERS: Lazy<HeaderMap> = Lazy::new(|| {
+      let mut map = HeaderMap::new();
+
+      map.insert("x-existing", HeaderValue::from_static("header"));
+
+      map
+    });
+
+    static TEST_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
+      let mut map = BTreeMap::new();
+
+      map.insert("existing".to_owned(), "var".to_owned());
+
+      map
+    });
+
+    struct MockGraphqlContext;
+
+    impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
+      fn value(&'a self) -> Option<&'a Value> {
+        Some(&TEST_VALUES)
+      }
+
+      fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+        Some(&TEST_ARGS)
+      }
+
+      fn field(&'a self) -> Option<SelectionField> {
+        None
+      }
+    }
+
+    static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
+      let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+
+      req_ctx.server.vars = TEST_VARS.clone();
+
+      req_ctx
+    });
+
+    static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext>> =
+      Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext));
+
+    #[test]
+    fn path_to_string() {
+      // value
+      assert_eq!(EVAL_CTX.path_string(&["value", "bool"]), Some(Cow::Borrowed("true")));
+      assert_eq!(EVAL_CTX.path_string(&["value", "number"]), Some(Cow::Borrowed("2")));
+      assert_eq!(EVAL_CTX.path_string(&["value", "str"]), Some(Cow::Borrowed("str-test")));
+      assert_eq!(
+        EVAL_CTX.path_string(&["value", "nested"]),
+        Some(Cow::Borrowed("{\"existing\":\"nested-test\"}"))
+      );
+      assert_eq!(EVAL_CTX.path_string(&["value", "missing"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["value", "nested", "missing"]), None);
+
+      // args
+      assert_eq!(
+        EVAL_CTX.path_string(&["args", "root"]),
+        Some(Cow::Borrowed("root-test"))
+      );
+      assert_eq!(
+        EVAL_CTX.path_string(&["args", "nested"]),
+        Some(Cow::Borrowed("{\"existing\":\"nested-test\"}"))
+      );
+      assert_eq!(EVAL_CTX.path_string(&["args", "missing"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["args", "nested", "missing"]), None);
+
+      // headers
+      assert_eq!(
+        EVAL_CTX.path_string(&["headers", "x-existing"]),
+        Some(Cow::Borrowed("header"))
+      );
+      assert_eq!(EVAL_CTX.path_string(&["headers", "x-missing"]), None);
+
+      // vars
+      assert_eq!(EVAL_CTX.path_string(&["vars", "existing"]), Some(Cow::Borrowed("var")));
+      assert_eq!(EVAL_CTX.path_string(&["vars", "missing"]), None);
+    }
+
+    #[test]
+    fn path_to_graphql_string() {
+      // value
+      assert_eq!(EVAL_CTX.path_graphql(&["value", "bool"]), Some("true".to_owned()));
+      assert_eq!(EVAL_CTX.path_graphql(&["value", "number"]), Some("2".to_owned()));
+      assert_eq!(
+        EVAL_CTX.path_graphql(&["value", "str"]),
+        Some("\"str-test\"".to_owned())
+      );
+      assert_eq!(
+        EVAL_CTX.path_graphql(&["value", "nested"]),
+        Some("{existing: \"nested-test\"}".to_owned())
+      );
+      assert_eq!(EVAL_CTX.path_graphql(&["value", "missing"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["value", "nested", "missing"]), None);
+
+      // args
+      assert_eq!(
+        EVAL_CTX.path_graphql(&["args", "root"]),
+        Some("\"root-test\"".to_owned())
+      );
+      assert_eq!(
+        EVAL_CTX.path_graphql(&["args", "nested"]),
+        Some("{existing: \"nested-test\"}".to_owned())
+      );
+      assert_eq!(EVAL_CTX.path_graphql(&["args", "missing"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["args", "nested", "missing"]), None);
+
+      // headers
+      assert_eq!(
+        EVAL_CTX.path_graphql(&["headers", "x-existing"]),
+        Some("\"header\"".to_owned())
+      );
+      assert_eq!(EVAL_CTX.path_graphql(&["headers", "x-missing"]), None);
+
+      // vars
+      assert_eq!(EVAL_CTX.path_graphql(&["vars", "existing"]), Some("\"var\"".to_owned()));
+      assert_eq!(EVAL_CTX.path_graphql(&["vars", "missing"]), None);
+    }
   }
 }

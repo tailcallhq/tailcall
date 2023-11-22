@@ -67,7 +67,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
       let selection_set = self.graphql_ctx.field()?.selection_set();
       Some(format_selection_set(selection_set))
     } else {
-      Some("".to_string())
+      None
     }
   }
 }

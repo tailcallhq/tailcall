@@ -2,11 +2,21 @@ schema
   @server(port: 8001, graphiql: true, queryValidation: false, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
   post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{args.id}}")
+}
+
+type Mutation {
+  createUser(user: UserInput!): User
+    @graphql(
+      baseURL: "http://localhost:8000/graphql"
+      name: "createUser"
+      args: [{key: "user", value: "{{args.user}}"}]
+    )
 }
 
 type Post {
@@ -24,4 +34,10 @@ type User {
   email: String!
   phone: String
   website: String
+}
+
+type UserInput {
+  name: String!
+  email: String!
+  phone: String
 }

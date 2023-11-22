@@ -8,7 +8,7 @@ use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::mustache::Mustache;
-use crate::path_string::PathString;
+use crate::path_string::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate
 /// documentation)
@@ -23,11 +23,11 @@ pub struct GraphqlRequestTemplate {
 }
 
 impl GraphqlRequestTemplate {
-  fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+  fn create_headers<C: PathGraphql>(&self, ctx: &C) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
-      if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+      if let Ok(header_value) = HeaderValue::from_str(&v.render_graphql(ctx)) {
         header_map.insert(k, header_value);
       }
     }
@@ -35,7 +35,7 @@ impl GraphqlRequestTemplate {
     header_map
   }
 
-  fn set_headers<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+  fn set_headers<C: PathGraphql + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     let headers = req.headers_mut();
     let config_headers = self.create_headers(ctx);
 
@@ -50,32 +50,30 @@ impl GraphqlRequestTemplate {
     req
   }
 
-  pub fn to_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+  pub fn to_request<C: PathGraphql + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
     req = self.set_headers(req, ctx);
     req = self.set_body(req, ctx);
     Ok(req)
   }
 
-  fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+  fn set_body<C: PathGraphql + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     let operation_type = &self.operation_type;
-    let selection_set = self.selection_set.render(ctx);
+    let selection_set = self.selection_set.render_graphql(ctx);
     let operation = self
       .operation_arguments
       .as_ref()
       .map(|args| {
         args
           .iter()
-          // TODO: Mustache::render returns only string while therefore quotes here
-          // but other types don't require quotes wrapping
-          .map(|(k, v)| format!(r#"{}: \"{}\""#, k, v.render(ctx)))
+          .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
           .collect::<Vec<_>>()
           .join(", ")
       })
       .map(|args| format!("{}({})", self.operation_name, args))
       .unwrap_or(self.operation_name.clone());
 
-    let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {{ {selection_set} }} }}" }}"#,);
+    let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {{ {selection_set} }} }}" }}"#);
 
     req.body_mut().replace(graphql_query.into());
     req
@@ -118,9 +116,6 @@ impl GraphqlRequestTemplate {
 
 #[cfg(test)]
 mod tests {
-  use std::borrow::Cow;
-
-  use derive_setters::Setters;
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
@@ -128,20 +123,14 @@ mod tests {
   use crate::config::GraphQLOperationType;
   use crate::graphql_request_template::GraphqlRequestTemplate;
 
-  #[derive(Setters)]
   struct Context {
     pub value: serde_json::Value,
     pub headers: HeaderMap,
   }
 
-  impl Default for Context {
-    fn default() -> Self {
-      Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
-    }
-  }
-  impl crate::path_string::PathString for Context {
-    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-      self.value.path_string(parts)
+  impl crate::path_string::PathGraphql for Context {
+    fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
+      self.value.path_graphql(path)
     }
   }
   impl crate::has_headers::HasHeaders for Context {
@@ -160,15 +149,18 @@ mod tests {
       HeaderMap::new(),
     )
     .unwrap();
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz",
-        "header": "abc"
-      },
-      "field": {
-        "selectionSet": "a,b,c"
-      }
-    }));
+    let ctx = Context {
+      value: json!({
+        "foo": {
+          "bar": "baz",
+          "header": "abc"
+        },
+        "field": {
+          "selectionSet": "a,b,c"
+        }
+      }),
+      headers: Default::default(),
+    };
 
     let req = tmpl.to_request(&ctx).unwrap();
     let body = req.body().unwrap().as_bytes().unwrap().to_owned();
@@ -189,15 +181,18 @@ mod tests {
       HeaderMap::new(),
     )
     .unwrap();
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz",
-        "header": "abc"
-      },
-      "field": {
-        "selectionSet": "a,b,c"
-      }
-    }));
+    let ctx = Context {
+      value: json!({
+        "foo": {
+          "bar": "baz",
+          "header": "abc"
+        },
+        "field": {
+          "selectionSet": "a,b,c"
+        }
+      }),
+      headers: Default::default(),
+    };
 
     let req = tmpl.to_request(&ctx).unwrap();
     let body = req.body().unwrap().as_bytes().unwrap().to_owned();

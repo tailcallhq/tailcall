@@ -4,7 +4,7 @@ mock:
   - request:
       url: http://upstream/graphql
       method: POST
-      body: '{ "query": "mutation { createUser(name: \"Test Name\") { name  } }" }'
+      body: '{ "query": "mutation { createUser(user: {name: \"Test Name\",email: \"test@email\"}) { name  } }" }'
     response:
       body:
         data:
@@ -15,7 +15,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: 'mutation { createUser(name: "Test Name") { name } }'
+        query: 'mutation { createUser(user: {name: "Test Name", email: "test@email"}) { name } }'
     response:
       body:
         data:

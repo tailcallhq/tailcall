@@ -1,6 +1,6 @@
 use nom::{Finish, IResult};
 
-use crate::path_string::PathString;
+use crate::path_string::{PathGraphql, PathString};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mustache(Vec<Segment>);
@@ -46,6 +46,18 @@ impl Mustache {
         .map(|segment| match segment {
           Segment::Literal(text) => text.clone(),
           Segment::Expression(parts) => value.path_string(parts).map(|a| a.to_string()).unwrap_or_default(),
+        })
+        .collect(),
+    }
+  }
+
+  pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
+    match self {
+      Mustache(segments) => segments
+        .iter()
+        .map(|segment| match segment {
+          Segment::Literal(text) => text.to_string(),
+          Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
         })
         .collect(),
     }
@@ -304,6 +316,62 @@ mod tests {
       ]);
 
       assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+    }
+  }
+
+  mod render_graphql {
+    use crate::mustache::{Mustache, Segment};
+    use crate::path_string::PathGraphql;
+
+    #[test]
+    fn test_render_mixed() {
+      struct DummyPath;
+
+      impl PathGraphql for DummyPath {
+        fn path_graphql<T: AsRef<str>>(&self, parts: &[T]) -> Option<String> {
+          let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+
+          if parts == ["foo", "bar"] {
+            Some("FOOBAR".to_owned())
+          } else if parts == ["baz", "qux"] {
+            Some("BAZQUX".to_owned())
+          } else {
+            None
+          }
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" middle ".to_string()),
+        Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(
+        mustache.render_graphql(&DummyPath),
+        "prefix FOOBAR middle BAZQUX suffix"
+      );
+    }
+
+    #[test]
+    fn test_render_with_missing_path() {
+      struct DummyPath;
+
+      impl PathGraphql for DummyPath {
+        fn path_graphql<T: AsRef<str>>(&self, _: &[T]) -> Option<String> {
+          None
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(mustache.render_graphql(&DummyPath), "prefix  suffix");
     }
   }
 }

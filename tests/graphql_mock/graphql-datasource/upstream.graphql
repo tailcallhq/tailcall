@@ -1,11 +1,16 @@
 schema
-  @server(port: 8000, enableGraphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
+  @server(port: 8000, graphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type Mutation {
+  createUser(user: UserInput!): User @http(path: "/users/1")
 }
 
 type User {
@@ -15,4 +20,10 @@ type User {
   email: String!
   phone: String
   website: String
+}
+
+type UserInput {
+  name: String!
+  email: String!
+  phone: String
 }
