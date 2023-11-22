@@ -1,4 +1,4 @@
-schema @server(responseHeaders: [{key: "x-id", value: "1"}, {key: "x-value", value: "value"}], enableGraphiql: true) {
+schema @server(responseHeaders: [{key: "x-id", value: "1"}, {key: "x-value", value: "value"}], graphiql: true) {
   query: Query
 }
 

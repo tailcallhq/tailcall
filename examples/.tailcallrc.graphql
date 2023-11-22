@@ -5,6 +5,7 @@ directive @server(
   introspection: Boolean
   queryValidation: Boolean
   responseValidation: Boolean
+  batchRequests: Boolean
   globalResponseTimeout: Int
   workers: Int
   port: Int
