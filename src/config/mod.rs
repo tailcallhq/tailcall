@@ -7,6 +7,7 @@ mod n_plus_one;
 mod reader;
 mod server;
 mod source;
+pub mod config_poll;
 
 pub use config::*;
 pub use key_values::*;

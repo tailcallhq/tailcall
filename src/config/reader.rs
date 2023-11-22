@@ -28,7 +28,7 @@ impl ConfigReader {
     }
     Ok(config)
   }
-  async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
+  pub async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
     let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
     Config::from_source(source, &server_sdl)
   }
@@ -56,7 +56,7 @@ impl ConfigReader {
     let txt = resp.text().await?;
     Ok((txt, source))
   }
-  async fn from_url(url: Url) -> anyhow::Result<Config> {
+  pub async fn from_url(url: Url) -> anyhow::Result<Config> {
     let (st, source) = Self::read_over_url(url).await?;
     Config::from_source(source, &st)
   }

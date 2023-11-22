@@ -27,6 +27,9 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
+    /// It is the interval after which the schema will be re read and updated automatically
+    #[arg(long)]
+    poll: Option<u64>
   },
 
   /// Validate a composition spec

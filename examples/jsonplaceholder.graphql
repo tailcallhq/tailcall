@@ -5,7 +5,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [User] @http(path: "/users")
 }
 
 type User {
