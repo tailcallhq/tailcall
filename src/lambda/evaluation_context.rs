@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::time::Duration;
 
 use async_graphql::{Name, SelectionField, Value};
@@ -5,7 +6,7 @@ use derive_setters::Setters;
 use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
-use super::{EmptyResolverContext, ResolverContextLike};
+use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -61,39 +62,49 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 
     vars.get(key).map(|v| v.as_str())
   }
+}
 
-  pub fn field(&self, key: &str) -> Option<String> {
-    if key == "selectionSet" {
-      let selection_set = self.graphql_ctx.field()?.selection_set();
-      Some(format_selection_set(selection_set))
-    } else {
-      None
-    }
+impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
+  fn selection_set(&self) -> Option<String> {
+    let selection_set = self.graphql_ctx.field()?.selection_set();
+    Some(format_selection_set(selection_set))
   }
 }
 
 fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> String {
-  let fields = selection_set.map(format_selection_field).collect::<Vec<_>>().join(" ");
-  fields.to_string()
+  selection_set.map(format_selection_field).collect::<Vec<_>>().join(" ")
 }
 
 fn format_selection_field(field: SelectionField) -> String {
   let name = field.name();
-  let arguments = format_selection_field_arguments(field.arguments().unwrap());
+  let arguments = format_selection_field_arguments(field);
   let selection_set = format_selection_set(field.selection_set());
+
   format!("{}{} {}", name, arguments, selection_set)
 }
 
-fn format_selection_field_arguments(arguments: Vec<(Name, Value)>) -> String {
+fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> {
+  let name = field.name();
+  let arguments = field
+    .arguments()
+    .or_else(|error| {
+      log::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
+
+      Err(error)
+    })
+    .unwrap_or_default();
+
   if arguments.is_empty() {
-    return "".into();
+    return Cow::Borrowed("");
   }
+
   let args = arguments
     .iter()
     .map(|(name, value)| format!("{}: {}", name, value))
     .collect::<Vec<_>>()
     .join(",");
-  format!("({})", args)
+
+  Cow::Owned(format!("({})", args))
 }
 
 pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {

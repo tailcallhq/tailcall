@@ -7,18 +7,17 @@ use reqwest::header::{HeaderName, HeaderValue};
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
+use crate::lambda::GraphQLOperationContext;
 use crate::mustache::Mustache;
 use crate::path_string::PathGraphql;
 
-/// RequestTemplate for GraphQL requests (See RequestTemplate
-/// documentation)
+/// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
 pub struct GraphqlRequestTemplate {
   pub url: String,
   pub operation_type: GraphQLOperationType,
   pub operation_name: String,
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
-  pub selection_set: Mustache,
   pub headers: Vec<(HeaderName, Mustache)>,
 }
 
@@ -50,16 +49,23 @@ impl GraphqlRequestTemplate {
     req
   }
 
-  pub fn to_request<C: PathGraphql + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+  pub fn to_request<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+    &self,
+    ctx: &C,
+  ) -> anyhow::Result<reqwest::Request> {
     let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
     req = self.set_headers(req, ctx);
     req = self.set_body(req, ctx);
     Ok(req)
   }
 
-  fn set_body<C: PathGraphql + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+  fn set_body<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+    &self,
+    mut req: reqwest::Request,
+    ctx: &C,
+  ) -> reqwest::Request {
     let operation_type = &self.operation_type;
-    let selection_set = self.selection_set.render_graphql(ctx);
+    let selection_set = ctx.selection_set().unwrap_or_default();
     let operation = self
       .operation_arguments
       .as_ref()
@@ -97,7 +103,6 @@ impl GraphqlRequestTemplate {
       );
     }
 
-    let selection_set = Mustache::parse("{{field.selectionSet}}")?;
     let headers = headers
       .iter()
       .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
@@ -108,7 +113,6 @@ impl GraphqlRequestTemplate {
       operation_type: operation_type.to_owned(),
       operation_name: operation_name.to_owned(),
       operation_arguments,
-      selection_set,
       headers,
     })
   }
@@ -122,20 +126,30 @@ mod tests {
 
   use crate::config::GraphQLOperationType;
   use crate::graphql_request_template::GraphqlRequestTemplate;
+  use crate::has_headers::HasHeaders;
+  use crate::lambda::GraphQLOperationContext;
+  use crate::path_string::PathGraphql;
 
   struct Context {
     pub value: serde_json::Value,
     pub headers: HeaderMap,
   }
 
-  impl crate::path_string::PathGraphql for Context {
+  impl PathGraphql for Context {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
       self.value.path_graphql(path)
     }
   }
-  impl crate::has_headers::HasHeaders for Context {
+
+  impl HasHeaders for Context {
     fn headers(&self) -> &HeaderMap {
       &self.headers
+    }
+  }
+
+  impl GraphQLOperationContext for Context {
+    fn selection_set(&self) -> Option<String> {
+      Some("a,b,c".to_owned())
     }
   }
 
@@ -154,9 +168,6 @@ mod tests {
         "foo": {
           "bar": "baz",
           "header": "abc"
-        },
-        "field": {
-          "selectionSet": "a,b,c"
         }
       }),
       headers: Default::default(),
@@ -186,9 +197,6 @@ mod tests {
         "foo": {
           "bar": "baz",
           "header": "abc"
-        },
-        "field": {
-          "selectionSet": "a,b,c"
         }
       }),
       headers: Default::default(),

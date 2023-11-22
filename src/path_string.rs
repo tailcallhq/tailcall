@@ -26,10 +26,9 @@ impl PathString for serde_json::Value {
 
 impl PathGraphql for serde_json::Value {
   fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-    self.get_path(path).and_then(|v| match path[0].as_ref() {
-      "field" => v.as_str().map(|s| s.to_owned()),
-      _ => async_graphql::Value::from_json(v.clone()).ok().map(|v| v.to_string()),
-    })
+    self
+      .get_path(path)
+      .and_then(|v| async_graphql::Value::from_json(v.clone()).ok().map(|v| v.to_string()))
   }
 }
 
@@ -57,7 +56,6 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
       "args" => convert_value(ctx.arg(tail)?),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-      "field" => Some(Cow::Owned(ctx.field(tail[0].as_ref())?)),
       _ => None,
     })
   }
@@ -76,7 +74,6 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
       "args" => Some(ctx.arg(tail)?.to_string()),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-      "field" => ctx.field(tail[0].as_ref()),
       _ => None,
     })
   }
