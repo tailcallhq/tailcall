@@ -376,7 +376,7 @@ dependencies = [
  "event-listener 3.1.0",
  "futures-lite 1.13.0",
  "rustix 0.38.25",
- "windows-sys",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1790,7 +1790,7 @@ checksum = "cb0889898416213fab133e1d33a0e5858a48177452750691bde3666d0fdbaf8b"
 dependencies = [
  "hermit-abi",
  "rustix 0.38.25",
- "windows-sys",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -2814,7 +2814,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.11",
- "windows-sys",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -3332,7 +3332,7 @@ dependencies = [
  "fastrand 2.0.1",
  "redox_syscall",
  "rustix 0.38.25",
- "windows-sys",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
