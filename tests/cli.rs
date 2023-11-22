@@ -215,7 +215,7 @@ mod start {
 mod init {
   use std::path::PathBuf;
   use std::{env, fs, path};
-  
+
   use super::*;
 
   #[test]
@@ -239,11 +239,11 @@ mod init {
     Ok(())
   }
 
-  /* 
+  /*
       The rest of the tests were completed using the `rexpect` crate instead of with the `assert_cmd` crate.
 
-      Why? The `assert_cmd` crate failed to work with either of the 2 interactive libraries for CLI input: 
-        - inquire::{Confirm / Input} & 
+      Why? The `assert_cmd` crate failed to work with either of the 2 interactive libraries for CLI input:
+        - inquire::{Confirm / Input} &
         - dialoguer::{Confirm / Input}
       because it doesn't allocate a pty like `rexpect` does.
 
@@ -278,7 +278,7 @@ mod init {
   */
   #[test]
   fn test_folder_missing() -> Result<(), Box<dyn std::error::Error>> {
-    // println!("BINARY PATH: {}", cargo_bin_str("tailcall"));
+    println!("BINARY PATH: {}", cargo_bin_str("tailcall"));
     let mut p = rexpect::spawn(&format!("{} init tmp0", cargo_bin_str("tailcall")), Some(500000))?;
     let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res);
@@ -288,7 +288,6 @@ mod init {
     println!("OUTPUT after sending 'N': {:?}", res);
 
     Ok(())
-
   }
 
   #[test]
@@ -313,7 +312,10 @@ mod init {
     answer3: &str,
   ) -> Result<(), rexpect::error::Error> {
     let folder_name = &folder_to_path_cwd(folder_name);
-    let mut p = rexpect::spawn(&format!("{} init {}", cargo_bin_str("tailcall"), folder_name), Some(5000))?;
+    let mut p = rexpect::spawn(
+      &format!("{} init {}", cargo_bin_str("tailcall"), folder_name),
+      Some(5000),
+    )?;
 
     let res1 = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res1);
@@ -432,23 +434,24 @@ mod init {
   fn cargo_bin_str(name: &str) -> String {
     let env_var = format!("CARGO_BIN_EXE_{}", name);
     return std::env::var_os(env_var)
-        .map(|p| p.into())
-        .unwrap_or_else(|| target_dir().join(format!("{}{}", name, env::consts::EXE_SUFFIX))).to_string_lossy().into();
+      .map(|p| p.into())
+      .unwrap_or_else(|| target_dir().join(format!("{}{}", name, env::consts::EXE_SUFFIX)))
+      .to_string_lossy()
+      .into();
   }
 
   // Adapted from
   // https://github.com/rust-lang/cargo/blob/485670b3983b52289a2f353d589c57fae2f60f82/tests/testsuite/support/mod.rs#L507
   fn target_dir() -> path::PathBuf {
     env::current_exe()
-        .ok()
-        .map(|mut path| {
-            path.pop();
-            if path.ends_with("deps") {
-                path.pop();
-            }
-            path
-        })
-        .unwrap()
+      .ok()
+      .map(|mut path| {
+        path.pop();
+        if path.ends_with("deps") {
+          path.pop();
+        }
+        path
+      })
+      .unwrap()
   }
-
 }
