@@ -60,7 +60,10 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   let request = serde_json::from_slice::<T>(&bytes);
   match request {
     Ok(request) => {
-      let mut response = request.data(req_ctx.clone()).execute(&*server_ctx.schema.read().await).await;
+      let mut response = request
+        .data(req_ctx.clone())
+        .execute(&*server_ctx.schema.read().await)
+        .await;
       response = update_cache_control_header(response, server_ctx, req_ctx);
       let mut resp = response.to_response()?;
       update_response_headers(&mut resp, server_ctx);

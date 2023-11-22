@@ -11,8 +11,8 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::Config;
 use crate::config::config_poll::ConfigLoader;
+use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
 
@@ -27,11 +27,7 @@ pub fn run() -> Result<()> {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      let cl = if let Some(poll) = poll {
-        Some(ConfigLoader::init(file_path, poll))
-      }else {
-        None
-      };
+      let cl = poll.map(|poll| ConfigLoader::init(file_path, poll));
 
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())

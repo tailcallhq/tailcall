@@ -1,4 +1,5 @@
 mod config;
+pub mod config_poll;
 mod from_document;
 pub mod group_by;
 mod into_document;
@@ -7,7 +8,6 @@ mod n_plus_one;
 mod reader;
 mod server;
 mod source;
-pub mod config_poll;
 
 pub use config::*;
 pub use key_values::*;
