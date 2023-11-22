@@ -126,16 +126,12 @@ impl Parser {
     for c in input.chars() {
       match c {
         '.' => {
-          if let Some(s) = curhm
+          curhm = curhm
             .entry(p.clone())
             .or_insert_with(|| Value::Object(Map::new()))
             .as_object_mut()
-          {
-            curhm = s;
-            p.clear();
-          } else {
-            return Err(serde_json::Error::custom("Error while parsing value"));
-          }
+            .unwrap();
+          p.clear();
         }
         ',' => {
           curhm.insert(p.clone(), Value::Null);

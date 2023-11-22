@@ -100,3 +100,22 @@ assert:
           nested:
             user:
               name: "bar"
+  - request:
+      method: GET
+      url: http://localhost:8080/api/nested\?\$\=user.name\}
+    response:
+      body:
+        data: null
+        errors:
+          - message: "Unexpected GraphQL Request: Unexpected token }"
+  - request:
+      method: GET
+      url: http://localhost:8080/api/
+    response:
+      body:
+        data: null
+        errors:
+          - locations:
+              - column: 2
+                line: 1
+            message: " --> 1:2\n  |\n1 | {}\n  |  ^---\n  |\n  = expected selection"
