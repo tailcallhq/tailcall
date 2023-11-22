@@ -214,8 +214,8 @@ mod start {
 #[cfg(test)]
 mod init {
   use std::path::PathBuf;
-  use std::{env, fs};
-
+  use std::{env, fs, path};
+  
   use super::*;
 
   #[test]
@@ -239,28 +239,56 @@ mod init {
     Ok(())
   }
 
-  // #[test]
-  // fn test_folder_missing() -> Result<(), Box<dyn std::error::Error>> {
-  //   let mut cmd = assert_cmd::Command::cargo_bin("tailcall")?;
+  /* 
+      The rest of the tests were completed using the `rexpect` crate instead of with the `assert_cmd` crate.
 
-  //   cmd.args(&["init", "tmp0"]);
-  //   cmd
-  //     .assert()
-  //     .success()
-  //     .stdout(predicates::prelude::predicate::str::contains(
-  //       "Do you want to add a file to the project?",
-  //     ));
+      Why? The `assert_cmd` crate failed to work with either of the 2 interactive libraries for CLI input: 
+        - inquire::{Confirm / Input} & 
+        - dialoguer::{Confirm / Input}
+      because it doesn't allocate a pty like `rexpect` does.
 
-  //   cmd.write_stdin("N\n");
-  //   cmd
-  //     .assert()
-  //     .failure()
-  //     .stderr(predicates::prelude::predicate::str::contains(
-  //       "No such file or directory",
-  //     ));
+      The following code:
+    ```
+    let mut cmd = assert_cmd::Command::cargo_bin("tailcall")?;
 
-  //   Ok(())
-  // }
+    cmd.args(&["init", "tmp0"]);
+    cmd
+      .assert()
+      .success()
+      .stdout(predicates::prelude::predicate::str::contains(
+        "Do you want to add a file to the project?",
+      ));
+
+    cmd.write_stdin("N\n");
+    cmd
+      .assert()
+      .failure()
+      .stderr(predicates::prelude::predicate::str::contains(
+        "No such file or directory",
+      ));
+
+    Ok(())
+    ```
+    was causing the tests to fail with the following error:
+
+    code=101
+    stderr=``````
+    thread \'main\' panicked at \'called `Result::unwrap()` on an `Err` value: IO(Custom { kind: NotConnected, error: \"not a terminal\" })\', src/cli/tc.rs:59:6
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+  */
+  #[test]
+  fn test_folder_missing() -> Result<(), Box<dyn std::error::Error>> {
+    let mut p = rexpect::spawn("./target/debug/tailcall init tmp0", Some(500000))?;
+    let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
+    println!("PROMPT: {:?}", res);
+
+    p.send("N\n")?; // send the newline in tests because it can't do the readline checks that it would in a proper terminal
+    res = p.exp_regex(".*No such file or directory.*")?;
+    println!("OUTPUT after sending 'N': {:?}", res);
+
+    Ok(())
+
+  }
 
   #[test]
   #[serial]
@@ -399,4 +427,27 @@ mod init {
       }
     }
   }
+
+  fn cargo_bin_str(name: &str) -> String {
+    let env_var = format!("CARGO_BIN_EXE_{}", name);
+    return std::env::var_os(env_var)
+        .map(|p| p.into())
+        .unwrap_or_else(|| target_dir().join(format!("{}{}", name, env::consts::EXE_SUFFIX))).to_string_lossy().into();
+  }
+
+  // Adapted from
+  // https://github.com/rust-lang/cargo/blob/485670b3983b52289a2f353d589c57fae2f60f82/tests/testsuite/support/mod.rs#L507
+  fn target_dir() -> path::PathBuf {
+    env::current_exe()
+        .ok()
+        .map(|mut path| {
+            path.pop();
+            if path.ends_with("deps") {
+                path.pop();
+            }
+            path
+        })
+        .unwrap()
+  }
+
 }
