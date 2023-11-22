@@ -14,7 +14,7 @@ mod server_context;
 
 use std::time::Duration;
 
-use cache_control::CacheControl;
+use cache_control::{Cachability, CacheControl};
 pub use client::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
@@ -28,11 +28,27 @@ pub use server_context::ServerContext;
 
 use self::server_config::ServerConfig;
 
-pub fn max_age(res: &Response) -> Option<Duration> {
+pub fn cache_policy(res: &Response) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;
   let value = header.to_str().ok()?;
-  let policy = CacheControl::from_value(value)?;
-  policy.max_age
+
+  CacheControl::from_value(value)
+}
+
+pub fn max_age(res: &Response) -> Option<Duration> {
+  match cache_policy(res) {
+    Some(value) => value.max_age,
+    None => None,
+  }
+}
+
+pub fn cache_visibility(res: &Response) -> String {
+  match cache_policy(res) {
+    Some(value) if value.cachability == Some(Cachability::Public) => "public".to_string(),
+    Some(value) if value.cachability == Some(Cachability::Private) => "private".to_string(),
+    Some(value) if value.cachability == Some(Cachability::NoCache) => "no-cache".to_string(),
+    _ => "".to_string(),
+  }
 }
 
 /// Returns the minimum TTL of the given responses.
@@ -73,6 +89,15 @@ mod tests {
     headers
   }
 
+  fn cache_control_header_visibility(i: i32, visibility: &str) -> HeaderMap {
+    let mut headers = reqwest::header::HeaderMap::default();
+    headers.append(
+      "Cache-Control",
+      format!("max-age={}, {}", i, visibility).parse().unwrap(),
+    );
+    headers
+  }
+
   #[test]
   fn test_max_age_none() {
     let response = Response::default();
@@ -92,5 +117,23 @@ mod tests {
     let max_ages = [3600, 1800, 7200].map(|i| Response::default().headers(cache_control_header(i)));
     let min = super::min_ttl(max_ages.iter());
     assert_eq!(min, 1800);
+  }
+
+  #[test]
+  fn test_cache_visibility_public() {
+    let headers = cache_control_header_visibility(3600, "public");
+    let response = Response::default().headers(headers);
+
+    assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
+    assert_eq!(super::cache_visibility(&response), "public");
+  }
+
+  #[test]
+  fn test_cache_visibility_private() {
+    let headers = cache_control_header_visibility(3600, "private");
+    let response = Response::default().headers(headers);
+
+    assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
+    assert_eq!(super::cache_visibility(&response), "private");
   }
 }

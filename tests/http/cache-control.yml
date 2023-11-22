@@ -43,7 +43,7 @@ mock:
         test: test
     response:
       headers:
-        Cache-Control: "max-age=7200"
+        Cache-Control: "max-age=7200, private"
       body:
         id: 2
         name: bar
@@ -53,12 +53,11 @@ mock:
         test: test
     response:
       headers:
-        Cache-Control: "no-store"
+        Cache-Control: "no-cache"
       body:
         id: 3
         name: foobar
 assert:
-  # Sending a request that results in multiple upstream requsts
   - request:
       method: POST
       url: http://localhost:8080/graphql
@@ -66,7 +65,7 @@ assert:
         query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
     response:
       headers:
-        Cache-Control: "max-age=3600"
+        Cache-Control: "max-age=3600, private"
       body:
         data:
           u1:
@@ -80,7 +79,7 @@ assert:
         query: "query { u1: user(id: 1) { id } u3: user(id: 3) { id } }"
     response:
       headers:
-        Cache-Control: "max-age=3600" # BUG: This should be 'no-store'
+        Cache-Control: "no-cache"
       body:
         data:
           u1:

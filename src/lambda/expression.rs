@@ -5,13 +5,14 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::dataloader::{DataLoader, NoCache};
+use cache_control::Cachability;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{max_age, HttpDataLoader};
+use crate::http::{cache_policy, max_age, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -122,7 +123,13 @@ impl Expression {
                   .unwrap_or_default();
                 if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
                   if let Some(max_age) = max_age(&resp) {
-                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                    ctx.req_ctx.set_min_max_age(max_age.as_secs() as i64);
+                  }
+                  if let Some(policy) = cache_policy(&resp) {
+                    ctx.req_ctx.set_cache_visibility(&policy.cachability);
+                    if Some(Cachability::NoCache) == policy.cachability {
+                      ctx.req_ctx.set_min_max_age(-1);
+                    }
                   }
                 }
                 return Ok(resp.body);
@@ -144,7 +151,13 @@ impl Expression {
               }
               if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
                 if let Some(max_age) = max_age(&res) {
-                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                  ctx.req_ctx.set_min_max_age(max_age.as_secs() as i64);
+                }
+                if let Some(policy) = cache_policy(&res) {
+                  ctx.req_ctx.set_cache_visibility(&policy.cachability);
+                  if Some(Cachability::NoCache) == policy.cachability {
+                    ctx.req_ctx.set_min_max_age(-1);
+                  }
                 }
               }
               Ok(res.body)
