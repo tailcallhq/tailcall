@@ -53,12 +53,10 @@ pub async fn start_http_2(
   let cert_chain = load_cert(&cert).await?;
   let key = load_private_key(&key).await?;
   let incoming = AddrIncoming::bind(&addr)?;
-  let rt = sc.tokio_runtime()?;
   let acceptor = TlsAcceptor::builder()
     .with_single_cert(cert_chain, key)?
     .with_http2_alpn()
     .with_incoming(incoming);
-
   let make_svc_single_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
     async move {
@@ -78,18 +76,11 @@ pub async fn start_http_2(
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
-
+  log_launch(sc.as_ref());
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
   } else {
     builder.serve(make_svc_single_req).await
   };
-
-  Ok(
-    rt.spawn(async move {
-      log_launch(sc.as_ref());
-      server.map_err(CLIError::from)
-    })
-    .await??,
-  )
+  Ok(server.map_err(CLIError::from)?)
 }
