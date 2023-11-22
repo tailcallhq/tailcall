@@ -278,7 +278,8 @@ mod init {
   */
   #[test]
   fn test_folder_missing() -> Result<(), Box<dyn std::error::Error>> {
-    let mut p = rexpect::spawn("./target/debug/tailcall init tmp0", Some(500000))?;
+    // println!("BINARY PATH: {}", cargo_bin_str("tailcall"));
+    let mut p = rexpect::spawn(&format!("{} init tmp0", cargo_bin_str("tailcall")), Some(500000))?;
     let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res);
 
@@ -293,7 +294,7 @@ mod init {
   #[test]
   #[serial]
   fn test_folder_nonexistent() -> Result<(), rexpect::error::Error> {
-    let mut p = rexpect::spawn("./target/debug/tailcall init tmp0", Some(500000))?;
+    let mut p = rexpect::spawn(&format!("{} init tmp0", cargo_bin_str("tailcall")), Some(500000))?;
     let mut res = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res);
 
@@ -312,7 +313,7 @@ mod init {
     answer3: &str,
   ) -> Result<(), rexpect::error::Error> {
     let folder_name = &folder_to_path_cwd(folder_name);
-    let mut p = rexpect::spawn(&format!("./target/debug/tailcall init {}", folder_name), Some(5000))?;
+    let mut p = rexpect::spawn(&format!("{} init {}", cargo_bin_str("tailcall"), folder_name), Some(5000))?;
 
     let res1 = p.exp_regex(r#".*Do you want to add a file to the project\?.*"#)?;
     println!("PROMPT: {:?}", res1);
