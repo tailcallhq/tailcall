@@ -93,7 +93,7 @@ assert:
           num: 7
   - request:
       method: GET
-      url: http://localhost:8080/api/nested\?\$\=user\{name\}
+      url: http://localhost:8080/api/nested\?\$\=user.name
     response:
       body:
         data:

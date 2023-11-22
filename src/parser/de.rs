@@ -123,20 +123,9 @@ impl Parser {
       None => "",
       Some(s) => s,
     };
-    let mut stk = 0usize;
     for c in input.chars() {
       match c {
-        '}' => {
-          if stk == 0 {
-            return Err(serde_json::Error::custom("Unexpected token }"));
-          }
-          stk -= 1;
-          curhm.insert(p.clone(), Value::Null);
-          curhm = &mut hm;
-          p.clear();
-        }
-        '{' => {
-          stk += 1;
+        '.' => {
           if let Some(s) = curhm
             .entry(p.clone())
             .or_insert_with(|| Value::Object(Map::new()))
@@ -150,6 +139,7 @@ impl Parser {
         }
         ',' => {
           curhm.insert(p.clone(), Value::Null);
+          curhm = &mut hm;
           p.clear();
         }
         ' ' => (),
@@ -157,9 +147,6 @@ impl Parser {
           p.push(c);
         }
       }
-    }
-    if stk > 0 {
-      return Err(serde_json::Error::custom("Unexpected token {"));
     }
     curhm.insert(p, Value::Null);
     let v = Value::Object(hm);
@@ -177,25 +164,19 @@ impl Parser {
     };
     for c in matches.chars() {
       match c {
-        '}' => {
-          curhm.insert(p.clone(), Value::from(p1.clone()));
-          curhm = &mut hm;
-          p.clear();
-          p1.clear();
-        }
-        '{' => {
+        '.' => {
           curhm = curhm
             .entry(p.clone())
             .or_insert_with(|| Value::Object(Map::new()))
             .as_object_mut()
-            .expect("Expected Object");
+            .unwrap();
           p.clear();
           b = false;
         }
         ',' => {
           b = false;
           curhm.insert(p.clone(), Value::from(p1.clone()));
-          // curhm = &mut hm;
+          curhm = &mut hm;
           p.clear();
           p1.clear();
         }

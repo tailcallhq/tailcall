@@ -83,10 +83,8 @@ assert:
   # Sending a bad request
   - request:
       method: GET
-      url: http://localhost:8080/api/posts\?\$\=title,user{name}\}
+      url: http://localhost:8080/api/posts\?\$\=title,user.name
     response:
       status: 200
       body:
-        data: null
-        errors:
-          - message: "Unexpected GraphQL Request: Unexpected token }"
+        data: {}
