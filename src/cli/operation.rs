@@ -1,15 +1,13 @@
 use crate::valid::Valid;
 
-pub struct Operation {}
+pub struct Operation {
+  pub document: async_graphql::parser::types::ExecutableDocument,
+}
 
 impl Operation {
   fn from_gql(sdl: &str) -> Valid<Self, String> {
-    let doc = async_graphql::parser::parse_query(sdl);
-    match doc {
-      Ok(doc) => {
-        println!("{:?}", doc);
-        Valid::fail(format!("{:?}", doc))
-      }
+    match async_graphql::parser::parse_query(sdl) {
+      Ok(doc) => Valid::succeed(Operation { document: doc }),
       Err(e) => Valid::fail(e.to_string()),
     }
   }
