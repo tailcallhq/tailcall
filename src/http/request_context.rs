@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use cache_control::Cachability;
+use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
@@ -14,8 +14,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  min_max_age: Arc<Mutex<Option<i64>>>,
-  cache_private: Arc<Mutex<Option<bool>>>,
+  min_max_age: Arc<Mutex<Option<i32>>>,
+  cache_public: Arc<Mutex<Option<bool>>>,
 }
 
 impl Default for RequestContext {
@@ -35,28 +35,29 @@ impl RequestContext {
       server,
       upstream,
       min_max_age: Arc::new(Mutex::new(None)),
-      cache_private: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
     }
   }
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     self.http_client.execute(req).await
   }
-  fn set_min_max_age_conc(&self, min_max_age: i64) {
+  fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
-  pub fn get_min_max_age(&self) -> Option<i64> {
+  pub fn get_min_max_age(&self) -> Option<i32> {
     *self.min_max_age.lock().unwrap()
   }
 
-  pub fn set_cache_private_true(&self) {
-    *self.cache_private.lock().unwrap() = Some(true);
-  }
-  pub fn is_cache_private(&self) -> Option<bool> {
-    *self.cache_private.lock().unwrap()
+  pub fn set_cache_public_false(&self) {
+    *self.cache_public.lock().unwrap() = Some(false);
   }
 
-  pub fn set_min_max_age(&self, max_age: i64) {
+  pub fn is_cache_public(&self) -> Option<bool> {
+    *self.cache_public.lock().unwrap()
+  }
+
+  pub fn set_min_max_age(&self, max_age: i32) {
     let min_max_age_lock = self.get_min_max_age();
     match min_max_age_lock {
       Some(min_max_age) if max_age < min_max_age => {
@@ -71,7 +72,17 @@ impl RequestContext {
 
   pub fn set_cache_visibility(&self, cachability: &Option<Cachability>) {
     if let Some(Cachability::Private) = cachability {
-      self.set_cache_private_true()
+      self.set_cache_public_false()
+    }
+  }
+
+  pub fn set_cache_control(&self, cache_policy: CacheControl) {
+    if let Some(max_age) = cache_policy.max_age {
+      self.set_min_max_age(max_age.as_secs() as i32);
+    }
+    self.set_cache_visibility(&cache_policy.cachability);
+    if Some(Cachability::NoCache) == cache_policy.cachability {
+      self.set_min_max_age(-1);
     }
   }
 }
@@ -84,7 +95,7 @@ impl From<&ServerContext> for RequestContext {
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
       min_max_age: Arc::new(Mutex::new(None)),
-      cache_private: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
     }
   }
 }
@@ -123,13 +134,13 @@ mod test {
   fn test_update_cache_visibility_private() {
     let req_ctx = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Private));
-    assert_eq!(req_ctx.is_cache_private(), Some(true));
+    assert_eq!(req_ctx.is_cache_public(), Some(false));
   }
 
   #[test]
   fn test_update_cache_visibility_public() {
     let req_ctx = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
-    assert_eq!(req_ctx.is_cache_private(), None);
+    assert_eq!(req_ctx.is_cache_public(), None);
   }
 }

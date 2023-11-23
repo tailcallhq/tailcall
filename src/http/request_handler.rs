@@ -38,8 +38,8 @@ fn update_cache_control_header(
 ) -> GraphQLResponse {
   if server_ctx.blueprint.server.enable_cache_control_header {
     let ttl = req_ctx.get_min_max_age().unwrap_or(0);
-    let cache_private_flag = req_ctx.is_cache_private().unwrap_or(false);
-    return response.set_cache_control(ttl as i32, cache_private_flag);
+    let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
+    return response.set_cache_control(ttl, cache_public_flag);
   }
   response
 }

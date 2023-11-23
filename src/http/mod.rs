@@ -43,10 +43,12 @@ pub fn max_age(res: &Response) -> Option<Duration> {
 }
 
 pub fn cache_visibility(res: &Response) -> String {
-  match cache_policy(res) {
-    Some(value) if value.cachability == Some(Cachability::Public) => "public".to_string(),
-    Some(value) if value.cachability == Some(Cachability::Private) => "private".to_string(),
-    Some(value) if value.cachability == Some(Cachability::NoCache) => "no-cache".to_string(),
+  let cachability = cache_policy(res).and_then(|value| value.cachability);
+
+  match cachability {
+    Some(Cachability::Public) => "public".to_string(),
+    Some(Cachability::Private) => "private".to_string(),
+    Some(Cachability::NoCache) => "no-cache".to_string(),
     _ => "".to_string(),
   }
 }
