@@ -87,10 +87,10 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
   let name = field.name();
   let arguments = field
     .arguments()
-    .or_else(|error| {
+    .map_err(|error| {
       log::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
 
-      Err(error)
+      error
     })
     .unwrap_or_default();
 

@@ -4,10 +4,14 @@ use regex::Regex;
 use serde_json::Value;
 
 pub fn start_mock_server() -> mockito::Server {
-  mockito::Server::new_with_port(3080)
+  let mut server = mockito::Server::new_with_port(3080);
+
+  setup_mocks(&mut server);
+
+  server
 }
 
-pub fn setup_mocks(mock_server: &mut mockito::Server) {
+fn setup_mocks(mock_server: &mut mockito::Server) {
   let users_json = fs::read_to_string("tests/data/users.json").unwrap();
   let users: Vec<serde_json::Value> = serde_json::from_str(users_json.as_str()).unwrap();
   let users_2: Vec<serde_json::Value> = serde_json::from_str(users_json.as_str()).unwrap();
@@ -15,6 +19,7 @@ pub fn setup_mocks(mock_server: &mut mockito::Server) {
   let user_posts: serde_json::Value = serde_json::from_str(users_posts_json.as_str()).unwrap();
   let user_posts_2: serde_json::Value = serde_json::from_str(users_posts_json.as_str()).unwrap();
   let posts_json = fs::read_to_string("tests/data/posts.json").unwrap();
+  let posts: Vec<serde_json::Value> = serde_json::from_str(posts_json.as_str()).unwrap();
 
   mock_server
     .mock("GET", "/users")
@@ -35,10 +40,27 @@ pub fn setup_mocks(mock_server: &mut mockito::Server) {
     .create();
 
   mock_server
-    .mock("GET", "/posts?")
+    .mock("GET", "/posts")
     .with_status(200)
     .with_header("content-type", "application/json")
     .with_body(posts_json)
+    .create();
+
+  mock_server
+    .mock("GET", mockito::Matcher::Regex(r"^/posts/(\d{4,})$".to_string()))
+    .with_status(404)
+    .with_body("{}")
+    .create();
+
+  mock_server
+    .mock("GET", mockito::Matcher::Regex(r"^/posts/(\d+)$".to_string()))
+    .with_status(200)
+    .with_header("content-type", "application/json")
+    .with_body_from_request(move |req| {
+      let id = get_id_from_path(req.path(), Regex::new(r"^/posts/(\d+)$").unwrap());
+      let post = posts.iter().find(|x| x["id"].as_u64().unwrap() == id).unwrap();
+      post.to_string().into()
+    })
     .create();
 
   mock_server

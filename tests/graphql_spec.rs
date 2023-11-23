@@ -19,7 +19,6 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
-mod graphql_mock;
 
 static INIT: Once = Once::new();
 
@@ -284,9 +283,6 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
 // Check if execution gives expected response
 #[tokio::test]
 async fn test_execution() -> std::io::Result<()> {
-  let mut mock_server = graphql_mock::start_mock_server();
-  graphql_mock::setup_mocks(&mut mock_server);
-
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   let tasks: Vec<_> = specs?

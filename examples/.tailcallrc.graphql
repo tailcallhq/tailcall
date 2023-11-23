@@ -53,8 +53,9 @@ directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
 directive @graphql(
-  operation: GraphQLOperation
   baseURL: String
+  name: String
+  args: [KeyValue]
   headers: [KeyValue]
   batch: Boolean
 ) on FIELD_DEFINITION
@@ -82,11 +83,6 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
-}
-
-input GraphQLOperation {
-  name: String
-  args: [KeyValue]
 }
 
 scalar JSON

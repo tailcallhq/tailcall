@@ -1,13 +1,14 @@
 schema
   @server(port: 8001, graphiql: true, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  @upstream(baseURL: "http://localhost:3080", httpCache: true) {
   query: Query
   mutation: Mutation
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{args.id}}")
+  post(id: Int!): Post @http(baseURL: "http://localhost:3080", path: "/posts/{{args.id}}")
+  missing: String @graphql(baseURL: "http://localhost:8000/graphql", name: "missing")
 }
 
 type Mutation {

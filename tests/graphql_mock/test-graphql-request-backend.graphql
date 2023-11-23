@@ -1,6 +1,6 @@
 schema
   @server(port: 8000, graphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true) {
+  @upstream(baseURL: "http://localhost:3080", enableHttpCache: true) {
   query: Query
   mutation: Mutation
 }
