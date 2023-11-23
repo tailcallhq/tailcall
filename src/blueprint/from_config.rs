@@ -339,6 +339,7 @@ fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
   None
 }
 
+#[derive(Debug)]
 struct MustachePartsValidator<'a> {
   type_of: &'a config::Type,
   config: &'a Config,
@@ -349,6 +350,18 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
+
+  fn get_nested_type(&self, tail: &[String], type_of: &config::Type) -> Option<Type> {
+    if tail.len() == 1 {
+      return get_value_type(type_of, &tail[0]);
+    }
+    
+    let head = tail[0].as_str();
+    let field = type_of.fields.get(head)?;
+    let type_of = self.config.find_type(&field.type_of)?;
+    self.get_nested_type(&tail[1..], &type_of)
+  }
+
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
     let type_of = self.type_of;
     let config = self.config;
@@ -363,7 +376,7 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Some(val_type) = get_value_type(type_of, tail) {
+        if let Some(val_type) = self.get_nested_type(&parts[1..], type_of) {
           if !is_scalar(val_type.name()) {
             return Valid::fail(format!("value '{tail}' is not of a scalar type"));
           }
