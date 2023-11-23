@@ -355,11 +355,11 @@ impl<'a> MustachePartsValidator<'a> {
     if tail.len() == 1 {
       return get_value_type(type_of, &tail[0]);
     }
-    
+
     let head = tail[0].as_str();
     let field = type_of.fields.get(head)?;
     let type_of = self.config.find_type(&field.type_of)?;
-    self.get_nested_type(&tail[1..], &type_of)
+    self.get_nested_type(&tail[1..], type_of)
   }
 
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
@@ -394,7 +394,7 @@ impl<'a> MustachePartsValidator<'a> {
             if !is_query && val_type.is_nullable() {
               return Valid::fail(format!("value '{tail}' is a nullable type"));
             }
-          },
+          }
           None => {
             return Valid::fail(format!("no value '{tail}' found"));
           }

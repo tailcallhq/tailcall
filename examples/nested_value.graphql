@@ -1,6 +1,4 @@
-schema
-  @server(port: 8000, graphiql: true)
-  @upstream(baseURL: "https://api-web.nhle.com") {
+schema @server(port: 8000, graphiql: true) @upstream(baseURL: "https://api-web.nhle.com") {
   query: Query
 }
 
