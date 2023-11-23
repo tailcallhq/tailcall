@@ -12,6 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
+use crate::cli::operation::Operation;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
@@ -37,10 +38,14 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema, operations, out_file_path  } => {
+    Command::Check { file_path, n_plus_one_queries, schema, operations, out_file_path } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
+      let _operations = operations
+        .iter()
+        .map(|op| Operation::from_file_path(op))
+        .collect::<Vec<Result<Operation>>>();
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);

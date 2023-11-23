@@ -1,0 +1,6 @@
+query {
+  posts {
+    id
+    body
+  }
+}
