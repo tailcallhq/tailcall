@@ -1,0 +1,114 @@
+name: Micro benchmarks
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+    branches:
+      - main
+      
+  push:
+    branches:
+      - "*"
+jobs:
+ Check_Degdratation:
+    name: Criterion Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.head_commit.message, 'benchmark')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Critcmp
+        run: cargo install critcmp 
+
+      - name: Benchmark changes
+        run: |
+          cargo bench --bench impl_path_string_for_evaluation_context -- --save-baseline new_branch
+          cargo bench --bench data_loader_bench -- --save-baseline new_branch
+          cargo bench --bench request_template_bench -- --save-baseline new_branch
+          cargo bench --bench json_like_bench -- --save-baseline new_branch
+
+      - name: Fetch base branch
+        run: git fetch
+
+      - name: Checkout base branch
+        run: git checkout ${{ github.base_ref }}
+
+      - name: Benchmark base
+        run: |
+          cargo bench --bench impl_path_string_for_evaluation_context -- --save-baseline main_branch
+          cargo bench --bench data_loader_bench -- --save-baseline main_branch
+          cargo bench --bench request_template_bench -- --save-baseline main_branch
+          cargo bench --bench json_like_bench -- --save-baseline main_branch
+
+      - name: Run shell script
+        run: |
+          critcmp main_branch new_branch
+          chmod +x .github/scripts/check_degradation.sh
+          bash .github/scripts/check_degradation.sh
+          
+      - uses: actions/github-script@v6
+        id: get_issue_number
+        with:
+          script: |
+            if (context.issue.number) {
+              // Return issue number if present
+              return context.issue.number;
+            } else {
+              // Otherwise return issue number from commit
+              return (
+                await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              commit_sha: context.sha,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+              ).data[0].number;
+            }
+          result-encoding: string
+          
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+           const fs = require('fs');
+           const fileContent = fs.readFileSync('output_file.txt', 'utf8');
+           const issue_number = ${{steps.get_issue_number.outputs.result}}
+           const owner = context.repo.owner;
+           const repo = context.repo.repo;
+            const comment = `
+            <details>
+            <summary>Benchmark Results</summary>
+
+            | Test                          | Base         | PR               | % change   |
+            |-------------------------------|--------------|------------------|------------|
+            ${fileContent}
+
+            </details>
+            `;
+           github.rest.issues.createComment({
+           issue_number: issue_number,
+           owner: owner,
+           repo: repo,
+           body: comment
+           });
+           
+ Build_time_compare:
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.head_commit.message, 'benchmark')
+    name: iai_callgrind_benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code from the repository
+        uses: actions/checkout@v2
+
+      - name: Install iai-callgrind-runner
+        run: cargo install --version 0.7.3 iai-callgrind-runner
+
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install valgrind
+
+      - name: Execute build_time_compare.sh
+        run: |
+          chmod +x .github/scripts/compare_build_time.sh
+          bash .github/scripts/compare_build_time.sh

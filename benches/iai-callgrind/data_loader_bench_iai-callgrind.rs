@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-
+use std::collections::HashMap;
+use async_graphql::Value;
 use async_graphql::futures_util::future::join_all;
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 use tailcall::config::Batch;
@@ -26,7 +27,11 @@ impl HttpClient for MockHttpClient {
 async fn benchmark_data_loader() {
   let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
 
-  let loader = HttpDataLoader { client: client.clone(), batched: None };
+  let loader = HttpDataLoader {
+    client: client.clone(),
+    batched: None,
+    body: |_: HashMap<String, Vec<&Value>>, _: &str| async_graphql::Value::Null
+   };
 
   let loader = loader.to_data_loader(Batch::default().delay(1));
 
