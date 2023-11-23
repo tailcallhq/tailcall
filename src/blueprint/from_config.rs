@@ -376,17 +376,28 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Some(val_type) = self.get_nested_type(&parts[1..], type_of) {
-          if !is_scalar(val_type.name()) {
-            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
-          }
+        let tail_is_long = parts.len() > 2;
 
-          // Queries can use optional values
-          if !is_query && val_type.is_nullable() {
-            return Valid::fail(format!("value '{tail}' is a nullable type"));
-          }
+        let val_type = if tail_is_long {
+          self.get_nested_type(&parts[1..], type_of)
         } else {
-          return Valid::fail(format!("no value '{tail}' found"));
+          get_value_type(type_of, tail)
+        };
+
+        match val_type {
+          Some(val_type) => {
+            if !is_scalar(val_type.name()) {
+              return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+            }
+
+            // Queries can use optional values
+            if !is_query && val_type.is_nullable() {
+              return Valid::fail(format!("value '{tail}' is a nullable type"));
+            }
+          },
+          None => {
+            return Valid::fail(format!("no value '{tail}' found"));
+          }
         }
       }
       "args" => {
