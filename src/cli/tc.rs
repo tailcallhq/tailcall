@@ -11,6 +11,7 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::operation::Operation;
 use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
@@ -36,6 +37,10 @@ pub fn run() -> Result<()> {
     Command::Check { file_path, n_plus_one_queries, schema, operations } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
+      let _operations = operations
+        .iter()
+        .map(|op| Operation::from_file_path(op))
+        .collect::<Vec<Result<Operation>>>();
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
