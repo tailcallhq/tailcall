@@ -57,6 +57,7 @@ env_logger = "0.10.1"
 stripmargin = "0.1.1"
 convert_case = "0.6.0"
 ring = "0.17.5"
+lazy_static = "1.4"
 num_cpus = "1.16.0"
 hyper-rustls = "0.24.2"
 rustls = "0.21.9"
@@ -68,6 +69,8 @@ httpmock = "0.6"
 mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+iai-callgrind = "0.7.3"
+
 
 [profile.release]
 opt-level = 3
@@ -81,18 +84,43 @@ overflow-checks = false
 [features]
 unsafe-js = ["dep:mini-v8"]
 
+
 [[bench]]
 name = "json_like_bench"
 harness = false
+path = "benches/criterion/json_like_bench.rs"
 
 [[bench]]
 name = "request_template_bench"
 harness = false
+path = "benches/criterion/request_template_bench.rs"
 
 [[bench]]
 name = "data_loader_bench"
 harness = false
+path = "benches/criterion/data_loader_bench.rs"
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
 harness = false
+path = "benches/criterion/impl_path_string_for_evaluation_context.rs"
+
+[[bench]]
+name = "data_loader_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/data_loader_bench_iai-callgrind.rs"
+
+[[bench]]
+name = "json_like_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/json_like_bench_iai-callgrind.rs"
+
+[[bench]]
+name = "impl_path_string_for_evaluation_context_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/impl_path_string_for_evaluation_context_iai-callgrind.rs"
+
+[[bench]]
+name = "request_template_bench_iai-callgrind"
+harness = false
+path = "benches/iai-callgrind/request_template_bench_iai-callgrind.rs"
