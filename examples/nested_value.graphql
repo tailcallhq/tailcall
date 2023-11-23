@@ -1,0 +1,43 @@
+schema
+  @server(port: 8000, graphiql: true)
+  @upstream(baseURL: "https://api-web.nhle.com") {
+  query: Query
+}
+
+type Query {
+  standings: StandingsResp @http(path: "/v1/standings/now")
+}
+
+type StandingsResp {
+  standings: [Standings]
+}
+
+type Standings {
+  teamAbbrev: TeamAbbrev
+  teamName: TeamName
+  roster: Roster @http(path: "/v1/roster/{{value.teamAbbrev.default}}/current")
+}
+
+type TeamAbbrev {
+  default: String!
+}
+
+type TeamName {
+  default: String
+}
+
+type Name {
+  default: String
+}
+
+type Player {
+  id: Int
+  lastName: Name
+  firstName: Name
+}
+
+type Roster {
+  goalies: [Player]
+  defensemen: [Player]
+  forwards: [Player]
+}
