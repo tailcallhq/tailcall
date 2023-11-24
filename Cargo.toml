@@ -11,7 +11,7 @@ path = "src/main.rs"
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
 thiserror = "1.0.50"
-http-cache-semantics = { version = "1.0.2", default-features = false, features = [
+http-cache-semantics = { version = "2.0.0", default-features = false, features = [
    "reqwest"
 ] }
 mimalloc = { version = "0.1.39", default-features = false }
