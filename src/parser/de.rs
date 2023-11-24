@@ -10,121 +10,72 @@ type PosValHolder = HashMap<String, Vec<(String, String)>>;
 #[derive(Debug, serde::Deserialize, Default)]
 pub struct Parser {
   root: Option<String>,
-  m: Option<String>,
-  q: Option<String>,
+  arguments: Option<String>,
+  selections: Option<String>,
 }
 impl Parser {
   pub fn from_path(path: &str) -> anyhow::Result<Parser> {
-    let path = urlencoding::decode(path).unwrap().replace('\\', "");
+    let path = urlencoding::decode(&de_kebab(path)).unwrap().replace('\\', "");
     let mut root = String::new();
     let split = path.split('?').collect::<Vec<&str>>();
     let path = split.last().unwrap();
     match serde_qs::from_str::<Map<String, Value>>(path) {
       Ok(p) => {
-        let mut s = Self::default();
-        let rc = split.first().unwrap();
-        for c in rc.chars().skip(4) {
-          match c {
+        let mut parser = Self::default();
+        let rootname = split.first().unwrap();
+        let mut to_camel = false;
+        for char in rootname.chars().skip(4) {
+          match char {
             '/' => (),
-            ' ' => (),
+            '-' => {
+              to_camel = true;
+            }
             _ => {
-              root.push(c);
+              if to_camel {
+                root.push(char.to_ascii_uppercase());
+              } else {
+                to_camel = false;
+                root.push(char);
+              }
             }
           }
         }
-        s.root = Some(de_kebab(&root));
+        parser.root = Some(root);
         if let Some(q) = p.get("$") {
           if let Some(q) = q.as_str() {
-            s.q = Some(q.to_string());
+            parser.selections = Some(q.to_string());
           }
         }
-        let x = p
+        let arguments = p
           .iter()
           .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
           .map(|(k, v)| format!("{k}={}", v.as_str().unwrap()))
           .collect::<Vec<String>>()
           .join(",");
-        s.m = Some(x);
-        Ok(s)
+        parser.arguments = Some(arguments);
+        Ok(parser)
       }
       Err(_) => Err(anyhow::anyhow!("Unable to parse query")),
     }
-    /*    let qry = path.split("api/").last().unwrap();
-    let qry = de_kebab(qry);
-    let mut root = String::new();
-    let mut sel = String::new();
-    let mut matches = String::new();
-    let mut pr = String::new();
-    let mut i = 0;
-    for c in qry.chars() {
-      i += 1;
-      match c {
-        '?' => {
-          break;
-        }
-        _ => {
-          root.push(c);
-        }
-      }
-    }
-    let mut cur = 0usize;
-    for c in qry.chars().skip(i) {
-      match c {
-        '=' => {
-          if pr.eq("$") {
-            cur = 1;
-            pr = String::new();
-          } else {
-            cur = 2;
-            pr.push(c);
-          }
-        }
-        '&' => {
-          match cur {
-            1 => {
-              sel = pr.clone();
-            }
-            2 => {
-              matches = pr.clone();
-            }
-            _ => {}
-          }
-          pr = String::new();
-        }
-        _ => {
-          pr.push(c);
-        }
-      }
-    }
-    match cur {
-      1 => {
-        sel = pr.clone();
-      }
-      2 => {
-        matches = pr.clone();
-      }
-      _ => {}
-    }
-    Self { root, matches, input: sel }*/
   }
   pub fn parse<T: DeserializeOwned + GraphQLRequestLike>(&mut self) -> Result<T, serde_json::Error> {
-    let s = self.parse_qry()?;
-    let v = self.parse_matches()?;
+    let s = self.parse_selections()?;
+    let v = self.parse_arguments()?;
     let v = self.parse_to_string(v, s)?;
     let mut hm = serde_json::Map::new();
     hm.insert("query".to_string(), Value::from(v));
     serde_json::from_value::<T>(Value::from(hm))
   }
-  fn parse_qry(&mut self) -> Result<String, serde_json::Error> {
+  fn parse_selections(&mut self) -> Result<String, serde_json::Error> {
     let mut hm = Map::new();
     let mut p = String::new();
     let mut curhm = &mut hm;
-    let input = match &self.q {
+    let input = match &self.selections {
       None => "",
       Some(s) => s,
     };
-    for c in input.chars() {
-      match c {
+    for char in input.chars() {
+      match char {
         '.' => {
           curhm = curhm
             .entry(p.clone())
@@ -138,9 +89,8 @@ impl Parser {
           curhm = &mut hm;
           p.clear();
         }
-        ' ' => (),
         _ => {
-          p.push(c);
+          p.push(char);
         }
       }
     }
@@ -148,18 +98,18 @@ impl Parser {
     let v = Value::Object(hm);
     Ok(to_json_str(&v))
   }
-  fn parse_matches(&mut self) -> Result<Value, serde_json::Error> {
+  fn parse_arguments(&mut self) -> Result<Value, serde_json::Error> {
     let mut hm = Map::new();
     let mut p = String::new();
     let mut p1 = String::new();
     let mut curhm = &mut hm;
     let mut b = false;
-    let matches = match &self.m {
+    let matches = match &self.arguments {
       None => "",
       Some(s) => s,
     };
-    for c in matches.chars() {
-      match c {
+    for char in matches.chars() {
+      match char {
         '.' => {
           curhm = curhm
             .entry(p.clone())
@@ -179,12 +129,11 @@ impl Parser {
         '=' => {
           b = true;
         }
-        ' ' => (),
         _ => {
           if b {
-            p1.push(c);
+            p1.push(char);
           } else {
-            p.push(c);
+            p.push(char);
           }
         }
       }
@@ -240,24 +189,24 @@ impl Parser {
     if stk > 0 {
       return Err(serde_json::Error::custom("Unexpected token {"));
     }
-    Ok(s.clone())
+    Ok(s)
   }
 }
 
 fn de_kebab(qry: &str) -> String {
   let mut s = String::new();
   let mut b = false;
-  for c in qry.chars() {
-    match c {
+  for char in qry.chars() {
+    match char {
       ' ' => (),
       '-' => {
         b = true;
       }
       _ => {
         if b {
-          s.push(c.to_ascii_uppercase());
+          s.push(char.to_ascii_uppercase());
         } else {
-          s.push(c);
+          s.push(char);
         }
         b = false;
       }
