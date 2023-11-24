@@ -1,8 +1,8 @@
 #!/bin/bash
-
 file1="benches/iai-callgrind/old_benchmark.txt"
 file2="benches/iai-callgrind/new_benchmarks.txt"
 
+# Switch back to the original branch
 config_file="benches/iai-callgrind/benchmarks.cfg" # to add more benchmarks add in this file
 # Read benchmarks from the configuration file
 readarray -t benchmarks < "$config_file"
