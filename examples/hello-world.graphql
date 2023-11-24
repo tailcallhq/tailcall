@@ -1,0 +1,13 @@
+schema
+  @server(port: 8000, graphiql: true)
+  @upstream(baseURL: "http://localhost:32400", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  ping: Ping @http(path: "/hello-world")
+}
+
+type Ping {
+    ping: String
+}

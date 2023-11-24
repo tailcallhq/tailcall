@@ -1,0 +1,34 @@
+schema
+  # Specify server configuration: Start tailcall server at 0.0.0.0:8000 and enable GraphiQL playground
+  @server(port: 8000, graphiql: true)
+  # Specify a base url for all http requests
+  @upstream(baseURL: "http://localhost:32400") {
+  query: Query
+}
+
+type Query {
+  # Specify the http path for the users query
+  users: [User] @http(path: "/users")
+}
+
+# Create a user type with the fields returned by the users api
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+
+  # Extend the user type with the posts field
+  # Use the current user's id to construct the path
+  #! NOTE: This results in an N + 1 query
+  # as we make a call to users, then for each user we make a call to posts
+  # see batch on a potential fix to this problem
+  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+}
+
+# Create a post type with the fields returned by the posts api
+type Post {
+  id: Int!
+  title: String!
+  body: String!
+}
