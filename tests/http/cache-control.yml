@@ -53,12 +53,21 @@ mock:
         test: test
     response:
       headers:
-        Cache-Control: "no-store"
+        Cache-Control: "max-age=7200, private"
       body:
         id: 3
         name: foobar
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=4
+      headers:
+        test: test
+    response:
+      headers:
+        Cache-Control: "no-cache"
+      body:
+        id: 4
+        name: barfoo
 assert:
-  # Sending a request that results in multiple upstream requsts
   - request:
       method: POST
       url: http://localhost:8080/graphql
@@ -80,10 +89,38 @@ assert:
         query: "query { u1: user(id: 1) { id } u3: user(id: 3) { id } }"
     response:
       headers:
-        Cache-Control: "max-age=3600" # BUG: This should be 'no-store'
+        Cache-Control: "max-age=3600, private"
       body:
         data:
           u1:
             id: 1
           u3:
             id: 3
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u1: user(id: 1) { id } u4: user(id: 4) { id } }"
+    response:
+      headers:
+        Cache-Control: "no-cache"
+      body:
+        data:
+          u1:
+            id: 1
+          u4:
+            id: 4
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u3: user(id: 3) { id } u4: user(id: 4) { id } }"
+    response:
+      headers:
+        Cache-Control: "no-cache, private"
+      body:
+        data:
+          u3:
+            id: 3
+          u4:
+            id: 4
