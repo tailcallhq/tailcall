@@ -13,7 +13,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{max_age, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
+use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -173,8 +173,8 @@ impl Expression {
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
   if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
-    if let Some(max_age) = max_age(res) {
-      ctx.req_ctx.set_min_max_age(max_age.as_secs());
+    if let Some(policy) = cache_policy(res) {
+      ctx.req_ctx.set_cache_control(policy);
     }
   }
 }
