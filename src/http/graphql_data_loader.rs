@@ -12,11 +12,12 @@ use crate::http::{DataLoaderRequest, HttpClient, Response};
 
 pub struct GraphqlDataLoader {
   pub client: Arc<dyn HttpClient>,
-  pub use_batch_request: bool,
+  pub batch: bool,
 }
+
 impl GraphqlDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, use_batch_request: bool) -> Self {
-    GraphqlDataLoader { client, use_batch_request }
+  pub fn new(client: Arc<dyn HttpClient>, batch: bool) -> Self {
+    GraphqlDataLoader { client, batch }
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader, NoCache> {
@@ -36,7 +37,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    if self.use_batch_request {
+    if self.batch {
       let batched_req = create_batched_request(keys);
       let result = self.client.execute(batched_req).await;
       let hashmap = extract_responses(result, keys);

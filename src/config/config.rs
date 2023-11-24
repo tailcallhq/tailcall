@@ -337,8 +337,8 @@ pub struct Graphql {
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   #[serde(default)]
-  #[serde(rename = "batch", skip_serializing_if = "is_default")]
-  pub use_batch_request: bool,
+  #[serde(skip_serializing_if = "is_default")]
+  pub batch: bool,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

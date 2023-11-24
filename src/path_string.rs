@@ -152,6 +152,8 @@ mod tests {
       fn field(&'a self) -> Option<SelectionField> {
         None
       }
+
+      fn add_error(&'a self, _: async_graphql::ServerError) {}
     }
 
     static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {

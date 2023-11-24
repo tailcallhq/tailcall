@@ -4,8 +4,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::dataloader::{DataLoader, NoCache};
-use async_graphql_value::ConstValue;
+use async_graphql::dataloader::{DataLoader, Loader, NoCache};
+use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -13,11 +13,10 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{max_age, GraphqlDataLoader, HttpDataLoader};
+use crate::http::{max_age, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
-use crate::lambda::evaluation_context::get_path_value;
 use crate::lambda::EvaluationContext;
 use crate::request_template::RequestTemplate;
 
@@ -43,12 +42,12 @@ pub enum Unsafe {
     Option<GroupBy>,
     Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
   ),
-  GraphQLEndpoint(
-    GraphqlRequestTemplate,
-    String,
-    bool,
-    Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
-  ),
+  GraphQLEndpoint {
+    req_template: GraphqlRequestTemplate,
+    field_name: String,
+    batch: bool,
+    data_loader: Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
+  },
   JS(Box<Expression>, String),
 }
 
@@ -61,11 +60,11 @@ impl Debug for Unsafe {
         .field("group_by", group_by)
         .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
         .finish(),
-      Unsafe::GraphQLEndpoint(req_template, field_name, use_batch_request, _dl) => f
+      Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => f
         .debug_struct("GraphQLEndpoint")
         .field("req_template", req_template)
         .field("field_name", field_name)
-        .field("use_batch_request", use_batch_request)
+        .field("batch", batch)
         .finish(),
       Unsafe::JS(input, script) => f
         .debug_struct("JS")
@@ -113,120 +112,125 @@ impl Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
-        Expression::Unsafe(operation) => {
-          match operation {
-            Unsafe::Http(req_template, _, dl) => {
-              let req = req_template.to_request(ctx)?;
-              let is_get = req.method() == reqwest::Method::GET;
-              // Attempt to short circuit GET request
-              if is_get && ctx.req_ctx.upstream.batch.is_some() {
-                let headers = ctx
-                  .req_ctx
-                  .upstream
-                  .batch
-                  .clone()
-                  .map(|s| s.headers)
-                  .unwrap_or_default();
-                let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = dl
-                  .as_ref()
-                  .unwrap()
-                  .load_one(endpoint_key)
-                  .await
-                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
-                  .unwrap_or_default();
-                if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
-                  if let Some(max_age) = max_age(&resp) {
-                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
-                  }
-                }
-                return Ok(resp.body);
-              }
+        Expression::Unsafe(operation) => match operation {
+          Unsafe::Http(req_template, _, data_loader) => {
+            let req = req_template.to_request(ctx)?;
+            let is_get = req.method() == reqwest::Method::GET;
 
-              // Prepare for HTTP calls
-              let res = ctx
-                .req_ctx
-                .execute(req)
-                .await
-                .map_err(|e| EvaluationError::IOException(e.to_string()))?;
-              if ctx.req_ctx.server.get_enable_http_validation() {
-                req_template
-                  .endpoint
-                  .output
-                  .validate(&res.body)
-                  .to_result()
-                  .map_err(EvaluationError::from)?;
-              }
-              if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
-                if let Some(max_age) = max_age(&res) {
-                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
-                }
-              }
-              Ok(res.body)
+            let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
+              execute_request_with_dl(ctx, req, data_loader).await?
+            } else {
+              execute_raw_request(ctx, req).await?
+            };
+
+            if ctx.req_ctx.server.get_enable_http_validation() {
+              req_template
+                .endpoint
+                .output
+                .validate(&res.body)
+                .to_result()
+                .map_err(EvaluationError::from)?;
             }
-            Unsafe::GraphQLEndpoint(req_template, field_name, _, dl) => {
-              let req = req_template.to_request(ctx)?;
 
-              if ctx.req_ctx.upstream.batch.is_some() {
-                let headers = ctx
-                  .req_ctx
-                  .upstream
-                  .batch
-                  .clone()
-                  .map(|s| s.headers)
-                  .unwrap_or_default();
-                let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-                let resp = dl
-                  .as_ref()
-                  .unwrap()
-                  .load_one(endpoint_key)
-                  .await
-                  .map_err(|e| EvaluationError::IOException(e.to_string()))?
-                  .unwrap_or_default();
-                if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
-                  if let Some(max_age) = max_age(&resp) {
-                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
-                  }
-                }
-                let path = ["data", field_name];
-                let v = get_path_value(&resp.body, &path);
-                return Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null));
-              }
-              let res = ctx
-                .req_ctx
-                .execute(req)
-                .await
-                .map_err(|e| EvaluationError::IOException(e.to_string()))?;
-              if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
-                if let Some(max_age) = max_age(&res) {
-                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
-                }
-              }
+            set_cache_control(ctx, &res);
 
-              let path = ["data", field_name];
-              let v = get_path_value(&res.body, &path);
-              Ok(v.map(|value| value.to_owned()).unwrap_or(ConstValue::Null))
-            }
-            Unsafe::JS(input, script) => {
-              let result;
-              #[cfg(not(feature = "unsafe-js"))]
-              {
-                let _ = script;
-                let _ = input;
-                result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
-              }
-
-              #[cfg(feature = "unsafe-js")]
-              {
-                let input = input.eval(ctx).await?;
-                result = javascript::execute_js(script, input, Some(ctx.timeout))
-                  .map_err(|e| EvaluationError::JSException(e.to_string()).into());
-              }
-              result
-            }
+            Ok(res.body)
           }
-        }
+          Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
+            let req = req_template.to_request(ctx)?;
+
+            let res = if ctx.req_ctx.upstream.batch.is_some() {
+              execute_request_with_dl(ctx, req, data_loader).await?
+            } else {
+              execute_raw_request(ctx, req).await?
+            };
+
+            set_cache_control(ctx, &res);
+            parse_graphql_response(ctx, res, field_name)
+          }
+          Unsafe::JS(input, script) => {
+            let result;
+            #[cfg(not(feature = "unsafe-js"))]
+            {
+              let _ = script;
+              let _ = input;
+              result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
+            }
+
+            #[cfg(feature = "unsafe-js")]
+            {
+              let input = input.eval(ctx).await?;
+              result = javascript::execute_js(script, input, Some(ctx.timeout))
+                .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+            }
+            result
+          }
+        },
       }
     })
   }
+}
+
+fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
+  if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
+    if let Some(max_age) = max_age(res) {
+      ctx.req_ctx.set_min_max_age(max_age.as_secs());
+    }
+  }
+}
+
+async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  req: Request,
+) -> Result<Response> {
+  Ok(
+    ctx
+      .req_ctx
+      .execute(req)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+  )
+}
+
+async fn execute_request_with_dl<
+  'ctx,
+  Ctx: ResolverContextLike<'ctx>,
+  Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  req: Request,
+  data_loader: &Option<Arc<DataLoader<Dl>>>,
+) -> Result<Response> {
+  let headers = ctx
+    .req_ctx
+    .upstream
+    .batch
+    .clone()
+    .map(|s| s.headers)
+    .unwrap_or_default();
+  let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
+
+  Ok(
+    data_loader
+      .as_ref()
+      .unwrap()
+      .load_one(endpoint_key)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?
+      .unwrap_or_default(),
+  )
+}
+
+fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  res: Response,
+  field_name: &str,
+) -> Result<async_graphql::Value> {
+  let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
+
+  for error in res.errors {
+    ctx.add_error(error);
+  }
+
+  Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default())
 }

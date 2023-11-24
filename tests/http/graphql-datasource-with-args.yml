@@ -4,12 +4,23 @@ mock:
   - request:
       url: http://upstream/graphql
       method: POST
-      body: '{ "query": "query { user(id: 1) { name  } }" }'
+      body: '{ "query": "query { user(id: 1) { name } }" }'
     response:
       body:
         data:
           user:
             name: "Leanne Graham"
+  - request:
+      url: http://upstream/graphql
+      method: POST
+      body: '{ "query": "query { post(id: 1) { id user { name } } }" }'
+    response:
+      body:
+        data:
+          post:
+            id: 1
+            user:
+              name: "Leanne Graham"
 assert:
   - request:
       method: POST
@@ -21,3 +32,15 @@ assert:
         data:
           user:
             name: "Leanne Graham"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { post(id: 1) { id user { name } } }"
+    response:
+      body:
+        data:
+          post:
+            id: 1
+            user:
+              name: "Leanne Graham"

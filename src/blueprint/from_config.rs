@@ -602,7 +602,7 @@ fn update_graphql<'a>(
         .map(|req_template| {
           let field_name = b_field.name.clone();
           b_field.resolver(Some(
-            Lambda::from_graphql_request_template(req_template, field_name, graphql.use_batch_request).expression,
+            Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
           ))
         })
     },

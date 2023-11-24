@@ -3,6 +3,7 @@ use std::fs;
 use regex::Regex;
 use serde_json::Value;
 
+#[must_use]
 pub fn start_mock_server() -> mockito::Server {
   let mut server = mockito::Server::new_with_port(3080);
 

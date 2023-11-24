@@ -79,7 +79,7 @@ impl GraphqlRequestTemplate {
       .map(|args| format!("{}({})", self.operation_name, args))
       .unwrap_or(self.operation_name.clone());
 
-    let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {{ {selection_set} }} }}" }}"#);
+    let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
 
     req.body_mut().replace(graphql_query.into());
     req
@@ -149,7 +149,7 @@ mod tests {
 
   impl GraphQLOperationContext for Context {
     fn selection_set(&self) -> Option<String> {
-      Some("a,b,c".to_owned())
+      Some("{ a,b,c }".to_owned())
     }
   }
 

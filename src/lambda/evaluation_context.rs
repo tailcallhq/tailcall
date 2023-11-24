@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::time::Duration;
 
-use async_graphql::{Name, SelectionField, Value};
+use async_graphql::{Name, SelectionField, ServerError, Value};
 use derive_setters::Setters;
 use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
@@ -62,17 +62,28 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 
     vars.get(key).map(|v| v.as_str())
   }
+
+  pub fn add_error(&self, error: ServerError) {
+    self.graphql_ctx.add_error(error)
+  }
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
   fn selection_set(&self) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
-    Some(format_selection_set(selection_set))
+
+    format_selection_set(selection_set)
   }
 }
 
-fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> String {
-  selection_set.map(format_selection_field).collect::<Vec<_>>().join(" ")
+fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> Option<String> {
+  let set = selection_set.map(format_selection_field).collect::<Vec<_>>();
+
+  if set.is_empty() {
+    return None;
+  }
+
+  Some(format!("{{ {} }}", set.join(" ")))
 }
 
 fn format_selection_field(field: SelectionField) -> String {
@@ -80,7 +91,11 @@ fn format_selection_field(field: SelectionField) -> String {
   let arguments = format_selection_field_arguments(field);
   let selection_set = format_selection_set(field.selection_set());
 
-  format!("{}{} {}", name, arguments, selection_set)
+  if let Some(set) = selection_set {
+    format!("{}{} {}", name, arguments, set)
+  } else {
+    format!("{}{}", name, arguments)
+  }
 }
 
 fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> {

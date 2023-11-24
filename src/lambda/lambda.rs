@@ -52,14 +52,14 @@ impl Lambda<serde_json::Value> {
   pub fn from_graphql_request_template(
     req_template: GraphqlRequestTemplate,
     field_name: String,
-    use_batch_request: bool,
+    batch: bool,
   ) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint(
+    Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
       req_template,
       field_name,
-      use_batch_request,
-      None,
-    )))
+      batch,
+      data_loader: None,
+    }))
   }
 }
 
