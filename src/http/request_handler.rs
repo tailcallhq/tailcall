@@ -97,7 +97,7 @@ async fn url_req<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(response)
       }
       Err(err) => {
-        log::error!("Failed to parse request: {q}",);
+        log::error!("Failed to parse request: {query}",);
 
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
