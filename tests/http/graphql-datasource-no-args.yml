@@ -16,10 +16,10 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query { users { name } }"
+        query: "query { users_list { name } }"
     response:
       body:
         data:
-          users:
+          users_list:
             - name: "Leanne Graham"
             - name: "Ervin Howell"
