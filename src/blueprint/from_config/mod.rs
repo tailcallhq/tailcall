@@ -13,7 +13,7 @@ pub use server::*;
 pub use upstream::*;
 
 use super::Type;
-use crate::config::Config;
+use crate::config::{Arg, Config, Field};
 use crate::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
@@ -23,6 +23,42 @@ pub(crate) trait TypeLike {
   fn list(&self) -> bool;
   fn non_null(&self) -> bool;
   fn list_type_required(&self) -> bool;
+}
+
+impl TypeLike for Field {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    self.list_type_required
+  }
+}
+
+impl TypeLike for Arg {
+  fn name(&self) -> &str {
+    &self.type_of
+  }
+
+  fn list(&self) -> bool {
+    self.list
+  }
+
+  fn non_null(&self) -> bool {
+    self.required
+  }
+
+  fn list_type_required(&self) -> bool {
+    false
+  }
 }
 
 pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
@@ -46,4 +82,8 @@ where
   } else {
     Type::NamedType { name: name.to_string(), non_null }
   }
+}
+
+pub fn is_scalar(type_name: &str) -> bool {
+  ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }

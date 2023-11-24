@@ -1,5 +1,3 @@
-#[allow(unused_imports)]
-use async_graphql::InputType;
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::*;
