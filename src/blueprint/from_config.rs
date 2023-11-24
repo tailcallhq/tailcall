@@ -357,31 +357,31 @@ impl<'a> MustachePartsValidator<'a> {
     Self { type_of, config, field }
   }
 
-  fn get_nested_type(&self, tail: &[String], type_of: &config::Type) -> Result<Type, String> {
-    if let Some(val_type) = get_value_type(type_of, &tail[0]) {
-      match tail.len() {
-        1 => {
-          return Ok(val_type);
-        }
-        _ => {
-          if val_type.is_nullable() {
-            return Err(format!("value '{}' is a nullable type", tail[0].as_str()));
+  fn get_nested_type(&self, tail: &[String], mut type_of: &'a config::Type) -> Result<Type, String> {
+    let mut len = tail.len();
+    for item in tail {
+      if let Some(val_type) = get_value_type(type_of, item) {
+        match len {
+          1 => {
+            return Ok(val_type);
+          }
+          _ => {
+            if val_type.is_nullable() {
+              return Err(format!("value '{}' is a nullable type", item.as_str()));
+            }
           }
         }
+      } else {
+        return Err(format!("no value '{}' found", item));
       }
-    } else {
-      return Err(format!("no value '{}' found", tail[0].as_str()));
+      let field = type_of.fields.get(item).ok_or(format!("no value '{}' found", item))?;
+      type_of = self
+        .config
+        .find_type(&field.type_of)
+        .ok_or(format!("no value '{}' found", item))?;
+      len -= 1;
     }
-    let head = tail[0].as_str();
-    let field = type_of
-      .fields
-      .get(head)
-      .ok_or(format!("no value '{}' found", tail[0].as_str()))?;
-    let type_of = self
-      .config
-      .find_type(&field.type_of)
-      .ok_or(format!("no value '{}' found", tail[0].as_str()))?;
-    self.get_nested_type(&tail[1..], type_of)
+    unreachable!()
   }
 
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
