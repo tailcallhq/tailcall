@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::http::{max_age, HttpDataLoader};
+use crate::http::{cache_policy, HttpDataLoader};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -121,8 +121,8 @@ impl Expression {
                   .map_err(|e| EvaluationError::IOException(e.to_string()))?
                   .unwrap_or_default();
                 if ctx.req_ctx.server.get_enable_cache_control() && resp.status.is_success() {
-                  if let Some(max_age) = max_age(&resp) {
-                    ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                  if let Some(policy) = cache_policy(&resp) {
+                    ctx.req_ctx.set_cache_control(policy);
                   }
                 }
                 return Ok(resp.body);
@@ -143,8 +143,8 @@ impl Expression {
                   .map_err(EvaluationError::from)?;
               }
               if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
-                if let Some(max_age) = max_age(&res) {
-                  ctx.req_ctx.set_min_max_age(max_age.as_secs());
+                if let Some(policy) = cache_policy(&res) {
+                  ctx.req_ctx.set_cache_control(policy);
                 }
               }
               Ok(res.body)
