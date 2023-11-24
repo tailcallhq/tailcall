@@ -126,27 +126,30 @@ impl GraphQLResponse {
     Ok(response)
   }
 
-  /// Sets the `cache_control` max_age for a given `GraphQLResponse`.
+  /// Sets the `cache_control` for a given `GraphQLResponse`.
   ///
   /// The function modifies the `GraphQLResponse` to set the `cache_control` `max_age`
-  /// to the specified `min_cache` value.
+  /// to the specified `min_cache` value and `public` flag to `cache_public`
   ///
   /// # Arguments
   ///
   /// * `res` - The GraphQL response whose `cache_control` is to be set.
   /// * `min_cache` - The `max_age` value to be set for `cache_control`.
+  /// * `cache_public` - The negation of `public` flag to be set for `cache_control`.
   ///
   /// # Returns
   ///
-  /// * A modified `GraphQLResponse` with updated `cache_control` `max_age`.
-  pub fn set_cache_control(mut self, min_cache: i32) -> GraphQLResponse {
+  /// * A modified `GraphQLResponse` with updated `cache_control` `max_age` and `public` flag.
+  pub fn set_cache_control(mut self, min_cache: i32, cache_public: bool) -> GraphQLResponse {
     match self.0 {
       BatchResponse::Single(ref mut res) => {
         res.cache_control.max_age = min_cache;
+        res.cache_control.public = cache_public;
       }
       BatchResponse::Batch(ref mut list) => {
         for res in list {
           res.cache_control.max_age = min_cache;
+          res.cache_control.public = cache_public;
         }
       }
     };
