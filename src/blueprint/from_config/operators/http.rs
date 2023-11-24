@@ -1,5 +1,3 @@
-#[allow(unused_imports)]
-use async_graphql::InputType;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 

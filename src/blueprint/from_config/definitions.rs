@@ -1,7 +1,5 @@
 use std::collections::BTreeSet;
 
-#[allow(unused_imports)]
-use async_graphql::InputType;
 use regex::Regex;
 
 use crate::blueprint::Type::ListType;

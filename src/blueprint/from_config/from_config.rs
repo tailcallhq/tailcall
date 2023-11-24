@@ -1,13 +1,9 @@
 use std::collections::{BTreeMap, HashMap};
 
-#[allow(unused_imports)]
-use async_graphql::InputType;
-
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
 use crate::config::{Arg, Batch, Config, Field};
-use crate::directive::DirectiveCodec;
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, Unsafe};
 use crate::try_fold::TryFold;
@@ -55,61 +51,6 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     }
   }
   blueprint
-}
-
-fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
-  TryFoldConfig::new(|config, _| {
-    validate_query(config)
-      .and(validate_mutation(config))
-      .and(Valid::from_option(
-        config.schema.query.as_ref(),
-        "Query root is missing".to_owned(),
-      ))
-      .zip(to_directive(config.server.to_directive()))
-      .map(|(query_type_name, directive)| SchemaDefinition {
-        query: query_type_name.to_owned(),
-        mutation: config.schema.mutation.clone(),
-        directives: vec![directive],
-      })
-  })
-}
-
-fn validate_query(config: &Config) -> Valid<(), String> {
-  Valid::from_option(config.schema.query.clone(), "Query root is missing".to_owned())
-    .and_then(|ref query_type_name| {
-      let Some(query) = config.find_type(query_type_name) else {
-        return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
-      };
-
-      Valid::from_iter(query.fields.iter(), validate_field_has_resolver).trace(query_type_name)
-    })
-    .unit()
-}
-
-fn validate_mutation(config: &Config) -> Valid<(), String> {
-  let mutation_type_name = config.schema.mutation.as_ref();
-
-  if let Some(mutation_type_name) = mutation_type_name {
-    let Some(mutation) = config.find_type(mutation_type_name) else {
-      return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
-    };
-
-    Valid::from_iter(mutation.fields.iter(), validate_field_has_resolver)
-      .trace(mutation_type_name)
-      .unit()
-  } else {
-    Valid::succeed(())
-  }
-}
-
-fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<(), String> {
-  Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
-    .when(|| !field.has_resolver())
-    .trace(name)
-}
-
-pub fn is_scalar(type_name: &str) -> bool {
-  ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
 
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
@@ -167,40 +108,5 @@ impl TryFrom<&Config> for Blueprint {
 
   fn try_from(config: &Config) -> Result<Self, Self::Error> {
     config_blueprint().try_fold(config, Blueprint::default()).to_result()
-  }
-}
-
-impl TypeLike for Field {
-  fn name(&self) -> &str {
-    &self.type_of
-  }
-
-  fn list(&self) -> bool {
-    self.list
-  }
-
-  fn non_null(&self) -> bool {
-    self.required
-  }
-
-  fn list_type_required(&self) -> bool {
-    self.list_type_required
-  }
-}
-impl TypeLike for Arg {
-  fn name(&self) -> &str {
-    &self.type_of
-  }
-
-  fn list(&self) -> bool {
-    self.list
-  }
-
-  fn non_null(&self) -> bool {
-    self.required
-  }
-
-  fn list_type_required(&self) -> bool {
-    false
   }
 }
