@@ -2,7 +2,7 @@
 name: Testing a GraphQL query
 
 config: !inline
-  upstream: { }
+  upstream: {}
   server:
     port: 8080
   schema:
@@ -130,4 +130,3 @@ assert:
         errors:
           - message: "Unexpected API Request: 404 - key: posts not found"
         data: null
-
