@@ -88,22 +88,22 @@ unsafe-js = ["dep:mini-v8"]
 [[bench]]
 name = "json_like_bench"
 harness = false
-path = "benches/criterion/json_like_bench.rs"
+path = "benches/json_like_bench.rs"
 
 [[bench]]
 name = "request_template_bench"
 harness = false
-path = "benches/criterion/request_template_bench.rs"
+path = "benches/request_template_bench.rs"
 
 [[bench]]
 name = "data_loader_bench"
 harness = false
-path = "benches/criterion/data_loader_bench.rs"
+path = "benches/data_loader_bench.rs"
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
 harness = false
-path = "benches/criterion/impl_path_string_for_evaluation_context.rs"
+path = "benches/impl_path_string_for_evaluation_context.rs"
 
 [[bench]]
 name = "data_loader_bench_iai-callgrind"
