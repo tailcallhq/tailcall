@@ -1,9 +1,9 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::collections::HashMap;
-use async_graphql::Value;
+
 use async_graphql::futures_util::future::join_all;
+use async_graphql::Value;
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 use tailcall::config::Batch;
 use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
@@ -30,8 +30,8 @@ async fn benchmark_data_loader() {
   let loader = HttpDataLoader {
     client: client.clone(),
     batched: None,
-    body: |_: HashMap<String, Vec<&Value>>, _: &str| async_graphql::Value::Null
-   };
+    body: |_: HashMap<String, Vec<&Value>>, _: &str| async_graphql::Value::Null,
+  };
 
   let loader = loader.to_data_loader(Batch::default().delay(1));
 
