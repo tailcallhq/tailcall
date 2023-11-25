@@ -220,7 +220,7 @@ dependencies = [
  "futures-timer",
  "futures-util",
  "handlebars",
- "http",
+ "http 0.2.11",
  "indexmap",
  "lru",
  "mime",
@@ -1363,7 +1363,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap",
  "slab",
  "tokio",
@@ -1439,14 +1439,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.11",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-body"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
+dependencies = [
+ "bytes",
+ "http 1.0.0",
 ]
 
 [[package]]
@@ -1457,7 +1478,7 @@ checksum = "57bae69908277d47122334bf6009e514cd3d24e65d0bf2b56f1b45db6ad8864d"
 dependencies = [
  "async-trait",
  "bincode",
- "http",
+ "http 0.2.11",
  "http-cache-semantics",
  "httpdate",
  "moka",
@@ -1473,7 +1494,7 @@ checksum = "ee5a40915f9da8f3feef6f942f9aace74393803c47bce6870f19cd2b5123f27a"
 dependencies = [
  "anyhow",
  "async-trait",
- "http",
+ "http 0.2.11",
  "http-cache",
  "http-cache-semantics",
  "reqwest",
@@ -1489,7 +1510,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7aec9f678bca3f4a15194b980f20ed9bfe0dd38e8d298c65c559a93dfbd6380a"
 dependencies = [
- "http",
+ "http 0.2.11",
  "http-serde",
  "reqwest",
  "serde",
@@ -1497,12 +1518,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-range"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
+
+[[package]]
 name = "http-serde"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f560b665ad9f1572cfcaf034f7fb84338a7ce945216d64a90fd81f046a3caee"
 dependencies = [
- "http",
+ "http 0.2.11",
  "serde",
 ]
 
@@ -1532,7 +1559,7 @@ dependencies = [
  "crossbeam-utils",
  "form_urlencoded",
  "futures-util",
- "hyper",
+ "hyper 0.14.27",
  "isahc",
  "lazy_static",
  "levenshtein",
@@ -1563,8 +1590,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.5",
  "httparse",
  "httpdate",
  "itoa",
@@ -1577,19 +1604,73 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "403f9214f3e703236b221f1a9cd88ec8b4adfa5296de01ab96216361f4692f56"
+dependencies = [
+ "bytes",
+ "futures-channel",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
 name = "hyper-rustls"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
- "hyper",
+ "http 0.2.11",
+ "hyper 0.14.27",
  "log",
  "rustls",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls",
+]
+
+[[package]]
+name = "hyper-staticfile"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "318ca89e4827e7fe4ddd2824f52337239796ae8ecc761a663324407dc3d8d7e7"
+dependencies = [
+ "futures-util",
+ "http 0.2.11",
+ "http-range",
+ "httpdate",
+ "hyper 0.14.27",
+ "mime_guess",
+ "percent-encoding",
+ "rand",
+ "tokio",
+ "url",
+ "winapi",
+]
+
+[[package]]
+name = "hyper-util"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ca339002caeb0d159cc6e023dff48e199f081e42fa039895c7c6f38b37f2e9d"
+dependencies = [
+ "bytes",
+ "futures-channel",
+ "futures-util",
+ "http 1.0.0",
+ "http-body 1.0.0",
+ "hyper 1.0.1",
+ "pin-project-lite",
+ "socket2 0.5.5",
+ "tokio",
+ "tower",
+ "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -1709,7 +1790,7 @@ dependencies = [
  "encoding_rs",
  "event-listener 2.5.3",
  "futures-lite 1.13.0",
- "http",
+ "http 0.2.11",
  "log",
  "mime",
  "once_cell",
@@ -1981,7 +2062,7 @@ dependencies = [
  "assert-json-diff",
  "colored",
  "futures",
- "hyper",
+ "hyper 0.14.27",
  "log",
  "rand",
  "regex",
@@ -2024,7 +2105,7 @@ dependencies = [
  "bytes",
  "encoding_rs",
  "futures-util",
- "http",
+ "http 0.2.11",
  "httparse",
  "log",
  "memchr",
@@ -2531,9 +2612,9 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
- "hyper",
+ "http 0.2.11",
+ "http-body 0.4.5",
+ "hyper 0.14.27",
  "hyper-rustls",
  "ipnet",
  "js-sys",
@@ -2568,7 +2649,7 @@ checksum = "88a3e86aa6053e59030e7ce2d2a3b258dd08fc2d337d52f73f6cb480f5858690"
 dependencies = [
  "anyhow",
  "async-trait",
- "http",
+ "http 0.2.11",
  "reqwest",
  "serde",
  "task-local-extensions",
@@ -3062,11 +3143,15 @@ dependencies = [
  "derive_setters",
  "env_logger",
  "exitcode",
+ "futures-util",
+ "http 1.0.0",
  "http-cache-reqwest",
  "http-cache-semantics",
  "httpmock",
- "hyper",
+ "hyper 0.14.27",
  "hyper-rustls",
+ "hyper-staticfile",
+ "hyper-util",
  "indexmap",
  "inquire",
  "log",
@@ -3292,6 +3377,28 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
+
+[[package]]
+name = "tower"
+version = "0.4.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project",
+ "pin-project-lite",
+ "tokio",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-layer"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c20c8dbed6283a09604c3e69b4b7eeb54e298b8a600d4d5ecb5ad39de609f1d0"
 
 [[package]]
 name = "tower-service"

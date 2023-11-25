@@ -2,7 +2,7 @@ schema
   # Specify server configuration: Start tailcall server at 0.0.0.0:8000 and enable GraphiQL playground
   @server(port: 8000, graphiql: true)
   # Specify a base url for all http requests
-  @upstream(baseURL: "http://localhost:32400") {
+  @upstream(baseURL: "http://localhost:3000") {
   query: Query
 }
 

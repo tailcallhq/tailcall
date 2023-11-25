@@ -68,6 +68,10 @@ httpmock = "0.6"
 mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+http = "1.0.0"
+hyper-staticfile = "0.9.5"
+hyper-util = { version = "0.1.1", features = ["tokio"] }
+futures-util = "0.3.1"
 
 [profile.release]
 opt-level = 3
@@ -80,6 +84,9 @@ overflow-checks = false
 
 [features]
 unsafe-js = ["dep:mini-v8"]
+
+[[example]]
+name = "server"
 
 [[bench]]
 name = "json_like_bench"

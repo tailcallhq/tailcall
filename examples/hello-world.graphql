@@ -1,6 +1,6 @@
 schema
   @server(port: 8000, graphiql: true)
-  @upstream(baseURL: "http://localhost:32400", httpCache: true) {
+  @upstream(baseURL: "http://localhost:3000", httpCache: true) {
   query: Query
 }
 

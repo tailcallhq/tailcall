@@ -5,7 +5,8 @@ Adding file extensions when needed to find certain files.
 ## Usage
 
 ```bash
-python3 server.py
+# from the root of the project
+cargo run --example server
 ```
 
 ## Contributing
