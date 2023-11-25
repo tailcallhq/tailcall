@@ -11,8 +11,11 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+<<<<<<< HEAD
 use crate::cli::CLIError;
 use crate::cli::operation::Operation;
+=======
+>>>>>>> 0fe492e4 (chore(dev): use simple schema execution for check)
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
@@ -49,6 +52,17 @@ pub fn run() -> Result<()> {
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
+
+          let _ = tokio::runtime::Runtime::new()?.block_on(async {
+            let t_schema = blueprint.to_schema();
+            for op in operations.iter() {
+              let operation = tokio::fs::read_to_string(op).await?;
+              let res = t_schema.execute(&operation).await;
+              println!("{:?}", res);
+            }
+            Ok::<(), anyhow::Error>(())
+          });
+
           if schema {
             display_schema(&blueprint);
           }
