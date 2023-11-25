@@ -181,7 +181,6 @@ jobs:
 
       - name: Execute check_degradation.sh
         run: |
-          chmod +x .github/scripts/check_degradation.sh
           bash .github/scripts/check_degradation.sh
 
       - name: Comment on PR
@@ -252,5 +251,4 @@ jobs:
 
       - name: Execute build_time_compare.sh
         run: |
-          chmod +x .github/scripts/compare_build_time.sh
           bash .github/scripts/compare_build_time.sh
