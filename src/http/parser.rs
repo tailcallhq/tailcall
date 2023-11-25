@@ -115,6 +115,7 @@ impl Parser {
             }
             len -= 1;
           }
+          curhm = &mut hm;
         }
         '.' => {
           let pc = p.clone();
