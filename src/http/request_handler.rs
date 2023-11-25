@@ -37,9 +37,9 @@ fn update_cache_control_header(
   req_ctx: Arc<RequestContext>,
 ) -> GraphQLResponse {
   if server_ctx.blueprint.server.enable_cache_control_header {
-    if let Some(ttl) = req_ctx.get_min_max_age() {
-      return response.set_cache_control(ttl as i32);
-    }
+    let ttl = req_ctx.get_min_max_age().unwrap_or(0);
+    let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
+    return response.set_cache_control(ttl, cache_public_flag);
   }
   response
 }
