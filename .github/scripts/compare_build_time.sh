@@ -1,79 +1,46 @@
 #!/bin/bash
-file1="benches/iai-callgrind/old_benchmark.txt"
-file2="benches/iai-callgrind/new_benchmark.txt"
-
-# Switch back to the original branch
-config_file="benches/iai-callgrind/benchmarks.cfg" # to add more benchmarks add in this file
-# Read benchmarks from the configuration file
+file1="benches/iai-callgrind/new_benchmark.txt"
+file2="benches/iai-callgrind/old_benchmark.txt"
+config_file="benches/iai-callgrind/benchmarks.cfg"
 readarray -t benchmarks < "$config_file"
-
-attributes=("Instructions" "L1 Hits" "L2 Hits" "RAM Hits")
-
+attributes=("Instructions" "L1 Hits" "L2 Hits" "RAM Hits" "Total read+write" "Estimated Cycles")
 fail_ci=0
 
+calculate_value() {
+    local file="$1"
+    local bench="$2"
+    local attribute="$3"
+    case "$attribute" in
+        "Total read+write")
+            echo $(( $(grep -A5 "$bench" "$file" | grep -Po "L1 Hits:\s*\K\d+" || echo 0) +
+                     $(grep -A5 "$bench" "$file" | grep -Po "L2 Hits:\s*\K\d+" || echo 0) +
+                     $(grep -A5 "$bench" "$file" | grep -Po "RAM Hits:\s*\K\d+" || echo 0) ))
+            ;;
+        "Estimated Cycles")
+            echo $(( $(grep -A5 "$bench" "$file" | grep -Po "L1 Hits:\s*\K\d+" || echo 0) +
+                     5 * $(grep -A5 "$bench" "$file" | grep -Po "L2 Hits:\s*\K\d+" || echo 0) +
+                     35 * $(grep -A5 "$bench" "$file" | grep -Po "RAM Hits:\s*\K\d+" || echo 0) ))
+            ;;
+        *)
+            echo $(grep -A5 "$bench" "$file" | grep -Po "${attribute}:\s*\K\d+" || echo 0)
+            ;;
+    esac
+}
+
 for bench in "${benchmarks[@]}"; do
-    x=0
-    y=0
-
-    # Check attribute changes
     for attribute in "${attributes[@]}"; do
-        value1=$(grep -A5 "$bench" "$file1" | grep -Po "${attribute}:\K\d+")
-        value2=$(grep -A5 "$bench" "$file2" | grep -Po "${attribute}:\K\d+")
+        value1=$(calculate_value "$file1" "$bench" "$attribute")
+        value2=$(calculate_value "$file2" "$bench" "$attribute")
 
-        if [ -n "$value1" ] && [ -n "$value2" ]; then
-            if [ "$value1" -ne 0 ]; then
-                percent_change=$(( ((value2 - value1) * 100) / value1 ))
-            else
-                percent_change="nan"
-            fi
+        percent_change=$(( value1 ? ((value2 - value1) * 100) / value1 : 0 ))
 
-            if ((percent_change > 10)); then
-                echo "$bench $attribute has a change of $percent_change%, failing CI."
-                fail_ci=1
-            else
-                echo "$bench $attribute has a change of $percent_change%, within CI limits."
-            fi
+        if ((percent_change > 10)); then
+            echo "$bench $attribute has a change of $percent_change%, failing CI. (Original values: $value1 -> $value2)"
+            fail_ci=1
         else
-            echo "Values not found for $bench $attribute"
+            echo "$bench $attribute has a change of $percent_change%, within CI limits. (Original values: $value1 -> $value2)"
         fi
     done
-
-    # Check performance metric changes 
-    # Total read+write = L1 Hits + L2 Hits + RAM Hits.
-    # Estimated Cycles = L1 Hits + 5 × (L2 Hits) + 35 × (RAM Hits).
-    for file in "$file1" "$file2"; do
-        l1_hits=$(grep -A5 "$bench" "$file" | grep -Po "L1 Hits:\K\d+")
-        l2_hits=$(grep -A5 "$bench" "$file" | grep -Po "L2 Hits:\K\d+")
-        ram_hits=$(grep -A5 "$bench" "$file" | grep -Po "RAM Hits:\K\d+")
-
-        if [ "$x" -ne 0 ]; then
-            total_read_write=$((l1_hits + l2_hits + ram_hits))
-            estimated_cycles=$((l1_hits + 5 * l2_hits + 35 * ram_hits))
-
-            p1=$(( ((total_read_write - x) * 100) / x ))
-            echo "$bench Total read+write has a change of $p1%"
-
-            if ((p1 > 10)); then
-                echo "$bench Total read+write has a change greater than 10%, failing CI."
-                fail_ci=1
-            fi
-
-            p2=$(( ((estimated_cycles - y) * 100) / y ))
-            echo "$bench Estimated Cycles has a change of $p2%"
-
-            if ((p2 > 10)); then
-                echo "$bench Estimated Cycles has a change greater than 10%, failing CI."
-                fail_ci=1
-            fi
-        else
-            total_read_write=$((l1_hits + l2_hits + ram_hits))
-            estimated_cycles=$((l1_hits + 5 * l2_hits + 35 * ram_hits))
-        fi
-
-        x=$((x + total_read_write))
-        y=$((y + estimated_cycles))
-    done
-
     echo "----------------------------------"
 done
 
