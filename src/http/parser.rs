@@ -118,14 +118,16 @@ impl Parser {
           curhm = &mut hm;
         }
         '.' => {
-          let pc = p.clone();
-          curhm = curhm
-            .entry(&pc)
-            .or_insert_with(|| Value::Object(Map::new()))
-            .as_object_mut()
-            .unwrap();
-          queue.push_back(pc);
-          p.clear();
+          if !p.is_empty() {
+            let pc = p.clone();
+            curhm = curhm
+              .entry(&pc)
+              .or_insert_with(|| Value::Object(Map::new()))
+              .as_object_mut()
+              .unwrap();
+            queue.push_back(pc);
+            p.clear();
+          }
         }
         ',' => {
           queue.clear();

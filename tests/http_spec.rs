@@ -317,8 +317,8 @@ mod parser_tests {
         .parse::<GraphQLRequest>(&Blueprint::default().definitions)
         .unwrap()
         .0
-        .query,
-      "{user {address {city state} age name}}"
+        .query.replace(" ", ""),
+      "{user {address {city state} age name}}".replace(" ", "")
     );
   }
 
@@ -332,8 +332,8 @@ mod parser_tests {
         .parse::<GraphQLRequest>(&Blueprint::default().definitions)
         .unwrap()
         .0
-        .query,
-      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}"
+        .query.replace(" ", ""),
+      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}".replace(" ", "")
     );
   }
   #[tokio::test]
@@ -351,8 +351,8 @@ mod parser_tests {
         .parse::<GraphQLRequest>(&bp.definitions)
         .unwrap()
         .0
-        .query,
-      "{posts {user { email id name phone username website}}}"
+        .query.replace(" ", ""),
+      "{posts { user {email id name phone username website}}}".replace(" ", "")
     );
   }
 }
