@@ -1,6 +1,7 @@
 mod client;
 mod data_loader;
 
+mod api_request_handler;
 mod data_loader_request;
 mod http_1;
 mod http_2;

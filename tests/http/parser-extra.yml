@@ -104,10 +104,11 @@ assert:
       method: GET
       url: http://localhost:8080/api/nested\?\$\=user.name\}
     response:
+      status: 400
       body:
         data: null
         errors:
-          - message: "Unexpected GraphQL Request: Unexpected token }"
+          - message: "Unexpected API Request: Unexpected token }"
   - request:
       method: GET
       url: http://localhost:8080/api/
