@@ -99,6 +99,13 @@ struct HttpSpec {
 
   // Annotations for the runner
   runner: Option<Annotation>,
+
+  #[serde(default = "default_repeat")]
+  repeat: usize,
+}
+
+fn default_repeat() -> usize {
+  1
 }
 
 impl HttpSpec {
@@ -225,39 +232,41 @@ impl HttpClient for MockHttpClient {
 
 async fn assert_downstream(spec: HttpSpec) {
   for assertion in spec.assert.iter() {
-    if let Some(Annotation::Fail) = spec.runner {
-      let response = run(spec.clone(), &assertion).await.unwrap();
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
-      log::error!("{} {} ... failed", spec.name, spec.path.display());
-      panic!(
-        "Expected spec: {} {} to fail but it passed",
-        spec.name,
-        spec.path.display()
-      );
-    } else {
-      let response = run(spec.clone(), &assertion)
-        .await
-        .context(spec.path.to_str().unwrap().to_string())
-        .unwrap();
-      let actual_status = response.status().clone().as_u16();
-      let actual_headers = response.headers().clone();
-      let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    for _ in 0..spec.repeat {
+      if let Some(Annotation::Fail) = spec.runner {
+        let response = run(spec.clone(), &assertion).await.unwrap();
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
+        log::error!("{} {} ... failed", spec.name, spec.path.display());
+        panic!(
+          "Expected spec: {} {} to fail but it passed",
+          spec.name,
+          spec.path.display()
+        );
+      } else {
+        let response = run(spec.clone(), &assertion)
+          .await
+          .context(spec.path.to_str().unwrap().to_string())
+          .unwrap();
+        let actual_status = response.status().clone().as_u16();
+        let actual_headers = response.headers().clone();
+        let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
 
-      // Assert Status
-      assert_eq!(actual_status, assertion.response.0.status);
+        // Assert Status
+        assert_eq!(actual_status, assertion.response.0.status);
 
-      // Assert Body
-      assert_eq!(
-        to_json_pretty(actual_body).unwrap(),
-        serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
-      );
+        // Assert Body
+        assert_eq!(
+          to_json_pretty(actual_body).unwrap(),
+          serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
+        );
 
-      // Assert Headers
-      for (key, value) in assertion.response.0.headers.iter() {
-        match actual_headers.get(key) {
-          None => panic!("Expected header {} to be present", key),
-          Some(actual_value) => assert_eq!(actual_value, value),
+        // Assert Headers
+        for (key, value) in assertion.response.0.headers.iter() {
+          match actual_headers.get(key) {
+            None => panic!("Expected header {} to be present", key),
+            Some(actual_value) => assert_eq!(actual_value, value),
+          }
         }
       }
     }

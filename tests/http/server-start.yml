@@ -1,0 +1,25 @@
+config: !file tests/http/config/server-start.graphql
+name: Server Start Test
+repeat: 100
+mock:
+  - request:
+      url: http://localhost:8000/graphql
+      method: POST
+      body:
+        query: query { greet }
+    response:
+      status: 200
+      body:
+        data:
+          greet: "Hello World!"
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8000/graphql
+      body:
+        query: query { greet }
+    response:
+      status: 200
+      body:
+        data:
+          greet: "Hello World!"
