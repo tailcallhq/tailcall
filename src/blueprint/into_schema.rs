@@ -39,26 +39,29 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
-          let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-          let field_name = field.name.clone();
-          let resolver = field.resolver.clone();
-          FieldFuture::new(async move {
-            match resolver {
-              None => {
-                let ctx = EvaluationContext::new(req_ctx, &ctx);
-                Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
+          if let Ok(req_ctx) = ctx.ctx.data::<Arc<RequestContext>>() {
+            let field_name = field.name.clone();
+            let resolver = field.resolver.clone();
+            FieldFuture::new(async move {
+              match resolver {
+                None => {
+                  let ctx = EvaluationContext::new(req_ctx, &ctx);
+                  Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
+                }
+                Some(expr) => {
+                  let ctx = EvaluationContext::new(req_ctx, &ctx);
+                  let const_value = expr.eval(&ctx).await?;
+                  let p = match const_value {
+                    ConstValue::List(a) => FieldValue::list(a),
+                    a => FieldValue::from(a),
+                  };
+                  Ok(Some(p))
+                }
               }
-              Some(expr) => {
-                let ctx = EvaluationContext::new(req_ctx, &ctx);
-                let const_value = expr.eval(&ctx).await?;
-                let p = match const_value {
-                  ConstValue::List(a) => FieldValue::list(a),
-                  a => FieldValue::from(a),
-                };
-                Ok(Some(p))
-              }
-            }
-          })
+            })
+          } else {
+            FieldFuture::new(async { Ok(None::<FieldValue>) })
+          }
         });
         if let Some(description) = &field.description {
           dyn_schema_field = dyn_schema_field.description(description);
