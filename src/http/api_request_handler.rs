@@ -6,9 +6,9 @@ use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
 
 use crate::async_graphql_hyper::GraphQLRequestLike;
+use crate::http::parser::Parser;
 use crate::http::request_handler::{create_request_context, update_cache_control_header, update_response_headers};
 use crate::http::ServerContext;
-use crate::parser::parser::Parser;
 
 pub async fn api_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
@@ -27,9 +27,14 @@ pub async fn api_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(response)
       }
       Err(err) => {
-        log::error!("Failed to parse request: {query}",);
+        log::error!("Failed to parse request: {query}");
+        let status_code = if err.to_string().starts_with("404") {
+          StatusCode::NOT_FOUND
+        } else {
+          StatusCode::BAD_REQUEST
+        };
         let resp = Response::builder()
-          .status(StatusCode::BAD_REQUEST)
+          .status(status_code)
           .body(Body::from(make_error_json(format!("Unexpected API Request: {}", err))));
         Ok(resp?)
       }

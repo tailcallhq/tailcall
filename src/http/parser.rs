@@ -80,7 +80,7 @@ impl Parser {
     };
     let mut defi_hm = Value::Null;
     if input.contains('*') {
-      defi_hm = build_definition_map(definations);
+      defi_hm = build_definition_map(definations)?;
     }
     let mut queue: LinkedList<String> = LinkedList::new();
     for char in input.chars() {
@@ -98,15 +98,19 @@ impl Parser {
           while len > 0 {
             match len {
               1 => {
+                let last = queue.pop_front().unwrap();
                 *curhm = tmp_defi
-                  .get(&queue.pop_front().unwrap())
-                  .unwrap()
+                  .get(&last)
+                  .ok_or(serde_json::Error::custom(format!("404 - key: {last} not found")))?
                   .as_object()
                   .cloned()
                   .unwrap();
               }
               _ => {
-                tmp_defi = tmp_defi.get_mut(&queue.pop_front().unwrap()).unwrap();
+                let key = queue.pop_front().unwrap();
+                tmp_defi = tmp_defi
+                  .get_mut(&key)
+                  .ok_or(serde_json::Error::custom(format!("404 - key: {key} not found")))?;
               }
             }
             len -= 1;
@@ -236,7 +240,7 @@ fn is_scalar_type(type_name: &str) -> bool {
   ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
 
-fn build_definition_map(definitions: &Vec<Definition>) -> Value {
+fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_json::Error> {
   let mut definition_map = Map::new();
   let mut current_definition = &mut definition_map;
 
@@ -261,14 +265,17 @@ fn build_definition_map(definitions: &Vec<Definition>) -> Value {
   create_query_map(&definition_map, definition_map.get("Query").unwrap().clone())
 }
 
-fn create_query_map(definition_map: &Map<String, Value>, query_value: Value) -> Value {
+fn create_query_map(definition_map: &Map<String, Value>, query_value: Value) -> Result<Value, serde_json::Error> {
   let mut result_map = Map::new();
 
-  for (key, val) in query_value.as_object().unwrap() {
+  for (key, val) in query_value.as_object().ok_or(serde_json::Error::custom(format!(
+    "The field: {} is not an json",
+    query_value
+  )))? {
     match val {
       Value::String(subtype) => {
         let mapped_value = create_query_map(definition_map, definition_map.get(subtype).unwrap().clone());
-        result_map.insert(key.clone(), mapped_value);
+        result_map.insert(key.clone(), mapped_value?);
       }
       _ => {
         result_map.insert(key.clone(), Value::Null);
@@ -276,61 +283,5 @@ fn create_query_map(definition_map: &Map<String, Value>, query_value: Value) -> 
     }
   }
 
-  Value::Object(result_map)
-}
-
-#[cfg(test)]
-mod parser_tests {
-  use crate::async_graphql_hyper::GraphQLRequest;
-  use crate::blueprint::Blueprint;
-  use crate::config::Config;
-  use crate::parser::parser::Parser;
-
-  #[test]
-  fn t1_url_qry_parser() {
-    let parser = Parser::from_path("api/user?$=name,age,address.city,address.state");
-    assert_eq!(
-      parser
-        .unwrap()
-        .parse::<GraphQLRequest>(&Blueprint::default().definitions)
-        .unwrap()
-        .0
-        .query,
-      "{user {address {city state} age name}}"
-    );
-  }
-
-  #[test]
-  fn t2_url_nested_qry_parser() {
-    let parser =
-      Parser::from_path("api/user?id=123,address.country=India,address.city=Foo&$=name,age,address.city,address.state");
-    assert_eq!(
-      parser
-        .unwrap()
-        .parse::<GraphQLRequest>(&Blueprint::default().definitions)
-        .unwrap()
-        .0
-        .query,
-      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}"
-    );
-  }
-  #[tokio::test]
-  async fn t3_wildcard() {
-    let bp = Blueprint::try_from(
-      &Config::from_file_or_url(["examples/jsonplaceholder.graphql".to_string()].iter())
-        .await
-        .unwrap(),
-    )
-    .unwrap();
-    let parser = Parser::from_path("api/posts?$=user.*");
-    assert_eq!(
-      parser
-        .unwrap()
-        .parse::<GraphQLRequest>(&bp.definitions)
-        .unwrap()
-        .0
-        .query,
-      "{posts {user { email id name phone username website}}}"
-    );
-  }
+  Ok(Value::Object(result_map))
 }

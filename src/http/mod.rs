@@ -6,13 +6,13 @@ mod data_loader_request;
 mod http_1;
 mod http_2;
 mod method;
+pub mod parser;
 mod request_context;
 mod request_handler;
 mod response;
 mod server;
 mod server_config;
 mod server_context;
-
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};

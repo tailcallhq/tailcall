@@ -2,7 +2,7 @@
 name: Testing a GraphQL query
 
 config: !inline
-  upstream: {}
+  upstream: { }
   server:
     port: 8080
   schema:
@@ -120,3 +120,14 @@ assert:
               - column: 2
                 line: 1
             message: " --> 1:2\n  |\n1 | {}\n  |  ^---\n  |\n  = expected selection"
+
+  - request:
+      method: GET
+      url: http://localhost:8080/api/posts?\$=user.*
+    response:
+      status: 404
+      body:
+        errors:
+          - message: "Unexpected API Request: 404 - key: posts not found"
+        data: null
+

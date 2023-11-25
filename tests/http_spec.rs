@@ -301,3 +301,58 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
     handle_single_request(req, server_context).await
   }
 }
+
+#[cfg(test)]
+mod parser_tests {
+  use tailcall::async_graphql_hyper::GraphQLRequest;
+  use tailcall::blueprint::Blueprint;
+  use tailcall::config::Config;
+  use tailcall::http::parser::Parser;
+  #[test]
+  fn t1_url_qry_parser() {
+    let parser = Parser::from_path("api/user?$=name,age,address.city,address.state");
+    assert_eq!(
+      parser
+        .unwrap()
+        .parse::<GraphQLRequest>(&Blueprint::default().definitions)
+        .unwrap()
+        .0
+        .query,
+      "{user {address {city state} age name}}"
+    );
+  }
+
+  #[test]
+  fn t2_url_nested_qry_parser() {
+    let parser =
+      Parser::from_path("api/user?id=123,address.country=India,address.city=Foo&$=name,age,address.city,address.state");
+    assert_eq!(
+      parser
+        .unwrap()
+        .parse::<GraphQLRequest>(&Blueprint::default().definitions)
+        .unwrap()
+        .0
+        .query,
+      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}"
+    );
+  }
+  #[tokio::test]
+  async fn t3_wildcard() {
+    let bp = Blueprint::try_from(
+      &Config::from_file_or_url(["examples/jsonplaceholder.graphql".to_string()].iter())
+        .await
+        .unwrap(),
+    )
+    .unwrap();
+    let parser = Parser::from_path("api/posts?$=user.*");
+    assert_eq!(
+      parser
+        .unwrap()
+        .parse::<GraphQLRequest>(&bp.definitions)
+        .unwrap()
+        .0
+        .query,
+      "{posts {user { email id name phone username website}}}"
+    );
+  }
+}
