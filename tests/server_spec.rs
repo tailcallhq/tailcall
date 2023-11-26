@@ -6,12 +6,11 @@ async fn server_start() {
   use reqwest::Client;
   use serde_json::json;
 
-  let _ = tokio::spawn(async {
+  tokio::spawn(async {
     let file_paths = vec!["tests/server/config/server-start.graphql".to_string()];
     let config = Config::from_file_or_url(file_paths.iter()).await.unwrap();
-    start_server(config)
-  })
-  .await;
+    start_server(config).await.unwrap();
+  });
 
   let client = Client::new();
   let query = json!({
