@@ -22,7 +22,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 // Return is this type has resolver
 // Will recursive check all fields
 fn validate_field_of_type_has_resolver(name: &str, ty: &Type, types: &BTreeMap<String, Type>) -> Valid<(), String> {
-  Valid::from_iter(ty.fields.iter(), |i| validate_field_has_resolver(i, &types))
+  Valid::from_iter(ty.fields.iter(), |i| validate_field_has_resolver(i, types))
     .trace(name)
     .unit()
 }
@@ -39,7 +39,7 @@ fn validate_field_has_resolver((name, field): (&String, &Field), types: &BTreeMa
         }
       }
       {
-        return false;
+        false
       }
     })
     .trace(name)
