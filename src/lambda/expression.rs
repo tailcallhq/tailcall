@@ -11,6 +11,8 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use super::evaluation_context::get_path_value;
+use crate::config::Federate;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
@@ -138,7 +140,8 @@ impl Expression {
           }
           Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
             let req = req_template.to_request(ctx)?;
-
+            println!("{:?}", std::str::from_utf8(&req.body().unwrap().as_bytes().unwrap()));
+            println!("{:?}", req_template.url);
             let res = if ctx.req_ctx.upstream.batch.is_some() {
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -146,7 +149,7 @@ impl Expression {
             };
 
             set_cache_control(ctx, &res);
-            parse_graphql_response(ctx, res, field_name)
+            parse_graphql_response(ctx, res, field_name, req_template.federate.as_ref().map_or(None, |f| Some(f.path.clone())))
           }
           Unsafe::JS(input, script) => {
             let result;
@@ -225,6 +228,7 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   res: Response,
   field_name: &str,
+  path: Option<Vec<String>>
 ) -> Result<async_graphql::Value> {
   let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
 
@@ -232,5 +236,12 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx.add_error(error);
   }
 
-  Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default())
+  match path {
+    None => Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default()),
+    Some(path) => {
+      println!("{}", res.data);
+      Ok(get_path_value(&res.data, &path).map(|v| v.to_owned()).unwrap_or_default())
+    }
+  } 
+
 }

@@ -1,10 +1,12 @@
 #![allow(clippy::too_many_arguments)]
 
+use std::collections::BTreeMap;
+
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::{GraphQLOperationType, KeyValues};
+use crate::config::{GraphQLOperationType, KeyValues, Federate};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::lambda::GraphQLOperationContext;
@@ -19,6 +21,8 @@ pub struct GraphqlRequestTemplate {
   pub operation_name: String,
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
+  pub federate: Option<Federate>,
+  pub url_type_fields: BTreeMap<String, BTreeMap<String, Vec<String>>>
 }
 
 impl GraphqlRequestTemplate {
@@ -64,26 +68,44 @@ impl GraphqlRequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> reqwest::Request {
-    let operation_type = &self.operation_type;
-    let selection_set = ctx.selection_set().unwrap_or_default();
-    let operation = self
-      .operation_arguments
-      .as_ref()
-      .map(|args| {
-        args
-          .iter()
-          .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
-          .collect::<Vec<_>>()
-          .join(", ")
-      })
-      .map(|args| format!("{}({})", self.operation_name, args))
-      .unwrap_or(self.operation_name.clone());
+    if self.federate.is_none() {
+      let operation_type = &self.operation_type;
+      let mut selection_set = ctx.selection_set().unwrap_or_default();
 
-    let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
+      // Replace this with filtering the selection set with fields present in the particular subgraph
+      if self.url == "https://flyby-reviews-sub.herokuapp.com/" {
+        selection_set = selection_set.replace("description ", "");
+      }
+      
+      let operation = self
+        .operation_arguments
+        .as_ref()
+        .map(|args| {
+          args
+            .iter()
+            .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+            .collect::<Vec<_>>()
+            .join(", ")
+        })
+        .map(|args| format!("{}({})", self.operation_name, args))
+        .unwrap_or(self.operation_name.clone());
 
-    req.body_mut().replace(graphql_query.into());
-    req
+      let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
+
+      req.body_mut().replace(graphql_query.into());
+      req
+    }  else {
+      let federate = self.federate.as_ref().unwrap().clone();
+      let arg_map = self.operation_arguments.as_ref().map_or_else(|| BTreeMap::new(), |args| BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx)))));
+      let graphql_query = format!(r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#, federate.typename, federate.key, arg_map.get(&federate.key).unwrap().escape_default(), federate.typename, federate.field_name);
+      println!("graphql_query");
+      println!("{}", graphql_query);
+      req.body_mut().replace(graphql_query.into());
+      req
+    }
   }
+    
+  
 
   pub fn new(
     url: String,
@@ -91,6 +113,7 @@ impl GraphqlRequestTemplate {
     operation_name: &str,
     args: Option<&KeyValues>,
     headers: HeaderMap<HeaderValue>,
+    federate: Option<Federate>
   ) -> anyhow::Result<Self> {
     let mut operation_arguments = None;
 
@@ -108,12 +131,22 @@ impl GraphqlRequestTemplate {
       .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
 
+    let url_type_fields = BTreeMap::from([
+      ("https://flyby-reviews-sub.herokuapp.com/".to_string(),
+        BTreeMap::from([
+          ("Review".to_string(), vec!["id".to_string(), "comment".to_string(), "rating".to_string(), "location".to_string()]),
+          ("Location".to_string(), vec!["overallRating".to_string()])
+        ])
+      )
+    ]);
     Ok(Self {
       url,
       operation_type: operation_type.to_owned(),
       operation_name: operation_name.to_owned(),
       operation_arguments,
       headers,
+      federate,
+      url_type_fields
     })
   }
 }
@@ -161,6 +194,7 @@ mod tests {
       "myQuery",
       None,
       HeaderMap::new(),
+      None,
     )
     .unwrap();
     let ctx = Context {
@@ -190,6 +224,7 @@ mod tests {
       "create",
       Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
       HeaderMap::new(),
+      None
     )
     .unwrap();
     let ctx = Context {

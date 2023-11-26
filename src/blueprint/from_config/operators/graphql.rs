@@ -24,7 +24,7 @@ pub fn update_graphql<'a>(
       helpers::headers::to_headermap(&graphql.headers)
         .and_then(|header_map| {
           Valid::from(
-            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
+            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map, graphql.federate.clone())
               .map_err(|e| ValidationError::new(e.to_string())),
           )
         })
