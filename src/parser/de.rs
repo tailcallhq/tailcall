@@ -3,6 +3,36 @@ use std::collections::HashMap;
 use serde_json::Value;
 type PosValHolder = HashMap<String, Vec<(String, String)>>;
 
+pub fn parse_operation(path: &str) -> String {
+  if path.len() < 6 {
+    return String::new();
+  }
+  let path = de_kebab(path);
+  let mut s = String::new();
+  for char in path.chars().skip(5) {
+    if char.is_ascii_alphanumeric() {
+      s.push(char);
+    } else {
+      break;
+    }
+  }
+  s
+}
+
+pub fn parse_args(p: &serde_json::Map<String, Value>) -> anyhow::Result<String> {
+  Ok(
+    p.iter()
+      .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
+      .map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or_default()))
+      .collect::<Vec<String>>()
+      .join(","),
+  )
+}
+
+pub fn parse_selections(p: &serde_json::Map<String, Value>) -> Option<String> {
+  Some(p.get("$")?.as_str()?.to_string())
+}
+
 pub fn de_kebab(qry: &str) -> String {
   let mut s = String::new();
   let mut b = false;
@@ -59,14 +89,14 @@ pub fn to_json(value: &Value, result: &mut HashMap<usize, PosValHolder>, prl: (O
   }
 }
 
-pub fn to_json_str(value: &Value) -> String {
+pub fn value_to_graphql_selections(value: &Value) -> String {
   match value {
     Value::Null => "".to_string(), // Return empty string for null values
     Value::Bool(b) => b.to_string(),
     Value::Number(num) => num.to_string(),
     Value::String(s) => s.to_string(),
     Value::Array(arr) => {
-      let elements: Vec<String> = arr.iter().map(to_json_str).collect();
+      let elements: Vec<String> = arr.iter().map(value_to_graphql_selections).collect();
       format!("[{}]", elements.join(" "))
     }
     Value::Object(obj) => {
@@ -86,7 +116,7 @@ pub fn next_token(input: &str, position: &mut usize) -> Option<char> {
 }
 
 fn get_cur(k: &String, v: &Value) -> String {
-  let s = to_json_str(v);
+  let s = value_to_graphql_selections(v);
   if s.is_empty() {
     k.clone()
   } else {
