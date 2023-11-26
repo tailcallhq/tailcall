@@ -134,3 +134,4 @@ name = "request_template_bench_iai-callgrind"
 harness = false
 path = "benches/iai-callgrind/request_template_bench_iai-callgrind.rs"
 required-features = ["iai-callgrind"]
+harness = false
