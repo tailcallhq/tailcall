@@ -1,4 +1,5 @@
-use tailcall::{config::Config, http::start_server};
+use tailcall::config::Config;
+use tailcall::http::start_server;
 
 #[tokio::test]
 async fn server_start() {
