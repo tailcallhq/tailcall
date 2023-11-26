@@ -225,7 +225,7 @@ jobs:
 
       - name: Switch to main
         run: |
-          gitt stash
+          git stash
           git fetch
           git checkout main
           git stash apply
