@@ -304,13 +304,16 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
 #[cfg(test)]
 mod parser_tests {
+  use std::str::FromStr;
+
+  use hyper::Uri;
   use tailcall::async_graphql_hyper::GraphQLRequest;
   use tailcall::blueprint::Blueprint;
   use tailcall::config::Config;
   use tailcall::http::parser::Parser;
   #[test]
   fn t1_url_qry_parser() {
-    let parser = Parser::from_path("api/user?$=name,age,address.city,address.state");
+    let parser = Parser::from_path(&Uri::from_str("/api/user?$=name,age,address.city,address.state").unwrap());
     assert_eq!(
       parser
         .unwrap()
@@ -325,8 +328,10 @@ mod parser_tests {
 
   #[test]
   fn t2_url_nested_qry_parser() {
-    let parser =
-      Parser::from_path("api/user?id=123,address.country=India,address.city=Foo&$=name,age,address.city,address.state");
+    let parser = Parser::from_path(
+      &Uri::from_str("/api/user?id=123,address.country=India,address.city=Foo&$=name,age,address.city,address.state")
+        .unwrap(),
+    );
     assert_eq!(
       parser
         .unwrap()
@@ -346,7 +351,7 @@ mod parser_tests {
         .unwrap(),
     )
     .unwrap();
-    let parser = Parser::from_path("api/posts?$=user.*");
+    let parser = Parser::from_path(&Uri::from_str("/api/posts?$=user.*").unwrap());
     assert_eq!(
       parser
         .unwrap()

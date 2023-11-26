@@ -73,12 +73,8 @@ impl Definition {
   }
   pub fn fields(&self) -> Option<&Vec<FieldDefinition>> {
     match self {
-      Definition::InterfaceTypeDefinition(_) => None,
       Definition::ObjectTypeDefinition(f) => Some(&f.fields),
-      Definition::InputObjectTypeDefinition(_) => None,
-      Definition::ScalarTypeDefinition(_) => None,
-      Definition::EnumTypeDefinition(_) => None,
-      Definition::UnionTypeDefinition(_) => None,
+      _ => None,
     }
   }
 }

@@ -1,11 +1,14 @@
 use std::collections::{HashMap, LinkedList};
 
+use hyper::Uri;
 use serde::de::{DeserializeOwned, Error};
 use serde_json::{Map, Value};
 
 use crate::async_graphql_hyper::GraphQLRequestLike;
-use crate::blueprint::Definition;
-use crate::parser::de::{de_kebab, next_token, to_json, to_json_str};
+use crate::blueprint::{is_scalar, Definition};
+use crate::parser::de::{
+  de_kebab, next_token, parse_args, parse_operation, parse_selections, to_json, value_to_graphql_selections,
+};
 
 #[derive(Debug, serde::Deserialize, Default)]
 pub struct Parser {
@@ -15,49 +18,21 @@ pub struct Parser {
 }
 
 impl Parser {
-  pub fn from_path(path: &str) -> anyhow::Result<Parser> {
-    let path = urlencoding::decode(&de_kebab(path)).unwrap().replace('\\', "");
-    let mut root = String::new();
-    let split = path.split('?').collect::<Vec<&str>>();
-    let path = split.last().unwrap();
-    match serde_qs::from_str::<Map<String, Value>>(path) {
-      Ok(p) => {
-        let mut parser = Self::default();
-        let rootname = split.first().unwrap();
-        let mut to_camel = false;
-        for char in rootname.chars().skip(4) {
-          match char {
-            '/' => (),
-            '-' => {
-              to_camel = true;
-            }
-            _ => {
-              if to_camel {
-                root.push(char.to_ascii_uppercase());
-              } else {
-                to_camel = false;
-                root.push(char);
-              }
-            }
-          }
+  pub fn from_path(uri: &Uri) -> anyhow::Result<Parser> {
+    let mut parser = Self { operation: parse_operation(&de_kebab(uri.path())), ..Default::default() };
+
+    if let Some(query) = uri.query() {
+      let query = de_kebab(query).replace('\\', "");
+      return match serde_qs::from_str::<Map<String, Value>>(&query) {
+        Ok(p) => {
+          parser.selections = parse_selections(&p);
+          parser.arguments = Some(parse_args(&p)?);
+          Ok(parser)
         }
-        parser.operation = root;
-        if let Some(q) = p.get("$") {
-          if let Some(q) = q.as_str() {
-            parser.selections = Some(q.to_string());
-          }
-        }
-        let arguments = p
-          .iter()
-          .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
-          .map(|(k, v)| format!("{k}={}", v.as_str().unwrap()))
-          .collect::<Vec<String>>()
-          .join(",");
-        parser.arguments = Some(arguments);
-        Ok(parser)
-      }
-      Err(_) => Err(anyhow::anyhow!("Unable to parse query")),
+        Err(e) => Err(anyhow::anyhow!("Unable to parse query: {e}")),
+      };
     }
+    Ok(parser)
   }
   pub fn parse<T: DeserializeOwned + GraphQLRequestLike>(
     &mut self,
@@ -142,7 +117,7 @@ impl Parser {
     }
     curhm.insert(p, Value::Null);
     let v = Value::Object(hm);
-    Ok(to_json_str(&v))
+    Ok(value_to_graphql_selections(&v))
   }
   fn parse_arguments(&mut self) -> Result<Value, serde_json::Error> {
     let mut hm = Map::new();
@@ -239,10 +214,6 @@ impl Parser {
   }
 }
 
-fn is_scalar_type(type_name: &str) -> bool {
-  ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
-}
-
 fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_json::Error> {
   let mut definition_map = Map::new();
   let mut current_definition = &mut definition_map;
@@ -255,7 +226,7 @@ fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_js
       .unwrap();
 
     for field in definition.fields().unwrap_or(&vec![]) {
-      if is_scalar_type(field.of_type.name()) {
+      if is_scalar(field.of_type.name()) {
         current_definition.insert(field.name.clone(), Value::Null);
       } else {
         current_definition.insert(field.name.clone(), Value::String(field.of_type.name().to_string()));

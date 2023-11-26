@@ -75,14 +75,15 @@ assert:
   # Sending a bad request
   - request:
       method: GET
-      url: http://localhost:8080/api/posts\?\$\=title,user.name
+      url: http://localhost:8080/api/posts?$=title,user.name
     response:
       status: 200
       body:
         data: {}
+  # Bad formatting with spaces
   - request:
       method: GET
-      url: http://localhost:8080/api/user \?id=1\&\$=id
+      url: http://localhost:8080/api/user ?id=1&$=id
     response:
       body:
         data:

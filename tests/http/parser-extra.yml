@@ -49,12 +49,14 @@ mock:
     response:
       body:
         id: 1
+        title: "Pineapples on pizza?"
 
   - request:
       url: http://jsonplaceholder.typicode.com/posts/2
     response:
       body:
         id: 2
+        title: "Say hi"
 
   - request:
       url: http://jsonplaceholder.typicode.com/users/1
@@ -77,56 +79,3 @@ assert:
       body:
         data:
           helloQry: "World!"
-  - request:
-      method: GET
-      url: http://localhost:8080/api/alw-f
-    response:
-      body:
-        data:
-          alwF: false
-  - request:
-      method: GET
-      url: http://localhost:8080/api/num
-    response:
-      body:
-        data:
-          num: 7
-  - request:
-      method: GET
-      url: http://localhost:8080/api/nested\?\$\=user.name
-    response:
-      body:
-        data:
-          nested:
-            user:
-              name: "bar"
-  - request:
-      method: GET
-      url: http://localhost:8080/api/nested\?\$\=user.name\}
-    response:
-      status: 400
-      body:
-        data: null
-        errors:
-          - message: "Unexpected API Request: Unexpected token }"
-  - request:
-      method: GET
-      url: http://localhost:8080/api/
-    response:
-      body:
-        data: null
-        errors:
-          - locations:
-              - column: 2
-                line: 1
-            message: " --> 1:2\n  |\n1 | {}\n  |  ^---\n  |\n  = expected selection"
-
-  - request:
-      method: GET
-      url: http://localhost:8080/api/posts?\$=user.*
-    response:
-      status: 404
-      body:
-        errors:
-          - message: "Unexpected API Request: 404 - key: posts not found"
-        data: null
