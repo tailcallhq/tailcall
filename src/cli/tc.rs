@@ -2,6 +2,7 @@ use std::path::Path;
 use std::{env, fs};
 
 use anyhow::Result;
+use async_graphql::Response;
 use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
@@ -57,8 +58,8 @@ pub fn run() -> Result<()> {
             let t_schema = blueprint.to_schema();
             for op in operations.iter() {
               let operation = tokio::fs::read_to_string(op).await?;
-              let res = t_schema.execute(&operation).await;
-              println!("{:?}", res);
+              let Response { errors, .. } = t_schema.execute(&operation).await;
+              println!("{:?}", errors);
             }
             Ok::<(), anyhow::Error>(())
           });
