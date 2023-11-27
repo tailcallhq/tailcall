@@ -10,16 +10,13 @@ use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
+use crate::cli::CLIError;
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-<<<<<<< HEAD
-use crate::cli::CLIError;
-use crate::cli::operation::Operation;
-=======
->>>>>>> 0fe492e4 (chore(dev): use simple schema execution for check)
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
+use crate::valid::Valid;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -54,21 +51,20 @@ pub fn run() -> Result<()> {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
 
-          let _ = tokio::runtime::Runtime::new()?.block_on(async {
-            let t_schema = blueprint.to_schema();
-            for op in operations.iter() {
-              let operation = tokio::fs::read_to_string(op).await?;
-              let Response { errors, .. } = t_schema.execute(&operation).await;
-              println!("{:?}", errors);
-            }
-            Ok::<(), anyhow::Error>(())
-          });
-
           if schema {
             display_schema(&blueprint);
           }
+          if let Some(out_file) = out_file_path {
+            tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
+            Fmt::display(Fmt::success(
+              &format!("Schema has been written to {}", out_file).to_string(),
+            ));
+          }
 
-          Ok(())
+          match validate_operations(&blueprint, operations) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+          }
         }
         Err(e) => Err(e.into()),
       }
@@ -184,4 +180,33 @@ fn logger_init() {
   let env = Env::new().filter_or(filter_env_name, "info");
 
   env_logger::Builder::from_env(env).init();
+}
+
+fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result<()> {
+  let execution = tokio::runtime::Runtime::new()?.block_on(async {
+    let schema = blueprint.to_schema();
+    let mut execution = vec![];
+
+    for op in operations.iter() {
+      let operation = tokio::fs::read_to_string(op).await?;
+      let Response { errors, .. } = schema.execute(&operation).await;
+      execution.push((op, errors));
+
+      // if !errors.is_empty() {
+      //   return Err(anyhow::anyhow!("Error in operation: {}", op));
+      // }
+
+    }
+    Ok::<_, anyhow::Error>(execution)
+  })?;
+
+  Valid::from_iter(execution.iter(), |(op, errors)| {
+        match errors.len() {
+            0 => Valid::succeed(()),
+            _ => Valid::fail(format!("Error in operation: {}", op)),
+        }
+        // Valid::<_, String>::succeed(())
+  });
+
+  Ok::<(), anyhow::Error>(())
 }
