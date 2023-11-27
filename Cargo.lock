@@ -1491,7 +1491,6 @@ checksum = "7aec9f678bca3f4a15194b980f20ed9bfe0dd38e8d298c65c559a93dfbd6380a"
 dependencies = [
  "http",
  "http-serde",
- "reqwest",
  "serde",
  "time",
 ]
@@ -3063,7 +3062,6 @@ dependencies = [
  "env_logger",
  "exitcode",
  "http-cache-reqwest",
- "http-cache-semantics",
  "httpmock",
  "hyper",
  "hyper-rustls",
