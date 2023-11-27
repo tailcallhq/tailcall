@@ -1,0 +1,75 @@
+#> server-sdl
+schema @server(graphiql: true, port: 8000) @upstream(baseURL: "https://api-web.nhle.com") {
+  query: Query
+}
+
+type Name {
+  default: String
+}
+
+type Player {
+  firstName: Name
+  id: Int
+  lastName: Name
+}
+
+type Query {
+  standings: StandingsResp @http(path: "/v1/standings/now")
+}
+
+type Roster {
+  defensemen: [Player]
+  forwards: [Player]
+  goalies: [Player]
+}
+
+type Standings {
+  roster: Roster @http(path: "/v1/roster/{{value.teamAbbrev.default}}/current")
+  teamAbbrev: TeamAbbrev!
+}
+
+type StandingsResp {
+  standings: [Standings]
+}
+
+type TeamAbbrev {
+  default: String!
+}
+
+#> client-sdl
+type Name {
+  default: String
+}
+
+type Player {
+  firstName: Name
+  id: Int
+  lastName: Name
+}
+
+type Query {
+  standings: StandingsResp
+}
+
+type Roster {
+  defensemen: [Player]
+  forwards: [Player]
+  goalies: [Player]
+}
+
+type Standings {
+  roster: Roster
+  teamAbbrev: TeamAbbrev!
+}
+
+type StandingsResp {
+  standings: [Standings]
+}
+
+type TeamAbbrev {
+  default: String!
+}
+
+schema {
+  query: Query
+}
