@@ -15,6 +15,7 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
+use crate::valid::Valid;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
@@ -43,20 +44,14 @@ pub fn run() -> Result<()> {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
 
-          let _ = tokio::runtime::Runtime::new()?.block_on(async {
-            let t_schema = blueprint.to_schema();
-            for op in operations.iter() {
-              let operation = tokio::fs::read_to_string(op).await?;
-              let Response { errors, .. } = t_schema.execute(&operation).await;
-              println!("{:?}", errors);
-            }
-            Ok::<(), anyhow::Error>(())
-          });
-
           if schema {
             display_schema(&blueprint);
           }
-          Ok(())
+
+          match validate_operations(&blueprint, operations) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+          }
         }
         Err(e) => Err(e.into()),
       }
@@ -124,4 +119,33 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
+}
+
+fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result<()> {
+  let execution = tokio::runtime::Runtime::new()?.block_on(async {
+    let schema = blueprint.to_schema();
+    let mut execution = vec![];
+
+    for op in operations.iter() {
+      let operation = tokio::fs::read_to_string(op).await?;
+      let Response { errors, .. } = schema.execute(&operation).await;
+      execution.push((op, errors));
+
+      // if !errors.is_empty() {
+      //   return Err(anyhow::anyhow!("Error in operation: {}", op));
+      // }
+
+    }
+    Ok::<_, anyhow::Error>(execution)
+  })?;
+
+  Valid::from_iter(execution.iter(), |(op, errors)| {
+        match errors.len() {
+            0 => Valid::succeed(()),
+            _ => Valid::fail(format!("Error in operation: {}", op)),
+        }
+        // Valid::<_, String>::succeed(())
+  });
+
+  Ok::<(), anyhow::Error>(())
 }
