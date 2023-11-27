@@ -7,6 +7,7 @@ use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
+use tokio::sync::oneshot;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -30,7 +31,8 @@ pub fn run() -> Result<()> {
         .worker_threads(config.server.get_workers())
         .enable_all()
         .build()?;
-      runtime.block_on(start_server(config))?;
+      let (tx, _) = oneshot::channel::<bool>();
+      runtime.block_on(start_server(config, tx))?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
