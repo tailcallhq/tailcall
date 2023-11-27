@@ -33,20 +33,14 @@ impl<'a> MustachePartsValidator<'a> {
   fn get_nested_type(&self, tail: &[String], mut type_of: &'a config::Type) -> Result<Type, String> {
     let mut len = tail.len();
     for item in tail {
-      if let Some(val_type) = get_value_type(type_of, item) {
-        match len {
-          1 => {
-            return Ok(val_type);
-          }
-          _ => {
-            if val_type.is_nullable() {
-              return Err(format!("value '{}' is a nullable type", item.as_str()));
-            }
-          }
-        }
-      } else {
-        return Err(format!("no value '{}' found", item));
+      let val_type = get_value_type(type_of, item).ok_or_else(|| format!("no value '{}' found", item))?;
+
+      if len == 1 {
+        return Ok(val_type);
+      } else if val_type.is_nullable() {
+        return Err(format!("value '{}' is a nullable type", item.as_str()));
       }
+
       let field = type_of.fields.get(item).ok_or(format!("no value '{}' found", item))?;
       type_of = self
         .config
