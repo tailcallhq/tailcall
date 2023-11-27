@@ -230,6 +230,8 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   field_name: &str,
   path: Option<Vec<String>>
 ) -> Result<async_graphql::Value> {
+  println!("In parse_graphql_response");
+  println!("{}", res.body);
   let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
 
   for error in res.errors {

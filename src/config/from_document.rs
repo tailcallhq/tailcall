@@ -136,7 +136,8 @@ where
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+    let join_types = to_join_types_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, join_types, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -191,6 +192,7 @@ where
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
+  let join_field = to_join_field(directives);
 
   to_http(directives).zip(to_graphql(directives)).map(|(http, graphql)| {
     let unsafe_operation = to_unsafe_operation(directives);
@@ -207,6 +209,7 @@ where
       unsafe_operation,
       const_field,
       graphql,
+      join_field
     }
   })
 }
@@ -305,6 +308,29 @@ fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> V
       }
     })
     .collect::<Vec<_>>()
+}
+
+fn to_join_types_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::JoinType> {
+  directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node == config::JoinType::directive_name() {
+        config::JoinType::from_directive(&directive.node).to_result().ok()
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>()
+}
+
+fn to_join_field(directives: &[Positioned<ConstDirective>]) -> Option<config::JoinField> {
+  directives.iter().find_map(|directive| {
+    if directive.node.name.node == config::JoinField::directive_name() {
+      config::JoinField::from_directive(&directive.node).to_result().ok()
+    } else {
+      None
+    }
+  })
 }
 
 trait HasName {

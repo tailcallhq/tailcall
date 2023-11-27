@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::config::Upstream;
+use crate::config::{Upstream, JoinType, JoinField};
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -86,6 +86,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
+  pub join_types: Vec<JoinType>,
 }
 
 #[derive(Clone, Debug)]
@@ -133,6 +134,7 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
+  pub join_field: Option<JoinField>,
 }
 
 impl FieldDefinition {

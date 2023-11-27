@@ -231,6 +231,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
+      join_types: type_of.join_types.clone(),
     })
   })
 }
@@ -253,6 +254,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
+      join_field: None,
     })
   })
 }
@@ -312,6 +314,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::Graphql::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
+      .and(update_join_field().trace(config::JoinField::trace_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
@@ -347,6 +350,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
+            join_field: None
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

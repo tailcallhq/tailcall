@@ -135,6 +135,8 @@ pub struct Type {
   pub interface: bool,
   #[serde(default)]
   pub implements: BTreeSet<String>,
+  #[serde(default)]
+  pub join_types: Vec<JoinType>,
   #[serde(rename = "enum", default)]
   pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
@@ -230,6 +232,7 @@ pub struct Field {
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
   pub graphql: Option<Graphql>,
+  pub join_field: Option<JoinField>
 }
 
 impl Field {
@@ -378,6 +381,19 @@ pub struct Const {
 pub struct AddField {
   pub name: String,
   pub path: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JoinType {
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  pub key: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct JoinField {
+  #[serde(rename = "baseURL")]
+  pub base_url: String,
 }
 
 impl Config {

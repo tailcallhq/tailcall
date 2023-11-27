@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::time::Duration;
+use std::collections::BTreeMap;
 
 use async_graphql::{Name, SelectionField, ServerError, Value};
 use derive_setters::Setters;
@@ -69,16 +70,42 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
-  fn selection_set(&self) -> Option<String> {
+  fn selection_set(&self, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, root_field_type: Option<String>, url: String) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
 
-    format_selection_set(selection_set)
+    format_selection_set(selection_set, type_subgraph_fields, root_field_type, url)
   }
 }
 
-fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> Option<String> {
-  let set = selection_set.map(format_selection_field).collect::<Vec<_>>();
-
+fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, field_type: Option<String>, url: String) -> Option<String> {
+  let set = if let Some(field_type) = field_type {
+    if let Some(type_subgraph_fields) = type_subgraph_fields {
+      let mut set = selection_set.filter_map(|selection_field| {
+        if let Some(subgraph_fields) = type_subgraph_fields.get(&field_type) {
+          if let Some(fields) = subgraph_fields.get(&url) {
+            if let Some((_, child_field_type)) = fields.iter().find(|(name, _)| name == selection_field.name()) {
+              Some(format_selection_field(selection_field, Some(type_subgraph_fields.clone()), Some(child_field_type.to_owned()), url.clone()))
+            } else {
+              None
+            }
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+      }).collect::<Vec<_>>();
+      println!("set: {:?}", set);
+      // // TODO extend with key for that type
+      // set.extend(["id".to_string()]);
+      set
+    } else {
+      selection_set.map(|selection_field| format_selection_field(selection_field, type_subgraph_fields.clone(), None, url.clone())).collect::<Vec<_>>()
+    }
+  } else {
+    selection_set.map(|selection_field| format_selection_field(selection_field, type_subgraph_fields.clone(), None, url.clone())).collect::<Vec<_>>()
+  };
+  
   if set.is_empty() {
     return None;
   }
@@ -86,10 +113,36 @@ fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'
   Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(field: SelectionField) -> String {
+fn format_selection_field(field: SelectionField, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, field_type: Option<String>, url: String) -> String {
+  // println!("field: {}", field.name());
+  // println!("operation name: {}", field.context.query_env.0.operation_name.clone().unwrap_or("".to_string()));
+  // match field.context.path_node.unwrap().segment {
+  //   async_graphql::QueryPathSegment::Index(u) => {
+  //     println!("QueryPathSegment Index: {}", u);
+  //   },
+  //   async_graphql::QueryPathSegment::Name(name) => {
+  //     println!("QueryPathSegment Name: {}", name);
+
+  //   }
+  // }
+  // println!("{}", field.context.path_node.unwrap().parents().collect::<Vec<_>>().len());
+  // for node in field.context.path_node.unwrap().parents() {
+  //   match node.segment {
+  //     async_graphql::QueryPathSegment::Index(u) => {
+  //       println!("Parent QueryPathSegment Index");
+  //       println!("{}", u);
+  //     },
+  //     async_graphql::QueryPathSegment::Name(name) => {
+  //       println!("Parent QueryPathSegment Name");
+  //       println!("{}", name);
+  //     }
+  //   }
+
+  // }
+  
   let name = field.name();
   let arguments = format_selection_field_arguments(field);
-  let selection_set = format_selection_set(field.selection_set());
+  let selection_set = format_selection_set(field.selection_set(), type_subgraph_fields, field_type, url);
 
   if let Some(set) = selection_set {
     format!("{}{} {}", name, arguments, set)

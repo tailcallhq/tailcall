@@ -5,10 +5,10 @@ schema
 }
 
 type Query {
-	latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "https://flyby-reviews-sub.herokuapp.com/")
+	latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "https://flyby-reviews-sub.herokuapp.com/")  
 }
 
-type Review {
+type Review @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id") {
 	id: ID!
   "Written text"
   comment: String
@@ -19,7 +19,7 @@ type Review {
   # @graphql(name: "location", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-reviews-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Review", fieldName: "location", path: ["data", "location"]})
 }
 
-type Location @key(fields: "id"){
+type Location @joinType(baseURL: "https://flyby-locations-sub.herokuapp.com/", key: "id") {
   id: ID!
   "The name of the location"
   name: String!
@@ -28,6 +28,58 @@ type Location @key(fields: "id"){
   "The location's main photo as a URL"
   photo: String!
 	"The calculated overall rating based on all reviews"
-  overallRating: Float 
+  overallRating: Float @joinField(baseURL: "https://flyby-reviews-sub.herokuapp.com/")
 	# @graphql(name: "overallRating", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-reviews-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Location", fieldName: "location", path: ["data", "overallRating"]})
 }
+
+# --------------
+
+# Graph: latestReviews
+# type Query {
+#   latestReviews: [Review]
+# }
+
+# type Review {
+#   id: ID
+#   location: Location
+# }
+
+# type Location {
+#   id: ID
+#   avgRating: Int
+# }
+
+# Graph: oldestReviews
+# type Query {
+#   oldestReviews: [Review]
+# }
+
+# type Review {
+#   id: ID
+#   location: Location
+# }
+
+# type Location {
+#   id: ID
+# }
+
+# Graph: locations
+# type Query {
+#   locations: [Location]
+#   location(id: Int): Location
+# }
+
+# type Location {
+#   id: ID
+#   description: String
+# }
+
+# composed query:
+# query {
+#   oldestReviews {
+#     id
+#     location {
+#       description
+#     }
+#   }
+# }

@@ -10,7 +10,7 @@ pub fn update_graphql<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _, _), b_field| {
+    |(config, field, type_of, _), b_field| {
       let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };
@@ -24,7 +24,7 @@ pub fn update_graphql<'a>(
       helpers::headers::to_headermap(&graphql.headers)
         .and_then(|header_map| {
           Valid::from(
-            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map, graphql.federate.clone())
+            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map, graphql.federate.clone(), field.type_of.clone(), type_of.join_types.clone())
               .map_err(|e| ValidationError::new(e.to_string())),
           )
         })
