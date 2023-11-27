@@ -1,6 +1,7 @@
 use std::fs;
 
 use anyhow::Result;
+use async_graphql::Response;
 use clap::Parser;
 use inquire::Confirm;
 use log::Level;
@@ -36,10 +37,6 @@ pub fn run() -> Result<()> {
     Command::Check { file_path, n_plus_one_queries, schema, operations } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
-      // let operations = operations
-      //   .iter()
-      //   .map(|op| Operation::from_file_path(op))
-      //   .collect::<Vec<Result<Operation>>>();
 
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
@@ -50,8 +47,8 @@ pub fn run() -> Result<()> {
             let t_schema = blueprint.to_schema();
             for op in operations.iter() {
               let operation = tokio::fs::read_to_string(op).await?;
-              let res = t_schema.execute(&operation).await;
-              println!("{:?}", res);
+              let Response { errors, .. } = t_schema.execute(&operation).await;
+              println!("{:?}", errors);
             }
             Ok::<(), anyhow::Error>(())
           });
