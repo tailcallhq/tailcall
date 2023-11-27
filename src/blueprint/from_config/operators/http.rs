@@ -41,14 +41,15 @@ impl<'a> MustachePartsValidator<'a> {
         return Err(format!("value '{}' is a nullable type", item.as_str()));
       }
 
-      let field = type_of.fields.get(item).ok_or(format!("no value '{}' found", item))?;
-      type_of = self
-        .config
-        .find_type(&field.type_of)
-        .ok_or(format!("no value '{}' found", item))?;
+      if let Some(field) = type_of.fields.get(item) {
+        if let Some(_type_of) = self.config.find_type(&field.type_of) {
+          type_of = _type_of;
+        }
+      }
+
       len -= 1;
     }
-    
+
     Err(format!("no value '{}' found", tail.join(".")))
   }
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
