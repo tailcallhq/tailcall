@@ -22,7 +22,7 @@ pub struct GraphqlRequestTemplate {
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
   pub federate: Option<Federate>,
-  pub type_subgraph_fields: BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>,
+  pub type_subgraph_fields: BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>,
   pub field_type: String,
   pub join_types: Vec<JoinType>,
 }
@@ -95,8 +95,6 @@ impl GraphqlRequestTemplate {
       let federate = self.federate.as_ref().unwrap().clone();
       let arg_map = self.operation_arguments.as_ref().map_or_else(|| BTreeMap::new(), |args| BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx)))));
       let graphql_query = format!(r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#, federate.typename, federate.key, arg_map.get(&federate.key).unwrap().escape_default(), federate.typename, federate.field_name);
-      println!("federate graphql_query:");
-      println!("{}", graphql_query);
       req.body_mut().replace(graphql_query.into());
       req
     }
@@ -183,7 +181,7 @@ use std::collections::BTreeMap;
   }
 
   impl GraphQLOperationContext for Context {
-    fn selection_set(&self, _type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, root_field_type: Option<String>, url: String) -> Option<String> {
+    fn selection_set(&self, type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>, root_field_type: Option<String>, url: String) -> Option<String> {
       Some("{ a,b,c }".to_owned())
     }
   }

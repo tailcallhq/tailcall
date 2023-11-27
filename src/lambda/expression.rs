@@ -140,8 +140,6 @@ impl Expression {
           }
           Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
             let req = req_template.to_request(ctx)?;
-            println!("{:?}", std::str::from_utf8(&req.body().unwrap().as_bytes().unwrap()));
-            println!("{:?}", req_template.url);
             let res = if ctx.req_ctx.upstream.batch.is_some() {
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {

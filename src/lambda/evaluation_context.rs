@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
 use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
-use crate::http::RequestContext;
+use crate::{http::RequestContext, config::JoinType};
 
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
@@ -70,19 +70,19 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
-  fn selection_set(&self, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, root_field_type: Option<String>, url: String) -> Option<String> {
+  fn selection_set(&self, type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>, root_field_type: Option<String>, url: String) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
 
     format_selection_set(selection_set, type_subgraph_fields, root_field_type, url)
   }
 }
 
-fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, field_type: Option<String>, url: String) -> Option<String> {
+fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>, type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>, field_type: Option<String>, url: String) -> Option<String> {
   let set = if let Some(field_type) = field_type {
     if let Some(type_subgraph_fields) = type_subgraph_fields {
       let mut set = selection_set.filter_map(|selection_field| {
         if let Some(subgraph_fields) = type_subgraph_fields.get(&field_type) {
-          if let Some(fields) = subgraph_fields.get(&url) {
+          if let Some(fields) = subgraph_fields.0.get(&url) {
             if let Some((_, child_field_type)) = fields.iter().find(|(name, _)| name == selection_field.name()) {
               Some(format_selection_field(selection_field, Some(type_subgraph_fields.clone()), Some(child_field_type.to_owned()), url.clone()))
             } else {
@@ -95,10 +95,17 @@ fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'
           None
         }
       }).collect::<Vec<_>>();
-      println!("set: {:?}", set);
       if !set.is_empty() {
-        // TODO extend with key for that type
-        set.extend(["id".to_string()]);
+        let id = match type_subgraph_fields.get(&field_type) {
+          Some((_, join_types)) => {
+            match join_types.iter().find(|join_type| join_type.base_url.clone().unwrap_or_default() == url) {
+              Some(join_type) => join_type.key.clone(),
+              None => "id".to_string()
+            }
+          },
+          None => "id".to_string()
+        };
+        set.extend([id]);
       }
       set
     } else {
@@ -115,7 +122,7 @@ fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'
   Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(field: SelectionField, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, field_type: Option<String>, url: String) -> String {
+fn format_selection_field(field: SelectionField, type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>, field_type: Option<String>, url: String) -> String {
   
   let name = field.name();
   let arguments = format_selection_field_arguments(field);
