@@ -48,7 +48,8 @@ impl<'a> MustachePartsValidator<'a> {
         .ok_or(format!("no value '{}' found", item))?;
       len -= 1;
     }
-    unreachable!()
+    
+    Err(format!("no value '{}' found", tail.join(".")))
   }
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
     let type_of = self.type_of;
