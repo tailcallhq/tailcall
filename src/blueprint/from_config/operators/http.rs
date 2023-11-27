@@ -30,6 +30,32 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
+  fn get_nested_type(&self, tail: &[String], mut type_of: &'a config::Type) -> Result<Type, String> {
+    let mut len = tail.len();
+    for item in tail {
+      if let Some(val_type) = get_value_type(type_of, item) {
+        match len {
+          1 => {
+            return Ok(val_type);
+          }
+          _ => {
+            if val_type.is_nullable() {
+              return Err(format!("value '{}' is a nullable type", item.as_str()));
+            }
+          }
+        }
+      } else {
+        return Err(format!("no value '{}' found", item));
+      }
+      let field = type_of.fields.get(item).ok_or(format!("no value '{}' found", item))?;
+      type_of = self
+        .config
+        .find_type(&field.type_of)
+        .ok_or(format!("no value '{}' found", item))?;
+      len -= 1;
+    }
+    unreachable!()
+  }
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
     let type_of = self.type_of;
     let config = self.config;
@@ -44,17 +70,21 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Some(val_type) = get_value_type(type_of, tail) {
-          if !is_scalar(val_type.name()) {
-            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
-          }
+        let val_type = self.get_nested_type(&parts[1..], type_of);
+        match val_type {
+          Ok(val_type) => {
+            if !is_scalar(val_type.name()) {
+              return Valid::fail(format!("value '{tail}' is not of a scalar type"));
+            }
 
-          // Queries can use optional values
-          if !is_query && val_type.is_nullable() {
-            return Valid::fail(format!("value '{tail}' is a nullable type"));
+            // Queries can use optional values
+            if !is_query && val_type.is_nullable() {
+              return Valid::fail(format!("value '{tail}' is a nullable type"));
+            }
           }
-        } else {
-          return Valid::fail(format!("no value '{tail}' found"));
+          Err(e) => {
+            return Valid::fail(e);
+          }
         }
       }
       "args" => {
