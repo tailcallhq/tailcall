@@ -124,3 +124,12 @@ assert:
             id: 3
           u4:
             id: 4
+  - request:
+      method: GET
+      url: http://localhost:8080/api/user?id=3&$=*
+    response:
+      body:
+        data:
+          user:
+            id: 3
+            name: foobar
