@@ -1,7 +1,0 @@
-schema @server(port: 8000) {
-  query: Query
-}
-
-type Query {
-  hello: String! @const(data: "Hi")
-}
