@@ -22,14 +22,11 @@ impl Parser {
 
     if let Some(query) = uri.query() {
       let query = de_kebab(query).replace('\\', "");
-      return match serde_qs::from_str::<Map<String, Value>>(&query) {
-        Ok(p) => {
-          parser.selections = parse_selections(&p);
-          parser.arguments = Some(parse_args(&p)?);
-          Ok(parser)
-        }
-        Err(e) => Err(anyhow::anyhow!("Unable to parse query: {e}")),
-      };
+      if let Ok(p) = serde_qs::from_str::<Map<String, Value>>(&query) {
+        parser.selections = parse_selections(&p);
+        parser.arguments = Some(parse_args(&p)?);
+        return Ok(parser);
+      }
     }
     Ok(parser)
   }
