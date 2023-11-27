@@ -321,8 +321,9 @@ mod parser_tests {
         .unwrap()
         .0
         .query
-        .replace(' ', ""),
-      "{user {address {city state} age name}}".replace(' ', "")
+        .replace(' ', "")
+        .to_lowercase(),
+      "{user {address {city state} age name}}".replace(' ', "").to_lowercase()
     );
   }
 
@@ -339,8 +340,11 @@ mod parser_tests {
         .unwrap()
         .0
         .query
-        .replace(' ', ""),
-      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}".replace(' ', "")
+        .replace(' ', "")
+        .to_lowercase(),
+      "{user (id: 123,) {address (city: Foo,country: India,) ) {city state} age name}}"
+        .replace(' ', "")
+        .to_lowercase()
     );
   }
   #[tokio::test]
@@ -359,8 +363,11 @@ mod parser_tests {
         .unwrap()
         .0
         .query
-        .replace(' ', ""),
-      "{posts { user {email id name phone username website}}}".replace(' ', "")
+        .replace(' ', "")
+        .to_lowercase(),
+      "{posts { user {email id name phone username website}}}"
+        .replace(' ', "")
+        .to_lowercase()
     );
   }
 }

@@ -1,10 +1,8 @@
-
 use std::sync::Arc;
 
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
-
 
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::http::parser::Parser;

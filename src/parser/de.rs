@@ -19,14 +19,12 @@ pub fn parse_operation(path: &str) -> String {
   s
 }
 
-pub fn parse_args(p: &serde_json::Map<String, Value>) -> anyhow::Result<String> {
-  Ok(
-    p.iter()
-      .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
-      .map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or_default()))
-      .collect::<Vec<String>>()
-      .join(","),
-  )
+pub fn parse_args(p: &serde_json::Map<String, Value>) -> String {
+  p.iter()
+    .filter(|(key, _)| !key.starts_with("api") && !key.starts_with("/api") && !key.starts_with('$'))
+    .map(|(k, v)| format!("{k}={}", v.as_str().unwrap_or_default()))
+    .collect::<Vec<String>>()
+    .join(",")
 }
 
 pub fn parse_selections(p: &serde_json::Map<String, Value>) -> Option<String> {
@@ -34,25 +32,10 @@ pub fn parse_selections(p: &serde_json::Map<String, Value>) -> Option<String> {
 }
 
 pub fn de_kebab(qry: &str) -> String {
-  let mut s = String::new();
-  let mut b = false;
-  for char in qry.chars() {
-    match char {
-      ' ' => (),
-      '-' => {
-        b = true;
-      }
-      _ => {
-        if b {
-          s.push(char.to_ascii_uppercase());
-        } else {
-          s.push(char);
-        }
-        b = false;
-      }
-    }
-  }
-  s
+  let qry = urlencoding::decode(qry).unwrap_or_default().replace('\\', "");
+  let converter = convert_case::Converter::new();
+  let converter = converter.to_case(convert_case::Case::Camel);
+  converter.convert(qry)
 }
 
 pub fn to_json(value: &Value, result: &mut HashMap<usize, PosValHolder>, prl: (Option<String>, &String, usize)) {

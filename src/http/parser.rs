@@ -21,10 +21,10 @@ impl Parser {
     let mut parser = Self { operation: parse_operation(&de_kebab(uri.path())), ..Default::default() };
 
     if let Some(query) = uri.query() {
-      let query = de_kebab(query).replace('\\', "");
+      let query = de_kebab(query);
       if let Ok(p) = serde_qs::from_str::<Map<String, Value>>(&query) {
         parser.selections = parse_selections(&p);
-        parser.arguments = Some(parse_args(&p)?);
+        parser.arguments = Some(parse_args(&p));
         return Ok(parser);
       }
     }
