@@ -11,7 +11,7 @@ type StandingsResp {
 }
 
 type Standings {
-  teamAbbrev: TeamAbbrev
+  teamAbbrev: TeamAbbrev!
   teamName: TeamName
   roster: Roster @http(path: "/v1/roster/{{value.teamAbbrev.default}}/current")
 }
