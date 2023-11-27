@@ -1,6 +1,6 @@
 #!/bin/bash
-file1="benches/iai-callgrind/new_benchmark.txt"
-file2="benches/iai-callgrind/old_benchmark.txt"
+file1="benches/iai-callgrind/old_benchmark.txt"
+file2="benches/iai-callgrind/new_benchmark.txt"
 config_file="benches/iai-callgrind/benchmarks.cfg"
 readarray -t benchmarks < "$config_file"
 attributes=("Instructions" "L1 Hits" "L2 Hits" "RAM Hits" "Total read+write" "Estimated Cycles")
