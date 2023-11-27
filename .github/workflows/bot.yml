@@ -225,10 +225,8 @@ jobs:
 
       - name: Switch to main
         run: |
-          git stash
           git fetch
           git checkout main
-          git stash apply
 
       - name: Run iai-callgrind  on main
         run: |
