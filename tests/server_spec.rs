@@ -18,21 +18,26 @@ async fn server_start() {
       "query": "{ greet }"
   });
 
-  let send_request = || async {
-    loop {
-      let response = client.post("http://localhost:8000/graphql").json(&query).send().await;
-      if let Err(err) = &response {
-        if err.is_request() && format!("{}", err).contains("Connection refused") {
-          continue;
-        }
-      }
-      break response;
-    }
-  };
-
+  let mut tasks = vec![];
   for _ in 0..100 {
-    let response = send_request().await.expect("Failed to send request");
-    let response_body: serde_json::Value = response.json().await.expect("Failed to parse response body");
-    assert_eq!(response_body["data"]["greet"], "Hello World!");
+    let client = client.clone();
+    let query = query.clone();
+    let task = tokio::spawn(async move {
+      let send_request = || async {
+        loop {
+          let response = client.post("http://localhost:8000/graphql").json(&query).send().await;
+          if let Err(err) = &response {
+            if err.is_request() && format!("{}", err).contains("Connection refused") {
+              continue;
+            }
+          }
+          break response;
+        }
+      };
+      let response = send_request().await.expect("Failed to send request");
+      let response_body: serde_json::Value = response.json().await.expect("Failed to parse response body");
+      assert_eq!(response_body["data"]["greet"], "Hello World!");
+    });
+    tasks.push(task);
   }
 }
