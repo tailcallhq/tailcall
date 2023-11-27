@@ -4,7 +4,7 @@ use hyper::Uri;
 use serde::de::{DeserializeOwned, Error};
 use serde_json::{Map, Value};
 
-use crate::async_graphql_hyper::GraphQLRequestLike;
+
 use crate::blueprint::{is_scalar, Definition};
 use crate::parser::de::{
   de_kebab, next_token, parse_args, parse_operation, parse_selections, to_json, value_to_graphql_selections,
@@ -34,10 +34,7 @@ impl Parser {
     }
     Ok(parser)
   }
-  pub fn parse<T: DeserializeOwned + GraphQLRequestLike>(
-    &mut self,
-    definations: &Vec<Definition>,
-  ) -> Result<T, serde_json::Error> {
+  pub fn parse<T: DeserializeOwned>(&mut self, definations: &Vec<Definition>) -> Result<T, serde_json::Error> {
     let s = self.parse_selections(definations)?;
     let v = self.parse_arguments()?;
     let v = self.parse_to_string(v, s)?;
