@@ -96,8 +96,10 @@ fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'
         }
       }).collect::<Vec<_>>();
       println!("set: {:?}", set);
-      // // TODO extend with key for that type
-      // set.extend(["id".to_string()]);
+      if !set.is_empty() {
+        // TODO extend with key for that type
+        set.extend(["id".to_string()]);
+      }
       set
     } else {
       selection_set.map(|selection_field| format_selection_field(selection_field, type_subgraph_fields.clone(), None, url.clone())).collect::<Vec<_>>()
@@ -114,31 +116,6 @@ fn format_selection_set<'a>(selection_set: impl Iterator<Item = SelectionField<'
 }
 
 fn format_selection_field(field: SelectionField, type_subgraph_fields: Option<BTreeMap<String, BTreeMap<String, Vec<(String, String)>>>>, field_type: Option<String>, url: String) -> String {
-  // println!("field: {}", field.name());
-  // println!("operation name: {}", field.context.query_env.0.operation_name.clone().unwrap_or("".to_string()));
-  // match field.context.path_node.unwrap().segment {
-  //   async_graphql::QueryPathSegment::Index(u) => {
-  //     println!("QueryPathSegment Index: {}", u);
-  //   },
-  //   async_graphql::QueryPathSegment::Name(name) => {
-  //     println!("QueryPathSegment Name: {}", name);
-
-  //   }
-  // }
-  // println!("{}", field.context.path_node.unwrap().parents().collect::<Vec<_>>().len());
-  // for node in field.context.path_node.unwrap().parents() {
-  //   match node.segment {
-  //     async_graphql::QueryPathSegment::Index(u) => {
-  //       println!("Parent QueryPathSegment Index");
-  //       println!("{}", u);
-  //     },
-  //     async_graphql::QueryPathSegment::Name(name) => {
-  //       println!("Parent QueryPathSegment Name");
-  //       println!("{}", name);
-  //     }
-  //   }
-
-  // }
   
   let name = field.name();
   let arguments = format_selection_field_arguments(field);
