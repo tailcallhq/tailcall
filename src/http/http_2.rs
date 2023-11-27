@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use std::io::BufReader;
 use std::sync::Arc;
 
@@ -8,6 +9,7 @@ use hyper::Server;
 use hyper_rustls::TlsAcceptor;
 use rustls::PrivateKey;
 use tokio::fs::File;
+use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use super::{handle_batch_request, handle_single_request, log_launch};
@@ -48,6 +50,7 @@ pub async fn start_http_2(
   sc: Arc<ServerConfig>,
   cert: String,
   key: String,
+  tx: oneshot::Sender<bool>,
 ) -> std::prelude::v1::Result<(), anyhow::Error> {
   let addr = sc.addr();
   let cert_chain = load_cert(&cert).await?;
@@ -76,6 +79,7 @@ pub async fn start_http_2(
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
+  tx.send(true).ok();
   log_launch(sc.as_ref());
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
