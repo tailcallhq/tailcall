@@ -1,16 +1,6 @@
 use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
 use serde_json::json;
-
-fn gather_path_matches(input: &serde_json::Value, path: &[&str]) -> Option<serde_json::Value> {
-  let mut current = input;
-  for key in path {
-    current = match current.get(key) {
-      Some(value) => value,
-      None => return None, // Handle the case where the key doesn't exist
-    };
-  }
-  Some(current.clone())
-}
+use tailcall::benchmark::gather_path_matches;
 
 #[library_benchmark]
 fn benchmark_batched_body() {
@@ -22,8 +12,7 @@ fn benchmark_batched_body() {
           {"user": [
               {"id": "4"},
               {"id": "5"}
-              ]
-          },
+          ]}
       ]
   });
 
@@ -31,7 +20,8 @@ fn benchmark_batched_body() {
 }
 
 library_benchmark_group!(
-    name= batched_body;
-    benchmarks= benchmark_batched_body);
+    name = batched_body;
+    benchmarks = benchmark_batched_body
+);
 
 main!(library_benchmark_groups = batched_body);
