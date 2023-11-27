@@ -151,7 +151,7 @@ jobs:
 
   Check_Degdratation:
     name: Criterion Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'benchmark') 
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -163,7 +163,7 @@ jobs:
       - name: Run Criterion on branch
         run: |
           cargo bench --features criterion -- --save-baseline new_branch
-          
+
       - name: Switch to main
         run: |
           git fetch
@@ -172,7 +172,7 @@ jobs:
       - name: Run Criterion on main
         run: |
           cargo bench --features criterion -- --save-baseline main_branch
-          
+
       - name: Execute check_degradation.sh
         run: |
           bash .github/scripts/check_degradation.sh
@@ -232,7 +232,7 @@ jobs:
         run: |
           echo -n > benches/iai-callgrind/old_benchmark.txt
           cargo bench --features iai-callgrind > benches/iai-callgrind/old_benchmark.txt
-          
+
       - name: Execute build_time_compare.sh
         run: |
           bash .github/scripts/compare_build_time.sh
