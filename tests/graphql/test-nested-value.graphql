@@ -1,73 +1,35 @@
 #> server-sdl
-schema @server(graphiql: true, port: 8000) @upstream(baseURL: "https://api-web.nhle.com") {
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
-type Name {
-  default: String
-}
-
-type Player {
-  firstName: Name
+type Post {
   id: Int
-  lastName: Name
+  user: User! @http(path: "/users", query: [{key: "id", value: "{{value.user.id}}"}])
 }
 
 type Query {
-  standings: StandingsResp @http(path: "/v1/standings/now")
+  posts: [Post] @http(path: "/posts")
 }
 
-type Roster {
-  defensemen: [Player]
-  forwards: [Player]
-  goalies: [Player]
-}
-
-type Standings {
-  roster: Roster @http(path: "/v1/roster/{{value.teamAbbrev.default}}/current")
-  teamAbbrev: TeamAbbrev!
-}
-
-type StandingsResp {
-  standings: [Standings]
-}
-
-type TeamAbbrev {
-  default: String!
+type User {
+  id: Int!
+  name: String
 }
 
 #> client-sdl
-type Name {
-  default: String
-}
-
-type Player {
-  firstName: Name
+type Post {
   id: Int
-  lastName: Name
+  user: User!
 }
 
 type Query {
-  standings: StandingsResp
+  posts: [Post]
 }
 
-type Roster {
-  defensemen: [Player]
-  forwards: [Player]
-  goalies: [Player]
-}
-
-type Standings {
-  roster: Roster
-  teamAbbrev: TeamAbbrev!
-}
-
-type StandingsResp {
-  standings: [Standings]
-}
-
-type TeamAbbrev {
-  default: String!
+type User {
+  id: Int!
+  name: String
 }
 
 schema {
