@@ -4,7 +4,6 @@ use hyper::Uri;
 use serde::de::{DeserializeOwned, Error};
 use serde_json::{Map, Value};
 
-
 use crate::blueprint::{is_scalar, Definition};
 use crate::parser::de::{
   de_kebab, next_token, parse_args, parse_operation, parse_selections, to_json, value_to_graphql_selections,
