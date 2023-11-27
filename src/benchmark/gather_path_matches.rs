@@ -1,5 +1,3 @@
-// src/benchmark/common.rs
-
 use serde_json::Value;
 
 pub fn gather_path_matches(input: &Value, path: &[&str]) -> Option<Value> {

@@ -1,5 +1,3 @@
-// src/benchmark/common.rs
-
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -10,6 +8,7 @@ use indexmap::IndexMap;
 use crate::lambda::{EvaluationContext, ResolverContextLike};
 use crate::path_string::PathString;
 
+// Use lazy_static to initialize static variables once
 lazy_static::lazy_static! {
     pub static ref TEST_VALUES: Value = {
         let mut root = IndexMap::new();
@@ -52,8 +51,10 @@ lazy_static::lazy_static! {
     };
 }
 
+// Define a mock GraphQL context
 pub struct MockGraphqlContext;
 
+// Implement ResolverContextLike trait for MockGraphqlContext
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn value(&'a self) -> Option<&'a Value> {
     Some(&TEST_VALUES)
@@ -64,8 +65,9 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   }
 }
 
+// Function to assert test values using EvaluationContext
 pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
-  // value
+  // value assertions
   assert_eq!(
     eval_ctx.path_string(&["value", "root"]),
     Some(Cow::Borrowed("root-test"))
@@ -77,7 +79,7 @@ pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
   assert_eq!(eval_ctx.path_string(&["value", "missing"]), None);
   assert_eq!(eval_ctx.path_string(&["value", "nested", "missing"]), None);
 
-  // args
+  // args assertions
   assert_eq!(
     eval_ctx.path_string(&["args", "root"]),
     Some(Cow::Borrowed("root-test"))
@@ -89,14 +91,14 @@ pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
   assert_eq!(eval_ctx.path_string(&["args", "missing"]), None);
   assert_eq!(eval_ctx.path_string(&["args", "nested", "missing"]), None);
 
-  // headers
+  // headers assertions
   assert_eq!(
     eval_ctx.path_string(&["headers", "x-existing"]),
     Some(Cow::Borrowed("header"))
   );
   assert_eq!(eval_ctx.path_string(&["headers", "x-missing"]), None);
 
-  // vars
+  // vars assertions
   assert_eq!(eval_ctx.path_string(&["vars", "existing"]), Some(Cow::Borrowed("var")));
   assert_eq!(eval_ctx.path_string(&["vars", "missing"]), None);
 }

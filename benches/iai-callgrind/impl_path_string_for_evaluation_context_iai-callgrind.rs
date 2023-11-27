@@ -26,16 +26,22 @@ const HEADERS_VALUE: &[&[&str]] = &[&["headers", "existing"], &["headers", "miss
 
 const VARS_VALUE: &[&[&str]] = &[&["vars", "existing"], &["vars", "missing"]];
 
+// Define the benchmark function
 #[library_benchmark]
 fn bench_main() {
+  // Initialize the request context with test headers
   let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
+  // Set test variables in the request context
   req_ctx.server.vars = TEST_VARS.clone();
 
+  // Create an evaluation context with the request context and mock GraphQL context
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
+  // Run the assert_test function to ensure correctness of the EvaluationContext
   assert_test(&eval_ctx);
 
+  // Iterate over all input values and call path_string method
   let all_inputs = INPUT_VALUE
     .iter()
     .chain(ARGS_VALUE)
@@ -47,9 +53,11 @@ fn bench_main() {
   }
 }
 
+// Define the benchmark group
 library_benchmark_group!(
     name = bench;
     benchmarks = bench_main
 );
 
+// Define the main function for IAI-callgrind
 main!(library_benchmark_groups = bench);

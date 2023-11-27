@@ -4,6 +4,7 @@ use tailcall::http::RequestContext;
 use tailcall::lambda::EvaluationContext;
 use tailcall::path_string::PathString;
 
+// constant input values for benchmarking
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
   &["value", "root"],
@@ -30,14 +31,21 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
   BenchmarkId::new("input", input.join("."))
 }
 
+// Define the benchmark function
 fn bench_main(c: &mut Criterion) {
+  // Initialize the request context with test headers
   let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
+  // Set test variables in the request context
   req_ctx.server.vars = TEST_VARS.clone();
+
+  // Create an evaluation context with the request context and mock GraphQL context
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
+  // Run the assert_test function to ensure correctness of the EvaluationContext
   assert_test(&eval_ctx);
 
+  // Iterate over all input values and add benchmarks to Criterion
   let all_inputs = INPUT_VALUE
     .iter()
     .chain(ARGS_VALUE)
@@ -51,5 +59,6 @@ fn bench_main(c: &mut Criterion) {
   }
 }
 
+// Define the criterion group
 criterion_group!(benches, bench_main);
 criterion_main!(benches);
