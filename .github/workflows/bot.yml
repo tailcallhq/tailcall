@@ -151,7 +151,7 @@ jobs:
 
   Check_Degdratation:
     name: Criterion Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.head_commit.message, 'benchmark')
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -204,7 +204,7 @@ jobs:
               body: comment
             });
   Build_time_compare:
-    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.head_commit.message, 'benchmark')
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
     name: iai_callgrind_benchmarks
     runs-on: ubuntu-latest
 
