@@ -30,8 +30,9 @@ type Post {
   userInvalidDirective: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
   userNonScalar: User @http(path: "/users/{{value.nonNullableUser}}", baseURL: "http://localhost:8080")
   userNullable: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
-  nestedUserNullable: User! @http(path: "/users/{{value.nonNullableUser.nestedUser.id}}", baseURL: "http://localhost:8080")
-  nestedNonScalar: User! @http(path: "/users/{{value.nonNullableUser.nestedUser}}", baseURL: "http://localhost:8080")
+  nestedUserNullable: User @http(path: "/users/{{value.nonNullableUser.nestedUser.id}}", baseURL: "http://localhost:8080")
+  nestedNonScalar: User @http(path: "/users/{{value.nonNullableUser.nestedUser}}", baseURL: "http://localhost:8080")
+  nestedUndefinedValue: User @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser.userId}}", baseURL: "http://localhost:8080")
   userNullValue: User @http(path: "/users/{{value.userId}}", baseURL: "http://localhost:8080")
   # nullable values are allowed in queries
   userNullValueQuery: User
@@ -45,6 +46,7 @@ type Post {
 
 #> client-sdl
 type Failure @error(message: "value 'nonNullableUser' is not of a scalar type", trace: ["Post", "nestedNonScalar", "@http", "path"])
+type Failure @error(message: "no value 'userId' found", trace: ["Post", "nestedUndefinedValue", "@http", "path"])
 type Failure @error(message: "value 'nestedUser' is a nullable type", trace: ["Post", "nestedUserNullable", "@http", "path"])
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
 type Failure
