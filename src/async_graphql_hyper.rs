@@ -126,6 +126,23 @@ impl GraphQLResponse {
     Ok(response)
   }
 
+  pub fn to_response_with_status_code(self, status_code: StatusCode) -> Result<Response<hyper::Body>> {
+    let mut response = Response::builder()
+      .status(status_code)
+      .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+      .body(Body::from(serde_json::to_string(&self.0)?))?;
+
+    if self.0.is_ok() {
+      if let Some(cache_control) = self.0.cache_control().value() {
+        response
+          .headers_mut()
+          .insert(CACHE_CONTROL, HeaderValue::from_str(cache_control.as_str())?);
+      }
+    }
+
+    Ok(response)
+  }
+
   /// Sets the `cache_control` for a given `GraphQLResponse`.
   ///
   /// The function modifies the `GraphQLResponse` to set the `cache_control` `max_age`

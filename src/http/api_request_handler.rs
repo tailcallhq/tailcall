@@ -1,11 +1,12 @@
-use std::str::FromStr;
+
 use std::sync::Arc;
 
+use async_graphql::ServerError;
 use hyper::{Body, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
-use serde_json::{Map, Value};
 
-use crate::async_graphql_hyper::GraphQLRequestLike;
+
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::http::parser::Parser;
 use crate::http::request_handler::{create_request_context, update_cache_control_header, update_response_headers};
 use crate::http::ServerContext;
@@ -32,29 +33,17 @@ pub async fn api_request<T: DeserializeOwned + GraphQLRequestLike>(
         } else {
           StatusCode::BAD_REQUEST
         };
-        let resp = Response::builder()
-          .status(status_code)
-          .body(Body::from(make_error_json(format!("Unexpected API Request: {}", err))));
-        Ok(resp?)
+        let err = ServerError::new(format!("Unexpected API Request: {}", err), None);
+        let mut resp = async_graphql::Response::default();
+        resp.errors = vec![err];
+        Ok(GraphQLResponse::from(resp).to_response_with_status_code(status_code)?)
       }
     }
   } else {
     log::error!("Failed to parse request, invalid url",);
-    let response = Response::builder()
-      .status(StatusCode::BAD_REQUEST)
-      .body(Body::from(make_error_json(
-        "Failed to parse request, invalid url".to_string(),
-      )));
-    Ok(response?)
+    let err = ServerError::new("Failed to parse request, invalid url".to_string(), None);
+    let mut resp = async_graphql::Response::default();
+    resp.errors = vec![err];
+    Ok(GraphQLResponse::from(resp).to_response_with_status_code(StatusCode::BAD_REQUEST)?)
   }
-}
-
-fn make_error_json(err: String) -> String {
-  let mut mp = Map::new();
-  mp.insert(
-    "errors".to_string(),
-    Value::from_str(&format!("[{{\"message\": \"{err}\"}}]")).unwrap(),
-  );
-  mp.insert("data".to_string(), Value::Null);
-  Value::Object(mp).to_string()
 }
