@@ -1,6 +1,5 @@
 use anyhow::Result;
 use derive_setters::Setters;
-use http_cache_semantics::ResponseLike;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response {
@@ -16,15 +15,5 @@ impl Response {
     let body = resp.bytes().await?;
     let json = serde_json::from_slice(&body)?;
     Ok(Response { status, headers, body: json })
-  }
-}
-
-impl ResponseLike for Response {
-  fn status(&self) -> reqwest::StatusCode {
-    self.status
-  }
-
-  fn headers(&self) -> &reqwest::header::HeaderMap {
-    &self.headers
   }
 }
