@@ -44,9 +44,12 @@ impl<'a> MustachePartsValidator<'a> {
       }
 
       if let Some(field) = type_of.fields.get(item) {
-        if let Some(_type_of) = self.config.find_type(&field.type_of) {
-          type_of = _type_of;
-        }
+        type_of = self.config.find_type(&field.type_of).ok_or_else(|| {
+          format!(
+            "type '{}' not found in the server config",
+            field.type_of.as_str()
+          )
+        })?;
       }
 
       len -= 1;
