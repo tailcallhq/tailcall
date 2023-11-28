@@ -30,7 +30,12 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
-  fn get_nested_type(&self, tail: &[String], mut type_of: &'a config::Type, is_query: bool) -> Result<(Type, String), String> {
+  fn get_nested_type(
+    &self,
+    tail: &[String],
+    mut type_of: &'a config::Type,
+    is_query: bool,
+  ) -> Result<(Type, String), String> {
     let mut len = tail.len();
     for item in tail {
       let val_type = get_value_type(type_of, item);
@@ -44,12 +49,10 @@ impl<'a> MustachePartsValidator<'a> {
       }
 
       if let Some(field) = type_of.fields.get(item) {
-        type_of = self.config.find_type(&field.type_of).ok_or_else(|| {
-          format!(
-            "type '{}' not found in the server config",
-            field.type_of.as_str()
-          )
-        })?;
+        type_of = self
+          .config
+          .find_type(&field.type_of)
+          .ok_or_else(|| format!("type '{}' not found in the server config", field.type_of.as_str()))?;
       }
 
       len -= 1;
