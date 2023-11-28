@@ -52,7 +52,7 @@ type Post {
 type Failure
   @error(message: "value 'nestedUser' is not of a scalar type", trace: ["Post", "nestedNonScalar", "@http", "path"])
 type Failure @error(message: "value 'id' is a nullable type", trace: ["Post", "nestedNullable", "@http", "path"])
-type Failure @error(message: "no value 'userId' found", trace: ["Post", "nestedUndefinedValue", "@http", "path"])
+type Failure @error(message: "no value 'nonNullableUser.nonNullableNestedUser.userId' found", trace: ["Post", "nestedUndefinedValue", "@http", "path"])
 type Failure
   @error(message: "value 'nestedUser' is a nullable type", trace: ["Post", "nestedUserNullable", "@http", "path"])
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
