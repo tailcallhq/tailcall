@@ -9,7 +9,7 @@ type User {
 }
 
 type User1 {
-  user1:  User @http(path: "/users/1")
+  user1: User @http(path: "/users/1")
 }
 
 type Query {
