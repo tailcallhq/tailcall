@@ -293,7 +293,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
+pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
   let to_field = |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
@@ -305,6 +305,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefiniti
       .and(update_unsafe().trace("@unsafe"))
       .and(update_const_field().trace("@const"))
       .and(update_modify().trace("@modify"))
+      .and(update_ref_field())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
