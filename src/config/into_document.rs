@@ -178,28 +178,15 @@ fn config_document(config: &Config) -> ServiceDocument {
 }
 
 fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective>> {
-  let mut directives = Vec::new();
-  if let Some(http) = &field.http {
-    let http_dir = http.to_directive();
-    directives.push(pos(http_dir));
-  }
-  if let Some(us) = &field.unsafe_operation {
-    let us_dir = us.to_directive();
-    directives.push(pos(us_dir));
-  }
-  if let Some(const_field) = &field.const_field {
-    let us_dir = const_field.to_directive();
-    directives.push(pos(us_dir));
-  }
-  if let Some(modify) = &field.modify {
-    let dir = modify.to_directive();
-    directives.push(pos(dir));
-  }
-  if let Some(graphql_source) = &field.graphql {
-    let graphql_dir = graphql_source.to_directive();
-    directives.push(pos(graphql_dir));
-  }
-  directives
+  let directives = vec![
+    field.http.as_ref().map(|d| pos(d.to_directive())),
+    field.unsafe_operation.as_ref().map(|d| pos(d.to_directive())),
+    field.const_field.as_ref().map(|d| pos(d.to_directive())),
+    field.modify.as_ref().map(|d| pos(d.to_directive())),
+    field.graphql.as_ref().map(|d| pos(d.to_directive())),
+  ];
+
+  directives.into_iter().flatten().collect()
 }
 
 impl From<Config> for ServiceDocument {
