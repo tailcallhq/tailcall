@@ -19,13 +19,6 @@ struct MustachePartsValidator<'a> {
   field: &'a FieldDefinition,
 }
 
-fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
-  if let Some(field) = type_of.fields.get(value) {
-    return Some(to_type(field, None));
-  }
-  None
-}
-
 impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
@@ -34,21 +27,20 @@ impl<'a> MustachePartsValidator<'a> {
     let mut len = tail.len();
     let mut type_of = self.type_of;
     for item in tail {
-      let val_type = get_value_type(type_of, item);
+      if let Some(field) = type_of.fields.get(item) {
+        let val_type = to_type(field, None);
 
-      if let Some(val_type) = val_type {
         if len == 1 {
           return Ok((val_type, item.to_owned()));
         } else if !is_query && val_type.is_nullable() {
           return Err(format!("value '{}' is a nullable type", item.as_str()));
         }
-      }
 
-      if let Some(field) = type_of.fields.get(item) {
         type_of = self
           .config
           .find_type(&field.type_of)
-          .ok_or_else(|| format!("type '{}' not found in the server config", field.type_of.as_str()))?;
+          // this code never runs because we validate the config before
+          .ok_or_else(|| format!("Path [{}] does not exist", field.type_of.as_str()))?;
       }
 
       len -= 1;
