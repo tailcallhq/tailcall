@@ -1,4 +1,4 @@
-use std::collections::{HashMap, LinkedList};
+use std::collections::HashMap;
 
 use hyper::Uri;
 use serde::de::{DeserializeOwned, Error};
@@ -6,7 +6,8 @@ use serde_json::{Map, Value};
 
 use crate::blueprint::{is_scalar, Definition};
 use crate::parser::de::{
-  de_kebab, next_token, parse_args, parse_operation, parse_selections, to_json, value_to_graphql_selections,
+  de_kebab, next_token, parse_args, parse_arguments_string, parse_operation, parse_selections, parse_selections_string,
+  to_json, value_to_graphql_selections,
 };
 
 #[derive(Debug, serde::Deserialize, Default)]
@@ -39,9 +40,6 @@ impl Parser {
     serde_json::from_value::<T>(Value::from(hm))
   }
   fn parse_selections(&mut self, definations: &Vec<Definition>) -> Result<String, serde_json::Error> {
-    let mut hm = Map::new();
-    let mut p = String::new();
-    let mut curhm = &mut hm;
     let input = match &self.selections {
       None => "",
       Some(s) => s,
@@ -50,109 +48,16 @@ impl Parser {
     if input.contains('*') {
       defi_hm = build_definition_map(definations)?;
     }
-    let mut queue: LinkedList<String> = LinkedList::new();
-    for char in input.chars() {
-      match char {
-        '*' => {
-          let mut tmp_defi = &mut defi_hm;
-          if let Some(first) = queue.front() {
-            if !first.eq_ignore_ascii_case(&self.operation) {
-              queue.push_front(self.operation.clone());
-            }
-          } else {
-            queue.push_front(self.operation.clone());
-          }
-          let mut len = queue.len();
-          while len > 0 {
-            match len {
-              1 => {
-                let last = queue.pop_front().unwrap();
-                *curhm = tmp_defi
-                  .get(&last)
-                  .ok_or(serde_json::Error::custom(format!("404 - key: {last} not found")))?
-                  .as_object()
-                  .cloned()
-                  .unwrap();
-              }
-              _ => {
-                let key = queue.pop_front().unwrap();
-                tmp_defi = tmp_defi
-                  .get_mut(&key)
-                  .ok_or(serde_json::Error::custom(format!("404 - key: {key} not found")))?;
-              }
-            }
-            len -= 1;
-          }
-          curhm = &mut hm;
-        }
-        '.' => {
-          if !p.is_empty() {
-            let pc = p.clone();
-            curhm = curhm
-              .entry(&pc)
-              .or_insert_with(|| Value::Object(Map::new()))
-              .as_object_mut()
-              .unwrap();
-            queue.push_back(pc);
-            p.clear();
-          }
-        }
-        ',' => {
-          queue.clear();
-          curhm.insert(p.clone(), Value::Null);
-          curhm = &mut hm;
-          p.clear();
-        }
-        _ => {
-          p.push(char);
-        }
-      }
-    }
-    curhm.insert(p, Value::Null);
+    let hm = parse_selections_string(defi_hm, input, &self.operation)?;
     let v = Value::Object(hm);
     Ok(value_to_graphql_selections(&v))
   }
   fn parse_arguments(&mut self) -> Result<Value, serde_json::Error> {
-    let mut hm = Map::new();
-    let mut p = String::new();
-    let mut p1 = String::new();
-    let mut curhm = &mut hm;
-    let mut b = false;
     let matches = match &self.arguments {
       None => "",
       Some(s) => s,
     };
-    for char in matches.chars() {
-      match char {
-        '.' => {
-          curhm = curhm
-            .entry(p.clone())
-            .or_insert_with(|| Value::Object(Map::new()))
-            .as_object_mut()
-            .unwrap();
-          p.clear();
-          b = false;
-        }
-        ',' => {
-          b = false;
-          curhm.insert(p.clone(), Value::from(p1.clone()));
-          curhm = &mut hm;
-          p.clear();
-          p1.clear();
-        }
-        '=' => {
-          b = true;
-        }
-        _ => {
-          if b {
-            p1.push(char);
-          } else {
-            p.push(char);
-          }
-        }
-      }
-    }
-    curhm.insert(p, Value::from(p1));
+    let hm = parse_arguments_string(matches)?;
     Ok(Value::from(hm))
   }
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
