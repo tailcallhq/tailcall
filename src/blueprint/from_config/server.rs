@@ -24,6 +24,7 @@ pub struct Server {
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
   pub http: Http,
+  pub enable_federation_v2_router: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -91,6 +92,7 @@ impl TryFrom<crate::config::Server> for Server {
         hostname,
         vars: (config_server).get_vars(),
         response_headers,
+        enable_federation_v2_router: (config_server).enable_federation_v2_router(),
       })
       .to_result()
   }

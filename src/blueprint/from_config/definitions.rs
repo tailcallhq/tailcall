@@ -350,7 +350,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
-            join_field: None
+            join_field: None,
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

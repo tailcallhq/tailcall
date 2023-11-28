@@ -1,85 +1,48 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0", federationV2Router: true)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 
 type Query {
-	latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "https://flyby-reviews-sub.herokuapp.com/")  
+  latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "https://flyby-reviews-sub.herokuapp.com/")
 }
 
 type Review @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id") {
-	id: ID!
+  id: ID!
   "Written text"
   comment: String
   "A number from 1 - 5 with 1 being lowest and 5 being highest"
   rating: Int
   "The location the review is about"
-  location: Location 
+  location: Location
   # @graphql(name: "location", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-reviews-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Review", fieldName: "location", path: ["data", "location"]})
 }
 
-type Location @joinType(baseURL: "https://flyby-locations-sub.herokuapp.com/", key: "id") {
+type Location
+  @joinType(baseURL: "https://flyby-locations-sub.herokuapp.com/", key: "id")
+  @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id") {
   id: ID!
   "The name of the location"
   name: String!
   "A short description about the location"
-  description: String! @graphql(name: "description", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-locations-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Location", fieldName: "description", path: [ "_entities", "0", "description"]})
+  description: String!
+    @graphql(
+      name: "description"
+      args: [{key: "id", value: "{{value.id}}"}]
+      baseURL: "https://flyby-locations-sub.herokuapp.com/"
+      federate: {
+        federationType: "apollo"
+        key: "id"
+        typename: "Location"
+        fieldName: "description"
+        path: ["_entities", "0", "description"]
+      }
+    )
   "The location's main photo as a URL"
   photo: String!
-	"The calculated overall rating based on all reviews"
+  "The calculated overall rating based on all reviews"
   overallRating: Float @joinField(baseURL: "https://flyby-reviews-sub.herokuapp.com/")
-	# @graphql(name: "overallRating", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-reviews-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Location", fieldName: "location", path: ["data", "overallRating"]})
+  # @graphql(name: "overallRating", args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-reviews-sub.herokuapp.com/", federate: { federationType: "apollo", key: "id", typename: "Location", fieldName: "location", path: ["data", "overallRating"]})
 }
 
-# --------------
-
-# Graph: latestReviews
-# type Query {
-#   latestReviews: [Review]
-# }
-
-# type Review {
-#   id: ID
-#   location: Location
-# }
-
-# type Location {
-#   id: ID
-#   avgRating: Int
-# }
-
-# Graph: oldestReviews
-# type Query {
-#   oldestReviews: [Review]
-# }
-
-# type Review {
-#   id: ID
-#   location: Location
-# }
-
-# type Location {
-#   id: ID
-# }
-
-# Graph: locations
-# type Query {
-#   locations: [Location]
-#   location(id: Int): Location
-# }
-
-# type Location {
-#   id: ID
-#   description: String
-# }
-
-# composed query:
-# query {
-#   oldestReviews {
-#     id
-#     location {
-#       description
-#     }
-#   }
-# }

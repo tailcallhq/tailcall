@@ -10,9 +10,8 @@ use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
-use super::ResolverContextLike;
 use super::evaluation_context::get_path_value;
-use crate::config::Federate;
+use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
@@ -147,7 +146,12 @@ impl Expression {
             };
 
             set_cache_control(ctx, &res);
-            parse_graphql_response(ctx, res, field_name, req_template.federate.as_ref().map_or(None, |f| Some(f.path.clone())))
+            parse_graphql_response(
+              ctx,
+              res,
+              field_name,
+              req_template.federate.as_ref().map(|f| f.path.clone()),
+            )
           }
           Unsafe::JS(input, script) => {
             let result;
@@ -226,10 +230,8 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   res: Response,
   field_name: &str,
-  path: Option<Vec<String>>
+  path: Option<Vec<String>>,
 ) -> Result<async_graphql::Value> {
-  println!("In parse_graphql_response");
-  println!("{}", res.body);
   let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
 
   for error in res.errors {
@@ -239,9 +241,11 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   match path {
     None => Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default()),
     Some(path) => {
-      println!("{}", res.data);
-      Ok(get_path_value(&res.data, &path).map(|v| v.to_owned()).unwrap_or_default())
+      Ok(
+        get_path_value(&res.data, &path)
+          .map(|v| v.to_owned())
+          .unwrap_or_default(),
+      )
     }
-  } 
-
+  }
 }

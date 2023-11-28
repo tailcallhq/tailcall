@@ -27,6 +27,7 @@ pub struct Server {
   pub version: Option<HttpVersion>,
   pub cert: Option<String>,
   pub key: Option<String>,
+  pub federation_v2_router: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
@@ -99,6 +100,10 @@ impl Server {
     self.version.unwrap_or(HttpVersion::HTTP1)
   }
 
+  pub fn enable_federation_v2_router(self) -> bool {
+    self.federation_v2_router.unwrap_or(false)
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
     self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
@@ -120,6 +125,7 @@ impl Server {
     self.version = other.version.or(self.version);
     self.cert = other.cert.or(self.cert);
     self.key = other.key.or(self.key);
+    self.federation_v2_router = other.federation_v2_router.or(self.federation_v2_router);
     self
   }
 }

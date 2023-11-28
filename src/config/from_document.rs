@@ -209,7 +209,7 @@ where
       unsafe_operation,
       const_field,
       graphql,
-      join_field
+      join_field,
     }
   })
 }

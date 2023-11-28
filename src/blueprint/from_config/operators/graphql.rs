@@ -24,8 +24,18 @@ pub fn update_graphql<'a>(
       helpers::headers::to_headermap(&graphql.headers)
         .and_then(|header_map| {
           Valid::from(
-            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map, graphql.federate.clone(), field.type_of.clone(), type_of.join_types.clone())
-              .map_err(|e| ValidationError::new(e.to_string())),
+            GraphqlRequestTemplate::new(
+              base_url.to_owned(),
+              operation_type,
+              &graphql.name,
+              args,
+              header_map,
+              graphql.federate.clone(),
+              field.type_of.clone(),
+              type_of.join_types.clone(),
+              config.server.clone().enable_federation_v2_router(),
+            )
+            .map_err(|e| ValidationError::new(e.to_string())),
           )
         })
         .map(|req_template| {

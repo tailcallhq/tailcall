@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::{GraphQLOperationType, KeyValues, Federate, JoinType};
+use crate::config::{Federate, GraphQLOperationType, JoinType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::lambda::GraphQLOperationContext;
@@ -25,6 +25,7 @@ pub struct GraphqlRequestTemplate {
   pub type_subgraph_fields: BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>,
   pub field_type: String,
   pub join_types: Vec<JoinType>,
+  pub enable_federation_v2_router: bool,
 }
 
 impl GraphqlRequestTemplate {
@@ -72,7 +73,14 @@ impl GraphqlRequestTemplate {
   ) -> reqwest::Request {
     if self.federate.is_none() {
       let operation_type = &self.operation_type;
-      let selection_set = ctx.selection_set(Some(self.type_subgraph_fields.clone()), Some(self.field_type.clone()), self.url.clone()).unwrap_or_default();
+      let selection_set = ctx
+        .selection_set(
+          Some(self.type_subgraph_fields.clone()),
+          Some(self.field_type.clone()),
+          self.url.clone(),
+          self.enable_federation_v2_router,
+        )
+        .unwrap_or_default();
 
       let operation = self
         .operation_arguments
@@ -91,16 +99,23 @@ impl GraphqlRequestTemplate {
 
       req.body_mut().replace(graphql_query.into());
       req
-    }  else {
+    } else {
       let federate = self.federate.as_ref().unwrap().clone();
-      let arg_map = self.operation_arguments.as_ref().map_or_else(|| BTreeMap::new(), |args| BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx)))));
-      let graphql_query = format!(r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#, federate.typename, federate.key, arg_map.get(&federate.key).unwrap().escape_default(), federate.typename, federate.field_name);
+      let arg_map = self.operation_arguments.as_ref().map_or_else(BTreeMap::new, |args| {
+        BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx))))
+      });
+      let graphql_query = format!(
+        r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#,
+        federate.typename,
+        federate.key,
+        arg_map.get(&federate.key).unwrap().escape_default(),
+        federate.typename,
+        federate.field_name
+      );
       req.body_mut().replace(graphql_query.into());
       req
     }
   }
-    
-  
 
   pub fn new(
     url: String,
@@ -111,6 +126,7 @@ impl GraphqlRequestTemplate {
     federate: Option<Federate>,
     field_type: String,
     join_types: Vec<JoinType>,
+    enable_federation_v2_router: bool,
   ) -> anyhow::Result<Self> {
     let mut operation_arguments = None;
 
@@ -128,14 +144,6 @@ impl GraphqlRequestTemplate {
       .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
 
-    // let url_type_fields = BTreeMap::from([
-    //   ("https://flyby-reviews-sub.herokuapp.com/".to_string(),
-    //     BTreeMap::from([
-    //       ("Review".to_string(), vec!["id".to_string(), "comment".to_string(), "rating".to_string(), "location".to_string()]),
-    //       ("Location".to_string(), vec!["overallRating".to_string()])
-    //     ])
-    //   )
-    // ]);
     Ok(Self {
       url,
       operation_type: operation_type.to_owned(),
@@ -145,23 +153,25 @@ impl GraphqlRequestTemplate {
       federate,
       type_subgraph_fields: BTreeMap::new(),
       field_type,
-      join_types
+      join_types,
+      enable_federation_v2_router,
     })
   }
 }
 
 #[cfg(test)]
 mod tests {
+  use std::collections::BTreeMap;
+
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
   use crate::config::GraphQLOperationType;
-  use crate::graphql_request_template::GraphqlRequestTemplate;
+  use crate::graphql_request_template::{GraphqlRequestTemplate, JoinType};
   use crate::has_headers::HasHeaders;
   use crate::lambda::GraphQLOperationContext;
   use crate::path_string::PathGraphql;
-use std::collections::BTreeMap;
 
   struct Context {
     pub value: serde_json::Value,
@@ -181,7 +191,13 @@ use std::collections::BTreeMap;
   }
 
   impl GraphQLOperationContext for Context {
-    fn selection_set(&self, type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>, root_field_type: Option<String>, url: String) -> Option<String> {
+    fn selection_set(
+      &self,
+      _type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
+      _root_field_type: Option<String>,
+      _url: String,
+      _enable_federation_v2_router: bool,
+    ) -> Option<String> {
       Some("{ a,b,c }".to_owned())
     }
   }
@@ -196,7 +212,8 @@ use std::collections::BTreeMap;
       HeaderMap::new(),
       None,
       "".to_string(),
-      Vec::new()
+      Vec::new(),
+      false,
     )
     .unwrap();
     let ctx = Context {
@@ -228,7 +245,8 @@ use std::collections::BTreeMap;
       HeaderMap::new(),
       None,
       "".to_string(),
-      Vec::new()
+      Vec::new(),
+      false,
     )
     .unwrap();
     let ctx = Context {
