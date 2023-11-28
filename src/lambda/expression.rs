@@ -139,6 +139,15 @@ impl Expression {
           }
           Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
             let req = req_template.to_request(ctx)?;
+            let path = if req_template.federate {
+              Some(vec![
+                "_entities".to_string(),
+                "0".to_string(),
+                req_template.field_name.clone(),
+              ])
+            } else {
+              None
+            };
             let res = if ctx.req_ctx.upstream.batch.is_some() {
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -147,10 +156,8 @@ impl Expression {
 
             set_cache_control(ctx, &res);
             parse_graphql_response(
-              ctx,
-              res,
-              field_name,
-              req_template.federate.as_ref().map(|f| f.path.clone()),
+              ctx, res, field_name, path,
+              // req_template.federate.as_ref().map(|f| f.path.clone()),
             )
           }
           Unsafe::JS(input, script) => {
@@ -240,12 +247,10 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
   match path {
     None => Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default()),
-    Some(path) => {
-      Ok(
-        get_path_value(&res.data, &path)
-          .map(|v| v.to_owned())
-          .unwrap_or_default(),
-      )
-    }
+    Some(path) => Ok(
+      get_path_value(&res.data, &path)
+        .map(|v| v.to_owned())
+        .unwrap_or_default(),
+    ),
   }
 }

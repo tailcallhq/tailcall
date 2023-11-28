@@ -8,6 +8,6 @@ pub trait GraphQLOperationContext {
     type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
     root_field_type: Option<String>,
     url: String,
-    enable_federation_v2_router: bool,
+    filter_selection_set: bool,
   ) -> Option<String>;
 }

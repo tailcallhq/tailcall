@@ -6,11 +6,11 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::{Federate, GraphQLOperationType, JoinType, KeyValues};
+use crate::config::{GraphQLOperationType, JoinType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::lambda::GraphQLOperationContext;
-use crate::mustache::Mustache;
+use crate::mustache::{Mustache, Segment};
 use crate::path_string::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
@@ -21,11 +21,13 @@ pub struct GraphqlRequestTemplate {
   pub operation_name: String,
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
-  pub federate: Option<Federate>,
+  pub federate: bool,
   pub type_subgraph_fields: BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>,
   pub field_type: String,
   pub join_types: Vec<JoinType>,
-  pub enable_federation_v2_router: bool,
+  pub parent_type_name: String,
+  pub field_name: String,
+  pub filter_selection_set: bool,
 }
 
 impl GraphqlRequestTemplate {
@@ -71,14 +73,14 @@ impl GraphqlRequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> reqwest::Request {
-    if self.federate.is_none() {
+    if !self.federate {
       let operation_type = &self.operation_type;
       let selection_set = ctx
         .selection_set(
           Some(self.type_subgraph_fields.clone()),
           Some(self.field_type.clone()),
           self.url.clone(),
-          self.enable_federation_v2_router,
+          self.filter_selection_set,
         )
         .unwrap_or_default();
 
@@ -100,17 +102,28 @@ impl GraphqlRequestTemplate {
       req.body_mut().replace(graphql_query.into());
       req
     } else {
-      let federate = self.federate.as_ref().unwrap().clone();
+      let id = self
+        .operation_arguments
+        .as_ref()
+        .map(|args| {
+          args
+            .first() // TODO - validate that args are present if federate is true
+            .unwrap_or(&("".to_string(), Mustache::from(vec![Segment::Literal("".to_string())])))
+            .0
+            .clone()
+        })
+        .unwrap_or_default();
+
       let arg_map = self.operation_arguments.as_ref().map_or_else(BTreeMap::new, |args| {
         BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx))))
       });
       let graphql_query = format!(
         r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#,
-        federate.typename,
-        federate.key,
-        arg_map.get(&federate.key).unwrap().escape_default(),
-        federate.typename,
-        federate.field_name
+        self.parent_type_name,
+        id,
+        arg_map.get(&id).unwrap().escape_default(),
+        self.parent_type_name,
+        self.field_name
       );
       req.body_mut().replace(graphql_query.into());
       req
@@ -123,10 +136,12 @@ impl GraphqlRequestTemplate {
     operation_name: &str,
     args: Option<&KeyValues>,
     headers: HeaderMap<HeaderValue>,
-    federate: Option<Federate>,
+    federate: bool,
     field_type: String,
     join_types: Vec<JoinType>,
-    enable_federation_v2_router: bool,
+    parent_type_name: String,
+    field_name: String,
+    filter_selection_set: bool,
   ) -> anyhow::Result<Self> {
     let mut operation_arguments = None;
 
@@ -154,7 +169,9 @@ impl GraphqlRequestTemplate {
       type_subgraph_fields: BTreeMap::new(),
       field_type,
       join_types,
-      enable_federation_v2_router,
+      parent_type_name,
+      field_name,
+      filter_selection_set,
     })
   }
 }
@@ -196,7 +213,7 @@ mod tests {
       _type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
       _root_field_type: Option<String>,
       _url: String,
-      _enable_federation_v2_router: bool,
+      _filter_selection_set: bool,
     ) -> Option<String> {
       Some("{ a,b,c }".to_owned())
     }
@@ -210,9 +227,11 @@ mod tests {
       "myQuery",
       None,
       HeaderMap::new(),
-      None,
+      false,
       "".to_string(),
       Vec::new(),
+      "".to_string(),
+      "".to_string(),
       false,
     )
     .unwrap();
@@ -243,9 +262,11 @@ mod tests {
       "create",
       Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
       HeaderMap::new(),
-      None,
+      false,
       "".to_string(),
       Vec::new(),
+      "".to_string(),
+      "".to_string(),
       false,
     )
     .unwrap();

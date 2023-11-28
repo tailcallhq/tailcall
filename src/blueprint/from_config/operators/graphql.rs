@@ -8,6 +8,7 @@ use crate::valid::{Valid, ValidationError};
 
 pub fn update_graphql<'a>(
   operation_type: &'a GraphQLOperationType,
+  object_name: &'a str,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, type_of, _), b_field| {
@@ -30,10 +31,12 @@ pub fn update_graphql<'a>(
               &graphql.name,
               args,
               header_map,
-              graphql.federate.clone(),
+              graphql.federate.unwrap_or(false),
               field.type_of.clone(),
               type_of.join_types.clone(),
-              config.server.clone().enable_federation_v2_router(),
+              object_name.to_string(),
+              b_field.name.clone(),
+              graphql.filter_selection_set.unwrap_or(false),
             )
             .map_err(|e| ValidationError::new(e.to_string())),
           )

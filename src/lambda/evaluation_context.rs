@@ -76,11 +76,11 @@ impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationCon
     type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
     root_field_type: Option<String>,
     url: String,
-    enable_federation_v2_router: bool,
+    filter_selection_set: bool,
   ) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
 
-    if enable_federation_v2_router {
+    if filter_selection_set {
       format_selection_set(selection_set, type_subgraph_fields, root_field_type, url)
     } else {
       format_selection_set(selection_set, None, None, "".to_string())

@@ -342,17 +342,9 @@ pub struct Graphql {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub batch: bool,
-  pub federate: Option<Federate>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct Federate {
-  pub federation_type: String,
-  pub key: String,
-  pub typename: String,
-  pub field_name: String,
-  pub path: Vec<String>,
+  pub federate: Option<bool>,
+  #[serde(rename = "filterSelectionSet")]
+  pub filter_selection_set: Option<bool>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

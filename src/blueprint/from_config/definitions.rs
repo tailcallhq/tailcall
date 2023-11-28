@@ -312,7 +312,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
-      .and(update_graphql(&operation_type).trace(config::Graphql::trace_name().as_str()))
+      .and(update_graphql(&operation_type, object_name).trace(config::Graphql::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_join_field().trace(config::JoinField::trace_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
