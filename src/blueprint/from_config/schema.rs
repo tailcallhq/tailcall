@@ -14,7 +14,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
       };
 
-      Valid::from_iter(query.fields.iter(), |i| validate_field_has_resolver(i, &config.types)).trace(query_type_name)
+      validate_field_of_type_has_resolver(query_type_name, query, &config.types)
     })
     .unit()
 }
