@@ -18,13 +18,18 @@ pub fn update_ref_field<'a>(
       let field_type = config.types.get(&field.type_of);
       if let Some(ty) = field_type {
         let resolvers = to_fields(ty, config).map(|i| {
-          i.iter().map(|fd| {
+          i.iter().filter(|fd| {
+            fd.resolver.is_some()
+          }).map(|fd| {
             (fd.name.clone(), fd.resolver.clone())
           }).collect::<IndexMap<String, Option<Expression>>>()
         });
         let mut mut_field = b_field;
         resolvers.map(|i| {
-          mut_field.resolver = Some(Merge(i));
+          println!("DEBUG POINT: field {} has {} resolvers.", field_name, i.len());
+          if !i.is_empty() {
+            mut_field.resolver = Some(Merge(i));
+          }
         });
         return Valid::succeed(mut_field);
       } else if is_scalar(&field.type_of) {

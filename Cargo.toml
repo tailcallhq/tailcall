@@ -24,12 +24,6 @@ reqwest = { version = "0.11", features = [
    "rustls-tls"
 ], default-features = false }
 hyper = { version = "0.14", features = ["full"], default-features = false }
-# async-graphql = { path = "../async-graphql", features = [
-   # "dynamic-schema",
-   # "dataloader",
-   # "apollo_tracing"
-# ] }
-# async-graphql-value = { path = "../async-graphql/value" } 
 async-graphql = { version = "6.0.11", features = [
    "dynamic-schema",
    "dataloader",
