@@ -39,15 +39,22 @@ impl<'a> MustachePartsValidator<'a> {
         type_of = self
           .config
           .find_type(&field.type_of)
-          // this code never runs because we validate the config before
-          .ok_or_else(|| format!("Path [{}] does not exist", field.type_of.as_str()))?;
-      }
+          .ok_or_else(|| format!("no type '{}' found", tail.join(".").as_str()))?;
 
-      len -= 1;
+        len -= 1;
+      } else {
+        // get tail so far to be logged
+        let item = tail[0..tail.len() - len + 1].join(".");
+
+        return Err(format!("no value '{}' found", item.as_str()));
+      }
     }
 
-    Err(format!("no value '{}' found", tail.join(".")))
+    let item = tail[0..tail.len() - len + 1].join(".");
+
+    return Err(format!("no value '{}' found", item.as_str()));
   }
+
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
     let config = self.config;
     let args = &self.field.args;
