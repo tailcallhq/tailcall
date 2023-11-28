@@ -30,13 +30,9 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
-  fn get_nested_type(
-    &self,
-    tail: &[String],
-    mut type_of: &'a config::Type,
-    is_query: bool,
-  ) -> Result<(Type, String), String> {
+  fn get_nested_type(&self, tail: &[String], is_query: bool) -> Result<(Type, String), String> {
     let mut len = tail.len();
+    let mut type_of = self.type_of;
     for item in tail {
       let val_type = get_value_type(type_of, item);
 
@@ -61,7 +57,6 @@ impl<'a> MustachePartsValidator<'a> {
     Err(format!("no value '{}' found", tail.join(".")))
   }
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
-    let type_of = self.type_of;
     let config = self.config;
     let args = &self.field.args;
 
@@ -74,7 +69,7 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        let val_type = self.get_nested_type(&parts[1..], type_of, is_query);
+        let val_type = self.get_nested_type(&parts[1..], is_query);
         match val_type {
           Ok((val_type, tail)) => {
             if !is_scalar(val_type.name()) {
