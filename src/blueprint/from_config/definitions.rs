@@ -309,6 +309,20 @@ pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefi
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
+  let add_to_field = |name: &String, field: &Field| {
+    let directives = field.resolvable_directives();
+    if directives.len() > 1 {
+      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
+    }
+
+    update_args()
+      .and(update_http().trace("@http"))
+      .and(update_unsafe().trace("@unsafe"))
+      .and(update_const_field().trace("@const"))
+      .and(update_modify().trace("@modify"))
+      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+  };
+
   let fields = Valid::from_iter(
     type_of
       .fields
@@ -341,7 +355,7 @@ pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefi
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
           };
-          to_field(&add_field.name, &new_field)
+          add_to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {
               let added_field_path = match source_field.http {
                 Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
