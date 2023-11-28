@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, Graphql, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, Graphql, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -192,23 +192,25 @@ where
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
 
-  to_http(directives).zip(to_graphql(directives)).map(|(http, graphql)| {
-    let unsafe_operation = to_unsafe_operation(directives);
-    let const_field = to_const_field(directives);
-    config::Field {
-      type_of,
-      list,
-      required: !nullable,
-      list_type_required,
-      args,
-      doc,
-      modify,
-      http,
-      unsafe_operation,
-      const_field,
-      graphql,
-    }
-  })
+  config::Http::from_directives(directives.iter())
+    .zip(Graphql::from_directives(directives.iter()))
+    .map(|(http, graphql)| {
+      let unsafe_operation = to_unsafe_operation(directives);
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        http,
+        unsafe_operation,
+        const_field,
+        graphql,
+      }
+    })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
@@ -259,14 +261,7 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
     }
   })
 }
-fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>, String> {
-  for directive in directives {
-    if directive.node.name.node == config::Http::directive_name() {
-      return Http::from_directive(&directive.node).map(Some);
-    }
-  }
-  Valid::succeed(None)
-}
+
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members
@@ -283,15 +278,6 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::C
       None
     }
   })
-}
-
-fn to_graphql(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Graphql>, String> {
-  for directive in directives {
-    if directive.node.name.node == Graphql::directive_name() {
-      return Graphql::from_directive(&directive.node).map(Some);
-    }
-  }
-  Valid::succeed(None)
 }
 
 fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {
