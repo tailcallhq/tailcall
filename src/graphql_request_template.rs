@@ -188,7 +188,11 @@ mod tests {
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Mutation,
       "create",
-      Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
+      Some(
+        serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#)
+          .unwrap(),
+      )
+      .as_ref(),
       HeaderMap::new(),
     )
     .unwrap();
@@ -207,7 +211,7 @@ mod tests {
 
     assert_eq!(
       std::str::from_utf8(&body).unwrap(),
-      r#"{ "query": "mutation { create(id: \"baz\") { a,b,c } }" }"#
+      r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\",header: \"abc\"}) { a,b,c } }" }"#
     );
   }
 }
