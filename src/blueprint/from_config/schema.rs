@@ -68,11 +68,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
       return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
     };
 
-    Valid::from_iter(mutation.fields.iter(), |i| {
-      validate_field_has_resolver(i, &config.types)
-    })
-    .trace(mutation_type_name)
-    .unit()
+    validate_field_of_type_has_resolver(mutation_type_name, mutation, &config.types)
   } else {
     Valid::succeed(())
   }
