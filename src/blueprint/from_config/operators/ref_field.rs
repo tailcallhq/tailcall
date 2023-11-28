@@ -26,7 +26,6 @@ pub fn update_ref_field<'a>(
         });
         let mut mut_field = b_field;
         resolvers.map(|i| {
-          println!("DEBUG POINT: field {} has {} resolvers.", field_name, i.len());
           if !i.is_empty() {
             mut_field.resolver = Some(Merge(i));
           }
