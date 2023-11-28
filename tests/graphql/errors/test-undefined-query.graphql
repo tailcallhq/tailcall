@@ -32,7 +32,9 @@ type User {
 }
 
 #> client-sdl
-type Failure @error(message: "no type 'user.nested.inner.id.test' found", trace: ["Post", "innerIdNested", "@http", "query"])
-type Failure @error(message: "no value 'user.nested.inner.test' found", trace: ["Post", "innerNested", "@http", "query"])
+type Failure
+  @error(message: "no type 'user.nested.inner.id.test' found", trace: ["Post", "innerIdNested", "@http", "query"])
+type Failure
+  @error(message: "no value 'user.nested.inner.test' found", trace: ["Post", "innerNested", "@http", "query"])
 type Failure @error(message: "no value 'user.nested.test' found", trace: ["Post", "nested", "@http", "query"])
 type Failure @error(message: "no value 'test' found", trace: ["Post", "user", "@http", "query"])
