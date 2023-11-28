@@ -38,9 +38,7 @@ fn validate_field_has_resolver((name, field): (&String, &Field), types: &BTreeMa
           return true;
         }
       }
-      {
-        false
-      }
+      false
     })
     .trace(name)
 }
