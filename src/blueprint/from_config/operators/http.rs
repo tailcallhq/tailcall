@@ -27,27 +27,24 @@ impl<'a> MustachePartsValidator<'a> {
     let mut len = tail.len();
     let mut type_of = self.type_of;
     for item in tail {
-      if let Some(field) = type_of.fields.get(item) {
-        let val_type = to_type(field, None);
+      let field = type_of
+        .fields
+        .get(item)
+        .ok_or_else(|| format!("no value '{}' found", tail[0..tail.len() - len + 1].join(".").as_str()))?;
+      let val_type = to_type(field, None);
 
-        if len == 1 {
-          return Ok((val_type, item.to_owned()));
-        } else if !is_query && val_type.is_nullable() {
-          return Err(format!("value '{}' is a nullable type", item.as_str()));
-        }
-
-        type_of = self
-          .config
-          .find_type(&field.type_of)
-          .ok_or_else(|| format!("no type '{}' found", tail.join(".").as_str()))?;
-
-        len -= 1;
-      } else {
-        // get tail so far to be logged
-        let item = tail[0..tail.len() - len + 1].join(".");
-
-        return Err(format!("no value '{}' found", item.as_str()));
+      if len == 1 {
+        return Ok((val_type, item.to_owned()));
+      } else if !is_query && val_type.is_nullable() {
+        return Err(format!("value '{}' is a nullable type", item.as_str()));
       }
+
+      type_of = self
+        .config
+        .find_type(&field.type_of)
+        .ok_or_else(|| format!("no type '{}' found", tail.join(".").as_str()))?;
+
+      len -= 1;
     }
 
     let item = tail[0..tail.len() - len + 1].join(".");
