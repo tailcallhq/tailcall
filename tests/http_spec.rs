@@ -244,16 +244,16 @@ impl HttpClient for MockHttpClient {
 
 async fn assert_downstream(spec: HttpSpec) {
   for assertion in spec.assert.iter() {
-    let panic_spec = spec.clone();
-    panic::set_hook(Box::new(move |info| {
-      log::error!("{} {} ... failed", panic_spec.name, panic_spec.path.display());
-      eprint!("{}", info);
-    }));
-
     if let Some(Annotation::Fail) = spec.runner {
       let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
+      assert_eq!(
+        body,
+        serde_json::to_string(&assertion.response.0.body).unwrap(),
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
       log::error!("{} {} ... failed", spec.name, spec.path.display());
       panic!(
         "Expected spec: {} {} to fail but it passed",
@@ -270,19 +270,28 @@ async fn assert_downstream(spec: HttpSpec) {
       let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
 
       // Assert Status
-      assert_eq!(actual_status, assertion.response.0.status);
+      assert_eq!(
+        actual_status,
+        assertion.response.0.status,
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
 
       // Assert Body
       assert_eq!(
         to_json_pretty(actual_body).unwrap(),
-        serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
+        serde_json::to_string_pretty(&assertion.response.0.body).unwrap(),
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
       );
 
       // Assert Headers
       for (key, value) in assertion.response.0.headers.iter() {
         match actual_headers.get(key) {
           None => panic!("Expected header {} to be present", key),
-          Some(actual_value) => assert_eq!(actual_value, value),
+          Some(actual_value) => assert_eq!(actual_value, value, "File: {} {}", spec.name, spec.path.display()),
         }
       }
     }
