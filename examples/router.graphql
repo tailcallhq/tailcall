@@ -36,5 +36,5 @@ type Location
   "The location's main photo as a URL"
   photo: String!
   "The calculated overall rating based on all reviews"
-  overallRating: Float @joinField(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id")
+  overallRating: Float
 }

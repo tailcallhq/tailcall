@@ -192,7 +192,6 @@ where
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
-  let join_field = to_join_field(directives);
 
   to_http(directives).zip(to_graphql(directives)).map(|(http, graphql)| {
     let unsafe_operation = to_unsafe_operation(directives);
@@ -209,7 +208,6 @@ where
       unsafe_operation,
       const_field,
       graphql,
-      join_field,
     }
   })
 }
@@ -321,16 +319,6 @@ fn to_join_types_from_directives(directives: &[Positioned<ConstDirective>]) -> V
       }
     })
     .collect::<Vec<_>>()
-}
-
-fn to_join_field(directives: &[Positioned<ConstDirective>]) -> Option<config::JoinField> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::JoinField::directive_name() {
-      config::JoinField::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
 }
 
 trait HasName {

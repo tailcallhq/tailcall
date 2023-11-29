@@ -232,7 +232,6 @@ pub struct Field {
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
   pub graphql: Option<Graphql>,
-  pub join_field: Option<JoinField>,
 }
 
 impl Field {
