@@ -9,7 +9,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use crate::config::{GraphQLOperationType, JoinType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
-use crate::lambda::GraphQLOperationContext;
+use crate::lambda::{GraphQLOperationContext, UrlToFieldNameAndTypePairsMap};
 use crate::mustache::{Mustache, Segment};
 use crate::path_string::PathGraphql;
 
@@ -22,7 +22,7 @@ pub struct GraphqlRequestTemplate {
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
   pub federate: bool,
-  pub type_subgraph_fields: BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>,
+  pub type_subgraph_fields: BTreeMap<String, (UrlToFieldNameAndTypePairsMap, Vec<JoinType>)>,
   pub field_type: String,
   pub join_types: Vec<JoinType>,
   pub parent_type_name: String,

@@ -8,7 +8,7 @@ use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::config::JoinType;
 use crate::http::{GraphqlDataLoader, HttpDataLoader};
-use crate::lambda::{Expression, Unsafe};
+use crate::lambda::{Expression, Unsafe, UrlToFieldNameAndTypePairsMap};
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
@@ -67,8 +67,7 @@ fn update_fields_for_type(
         if let Some(subgraph_fields) = all_subgraph_fields.get_mut(&req_template.url) {
           subgraph_fields.push((field.name.clone(), field.of_type.name().to_string()));
         } else {
-          let mut subgraph_fields = Vec::new();
-          subgraph_fields.push((field.name.clone(), field.of_type.name().to_string()));
+          let subgraph_fields = vec![(field.name.clone(), field.of_type.name().to_string())];
           all_subgraph_fields.insert(req_template.url.clone(), subgraph_fields);
         }
       } else {
@@ -81,24 +80,22 @@ fn update_fields_for_type(
 }
 
 fn update_field_from_join_type(
-  join_types: &Vec<JoinType>,
+  join_types: &[JoinType],
   all_subgraph_fields: &mut BTreeMap<String, Vec<(String, String)>>,
-  field: &mut crate::blueprint::FieldDefinition,
+  field: &crate::blueprint::FieldDefinition,
 ) {
   for join_type in join_types.iter() {
     if let Some(subgraph_fields) = all_subgraph_fields.get_mut(&join_type.base_url.clone().unwrap_or_default()) {
       subgraph_fields.push((field.name.clone(), field.of_type.name().to_string()));
     } else {
-      let mut subgraph_fields = Vec::new();
-      subgraph_fields.push((field.name.clone(), field.of_type.name().to_string()));
+      let subgraph_fields = vec![(field.name.clone(), field.of_type.name().to_string())];
       all_subgraph_fields.insert(join_type.base_url.clone().unwrap_or_default(), subgraph_fields);
     }
   }
 }
 
 fn assign_url_type_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
-  let mut type_subgraph_fields: BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)> =
-    BTreeMap::new();
+  let mut type_subgraph_fields: BTreeMap<String, (UrlToFieldNameAndTypePairsMap, Vec<JoinType>)> = BTreeMap::new();
 
   for def in blueprint.definitions.iter_mut() {
     if let Definition::ObjectTypeDefinition(def) = def {
@@ -115,13 +112,8 @@ fn assign_url_type_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
   for def in blueprint.definitions.iter_mut() {
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &mut def.fields {
-        if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
-          match expr_unsafe {
-            Unsafe::GraphQLEndpoint { req_template,   .. } => {
-              req_template.type_subgraph_fields = type_subgraph_fields.clone();
-            }
-            _ => {}
-          }
+        if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &mut field.resolver {
+          req_template.type_subgraph_fields = type_subgraph_fields.clone();
         }
       }
     }

@@ -10,6 +10,7 @@ use reqwest::header::HeaderMap;
 use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
 use crate::config::JoinType;
 use crate::http::RequestContext;
+use crate::lambda::UrlToFieldNameAndTypePairsMap;
 
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
@@ -74,74 +75,59 @@ impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationCon
   fn selection_set(
     &self,
     type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
-    root_field_type: Option<String>,
+    field_type: Option<String>,
     url: String,
     filter_selection_set: bool,
   ) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
 
-    if filter_selection_set {
-      format_selection_set(selection_set, type_subgraph_fields, root_field_type, url)
+    if filter_selection_set && type_subgraph_fields.is_some() && field_type.is_some() {
+      format_selection_set(selection_set, type_subgraph_fields.unwrap(), field_type.unwrap(), url)
     } else {
-      format_selection_set(selection_set, None, None, "".to_string())
+      format_selection_set_unfiltered(selection_set)
     }
   }
 }
 
 fn format_selection_set<'a>(
   selection_set: impl Iterator<Item = SelectionField<'a>>,
-  type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
-  field_type: Option<String>,
+  type_subgraph_fields: BTreeMap<String, (UrlToFieldNameAndTypePairsMap, Vec<JoinType>)>,
+  field_type: String,
   url: String,
 ) -> Option<String> {
-  let set = if let Some(field_type) = field_type {
-    if let Some(type_subgraph_fields) = type_subgraph_fields {
-      let mut set = selection_set
-        .filter_map(|selection_field| {
-          if let Some(subgraph_fields) = type_subgraph_fields.get(&field_type) {
-            if let Some(fields) = subgraph_fields.0.get(&url) {
-              if let Some((_, child_field_type)) = fields.iter().find(|(name, _)| name == selection_field.name()) {
-                Some(format_selection_field(
-                  selection_field,
-                  Some(type_subgraph_fields.clone()),
-                  Some(child_field_type.to_owned()),
-                  url.clone(),
-                ))
-              } else {
-                None
-              }
-            } else {
-              None
-            }
-          } else {
-            None
-          }
-        })
-        .collect::<Vec<_>>();
-      if !set.is_empty() {
-        let ids = match type_subgraph_fields.get(&field_type) {
-          Some((_, join_types)) => join_types
+  let mut set = selection_set
+    .filter_map(|selection_field| {
+      type_subgraph_fields.get(&field_type).and_then(|(subgraph_fields, _)| {
+        subgraph_fields.get(&url).and_then(|fields| {
+          fields
             .iter()
-            .filter(|join_type| join_type.base_url.clone().unwrap_or_default() == url)
-            .map(|join_type| join_type.key.clone())
-            .collect::<Vec<_>>(),
-          None => vec!["id".to_string()],
-        };
-        for id in ids {
-          set.extend([id]);
-        }
-      }
-      set
-    } else {
-      selection_set
-        .map(|selection_field| format_selection_field(selection_field, type_subgraph_fields.clone(), None, url.clone()))
-        .collect::<Vec<_>>()
+            .find(|(name, _)| name == selection_field.name())
+            .map(|(_, child_field_type)| {
+              format_selection_field(
+                selection_field,
+                type_subgraph_fields.clone(),
+                child_field_type.to_owned(),
+                url.clone(),
+              )
+            })
+        })
+      })
+    })
+    .collect::<Vec<_>>();
+
+  if !set.is_empty() {
+    let ids = match type_subgraph_fields.get(&field_type) {
+      Some((_, join_types)) => join_types
+        .iter()
+        .filter(|join_type| join_type.base_url.clone().unwrap_or_default() == url)
+        .map(|join_type| join_type.key.clone())
+        .collect::<Vec<_>>(),
+      None => vec!["id".to_string()],
+    };
+    for id in ids {
+      set.extend([id]);
     }
-  } else {
-    selection_set
-      .map(|selection_field| format_selection_field(selection_field, type_subgraph_fields.clone(), None, url.clone()))
-      .collect::<Vec<_>>()
-  };
+  }
 
   if set.is_empty() {
     return None;
@@ -150,15 +136,35 @@ fn format_selection_set<'a>(
   Some(format!("{{ {} }}", set.join(" ")))
 }
 
+fn format_selection_set_unfiltered<'a>(selection_set: impl Iterator<Item = SelectionField<'a>>) -> Option<String> {
+  let set = selection_set.map(format_selection_field_unfiltered).collect::<Vec<_>>();
+  if set.is_empty() {
+    return None;
+  }
+  Some(format!("{{ {} }}", set.join(" ")))
+}
+
 fn format_selection_field(
   field: SelectionField,
-  type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
-  field_type: Option<String>,
+  type_subgraph_fields: BTreeMap<String, (UrlToFieldNameAndTypePairsMap, Vec<JoinType>)>,
+  field_type: String,
   url: String,
 ) -> String {
   let name = field.name();
   let arguments = format_selection_field_arguments(field);
   let selection_set = format_selection_set(field.selection_set(), type_subgraph_fields, field_type, url);
+
+  if let Some(set) = selection_set {
+    format!("{}{} {}", name, arguments, set)
+  } else {
+    format!("{}{}", name, arguments)
+  }
+}
+
+fn format_selection_field_unfiltered(field: SelectionField) -> String {
+  let name = field.name();
+  let arguments = format_selection_field_arguments(field);
+  let selection_set = format_selection_set_unfiltered(field.selection_set());
 
   if let Some(set) = selection_set {
     format!("{}{} {}", name, arguments, set)
