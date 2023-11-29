@@ -46,6 +46,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```bash
    cargo test
    ```
+
 ## Benchmarks Comparison
 
 1. **Important:** Make sure all the commits are done.
@@ -54,6 +55,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo install critcmp
    ```
 3. **Run Benchmarks:** This will first run criterion benchmarks on the main branch and then on the current branch.
+
    ```bash
    cargo install critcmp
    git checkout main
@@ -63,6 +65,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```
 
 4. **Compare benchmarks:** Execute the benchmark comparison script by running the following command in your terminal.
+
    ```bash
    bash .github/scripts/check_degradation.sh
    ```
