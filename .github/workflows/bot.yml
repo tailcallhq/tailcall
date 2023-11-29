@@ -203,36 +203,3 @@ jobs:
               repo: repo,
               body: comment
             });
-  Build_time_compare:
-    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
-    name: iai_callgrind_benchmarks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout the code from the repository
-        uses: actions/checkout@v2
-
-      - name: Install iai-callgrind-runner
-        run: cargo install --version 0.7.3 iai-callgrind-runner
-
-      - name: Install Valgrind
-        run: sudo apt-get update && sudo apt-get install valgrind
-
-      - name: Run iai-callgrind on branch
-        run: |
-          echo -n > benches/iai-callgrind/new_benchmark.txt
-          cargo bench --features iai-callgrind > benches/iai-callgrind/new_benchmark.txt
-
-      - name: Switch to main
-        run: |
-          git fetch
-          git checkout main
-
-      - name: Run iai-callgrind  on main
-        run: |
-          echo -n > benches/iai-callgrind/old_benchmark.txt
-          cargo bench --features iai-callgrind > benches/iai-callgrind/old_benchmark.txt
-
-      - name: Execute build_time_compare.sh
-        run: |
-          bash .github/scripts/compare_build_time.sh

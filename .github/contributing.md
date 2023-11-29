@@ -46,6 +46,28 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```bash
    cargo test
    ```
+## Benchmarks Comparison
+
+1. **Important:** Make sure all the commits are done.
+2. **Install critcmp:** Install criterion-compare.
+   ```bash
+   cargo install critcmp
+   ```
+3. **Run Benchmarks:** This will first run criterion benchmarks on the main branch and then on the current branch.
+   ```bash
+   cargo install critcmp
+   git checkout main
+   cargo bench --features criterion -- --save-baseline main_branch
+   git checkout -
+   cargo bench --features criterion -- --save-baseline new_branch
+   ```
+
+4. **Compare benchmarks:** Execute the benchmark comparison script by running the following command in your terminal.
+   ```bash
+   bash .github/scripts/check_degradation.sh
+   ```
+
+5. **Check the Results:** If the benchmarks show a degradation of more than 10%, the script will stop. Please check "benches/critcmp.txt" file to identify the specific benchmarks that failed and investigate the code changes that might have caused the degradation.
 
 ## Documentation
 
