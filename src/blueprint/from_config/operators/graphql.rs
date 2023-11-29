@@ -15,25 +15,25 @@ pub fn update_graphql<'a>(
         return Valid::succeed(b_field);
       };
 
-      let Some(base_url) = graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()) else {
-        return Valid::fail("No base URL defined".to_string());
-      };
-
       let args = graphql.args.as_ref();
 
-      helpers::headers::to_headermap(&graphql.headers)
-        .and_then(|header_map| {
-          Valid::from(
-            GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
-              .map_err(|e| ValidationError::new(e.to_string())),
-          )
-        })
-        .map(|req_template| {
-          let field_name = graphql.name.clone();
-          b_field.resolver(Some(
-            Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
-          ))
-        })
+      Valid::from_option(
+        graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+        "No base URL defined".to_string(),
+      )
+      .zip(helpers::headers::to_headermap(&graphql.headers))
+      .and_then(|(base_url, header_map)| {
+        Valid::from(
+          GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
+            .map_err(|e| ValidationError::new(e.to_string())),
+        )
+      })
+      .map(|req_template| {
+        let field_name = graphql.name.clone();
+        b_field.resolver(Some(
+          Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
+        ))
+      })
     },
   )
 }

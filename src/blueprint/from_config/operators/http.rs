@@ -124,21 +124,21 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         return Valid::succeed(b_field);
       };
 
-      let Some(base_url) = http.base_url.as_ref().or(config.upstream.base_url.as_ref()) else {
-        return Valid::fail("No base URL defined".to_string());
-      };
-
-      let mut base_url = base_url.trim_end_matches('/').to_owned();
-      base_url.push_str(http.path.clone().as_str());
-
-      let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-      let output_schema = to_json_schema_for_field(field, config);
-      let input_schema = to_json_schema_for_args(&field.args, config);
-
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-        .and(helpers::headers::to_headermap(&http.headers))
-        .and_then(|header_map| {
+        .and(Valid::from_option(
+          http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+          "No base URL defined".to_string(),
+        ))
+        .zip(helpers::headers::to_headermap(&http.headers))
+        .and_then(|(base_url, header_map)| {
+          let mut base_url = base_url.trim_end_matches('/').to_owned();
+          base_url.push_str(http.path.clone().as_str());
+
+          let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+          let output_schema = to_json_schema_for_field(field, config);
+          let input_schema = to_json_schema_for_args(&field.args, config);
+
           RequestTemplate::try_from(
             Endpoint::new(base_url.to_string())
               .method(http.method.clone())
