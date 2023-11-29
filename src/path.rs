@@ -37,14 +37,6 @@ impl PathString for serde_json::Value {
   }
 }
 
-impl PathGraphql for serde_json::Value {
-  fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-    self
-      .get_path(path)
-      .and_then(|v| async_graphql::Value::from_json(v.clone()).ok().map(|v| v.to_string()))
-  }
-}
-
 fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
   match value {
     async_graphql::Value::String(s) => Some(Cow::Borrowed(s.as_str())),

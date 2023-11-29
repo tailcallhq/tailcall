@@ -120,6 +120,7 @@ impl GraphqlRequestTemplate {
 
 #[cfg(test)]
 mod tests {
+  use async_graphql::Value;
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
@@ -127,17 +128,18 @@ mod tests {
   use crate::config::GraphQLOperationType;
   use crate::graphql_request_template::GraphqlRequestTemplate;
   use crate::has_headers::HasHeaders;
+  use crate::json::JsonLike;
   use crate::lambda::GraphQLOperationContext;
   use crate::path::PathGraphql;
 
   struct Context {
-    pub value: serde_json::Value,
+    pub value: Value,
     pub headers: HeaderMap,
   }
 
   impl PathGraphql for Context {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-      self.value.path_graphql(path)
+      self.value.get_path(path).map(|v| v.to_string())
     }
   }
 
@@ -164,12 +166,13 @@ mod tests {
     )
     .unwrap();
     let ctx = Context {
-      value: json!({
+      value: Value::from_json(json!({
         "foo": {
           "bar": "baz",
           "header": "abc"
         }
-      }),
+      }))
+      .unwrap(),
       headers: Default::default(),
     };
 
@@ -197,12 +200,13 @@ mod tests {
     )
     .unwrap();
     let ctx = Context {
-      value: json!({
+      value: Value::from_json(json!({
         "foo": {
           "bar": "baz",
           "header": "abc"
         }
-      }),
+      }))
+      .unwrap(),
       headers: Default::default(),
     };
 
