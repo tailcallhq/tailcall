@@ -15,9 +15,10 @@ use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::http::{handle_batch_request, handle_single_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 static INIT: Once = Once::new();
 
@@ -296,9 +297,9 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_batch_request(req, server_context).await
+    handle_request::<GraphQLBatchRequest>(req, server_context).await
   } else {
-    handle_single_request(req, server_context).await
+    handle_request::<GraphQLRequest>(req, server_context).await
   }
 }
 
