@@ -5,13 +5,13 @@ use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
 use serde::de::DeserializeOwned;
 
-use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::http::request_handlers::request_handler::{
   create_request_context, update_cache_control_header, update_response_headers,
 };
 use crate::http::ServerContext;
 
-async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   server_ctx: &ServerContext,
 ) -> Result<Response<Body>> {
@@ -20,10 +20,11 @@ async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   let request = serde_json::from_slice::<T>(&bytes);
   match request {
     Ok(request) => {
-      let response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
-      let mut response = update_cache_control_header(response, server_ctx, req_ctx).to_response()?;
-      update_response_headers(&mut response, server_ctx);
-      Ok(response)
+      let mut response = request.data(req_ctx.clone()).execute(&server_ctx.schema).await;
+      response = update_cache_control_header(response, server_ctx, req_ctx);
+      let mut resp = response.to_response()?;
+      update_response_headers(&mut resp, server_ctx);
+      Ok(resp)
     }
     Err(err) => {
       log::error!(
@@ -38,11 +39,4 @@ async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
       Ok(GraphQLResponse::from(response).to_response()?)
     }
   }
-}
-pub async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  graphql_request::<GraphQLRequest>(req, server_ctx).await
-}
-
-pub async fn graphql_batch_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  graphql_request::<GraphQLBatchRequest>(req, server_ctx).await
 }

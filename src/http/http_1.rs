@@ -7,7 +7,7 @@ use super::{handle_request, log_launch};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
-pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(), anyhow::Error> {
+pub async fn start_http_1(sc: Arc<ServerConfig>) -> Result<(), anyhow::Error> {
   let addr = sc.addr();
   let make_svc_single_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
@@ -28,7 +28,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
   });
   let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
   log_launch(sc.as_ref());
-  let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
+  let server: Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
   } else {
     builder.serve(make_svc_single_req).await

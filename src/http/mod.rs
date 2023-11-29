@@ -22,7 +22,7 @@ pub use data_loader_request::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
-pub use request_handlers::request_handler::{handle_batch_request, handle_single_request};
+pub use request_handlers::request_handler::*;
 pub use response::*;
 pub use server::start_server;
 pub use server_context::ServerContext;
