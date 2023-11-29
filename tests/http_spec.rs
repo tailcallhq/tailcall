@@ -1,10 +1,10 @@
 extern crate core;
 
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
+use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use async_graphql_value::ConstValue;
@@ -244,6 +244,12 @@ impl HttpClient for MockHttpClient {
 
 async fn assert_downstream(spec: HttpSpec) {
   for assertion in spec.assert.iter() {
+    let panic_spec = spec.clone();
+    panic::set_hook(Box::new(move |info| {
+      log::error!("{} {} ... failed", panic_spec.name, panic_spec.path.display());
+      eprint!("{}", info);
+    }));
+
     if let Some(Annotation::Fail) = spec.runner {
       let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
