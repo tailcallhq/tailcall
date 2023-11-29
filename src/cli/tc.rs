@@ -11,6 +11,7 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::start_server;
 use crate::print_schema;
@@ -23,33 +24,35 @@ pub fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
-      log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      let runtime = Builder::new_multi_thread()
-        .worker_threads(config.server.get_workers())
-        .enable_all()
-        .build()?;
-      runtime.block_on(start_server(config))?;
-      Ok(())
-    }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
-      let blueprint = Blueprint::try_from(&config);
-      match blueprint {
+      match parse_blueprint(file_path, false) {
         Ok(blueprint) => {
-          display_config(&config, n_plus_one_queries);
-          if schema {
-            display_schema(&blueprint);
-          }
+          let runtime = Builder::new_multi_thread()
+            .worker_threads(blueprint.server.worker) // if 0 should be num_cpus::get()
+            .enable_all()
+            .build()?;
+          runtime.block_on(start_server(blueprint))?;
           Ok(())
         }
-        Err(e) => Err(e.into()),
+        Err(e) => Err(e),
       }
     }
+    Command::Check { file_path, n_plus_one_queries, schema } => match parse_blueprint(file_path, n_plus_one_queries) {
+      Ok(blueprint) => {
+        if schema {
+          display_schema(&blueprint);
+        }
+        Ok(())
+      }
+      Err(e) => Err(e),
+    },
     Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
+}
+
+fn parse_blueprint(file_path: Vec<String>, n_plus_one_queries: bool) -> Result<Blueprint> {
+  let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
+  display_config(&config, n_plus_one_queries);
+  Blueprint::try_from(&config).map_err(|e| CLIError::new(&e.to_string()).into())
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
