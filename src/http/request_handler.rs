@@ -9,7 +9,7 @@ use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
-use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -81,14 +81,6 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   }
 }
 
-async fn graphql_single_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  graphql_request::<GraphQLRequest>(req, server_ctx).await
-}
-
-async fn graphql_batch_request(req: Request<Body>, server_ctx: &ServerContext) -> Result<Response<Body>> {
-  graphql_request::<GraphQLBatchRequest>(req, server_ctx).await
-}
-
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
   let mut new_headers = HeaderMap::new();
   for (k, v) in headers.iter() {
@@ -100,17 +92,12 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
-pub async fn handle_single_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
+  req: Request<Body>,
+  state: Arc<ServerContext>,
+) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_single_request(req, state.as_ref()).await,
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
-    _ => not_found(),
-  }
-}
-
-pub async fn handle_batch_request(req: Request<Body>, state: Arc<ServerContext>) -> Result<Response<Body>> {
-  match *req.method() {
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_batch_request(req, state.as_ref()).await,
+    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     _ => not_found(),
   }
