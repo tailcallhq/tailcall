@@ -5,11 +5,10 @@ use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 
-use super::request_context::RequestContext;
-use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequest, GraphQLResponse};
 use crate::http::request_handlers::api_request_handler::api_request;
 use crate::http::request_handlers::graphql_request_handler::{graphql_batch_request, graphql_single_request};
+use crate::http::{RequestContext, ServerContext};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(

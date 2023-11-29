@@ -6,7 +6,9 @@ use serde::de::DeserializeOwned;
 
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::http::parser::Parser;
-use crate::http::request_handler::{create_request_context, update_cache_control_header, update_response_headers};
+use crate::http::request_handlers::request_handler::{
+  create_request_context, update_cache_control_header, update_response_headers,
+};
 use crate::http::ServerContext;
 
 pub async fn api_request<T: DeserializeOwned + GraphQLRequestLike>(
