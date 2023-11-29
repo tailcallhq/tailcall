@@ -191,22 +191,28 @@ fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result
       let operation = tokio::fs::read_to_string(op).await?;
       let Response { errors, .. } = schema.execute(&operation).await;
       execution.push((op, errors));
-
-      // if !errors.is_empty() {
-      //   return Err(anyhow::anyhow!("Error in operation: {}", op));
-      // }
-
     }
     Ok::<_, anyhow::Error>(execution)
   })?;
 
-  Valid::from_iter(execution.iter(), |(op, errors)| {
-        match errors.len() {
-            0 => Valid::succeed(()),
-            _ => Valid::fail(format!("Error in operation: {}", op)),
-        }
-        // Valid::<_, String>::succeed(())
+  let result = Valid::from_iter(execution.iter(), |(op, errors)| {
+    match errors.len() {
+      0 => Valid::succeed(()),
+      _ => Valid::fail(format!(
+        "File {op}:\n{}",
+        errors
+          .iter()
+          .enumerate()
+          .map(|(count, error)| format!("{count}. {}", error.message.to_string()))
+          .collect::<Vec<String>>()
+          .join("\n")
+      )),
+    }
   });
 
-  Ok::<(), anyhow::Error>(())
+  match result {
+    Valid::Succeed(_) => Ok(()),
+    Valid::Fail(errors) => Err(anyhow::anyhow!(errors)),
+  }
+  // Ok::<(), anyhow::Error>(())
 }
