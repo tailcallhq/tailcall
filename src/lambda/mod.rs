@@ -6,6 +6,9 @@ mod resolver_context_like;
 
 pub use evaluation_context::EvaluationContext;
 pub use expression::{Expression, Unsafe};
-pub use graphql_operation_context::{GraphQLOperationContext, SelectionSetFilterData, UrlToFieldNameAndTypePairsMap};
+pub use graphql_operation_context::{
+  GraphQLOperationContext, ObjectNameToFieldPairsMap, SelectionSetFilterData, UrlToFieldNameAndTypePairsMap,
+  UrlToObjFieldsMap,
+};
 pub use lambda::Lambda;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContextLike};

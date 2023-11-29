@@ -9,7 +9,7 @@ type Query {
     @graphql(name: "latestReviews", baseURL: "https://flyby-reviews-sub.herokuapp.com/", filterSelectionSet: true)
 }
 
-type Review @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id") {
+type Review {
   id: ID!
   "Written text"
   comment: String
@@ -19,16 +19,14 @@ type Review @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: 
   location: Location
 }
 
-type Location
-  @joinType(baseURL: "https://flyby-locations-sub.herokuapp.com/", key: "id")
-  @joinType(baseURL: "https://flyby-reviews-sub.herokuapp.com/", key: "id") {
+type Location {
   id: ID!
   "The name of the location"
   name: String!
   "A short description about the location"
   description: String!
     @graphql(
-      name: "description"
+      name: "description" # use name _entities for federated call, remove federate flag.
       args: [{key: "id", value: "{{value.id}}"}]
       baseURL: "https://flyby-locations-sub.herokuapp.com/"
       federate: true

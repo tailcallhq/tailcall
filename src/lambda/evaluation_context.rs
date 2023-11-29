@@ -78,9 +78,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationCon
     let selection_set = self.graphql_ctx.field()?.selection_set();
 
     match (filter_selection_set, selection_set_filter) {
-      (true, Some(SelectionSetFilterData { type_subgraph_fields, field_type, url })) => format_selection_set(
+      (true, Some(SelectionSetFilterData { url_obj_fields, field_type, url, url_obj_ids })) => format_selection_set(
         selection_set,
-        SelectionSetFilterData { type_subgraph_fields, field_type, url },
+        SelectionSetFilterData { url_obj_fields, field_type, url, url_obj_ids },
       ),
       _ => format_selection_set_unfiltered(selection_set),
     }
@@ -94,10 +94,10 @@ fn format_selection_set<'a>(
   let mut set = selection_set
     .filter_map(|selection_field| {
       selection_set_filter
-        .type_subgraph_fields
-        .get(&selection_set_filter.field_type)
-        .and_then(|(subgraph_fields, _)| {
-          subgraph_fields.get(&selection_set_filter.url).and_then(|fields| {
+        .url_obj_fields
+        .get(&selection_set_filter.url)
+        .and_then(|obj_fields| {
+          obj_fields.get(&selection_set_filter.field_type).and_then(|fields| {
             fields
               .iter()
               .find(|(name, _)| name == selection_field.name())
@@ -105,9 +105,10 @@ fn format_selection_set<'a>(
                 format_selection_field(
                   selection_field,
                   SelectionSetFilterData {
-                    type_subgraph_fields: selection_set_filter.type_subgraph_fields.clone(),
+                    url_obj_fields: selection_set_filter.url_obj_fields.clone(),
                     field_type: child_field_type.to_owned(),
                     url: selection_set_filter.url.clone(),
+                    url_obj_ids: selection_set_filter.url_obj_ids.clone(),
                   },
                 )
               })
@@ -116,20 +117,15 @@ fn format_selection_set<'a>(
     })
     .collect::<Vec<_>>();
 
+  println!("selection set without ids added: {:?}", set);
+
   if !set.is_empty() {
-    let ids = match selection_set_filter
-      .type_subgraph_fields
-      .get(&selection_set_filter.field_type)
-    {
-      Some((_, join_types)) => join_types
-        .iter()
-        .filter(|join_type| join_type.base_url.clone().unwrap_or_default() == selection_set_filter.url)
-        .map(|join_type| join_type.key.clone())
-        .collect::<Vec<_>>(),
-      None => vec!["id".to_string()],
-    };
-    for id in ids {
-      set.extend([id]);
+    for (_, obj_ids) in selection_set_filter.url_obj_ids {
+      obj_ids.get(&selection_set_filter.field_type).map(|ids| {
+        for id in ids {
+          set.extend([id.clone()]);
+        }
+      });
     }
   }
 

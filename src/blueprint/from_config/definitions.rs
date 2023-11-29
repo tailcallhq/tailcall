@@ -231,7 +231,6 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
-      join_types: type_of.join_types.clone(),
     })
   })
 }

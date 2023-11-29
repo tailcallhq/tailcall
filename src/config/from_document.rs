@@ -136,8 +136,7 @@ where
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    let join_types = to_join_types_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, join_types, ..Default::default() }
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -301,19 +300,6 @@ fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> V
     .filter_map(|directive| {
       if directive.node.name.node == config::AddField::directive_name() {
         config::AddField::from_directive(&directive.node).to_result().ok()
-      } else {
-        None
-      }
-    })
-    .collect::<Vec<_>>()
-}
-
-fn to_join_types_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::JoinType> {
-  directives
-    .iter()
-    .filter_map(|directive| {
-      if directive.node.name.node == config::JoinType::directive_name() {
-        config::JoinType::from_directive(&directive.node).to_result().ok()
       } else {
         None
       }

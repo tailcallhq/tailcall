@@ -11,7 +11,7 @@ pub fn update_graphql<'a>(
   object_name: &'a str,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, type_of, _), b_field| {
+    |(config, field, _type_of, _), b_field| {
       let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };
@@ -33,7 +33,6 @@ pub fn update_graphql<'a>(
               header_map,
               graphql.federate.unwrap_or(false),
               field.type_of.clone(),
-              type_of.join_types.clone(),
               object_name.to_string(),
               b_field.name.clone(),
               graphql.filter_selection_set.unwrap_or(false),

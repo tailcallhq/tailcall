@@ -6,10 +6,10 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::{HeaderName, HeaderValue};
 
-use crate::config::{GraphQLOperationType, JoinType, KeyValues};
+use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
-use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData, UrlToFieldNameAndTypePairsMap};
+use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData, UrlToObjFieldsMap};
 use crate::mustache::{Mustache, Segment};
 use crate::path_string::PathGraphql;
 
@@ -22,12 +22,12 @@ pub struct GraphqlRequestTemplate {
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
   pub federate: bool,
-  pub type_subgraph_fields: BTreeMap<String, (UrlToFieldNameAndTypePairsMap, Vec<JoinType>)>,
   pub field_type: String,
-  pub join_types: Vec<JoinType>,
   pub parent_type_name: String,
   pub field_name: String,
   pub filter_selection_set: bool,
+  pub url_obj_fields: UrlToObjFieldsMap,
+  pub url_obj_ids: BTreeMap<String, BTreeMap<String, Vec<String>>>,
 }
 
 impl GraphqlRequestTemplate {
@@ -78,9 +78,10 @@ impl GraphqlRequestTemplate {
       let selection_set = ctx
         .selection_set(
           Some(SelectionSetFilterData {
-            type_subgraph_fields: self.type_subgraph_fields.clone(),
+            url_obj_fields: self.url_obj_fields.clone(),
             field_type: self.field_type.clone(),
             url: self.url.clone(),
+            url_obj_ids: self.url_obj_ids.clone(),
           }),
           self.filter_selection_set,
         )
@@ -140,7 +141,6 @@ impl GraphqlRequestTemplate {
     headers: HeaderMap<HeaderValue>,
     federate: bool,
     field_type: String,
-    join_types: Vec<JoinType>,
     parent_type_name: String,
     field_name: String,
     filter_selection_set: bool,
@@ -168,12 +168,12 @@ impl GraphqlRequestTemplate {
       operation_arguments,
       headers,
       federate,
-      type_subgraph_fields: BTreeMap::new(),
       field_type,
-      join_types,
       parent_type_name,
       field_name,
       filter_selection_set,
+      url_obj_fields: BTreeMap::new(),
+      url_obj_ids: BTreeMap::new(),
     })
   }
 }
@@ -227,7 +227,6 @@ mod tests {
       HeaderMap::new(),
       false,
       "".to_string(),
-      Vec::new(),
       "".to_string(),
       "".to_string(),
       false,
@@ -262,7 +261,6 @@ mod tests {
       HeaderMap::new(),
       false,
       "".to_string(),
-      Vec::new(),
       "".to_string(),
       "".to_string(),
       false,
