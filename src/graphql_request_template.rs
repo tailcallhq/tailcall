@@ -9,7 +9,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use crate::config::{GraphQLOperationType, JoinType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
-use crate::lambda::{GraphQLOperationContext, UrlToFieldNameAndTypePairsMap};
+use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData, UrlToFieldNameAndTypePairsMap};
 use crate::mustache::{Mustache, Segment};
 use crate::path_string::PathGraphql;
 
@@ -77,9 +77,11 @@ impl GraphqlRequestTemplate {
       let operation_type = &self.operation_type;
       let selection_set = ctx
         .selection_set(
-          Some(self.type_subgraph_fields.clone()),
-          Some(self.field_type.clone()),
-          self.url.clone(),
+          Some(SelectionSetFilterData {
+            type_subgraph_fields: self.type_subgraph_fields.clone(),
+            field_type: self.field_type.clone(),
+            url: self.url.clone(),
+          }),
           self.filter_selection_set,
         )
         .unwrap_or_default();
@@ -178,16 +180,14 @@ impl GraphqlRequestTemplate {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::BTreeMap;
-
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
   use crate::config::GraphQLOperationType;
-  use crate::graphql_request_template::{GraphqlRequestTemplate, JoinType};
+  use crate::graphql_request_template::GraphqlRequestTemplate;
   use crate::has_headers::HasHeaders;
-  use crate::lambda::GraphQLOperationContext;
+  use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData};
   use crate::path_string::PathGraphql;
 
   struct Context {
@@ -210,9 +210,7 @@ mod tests {
   impl GraphQLOperationContext for Context {
     fn selection_set(
       &self,
-      _type_subgraph_fields: Option<BTreeMap<String, (BTreeMap<String, Vec<(String, String)>>, Vec<JoinType>)>>,
-      _root_field_type: Option<String>,
-      _url: String,
+      _selection_set_filter: Option<SelectionSetFilterData>,
       _filter_selection_set: bool,
     ) -> Option<String> {
       Some("{ a,b,c }".to_owned())
