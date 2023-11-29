@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values

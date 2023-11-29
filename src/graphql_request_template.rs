@@ -9,7 +9,7 @@ use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::lambda::GraphQLOperationContext;
 use crate::mustache::Mustache;
-use crate::path_string::PathGraphql;
+use crate::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -128,7 +128,7 @@ mod tests {
   use crate::graphql_request_template::GraphqlRequestTemplate;
   use crate::has_headers::HasHeaders;
   use crate::lambda::GraphQLOperationContext;
-  use crate::path_string::PathGraphql;
+  use crate::path::PathGraphql;
 
   struct Context {
     pub value: serde_json::Value,

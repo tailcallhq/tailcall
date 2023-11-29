@@ -94,7 +94,7 @@ mod tests {
 
     use crate::http::RequestContext;
     use crate::lambda::{EvaluationContext, ResolverContextLike};
-    use crate::path_string::{PathGraphql, PathString};
+    use crate::path::{PathGraphql, PathString};
 
     static TEST_VALUES: Lazy<Value> = Lazy::new(|| {
       let mut root = IndexMap::new();

@@ -1,6 +1,6 @@
 use nom::{Finish, IResult};
 
-use crate::path_string::{PathGraphql, PathString};
+use crate::path::{PathGraphql, PathString};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mustache(Vec<Segment>);
@@ -234,7 +234,7 @@ mod tests {
     use serde_json::json;
 
     use crate::mustache::{Mustache, Segment};
-    use crate::path_string::PathString;
+    use crate::path::PathString;
 
     #[test]
     fn test_query_params_template() {
@@ -321,7 +321,7 @@ mod tests {
 
   mod render_graphql {
     use crate::mustache::{Mustache, Segment};
-    use crate::path_string::PathGraphql;
+    use crate::path::PathGraphql;
 
     #[test]
     fn test_render_mixed() {
