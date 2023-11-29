@@ -17,6 +17,10 @@ impl Fmt {
     format!("{}", success.green())
   }
 
+  pub fn error(error: &String) -> String {
+    format!("{}", error.red())
+  }
+
   pub fn display(s: String) {
     println!("{}", s);
   }
@@ -39,6 +43,23 @@ impl Fmt {
       .join("\n");
     table.push('\n');
     table
+  }
+  pub fn format_operation(op: &str, errors: &[async_graphql::ServerError]) -> String {
+    let meta = if errors.is_empty() {
+      Fmt::success(&"No errors found".to_string())
+    } else {
+      Fmt::meta(&format!("{} errors found", errors.len()))
+    };
+    let heading = Fmt::heading(&format!("Operation {op}: {meta}"));
+
+    let report = errors
+      .iter()
+      .enumerate()
+      .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error.message)))
+      .collect::<Vec<String>>()
+      .join("\n");
+
+    format!("{heading}\n{report}")
   }
 
   pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {

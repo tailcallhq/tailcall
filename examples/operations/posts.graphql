@@ -3,5 +3,6 @@ query {
     id
     body
     userOd
+    userAd
   }
 }

@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::{env, fs};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql::Response;
 use clap::Parser;
 use env_logger::Env;
@@ -16,7 +16,6 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
-use crate::valid::Valid;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -61,10 +60,7 @@ pub fn run() -> Result<()> {
             ));
           }
 
-          match validate_operations(&blueprint, operations) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
-          }
+          Ok(validate_operations(&blueprint, operations)?)
         }
         Err(e) => Err(e.into()),
       }
@@ -160,7 +156,6 @@ pub fn display_schema(blueprint: &Blueprint) {
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
-  Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
 }
@@ -183,36 +178,27 @@ fn logger_init() {
 }
 
 fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result<()> {
-  let execution = tokio::runtime::Runtime::new()?.block_on(async {
+  tokio::runtime::Runtime::new()?.block_on(async {
     let schema = blueprint.to_schema();
     let mut execution = vec![];
 
     for op in operations.iter() {
-      let operation = tokio::fs::read_to_string(op).await?;
-      let Response { errors, .. } = schema.execute(&operation).await;
-      execution.push((op, errors));
+      if let Ok(operation) = tokio::fs::read_to_string(op).await {
+        let Response { errors, .. } = schema.execute(&operation).await;
+        execution.push((op, errors));
+      } else {
+        return Err(anyhow!("Cannot read operation {}", op));
+      }
     }
-    Ok::<_, anyhow::Error>(execution)
-  })?;
 
-  let result = Valid::from_iter(execution.iter(), |(op, errors)| {
-    match errors.len() {
-      0 => Valid::succeed(()),
-      _ => Valid::fail(format!(
-        "File {op}:\n{}",
-        errors
-          .iter()
-          .enumerate()
-          .map(|(count, error)| format!("{count}. {}", error.message.to_string()))
-          .collect::<Vec<String>>()
-          .join("\n")
-      )),
-    }
-  });
+    Fmt::display(
+      execution
+        .iter()
+        .map(|(op, errors)| Fmt::format_operation(op, errors))
+        .collect::<Vec<String>>()
+        .join("\n\n"),
+    );
 
-  match result {
-    Valid::Succeed(_) => Ok(()),
-    Valid::Fail(errors) => Err(anyhow::anyhow!(errors)),
-  }
-  // Ok::<(), anyhow::Error>(())
+    Ok::<_, anyhow::Error>(())
+  })
 }
