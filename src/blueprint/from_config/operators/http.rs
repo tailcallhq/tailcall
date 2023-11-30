@@ -24,7 +24,7 @@ impl<'a> MustachePartsValidator<'a> {
     Self { type_of, config, field }
   }
 
-  fn get_valid_nested_type(&self, tail: &[String], is_query: bool) -> Result<(Type, String), String> {
+  fn validate_type(&self, tail: &[String], is_query: bool) -> Result<(), String> {
     let mut len = tail.len();
     let mut type_of = self.type_of;
     for item in tail {
@@ -39,7 +39,7 @@ impl<'a> MustachePartsValidator<'a> {
       } else if len == 1 && !is_scalar(val_type.name()) {
         return Err(format!("value '{}' is not of a scalar type", item.as_str()));
       } else if len == 1 {
-        return Ok((val_type, item.to_owned()));
+        break;
       }
 
       type_of = self
@@ -50,9 +50,7 @@ impl<'a> MustachePartsValidator<'a> {
       len -= 1;
     }
 
-    let item = tail[0..tail.len() - len + 1].join(".");
-
-    Err(format!("no value '{}' found", item.as_str()))
+    Ok(())
   }
 
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
@@ -68,7 +66,10 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Err(e) = self.get_valid_nested_type(&parts[1..], is_query) {
+        // all items on parts except the first one
+        let tail = &parts[1..];
+
+        if let Err(e) = self.validate_type(tail, is_query) {
           return Valid::fail(e);
         }
       }
