@@ -28,10 +28,12 @@ impl<'a> MustachePartsValidator<'a> {
     let mut len = parts.len();
     let mut type_of = self.type_of;
     for item in parts {
-      let field = type_of
-        .fields
-        .get(item)
-        .ok_or_else(|| format!("no value '{}' found", parts[0..parts.len() - len + 1].join(".").as_str()))?;
+      let field = type_of.fields.get(item).ok_or_else(|| {
+        format!(
+          "no value '{}' found",
+          parts[0..parts.len() - len + 1].join(".").as_str()
+        )
+      })?;
       let val_type = to_type(field, None);
 
       if !is_query && val_type.is_nullable() {
