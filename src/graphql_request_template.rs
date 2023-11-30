@@ -72,20 +72,21 @@ impl GraphqlRequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> reqwest::Request {
+    let selection_set = ctx
+      .selection_set(
+        Some(SelectionSetFilterData {
+          url_obj_fields: self.url_obj_fields.clone(),
+          obj_name: self.field_type.clone(),
+          url: self.url.clone(),
+          url_obj_ids: self.url_obj_ids.clone(),
+        }),
+        self.filter_selection_set,
+      )
+      .unwrap_or_default();
+
     println!("operation_name: {:?}", self.operation_name);
     if self.operation_name.is_some() {
       let operation_type = &self.operation_type;
-      let selection_set = ctx
-        .selection_set(
-          Some(SelectionSetFilterData {
-            url_obj_fields: self.url_obj_fields.clone(),
-            obj_name: self.field_type.clone(),
-            url: self.url.clone(),
-            url_obj_ids: self.url_obj_ids.clone(),
-          }),
-          self.filter_selection_set,
-        )
-        .unwrap_or_default();
 
       let operation_name = self.operation_name.clone().unwrap_or_default();
       let operation = self
@@ -107,6 +108,9 @@ impl GraphqlRequestTemplate {
       req
     } else {
       // _entities query
+      let typename = self.parent_type_name.clone();
+      let typename_esc = self.parent_type_name.escape_default();
+      let field_name = self.field_name.clone();
       let id = self
         .operation_arguments
         .as_ref()
@@ -121,13 +125,13 @@ impl GraphqlRequestTemplate {
       let arg_map = self.operation_arguments.as_ref().map_or_else(BTreeMap::new, |args| {
         BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx))))
       });
+      let id_value = arg_map
+        .get(&id)
+        .map(String::as_str)
+        .unwrap_or_default()
+        .escape_default();
       let graphql_query = format!(
-        r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: \"{}\", {}: {} }} ]) {{ ... on {} {{ {} }} }} }}" }}"#,
-        self.parent_type_name,
-        id,
-        arg_map.get(&id).unwrap().escape_default(),
-        self.parent_type_name,
-        self.field_name
+        r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: {typename_esc}, {id}: {id_value} }} ]) {{ ... on {typename} {{ {field_name} {selection_set} }} }} }}" }}"#,
       );
       println!("entities query: {}", graphql_query);
       req.body_mut().replace(graphql_query.into());
