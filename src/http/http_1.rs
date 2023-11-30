@@ -3,7 +3,8 @@ use std::sync::Arc;
 use hyper::service::{make_service_fn, service_fn};
 
 use super::server_config::ServerConfig;
-use super::{handle_batch_request, handle_single_request, log_launch};
+use super::{handle_request, log_launch};
+use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
 pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(), anyhow::Error> {
@@ -12,7 +13,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_single_request(req, state.server_context.clone())
+        handle_request::<GraphQLRequest>(req, state.server_context.clone())
       }))
     }
   });
@@ -21,7 +22,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_batch_request(req, state.server_context.clone())
+        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
       }))
     }
   });
