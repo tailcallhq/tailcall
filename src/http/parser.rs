@@ -6,8 +6,8 @@ use serde_json::{Map, Value};
 
 use crate::blueprint::{is_scalar, Definition};
 use crate::parser::de::{
-  de_kebab, next_token, parse_args, parse_arguments_string, parse_operation, parse_selections, parse_selections_string,
-  to_json, value_to_graphql_selections,
+  de_kebab, deserialize_to_levelwise_args, next_token, parse_args, parse_arguments_string, parse_operation,
+  parse_selections, parse_selections_string, value_to_graphql_selections,
 };
 
 #[derive(Debug, serde::Deserialize, Default)]
@@ -18,10 +18,12 @@ pub struct Parser {
 }
 
 impl Parser {
-  pub fn from_path(uri: &Uri) -> anyhow::Result<Parser> {
+  pub fn from_uri(uri: &Uri) -> anyhow::Result<Parser> {
+    // Uri must have a path that contains operation (i.e. root node) as a route.
+    // all the examples in comments will be given in reference to examples/jsonplaceholder.graphql
     let mut parser = Self { operation: parse_operation(&de_kebab(uri.path())), ..Default::default() };
-
     if let Some(query) = uri.query() {
+      // it's optional to have query i.e. the selections and/or arguments.
       let query = de_kebab(query);
       if let Ok(p) = serde_qs::from_str::<Map<String, Value>>(&query) {
         parser.selections = parse_selections(&p);
@@ -32,11 +34,18 @@ impl Parser {
     Ok(parser)
   }
   pub fn parse<T: DeserializeOwned>(&mut self, definations: &Vec<Definition>) -> Result<T, serde_json::Error> {
-    let s = self.parse_selections(definations)?;
-    let v = self.parse_arguments()?;
-    let v = self.parse_to_string(v, s)?;
+    // let uri be: /api/posts\?\$=title&id=10
+    let s = self.parse_selections(definations)?; // converts selections (i.e. query) to graphql request string
+                                                 // this is what the string looks like: {posts {title}}
+
+    let v = self.parse_arguments()?; // it will return serde_json::Value of arguments
+                                     // for example, id=10 will be converted to {"id":"10"} to iterate easily
+
+    let v = self.parse_to_string(v, s)?; // this functions is responsible to merge both of the values above.
+                                         // this is what merged values look like: {posts (id: 10,) {title}}
+
     let mut hm = serde_json::Map::new();
-    hm.insert("query".to_string(), Value::from(v));
+    hm.insert("query".to_string(), Value::from(v)); // finally it puts it in the required form
     serde_json::from_value::<T>(Value::from(hm))
   }
   fn parse_selections(&mut self, definations: &Vec<Definition>) -> Result<String, serde_json::Error> {
@@ -46,9 +55,11 @@ impl Parser {
     };
     let mut defi_hm = Value::Null;
     if input.contains('*') {
-      defi_hm = build_definition_map(definations)?;
+      defi_hm = build_definition_map(definations)?; // this iterates over all the nested Field definitions
+                                                    // to convert it to serde_json::Value for easier parsing
+                                                    // Basically it contains all the keys and nested values of the sdl.
     }
-    let hm = parse_selections_string(defi_hm, input, &self.operation)?;
+    let hm = parse_selections_string(defi_hm, input, &self.operation)?; // responsible to convert the query to graphql response string
     let v = Value::Object(hm);
     Ok(value_to_graphql_selections(&v))
   }
@@ -62,11 +73,16 @@ impl Parser {
   }
   fn parse_to_string(&self, v: Value, sx: String) -> Result<String, serde_json::Error> {
     let mut hm = HashMap::new();
-    to_json(&v, &mut hm, (None, &self.operation, 0));
+    // let argument be id=10
+    deserialize_to_levelwise_args(&v, &mut hm, (None, &self.operation, 0));
+    // the function above fills the hashmap with level-wise argument for given key.
+    // in the example, we need to put id=10 at level 1, so the hashmap will look like {1: {"posts": [("id", "10")]}}
+
     let mut s = if sx.eq("{}") {
-      format!("{{{}}}", self.operation)
+      // the sting does not contain root (operation) so far.
+      format!("{{{}}}", self.operation) //  if the query is empty it adds just the root node
     } else {
-      format!("{{{} {sx}}}", self.operation)
+      format!("{{{} {sx}}}", self.operation) // else it adds current query string with root node
     };
     let mut pos = 0;
     let mut stk = 0usize;
@@ -113,6 +129,7 @@ impl Parser {
 }
 
 fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_json::Error> {
+  // nothing fancy here, it just iterates over all the nested values and converts it to a map.
   let mut definition_map = Map::new();
   let mut current_definition = &mut definition_map;
 

@@ -314,7 +314,7 @@ mod parser_tests {
   use tailcall::http::parser::Parser;
   #[test]
   fn t1_url_qry_parser() {
-    let parser = Parser::from_path(&Uri::from_str("/api/user?$=name,age,address.city,address.state").unwrap());
+    let parser = Parser::from_uri(&Uri::from_str("/api/user?$=name,age,address.city,address.state").unwrap());
     assert_eq!(
       parser
         .unwrap()
@@ -330,7 +330,7 @@ mod parser_tests {
 
   #[test]
   fn t2_url_nested_qry_parser() {
-    let parser = Parser::from_path(
+    let parser = Parser::from_uri(
       &Uri::from_str("/api/user?id=123,address.country=India,address.city=Foo&$=name,age,address.city,address.state")
         .unwrap(),
     );
@@ -356,7 +356,7 @@ mod parser_tests {
         .unwrap(),
     )
     .unwrap();
-    let parser = Parser::from_path(&Uri::from_str("/api/posts?$=user.*").unwrap());
+    let parser = Parser::from_uri(&Uri::from_str("/api/posts?$=user.*").unwrap());
     assert_eq!(
       parser
         .unwrap()

@@ -16,7 +16,7 @@ pub async fn api_request<T: DeserializeOwned + GraphQLRequestLike>(
   server_ctx: &ServerContext,
 ) -> anyhow::Result<Response<Body>> {
   if let Some(query) = req.uri().path_and_query() {
-    let mut parser = Parser::from_path(req.uri())?;
+    let mut parser = Parser::from_uri(req.uri())?;
     let request = parser.parse::<T>(&server_ctx.blueprint.definitions);
     match request {
       Ok(request) => {

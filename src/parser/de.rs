@@ -1,4 +1,4 @@
-use std::collections::{HashMap, LinkedList};
+use std::collections::{HashMap, VecDeque};
 
 use serde::de::Error;
 use serde_json::{Map, Value};
@@ -25,69 +25,85 @@ pub fn parse_selections_string(
   input: &str,
   operation: &str,
 ) -> Result<Map<String, Value>, serde_json::Error> {
+  // let the root node (i.e. operation) be `foo`
+  // so the query can be either in form of `foo.foo1.bar` or `foo.bar` or `bar`
+
   let mut p = String::new();
   let mut hm = Map::new();
   let mut curhm = &mut hm;
-  let mut queue: LinkedList<String> = LinkedList::new();
+  let mut queue: VecDeque<String> = VecDeque::new();
   for char in input.chars() {
     match char {
       '*' => {
-        let mut tmp_defi = &mut defi_hm;
-        if let Some(first) = queue.front() {
-          if !first.eq_ignore_ascii_case(operation) {
-            queue.push_front(operation.to_owned());
-          }
-        } else {
-          queue.push_front(operation.to_owned());
-        }
-        let mut len = queue.len();
-        while len > 0 {
-          match len {
-            1 => {
-              let last = queue.pop_front().unwrap();
-              *curhm = tmp_defi
-                .get(&last)
-                .ok_or(serde_json::Error::custom(format!("404 - key: {last} not found")))?
-                .as_object()
-                .cloned()
-                .unwrap();
-            }
-            _ => {
-              let key = queue.pop_front().unwrap();
-              tmp_defi = tmp_defi
-                .get_mut(&key)
-                .ok_or(serde_json::Error::custom(format!("404 - key: {key} not found")))?;
-            }
-          }
-          len -= 1;
-        }
+        parse_wildcard_selections(&mut curhm, &mut defi_hm, &mut queue, operation)?;
         curhm = &mut hm;
       }
       '.' => {
         if !p.is_empty() {
-          let pc = p.clone();
-          curhm = curhm
-            .entry(&pc)
+          curhm = curhm // as keys are seperated by `.` it creates nested object for nested key.
+            .entry(&p)
             .or_insert_with(|| Value::Object(Map::new()))
             .as_object_mut()
             .unwrap();
-          queue.push_back(pc);
-          p.clear();
+          queue.push_back(p); // put the current key to the queue.
+          p = String::new();
         }
       }
       ',' => {
+        // queries are seperated by commas so the hashmap is set back to root and queue is cleared.
         queue.clear();
-        curhm.insert(p.clone(), Value::Null);
+        curhm.insert(p, Value::Null);
         curhm = &mut hm;
-        p.clear();
+        p = String::new();
       }
       _ => {
+        // push the keys/chars to the string
         p.push(char);
       }
     }
   }
-  curhm.insert(p.to_string(), Value::Null);
+  curhm.insert(p, Value::Null);
   Ok(hm)
+}
+#[allow(clippy::too_many_arguments)]
+#[inline]
+fn parse_wildcard_selections(
+  curhm: &mut &mut Map<String, Value>,
+  mut tmp_defi: &mut Value,
+  queue: &mut VecDeque<String>,
+  operation: &str,
+) -> Result<(), serde_json::Error> {
+  if let Some(first) = queue.front() {
+    if !first.eq_ignore_ascii_case(operation) {
+      queue.push_front(operation.to_owned());
+    }
+  } else {
+    queue.push_front(operation.to_owned()); // if queue does not contain root node then add it in the front.
+  }
+  let mut len = queue.len();
+  loop {
+    // this loop iterates over all the queried keys and gets till the last node requested.
+    match len {
+      1 => {
+        let last = queue.pop_front().unwrap();
+        **curhm = tmp_defi
+          .get(&last)
+          .ok_or(serde_json::Error::custom(format!("404 - key: {last} not found")))?
+          .as_object()
+          .cloned()
+          .unwrap();
+        break;
+      }
+      _ => {
+        let key = queue.pop_front().unwrap();
+        tmp_defi = tmp_defi
+          .get_mut(&key)
+          .ok_or(serde_json::Error::custom(format!("404 - key: {key} not found")))?;
+      }
+    }
+    len -= 1;
+  }
+  Ok(())
 }
 
 pub fn parse_arguments_string(matches: &str) -> Result<Map<String, Value>, serde_json::Error> {
@@ -100,19 +116,19 @@ pub fn parse_arguments_string(matches: &str) -> Result<Map<String, Value>, serde
     match char {
       '.' => {
         curhm = curhm
-          .entry(p.clone())
+          .entry(p)
           .or_insert_with(|| Value::Object(Map::new()))
           .as_object_mut()
           .unwrap();
-        p.clear();
+        p = String::new();
         b = false;
       }
       ',' => {
         b = false;
-        curhm.insert(p.clone(), Value::from(p1.clone()));
+        curhm.insert(p, Value::from(p1));
         curhm = &mut hm;
-        p.clear();
-        p1.clear();
+        p = String::new();
+        p1 = String::new();
       }
       '=' => {
         b = true;
@@ -149,7 +165,11 @@ pub fn de_kebab(qry: &str) -> String {
   converter.convert(qry)
 }
 
-pub fn to_json(value: &Value, result: &mut HashMap<usize, PosValHolder>, prl: (Option<String>, &String, usize)) {
+pub fn deserialize_to_levelwise_args(
+  value: &Value,
+  result: &mut HashMap<usize, PosValHolder>,
+  prl: (Option<String>, &String, usize),
+) {
   match value {
     Value::Null | Value::Bool(_) | Value::Number(_) => (),
     Value::String(s) => {
@@ -163,13 +183,13 @@ pub fn to_json(value: &Value, result: &mut HashMap<usize, PosValHolder>, prl: (O
     Value::Array(arr) => {
       let (parent_key, root_node, level) = prl;
       for v in arr.iter() {
-        to_json(v, result, (parent_key.clone(), root_node, level + 1));
+        deserialize_to_levelwise_args(v, result, (parent_key.clone(), root_node, level + 1));
       }
     }
     Value::Object(obj) => {
       let (_, root_node, level) = prl;
       for (k, v) in obj.iter() {
-        to_json(
+        deserialize_to_levelwise_args(
           v,
           result,
           (
