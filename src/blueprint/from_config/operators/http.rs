@@ -68,13 +68,9 @@ impl<'a> MustachePartsValidator<'a> {
     match head {
       "value" => {
         let val_type = self.get_valid_nested_type(&parts[1..], is_query);
-        match val_type {
-          Ok(_) => {
-            // if we're here, we've already validated the everything
-          }
-          Err(e) => {
-            return Valid::fail(e);
-          }
+
+        if val_type.is_err() {
+          return Valid::fail(val_type.unwrap_err());
         }
       }
       "args" => {
