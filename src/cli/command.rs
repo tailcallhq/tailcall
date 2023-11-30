@@ -48,7 +48,7 @@ pub enum Command {
     out_file_path: Option<String>,
 
     /// Operations to check
-    #[arg(short, long)]
+    #[arg(short, long, num_args = 1..)]
     operations: Vec<String>,
   },
 
