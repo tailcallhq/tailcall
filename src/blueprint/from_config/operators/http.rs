@@ -24,14 +24,14 @@ impl<'a> MustachePartsValidator<'a> {
     Self { type_of, config, field }
   }
 
-  fn validate_type(&self, tail: &[String], is_query: bool) -> Result<(), String> {
-    let mut len = tail.len();
+  fn validate_type(&self, parts: &[String], is_query: bool) -> Result<(), String> {
+    let mut len = parts.len();
     let mut type_of = self.type_of;
-    for item in tail {
+    for item in parts {
       let field = type_of
         .fields
         .get(item)
-        .ok_or_else(|| format!("no value '{}' found", tail[0..tail.len() - len + 1].join(".").as_str()))?;
+        .ok_or_else(|| format!("no value '{}' found", parts[0..parts.len() - len + 1].join(".").as_str()))?;
       let val_type = to_type(field, None);
 
       if !is_query && val_type.is_nullable() {
@@ -45,7 +45,7 @@ impl<'a> MustachePartsValidator<'a> {
       type_of = self
         .config
         .find_type(&field.type_of)
-        .ok_or_else(|| format!("no type '{}' found", tail.join(".").as_str()))?;
+        .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
 
       len -= 1;
     }
