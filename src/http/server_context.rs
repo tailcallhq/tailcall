@@ -60,6 +60,7 @@ fn assign_url_obj_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
   let mut url_obj_fields: UrlToObjFieldsMap = BTreeMap::new();
 
   let all_upstream_graphql_urls = get_all_graphql_upstream_urls(blueprint);
+
   for url in all_upstream_graphql_urls.clone() {
     url_obj_fields.insert(url.clone(), BTreeMap::new());
   }
@@ -69,16 +70,13 @@ fn assign_url_obj_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
         let field_pair = (field.name.clone(), field.of_type.name().to_string());
         if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &field.resolver {
           let obj_fields = url_obj_fields.get_mut(&req_template.url);
-          match obj_fields {
-            Some(obj_fields) => {
-              if let Some(fields) = obj_fields.get_mut(&def.name) {
-                fields.push(field_pair);
-              } else {
-                let fields = vec![field_pair];
-                obj_fields.insert(def.name.clone(), fields);
-              }
+          if let Some(obj_fields) = obj_fields {
+            if let Some(fields) = obj_fields.get_mut(&def.name) {
+              fields.push(field_pair);
+            } else {
+              let fields = vec![field_pair];
+              obj_fields.insert(def.name.clone(), fields);
             }
-            None => {}
           }
         } else {
           // no resolver, add field pair for all urls
@@ -86,16 +84,14 @@ fn assign_url_obj_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
           for url in all_upstream_graphql_urls {
             let field_pair = (field.name.clone(), field.of_type.name().to_string());
             let obj_fields = url_obj_fields.get_mut(&url);
-            match obj_fields {
-              Some(obj_fields) => {
-                if let Some(fields) = obj_fields.get_mut(&def.name) {
-                  fields.push(field_pair);
-                } else {
-                  let fields = vec![field_pair];
-                  obj_fields.insert(def.name.clone(), fields);
-                }
+
+            if let Some(obj_fields) = obj_fields {
+              if let Some(fields) = obj_fields.get_mut(&def.name) {
+                fields.push(field_pair);
+              } else {
+                let fields = vec![field_pair];
+                obj_fields.insert(def.name.clone(), fields);
               }
-              None => {}
             }
           }
         }
@@ -103,11 +99,7 @@ fn assign_url_obj_fields(blueprint: &mut Blueprint) -> &mut Blueprint {
     }
   }
 
-  println!("url_obj_fields: {:?}", url_obj_fields);
-
   let url_obj_ids = get_url_obj_ids(blueprint);
-  println!("url_obj_ids:");
-  println!("{:?}", url_obj_ids);
 
   for def in blueprint.definitions.iter_mut() {
     if let Definition::ObjectTypeDefinition(def) = def {
@@ -167,18 +159,15 @@ fn get_url_obj_ids(blueprint: &Blueprint) -> BTreeMap<String, BTreeMap<String, V
               }
               None => None,
             };
-
             if let Some(obj_ids) = url_obj_ids.get_mut(&req_template.url) {
               if let Some(ids) = obj_ids.get_mut(&req_template.parent_type_name) {
-                match id {
-                  Some(id) => ids.push(id),
-                  None => {}
+                if let Some(id) = id {
+                  ids.push(id)
                 }
               } else {
                 let mut ids: Vec<String> = Vec::new();
-                match id {
-                  Some(id) => ids.push(id),
-                  None => {}
+                if let Some(id) = id {
+                  ids.push(id)
                 }
                 obj_ids.insert(req_template.parent_type_name.clone(), ids);
               }

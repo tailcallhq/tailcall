@@ -76,12 +76,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationCon
     filter_selection_set: bool,
   ) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
-
     match (filter_selection_set, selection_set_filter) {
-      (true, Some(SelectionSetFilterData { url_obj_fields, field_type, url, url_obj_ids })) => format_selection_set(
-        selection_set,
-        SelectionSetFilterData { url_obj_fields, field_type, url, url_obj_ids },
-      ),
+      (true, Some(selection_set_filter)) => format_selection_set(selection_set, selection_set_filter),
       _ => format_selection_set_unfiltered(selection_set),
     }
   }
@@ -117,15 +113,11 @@ fn format_selection_set<'a>(
     })
     .collect::<Vec<_>>();
 
-  println!("selection set without ids added: {:?}", set);
-
-  if !set.is_empty() {
-    for (_, obj_ids) in selection_set_filter.url_obj_ids {
-      obj_ids.get(&selection_set_filter.field_type).map(|ids| {
-        for id in ids {
-          set.extend([id.clone()]);
-        }
-      });
+  for (_, obj_ids) in selection_set_filter.url_obj_ids {
+    if let Some(ids) = obj_ids.get(&selection_set_filter.field_type) {
+      for id in ids {
+        set.extend([id.clone()]);
+      }
     }
   }
 
@@ -147,7 +139,11 @@ fn format_selection_set_unfiltered<'a>(selection_set: impl Iterator<Item = Selec
 fn format_selection_field(field: SelectionField, selection_set_filter: SelectionSetFilterData) -> String {
   let name = field.name();
   let arguments = format_selection_field_arguments(field);
-  let selection_set = format_selection_set(field.selection_set(), selection_set_filter);
+  let selection_set = if field.selection_set().peekable().peek().is_some() {
+    format_selection_set(field.selection_set(), selection_set_filter)
+  } else {
+    None
+  };
 
   if let Some(set) = selection_set {
     format!("{}{} {}", name, arguments, set)

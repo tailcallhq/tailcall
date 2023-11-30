@@ -6,6 +6,7 @@ pub type UrlToFieldNameAndTypePairsMap = BTreeMap<String, FieldNameAndTypePairs>
 pub type ObjectNameToFieldPairsMap = BTreeMap<String, FieldNameAndTypePairs>;
 pub type UrlToObjFieldsMap = BTreeMap<String, ObjectNameToFieldPairsMap>;
 
+#[derive(Debug)]
 pub struct SelectionSetFilterData {
   pub url_obj_fields: UrlToObjFieldsMap,
   pub field_type: String,

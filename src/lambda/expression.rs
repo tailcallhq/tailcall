@@ -157,7 +157,6 @@ impl Expression {
             set_cache_control(ctx, &res);
             parse_graphql_response(
               ctx, res, field_name, path,
-              // req_template.federate.as_ref().map(|f| f.path.clone()),
             )
           }
           Unsafe::JS(input, script) => {

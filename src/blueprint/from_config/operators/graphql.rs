@@ -28,7 +28,7 @@ pub fn update_graphql<'a>(
             GraphqlRequestTemplate::new(
               base_url.to_owned(),
               operation_type,
-              &graphql.name,
+              &graphql.name.clone().unwrap_or_default(),
               args,
               header_map,
               graphql.federate.unwrap_or(false),
@@ -41,7 +41,7 @@ pub fn update_graphql<'a>(
           )
         })
         .map(|req_template| {
-          let field_name = graphql.name.clone();
+          let field_name = graphql.name.clone().unwrap_or_default();
           b_field.resolver(Some(
             Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
           ))

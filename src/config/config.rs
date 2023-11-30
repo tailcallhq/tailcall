@@ -329,7 +329,7 @@ pub struct Http {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Graphql {
-  pub name: String,
+  pub name: Option<String>,
   pub args: Option<KeyValues>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,

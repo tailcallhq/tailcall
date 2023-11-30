@@ -116,7 +116,6 @@ impl GraphqlRequestTemplate {
             .clone()
         })
         .unwrap_or_default();
-
       let arg_map = self.operation_arguments.as_ref().map_or_else(BTreeMap::new, |args| {
         BTreeMap::from_iter(args.iter().map(|(k, v)| (k, v.render_graphql(ctx))))
       });
