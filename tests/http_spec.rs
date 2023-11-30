@@ -1,10 +1,11 @@
 extern crate core;
 
 use std::collections::BTreeMap;
-use std::fs;
+use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
+use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use async_graphql_value::ConstValue;
@@ -228,13 +229,22 @@ async fn assert_downstream(spec: HttpSpec) {
     if let Some(Annotation::Fail) = spec.runner {
       let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
-      log::error!("{} {} ... failed", spec.name, spec.path.display());
-      panic!(
-        "Expected spec: {} {} to fail but it passed",
-        spec.name,
-        spec.path.display()
-      );
+      let result = panic::catch_unwind(AssertUnwindSafe(|| {
+        assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
+      }));
+
+      match result {
+        Ok(_) => {
+          panic!(
+            "Expected spec: {} {} to fail but it passed",
+            spec.name,
+            spec.path.display()
+          );
+        }
+        Err(_) => {
+          log::error!("{} {} ... failed", spec.name, spec.path.display());
+        }
+      }
     } else {
       let response = run(spec.clone(), &assertion)
         .await
