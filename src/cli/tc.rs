@@ -60,7 +60,7 @@ pub fn run() -> Result<()> {
             ));
           }
 
-          Ok(validate_operations(&blueprint, operations)?)
+          validate_operations(&blueprint, operations)
         }
         Err(e) => Err(e.into()),
       }
@@ -152,7 +152,7 @@ pub async fn init(folder_path: &str) -> Result<()> {
 pub fn display_schema(blueprint: &Blueprint) {
   Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
   let sdl = blueprint.to_schema();
-  Fmt::display(print_schema::print_schema(sdl));
+  Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
@@ -184,6 +184,7 @@ fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result
 
     for op in operations.iter() {
       if let Ok(operation) = tokio::fs::read_to_string(op).await {
+        // Fake execution to get errors
         let Response { errors, .. } = schema.execute(&operation).await;
         execution.push((op, errors));
       } else {
@@ -199,6 +200,6 @@ fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result
         .join("\n\n"),
     );
 
-    Ok::<_, anyhow::Error>(())
+    Ok(())
   })
 }
