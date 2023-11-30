@@ -34,6 +34,10 @@ impl<'a> MustachePartsValidator<'a> {
       let val_type = to_type(field, None);
 
       if len == 1 {
+        if !is_scalar(val_type.name()) {
+          return Err(format!("value '{}' is not of a scalar type", item.as_str()));
+        }
+
         return Ok((val_type, item.to_owned()));
       } else if !is_query && val_type.is_nullable() {
         return Err(format!("value '{}' is a nullable type", item.as_str()));
@@ -68,9 +72,6 @@ impl<'a> MustachePartsValidator<'a> {
         let val_type = self.get_nested_type(&parts[1..], is_query);
         match val_type {
           Ok((val_type, tail)) => {
-            if !is_scalar(val_type.name()) {
-              return Valid::fail(format!("value '{tail}' is not of a scalar type"));
-            }
 
             // Queries can use optional values
             if !is_query && val_type.is_nullable() {
