@@ -23,6 +23,7 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
+
   fn get_valid_nested_type(&self, tail: &[String], is_query: bool) -> Result<(Type, String), String> {
     let mut len = tail.len();
     let mut type_of = self.type_of;
