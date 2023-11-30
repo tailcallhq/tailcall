@@ -23,7 +23,7 @@ impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
-  fn get_nested_type(&self, tail: &[String], is_query: bool) -> Result<(Type, String), String> {
+  fn get_valid_nested_type(&self, tail: &[String], is_query: bool) -> Result<(Type, String), String> {
     let mut len = tail.len();
     let mut type_of = self.type_of;
     for item in tail {
@@ -33,14 +33,12 @@ impl<'a> MustachePartsValidator<'a> {
         .ok_or_else(|| format!("no value '{}' found", tail[0..tail.len() - len + 1].join(".").as_str()))?;
       let val_type = to_type(field, None);
 
-      if len == 1 {
-        if !is_scalar(val_type.name()) {
-          return Err(format!("value '{}' is not of a scalar type", item.as_str()));
-        }
-
-        return Ok((val_type, item.to_owned()));
-      } else if !is_query && val_type.is_nullable() {
+      if !is_query && val_type.is_nullable() {
         return Err(format!("value '{}' is a nullable type", item.as_str()));
+      } else if len == 1 && !is_scalar(val_type.name()) {
+        return Err(format!("value '{}' is not of a scalar type", item.as_str()));
+      } else if len == 1 {
+        return Ok((val_type, item.to_owned()));
       }
 
       type_of = self
@@ -69,14 +67,9 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        let val_type = self.get_nested_type(&parts[1..], is_query);
+        let val_type = self.get_valid_nested_type(&parts[1..], is_query);
         match val_type {
-          Ok((val_type, tail)) => {
-
-            // Queries can use optional values
-            if !is_query && val_type.is_nullable() {
-              return Valid::fail(format!("value '{tail}' is a nullable type"));
-            }
+          Ok(_) => {
           }
           Err(e) => {
             return Valid::fail(e);

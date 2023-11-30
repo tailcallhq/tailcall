@@ -32,7 +32,7 @@ type Post {
   userNullable: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
   nestedUserNullable: User
     @http(path: "/users/{{value.nonNullableUser.nestedUser.id}}", baseURL: "http://localhost:8080")
-  nestedNonScalar: User @http(path: "/users/{{value.nonNullableUser.nestedUser}}", baseURL: "http://localhost:8080")
+  nestedNonScalar: User @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser}}", baseURL: "http://localhost:8080")
   nestedUndefinedValue: User
     @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser.userId}}", baseURL: "http://localhost:8080")
   nestedNullable: User
@@ -50,7 +50,7 @@ type Post {
 
 #> client-sdl
 type Failure
-  @error(message: "value 'nestedUser' is not of a scalar type", trace: ["Post", "nestedNonScalar", "@http", "path"])
+  @error(message: "value 'nonNullableNestedUser' is not of a scalar type", trace: ["Post", "nestedNonScalar", "@http", "path"])
 type Failure @error(message: "value 'id' is a nullable type", trace: ["Post", "nestedNullable", "@http", "path"])
 type Failure
   @error(
