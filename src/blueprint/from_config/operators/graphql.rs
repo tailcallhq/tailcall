@@ -28,10 +28,9 @@ pub fn update_graphql<'a>(
             GraphqlRequestTemplate::new(
               base_url.to_owned(),
               operation_type,
-              &graphql.name.clone().unwrap_or_default(),
+              &graphql.name,
               args,
               header_map,
-              graphql.federate.unwrap_or(false),
               field.type_of.clone(),
               object_name.to_string(),
               b_field.name.clone(),

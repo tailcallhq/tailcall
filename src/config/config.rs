@@ -339,7 +339,6 @@ pub struct Graphql {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub batch: bool,
-  pub federate: Option<bool>,
   #[serde(rename = "filterSelectionSet")]
   pub filter_selection_set: Option<bool>,
 }

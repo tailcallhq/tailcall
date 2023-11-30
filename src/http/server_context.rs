@@ -144,7 +144,7 @@ fn get_url_obj_ids(blueprint: &Blueprint) -> BTreeMap<String, BTreeMap<String, V
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &def.fields {
         if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &field.resolver {
-          if req_template.federate && url_obj_ids.get(&req_template.url).is_none() {
+          if req_template.is_entities_query() && url_obj_ids.get(&req_template.url).is_none() {
             url_obj_ids.insert(req_template.url.clone(), BTreeMap::new());
           }
         }
@@ -156,7 +156,7 @@ fn get_url_obj_ids(blueprint: &Blueprint) -> BTreeMap<String, BTreeMap<String, V
     if let Definition::ObjectTypeDefinition(def) = def {
       for field in &def.fields {
         if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &field.resolver {
-          if req_template.federate {
+          if req_template.is_entities_query() {
             let id = match &req_template.operation_arguments {
               Some(args) => {
                 if !args.is_empty() {

@@ -25,12 +25,7 @@ type Location {
   name: String!
   "A short description about the location"
   description: String!
-    @graphql(
-      name: "description" # use name _entities for federated call, remove federate flag.
-      args: [{key: "id", value: "{{value.id}}"}]
-      baseURL: "https://flyby-locations-sub.herokuapp.com/"
-      federate: true
-    )
+    @graphql(args: [{key: "id", value: "{{value.id}}"}], baseURL: "https://flyby-locations-sub.herokuapp.com/")
   "The location's main photo as a URL"
   photo: String!
   "The calculated overall rating based on all reviews"

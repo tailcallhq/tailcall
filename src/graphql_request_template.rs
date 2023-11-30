@@ -18,10 +18,9 @@ use crate::path_string::PathGraphql;
 pub struct GraphqlRequestTemplate {
   pub url: String,
   pub operation_type: GraphQLOperationType,
-  pub operation_name: String,
+  pub operation_name: Option<String>,
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
   pub headers: Vec<(HeaderName, Mustache)>,
-  pub federate: bool,
   pub field_type: String,
   pub parent_type_name: String,
   pub field_name: String,
@@ -73,7 +72,8 @@ impl GraphqlRequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> reqwest::Request {
-    if !self.federate {
+    println!("operation_name: {:?}", self.operation_name);
+    if self.operation_name.is_some() {
       let operation_type = &self.operation_type;
       let selection_set = ctx
         .selection_set(
@@ -87,6 +87,7 @@ impl GraphqlRequestTemplate {
         )
         .unwrap_or_default();
 
+      let operation_name = self.operation_name.clone().unwrap_or_default();
       let operation = self
         .operation_arguments
         .as_ref()
@@ -97,20 +98,21 @@ impl GraphqlRequestTemplate {
             .collect::<Vec<_>>()
             .join(", ")
         })
-        .map(|args| format!("{}({})", self.operation_name, args))
-        .unwrap_or(self.operation_name.clone());
+        .map(|args| format!("{}({})", operation_name, args))
+        .unwrap_or(operation_name);
 
       let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
 
       req.body_mut().replace(graphql_query.into());
       req
     } else {
+      // _entities query
       let id = self
         .operation_arguments
         .as_ref()
         .map(|args| {
           args
-            .first() // TODO - validate that args are present if federate is true
+            .first() // TODO verify that args are present if name is not specified.
             .unwrap_or(&("".to_string(), Mustache::from(vec![Segment::Literal("".to_string())])))
             .0
             .clone()
@@ -127,6 +129,7 @@ impl GraphqlRequestTemplate {
         self.parent_type_name,
         self.field_name
       );
+      println!("entities query: {}", graphql_query);
       req.body_mut().replace(graphql_query.into());
       req
     }
@@ -135,10 +138,9 @@ impl GraphqlRequestTemplate {
   pub fn new(
     url: String,
     operation_type: &GraphQLOperationType,
-    operation_name: &str,
+    operation_name: &Option<String>,
     args: Option<&KeyValues>,
     headers: HeaderMap<HeaderValue>,
-    federate: bool,
     field_type: String,
     parent_type_name: String,
     field_name: String,
@@ -163,10 +165,9 @@ impl GraphqlRequestTemplate {
     Ok(Self {
       url,
       operation_type: operation_type.to_owned(),
-      operation_name: operation_name.to_owned(),
+      operation_name: operation_name.clone(),
       operation_arguments,
       headers,
-      federate,
       field_type,
       parent_type_name,
       field_name,
@@ -174,6 +175,10 @@ impl GraphqlRequestTemplate {
       url_obj_fields: BTreeMap::new(),
       url_obj_ids: BTreeMap::new(),
     })
+  }
+
+  pub fn is_entities_query(&self) -> bool {
+    self.operation_name.is_none()
   }
 }
 
@@ -221,10 +226,9 @@ mod tests {
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Query,
-      "myQuery",
+      &Some("myQuery".to_string()),
       None,
       HeaderMap::new(),
-      false,
       "".to_string(),
       "".to_string(),
       "".to_string(),
@@ -255,10 +259,9 @@ mod tests {
     let tmpl = GraphqlRequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Mutation,
-      "create",
+      &Some("create".to_string()),
       Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
       HeaderMap::new(),
-      false,
       "".to_string(),
       "".to_string(),
       "".to_string(),

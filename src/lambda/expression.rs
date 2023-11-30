@@ -144,7 +144,7 @@ impl Expression {
           }
           Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
             let req = req_template.to_request(ctx)?;
-            let path = if req_template.federate {
+            let path = if req_template.is_entities_query() {
               Some(vec![
                 "_entities".to_string(),
                 "0".to_string(),
