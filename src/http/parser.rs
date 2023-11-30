@@ -4,7 +4,7 @@ use hyper::Uri;
 use serde::de::{DeserializeOwned, Error};
 use serde_json::{Map, Value};
 
-use crate::blueprint::{is_scalar, Definition};
+use crate::blueprint::{is_scalar, Definition, FieldDefinition};
 use crate::parser::de::{
   de_kebab, deserialize_to_levelwise_args, next_token, parse_args, parse_arguments_string, parse_operation,
   parse_selections, parse_selections_string, value_to_graphql_selections,
@@ -140,7 +140,7 @@ fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_js
       .as_object_mut()
       .unwrap();
 
-    for field in definition.fields().unwrap_or(&vec![]) {
+    for field in get_fields(definition).unwrap_or(&vec![]) {
       if is_scalar(field.of_type.name()) {
         current_definition.insert(field.name.clone(), Value::Null);
       } else {
@@ -152,6 +152,13 @@ fn build_definition_map(definitions: &Vec<Definition>) -> Result<Value, serde_js
   }
 
   create_query_map(&definition_map, definition_map.get("Query").unwrap().clone())
+}
+
+pub fn get_fields(definition: &Definition) -> Option<&Vec<FieldDefinition>> {
+  match definition {
+    Definition::ObjectTypeDefinition(f) => Some(&f.fields),
+    _ => None,
+  }
 }
 
 fn create_query_map(definition_map: &Map<String, Value>, query_value: Value) -> Result<Value, serde_json::Error> {

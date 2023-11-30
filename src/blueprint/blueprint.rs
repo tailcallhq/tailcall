@@ -71,12 +71,6 @@ impl Definition {
       Definition::UnionTypeDefinition(def) => &def.name,
     }
   }
-  pub fn fields(&self) -> Option<&Vec<FieldDefinition>> {
-    match self {
-      Definition::ObjectTypeDefinition(f) => Some(&f.fields),
-      _ => None,
-    }
-  }
 }
 
 #[derive(Clone, Debug)]
