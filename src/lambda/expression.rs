@@ -52,6 +52,11 @@ pub enum Unsafe {
   JS(Box<Expression>, String),
 }
 
+pub struct ValueExtractParams<'a> {
+  field_name: &'a str,
+  path: Option<Vec<String>>,
+}
+
 impl Debug for Unsafe {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
@@ -155,9 +160,7 @@ impl Expression {
             };
 
             set_cache_control(ctx, &res);
-            parse_graphql_response(
-              ctx, res, field_name, path,
-            )
+            parse_graphql_response(ctx, res, ValueExtractParams { field_name, path })
           }
           Unsafe::JS(input, script) => {
             let result;
@@ -235,8 +238,7 @@ async fn execute_request_with_dl<
 fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   res: Response,
-  field_name: &str,
-  path: Option<Vec<String>>,
+  extract_params: ValueExtractParams,
 ) -> Result<async_graphql::Value> {
   let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
 
@@ -244,8 +246,14 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx.add_error(error);
   }
 
-  match path {
-    None => Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default()),
+  match extract_params.path {
+    None => Ok(
+      res
+        .data
+        .get_key(extract_params.field_name)
+        .map(|v| v.to_owned())
+        .unwrap_or_default(),
+    ),
     Some(path) => Ok(
       get_path_value(&res.data, &path)
         .map(|v| v.to_owned())

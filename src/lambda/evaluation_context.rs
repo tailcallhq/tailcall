@@ -93,7 +93,7 @@ fn format_selection_set<'a>(
         .url_obj_fields
         .get(&selection_set_filter.url)
         .and_then(|obj_fields| {
-          obj_fields.get(&selection_set_filter.field_type).and_then(|fields| {
+          obj_fields.get(&selection_set_filter.obj_name).and_then(|fields| {
             fields
               .iter()
               .find(|(name, _)| name == selection_field.name())
@@ -102,7 +102,7 @@ fn format_selection_set<'a>(
                   selection_field,
                   SelectionSetFilterData {
                     url_obj_fields: selection_set_filter.url_obj_fields.clone(),
-                    field_type: child_field_type.to_owned(),
+                    obj_name: child_field_type.to_owned(),
                     url: selection_set_filter.url.clone(),
                     url_obj_ids: selection_set_filter.url_obj_ids.clone(),
                   },
@@ -114,7 +114,7 @@ fn format_selection_set<'a>(
     .collect::<Vec<_>>();
 
   for (_, obj_ids) in selection_set_filter.url_obj_ids {
-    if let Some(ids) = obj_ids.get(&selection_set_filter.field_type) {
+    if let Some(ids) = obj_ids.get(&selection_set_filter.obj_name) {
       for id in ids {
         set.extend([id.clone()]);
       }

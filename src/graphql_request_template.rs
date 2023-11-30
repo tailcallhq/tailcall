@@ -79,7 +79,7 @@ impl GraphqlRequestTemplate {
         .selection_set(
           Some(SelectionSetFilterData {
             url_obj_fields: self.url_obj_fields.clone(),
-            field_type: self.field_type.clone(),
+            obj_name: self.field_type.clone(),
             url: self.url.clone(),
             url_obj_ids: self.url_obj_ids.clone(),
           }),
