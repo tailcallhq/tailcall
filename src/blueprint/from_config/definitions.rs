@@ -294,33 +294,19 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 }
 
 pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
-  let to_field = |name: &String, field: &Field| {
+  let to_field = |name: &String, field: &Field, is_add_field: bool| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
-    update_args()
+    let f = update_args()
       .and(update_http().trace("@http"))
       .and(update_unsafe().trace("@unsafe"))
       .and(update_const_field().trace("@const"))
-      .and(update_modify().trace("@modify"))
-      .and(update_ref_field())
-      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-  };
-
-  let add_to_field = |name: &String, field: &Field| {
-    let directives = field.resolvable_directives();
-    if directives.len() > 1 {
-      return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
-    }
-
-    update_args()
-      .and(update_http().trace("@http"))
-      .and(update_unsafe().trace("@unsafe"))
-      .and(update_const_field().trace("@const"))
-      .and(update_modify().trace("@modify"))
-      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+      .and(update_modify().trace("@modify"));
+    let f = if !is_add_field { f.and(update_ref_field()) } else { f };
+    f.try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
   let fields = Valid::from_iter(
@@ -330,7 +316,7 @@ pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefi
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
     |(name, field)| {
       validate_field_type_exist(config, field)
-        .and(to_field(name, field))
+        .and(to_field(name, field, false))
         .trace(name)
     },
   );
@@ -355,7 +341,7 @@ pub fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefi
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
           };
-          add_to_field(&add_field.name, &new_field)
+          to_field(&add_field.name, &new_field, true)
             .and_then(|field_definition| {
               let added_field_path = match source_field.http {
                 Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
