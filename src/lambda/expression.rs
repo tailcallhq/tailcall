@@ -158,7 +158,6 @@ impl Expression {
             } else {
               execute_raw_request(ctx, req).await?
             };
-
             set_cache_control(ctx, &res);
             parse_graphql_response(ctx, res, ValueExtractParams { field_name, path })
           }

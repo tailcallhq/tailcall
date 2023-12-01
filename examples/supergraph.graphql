@@ -7,8 +7,10 @@ schema
 type Query {
   # allPandas: [Panda] @join__field(graph: PANDAS)
   # panda(name: ID!): Panda @join__field(graph: PANDAS)
+
   allProducts: [Product]
     @graphql(name: "allProducts", baseURL: "http://localhost:4001/graphql", filterSelectionSet: true)
+
   product(id: ID!): Product
     @graphql(
       name: "product"
@@ -16,6 +18,7 @@ type Query {
       baseURL: "http://localhost:4001/graphql"
       filterSelectionSet: true
     )
+
   # review(id: Int!): Review @join__field(graph: REVIEWS)
 }
 
@@ -32,11 +35,6 @@ type Product {
   reviewsCount: Int! @graphql(args: [{key: "id", value: "{{value.id}}"}], baseURL: "http://localhost:4005/graphql")
   reviews: [Review!]! @graphql(args: [{key: "id", value: "{{value.id}}"}], baseURL: "http://localhost:4005/graphql")
 }
-
-# interface ProductItf {
-# 	name: String
-# 	createdBy: User
-# }
 
 type ProductVariation {
   id: ID!

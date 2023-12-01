@@ -84,7 +84,6 @@ impl GraphqlRequestTemplate {
       )
       .unwrap_or_default();
 
-    println!("operation_name: {:?}", self.operation_name);
     if self.operation_name.is_some() {
       let operation_type = &self.operation_type;
 
@@ -103,7 +102,6 @@ impl GraphqlRequestTemplate {
         .unwrap_or(operation_name);
 
       let graphql_query = format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
-
       req.body_mut().replace(graphql_query.into());
       req
     } else {
@@ -133,7 +131,6 @@ impl GraphqlRequestTemplate {
       let graphql_query = format!(
         r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: {typename_esc}, {id}: {id_value} }} ]) {{ ... on {typename} {{ {field_name} {selection_set} }} }} }}" }}"#,
       );
-      println!("entities query: {}", graphql_query);
       req.body_mut().replace(graphql_query.into());
       req
     }

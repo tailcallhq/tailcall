@@ -118,6 +118,7 @@ fn format_selection_set<'a>(
       for id in ids {
         set.extend([id.clone()]);
       }
+      set.extend(["__typename".to_string()]);
     }
   }
 

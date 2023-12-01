@@ -1,5 +1,5 @@
 config: !file tests/http/config/federation-router-simple.graphql
-name: Simple federation router exapmple 
+name: Simple federation router exapmple
 mock:
   - request:
       url: http://reviews/graphql
@@ -26,7 +26,7 @@ assert:
   - request:
       url: http://localhost:8000/graphql
       method: POST
-      body: 
+      body:
         query: "query { latestReviews { comment location { overallRating description } } }"
     response:
       body:
@@ -36,11 +36,3 @@ assert:
               location:
                 overallRating: 1
                 description: "Some description"
-
-
-
-
-
-
-
-
