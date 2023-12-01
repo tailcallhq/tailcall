@@ -179,12 +179,11 @@ fn logger_init() {
 
 fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result<()> {
   tokio::runtime::Runtime::new()?.block_on(async {
-    let schema = blueprint.to_schema();
+    let schema = blueprint.to_validation_schema();
     let mut execution = vec![];
 
     for op in operations.iter() {
       if let Ok(operation) = tokio::fs::read_to_string(op).await {
-        // Fake execution to get errors
         let Response { errors, .. } = schema.execute(&operation).await;
         execution.push((op, errors));
       } else {

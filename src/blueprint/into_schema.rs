@@ -189,6 +189,42 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
   schema
 }
 
+pub(crate) fn create_dumb_schema(blueprint: &Blueprint) -> SchemaBuilder {
+  let query = blueprint.query();
+  let mutation = blueprint.mutation();
+  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+  for def in blueprint.definitions.iter() {
+    let type_def = match def {
+      Definition::ObjectTypeDefinition(def) => {
+        let mut object = dynamic::Object::new(def.name.clone());
+        for field in def.fields.iter() {
+          let field = field.clone();
+          let type_ref = to_type_ref(&field.of_type);
+          let field_name = &field.name.clone();
+          let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |_ctx| {
+            FieldFuture::new(async { Ok(None::<FieldValue>) })
+          });
+          for arg in field.args.iter() {
+            dyn_schema_field =
+              dyn_schema_field.argument(dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)));
+          }
+          object = object.field(dyn_schema_field);
+        }
+        for interface in def.implements.iter() {
+          object = object.implement(interface.clone());
+        }
+
+        dynamic::Type::Object(object)
+      }
+      _ => to_type(def),
+    };
+    schema = schema.register(type_def);
+  }
+
+  schema
+}
+
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
     create(blueprint)
