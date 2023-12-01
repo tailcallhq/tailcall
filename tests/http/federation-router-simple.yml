@@ -1,0 +1,46 @@
+config: !file tests/http/config/federation-router-simple.graphql
+name: Simple federation router exapmple 
+mock:
+  - request:
+      url: http://reviews/graphql
+      method: POST
+      body: '{ "query": "query { latestReviews { comment location { overallRating id __typename } } }" }'
+    response:
+      body:
+        data:
+          latestReviews:
+            - comment: "Some comment"
+              location:
+                overallRating: 1
+                id: 1
+  - request:
+      url: http://locations/graphql
+      method: POST
+      body: '{ "query": "query { _entities(representations: [ { __typename: Location, id: 1 } ]) { ... on Location { description  } } }" }'
+    response:
+      body:
+        data:
+          _entities:
+            - description: "Some description"
+assert:
+  - request:
+      url: http://localhost:8000/graphql
+      method: POST
+      body: 
+        query: "query { latestReviews { comment location { overallRating description } } }"
+    response:
+      body:
+        data:
+          latestReviews:
+            - comment: "Some comment"
+              location:
+                overallRating: 1
+                description: "Some description"
+
+
+
+
+
+
+
+
