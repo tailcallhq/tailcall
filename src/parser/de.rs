@@ -4,13 +4,14 @@ use serde::de::Error;
 use serde_json::{Map, Value};
 type PosValHolder = HashMap<String, Vec<(String, String)>>;
 
-pub fn parse_operation(path: &str) -> String {
-  if path.len() < 6 {
-    return String::new();
+pub fn parse_operation(mut path: &str) -> String {
+  if !path.starts_with("/api/") {
+    return String::new(); // empty string is treated as null
   }
+  path = &path[5..];
   let path = de_kebab(path);
   let mut s = String::new();
-  for char in path.chars().skip(5) {
+  for char in path.chars() {
     if char.is_ascii_alphanumeric() {
       s.push(char);
     } else {
