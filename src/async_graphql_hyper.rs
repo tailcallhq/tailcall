@@ -109,24 +109,11 @@ impl GraphQLQuery {
 static APPLICATION_JSON: Lazy<HeaderValue> = Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-  pub fn to_response(self) -> Result<Response<hyper::Body>> {
-    let mut response = Response::builder()
-      .status(StatusCode::OK)
-      .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-      .body(Body::from(serde_json::to_string(&self.0)?))?;
-
-    if self.0.is_ok() {
-      if let Some(cache_control) = self.0.cache_control().value() {
-        response
-          .headers_mut()
-          .insert(CACHE_CONTROL, HeaderValue::from_str(cache_control.as_str())?);
-      }
-    }
-
-    Ok(response)
+  pub fn to_response(self) -> Result<Response<Body>> {
+    self.to_response_with_status_code(StatusCode::OK)
   }
 
-  pub fn to_response_with_status_code(self, status_code: StatusCode) -> Result<Response<hyper::Body>> {
+  pub fn to_response_with_status_code(self, status_code: StatusCode) -> Result<Response<Body>> {
     let mut response = Response::builder()
       .status(status_code)
       .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
