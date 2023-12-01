@@ -183,12 +183,11 @@ fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result
     let mut execution = vec![];
 
     for op in operations.iter() {
-      if let Ok(operation) = tokio::fs::read_to_string(op).await {
+      let operation = tokio::fs::read_to_string(op)
+        .await
+        .map_err(|_| anyhow!("Cannot read operation {}", op))?;
         let Response { errors, .. } = schema.execute(&operation).await;
         execution.push((op, errors));
-      } else {
-        return Err(anyhow!("Cannot read operation {}", op));
-      }
     }
 
     Fmt::display(
