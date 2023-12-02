@@ -27,7 +27,7 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
-    /// It is the interval after which the schema will be re read and updated automatically
+    /// The interval after which the configuration files that are served over HTTP will be reloaded
     #[arg(long)]
     poll: Option<u64>,
   },
