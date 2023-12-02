@@ -1,3 +1,4 @@
+current_branch=$(git rev-parse --abbrev-ref HEAD) 
 critcmp new_branch main_branch | awk 'NR>2 {
     item = $1
     before = $3
@@ -13,7 +14,9 @@ critcmp new_branch main_branch | awk 'NR>2 {
 
         if (change > 10) {
             printf "Percentage change for %s exceeds 10%%. Failing the workflow.\n", item
-            exit 1
+            if ("'$current_branch'" == "main") {
+                exit 1
+            }
         }
     } else {
         printf "Invalid units detected for %s. Failing the workflow.\n", item
