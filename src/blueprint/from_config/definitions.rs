@@ -5,7 +5,7 @@ use regex::Regex;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, Field, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::Lambda;
 use crate::try_fold::TryFold;
@@ -225,7 +225,7 @@ fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet
 }
 
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition, String> {
-  to_fields(type_of, config).map(|fields| {
+  to_fields(name, type_of, config).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
@@ -293,18 +293,25 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
-  let to_field = |name: &String, field: &Field| {
+fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
+  let operation_type = if config.schema.mutation.as_deref().eq(&Some(object_name)) {
+    GraphQLOperationType::Mutation
+  } else {
+    GraphQLOperationType::Query
+  };
+
+  let to_field = move |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
     update_args()
-      .and(update_http().trace("@http"))
-      .and(update_unsafe().trace("@unsafe"))
-      .and(update_const_field().trace("@const"))
-      .and(update_modify().trace("@modify"))
+      .and(update_http().trace(config::Http::trace_name().as_str()))
+      .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
+      .and(update_const_field().trace(config::Const::trace_name().as_str()))
+      .and(update_graphql(&operation_type).trace(config::Graphql::trace_name().as_str()))
+      .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
@@ -339,6 +346,7 @@ fn to_fields(type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefiniti
             http: source_field.http.clone(),
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
+            graphql: source_field.graphql.clone(),
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

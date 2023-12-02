@@ -8,7 +8,7 @@ use url::Url;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::mustache::Mustache;
-use crate::path_string::PathString;
+use crate::path::PathString;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -186,7 +186,7 @@ mod tests {
       Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
   }
-  impl crate::path_string::PathString for Context {
+  impl crate::path::PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
       self.value.path_string(parts)
     }

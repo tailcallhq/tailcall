@@ -166,10 +166,9 @@ impl HttpSpec {
 
   async fn server_context(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::from_file_or_url([file].iter()).await.ok().unwrap(),
+      ConfigSource::File(file) => Config::from_file_or_url([file].iter()).await.unwrap(),
       ConfigSource::Inline(config) => config,
     };
-
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let server_context = ServerContext::new(blueprint, client);
@@ -194,7 +193,22 @@ impl HttpClient for MockHttpClient {
       .find(|Mock { request: mock_req, response: _ }| {
         let method_match = req.method() == mock_req.0.method.clone().to_hyper();
         let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-        method_match && url_match
+        let req_body = match req.body() {
+          Some(body) => {
+            if let Some(bytes) = body.as_bytes() {
+              if let Ok(body_str) = std::str::from_utf8(bytes) {
+                Value::from(body_str)
+              } else {
+                Value::Null
+              }
+            } else {
+              Value::Null
+            }
+          }
+          None => Value::Null,
+        };
+        let body_match = req_body == mock_req.0.body;
+        method_match && url_match && body_match
       })
       .ok_or(anyhow!(
         "No mock found for request: {:?} {} in {}",
@@ -208,6 +222,11 @@ impl HttpClient for MockHttpClient {
 
     // Build the response with the status code from the mock.
     let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+
+    if status_code.is_client_error() || status_code.is_server_error() {
+      return Err(anyhow::format_err!("Status code error"));
+    }
+
     let mut response = Response { status: status_code, ..Default::default() };
 
     // Insert headers from the mock into the response.
@@ -230,7 +249,13 @@ async fn assert_downstream(spec: HttpSpec) {
       let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
       let result = panic::catch_unwind(AssertUnwindSafe(|| {
-        assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
+        assert_eq!(
+          body,
+          serde_json::to_string(&assertion.response.0.body).unwrap(),
+          "File: {} {}",
+          spec.name,
+          spec.path.display()
+        );
       }));
 
       match result {
@@ -255,19 +280,28 @@ async fn assert_downstream(spec: HttpSpec) {
       let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
 
       // Assert Status
-      assert_eq!(actual_status, assertion.response.0.status);
+      assert_eq!(
+        actual_status,
+        assertion.response.0.status,
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
 
       // Assert Body
       assert_eq!(
         to_json_pretty(actual_body).unwrap(),
-        serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
+        serde_json::to_string_pretty(&assertion.response.0.body).unwrap(),
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
       );
 
       // Assert Headers
       for (key, value) in assertion.response.0.headers.iter() {
         match actual_headers.get(key) {
           None => panic!("Expected header {} to be present", key),
-          Some(actual_value) => assert_eq!(actual_value, value),
+          Some(actual_value) => assert_eq!(actual_value, value, "File: {} {}", spec.name, spec.path.display()),
         }
       }
     }

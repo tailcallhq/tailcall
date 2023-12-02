@@ -65,7 +65,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    if let Some(group_by) = self.batched.clone() {
+    if let Some(group_by) = &self.batched {
       let mut keys = keys.to_vec();
       keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
 
