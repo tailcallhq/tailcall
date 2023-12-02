@@ -24,6 +24,7 @@ type Query {
 
 type Product {
   id: ID
+  dimensions: ProductDimension
   sku: String
   name: String
   package: String
@@ -50,4 +51,10 @@ type User {
   name: String @graphql(args: [{key: "email", value: "{{value.email}}"}], baseURL: "http://localhost:4003/graphql")
   email: String
   totalProductsCreated: Int
+}
+
+type ProductDimension
+{
+  size: String
+  weight: Float
 }
