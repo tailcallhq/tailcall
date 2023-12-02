@@ -16,19 +16,43 @@ struct MustachePartsValidator<'a> {
   field: &'a FieldDefinition,
 }
 
-fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
-  if let Some(field) = type_of.fields.get(value) {
-    return Some(to_type(field, None));
-  }
-  None
-}
-
 impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
+
+  fn validate_type(&self, parts: &[String], is_query: bool) -> Result<(), String> {
+    let mut len = parts.len();
+    let mut type_of = self.type_of;
+    for item in parts {
+      let field = type_of.fields.get(item).ok_or_else(|| {
+        format!(
+          "no value '{}' found",
+          parts[0..parts.len() - len + 1].join(".").as_str()
+        )
+      })?;
+      let val_type = to_type(field, None);
+
+      if !is_query && val_type.is_nullable() {
+        return Err(format!("value '{}' is a nullable type", item.as_str()));
+      } else if len == 1 && !is_scalar(val_type.name()) {
+        return Err(format!("value '{}' is not of a scalar type", item.as_str()));
+      } else if len == 1 {
+        break;
+      }
+
+      type_of = self
+        .config
+        .find_type(&field.type_of)
+        .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
+
+      len -= 1;
+    }
+
+    Ok(())
+  }
+
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
-    let type_of = self.type_of;
     let config = self.config;
     let args = &self.field.args;
 
@@ -41,17 +65,11 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Some(val_type) = get_value_type(type_of, tail) {
-          if !is_scalar(val_type.name()) {
-            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
-          }
+        // all items on parts except the first one
+        let tail = &parts[1..];
 
-          // Queries can use optional values
-          if !is_query && val_type.is_nullable() {
-            return Valid::fail(format!("value '{tail}' is a nullable type"));
-          }
-        } else {
-          return Valid::fail(format!("no value '{tail}' found"));
+        if let Err(e) = self.validate_type(tail, is_query) {
+          return Valid::fail(e);
         }
       }
       "args" => {
