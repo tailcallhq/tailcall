@@ -5,9 +5,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::dataloader::{DataLoader, NoCache};
-use async_graphql::Name;
-use async_graphql_value::ConstValue;
-use indexmap::IndexMap;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
@@ -28,7 +25,6 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
-  Merge(IndexMap<String, Option<Expression>>), // Merge expressions to one object
 }
 
 #[derive(Clone, Debug)]
@@ -171,20 +167,6 @@ impl Expression {
               result
             }
           }
-        }
-        Self::Merge(subs) => {
-          let mut values = IndexMap::new();
-          for sub in subs {
-            values.insert(
-              Name::new(sub.0.clone()),
-              if let Some(expr) = sub.1 {
-                expr.eval(ctx).await?
-              } else {
-                ConstValue::Null
-              },
-            );
-          }
-          Ok(async_graphql::Value::Object(values))
         }
       }
     })

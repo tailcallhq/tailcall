@@ -5,7 +5,6 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
 use crate::lambda::Expression;
-use crate::lambda::Expression::Merge;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -24,7 +23,7 @@ pub fn update_ref_field<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config:
         let mut mut_field = b_field;
         resolvers.map(|i| {
           if !i.is_empty() {
-            mut_field.resolver = Some(Merge(i));
+            mut_field.resolver = Some(Expression::Literal(serde_json::Value::Object(Default::default())));
           }
         });
         Valid::succeed(mut_field)
