@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+#[allow(dead_code)]
 pub fn gather_path_matches(input: &Value, path: &[&str]) -> Option<Value> {
   let mut current = input;
   for key in path {

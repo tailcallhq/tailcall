@@ -4,9 +4,8 @@ use std::collections::BTreeMap;
 use async_graphql::{Name, Value};
 use hyper::HeaderMap;
 use indexmap::IndexMap;
-
-use crate::lambda::{EvaluationContext, ResolverContextLike};
-use crate::path_string::PathString;
+use tailcall::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::path_string::PathString;
 
 // Use lazy_static to initialize static variables once
 lazy_static::lazy_static! {
@@ -66,6 +65,7 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
 }
 
 // Function to assert test values using EvaluationContext
+#[allow(dead_code)]
 pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
   // value assertions
   assert_eq!(

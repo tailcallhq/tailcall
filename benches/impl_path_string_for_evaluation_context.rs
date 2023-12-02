@@ -1,8 +1,11 @@
+mod benchmark;
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use tailcall::benchmark::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use tailcall::http::RequestContext;
 use tailcall::lambda::EvaluationContext;
 use tailcall::path_string::PathString;
+
+use crate::benchmark::assert_test::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 
 // constant input values for benchmarking
 const INPUT_VALUE: &[&[&str]] = &[

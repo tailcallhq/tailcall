@@ -1,8 +1,11 @@
+mod benchmark;
+
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use tailcall::benchmark::{run_data_loader_benchmark, MockHttpClient};
+
+use crate::benchmark::run_data_loader_benchmark::{run_data_loader_benchmark, MockHttpClient};
 
 // Benchmark function for the data loader
 fn benchmark_data_loader(c: &mut Criterion) {

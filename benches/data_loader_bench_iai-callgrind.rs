@@ -1,8 +1,11 @@
+mod benchmark;
+
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
-use tailcall::benchmark::{run_data_loader_benchmark, MockHttpClient};
+
+use crate::benchmark::run_data_loader_benchmark::{run_data_loader_benchmark, MockHttpClient};
 
 // IAI-callgrind benchmark for the data loader
 #[library_benchmark]

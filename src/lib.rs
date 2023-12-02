@@ -1,6 +1,5 @@
 #![allow(clippy::module_inception)]
 pub mod async_graphql_hyper;
-pub mod benchmark;
 pub mod blueprint;
 pub mod cache;
 pub mod cli;

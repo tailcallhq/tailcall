@@ -1,10 +1,9 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
-
-use crate::endpoint::Endpoint;
-use crate::has_headers::HasHeaders;
-use crate::path_string::PathString;
-use crate::request_template::RequestTemplate;
+use tailcall::endpoint::Endpoint;
+use tailcall::has_headers::HasHeaders;
+use tailcall::path_string::PathString;
+use tailcall::request_template::RequestTemplate;
 
 // Context struct with setters using the derive_setters crate
 #[derive(Setters)]
@@ -35,6 +34,7 @@ impl HasHeaders for Context {
 }
 
 // Function to create request templates (literal and mustache)
+#[allow(dead_code)]
 pub fn create_request_templates() -> (RequestTemplate, RequestTemplate) {
   // Create a RequestTemplate using a literal endpoint
   let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(

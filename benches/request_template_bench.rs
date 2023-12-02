@@ -1,6 +1,9 @@
+mod benchmark;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde_json::json;
-use tailcall::benchmark::{create_request_templates, Context};
+
+use crate::benchmark::create_request_templates::{create_request_templates, Context};
 
 // Benchmark function to test the performance of to_request method
 fn benchmark_to_request(c: &mut Criterion) {

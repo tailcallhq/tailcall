@@ -3,9 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
-
-use crate::config::Batch;
-use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
+use tailcall::config::Batch;
+use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 
 #[derive(Clone)]
 pub struct MockHttpClient {
@@ -22,6 +21,7 @@ impl HttpClient for MockHttpClient {
   }
 }
 
+#[allow(dead_code)]
 pub async fn run_data_loader_benchmark(client: Arc<MockHttpClient>) {
   // Create an HTTP data loader with a given client and batch configuration
   let loader = HttpDataLoader::new(client.clone(), None, false);
