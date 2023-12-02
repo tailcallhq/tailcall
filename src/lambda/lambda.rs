@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
+use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::request_template::RequestTemplate;
 
 #[derive(Clone)]
@@ -46,6 +47,19 @@ impl Lambda<serde_json::Value> {
 
   pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::Http(req_template, None, None)))
+  }
+
+  pub fn from_graphql_request_template(
+    req_template: GraphqlRequestTemplate,
+    field_name: String,
+    batch: bool,
+  ) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+      req_template,
+      field_name,
+      batch,
+      data_loader: None,
+    }))
   }
 }
 
