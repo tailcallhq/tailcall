@@ -57,6 +57,13 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
       }
       Definition::InterfaceTypeDefinition(def) => {
         dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
+        for def_inner in &blueprint.definitions {
+          if let Definition::ObjectTypeDefinition(def_inner) = def_inner {
+            if def_inner.implements.contains(&def.name) {
+              dependencies.push(&def_inner.name);
+            }
+          }
+        }
       }
       Definition::InputObjectTypeDefinition(def) => {
         dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
