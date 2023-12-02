@@ -19,7 +19,6 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
-mod graphql_mock;
 
 static INIT: Once = Once::new();
 
@@ -241,7 +240,6 @@ fn test_config_identity() -> std::io::Result<()> {
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let expected = content;
-
     let config = Config::from_sdl(content).to_result().unwrap();
     let actual = config.to_sdl();
 
@@ -268,7 +266,6 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
-    // error is on the line below
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
@@ -286,9 +283,6 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
 // Check if execution gives expected response
 #[tokio::test]
 async fn test_execution() -> std::io::Result<()> {
-  let mut mock_server = graphql_mock::start_mock_server();
-  graphql_mock::setup_mocks(&mut mock_server);
-
   let specs = GraphQLSpec::cargo_read("tests/graphql/passed");
 
   let tasks: Vec<_> = specs?

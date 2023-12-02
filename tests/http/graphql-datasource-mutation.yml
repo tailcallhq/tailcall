@@ -1,0 +1,23 @@
+config: !file tests/http/config/graphql-datasource-mutation.graphql
+name: Graphql datasource
+mock:
+  - request:
+      url: http://upstream/graphql
+      method: POST
+      body: '{ "query": "mutation { createUser(user: {name: \"Test Name\",email: \"test@email\"}) { name } }" }'
+    response:
+      body:
+        data:
+          createUser:
+            name: Test Name
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: 'mutation { createUser(user: {name: "Test Name", email: "test@email"}) { name } }'
+    response:
+      body:
+        data:
+          createUser:
+            name: Test Name
