@@ -11,7 +11,7 @@ use crate::has_headers::HasHeaders;
 use crate::http::Method::POST;
 use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData, UrlToObjFieldsMap};
 use crate::mustache::{Mustache, Segment};
-use crate::path_string::PathGraphql;
+use crate::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -185,6 +185,7 @@ impl GraphqlRequestTemplate {
 
 #[cfg(test)]
 mod tests {
+
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
@@ -192,8 +193,9 @@ mod tests {
   use crate::config::GraphQLOperationType;
   use crate::graphql_request_template::GraphqlRequestTemplate;
   use crate::has_headers::HasHeaders;
+  use crate::json::JsonLike;
   use crate::lambda::{GraphQLOperationContext, SelectionSetFilterData};
-  use crate::path_string::PathGraphql;
+  use crate::path::PathGraphql;
 
   struct Context {
     pub value: serde_json::Value,
@@ -202,7 +204,7 @@ mod tests {
 
   impl PathGraphql for Context {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-      self.value.path_graphql(path)
+      self.value.get_path(path).map(|v| v.to_string())
     }
   }
 

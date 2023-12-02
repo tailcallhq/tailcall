@@ -1,10 +1,11 @@
 extern crate core;
 
 use std::collections::BTreeMap;
-use std::fs;
+use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
+use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use async_graphql_value::ConstValue;
@@ -15,9 +16,10 @@ use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::http::{handle_batch_request, handle_single_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -246,13 +248,28 @@ async fn assert_downstream(spec: HttpSpec) {
     if let Some(Annotation::Fail) = spec.runner {
       let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_eq!(body, serde_json::to_string(&assertion.response.0.body).unwrap());
-      log::error!("{} {} ... failed", spec.name, spec.path.display());
-      panic!(
-        "Expected spec: {} {} to fail but it passed",
-        spec.name,
-        spec.path.display()
-      );
+      let result = panic::catch_unwind(AssertUnwindSafe(|| {
+        assert_eq!(
+          body,
+          serde_json::to_string(&assertion.response.0.body).unwrap(),
+          "File: {} {}",
+          spec.name,
+          spec.path.display()
+        );
+      }));
+
+      match result {
+        Ok(_) => {
+          panic!(
+            "Expected spec: {} {} to fail but it passed",
+            spec.name,
+            spec.path.display()
+          );
+        }
+        Err(_) => {
+          log::error!("{} {} ... failed", spec.name, spec.path.display());
+        }
+      }
     } else {
       let response = run(spec.clone(), &assertion)
         .await
@@ -263,19 +280,28 @@ async fn assert_downstream(spec: HttpSpec) {
       let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
 
       // Assert Status
-      assert_eq!(actual_status, assertion.response.0.status);
+      assert_eq!(
+        actual_status,
+        assertion.response.0.status,
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
 
       // Assert Body
       assert_eq!(
         to_json_pretty(actual_body).unwrap(),
-        serde_json::to_string_pretty(&assertion.response.0.body).unwrap()
+        serde_json::to_string_pretty(&assertion.response.0.body).unwrap(),
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
       );
 
       // Assert Headers
       for (key, value) in assertion.response.0.headers.iter() {
         match actual_headers.get(key) {
           None => panic!("Expected header {} to be present", key),
-          Some(actual_value) => assert_eq!(actual_value, value),
+          Some(actual_value) => assert_eq!(actual_value, value, "File: {} {}", spec.name, spec.path.display()),
         }
       }
     }
@@ -315,8 +341,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_batch_request(req, server_context).await
+    handle_request::<GraphQLBatchRequest>(req, server_context).await
   } else {
-    handle_single_request(req, server_context).await
+    handle_request::<GraphQLRequest>(req, server_context).await
   }
 }

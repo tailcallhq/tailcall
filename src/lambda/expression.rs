@@ -13,6 +13,7 @@ use thiserror::Error;
 use super::evaluation_context::get_path_value;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
+use crate::config::GraphQLOperationType;
 use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
@@ -153,7 +154,9 @@ impl Expression {
             } else {
               None
             };
-            let res = if ctx.req_ctx.upstream.batch.is_some() {
+            let res = if ctx.req_ctx.upstream.batch.is_some()
+              && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            {
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
               execute_raw_request(ctx, req).await?

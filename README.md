@@ -1,4 +1,4 @@
-[![Tailcall](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.png)](https://tailcall.run)
+[![Tailcall](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.svg)](https://tailcall.run)
 
 Tailcall is an open-source solution for building [high-performance] GraphQL backends.
 

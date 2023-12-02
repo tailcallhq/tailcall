@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 use tailcall::request_template::RequestTemplate;
 
 #[derive(Setters)]
