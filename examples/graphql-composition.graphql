@@ -9,7 +9,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @graphql(name: "posts")
+  posts: [Post] @graphQL(name: "posts")
 }
 
 type Post {
@@ -17,7 +17,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @graphql(name: "user", args: [{key: "id", value: "{{value.userId}}"}])
+  user: User @graphQL(name: "user", args: [{key: "id", value: "{{value.userId}}"}])
 }
 
 type User {

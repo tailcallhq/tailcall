@@ -7,7 +7,7 @@ type Post {
   title: String
   userId: Int
   user: User
-    @graphql(
+    @graphQL(
       baseURL: "http://upstream/graphql"
       name: "user"
       args: [{key: "id", value: "{{value.userId}}"}]
