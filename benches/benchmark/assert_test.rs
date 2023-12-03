@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use async_graphql::{Name, Value};
+use async_graphql::{Name, ServerError, Value};
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 
 // Use lazy_static to initialize static variables once
 lazy_static::lazy_static! {
@@ -61,6 +61,15 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
 
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
     Some(&TEST_ARGS)
+  }
+
+  // Implement the missing methods
+  fn field(&'a self) -> Option<async_graphql::SelectionField<'a>> {
+    todo!() // You need to provide the actual implementation here
+  }
+
+  fn add_error(&'a self, _: ServerError) {
+    todo!() // You need to provide the actual implementation here
   }
 }
 
