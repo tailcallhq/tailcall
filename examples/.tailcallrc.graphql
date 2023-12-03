@@ -52,7 +52,7 @@ directive @addField(name: String, path: [String]!) on OBJECT
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 directive @const(data: JSON) on FIELD_DEFINITION
-directive @graphql(
+directive @graphQL(
   baseURL: String
   name: String
   args: [KeyValue]

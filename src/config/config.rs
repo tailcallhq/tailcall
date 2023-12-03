@@ -229,7 +229,7 @@ pub struct Field {
 
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
-  pub graphql: Option<Graphql>,
+  pub graphql: Option<GraphQL>,
 }
 
 impl Field {
@@ -242,7 +242,7 @@ impl Field {
       directives.push(Http::trace_name())
     }
     if self.graphql.is_some() {
-      directives.push(Graphql::trace_name())
+      directives.push(GraphQL::trace_name())
     }
     if self.unsafe_operation.is_some() {
       directives.push(Unsafe::trace_name())
@@ -328,7 +328,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct Graphql {
+pub struct GraphQL {
   pub name: String,
   pub args: Option<KeyValues>,
   #[serde(rename = "baseURL")]
@@ -424,5 +424,11 @@ mod tests {
     assert!(!f1.has_batched_resolver());
     assert!(f2.has_batched_resolver());
     assert!(!f3.has_batched_resolver());
+  }
+
+  #[test]
+  fn test_graphql_directive_name() {
+    let name = GraphQL::directive_name();
+    assert_eq!(name, "graphQL");
   }
 }
