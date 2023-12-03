@@ -187,6 +187,7 @@ impl HttpClient for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
+
     // Try to find a matching mock for the incoming request.
     let mock = mocks
       .iter()

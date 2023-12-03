@@ -11,7 +11,7 @@ pub fn update_graphql<'a>(
   object_name: &'a str,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _type_of, _), b_field| {
+    |(config, field, _, _), b_field| {
       let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };

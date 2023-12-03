@@ -189,7 +189,7 @@ impl GraphqlRequestTemplate {
 
 #[cfg(test)]
 mod tests {
-
+  use async_graphql::Value;
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
@@ -202,7 +202,7 @@ mod tests {
   use crate::path::PathGraphql;
 
   struct Context {
-    pub value: serde_json::Value,
+    pub value: Value,
     pub headers: HeaderMap,
   }
 
@@ -243,12 +243,13 @@ mod tests {
     )
     .unwrap();
     let ctx = Context {
-      value: json!({
+      value: Value::from_json(json!({
         "foo": {
           "bar": "baz",
           "header": "abc"
         }
-      }),
+      }))
+      .unwrap(),
       headers: Default::default(),
     };
 
@@ -267,7 +268,11 @@ mod tests {
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Mutation,
       &Some("create".to_string()),
-      Some(serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}]"#).unwrap()).as_ref(),
+      Some(
+        serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#)
+          .unwrap(),
+      )
+      .as_ref(),
       HeaderMap::new(),
       "".to_string(),
       "".to_string(),
@@ -276,12 +281,13 @@ mod tests {
     )
     .unwrap();
     let ctx = Context {
-      value: json!({
+      value: Value::from_json(json!({
         "foo": {
           "bar": "baz",
           "header": "abc"
         }
-      }),
+      }))
+      .unwrap(),
       headers: Default::default(),
     };
 
@@ -290,7 +296,7 @@ mod tests {
 
     assert_eq!(
       std::str::from_utf8(&body).unwrap(),
-      r#"{ "query": "mutation { create(id: \"baz\") { a,b,c } }" }"#
+      r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\",header: \"abc\"}) { a,b,c } }" }"#
     );
   }
 }

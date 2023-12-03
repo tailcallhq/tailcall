@@ -232,8 +232,8 @@ const SPEC_SKIP: &str = "spec-skip";
 const SPEC_FAIL: &str = "spec-fail";
 
 // Check if SDL -> Config -> SDL is identity
-#[tokio::test]
-async fn test_config_identity() -> std::io::Result<()> {
+#[test]
+fn test_config_identity() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
@@ -256,8 +256,8 @@ async fn test_config_identity() -> std::io::Result<()> {
 }
 
 // Check server SDL matches expected client SDL
-#[tokio::test]
-async fn test_server_to_client_sdl() -> std::io::Result<()> {
+#[test]
+fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
@@ -331,18 +331,19 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[tokio::test]
-async fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[test]
+fn test_failures_in_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
 
   for spec in specs? {
     let content = spec.find_source(Tag::ServerSDL);
     let expected = spec.sdl_errors;
     let content = content.as_str();
-    let config = Config::from_sdl(content).to_result();
+    let config = Config::from_sdl(content);
 
-    let actual = config.and_then(|config| Blueprint::try_from(&config));
-
+    let actual = config
+      .and_then(|config| Valid::from(Blueprint::try_from(&config)))
+      .to_result();
     match actual {
       Err(cause) => {
         let actual: Vec<SDLError> = cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
@@ -362,8 +363,8 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   Ok(())
 }
 
-#[tokio::test]
-async fn test_merge_sdl() -> std::io::Result<()> {
+#[test]
+fn test_merge_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {

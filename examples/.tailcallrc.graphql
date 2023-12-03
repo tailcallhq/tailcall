@@ -58,6 +58,7 @@ directive @graphql(
   args: [KeyValue]
   headers: [KeyValue]
   batch: Boolean
+  filterSelectionSet: Boolean
 ) on FIELD_DEFINITION
 
 enum Method {

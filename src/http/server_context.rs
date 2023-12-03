@@ -45,7 +45,7 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClien
                 field_name: field_name.clone(),
                 batch: *batch,
                 data_loader: Some(Arc::new(graphql_data_loader)),
-              }));
+              }))
             }
             _ => {}
           }

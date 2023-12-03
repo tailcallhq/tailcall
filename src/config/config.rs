@@ -371,12 +371,6 @@ pub struct AddField {
   pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct JoinField {
-  #[serde(rename = "baseURL")]
-  pub base_url: String,
-}
-
 impl Config {
   pub fn from_json(json: &str) -> Result<Self> {
     Ok(serde_json::from_str(json)?)
