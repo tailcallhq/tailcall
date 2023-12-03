@@ -8,10 +8,10 @@ pub type UrlToObjFieldsMap = BTreeMap<String, ObjectNameToFieldPairsMap>;
 
 #[derive(Debug)]
 pub struct SelectionSetFilterData {
-  pub url_obj_fields: UrlToObjFieldsMap,
+  pub obj_name_to_fields_map: ObjectNameToFieldPairsMap,
   pub obj_name: String,
   pub url: String,
-  pub url_obj_ids: BTreeMap<String, BTreeMap<String, Vec<String>>>,
+  pub url_obj_name_to_ids_map: BTreeMap<String, BTreeMap<String, Vec<String>>>,
 }
 
 pub trait GraphQLOperationContext {

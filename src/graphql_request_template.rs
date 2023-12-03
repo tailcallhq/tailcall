@@ -72,13 +72,17 @@ impl GraphqlRequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> reqwest::Request {
+    let obj_fields = match self.url_obj_fields.get(&self.url) {
+      Some(obj_fields) => obj_fields.clone(),
+      None => BTreeMap::new(),
+    };
     let selection_set = ctx
       .selection_set(
         Some(SelectionSetFilterData {
-          url_obj_fields: self.url_obj_fields.clone(),
+          obj_name_to_fields_map: obj_fields,
           obj_name: self.field_type.clone(),
           url: self.url.clone(),
-          url_obj_ids: self.url_obj_ids.clone(),
+          url_obj_name_to_ids_map: self.url_obj_ids.clone(),
         }),
         self.filter_selection_set,
       )
