@@ -1,6 +1,6 @@
 use colored::*;
 
-use crate::config::Config;
+use crate::{config::Config, valid::Valid};
 
 pub struct Fmt {}
 
@@ -44,22 +44,23 @@ impl Fmt {
     table.push('\n');
     table
   }
-  pub fn format_operation(op: &str, errors: &[async_graphql::ServerError]) -> String {
-    let meta = if errors.is_empty() {
-      Fmt::success(&"No errors found".to_string())
+
+  pub fn format_operation(op: &str, errors: &[async_graphql::ServerError]) -> Valid<(), String> {
+    if errors.is_empty() {
+      Valid::succeed(())
     } else {
-      Fmt::meta(&format!("{} errors found", errors.len()))
-    };
-    let heading = Fmt::heading(&format!("Operation {op}: {meta}"));
+      let meta = Fmt::meta(&format!("{} errors found", errors.len()));
+      let heading = Fmt::heading(&format!("Operation {op}: {meta}"));
 
-    let report = errors
-      .iter()
-      .enumerate()
-      .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error.message)))
-      .collect::<Vec<String>>()
-      .join("\n");
+      let report = errors
+        .iter()
+        .enumerate()
+        .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error.message)))
+        .collect::<Vec<String>>()
+        .join("\n");
 
-    format!("{heading}\n{report}")
+      Valid::fail(format!("{heading}\n{report}"))
+    }
   }
 
   pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {

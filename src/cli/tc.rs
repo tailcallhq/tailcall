@@ -16,6 +16,7 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
+use crate::valid::Valid;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -177,27 +178,25 @@ fn logger_init() {
   env_logger::Builder::from_env(env).init();
 }
 
-fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Result<()> {
-  tokio::runtime::Runtime::new()?.block_on(async {
+fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Valid<Vec<()>, String> {
+  match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime.block_on(async {
     let schema = blueprint.to_validation_schema();
     let mut execution = vec![];
 
-    for op in operations.iter() {
-      let operation = tokio::fs::read_to_string(op)
-        .await
-        .map_err(|_| anyhow!("Cannot read operation {}", op))?;
+    Valid::from_iter(operations.iter(), |op| {
+                let handle = tokio::spawn(async {
+      match tokio::fs::read_to_string(op).await {
+        Ok(operation) => {
         let Response { errors, .. } = schema.execute(&operation).await;
-        execution.push((op, errors));
-    }
+            Fmt::format_operation(op, &errors)
+                    }
+        Err(_) => Valid::fail(format!("Cannot read operation {}", op)),
+      }
+                });
 
-    Fmt::display(
-      execution
-        .iter()
-        .map(|(op, errors)| Fmt::format_operation(op, errors))
-        .collect::<Vec<String>>()
-        .join("\n\n"),
-    );
-
-    Ok(())
+        })
   })
+        Err(_) => Valid::fail("Cannot create tokio runtime".to_string()),
+    }
 }
