@@ -3,14 +3,14 @@ schema {
 }
 
 type Query {
-  products: [Product!]! @graphql(name: "products", baseURL: "http://products/graphql", filterSelectionSet: true)
+  products: [Product!]! @graphQL(name: "products", baseURL: "http://products/graphql", filterSelectionSet: true)
 }
 
 type Product {
   id: ID!
   name: String!
   delivery(zip: String): DeliveryEstimates
-    @graphql(
+    @graphQL(
       args: [{key: "id", value: "{{value.id}}"}, {key: "zip", value: "{{args.zip}}"}]
       baseURL: "http://inventory/graphql"
     )

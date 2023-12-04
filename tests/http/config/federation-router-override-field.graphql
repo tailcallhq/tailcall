@@ -3,7 +3,7 @@ schema {
 }
 
 type Query {
-  latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "http://reviews/graphql", filterSelectionSet: true)
+  latestReviews: [Review!]! @graphQL(name: "latestReviews", baseURL: "http://reviews/graphql", filterSelectionSet: true)
 }
 
 type Review {
@@ -15,5 +15,5 @@ type Review {
 type Location {
   id: Int
   overallRating: Int
-  description: String! @graphql(args: [{key: "id", value: "{{value.id}}"}], baseURL: "http://locations/graphql")
+  description: String! @graphQL(args: [{key: "id", value: "{{value.id}}"}], baseURL: "http://locations/graphql")
 }

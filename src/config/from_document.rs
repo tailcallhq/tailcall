@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, Graphql, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -193,7 +193,7 @@ where
   let modify = to_modify(directives);
 
   config::Http::from_directives(directives.iter())
-    .zip(Graphql::from_directives(directives.iter()))
+    .zip(GraphQL::from_directives(directives.iter()))
     .map(|(http, graphql)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
