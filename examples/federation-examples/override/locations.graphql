@@ -9,5 +9,4 @@ type Location @key(fields: "id") {
   id: ID!
   name: String! @shareable
   description: String! @override(from: "reviews")
-
 }
