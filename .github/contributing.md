@@ -47,6 +47,31 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo test
    ```
 
+## Benchmarks Comparison
+
+1. **Important:** Make sure all the commits are done.
+2. **Install critcmp:** Install criterion-compare.
+   ```bash
+   cargo install critcmp
+   ```
+3. **Comparing Benchmarks:**
+   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
+
+   ```bash
+   cargo install critcmp
+   git checkout main
+   cargo bench --features criterion -- --save-baseline main_branch
+   git checkout -
+   cargo bench --features criterion -- --save-baseline new_branch
+   bash .github/scripts/check_degradation.sh
+
+   ```
+
+4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/critcmp.txt" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
+   The format for the "benches/critcmp.txt" file is:
+   | Test | Base | PR | % change |
+   |-------------------------------|--------------|------------------|------------|
+
 ## Documentation
 
 1. **Update README:** If your changes necessitate a change in the way users interact with the application, update the README accordingly.

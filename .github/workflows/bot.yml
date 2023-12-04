@@ -148,3 +148,43 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: apply lint fixes"
+
+  Check_Degdratation:
+    name: Criterion Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Critcmp
+        run: cargo install critcmp
+
+      - name: Run Criterion on branch
+        run: |
+          cargo bench --features criterion -- --save-baseline new_branch
+
+      - name: Fetch target branch
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+
+      - name: Run Criterion on main
+        run: |
+          cargo bench --features criterion -- --save-baseline main_branch
+
+      - name: Execute check_degradation.sh
+        run: |
+          bash .github/scripts/check_degradation.sh
+
+      - name: Comment on PR
+        uses: peter-evans/commit-comment@v3
+        with:
+          msg: |
+            <details>
+            <summary>Benchmark Results</summary>
+            | Test                          | Base         | PR               | % change   |
+            |-------------------------------|--------------|------------------|------------|
+            $(cat benches/critcmp.txt)
+            </details>
+          token: ${{ secrets.GITHUB_TOKEN }}
