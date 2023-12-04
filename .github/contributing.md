@@ -70,7 +70,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    bash .github/scripts/check_degradation.sh
    ```
 
-5. **Check the Results:** If the benchmarks show a degradation of more than 10%, the script will stop. Please check "benches/critcmp.txt" file to identify the specific benchmarks that failed and investigate the code changes that might have caused the degradation.
+5. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/critcmp.txt" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
    The format for the "benches/critcmp.txt" file is:
    | Test | Base | PR | % change |
    |-------------------------------|--------------|------------------|------------|
