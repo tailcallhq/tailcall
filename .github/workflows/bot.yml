@@ -177,15 +177,14 @@ jobs:
         run: |
           bash .github/scripts/check_degradation.sh
 
-       - name: Comment on PR
-         uses: peter-evans/commit-comment@v3
-         with:
-           msg: |
-             <details>
-             <summary>Benchmark Results</summary>
-             | Test                          | Base         | PR               | % change   |
-             |-------------------------------|--------------|------------------|------------|
-             $(cat benches/critcmp.txt)
-             </details>
-         token: ${{ secrets.GITHUB_TOKEN }}
-
+      - name: Comment on PR
+        uses: peter-evans/commit-comment@v3
+        with:
+          msg: |
+            <details>
+            <summary>Benchmark Results</summary>
+            | Test                          | Base         | PR               | % change   |
+            |-------------------------------|--------------|------------------|------------|
+            $(cat benches/critcmp.txt)
+            </details>
+          token: ${{ secrets.GITHUB_TOKEN }}

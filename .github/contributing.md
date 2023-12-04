@@ -54,8 +54,8 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```bash
    cargo install critcmp
    ```
-3. **Comparing Benchmarks:** 
-You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
+3. **Comparing Benchmarks:**
+   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
 
    ```bash
    cargo install critcmp
@@ -65,8 +65,9 @@ You need to follow the following steps to compare benchmarks between `main`(Base
    cargo bench --features criterion -- --save-baseline new_branch
    bash .github/scripts/check_degradation.sh
 
+   ```
 
-5. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/critcmp.txt" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
+4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/critcmp.txt" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
    The format for the "benches/critcmp.txt" file is:
    | Test | Base | PR | % change |
    |-------------------------------|--------------|------------------|------------|
