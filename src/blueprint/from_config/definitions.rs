@@ -310,7 +310,7 @@ pub fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> 
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
-      .and(update_graphql(&operation_type).trace(config::Graphql::trace_name().as_str()))
+      .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_ref_field(is_add_field))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
