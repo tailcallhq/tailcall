@@ -9,14 +9,25 @@ use crate::lambda::Expression;
 type Field = String;
 
 pub struct ResolvePlan {
-  resolver: Resolver,
+  resolver: Box<dyn Resolver>,
   fields: IndexMap<String, ResolvePlan>,
 }
 
-enum Resolver {
-  Empty,
-  Parent,
-  Expression(Expression),
+
+#[async_trait::async_trait]
+trait Resolver {
+  async fn resolve(&self, fields: HashSet<Field>) -> ConstValue;
+}
+
+struct ResolverWrapper<R: Resolver> {
+  resolver: R,
+  fields: HashSet<Field>
+}
+
+impl<R: Resolver> ResolverWrapper<R> {
+  fn extend(&mut self, other: ResolverWrapper<R>) {
+    self.fields.extend(other.fields);
+  }
 }
 
 #[cfg(test)]
@@ -32,7 +43,7 @@ mod tests {
       fields: IndexMap::from_iter([(
         "user".to_owned(),
         ResolvePlan {
-          resolver: Resolver::Expression(Expression::Literal(Value::String("user_name".to_owned()))),
+          // resolver: Resolver::Expression(Expression::Literal(Value::String("user_name".to_owned()))),
           fields: IndexMap::from_iter([(
             "name".to_owned(),
             ResolvePlan { resolver: Resolver::Parent, fields: IndexMap::new() },
