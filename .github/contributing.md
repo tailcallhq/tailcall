@@ -64,11 +64,6 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo bench --features criterion -- --save-baseline new_branch
    bash .github/scripts/check_degradation.sh
 
-4. **Compare benchmarks:** Execute the benchmark comparison script by running the following command in your terminal.
-
-   ```bash
-   bash .github/scripts/check_degradation.sh
-   ```
 
 5. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/critcmp.txt" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
    The format for the "benches/critcmp.txt" file is:
