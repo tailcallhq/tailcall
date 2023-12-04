@@ -1,19 +1,32 @@
 schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
-  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
-{
+  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
   query: Query
 }
 
 directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-directive @join__field(graph: join__Graph, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+directive @join__field(
+  graph: join__Graph
+  requires: join__FieldSet
+  provides: join__FieldSet
+  type: String
+  external: Boolean
+  override: String
+  usedOverridden: Boolean
+) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
 directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
-directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true, isInterfaceObject: Boolean! = false) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+directive @join__type(
+  graph: join__Graph!
+  key: join__FieldSet
+  extension: Boolean! = false
+  resolvable: Boolean! = true
+  isInterfaceObject: Boolean! = false
+) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
 directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
@@ -40,37 +53,37 @@ enum link__Purpose {
   EXECUTION
 }
 
-type Location
-  @join__type(graph: LOCATIONS, key: "id")
-  @join__type(graph: REVIEWS, key: "id")
-{
+type Location @join__type(graph: LOCATIONS, key: "id") @join__type(graph: REVIEWS, key: "id") {
   id: ID!
   name: String!
   description: String! @join__field(graph: LOCATIONS, override: "reviews")
 }
 
-type Query
-  @join__type(graph: LOCATIONS)
-  @join__type(graph: REVIEWS)
-{
+type Query @join__type(graph: LOCATIONS) @join__type(graph: REVIEWS) {
   locations: [Location!]! @join__field(graph: LOCATIONS)
   location(id: ID!): Location @join__field(graph: LOCATIONS)
 
-  """The three latest reviews submitted for FlyBy's locations"""
+  """
+  The three latest reviews submitted for FlyBy's locations
+  """
   latestReviews: [Review!]! @join__field(graph: REVIEWS)
 }
 
-type Review
-  @join__type(graph: REVIEWS)
-{
+type Review @join__type(graph: REVIEWS) {
   id: ID!
 
-  """Written text"""
+  """
+  Written text
+  """
   comment: String
 
-  """A number from 1 - 5 with 1 being lowest and 5 being highest"""
+  """
+  A number from 1 - 5 with 1 being lowest and 5 being highest
+  """
   rating: Int
 
-  """The location the review is about"""
+  """
+  The location the review is about
+  """
   location: Location
 }
