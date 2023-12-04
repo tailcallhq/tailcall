@@ -1,9 +1,5 @@
-mod benchmark;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde_json::json;
-
-use crate::benchmark::gather_path_matches::gather_path_matches;
 
 fn benchmark_batched_body(c: &mut Criterion) {
   c.bench_function("test_batched_body", |b| {
@@ -16,12 +12,19 @@ fn benchmark_batched_body(c: &mut Criterion) {
               {"user": [
                   {"id": "4"},
                   {"id": "5"}
-              ]}
+                  ]
+              },
           ]
       });
 
-      // Use the gather_path_matches function
-      black_box(serde_json::to_value(gather_path_matches(&input, &["data", "user", "id"])).unwrap());
+      black_box(
+        serde_json::to_value(tailcall::json::gather_path_matches(
+          &input,
+          &["data".into(), "user".into(), "id".into()],
+          vec![],
+        ))
+        .unwrap(),
+      );
     })
   });
 }

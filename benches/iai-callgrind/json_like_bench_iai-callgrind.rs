@@ -1,11 +1,17 @@
-mod benchmark;
-
 use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
 use serde_json::json;
 
-use crate::benchmark::gather_path_matches::gather_path_matches;
+fn gather_path_matches(input: &serde_json::Value, path: &[&str]) -> Option<serde_json::Value> {
+  let mut current = input;
+  for key in path {
+    current = match current.get(key) {
+      Some(value) => value,
+      None => return None, // Handle the case where the key doesn't exist
+    };
+  }
+  Some(current.clone())
+}
 
-// iai-callgrind benchmark
 #[library_benchmark]
 fn benchmark_batched_body() {
   let input = json!({
@@ -16,12 +22,16 @@ fn benchmark_batched_body() {
           {"user": [
               {"id": "4"},
               {"id": "5"}
-          ]}
+              ]
+          },
       ]
   });
 
   black_box(gather_path_matches(&input, &["data", "user", "id"]));
 }
 
-library_benchmark_group!(name = batched_body; benchmarks = benchmark_batched_body);
+library_benchmark_group!(
+    name= batched_body;
+    benchmarks= benchmark_batched_body);
+
 main!(library_benchmark_groups = batched_body);

@@ -164,10 +164,10 @@ jobs:
         run: |
           cargo bench --features criterion -- --save-baseline new_branch
 
-      - name: Switch to main
+      - name: Fetch target branch
         run: |
           git fetch
-          git checkout main
+          git checkout ${{ github.sha }}
 
       - name: Run Criterion on main
         run: |
@@ -177,29 +177,15 @@ jobs:
         run: |
           bash .github/scripts/check_degradation.sh
 
-      - name: Comment on PR
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const fileContent = fs.readFileSync('benches/critcmp.txt', 'utf8');
-            const issue_number = context.payload.pull_request.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const comment = `
+       - name: Comment on PR
+         uses: peter-evans/commit-comment@v3
+         with:
+           msg: |
              <details>
              <summary>Benchmark Results</summary>
-
              | Test                          | Base         | PR               | % change   |
              |-------------------------------|--------------|------------------|------------|
-             ${fileContent}
-
+             $(cat benches/critcmp.txt)
              </details>
-             `;
-            github.rest.issues.createComment({
-              issue_number: issue_number,
-              owner: owner,
-              repo: repo,
-              body: comment
-            });
+         token: ${{ secrets.GITHUB_TOKEN }}
+

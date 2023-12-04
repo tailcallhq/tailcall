@@ -1,15 +1,39 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use async_graphql::{Name, ServerError, Value};
+use async_graphql::{Name, Value};
+use hyper::header::HeaderValue;
 use hyper::HeaderMap;
+use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 use indexmap::IndexMap;
+use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
+use tailcall::path_string::PathString;
 
-// Use lazy_static to initialize static variables once
+const INPUT_VALUE: &[&[&str]] = &[
+  // existing values
+  &["value", "root"],
+  &["value", "nested", "existing"],
+  // missing values
+  &["value", "missing"],
+  &["value", "nested", "missing"],
+];
+
+const ARGS_VALUE: &[&[&str]] = &[
+  // existing values
+  &["args", "root"],
+  &["args", "nested", "existing"],
+  // missing values
+  &["args", "missing"],
+  &["args", "nested", "missing"],
+];
+
+const HEADERS_VALUE: &[&[&str]] = &[&["headers", "existing"], &["headers", "missing"]];
+
+const VARS_VALUE: &[&[&str]] = &[&["vars", "existing"], &["vars", "missing"]];
+
 lazy_static::lazy_static! {
-    pub static ref TEST_VALUES: Value = {
+    static ref TEST_VALUES: Value = {
         let mut root = IndexMap::new();
         let mut nested = IndexMap::new();
 
@@ -21,7 +45,7 @@ lazy_static::lazy_static! {
         Value::Object(root)
     };
 
-    pub static ref TEST_ARGS: IndexMap<Name, Value> = {
+    static ref TEST_ARGS: IndexMap<Name, Value> = {
         let mut root = IndexMap::new();
         let mut nested = IndexMap::new();
 
@@ -33,15 +57,15 @@ lazy_static::lazy_static! {
         root
     };
 
-    pub static ref TEST_HEADERS: HeaderMap = {
+    static ref TEST_HEADERS: HeaderMap = {
         let mut map = HeaderMap::new();
 
-        map.insert("x-existing", "header".parse().unwrap());
+        map.insert("x-existing", HeaderValue::from_static("header"));
 
         map
     };
 
-    pub static ref TEST_VARS: BTreeMap<String, String> = {
+    static ref TEST_VARS: BTreeMap<String, String> = {
         let mut map = BTreeMap::new();
 
         map.insert("existing".to_owned(), "var".to_owned());
@@ -50,10 +74,12 @@ lazy_static::lazy_static! {
     };
 }
 
-// Define a mock GraphQL context
-pub struct MockGraphqlContext;
+// fn to_bench_id(input: &[&str]) -> String {
+//     input.join(".")
+// }
 
-// Implement ResolverContextLike trait for MockGraphqlContext
+struct MockGraphqlContext;
+
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn value(&'a self) -> Option<&'a Value> {
     Some(&TEST_VALUES)
@@ -62,21 +88,11 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
     Some(&TEST_ARGS)
   }
-
-  // Implement the missing methods
-  fn field(&'a self) -> Option<async_graphql::SelectionField<'a>> {
-    todo!() // You need to provide the actual implementation here
-  }
-
-  fn add_error(&'a self, _: ServerError) {
-    todo!() // You need to provide the actual implementation here
-  }
 }
 
-// Function to assert test values using EvaluationContext
-#[allow(dead_code)]
-pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
-  // value assertions
+// assert that everything was set up correctly for the benchmark
+fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
+  // value
   assert_eq!(
     eval_ctx.path_string(&["value", "root"]),
     Some(Cow::Borrowed("root-test"))
@@ -88,7 +104,7 @@ pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
   assert_eq!(eval_ctx.path_string(&["value", "missing"]), None);
   assert_eq!(eval_ctx.path_string(&["value", "nested", "missing"]), None);
 
-  // args assertions
+  // args
   assert_eq!(
     eval_ctx.path_string(&["args", "root"]),
     Some(Cow::Borrowed("root-test"))
@@ -100,14 +116,41 @@ pub fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
   assert_eq!(eval_ctx.path_string(&["args", "missing"]), None);
   assert_eq!(eval_ctx.path_string(&["args", "nested", "missing"]), None);
 
-  // headers assertions
+  // headers
   assert_eq!(
     eval_ctx.path_string(&["headers", "x-existing"]),
     Some(Cow::Borrowed("header"))
   );
   assert_eq!(eval_ctx.path_string(&["headers", "x-missing"]), None);
 
-  // vars assertions
+  // vars
   assert_eq!(eval_ctx.path_string(&["vars", "existing"]), Some(Cow::Borrowed("var")));
   assert_eq!(eval_ctx.path_string(&["vars", "missing"]), None);
 }
+
+#[library_benchmark]
+fn bench_main() {
+  let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+
+  req_ctx.server.vars = TEST_VARS.clone();
+
+  let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
+
+  assert_test(&eval_ctx);
+
+  let all_inputs = INPUT_VALUE
+    .iter()
+    .chain(ARGS_VALUE)
+    .chain(HEADERS_VALUE)
+    .chain(VARS_VALUE);
+
+  for input in all_inputs {
+    let _result = eval_ctx.path_string(input);
+  }
+}
+
+library_benchmark_group!(
+    name= bench;
+    benchmarks= bench_main);
+
+main!(library_benchmark_groups = bench);

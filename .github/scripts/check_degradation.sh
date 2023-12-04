@@ -14,9 +14,7 @@ critcmp new_branch main_branch | awk 'NR>2 {
 
         if (change > 10) {
             printf "Percentage change for %s exceeds 10%%. Failing the workflow.\n", item
-            if ("'$current_branch'" == "main") {
-                exit 1
-            }
+            exit 1
         }
     } else {
         printf "Invalid units detected for %s. Failing the workflow.\n", item
