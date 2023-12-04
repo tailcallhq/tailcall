@@ -1,0 +1,7 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@override"])
+
+type Location @key(fields: "id") {
+  id: ID!
+  name: String! @shareable @override(from: "locations")
+  description: String! @override(from: "locations")
+}

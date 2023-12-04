@@ -1,0 +1,13 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@override"])
+
+type Query {
+  locations: [Location!]!
+  location(id: ID!): Location
+}
+
+type Location @key(fields: "id") {
+  id: ID!
+  name: String! @shareable
+  description: String! @override(from: "reviews")
+
+}

@@ -1,0 +1,10 @@
+federation_version: =2.3.2
+subgraphs:
+  products:
+    routing_url: https://flyby-products-sub.herokuapp.com/
+    schema:
+      file: ./products.graphql
+  inventory:
+    routing_url: https://flyby-inventory-sub.herokuapp.com/
+    schema:
+      file: ./inventory.graphql

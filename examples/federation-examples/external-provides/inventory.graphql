@@ -1,0 +1,12 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@provides", "@external"])
+
+type Product @key(fields: "id") {
+  id: ID!
+  name: String! @external
+  inStock: Boolean!
+}
+
+type Query {
+  outOfStockProducts: [Product!]! @provides(fields: "name")
+  discontinuedProducts: [Product!]!
+}

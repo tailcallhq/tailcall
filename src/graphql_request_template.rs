@@ -14,6 +14,7 @@ use crate::mustache::{Mustache, Segment};
 use crate::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
+/// TODO: add benchmarks for this
 #[derive(Setters, Debug, Clone)]
 pub struct GraphqlRequestTemplate {
   pub url: String,

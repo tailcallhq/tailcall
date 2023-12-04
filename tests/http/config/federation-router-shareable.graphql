@@ -1,0 +1,22 @@
+schema {
+  query: Query
+}
+
+type Query {
+  latestReviews: [Review!]! @graphql(name: "latestReviews", baseURL: "http://reviews/graphql", filterSelectionSet: true)
+  location(id: Int!): Location
+    @graphql(name: "location", baseURL: "http://locations/graphql", args: [{key: "id", value: "{{args.id}}"}])
+}
+
+type Review {
+  id: Int
+  comment: String
+  rating: Int
+  location: Location
+}
+
+type Location {
+  id: Int
+  name: String
+  description: String! @graphql(args: [{key: "id", value: "{{value.id}}"}], baseURL: "http://locations/graphql")
+}

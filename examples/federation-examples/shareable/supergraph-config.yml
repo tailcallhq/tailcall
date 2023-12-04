@@ -1,0 +1,10 @@
+federation_version: =2.3.2
+subgraphs:
+  locations:
+    routing_url: https://flyby-locations-sub.herokuapp.com/
+    schema:
+      file: ./locations.graphql
+  reviews:
+    routing_url: https://flyby-reviews-sub.herokuapp.com/
+    schema:
+      file: ./reviews.graphql

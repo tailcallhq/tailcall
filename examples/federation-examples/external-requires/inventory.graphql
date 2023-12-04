@@ -1,0 +1,18 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable", "@external", "@requires"])
+
+type Product @key(fields: "id") {
+  id: ID!
+  dimensions: ProductDimension @external
+  delivery(zip: String): DeliveryEstimates @requires(fields: "dimensions { size weight }")
+}
+
+type ProductDimension @shareable {
+  size: String
+  weight: Float
+}
+
+type DeliveryEstimates {
+  estimatedDelivery: String
+  fastestDelivery: String
+}

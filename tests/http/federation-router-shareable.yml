@@ -1,0 +1,57 @@
+config: !file tests/http/config/federation-router-shareable.graphql
+name: Shared field federation router example
+mock:
+  - request:
+      url: http://reviews/graphql
+      method: POST
+      body: '{ "query": "query { latestReviews { comment location { name id __typename } } }" }'
+    response:
+      body:
+        data:
+          latestReviews:
+            - comment: "Some comment"
+              location:
+                name: "Location 1"
+                id: 1
+  - request:
+      url: http://locations/graphql
+      method: POST
+      body: '{ "query": "query { _entities(representations: [ { __typename: Location, id: 1 } ]) { ... on Location { description  } } }" }'
+    response:
+      body:
+        data:
+          _entities:
+            - description: "Some description"
+  - request:
+      url: http://locations/graphql
+      method: POST
+      body: '{ "query": "query { location(id: 1) { name } }" }'
+    response:
+      body:
+        data:
+          location:
+            name: "Location 1"
+assert:
+  - request:
+      url: http://localhost:8000/graphql
+      method: POST
+      body:
+        query: "query { latestReviews { comment location { name description } } }"
+    response:
+      body:
+        data:
+          latestReviews:
+            - comment: "Some comment"
+              location:
+                name: "Location 1"
+                description: "Some description"
+  - request:
+      url: http://localhost:8000/graphql
+      method: POST
+      body:
+        query: "query { location(id: 1) { name } }"
+    response:
+      body:
+        data:
+          location:
+            name: "Location 1"

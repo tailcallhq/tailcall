@@ -1,5 +1,5 @@
-config: !file tests/http/config/federation-router-simple.graphql
-name: Simple federation router example
+config: !file tests/http/config/federation-router-override-field.graphql
+name: Federation router override example
 mock:
   - request:
       url: http://reviews/graphql
