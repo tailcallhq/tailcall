@@ -54,7 +54,8 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```bash
    cargo install critcmp
    ```
-3. **Run Benchmarks:** This will first run criterion benchmarks on the main branch and then on the current branch.
+3. **Comparing Benchmarks:** 
+You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
 
    ```bash
    cargo install critcmp
