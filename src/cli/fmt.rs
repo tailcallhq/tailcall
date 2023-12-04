@@ -1,6 +1,7 @@
 use colored::*;
 
-use crate::{config::Config, valid::Valid};
+use crate::config::Config;
+use crate::valid::Valid;
 
 pub struct Fmt {}
 
@@ -45,7 +46,7 @@ impl Fmt {
     table
   }
 
-  pub fn format_operation(op: &str, errors: &[async_graphql::ServerError]) -> Valid<(), String> {
+  pub fn format_operation(op: &str, errors: &[String]) -> Valid<(), String> {
     if errors.is_empty() {
       Valid::succeed(())
     } else {
@@ -55,7 +56,7 @@ impl Fmt {
       let report = errors
         .iter()
         .enumerate()
-        .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error.message)))
+        .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error)))
         .collect::<Vec<String>>()
         .join("\n");
 

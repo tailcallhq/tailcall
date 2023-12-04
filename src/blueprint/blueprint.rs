@@ -2,17 +2,21 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
 
+
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
+use async_graphql::{Response, *};
 use derive_setters::Setters;
 use serde_json::Value;
 
 use super::into_schema::create_dumb_schema;
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
+use crate::cli::Fmt;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
+use crate::valid::Valid;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -227,5 +231,22 @@ impl Blueprint {
       .validation_mode(ValidationMode::Strict)
       .finish()
       .unwrap()
+  }
+
+  pub async fn validate_operations(&self, operations: Vec<String>) -> Valid<(), String> {
+    let schema = self.to_validation_schema();
+    let mut execution = vec![];
+
+    for op in operations.iter() {
+      match tokio::fs::read_to_string(op).await {
+        Ok(operation) => {
+          let Response { errors, .. } = schema.execute(&operation).await;
+          execution.push((op, errors.iter().map(|e| e.message.clone()).collect::<Vec<String>>()));
+        }
+        Err(_) => execution.push((op, vec!["Cannot read operation".to_string()])),
+      }
+    }
+
+    Valid::from_iter(execution.iter(), |(op, errors)| Fmt::format_operation(op, errors)).map(|_| ())
   }
 }

@@ -1,8 +1,7 @@
 use std::path::Path;
 use std::{env, fs};
 
-use anyhow::{anyhow, Result};
-use async_graphql::Response;
+use anyhow::Result;
 use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
@@ -16,7 +15,6 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
-use crate::valid::Valid;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -61,7 +59,13 @@ pub fn run() -> Result<()> {
             ));
           }
 
-          validate_operations(&blueprint, operations)
+          match tokio::runtime::Runtime::new()?
+            .block_on(async { blueprint.validate_operations(operations).await })
+            .to_result()
+          {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.into()),
+          }
         }
         Err(e) => Err(e.into()),
       }
