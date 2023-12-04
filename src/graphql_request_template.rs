@@ -133,8 +133,22 @@ impl GraphqlRequestTemplate {
         .map(String::as_str)
         .unwrap_or_default()
         .escape_default();
+      let operation = self
+        .operation_arguments
+        .as_ref()
+        .and_then(|args| if args.len() > 1 { Some(&args[1..]) } else { None })
+        .map(|args| {
+          args
+            .iter()
+            .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+            .collect::<Vec<_>>()
+            .join(", ")
+        })
+        .map(|args| format!("{}({})", field_name, args))
+        .unwrap_or(field_name);
+
       let graphql_query = format!(
-        r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: {typename_esc}, {id}: {id_value} }} ]) {{ ... on {typename} {{ {field_name} {selection_set} }} }} }}" }}"#,
+        r#"{{ "query": "query {{ _entities(representations: [ {{ __typename: {typename_esc}, {id}: {id_value} }} ]) {{ ... on {typename} {{ {operation} {selection_set} }} }} }}" }}"#,
       );
       req.body_mut().replace(graphql_query.into());
       req

@@ -1,0 +1,36 @@
+config: !file tests/http/config/federation-router-entities-args.graphql
+name: Simple federation router example
+mock:
+  - request:
+      url: http://products/graphql
+      method: POST
+      body: '{ "query": "query { products { name id __typename } }" }'
+    response:
+      body:
+        data:
+          products:
+            - name: "Product 1"
+              id: 1
+  - request:
+      url: http://inventory/graphql
+      method: POST
+      body: '{ "query": "query { _entities(representations: [ { __typename: Product, id: 1 } ]) { ... on Product { delivery(zip: \"12345\") { estimatedDelivery } } } }" }'
+    response:
+      body:
+        data:
+          _entities:
+            - delivery:
+                estimatedDelivery: "Some estimate"
+assert:
+  - request:
+      url: http://localhost:8000/graphql
+      method: POST
+      body:
+        query: 'query { products { name delivery(zip: "12345") { estimatedDelivery } } }'
+    response:
+      body:
+        data:
+          products:
+            - name: "Product 1"
+              delivery:
+                estimatedDelivery: "Some estimate"

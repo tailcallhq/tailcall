@@ -1,0 +1,22 @@
+schema {
+  query: Query
+}
+
+type Query {
+  products: [Product!]! @graphql(name: "products", baseURL: "http://products/graphql", filterSelectionSet: true)
+}
+
+type Product {
+  id: ID!
+  name: String!
+  delivery(zip: String): DeliveryEstimates
+    @graphql(
+      args: [{key: "id", value: "{{value.id}}"}, {key: "zip", value: "{{args.zip}}"}]
+      baseURL: "http://inventory/graphql"
+    )
+}
+
+type DeliveryEstimates {
+  estimatedDelivery: String
+  fastestDelivery: String
+}
