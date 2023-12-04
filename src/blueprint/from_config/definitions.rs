@@ -293,7 +293,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-pub fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
+fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
   let operation_type = if config.schema.mutation.as_deref().eq(&Some(object_name)) {
     GraphQLOperationType::Mutation
   } else {

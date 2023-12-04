@@ -1,6 +1,3 @@
-use indexmap::IndexMap;
-
-use crate::blueprint::from_config::definitions::to_fields;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
@@ -19,18 +16,11 @@ pub fn update_ref_field<'a>(
       if !field.has_resolver() {
         let field_type = config.types.get(&field.type_of);
         if let Some(ty) = field_type {
-          let resolvers = to_fields(&field.type_of, ty, config).map(|i| {
-            i.iter()
-              .filter(|fd| fd.resolver.is_some())
-              .map(|fd| (fd.name.clone(), fd.resolver.clone()))
-              .collect::<IndexMap<String, Option<Expression>>>()
-          });
           let mut mut_field = b_field;
-          resolvers.map(|i| {
-            if !i.is_empty() {
-              mut_field.resolver = Some(Expression::Literal(serde_json::Value::Object(Default::default())));
-            }
-          });
+          let has_resolver = ty.fields.iter().any(|f| f.1.has_resolver());
+          if has_resolver {
+            mut_field.resolver = Some(Expression::Literal(serde_json::Value::Object(Default::default())));
+          }
           Valid::succeed(mut_field)
         } else if is_scalar(&field.type_of) {
           return Valid::succeed(b_field);
