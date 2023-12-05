@@ -1,0 +1,25 @@
+schema {
+  query: Query
+}
+
+interface IUser {
+  id: Int
+  name: String
+}
+
+type RegularUser implements IUser {
+  id: Int
+  name: String
+  email: String
+}
+
+type AdminUser implements IUser {
+  id: Int
+  name: String
+  accessLevel: Int
+}
+
+type Query {
+  users: [IUser] @http(baseURL: "http://upstream", path: "/users")
+  user: IUser @http(baseURL: "http://upstream", path: "/users/1")
+}
