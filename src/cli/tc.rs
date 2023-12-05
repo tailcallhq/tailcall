@@ -7,13 +7,12 @@ use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
-use tokio::sync::oneshot;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::start_server;
+use crate::http::{start_server, ServerControl};
 use crate::print_schema;
 
 pub fn run() -> Result<()> {
@@ -31,8 +30,12 @@ pub fn run() -> Result<()> {
         .worker_threads(config.server.get_workers())
         .enable_all()
         .build()?;
-      let (tx, _) = oneshot::channel::<bool>();
-      runtime.block_on(start_server(config, tx))?;
+      let server_control = ServerControl::new();
+      runtime.block_on(start_server(
+        config,
+        server_control.1,
+        server_control.0.shutdown.receiver,
+      ))?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

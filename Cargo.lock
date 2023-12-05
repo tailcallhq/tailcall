@@ -250,7 +250,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strum",
- "syn",
+ "syn 2.0.39",
  "thiserror",
 ]
 
@@ -428,7 +428,7 @@ checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -445,7 +445,7 @@ checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -496,6 +496,18 @@ dependencies = [
  "lalrpop",
  "lalrpop-util",
  "regex",
+]
+
+[[package]]
+name = "bidirectional-channel"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f7de9e5b201b937228ea09fcb1167ce0f492633be8092e9059ac023984a14eb"
+dependencies = [
+ "async-std",
+ "derive_more",
+ "futures",
+ "thiserror",
 ]
 
 [[package]]
@@ -557,6 +569,16 @@ dependencies = [
  "futures-lite 2.0.1",
  "piper",
  "tracing",
+]
+
+[[package]]
+name = "bmrng"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54df9073108f1558f90ae6c5bf5ab9c917c4185f5527b280c87a993cbead0ac"
+dependencies = [
+ "futures-core",
+ "tokio",
 ]
 
 [[package]]
@@ -714,7 +736,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -748,6 +770,12 @@ checksum = "f057a694a54f12365049b0958a1685bb52d567f5593b355fbf685838e873d400"
 dependencies = [
  "crossbeam-utils",
 ]
+
+[[package]]
+name = "convert_case"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "convert_case"
@@ -955,7 +983,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -966,7 +994,7 @@ checksum = "836a9bbc7ad63342d6d6e7b815ccab164bc77a2d95d84bc3117a8c0d5c98e2d5"
 dependencies = [
  "darling_core",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -979,6 +1007,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_more"
+version = "0.99.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
+dependencies = [
+ "convert_case 0.4.0",
+ "proc-macro2",
+ "quote",
+ "rustc_version",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "derive_setters"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,7 +1028,7 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -1268,7 +1309,7 @@ checksum = "53b153fd91e4b0147f4aced87be237c98248656bb01050b96bf3ee89220a8ddb"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -2181,7 +2222,7 @@ dependencies = [
  "pest_meta",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -2231,7 +2272,7 @@ checksum = "4359fd9c9171ec6e8c62926d6faaf553a8dc3f64e1507e76da7911b4f6a04405"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -2320,6 +2361,12 @@ dependencies = [
  "tracing",
  "windows-sys",
 ]
+
+[[package]]
+name = "port-killer"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f8f8abaf06419461fc718f5a0929c18d06dd825f26c066e376f365f2d8c2ec2"
 
 [[package]]
 name = "powerfmt"
@@ -2774,7 +2821,7 @@ checksum = "d6c7207fbec9faa48073f3e3074cbe553af6ea512d7c21ba46e434e70ea9fbc1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -3003,7 +3050,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn",
+ "syn 2.0.39",
+]
+
+[[package]]
+name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -3053,14 +3111,17 @@ dependencies = [
  "async-graphql-value",
  "async-trait",
  "base64 0.21.5",
+ "bidirectional-channel",
+ "bmrng",
  "cache_control",
  "clap",
  "colored",
- "convert_case",
+ "convert_case 0.6.0",
  "criterion",
  "derive_setters",
  "env_logger",
  "exitcode",
+ "futures",
  "http-cache-reqwest",
  "httpmock",
  "hyper",
@@ -3075,6 +3136,7 @@ dependencies = [
  "nom",
  "num_cpus",
  "once_cell",
+ "port-killer",
  "pretty_assertions",
  "regex",
  "reqwest",
@@ -3154,7 +3216,7 @@ checksum = "266b2e40bc00e5a6c09c3584011e08b06f123c00362c92b975ba9843aaaa14b8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -3247,7 +3309,7 @@ checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -3317,7 +3379,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -3532,7 +3594,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
  "wasm-bindgen-shared",
 ]
 
@@ -3566,7 +3628,7 @@ checksum = "c5353b8dab669f5e10f5bd76df26a9360c748f054f862ff5f3f8aae0c7fb3907"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.39",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]

@@ -11,7 +11,7 @@ use rustls::PrivateKey;
 use tokio::fs::File;
 use tokio::sync::oneshot;
 
-use super::server_config::ServerConfig;
+use super::server_config::{ServerConfig, ServerMessage};
 use super::{handle_batch_request, handle_single_request, log_launch};
 use crate::cli::CLIError;
 
@@ -50,7 +50,8 @@ pub async fn start_http_2(
   sc: Arc<ServerConfig>,
   cert: String,
   key: String,
-  tx: oneshot::Sender<bool>,
+  server_up_sender: oneshot::Sender<ServerMessage>,
+  shutdown_receiver: oneshot::Receiver<ServerMessage>,
 ) -> std::prelude::v1::Result<(), anyhow::Error> {
   let addr = sc.addr();
   let cert_chain = load_cert(&cert).await?;
@@ -79,12 +80,33 @@ pub async fn start_http_2(
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
-  tx.send(true).ok();
+
   log_launch(sc.as_ref());
+  server_up_sender.send(ServerMessage::ServerUp).ok();
+
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
-    builder.serve(make_svc_batch_req).await
+    builder
+      .serve(make_svc_batch_req)
+      .with_graceful_shutdown(async {
+        match shutdown_receiver.await {
+          Ok(ServerMessage::Shutdown) => (),
+          _ => (),
+        }
+      })
+      .await
   } else {
-    builder.serve(make_svc_single_req).await
+    builder
+      .serve(make_svc_single_req)
+      .with_graceful_shutdown(async {
+        match shutdown_receiver.await {
+          Ok(ServerMessage::Shutdown) => (),
+          _ => (),
+        }
+      })
+      .await
   };
-  Ok(server.map_err(CLIError::from)?)
+
+  let result = server.map_err(CLIError::from);
+
+  Ok(result?)
 }

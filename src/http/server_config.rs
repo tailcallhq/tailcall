@@ -2,10 +2,41 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use client::DefaultHttpClient;
+use tokio::sync::oneshot;
 
 use super::ServerContext;
 use crate::blueprint::{Blueprint, Http};
 use crate::http::client;
+
+pub enum ServerMessage {
+  ServerUp,
+  Shutdown,
+}
+
+pub struct ServerControl {
+  pub server_up: Control<ServerMessage>,
+  pub shutdown: Control<ServerMessage>,
+}
+
+pub struct Control<T> {
+  pub receiver: oneshot::Receiver<T>,
+}
+
+impl<T> Control<T> {
+  fn new() -> (Self, oneshot::Sender<T>) {
+    let (tx, rx) = oneshot::channel();
+    (Self { receiver: rx }, tx)
+  }
+}
+
+impl ServerControl {
+  pub fn new() -> (Self, oneshot::Sender<ServerMessage>, oneshot::Sender<ServerMessage>) {
+    let (server_up, server_up_sender) = Control::new();
+    let (shutdown, shutdown_sender) = Control::new();
+
+    (Self { server_up, shutdown }, server_up_sender, shutdown_sender)
+  }
+}
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
