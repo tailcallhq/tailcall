@@ -40,7 +40,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field_name = &field.name.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-          let field_name = field.name.clone();
+          let field_name = &field.name;
           match field.resolver.clone() {
             None => {
               let ctx = EvaluationContext::new(req_ctx, &ctx);
