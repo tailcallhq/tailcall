@@ -14,7 +14,9 @@ use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
+use crate::http::{
+  cache_policy, DataLoaderRequest, GetDataLoader, GraphqlDataLoader, HttpDataLoader, RequestContext, Response,
+};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -38,16 +40,12 @@ pub enum Context {
 
 #[derive(Clone)]
 pub enum Unsafe {
-  Http(
-    RequestTemplate,
-    Option<GroupBy>,
-    Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
-  ),
+  Http(RequestTemplate, Option<GroupBy>, Option<usize>),
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    data_loader: Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
+    data_loader_index: Option<usize>,
   },
   JS(Box<Expression>, String),
 }
@@ -59,7 +57,7 @@ impl Debug for Unsafe {
         .debug_struct("Http")
         .field("req_template", req_template)
         .field("group_by", group_by)
-        .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
+        .field("dl", dl)
         .finish(),
       Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => f
         .debug_struct("GraphQLEndpoint")
@@ -114,12 +112,12 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(operation) => match operation {
-          Unsafe::Http(req_template, _, data_loader) => {
+          Unsafe::Http(req_template, _, data_loader_index) => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              execute_request_with_dl(ctx, req, data_loader).await?
+              execute_request_with_dl::<_, HttpDataLoader>(ctx, req, data_loader_index).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -137,13 +135,13 @@ impl Expression {
 
             Ok(res.body)
           }
-          Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
+          Unsafe::GraphQLEndpoint { req_template, field_name, data_loader_index, .. } => {
             let req = req_template.to_request(ctx)?;
 
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              execute_request_with_dl(ctx, req, data_loader).await?
+              execute_request_with_dl::<_, GraphqlDataLoader>(ctx, req, data_loader_index).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -202,8 +200,11 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  data_loader: &Option<Arc<DataLoader<Dl>>>,
-) -> Result<Response> {
+  data_loader_index: &Option<usize>,
+) -> Result<Response>
+where
+  RequestContext: GetDataLoader<Dl>,
+{
   let headers = ctx
     .req_ctx
     .upstream
@@ -213,9 +214,10 @@ async fn execute_request_with_dl<
     .unwrap_or_default();
   let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
 
+  let data_loader: Option<&DataLoader<Dl>> = data_loader_index.and_then(|index| ctx.req_ctx.get_data_loader(index));
+
   Ok(
     data_loader
-      .as_ref()
       .unwrap()
       .load_one(endpoint_key)
       .await

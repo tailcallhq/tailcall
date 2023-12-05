@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use async_graphql::dataloader::DataLoader;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, HttpClient, Response, ServerContext};
+use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 
@@ -14,6 +15,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
+  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -23,17 +26,31 @@ impl Default for RequestContext {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, config.upstream.clone())
+    RequestContext::new(
+      Arc::new(DefaultHttpClient::default()),
+      server,
+      vec![],
+      vec![],
+      config.upstream.clone(),
+    )
   }
 }
 
 impl RequestContext {
-  pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
+  pub fn new(
+    http_client: Arc<dyn HttpClient>,
+    server: Server,
+    http_data_loaders: Vec<DataLoader<HttpDataLoader>>,
+    gql_data_loaders: Vec<DataLoader<GraphqlDataLoader>>,
+    upstream: Upstream,
+  ) -> Self {
     Self {
       req_headers: HeaderMap::new(),
       http_client,
       server,
       upstream,
+      http_data_loaders: Arc::new(http_data_loaders),
+      gql_data_loaders: Arc::new(gql_data_loaders),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -87,6 +104,22 @@ impl RequestContext {
   }
 }
 
+pub trait GetDataLoader<Dl> {
+  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<Dl>>;
+}
+
+impl GetDataLoader<HttpDataLoader> for RequestContext {
+  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<HttpDataLoader>> {
+    self.http_data_loaders.get(data_loader_index)
+  }
+}
+
+impl GetDataLoader<GraphqlDataLoader> for RequestContext {
+  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<GraphqlDataLoader>> {
+    self.gql_data_loaders.get(data_loader_index)
+  }
+}
+
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     Self {
@@ -94,6 +127,8 @@ impl From<&ServerContext> for RequestContext {
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
+      http_data_loaders: server_ctx.http_data_loaders.clone(),
+      gql_data_loaders: server_ctx.gql_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }

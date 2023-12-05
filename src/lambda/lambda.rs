@@ -58,7 +58,7 @@ impl Lambda<serde_json::Value> {
       req_template,
       field_name,
       batch,
-      data_loader: None,
+      data_loader_index: None,
     }))
   }
 }
