@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use async_graphql::dataloader::{DataLoader, Loader};
+use async_graphql::dataloader::DataLoader;
 use async_graphql::dynamic;
 
-use super::{DataLoaderRequest, HttpClient};
+use super::HttpClient;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
-use crate::http::{GraphqlDataLoader, HttpDataLoader, Response};
+use crate::http::{GraphqlDataLoader, HttpDataLoader};
 use crate::lambda::{Expression, Unsafe};
 
 pub struct ServerContext {
