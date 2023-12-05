@@ -3,10 +3,8 @@ use std::sync::Arc;
 use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 
-use super::server_config::{ServerConfig, ServerMessage};
-use super::{handle_batch_request, handle_single_request, log_launch};
-use super::server_config::ServerConfig;
-use super::{handle_request};
+use super::server_config::{ServerConfig, ServerConfig, ServerMessage};
+use super::{handle_batch_request, handle_request, handle_single_request, log_launch};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
