@@ -89,9 +89,8 @@ pub async fn start_http_2(
     builder
       .serve(make_svc_batch_req)
       .with_graceful_shutdown(async {
-        match shutdown_receiver.await {
-          Ok(ServerMessage::Shutdown) => (),
-          _ => (),
+        if let Ok(ServerMessage::Shutdown) = shutdown_receiver.await {
+          log::info!("shutting down server");
         }
       })
       .await
@@ -99,9 +98,8 @@ pub async fn start_http_2(
     builder
       .serve(make_svc_single_req)
       .with_graceful_shutdown(async {
-        match shutdown_receiver.await {
-          Ok(ServerMessage::Shutdown) => (),
-          _ => (),
+        if let Ok(ServerMessage::Shutdown) = shutdown_receiver.await {
+          log::info!("shutting down server");
         }
       })
       .await

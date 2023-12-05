@@ -40,16 +40,18 @@ pub async fn start_http_1(
     builder
       .serve(make_svc_batch_req)
       .with_graceful_shutdown(async {
-        log::info!("shutting down server");
-        shutdown_receiver.await.ok().unwrap();
+        if let Ok(ServerMessage::Shutdown) = shutdown_receiver.await {
+          log::info!("shutting down server");
+        }
       })
       .await
   } else {
     builder
       .serve(make_svc_single_req)
       .with_graceful_shutdown(async {
-        log::info!("shutting down server");
-        shutdown_receiver.await.ok().unwrap();
+        if let Ok(ServerMessage::Shutdown) = shutdown_receiver.await {
+          log::info!("shutting down server");
+        }
       })
       .await
   };
