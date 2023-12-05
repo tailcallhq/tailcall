@@ -1,9 +1,5 @@
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
-
 use crate::blueprint::from_config::to_type;
 use crate::blueprint::*;
-use crate::config;
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
@@ -12,6 +8,7 @@ use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::request_template::RequestTemplate;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
+use crate::{config, helpers};
 
 struct MustachePartsValidator<'a> {
   type_of: &'a config::Type,
@@ -19,19 +16,43 @@ struct MustachePartsValidator<'a> {
   field: &'a FieldDefinition,
 }
 
-fn get_value_type(type_of: &config::Type, value: &str) -> Option<Type> {
-  if let Some(field) = type_of.fields.get(value) {
-    return Some(to_type(field, None));
-  }
-  None
-}
-
 impl<'a> MustachePartsValidator<'a> {
   fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
     Self { type_of, config, field }
   }
+
+  fn validate_type(&self, parts: &[String], is_query: bool) -> Result<(), String> {
+    let mut len = parts.len();
+    let mut type_of = self.type_of;
+    for item in parts {
+      let field = type_of.fields.get(item).ok_or_else(|| {
+        format!(
+          "no value '{}' found",
+          parts[0..parts.len() - len + 1].join(".").as_str()
+        )
+      })?;
+      let val_type = to_type(field, None);
+
+      if !is_query && val_type.is_nullable() {
+        return Err(format!("value '{}' is a nullable type", item.as_str()));
+      } else if len == 1 && !is_scalar(val_type.name()) {
+        return Err(format!("value '{}' is not of a scalar type", item.as_str()));
+      } else if len == 1 {
+        break;
+      }
+
+      type_of = self
+        .config
+        .find_type(&field.type_of)
+        .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
+
+      len -= 1;
+    }
+
+    Ok(())
+  }
+
   fn validate(&self, parts: &[String], is_query: bool) -> Valid<(), String> {
-    let type_of = self.type_of;
     let config = self.config;
     let args = &self.field.args;
 
@@ -44,17 +65,11 @@ impl<'a> MustachePartsValidator<'a> {
 
     match head {
       "value" => {
-        if let Some(val_type) = get_value_type(type_of, tail) {
-          if !is_scalar(val_type.name()) {
-            return Valid::fail(format!("value '{tail}' is not of a scalar type"));
-          }
+        // all items on parts except the first one
+        let tail = &parts[1..];
 
-          // Queries can use optional values
-          if !is_query && val_type.is_nullable() {
-            return Valid::fail(format!("value '{tail}' is a nullable type"));
-          }
-        } else {
-          return Valid::fail(format!("no value '{tail}' found"));
+        if let Err(e) = self.validate_type(tail, is_query) {
+          return Valid::fail(e);
         }
       }
       "args" => {
@@ -122,63 +137,50 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
 
 pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, type_of, _), b_field| match field.http.as_ref() {
-      Some(http) => match http
-        .base_url
-        .as_ref()
-        .map_or_else(|| config.upstream.base_url.as_ref(), Some)
-      {
-        Some(base_url) => {
-          let mut base_url = base_url.clone();
-          if base_url.ends_with('/') {
-            base_url.pop();
-          }
+    |(config, field, type_of, _), b_field| {
+      let Some(http) = &field.http else {
+        return Valid::succeed(b_field);
+      };
+
+      Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
+        .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .and(Valid::from_option(
+          http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+          "No base URL defined".to_string(),
+        ))
+        .zip(helpers::headers::to_headermap(&http.headers))
+        .and_then(|(base_url, header_map)| {
+          let mut base_url = base_url.trim_end_matches('/').to_owned();
           base_url.push_str(http.path.clone().as_str());
+
           let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
           let output_schema = to_json_schema_for_field(field, config);
           let input_schema = to_json_schema_for_args(&field.args, config);
 
-          Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-            .when(|| !http.group_by.is_empty() && http.method != Method::GET)
-            .and(Valid::from_iter(http.headers.iter(), |(k, v)| {
-              let name =
-                Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())));
-
-              let value =
-                Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string())));
-
-              name.zip(value).map(|(name, value)| (name, value))
-            }))
-            .map(HeaderMap::from_iter)
-            .and_then(|header_map| {
-              RequestTemplate::try_from(
-                Endpoint::new(base_url.to_string())
-                  .method(http.method.clone())
-                  .query(query)
-                  .output(output_schema)
-                  .input(input_schema)
-                  .body(http.body.clone())
-                  .headers(header_map),
-              )
-              .map_err(|e| ValidationError::new(e.to_string()))
-              .into()
-            })
-            .map(|req_template| {
-              if !http.group_by.is_empty() && http.method == Method::GET {
-                b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
-                  req_template,
-                  Some(GroupBy::new(http.group_by.clone())),
-                  None,
-                ))))
-              } else {
-                b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
-              }
-            })
-            .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
-        }
-        None => Valid::fail("No base URL defined".to_string()),
-      },
-      None => Valid::succeed(b_field),
+          RequestTemplate::try_from(
+            Endpoint::new(base_url.to_string())
+              .method(http.method.clone())
+              .query(query)
+              .output(output_schema)
+              .input(input_schema)
+              .body(http.body.clone())
+              .headers(header_map),
+          )
+          .map_err(|e| ValidationError::new(e.to_string()))
+          .into()
+        })
+        .map(|req_template| {
+          if !http.group_by.is_empty() && http.method == Method::GET {
+            b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
+              req_template,
+              Some(GroupBy::new(http.group_by.clone())),
+              None,
+            ))))
+          } else {
+            b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+          }
+        })
+        .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))
     },
   )
 }

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
+use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
@@ -9,7 +10,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
@@ -87,6 +88,12 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
     Some(&TEST_ARGS)
   }
+
+  fn field(&'a self) -> Option<SelectionField> {
+    None
+  }
+
+  fn add_error(&'a self, _: async_graphql::ServerError) {}
 }
 
 // assert that everything was set up correctly for the benchmark

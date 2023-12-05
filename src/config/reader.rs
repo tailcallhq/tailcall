@@ -1,5 +1,3 @@
-use std::slice::Iter;
-
 use anyhow::anyhow;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -12,8 +10,12 @@ pub struct ConfigReader {
 }
 
 impl ConfigReader {
-  pub fn init(file_paths: Iter<String>) -> Self {
-    Self { file_paths: file_paths.cloned().collect() }
+  pub fn init<Iter>(file_paths: Iter) -> Self
+  where
+    Iter: Iterator,
+    Iter::Item: AsRef<str>,
+  {
+    Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
   }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
