@@ -115,5 +115,6 @@ async fn server_start_http2() {
     });
     assert_eq!(response_body, expected_response, "Unexpected response from server");
   }
+
   shutdown_sender.send(ServerMessage::Shutdown).ok();
 }
