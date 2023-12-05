@@ -1,9 +1,22 @@
+use std::collections::BTreeMap;
+
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
 use crate::lambda::Expression;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
+
+fn fields_has_resolver(ty: &config::Type, types: &BTreeMap<String, config::Type>) -> bool {
+  ty.fields.iter().any(|f| {
+    f.1.has_resolver()
+      || if let Some(f_ty) = types.get(&f.1.type_of) {
+        fields_has_resolver(f_ty, types)
+      } else {
+        false
+      }
+  })
+}
 
 pub fn update_ref_field<'a>(
   is_add_field: bool,
@@ -17,7 +30,7 @@ pub fn update_ref_field<'a>(
         let field_type = config.types.get(&field.type_of);
         if let Some(ty) = field_type {
           let mut mut_field = b_field;
-          let has_resolver = ty.fields.iter().any(|f| f.1.has_resolver());
+          let has_resolver = fields_has_resolver(ty, &config.types);
           if has_resolver {
             mut_field.resolver = Some(Expression::Literal(serde_json::Value::Object(Default::default())));
           }
