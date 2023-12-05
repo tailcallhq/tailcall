@@ -1,0 +1,52 @@
+config: !file tests/http/config/interface-extend.graphql
+runner: only
+name: Simple GraphQL Request
+mock:
+  - request:
+      url: http://upstream/users
+    response:
+      body:
+        - id: 1
+          name: foo
+          email: bar
+          __typename: RegularUser
+        - id: 2
+          name: bar
+          accessLevel: 4
+          __typename: AdminUser
+  - request:
+      url: http://upstream/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+        email: bar
+        __typename: RegularUser
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { users { id name ... on AdminUser { accessLevel } ... on RegularUser { email }} }
+    response:
+      body:
+        data:
+          users:
+            - email: bar
+              id: 1
+              name: foo
+            - accessLevel: 4
+              id: 2
+              name: bar
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { user { id name ... on AdminUser { accessLevel } ... on RegularUser { email }} }
+    response:
+      body:
+        data:
+          user:
+            email: bar
+            id: 1
+            name: foo
