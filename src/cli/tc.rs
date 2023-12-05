@@ -7,7 +7,6 @@ use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
-use tokio::sync::oneshot;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
@@ -31,12 +30,8 @@ pub fn run() -> Result<()> {
         .worker_threads(config.server.get_workers())
         .enable_all()
         .build()?;
-      let server_control = ServerControl::new();
-      runtime.block_on(start_server(
-        config,
-        server_control.1,
-        server_control.0.shutdown.receiver,
-      ))?;
+      let (server_control, server_up_sender, _shutdown_sender) = ServerControl::new();
+      runtime.block_on(start_server(config, server_up_sender, server_control.shutdown.receiver))?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
