@@ -40,13 +40,22 @@ fn get_type_from_value(value: &ConstValue) -> String {
   }
 }
 
+fn create_list_value_with_type(values: Vec<ConstValue>) -> FieldValue<'static> {
+  FieldValue::list(
+    values
+      .iter()
+      .map(|item| create_field_value_with_type(item.clone()))
+      .collect::<Vec<_>>(),
+  )
+}
+
 fn create_field_value_with_type(value: ConstValue) -> FieldValue<'static> {
   let typename = get_type_from_value(&value);
   let field_value = FieldValue::from(value);
   FieldValue::with_type(field_value, typename)
 }
 
-async fn get_evaled_value<'a>(
+async fn get_evaled_value_from_ctx<'a>(
   req_ctx: &'a Arc<RequestContext>,
   ctx: &'a ResolverContext<'_>,
   expr: Expression,
@@ -83,7 +92,7 @@ fn to_type(def: &Definition, definitions: &Vec<Definition>) -> dynamic::Type {
               match resolver {
                 None => Ok(get_field_value_from_ctx(req_ctx, &ctx, field_name)),
                 Some(expr) => {
-                  let const_value = get_evaled_value(req_ctx, &ctx, expr).await?;
+                  let const_value = get_evaled_value_from_ctx(req_ctx, &ctx, expr).await?;
                   let p = match const_value {
                     ConstValue::List(a) => FieldValue::list(a),
                     a => FieldValue::from(a),
@@ -102,13 +111,9 @@ fn to_type(def: &Definition, definitions: &Vec<Definition>) -> dynamic::Type {
               match resolver {
                 None => Ok(get_field_value_from_ctx(req_ctx, &ctx, field_name)),
                 Some(expr) => {
-                  let const_value = get_evaled_value(req_ctx, &ctx, expr).await?;
+                  let const_value = get_evaled_value_from_ctx(req_ctx, &ctx, expr).await?;
                   let p = match const_value {
-                    ConstValue::List(a) => FieldValue::list(
-                      a.iter()
-                        .map(|item| create_field_value_with_type(item.clone()))
-                        .collect::<Vec<_>>(),
-                    ),
+                    ConstValue::List(a) => create_list_value_with_type(a),
                     a => create_field_value_with_type(a),
                   };
                   Ok(Some(p))
