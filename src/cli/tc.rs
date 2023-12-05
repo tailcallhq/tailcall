@@ -28,6 +28,7 @@ pub fn run() -> Result<()> {
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
+        .global_queue_interval(15) // improves performance when low
         .enable_all()
         .build()?;
       runtime.block_on(start_server(config))?;

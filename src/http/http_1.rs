@@ -26,7 +26,11 @@ pub async fn start_http_1(sc: Arc<ServerConfig>) -> std::prelude::v1::Result<(),
       }))
     }
   });
-  let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
+  let builder = hyper::Server::try_bind(&addr)
+    .map_err(CLIError::from)?
+    .http1_only(true)
+    .http1_pipeline_flush(true)
+    .tcp_keepalive(Some(std::time::Duration::from_secs(60)));
   log_launch(sc.as_ref());
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
