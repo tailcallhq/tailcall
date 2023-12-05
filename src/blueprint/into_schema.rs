@@ -41,20 +41,23 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
-          match field.resolver.clone() {
+          match &field.resolver {
             None => {
               let ctx = EvaluationContext::new(req_ctx, &ctx);
               FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
             }
-            Some(expr) => FieldFuture::new(async move {
-              let ctx = EvaluationContext::new(req_ctx, &ctx);
-              let const_value = expr.eval(&ctx).await?;
-              let p = match const_value {
-                ConstValue::List(a) => FieldValue::list(a),
-                a => FieldValue::from(a),
-              };
-              Ok(Some(p))
-            }),
+            Some(expr) => {
+              let expr = expr.to_owned();
+              FieldFuture::new(async move {
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                let const_value = expr.eval(&ctx).await?;
+                let p = match const_value {
+                  ConstValue::List(a) => FieldValue::list(a),
+                  a => FieldValue::from(a),
+                };
+                Ok(Some(p))
+              })
+            }
           }
         });
         if let Some(description) = &field.description {
