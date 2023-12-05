@@ -1,7 +1,6 @@
 use colored::*;
 
 use crate::config::Config;
-use crate::valid::Valid;
 
 pub struct Fmt {}
 
@@ -44,24 +43,6 @@ impl Fmt {
       .join("\n");
     table.push('\n');
     table
-  }
-
-  pub fn format_operation(op: &str, errors: &[String]) -> Valid<(), String> {
-    if errors.is_empty() {
-      Valid::succeed(())
-    } else {
-      let meta = Fmt::meta(&format!("{} errors found", errors.len()));
-      let heading = Fmt::heading(&format!("Operation {op}: {meta}"));
-
-      let report = errors
-        .iter()
-        .enumerate()
-        .map(|(count, error)| Fmt::error(&format!("{}. {}", count + 1, error)))
-        .collect::<Vec<String>>()
-        .join("\n");
-
-      Valid::fail(format!("{heading}\n{report}"))
-    }
   }
 
   pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {

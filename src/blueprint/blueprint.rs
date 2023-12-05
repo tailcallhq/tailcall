@@ -1,7 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
-use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroU64;
-
+use std::collections::{BTreeSet, HashMap, VecDeque};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -13,10 +10,9 @@ use serde_json::Value;
 use super::into_schema::create_dumb_schema;
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::cli::Fmt;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
-use crate::valid::Valid;
+use crate::valid::{Cause, Valid};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -235,18 +231,35 @@ impl Blueprint {
 
   pub async fn validate_operations(&self, operations: Vec<String>) -> Valid<(), String> {
     let schema = self.to_validation_schema();
-    let mut execution = vec![];
+    let mut diagnostics = vec![];
 
     for op in operations.iter() {
       match tokio::fs::read_to_string(op).await {
         Ok(operation) => {
           let Response { errors, .. } = schema.execute(&operation).await;
-          execution.push((op, errors.iter().map(|e| e.message.clone()).collect::<Vec<String>>()));
+          for err in errors.iter() {
+            let trace = if err.locations.is_empty() {
+              op.to_string()
+            } else {
+              let locs = err
+                .locations
+                .iter()
+                .map(|loc| loc.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+              format!("{}({})", op, locs)
+            };
+            diagnostics.push(Cause::new(err.message.clone()).trace(VecDeque::from([trace])));
+          }
         }
-        Err(_) => execution.push((op, vec!["Cannot read operation".to_string()])),
+        Err(_) => diagnostics.push(Cause::new("Cannot read operation".into()).trace(VecDeque::from([op.to_string()]))),
       }
     }
 
-    Valid::from_iter(execution.iter(), |(op, errors)| Fmt::format_operation(op, errors)).map(|_| ())
+    if diagnostics.is_empty() {
+      Valid::succeed(())
+    } else {
+      Valid::from_vec_cause(diagnostics).map(|_: Vec<()>| ())
+    }
   }
 }
