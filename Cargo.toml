@@ -59,9 +59,6 @@ hyper-rustls = "0.24.2"
 rustls = "0.21.9"
 rustls-pemfile = "1.0.4"
 futures = "0.3.29"
-port-killer = "0.1.0"
-bmrng = "0.5.2"
-bidirectional-channel = "0.3.1"
 
 [dev-dependencies]
 criterion = "0.5.1"
