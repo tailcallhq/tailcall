@@ -3051,7 +3051,6 @@ dependencies = [
  "derive_setters",
  "env_logger",
  "exitcode",
- "futures",
  "http-cache-reqwest",
  "httpmock",
  "hyper",
