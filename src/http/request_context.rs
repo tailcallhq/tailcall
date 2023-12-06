@@ -16,8 +16,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  pub http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
-  pub gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
+  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -38,8 +38,8 @@ impl RequestContext {
       http_client,
       server,
       upstream,
-      http_data_loaders: vec![],
-      gql_data_loaders: vec![],
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -99,13 +99,13 @@ pub trait GetDataLoader<Dl> {
 
 impl GetDataLoader<HttpDataLoader> for RequestContext {
   fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<HttpDataLoader>> {
-    self.http_data_loaders.get(dl_id.0).map(Arc::as_ref)
+    self.http_data_loaders.get(dl_id.0)
   }
 }
 
 impl GetDataLoader<GraphqlDataLoader> for RequestContext {
   fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<GraphqlDataLoader>> {
-    self.gql_data_loaders.get(dl_id.0).map(Arc::as_ref)
+    self.gql_data_loaders.get(dl_id.0)
   }
 }
 

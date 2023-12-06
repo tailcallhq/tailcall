@@ -13,15 +13,15 @@ pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
-  pub http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
-  pub gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
+  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
 }
 
 struct PartialServerContext {
   http_client: Arc<dyn HttpClient>,
   blueprint: Blueprint,
-  http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
-  gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
+  http_data_loaders: Vec<DataLoader<HttpDataLoader>>,
+  gql_data_loaders: Vec<DataLoader<GraphqlDataLoader>>,
 }
 
 impl PartialServerContext {
@@ -45,7 +45,7 @@ impl PartialServerContext {
                   dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
                 }));
 
-                self.http_data_loaders.push(Arc::new(data_loader));
+                self.http_data_loaders.push(data_loader);
               }
 
               Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
@@ -59,7 +59,7 @@ impl PartialServerContext {
                   dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
                 }));
 
-                self.gql_data_loaders.push(Arc::new(graphql_data_loader));
+                self.gql_data_loaders.push(graphql_data_loader);
               }
               _ => {}
             }
@@ -74,8 +74,8 @@ impl PartialServerContext {
       schema,
       http_client: self.http_client,
       blueprint: self.blueprint,
-      http_data_loaders: self.http_data_loaders,
-      gql_data_loaders: self.gql_data_loaders,
+      http_data_loaders: Arc::new(self.http_data_loaders),
+      gql_data_loaders: Arc::new(self.gql_data_loaders),
     }
   }
 }
