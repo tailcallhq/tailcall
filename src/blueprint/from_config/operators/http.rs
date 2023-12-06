@@ -118,7 +118,7 @@ fn validate_field(type_of: &config::Type, config: &Config, field: &FieldDefiniti
 
   let parts_validator = MustachePartsValidator::new(type_of, config, field);
 
-  if let Some(Expression::Unsafe(Unsafe::Http(req_template, _, _))) = &field.resolver {
+  if let Some(Expression::Unsafe(Unsafe::Http { req_template, .. })) = &field.resolver {
     Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
       parts_validator.validate(parts, false).trace("path")
     })
@@ -171,11 +171,11 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         })
         .map(|req_template| {
           if !http.group_by.is_empty() && http.method == Method::GET {
-            b_field.resolver(Some(Expression::Unsafe(Unsafe::Http(
+            b_field.resolver(Some(Expression::Unsafe(Unsafe::Http {
               req_template,
-              Some(GroupBy::new(http.group_by.clone())),
-              None,
-            ))))
+              group_by: Some(GroupBy::new(http.group_by.clone())),
+              dl_id: None,
+            })))
           } else {
             b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
           }

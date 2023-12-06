@@ -40,7 +40,11 @@ pub enum Context {
 
 #[derive(Clone, Debug)]
 pub enum Unsafe {
-  Http(RequestTemplate, Option<GroupBy>, Option<usize>),
+  Http {
+    req_template: RequestTemplate,
+    group_by: Option<GroupBy>,
+    dl_id: Option<usize>,
+  },
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
@@ -88,7 +92,7 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(operation) => match operation {
-          Unsafe::Http(req_template, _, dl_id) => {
+          Unsafe::Http { req_template, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
