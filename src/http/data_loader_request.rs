@@ -1,15 +1,19 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct DataLoaderRequest(reqwest::Request, BTreeSet<String>);
 
 impl DataLoaderRequest {
   pub fn new(req: reqwest::Request, headers: BTreeSet<String>) -> Self {
+    // TODO: req should already have headers builtin, no?
     DataLoaderRequest(req, headers)
   }
   pub fn to_request(&self) -> reqwest::Request {
+    // TODO: excessive clone for the whole structure instead of cloning only part of it
+    // check if we really need to clone anything at all or just pass references?
     self.clone().0
   }
   pub fn headers(&self) -> &BTreeSet<String> {
@@ -19,6 +23,11 @@ impl DataLoaderRequest {
 impl Hash for DataLoaderRequest {
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.0.url().hash(state);
+    // use body in hash for graphql queries with query operation as they used to fetch data
+    // while http post and graphql mutation should not be loaded through dataloader at all!
+    if let Some(body) = self.0.body() {
+      body.as_bytes().hash(state);
+    }
     for name in &self.1 {
       if let Some(value) = self.0.headers().get(name) {
         name.hash(state);
@@ -42,15 +51,27 @@ impl PartialEq for DataLoaderRequest {
   }
 }
 
+impl Eq for DataLoaderRequest {}
+
 impl Clone for DataLoaderRequest {
   fn clone(&self) -> Self {
-    let mut req = reqwest::Request::new(reqwest::Method::GET, self.0.url().clone());
-    req.headers_mut().extend(self.0.headers().clone());
+    let req = self.0.try_clone().unwrap_or_else(|| {
+      let mut req = reqwest::Request::new(self.0.method().clone(), self.0.url().clone());
+      req.headers_mut().extend(self.0.headers().clone());
+      req
+    });
+
     DataLoaderRequest(req, self.1.clone())
   }
 }
 
-impl Eq for DataLoaderRequest {}
+impl Deref for DataLoaderRequest {
+  type Target = reqwest::Request;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
 
 #[cfg(test)]
 mod tests {

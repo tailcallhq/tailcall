@@ -183,7 +183,10 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
     let args = field
       .arguments
       .iter()
-      .map(|arg| format!("{}: {}", arg.node.name, arg.node.ty.node.base))
+      .map(|arg| {
+        let nullable = if arg.node.ty.node.nullable { "" } else { "!" };
+        format!("{}: {}{}", arg.node.name, arg.node.ty.node.base, nullable)
+      })
       .collect::<Vec<String>>()
       .join(", ");
     format!("({})", args)

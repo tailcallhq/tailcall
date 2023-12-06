@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::fmt::{self, Display};
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -7,9 +8,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{Server, Upstream};
+use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
+use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
@@ -226,22 +229,26 @@ pub struct Field {
 
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
+  pub graphql: Option<GraphQL>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some()
+    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.graphql.is_some()
   }
-  pub fn resolvable_directives(&self) -> Vec<&str> {
-    let mut directives = Vec::with_capacity(3);
+  pub fn resolvable_directives(&self) -> Vec<String> {
+    let mut directives = Vec::with_capacity(4);
     if self.http.is_some() {
-      directives.push("@http")
+      directives.push(Http::trace_name())
+    }
+    if self.graphql.is_some() {
+      directives.push(GraphQL::trace_name())
     }
     if self.unsafe_operation.is_some() {
-      directives.push("@unsafe")
+      directives.push(Unsafe::trace_name())
     }
     if self.const_field.is_some() {
-      directives.push("@const")
+      directives.push(Const::trace_name())
     }
     directives
   }
@@ -320,6 +327,37 @@ pub struct Http {
   pub group_by: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GraphQL {
+  pub name: String,
+  pub args: Option<KeyValues>,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub batch: bool,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GraphQLOperationType {
+  #[default]
+  Query,
+  Mutation,
+}
+
+impl Display for GraphQLOperationType {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    f.write_str(match self {
+      Self::Query => "query",
+      Self::Mutation => "mutation",
+    })
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Const {
   pub data: Value,
@@ -343,7 +381,7 @@ impl Config {
   pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
     let doc = async_graphql::parser::parse_schema(sdl);
     match doc {
-      Ok(doc) => Valid::from(Config::try_from(doc)),
+      Ok(doc) => from_document(doc),
       Err(e) => Valid::fail(e.to_string()),
     }
   }
@@ -359,8 +397,13 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url(file_paths: std::slice::Iter<'_, String>) -> Result<Config> {
+  pub async fn from_file_or_url<Iter>(file_paths: Iter) -> Result<Config>
+  where
+    Iter: Iterator,
+    Iter::Item: AsRef<str>,
+  {
     let config_reader = ConfigReader::init(file_paths);
+
     config_reader.read().await
   }
 }
@@ -381,5 +424,11 @@ mod tests {
     assert!(!f1.has_batched_resolver());
     assert!(f2.has_batched_resolver());
     assert!(!f3.has_batched_resolver());
+  }
+
+  #[test]
+  fn test_graphql_directive_name() {
+    let name = GraphQL::directive_name();
+    assert_eq!(name, "graphQL");
   }
 }

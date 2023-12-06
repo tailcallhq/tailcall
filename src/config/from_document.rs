@@ -7,9 +7,9 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, Http, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::Valid;
 
 pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let type_definitions: Vec<_> = doc
@@ -55,10 +55,10 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 }
 
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
-  process_schema_directives(schema_definition, "server")
+  process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
-  process_schema_directives(schema_definition, "upstream")
+  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
@@ -192,26 +192,29 @@ where
   let doc = description.as_ref().map(|pos| pos.node.clone());
   let modify = to_modify(directives);
 
-  to_http(directives).map(|http| {
-    let unsafe_operation = to_unsafe_operation(directives);
-    let const_field = to_const_field(directives);
-    config::Field {
-      type_of,
-      list,
-      required: !nullable,
-      list_type_required,
-      args,
-      doc,
-      modify,
-      http,
-      unsafe_operation,
-      const_field,
-    }
-  })
+  config::Http::from_directives(directives.iter())
+    .zip(GraphQL::from_directives(directives.iter()))
+    .map(|(http, graphql)| {
+      let unsafe_operation = to_unsafe_operation(directives);
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        http,
+        unsafe_operation,
+        const_field,
+        graphql,
+      }
+    })
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "unsafe" {
+    if directive.node.name.node == config::Unsafe::directive_name() {
       config::Unsafe::from_directive(&directive.node).to_result().ok()
     } else {
       None
@@ -221,10 +224,7 @@ fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<conf
 fn to_type_of(type_: &Type) -> String {
   match &type_.base {
     BaseType::Named(name) => name.to_string(),
-    BaseType::List(ty) => match &ty.base {
-      BaseType::Named(name) => name.to_string(),
-      _ => "".to_string(),
-    },
+    BaseType::List(ty) => to_type_of(ty),
   }
 }
 fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
@@ -254,21 +254,14 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
 }
 fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "modify" {
+    if directive.node.name.node == config::Modify::directive_name() {
       config::Modify::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
   })
 }
-fn to_http(directives: &[Positioned<ConstDirective>]) -> Valid<Option<config::Http>, String> {
-  for directive in directives {
-    if directive.node.name.node == "http" {
-      return Http::from_directive(&directive.node).map(Some);
-    }
-  }
-  Valid::succeed(None)
-}
+
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
   let types = union_type
     .members
@@ -279,13 +272,14 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == "const" {
+    if directive.node.name.node == config::Const::directive_name() {
       config::Const::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
   })
 }
+
 fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::AddField> {
   directives
     .iter()
@@ -310,14 +304,6 @@ impl HasName for FieldDefinition {
 impl HasName for InputValueDefinition {
   fn name(&self) -> &Positioned<Name> {
     &self.name
-  }
-}
-
-impl TryFrom<ServiceDocument> for Config {
-  type Error = ValidationError<String>;
-
-  fn try_from(value: ServiceDocument) -> Result<Self, ValidationError<String>> {
-    from_document(value).to_result()
   }
 }
 
