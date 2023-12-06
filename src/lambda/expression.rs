@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
+use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -43,19 +44,38 @@ pub enum Unsafe {
   Http {
     req_template: RequestTemplate,
     group_by: Option<GroupBy>,
-    dl_id: Option<DataLoaderId>,
+    dl_id: Option<DataLoaderId<HttpDataLoader>>,
   },
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    dl_id: Option<DataLoaderId>,
+    dl_id: Option<DataLoaderId<GraphqlDataLoader>>,
   },
   JS(Box<Expression>, String),
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct DataLoaderId(pub usize);
+pub struct DataLoaderId<T>(pub usize, PhantomData<T>);
+
+impl<T> DataLoaderId<T> {
+  pub fn new(index: usize) -> Self {
+    Self(index, PhantomData)
+  }
+}
+
+impl<T> Clone for DataLoaderId<T> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+
+impl<T> Copy for DataLoaderId<T> {}
+
+impl<T> std::fmt::Debug for DataLoaderId<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self.0)
+  }
+}
 
 #[derive(Debug, Error, Serialize)]
 pub enum EvaluationError {
@@ -183,7 +203,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  dl_id: Option<DataLoaderId>,
+  dl_id: Option<DataLoaderId<Dl>>,
 ) -> Result<Response>
 where
   RequestContext: GetDataLoader<Dl>,

@@ -42,7 +42,7 @@ impl PartialServerContext {
                 field.resolver = Some(Expression::Unsafe(Unsafe::Http {
                   req_template: req_template.clone(),
                   group_by: group_by.clone(),
-                  dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
+                  dl_id: Some(DataLoaderId::<HttpDataLoader>::new(self.http_data_loaders.len())),
                 }));
 
                 self.http_data_loaders.push(data_loader);
@@ -56,7 +56,7 @@ impl PartialServerContext {
                   req_template: req_template.clone(),
                   field_name: field_name.clone(),
                   batch: *batch,
-                  dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
+                  dl_id: Some(DataLoaderId::<GraphqlDataLoader>::new(self.gql_data_loaders.len())),
                 }));
 
                 self.gql_data_loaders.push(graphql_data_loader);

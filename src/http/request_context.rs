@@ -94,17 +94,17 @@ impl RequestContext {
 }
 
 pub trait GetDataLoader<Dl> {
-  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<Dl>>;
+  fn get_data_loader(&self, dl_id: DataLoaderId<Dl>) -> Option<&DataLoader<Dl>>;
 }
 
 impl GetDataLoader<HttpDataLoader> for RequestContext {
-  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<HttpDataLoader>> {
+  fn get_data_loader(&self, dl_id: DataLoaderId<HttpDataLoader>) -> Option<&DataLoader<HttpDataLoader>> {
     self.http_data_loaders.get(dl_id.0)
   }
 }
 
 impl GetDataLoader<GraphqlDataLoader> for RequestContext {
-  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<GraphqlDataLoader>> {
+  fn get_data_loader(&self, dl_id: DataLoaderId<GraphqlDataLoader>) -> Option<&DataLoader<GraphqlDataLoader>> {
     self.gql_data_loaders.get(dl_id.0)
   }
 }
