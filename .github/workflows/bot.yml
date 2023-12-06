@@ -86,13 +86,13 @@ jobs:
       - name: Warmup Wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 10 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql
+          wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql
 
       - id: run_wrk
         name: Run Wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 30 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
 
       - id: convert_wrk_output_markdown
         name: Convert Output to Markdown
