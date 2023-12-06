@@ -1,22 +1,18 @@
 use reqwest::Client;
 use serde_json::json;
 use tailcall::config::Config;
-use tailcall::http::{start_server, ServerControl, ServerMessage};
+use tailcall::http::Server;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let (server_control, server_up_sender, shutdown_sender) = ServerControl::new();
   let config = Config::from_file_or_url(configs.iter()).await.unwrap();
+  let mut server = Server::new(config);
+  let server_up_receiver = server.server_up_receiver();
 
-  tokio::spawn(async {
-    start_server(config, server_up_sender, server_control.shutdown.receiver)
-      .await
-      .unwrap();
+  tokio::spawn(async move {
+    server.start().await.unwrap();
   });
 
-  match server_control.server_up.receiver.await {
-    Ok(ServerMessage::ServerUp) => (),
-    _ => panic!("Server did not start up correctly"),
-  }
+  server_up_receiver.await.expect("Server did not start up correctly");
 
   // required since our cert is self signed
   let client = Client::builder().danger_accept_invalid_certs(true).build().unwrap();
@@ -50,8 +46,6 @@ async fn test_server(configs: &[&str], url: &str) {
     });
     assert_eq!(response_body, expected_response, "Unexpected response from server");
   }
-
-  shutdown_sender.send(ServerMessage::Shutdown).ok();
 }
 
 #[tokio::test]

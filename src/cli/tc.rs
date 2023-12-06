@@ -12,7 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::config::Config;
-use crate::http::{start_server, ServerControl};
+use crate::http::Server;
 use crate::print_schema;
 
 pub fn run() -> Result<()> {
@@ -30,8 +30,8 @@ pub fn run() -> Result<()> {
         .worker_threads(config.server.get_workers())
         .enable_all()
         .build()?;
-      let (server_control, server_up_sender, _shutdown_sender) = ServerControl::new();
-      runtime.block_on(start_server(config, server_up_sender, server_control.shutdown.receiver))?;
+      let server = Server::new(config);
+      runtime.block_on(server.start())?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
