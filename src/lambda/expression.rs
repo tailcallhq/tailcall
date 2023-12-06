@@ -43,16 +43,19 @@ pub enum Unsafe {
   Http {
     req_template: RequestTemplate,
     group_by: Option<GroupBy>,
-    dl_id: Option<usize>,
+    dl_id: Option<DataLoaderId>,
   },
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    dl_id: Option<usize>,
+    dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct DataLoaderId(pub usize);
 
 #[derive(Debug, Error, Serialize)]
 pub enum EvaluationError {
@@ -180,7 +183,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  dl_id: Option<usize>,
+  dl_id: Option<DataLoaderId>,
 ) -> Result<Response>
 where
   RequestContext: GetDataLoader<Dl>,
