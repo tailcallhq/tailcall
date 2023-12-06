@@ -38,40 +38,16 @@ pub enum Context {
   Path(Vec<String>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Unsafe {
   Http(RequestTemplate, Option<GroupBy>, Option<usize>),
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    data_loader_index: Option<usize>,
+    dl_id: Option<usize>,
   },
   JS(Box<Expression>, String),
-}
-
-impl Debug for Unsafe {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Unsafe::Http(req_template, group_by, dl) => f
-        .debug_struct("Http")
-        .field("req_template", req_template)
-        .field("group_by", group_by)
-        .field("dl", dl)
-        .finish(),
-      Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => f
-        .debug_struct("GraphQLEndpoint")
-        .field("req_template", req_template)
-        .field("field_name", field_name)
-        .field("batch", batch)
-        .finish(),
-      Unsafe::JS(input, script) => f
-        .debug_struct("JS")
-        .field("input", input)
-        .field("script", script)
-        .finish(),
-    }
-  }
 }
 
 #[derive(Debug, Error, Serialize)]
@@ -112,12 +88,12 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(operation) => match operation {
-          Unsafe::Http(req_template, _, data_loader_index) => {
+          Unsafe::Http(req_template, _, dl_id) => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              execute_request_with_dl::<_, HttpDataLoader>(ctx, req, data_loader_index).await?
+              execute_request_with_dl::<_, HttpDataLoader>(ctx, req, *dl_id).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -135,13 +111,13 @@ impl Expression {
 
             Ok(res.body)
           }
-          Unsafe::GraphQLEndpoint { req_template, field_name, data_loader_index, .. } => {
+          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
 
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              execute_request_with_dl::<_, GraphqlDataLoader>(ctx, req, data_loader_index).await?
+              execute_request_with_dl::<_, GraphqlDataLoader>(ctx, req, *dl_id).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -200,7 +176,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  data_loader_index: &Option<usize>,
+  dl_id: Option<usize>,
 ) -> Result<Response>
 where
   RequestContext: GetDataLoader<Dl>,
@@ -214,7 +190,7 @@ where
     .unwrap_or_default();
   let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
 
-  let data_loader: Option<&DataLoader<Dl>> = data_loader_index.and_then(|index| ctx.req_ctx.get_data_loader(index));
+  let data_loader: Option<&DataLoader<Dl>> = dl_id.and_then(|index| ctx.req_ctx.get_data_loader(index));
 
   Ok(
     data_loader
