@@ -8,6 +8,7 @@ use hyper::HeaderMap;
 use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
+use crate::lambda::DataLoaderId;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -93,18 +94,18 @@ impl RequestContext {
 }
 
 pub trait GetDataLoader<Dl> {
-  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<Dl>>;
+  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<Dl>>;
 }
 
 impl GetDataLoader<HttpDataLoader> for RequestContext {
-  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<HttpDataLoader>> {
-    self.http_data_loaders.get(data_loader_index).map(Arc::as_ref)
+  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<HttpDataLoader>> {
+    self.http_data_loaders.get(dl_id.0).map(Arc::as_ref)
   }
 }
 
 impl GetDataLoader<GraphqlDataLoader> for RequestContext {
-  fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<GraphqlDataLoader>> {
-    self.gql_data_loaders.get(data_loader_index).map(Arc::as_ref)
+  fn get_data_loader(&self, dl_id: DataLoaderId) -> Option<&DataLoader<GraphqlDataLoader>> {
+    self.gql_data_loaders.get(dl_id.0).map(Arc::as_ref)
   }
 }
 
