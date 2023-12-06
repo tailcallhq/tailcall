@@ -25,7 +25,7 @@ pub use method::Method;
 pub use request_context::RequestContext;
 pub use request_handler::handle_request;
 pub use response::*;
-pub use server::start_server;
+pub use server::Server;
 pub use server_context::ServerContext;
 
 use self::server_config::ServerConfig;
