@@ -5,15 +5,15 @@ schema
 }
 
 type Query {
-  a: [A] @graphql(name: "posts")
+  a: [A] @graphQL(name: "posts")
 }
 
 type A {
   id: Int!
   bid: Int!
   cid: Int!
-  b: B @graphql(name: "b", args: [{key: "id", value: "{{value.bid}}"}], batch: true)
-  c: C @graphql(name: "c", args: [{key: "id", value: "{{value.cid}}"}], batch: true)
+  b: B @graphQL(name: "b", args: [{key: "id", value: "{{value.bid}}"}], batch: true)
+  c: C @graphQL(name: "c", args: [{key: "id", value: "{{value.cid}}"}], batch: true)
 }
 
 type C {
