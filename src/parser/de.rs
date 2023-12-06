@@ -161,7 +161,6 @@ pub fn parse_selections(p: &serde_json::Map<String, Value>) -> Option<String> {
 
 pub fn de_kebab(qry: &str) -> String {
   let qry = urlencoding::decode(qry).unwrap_or_default().replace('\\', "");
-  println!("{qry}");
   let converter = convert_case::Converter::new();
   let converter = converter.to_case(convert_case::Case::Camel);
   converter.convert(qry)
