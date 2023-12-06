@@ -46,7 +46,11 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::Http(req_template, None, None)))
+    Lambda::new(Expression::Unsafe(Unsafe::Http {
+      req_template,
+      group_by: None,
+      dl_id: None,
+    }))
   }
 
   pub fn from_graphql_request_template(

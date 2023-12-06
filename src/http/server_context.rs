@@ -31,7 +31,7 @@ impl PartialServerContext {
         for field in &mut def.fields {
           if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
             match expr_unsafe {
-              Unsafe::Http(req_template, group_by, _) => {
+              Unsafe::Http { req_template, group_by, .. } => {
                 let data_loader = HttpDataLoader::new(
                   self.http_client.clone(),
                   group_by.clone(),
@@ -39,11 +39,11 @@ impl PartialServerContext {
                 )
                 .to_data_loader(self.blueprint.upstream.batch.clone().unwrap_or_default());
 
-                field.resolver = Some(Expression::Unsafe(Unsafe::Http(
-                  req_template.clone(),
-                  group_by.clone(),
-                  Some(self.http_data_loaders.len()),
-                )));
+                field.resolver = Some(Expression::Unsafe(Unsafe::Http {
+                  req_template: req_template.clone(),
+                  group_by: group_by.clone(),
+                  dl_id: Some(self.http_data_loaders.len()),
+                }));
 
                 self.http_data_loaders.push(Arc::new(data_loader));
               }
