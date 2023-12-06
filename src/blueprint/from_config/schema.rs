@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
 
 use crate::blueprint::*;
-use crate::config::{Config, Field};
+use crate::config::{Config, Field, Type};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
 
@@ -14,14 +14,35 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
       };
 
-      Valid::from_iter(query.fields.iter(), validate_field_has_resolver).trace(query_type_name)
+      validate_type_has_resolvers(query_type_name, query, &config.types)
     })
     .unit()
 }
 
-fn validate_field_has_resolver((name, field): (&String, &Field)) -> Valid<(), String> {
+/// Validates that all the root type fields has resolver
+/// making into the account the nesting
+fn validate_type_has_resolvers(name: &str, ty: &Type, types: &BTreeMap<String, Type>) -> Valid<(), String> {
+  Valid::from_iter(ty.fields.iter(), |(name, field)| {
+    validate_field_has_resolver(name, field, types)
+  })
+  .trace(name)
+  .unit()
+}
+
+pub fn validate_field_has_resolver(name: &str, field: &Field, types: &BTreeMap<String, Type>) -> Valid<(), String> {
   Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
-    .when(|| !field.has_resolver())
+    .when(|| {
+      if !field.has_resolver() {
+        let f_type = &field.type_of;
+        if let Some(ty) = types.get(f_type) {
+          let res = validate_type_has_resolvers(f_type, ty, types);
+          return !res.is_succeed();
+        } else {
+          return true;
+        }
+      }
+      false
+    })
     .trace(name)
 }
 
@@ -50,9 +71,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
       return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
     };
 
-    Valid::from_iter(mutation.fields.iter(), validate_field_has_resolver)
-      .trace(mutation_type_name)
-      .unit()
+    validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
   } else {
     Valid::succeed(())
   }
