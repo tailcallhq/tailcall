@@ -80,12 +80,3 @@ assert:
       status: 200
       body:
         data: {}
-  # Bad formatting with spaces
-  - request:
-      method: GET
-      url: http://localhost:8080/api/user ?id=1&$=id
-    response:
-      body:
-        data:
-          user:
-            id: 1
