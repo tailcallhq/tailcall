@@ -24,6 +24,7 @@ pub struct Server {
   pub vars: BTreeMap<String, String>,
   pub response_headers: HeaderMap,
   pub http: Http,
+  pub pipeline_flush: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -90,6 +91,7 @@ impl TryFrom<crate::config::Server> for Server {
         port: (config_server).get_port(),
         hostname,
         vars: (config_server).get_vars(),
+        pipeline_flush: (config_server).get_pipeline_flush(),
         response_headers,
       })
       .to_result()
