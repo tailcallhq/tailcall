@@ -34,7 +34,9 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
 
 fn get_type_from_value(value: &ConstValue, field_name: String) -> Result<String> {
   let path = vec!["__typename".to_string()];
-  let value = value.get_path(&path).ok_or(anyhow!("Could not find __typename in result for field {}", field_name))?;
+  let value = value
+    .get_path(&path)
+    .ok_or(anyhow!("Could not find __typename in result for field {}", field_name))?;
   let type_ = match value {
     ConstValue::String(s) => s.clone(),
     _ => "".to_string(),
@@ -45,10 +47,10 @@ fn get_type_from_value(value: &ConstValue, field_name: String) -> Result<String>
 fn create_list_value_with_type(values: Vec<ConstValue>, field_name: String) -> Result<FieldValue<'static>> {
   let values = values
     .iter()
-    .map(|item| create_field_value_with_type(item.clone(), field_name.clone())).collect::<Vec<_>>();
+    .map(|item| create_field_value_with_type(item.clone(), field_name.clone()))
+    .collect::<Vec<_>>();
   let list_values: Result<Vec<FieldValue<'_>>> = values.into_iter().collect();
   Ok(FieldValue::list(list_values?))
-  
 }
 
 fn create_field_value_with_type(value: ConstValue, field_name: String) -> Result<FieldValue<'static>> {

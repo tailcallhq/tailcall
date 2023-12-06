@@ -66,6 +66,6 @@ assert:
         data: null
         errors:
           - locations:
-            - column: 9
-              line: 1
+              - column: 9
+                line: 1
             message: Could not find __typename in result for field user
