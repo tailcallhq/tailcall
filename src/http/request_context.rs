@@ -15,8 +15,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
-  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
+  pub http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -26,31 +26,19 @@ impl Default for RequestContext {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(
-      Arc::new(DefaultHttpClient::default()),
-      server,
-      vec![],
-      vec![],
-      config.upstream.clone(),
-    )
+    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, config.upstream.clone())
   }
 }
 
 impl RequestContext {
-  pub fn new(
-    http_client: Arc<dyn HttpClient>,
-    server: Server,
-    http_data_loaders: Vec<DataLoader<HttpDataLoader>>,
-    gql_data_loaders: Vec<DataLoader<GraphqlDataLoader>>,
-    upstream: Upstream,
-  ) -> Self {
+  pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
     Self {
       req_headers: HeaderMap::new(),
       http_client,
       server,
       upstream,
-      http_data_loaders: Arc::new(http_data_loaders),
-      gql_data_loaders: Arc::new(gql_data_loaders),
+      http_data_loaders: vec![],
+      gql_data_loaders: vec![],
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -110,13 +98,13 @@ pub trait GetDataLoader<Dl> {
 
 impl GetDataLoader<HttpDataLoader> for RequestContext {
   fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<HttpDataLoader>> {
-    self.http_data_loaders.get(data_loader_index)
+    self.http_data_loaders.get(data_loader_index).map(Arc::as_ref)
   }
 }
 
 impl GetDataLoader<GraphqlDataLoader> for RequestContext {
   fn get_data_loader(&self, data_loader_index: usize) -> Option<&DataLoader<GraphqlDataLoader>> {
-    self.gql_data_loaders.get(data_loader_index)
+    self.gql_data_loaders.get(data_loader_index).map(Arc::as_ref)
   }
 }
 

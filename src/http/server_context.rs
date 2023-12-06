@@ -13,73 +13,78 @@ pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
-  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
-  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
+  pub http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
 }
 
-fn assign_data_loaders<'a>(
-  blueprint: &'a mut Blueprint,
+struct PartialServerContext {
   http_client: Arc<dyn HttpClient>,
-  http_data_loaders: &mut Vec<DataLoader<HttpDataLoader>>,
-  gql_data_loaders: &mut Vec<DataLoader<GraphqlDataLoader>>,
-) -> &'a Blueprint {
-  for def in blueprint.definitions.iter_mut() {
-    if let Definition::ObjectTypeDefinition(def) = def {
-      for field in &mut def.fields {
-        if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
-          match expr_unsafe {
-            Unsafe::Http(req_template, group_by, _) => {
-              let data_loader = HttpDataLoader::new(
-                http_client.clone(),
-                group_by.clone(),
-                matches!(&field.of_type, ListType { .. }),
-              )
-              .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
+  blueprint: Blueprint,
+  http_data_loaders: Vec<Arc<DataLoader<HttpDataLoader>>>,
+  gql_data_loaders: Vec<Arc<DataLoader<GraphqlDataLoader>>>,
+}
 
-              field.resolver = Some(Expression::Unsafe(Unsafe::Http(
-                req_template.clone(),
-                group_by.clone(),
-                Some(http_data_loaders.len()),
-              )));
+impl PartialServerContext {
+  fn create_server_ctx(mut self) -> ServerContext {
+    for def in self.blueprint.definitions.iter_mut() {
+      if let Definition::ObjectTypeDefinition(def) = def {
+        for field in &mut def.fields {
+          if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
+            match expr_unsafe {
+              Unsafe::Http(req_template, group_by, _) => {
+                let data_loader = HttpDataLoader::new(
+                  self.http_client.clone(),
+                  group_by.clone(),
+                  matches!(&field.of_type, ListType { .. }),
+                )
+                .to_data_loader(self.blueprint.upstream.batch.clone().unwrap_or_default());
 
-              http_data_loaders.push(data_loader);
+                field.resolver = Some(Expression::Unsafe(Unsafe::Http(
+                  req_template.clone(),
+                  group_by.clone(),
+                  Some(self.http_data_loaders.len()),
+                )));
+
+                self.http_data_loaders.push(Arc::new(data_loader));
+              }
+
+              Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+                let graphql_data_loader = GraphqlDataLoader::new(self.http_client.clone(), *batch)
+                  .to_data_loader(self.blueprint.upstream.batch.clone().unwrap_or_default());
+
+                field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+                  req_template: req_template.clone(),
+                  field_name: field_name.clone(),
+                  batch: *batch,
+                  dl_id: Some(self.gql_data_loaders.len()),
+                }));
+
+                self.gql_data_loaders.push(Arc::new(graphql_data_loader));
+              }
+              _ => {}
             }
-
-            Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-              let graphql_data_loader = GraphqlDataLoader::new(http_client.clone(), *batch)
-                .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
-
-              field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
-                req_template: req_template.clone(),
-                field_name: field_name.clone(),
-                batch: *batch,
-                data_loader_index: Some(gql_data_loaders.len()),
-              }));
-
-              gql_data_loaders.push(graphql_data_loader);
-            }
-            _ => {}
           }
         }
       }
     }
+
+    let schema = self.blueprint.to_schema();
+
+    ServerContext {
+      schema,
+      http_client: self.http_client,
+      blueprint: self.blueprint,
+      http_data_loaders: self.http_data_loaders,
+      gql_data_loaders: self.gql_data_loaders,
+    }
   }
-  blueprint
 }
 
 impl ServerContext {
-  pub fn new(mut blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
-    let mut http_data_loaders = vec![];
-    let mut gql_data_loaders = vec![];
-    let schema = assign_data_loaders(
-      &mut blueprint,
-      http_client.clone(),
-      &mut http_data_loaders,
-      &mut gql_data_loaders,
-    )
-    .to_schema();
-    let http_data_loaders = Arc::new(http_data_loaders);
-    let gql_data_loaders = Arc::new(gql_data_loaders);
-    ServerContext { schema, http_client, blueprint, http_data_loaders, gql_data_loaders }
+  pub fn new(blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
+    let http_data_loaders = vec![];
+    let gql_data_loaders = vec![];
+
+    PartialServerContext { http_client, blueprint, http_data_loaders, gql_data_loaders }.create_server_ctx()
   }
 }
