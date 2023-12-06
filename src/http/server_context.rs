@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic;
+use tokio::sync::RwLock;
 
 use super::HttpClient;
 use crate::blueprint::Type::ListType;
@@ -9,7 +10,7 @@ use crate::http::{GraphqlDataLoader, HttpDataLoader};
 use crate::lambda::{Expression, Unsafe};
 
 pub struct ServerContext {
-  pub schema: dynamic::Schema,
+  pub schema: RwLock<dynamic::Schema>,
   pub http_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
 }
@@ -58,6 +59,7 @@ fn assign_data_loaders(blueprint: &mut Blueprint, http_client: Arc<dyn HttpClien
 impl ServerContext {
   pub fn new(mut blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
     let schema = assign_data_loaders(&mut blueprint, http_client.clone()).to_schema();
+    let schema = RwLock::new(schema);
     ServerContext { schema, http_client, blueprint }
   }
 }
