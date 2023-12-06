@@ -21,5 +21,5 @@ type AdminUser implements IUser {
 
 type Query {
   users: [IUser] @http(baseURL: "http://upstream", path: "/users")
-  user: IUser @http(baseURL: "http://upstream", path: "/users/1")
+  user(id: Int!): IUser @http(baseURL: "http://upstream", path: "/users/{{args.id}}")
 }
