@@ -1,5 +1,4 @@
 config: !file tests/http/config/interface-extend.graphql
-runner: only
 name: Simple GraphQL Request
 mock:
   - request:
@@ -22,6 +21,13 @@ mock:
         name: foo
         email: bar
         __typename: RegularUser
+  - request:
+      url: http://upstream/users/2
+    response:
+      body:
+        id: 2
+        name: foo
+        email: bar
 assert:
   - request:
       method: POST
@@ -42,7 +48,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: query { user { id name ... on AdminUser { accessLevel } ... on RegularUser { email }} }
+        query: "query { user(id: 1) { id name ... on AdminUser { accessLevel } ... on RegularUser { email }} }"
     response:
       body:
         data:
@@ -50,3 +56,16 @@ assert:
             email: bar
             id: 1
             name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user(id: 2) { id name ... on AdminUser { accessLevel } ... on RegularUser { email }} }"
+    response:
+      body:
+        data: null
+        errors:
+          - locations:
+            - column: 9
+              line: 1
+            message: Could not find __typename in result for field user

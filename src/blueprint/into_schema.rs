@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
 };
@@ -32,27 +32,29 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
-fn get_type_from_value(value: &ConstValue) -> String {
+fn get_type_from_value(value: &ConstValue, field_name: String) -> Result<String> {
   let path = vec!["__typename".to_string()];
-  match value.get_path(&path).unwrap_or(&async_graphql::Value::Null) {
+  let value = value.get_path(&path).ok_or(anyhow!("Could not find __typename in result for field {}", field_name))?;
+  let type_ = match value {
     ConstValue::String(s) => s.clone(),
     _ => "".to_string(),
-  }
+  };
+  Ok(type_)
 }
 
-fn create_list_value_with_type(values: Vec<ConstValue>) -> FieldValue<'static> {
-  FieldValue::list(
-    values
-      .iter()
-      .map(|item| create_field_value_with_type(item.clone()))
-      .collect::<Vec<_>>(),
-  )
+fn create_list_value_with_type(values: Vec<ConstValue>, field_name: String) -> Result<FieldValue<'static>> {
+  let values = values
+    .iter()
+    .map(|item| create_field_value_with_type(item.clone(), field_name.clone())).collect::<Vec<_>>();
+  let list_values: Result<Vec<FieldValue<'_>>> = values.into_iter().collect();
+  Ok(FieldValue::list(list_values?))
+  
 }
 
-fn create_field_value_with_type(value: ConstValue) -> FieldValue<'static> {
-  let typename = get_type_from_value(&value);
+fn create_field_value_with_type(value: ConstValue, field_name: String) -> Result<FieldValue<'static>> {
+  let typename = get_type_from_value(&value, field_name)?;
   let field_value = FieldValue::from(value);
-  FieldValue::with_type(field_value, typename)
+  Ok(FieldValue::with_type(field_value, typename))
 }
 
 async fn get_evaled_value_from_ctx<'a>(
@@ -113,8 +115,8 @@ fn to_type(def: &Definition, definitions: &Vec<Definition>) -> dynamic::Type {
                 Some(expr) => {
                   let const_value = get_evaled_value_from_ctx(req_ctx, &ctx, expr).await?;
                   let p = match const_value {
-                    ConstValue::List(a) => create_list_value_with_type(a),
-                    a => create_field_value_with_type(a),
+                    ConstValue::List(a) => create_list_value_with_type(a, field_name)?,
+                    a => create_field_value_with_type(a, field_name)?,
                   };
                   Ok(Some(p))
                 }
