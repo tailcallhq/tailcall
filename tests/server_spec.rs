@@ -93,7 +93,7 @@ async fn server_start_http2() {
     let client = client.clone();
     let query = query.clone();
     let task = tokio::spawn(async move {
-      let send_request = || async { client.post("https://0.0.0.0:8000/graphql").json(&query).send().await };
+      let send_request = || async { client.post("https://0.0.0.0:8001/graphql").json(&query).send().await };
       let response = send_request().await.expect("Failed to send request");
       let response_body: serde_json::Value = response.json().await.expect("Failed to parse response body");
       response_body
