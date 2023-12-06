@@ -1,6 +1,9 @@
 name: Benchmark
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     types: [opened, synchronize, labeled]
     branches:
@@ -22,7 +25,7 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@v4
 
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
@@ -48,7 +51,7 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          ./target/release/tailcall start ci-benchmark/benchmark.graphql&
+          ./target/release/tailcall start ci-benchmark/benchmark.graphql --log-level error &
 
       - name: Install Nginx
         run: |
@@ -79,6 +82,11 @@ jobs:
       - name: Run Test Query
         run: |
           curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
+
+      - name: Warmup Wrk
+        working-directory: ci-benchmark
+        run: |
+          wrk -d 10 -t 1 -c 100 -s wrk.lua http://localhost:8000/graphql
 
       - id: run_wrk
         name: Run Wrk
