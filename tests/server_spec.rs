@@ -1,7 +1,5 @@
-use reqwest;
 use reqwest::Client;
 use serde_json::json;
-
 use tailcall::config::Config;
 use tailcall::http::{start_server, ServerControl, ServerMessage};
 
