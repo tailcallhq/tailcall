@@ -7,7 +7,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -284,6 +284,23 @@ fn update_resolver_from_path(
   })
 }
 
+/// Sets empty resolver to fields that has
+/// nested resolvers for its fields.
+/// To solve the problem that by default such fields will be resolved to null value
+/// and nested resolvers won't be called
+pub fn update_nested_resolvers<'a>(
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+    move |(config, field, _, name), mut b_field| {
+      if !field.has_resolver() && validate_field_has_resolver(name, field, &config.types).is_succeed() {
+        b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(Default::default()))));
+      }
+
+      Valid::succeed(b_field)
+    },
+  )
+}
+
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
   let field_type = &field.type_of;
   if !is_scalar(field_type) && !config.contains(field_type) {
@@ -300,7 +317,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
     GraphQLOperationType::Query
   };
 
-  let to_field = move |name: &String, field: &Field, is_add_field: bool| {
+  let to_field = move |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
@@ -312,7 +329,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
-      .and(update_ref_field(is_add_field))
+      .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
@@ -323,7 +340,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
     |(name, field)| {
       validate_field_type_exist(config, field)
-        .and(to_field(name, field, false))
+        .and(to_field(name, field))
         .trace(name)
     },
   );
@@ -349,7 +366,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
           };
-          to_field(&add_field.name, &new_field, true)
+          to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {
               let added_field_path = match source_field.http {
                 Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
