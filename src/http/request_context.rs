@@ -8,7 +8,6 @@ use hyper::HeaderMap;
 use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
-use crate::lambda::DataLoaderId;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -90,22 +89,6 @@ impl RequestContext {
     if Some(Cachability::NoCache) == cache_policy.cachability {
       self.set_min_max_age(-1);
     }
-  }
-}
-
-pub trait GetDataLoader<Dl> {
-  fn get_data_loader(&self, dl_id: DataLoaderId<Dl>) -> Option<&DataLoader<Dl>>;
-}
-
-impl GetDataLoader<HttpDataLoader> for RequestContext {
-  fn get_data_loader(&self, dl_id: DataLoaderId<HttpDataLoader>) -> Option<&DataLoader<HttpDataLoader>> {
-    self.http_data_loaders.get(dl_id.0)
-  }
-}
-
-impl GetDataLoader<GraphqlDataLoader> for RequestContext {
-  fn get_data_loader(&self, dl_id: DataLoaderId<GraphqlDataLoader>) -> Option<&DataLoader<GraphqlDataLoader>> {
-    self.gql_data_loaders.get(dl_id.0)
   }
 }
 

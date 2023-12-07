@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::future::Future;
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -15,9 +14,7 @@ use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{
-  cache_policy, DataLoaderRequest, GetDataLoader, GraphqlDataLoader, HttpDataLoader, RequestContext, Response,
-};
+use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -44,38 +41,19 @@ pub enum Unsafe {
   Http {
     req_template: RequestTemplate,
     group_by: Option<GroupBy>,
-    dl_id: Option<DataLoaderId<HttpDataLoader>>,
+    dl_id: Option<DataLoaderId>,
   },
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    dl_id: Option<DataLoaderId<GraphqlDataLoader>>,
+    dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
 }
 
-pub struct DataLoaderId<T>(pub usize, PhantomData<T>);
-
-impl<T> DataLoaderId<T> {
-  pub fn new(index: usize) -> Self {
-    Self(index, PhantomData)
-  }
-}
-
-impl<T> Clone for DataLoaderId<T> {
-  fn clone(&self) -> Self {
-    *self
-  }
-}
-
-impl<T> Copy for DataLoaderId<T> {}
-
-impl<T> std::fmt::Debug for DataLoaderId<T> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", self.0)
-  }
-}
+#[derive(Clone, Copy, Debug)]
+pub struct DataLoaderId(pub usize);
 
 #[derive(Debug, Error, Serialize)]
 pub enum EvaluationError {
@@ -120,7 +98,9 @@ impl Expression {
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              execute_request_with_dl::<_, HttpDataLoader>(ctx, req, *dl_id).await?
+              let data_loader: Option<&DataLoader<HttpDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+              execute_request_with_dl(ctx, req, data_loader).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -144,7 +124,9 @@ impl Expression {
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              execute_request_with_dl::<_, GraphqlDataLoader>(ctx, req, *dl_id).await?
+              let data_loader: Option<&DataLoader<GraphqlDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+              execute_request_with_dl(ctx, req, data_loader).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -203,11 +185,8 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  dl_id: Option<DataLoaderId<Dl>>,
-) -> Result<Response>
-where
-  RequestContext: GetDataLoader<Dl>,
-{
+  data_loader: Option<&DataLoader<Dl>>,
+) -> Result<Response> {
   let headers = ctx
     .req_ctx
     .upstream
@@ -216,8 +195,6 @@ where
     .map(|s| s.headers)
     .unwrap_or_default();
   let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
-
-  let data_loader: Option<&DataLoader<Dl>> = dl_id.and_then(|index| ctx.req_ctx.get_data_loader(index));
 
   Ok(
     data_loader
