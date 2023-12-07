@@ -27,8 +27,9 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
       }))
     }
   });
-  let builder = hyper::Server::try_bind(&addr).map_err(CLIError::from)?;
-
+  let builder = hyper::Server::try_bind(&addr)
+    .map_err(CLIError::from)?
+    .http1_pipeline_flush(sc.server_context.blueprint.server.pipeline_flush);
   log_launch(sc.as_ref());
 
   if let Some(sender) = server_up_sender {
