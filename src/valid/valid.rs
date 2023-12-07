@@ -45,6 +45,10 @@ impl<A, E> Valid<A, E> {
     Valid(Ok(a))
   }
 
+  pub fn is_succeed(&self) -> bool {
+    self.0.is_ok()
+  }
+
   pub fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
     self.zip(other).map(|(_, a1)| a1)
   }
