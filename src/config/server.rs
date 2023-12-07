@@ -27,6 +27,8 @@ pub struct Server {
   pub version: Option<HttpVersion>,
   pub cert: Option<String>,
   pub key: Option<String>,
+  #[serde(skip_serializing_if = "is_default")]
+  pub pipeline_flush: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
@@ -99,6 +101,10 @@ impl Server {
     self.version.unwrap_or(HttpVersion::HTTP1)
   }
 
+  pub fn get_pipeline_flush(&self) -> bool {
+    self.pipeline_flush.unwrap_or(true)
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
     self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
@@ -120,6 +126,7 @@ impl Server {
     self.version = other.version.or(self.version);
     self.cert = other.cert.or(self.cert);
     self.key = other.key.or(self.key);
+    self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
     self
   }
 }
