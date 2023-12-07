@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use async_graphql::dataloader::DataLoader;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, HttpClient, Response, ServerContext};
+use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 
@@ -14,6 +15,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
+  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -34,6 +37,8 @@ impl RequestContext {
       http_client,
       server,
       upstream,
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -94,6 +99,8 @@ impl From<&ServerContext> for RequestContext {
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
+      http_data_loaders: server_ctx.http_data_loaders.clone(),
+      gql_data_loaders: server_ctx.gql_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
