@@ -36,10 +36,10 @@ for bench in "${benchmarks[@]}"; do
 
         if ((percent_change > 10)); then
             echo "$bench $attribute has a change of $percent_change%, within CI limits. (Original values: $value1 -> $value2)"
-            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> FinalOutput.txt
+            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> benches/iai-callgrind/FinalOutput.txt
             fail_ci=1
         else
-            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> FinalOutput.txt
+            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> benches/iai-callgrind/FinalOutput.txt
         fi
     done
     echo "----------------------------------"
