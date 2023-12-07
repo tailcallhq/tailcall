@@ -25,4 +25,5 @@ FROM fedora:34 AS runner
 COPY --from=builder /prod/target/release/tailcall /bin
 COPY --from=builder /prod/jsonplaceholder.graphql /jsonplaceholder.graphql
 
-CMD ["/bin/tailcall", "start", "jsonplaceholder.graphql"]
+CMD ["/bin/tailcall", "start", "jsonplaceholder.graphql", "--log-level", "error"]
+
