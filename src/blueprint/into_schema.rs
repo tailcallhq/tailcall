@@ -3,14 +3,14 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use async_graphql::dynamic::{
-  FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
+  FieldFuture, FieldValue, SchemaBuilder, {self},
 };
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
 use crate::json::JsonLike;
-use crate::lambda::{EvaluationContext, Expression};
+use crate::lambda::EvaluationContext;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -32,7 +32,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
-fn get_type_from_value(value: &ConstValue, field_name: String) -> Result<String> {
+fn get_type_from_value(value: &ConstValue, field_name: &String) -> Result<String> {
   let path = vec!["__typename".to_string()];
   let value = value
     .get_path(&path)
@@ -54,27 +54,9 @@ fn create_list_value_with_type(values: Vec<ConstValue>, field_name: String) -> R
 }
 
 fn create_field_value_with_type(value: ConstValue, field_name: String) -> Result<FieldValue<'static>> {
-  let typename = get_type_from_value(&value, field_name)?;
+  let typename = get_type_from_value(&value, &field_name)?;
   let field_value = FieldValue::from(value);
   Ok(FieldValue::with_type(field_value, typename))
-}
-
-async fn get_evaled_value_from_ctx<'a>(
-  req_ctx: &'a Arc<RequestContext>,
-  ctx: &'a ResolverContext<'_>,
-  expr: Expression,
-) -> Result<async_graphql::Value> {
-  let ctx = EvaluationContext::new(req_ctx, ctx);
-  expr.eval(&ctx).await
-}
-
-fn get_field_value_from_ctx<'a>(
-  req_ctx: &'a Arc<RequestContext>,
-  ctx: &'a ResolverContext<'_>,
-  field_name: String,
-) -> Option<FieldValue<'static>> {
-  let ctx = EvaluationContext::new(req_ctx, ctx);
-  ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned()))
 }
 
 fn to_type(def: &Definition, definitions: &Vec<Definition>) -> dynamic::Type {
@@ -85,45 +67,55 @@ fn to_type(def: &Definition, definitions: &Vec<Definition>) -> dynamic::Type {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
-        let is_interface_type = is_interface_type(field.of_type.name(), definitions);
 
+        let is_interface_type = is_interface_type(field.of_type.name(), definitions);
         let mut dyn_schema_field = if !is_interface_type {
           dynamic::Field::new(field_name, type_ref, move |ctx| {
             let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-            let field_name = field.name.clone();
-            let resolver = field.resolver.clone();
-            FieldFuture::new(async move {
-              match resolver {
-                None => Ok(get_field_value_from_ctx(req_ctx, &ctx, field_name)),
-                Some(expr) => {
-                  let const_value = get_evaled_value_from_ctx(req_ctx, &ctx, expr).await?;
+            let field_name = &field.name;
+            match &field.resolver {
+              None => {
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
+              }
+              Some(expr) => {
+                let expr = expr.to_owned();
+                FieldFuture::new(async move {
+                  let ctx = EvaluationContext::new(req_ctx, &ctx);
+                  let const_value = expr.eval(&ctx).await?;
                   let p = match const_value {
                     ConstValue::List(a) => FieldValue::list(a),
                     a => FieldValue::from(a),
                   };
                   Ok(Some(p))
-                }
+                })
               }
-            })
+            }
           })
         } else {
           dynamic::Field::new(field_name, type_ref, move |ctx| {
             let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-            let field_name = field.name.clone();
-            let resolver = field.resolver.clone();
-            FieldFuture::new(async move {
-              match resolver {
-                None => Ok(get_field_value_from_ctx(req_ctx, &ctx, field_name)),
-                Some(expr) => {
-                  let const_value = get_evaled_value_from_ctx(req_ctx, &ctx, expr).await?;
+            let field_name = &field.name;
+            match &field.resolver {
+              None => {
+                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
+              }
+              Some(expr) => {
+                let expr = expr.to_owned();
+                let field_name = field_name.clone();
+                FieldFuture::new(async move {
+                  let ctx = EvaluationContext::new(req_ctx, &ctx);
+                  let const_value = expr.eval(&ctx).await?;
+
                   let p = match const_value {
                     ConstValue::List(a) => create_list_value_with_type(a, field_name)?,
                     a => create_field_value_with_type(a, field_name)?,
                   };
                   Ok(Some(p))
-                }
+                })
               }
-            })
+            }
           })
         };
         if let Some(description) = &field.description {
