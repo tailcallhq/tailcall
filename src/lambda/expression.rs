@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::dataloader::{DataLoader, Loader, NoCache};
+use async_graphql::dataloader::{DataLoader, Loader};
 use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
@@ -36,45 +36,24 @@ pub enum Context {
   Path(Vec<String>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Unsafe {
-  Http(
-    RequestTemplate,
-    Option<GroupBy>,
-    Option<Arc<DataLoader<HttpDataLoader, NoCache>>>,
-  ),
+  Http {
+    req_template: RequestTemplate,
+    group_by: Option<GroupBy>,
+    dl_id: Option<DataLoaderId>,
+  },
   GraphQLEndpoint {
     req_template: GraphqlRequestTemplate,
     field_name: String,
     batch: bool,
-    data_loader: Option<Arc<DataLoader<GraphqlDataLoader, NoCache>>>,
+    dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
 }
 
-impl Debug for Unsafe {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Unsafe::Http(req_template, group_by, dl) => f
-        .debug_struct("Http")
-        .field("req_template", req_template)
-        .field("group_by", group_by)
-        .field("dl", &dl.clone().map(|a| a.clone().loader().batched.clone()))
-        .finish(),
-      Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => f
-        .debug_struct("GraphQLEndpoint")
-        .field("req_template", req_template)
-        .field("field_name", field_name)
-        .field("batch", batch)
-        .finish(),
-      Unsafe::JS(input, script) => f
-        .debug_struct("JS")
-        .field("input", input)
-        .field("script", script)
-        .finish(),
-    }
-  }
-}
+#[derive(Clone, Copy, Debug)]
+pub struct DataLoaderId(pub usize);
 
 #[derive(Debug, Error, Serialize)]
 pub enum EvaluationError {
@@ -114,11 +93,13 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(operation) => match operation {
-          Unsafe::Http(req_template, _, data_loader) => {
+          Unsafe::Http { req_template, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
+              let data_loader: Option<&DataLoader<HttpDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
               execute_raw_request(ctx, req).await?
@@ -137,12 +118,14 @@ impl Expression {
 
             Ok(res.body)
           }
-          Unsafe::GraphQLEndpoint { req_template, field_name, data_loader, .. } => {
+          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;
 
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
+              let data_loader: Option<&DataLoader<GraphqlDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
               execute_raw_request(ctx, req).await?
@@ -202,7 +185,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  data_loader: &Option<Arc<DataLoader<Dl>>>,
+  data_loader: Option<&DataLoader<Dl>>,
 ) -> Result<Response> {
   let headers = ctx
     .req_ctx
@@ -215,7 +198,6 @@ async fn execute_request_with_dl<
 
   Ok(
     data_loader
-      .as_ref()
       .unwrap()
       .load_one(endpoint_key)
       .await

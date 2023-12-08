@@ -7,7 +7,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -284,6 +284,23 @@ fn update_resolver_from_path(
   })
 }
 
+/// Sets empty resolver to fields that has
+/// nested resolvers for its fields.
+/// To solve the problem that by default such fields will be resolved to null value
+/// and nested resolvers won't be called
+pub fn update_nested_resolvers<'a>(
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+    move |(config, field, _, name), mut b_field| {
+      if !field.has_resolver() && validate_field_has_resolver(name, field, &config.types).is_succeed() {
+        b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(Default::default()))));
+      }
+
+      Valid::succeed(b_field)
+    },
+  )
+}
+
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
   let field_type = &field.type_of;
   if !is_scalar(field_type) && !config.contains(field_type) {
@@ -312,6 +329,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
+      .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 

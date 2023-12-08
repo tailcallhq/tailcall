@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use std::io::BufReader;
 use std::sync::Arc;
 
@@ -8,6 +9,7 @@ use hyper::Server;
 use hyper_rustls::TlsAcceptor;
 use rustls::PrivateKey;
 use tokio::fs::File;
+use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use super::{handle_request, log_launch};
@@ -49,7 +51,8 @@ pub async fn start_http_2(
   sc: Arc<ServerConfig>,
   cert: String,
   key: String,
-) -> std::prelude::v1::Result<(), anyhow::Error> {
+  server_up_sender: Option<oneshot::Sender<()>>,
+) -> anyhow::Result<()> {
   let addr = sc.addr();
   let cert_chain = load_cert(&cert).await?;
   let key = load_private_key(&key).await?;
@@ -77,11 +80,20 @@ pub async fn start_http_2(
   });
 
   let builder = Server::builder(acceptor).http2_only(true);
+
   log_launch(sc.as_ref());
+
+  if let Some(sender) = server_up_sender {
+    sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
+  }
+
   let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
   } else {
     builder.serve(make_svc_single_req).await
   };
-  Ok(server.map_err(CLIError::from)?)
+
+  let result = server.map_err(CLIError::from);
+
+  Ok(result?)
 }
