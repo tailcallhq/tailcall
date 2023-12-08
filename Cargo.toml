@@ -22,8 +22,8 @@ tokio = { version = "1", features = ["full"] }
 protobuf = "3.3.0"
 protobuf-parse = "3.3.0"
 tempfile = "3.8.1"
-protobuf-json = "0.3.0"
-prost = "0.9"
+protobuf-json-mapping = "3.3.0"
+
 reqwest = { version = "0.11", features = [
    "json",
    "rustls-tls"

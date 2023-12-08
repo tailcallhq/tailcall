@@ -56,7 +56,7 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
 }
 
 pub async fn test(_req: Request<Body>, _server_ctx: &ServerContext) -> Result<Response<Body>> {
-  let client = reqwest::Client::builder().http2_prior_knowledge().build()?;
+  let client = reqwest::Client::builder().http2_prior_knowledge().build()?; // Todo reuse the client from server context // Current client only expose execute it should expose post
   let proto = r#"syntax = "proto3";
 
 message News {
@@ -82,7 +82,7 @@ message Empty {}
 
 message NewsList {
    repeated News news = 1;
-}"#;
+}"#; // Todo:  auto generate at compile time from reflection
 
   let temp_dir = tempfile::tempdir().unwrap();
   let tempfile = temp_dir.path().join("news.proto");
@@ -109,13 +109,12 @@ message NewsList {
 
   // Find the message descriptor for 'NewsList'.
   let news_list_descriptor = file_descriptor
-    .message_by_package_relative_name("NewsList")
+    .message_by_package_relative_name("NewsList") // Todo: NewsList Name should not be hardcoded come from config //
     .expect("message descriptor");
-  println!("{:?}", news_list_descriptor);
 
   let mut headers = HeaderMap::new();
   #[derive(Serialize, Default)]
-  struct Empty {}
+  struct Empty {} // Todo: Empty should not be hardcoded come from config //
   headers.insert(
     reqwest::header::CONTENT_TYPE,
     reqwest::header::HeaderValue::from_static("application/grpc"),
@@ -129,8 +128,8 @@ message NewsList {
     .await?;
   if response.status().is_success() {
     let bytes = response.bytes().await?;
-    let news_list_message = news_list_descriptor.parse_from_bytes(&bytes[5..]);
-    let news_list_json = protobuf::text_format::print_to_string(&*news_list_message?); // Todo convert to json
+    let news_list_message = news_list_descriptor.parse_from_bytes(&bytes[5..])?;
+    let news_list_json = protobuf_json_mapping::print_to_string(&*news_list_message)?; // Todo:  This should happen in graphql layer
     Ok(Response::new(Body::from(news_list_json)))
   } else {
     todo!()
