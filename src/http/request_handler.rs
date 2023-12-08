@@ -1,11 +1,14 @@
 use std::collections::BTreeSet;
+use std::fs;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use protobuf::reflect::FileDescriptor;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
@@ -51,6 +54,89 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
       .extend(server_ctx.blueprint.server.response_headers.clone());
   }
 }
+
+pub async fn test(_req: Request<Body>, _server_ctx: &ServerContext) -> Result<Response<Body>> {
+  let client = reqwest::Client::builder().http2_prior_knowledge().build()?;
+  let proto = r#"syntax = "proto3";
+
+message News {
+    string id = 1;
+    string title = 2;
+    string body = 3;
+    string postImage = 4;
+}
+
+service NewsService {
+    rpc GetAllNews (Empty) returns (NewsList) {}
+    rpc GetNews (NewsId) returns (News) {}
+    rpc DeleteNews (NewsId) returns (Empty) {}
+    rpc EditNews (News) returns (News) {}
+    rpc AddNews (News) returns (News) {}
+}
+
+message NewsId {
+    string id = 1;
+}
+
+message Empty {}
+
+message NewsList {
+   repeated News news = 1;
+}"#;
+
+  let temp_dir = tempfile::tempdir().unwrap();
+  let tempfile = temp_dir.path().join("news.proto");
+  // For now we need to write files to the disk.
+  fs::write(&tempfile, proto).unwrap();
+
+  // Parse text `.proto` file to `FileDescriptorProto` message.
+  // Note this API is not stable and subject to change.
+  // But binary protos can always be generated manually with `protoc` command.
+  let file_descriptor_protos = protobuf_parse::Parser::new()
+    .pure()
+    .includes(&[temp_dir.path().to_path_buf()])
+    .input(&tempfile)
+    .parse_and_typecheck()?;
+
+  println!("{:?}", file_descriptor_protos.file_descriptors.len());
+
+  let file_descriptor_proto = file_descriptor_protos
+    .file_descriptors
+    .into_iter()
+    .next()
+    .expect("file descriptor proto");
+  let file_descriptor = FileDescriptor::new_dynamic(file_descriptor_proto, &[])?;
+
+  // Find the message descriptor for 'NewsList'.
+  let news_list_descriptor = file_descriptor
+    .message_by_package_relative_name("NewsList")
+    .expect("message descriptor");
+  println!("{:?}", news_list_descriptor);
+
+  let mut headers = HeaderMap::new();
+  #[derive(Serialize, Default)]
+  struct Empty {}
+  headers.insert(
+    reqwest::header::CONTENT_TYPE,
+    reqwest::header::HeaderValue::from_static("application/grpc"),
+  );
+
+  let response = client
+    .get("http://localhost:50051/NewsService/GetAllNews")
+    .headers(headers)
+    .body(serde_json::to_vec(&Empty {})?)
+    .send()
+    .await?;
+  if response.status().is_success() {
+    let bytes = response.bytes().await?;
+    let news_list_message = news_list_descriptor.parse_from_bytes(&bytes[5..]);
+    let news_list_json = protobuf::text_format::print_to_string(&*news_list_message?); // Todo convert to json
+    Ok(Response::new(Body::from(news_list_json)))
+  } else {
+    todo!()
+  }
+}
+
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   server_ctx: &ServerContext,
@@ -97,6 +183,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
   match *req.method() {
+    hyper::Method::GET if req.uri().path() == "/test" => test(req, state.as_ref()).await,
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     _ => not_found(),
