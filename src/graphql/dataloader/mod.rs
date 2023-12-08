@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 pub use cache::{CacheFactory, CacheStorage, HashMapCache, LruCache, NoCache};
-use fnv::FnvHashMap;
 use futures_channel::oneshot;
 use futures_timer::Delay;
 use futures_util::future::BoxFuture;
@@ -62,7 +61,7 @@ pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 's
 }
 
 struct DataLoaderInner<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>> {
-  requests: Mutex<FnvHashMap<TypeId, Requests<K, T>>>,
+  requests: Mutex<Requests<K, T>>,
   loader: T,
 }
 
@@ -77,18 +76,16 @@ where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
-    let tid = TypeId::of::<K>();
     let keys = keys.into_iter().collect::<Vec<_>>();
 
     match self.loader.load(&keys).await {
       Ok(values) => {
         // update cache
-        let mut request = self.requests.lock().unwrap();
-        let typed_requests = request.get_mut(&tid).unwrap();
-        let disable_cache = typed_requests.disable_cache || disable_cache;
+        let mut requests = self.requests.lock().unwrap();
+        let disable_cache = requests.disable_cache || disable_cache;
         if !disable_cache {
           for (key, value) in &values {
-            typed_requests
+            requests
               .cache_storage
               .insert(Cow::Borrowed(key), Cow::Borrowed(value));
           }
@@ -116,16 +113,15 @@ where
 /// Data loader.
 ///
 /// Reference: <https://github.com/facebook/dataloader>
-pub struct DataLoader<K: Send + Sync + Eq + Clone + Hash + 'static, T: Loader<K>, C = NoCache> {
+pub struct DataLoader<K: Send + Sync + Eq + Clone + Hash + 'static, T: Loader<K>> {
   inner: Arc<DataLoaderInner<K, T>>,
-  cache_factory: C,
   delay: Duration,
   max_batch_size: usize,
   disable_cache: AtomicBool,
   spawner: Box<dyn Fn(BoxFuture<'static, ()>) + Send + Sync>,
 }
 
-impl<K, T> DataLoader<K, T, NoCache>
+impl<K, T> DataLoader<K, T>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
@@ -136,8 +132,7 @@ where
     S: Fn(BoxFuture<'static, ()>) -> R + Send + Sync + 'static,
   {
     Self {
-      inner: Arc::new(DataLoaderInner { requests: Mutex::new(Default::default()), loader }),
-      cache_factory: NoCache,
+      inner: Arc::new(DataLoaderInner { requests: Mutex::new(Requests::new(&NoCache)), loader }),
       delay: Duration::from_millis(1),
       max_batch_size: 1000,
       disable_cache: false.into(),
@@ -148,19 +143,18 @@ where
   }
 }
 
-impl<K, T, C: CacheFactory> DataLoader<K, T, C>
+impl<K, T> DataLoader<K, T>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
 {
   /// Use `Loader` to create a [DataLoader] with a cache factory.
-  pub fn with_cache<S, R>(loader: T, spawner: S, cache_factory: C) -> Self
+  pub fn with_cache<S, R, C: CacheFactory>(loader: T, spawner: S, cache_factory: C) -> Self
   where
     S: Fn(BoxFuture<'static, ()>) -> R + Send + Sync + 'static,
   {
     Self {
-      inner: Arc::new(DataLoaderInner { requests: Mutex::new(Default::default()), loader }),
-      cache_factory,
+      inner: Arc::new(DataLoaderInner { requests: Mutex::new(Requests::new(&cache_factory)), loader }),
       delay: Duration::from_millis(1),
       max_batch_size: 1000,
       disable_cache: false.into(),
@@ -203,10 +197,8 @@ where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
-    let tid = TypeId::of::<K>();
     let mut requests = self.inner.requests.lock().unwrap();
-    let typed_requests = requests.get_mut(&tid).unwrap();
-    typed_requests.disable_cache = !enable;
+    requests.disable_cache = !enable;
   }
 
   /// Use this `DataLoader` load a data.
@@ -234,22 +226,17 @@ where
       Delay,
     }
 
-    let tid = TypeId::of::<K>();
-
     let (action, rx) = {
       let mut requests = self.inner.requests.lock().unwrap();
-      let typed_requests = requests
-        .entry(tid)
-        .or_insert_with(|| Requests::<K, T>::new(&self.cache_factory));
-      let prev_count = typed_requests.keys.len();
+      let prev_count = requests.keys.len();
       let mut keys_set = HashSet::new();
       let mut use_cache_values = HashMap::new();
 
-      if typed_requests.disable_cache || self.disable_cache.load(Ordering::SeqCst) {
+      if requests.disable_cache || self.disable_cache.load(Ordering::SeqCst) {
         keys_set = keys.into_iter().collect();
       } else {
         for key in keys {
-          if let Some(value) = typed_requests.cache_storage.get(&key) {
+          if let Some(value) = requests.cache_storage.get(&key) {
             // Already in cache
             use_cache_values.insert(key.clone(), value.clone());
           } else {
@@ -264,17 +251,17 @@ where
         return Ok(Default::default());
       }
 
-      typed_requests.keys.extend(keys_set.clone());
+      requests.keys.extend(keys_set.clone());
       let (tx, rx) = oneshot::channel();
-      typed_requests
+      requests
         .pending
         .push((keys_set, ResSender { use_cache_values, tx }));
 
-      if typed_requests.keys.len() >= self.max_batch_size {
-        (Action::ImmediateLoad(typed_requests.take()), rx)
+      if requests.keys.len() >= self.max_batch_size {
+        (Action::ImmediateLoad(requests.take()), rx)
       } else {
         (
-          if !typed_requests.keys.is_empty() && prev_count == 0 {
+          if !requests.keys.is_empty() && prev_count == 0 {
             Action::StartFetch
           } else {
             Action::Delay
@@ -303,9 +290,8 @@ where
           Delay::new(delay).await;
 
           let keys = {
-            let mut request = inner.requests.lock().unwrap();
-            let typed_requests = request.get_mut(&tid).unwrap();
-            typed_requests.take()
+            let mut requests = inner.requests.lock().unwrap();
+            requests.take()
           };
 
           if !keys.0.is_empty() {
@@ -333,13 +319,9 @@ where
     I: IntoIterator<Item = (K, T::Value)>,
     T: Loader<K>,
   {
-    let tid = TypeId::of::<K>();
     let mut requests = self.inner.requests.lock().unwrap();
-    let typed_requests = requests
-      .entry(tid)
-      .or_insert_with(|| Requests::<K, T>::new(&self.cache_factory));
     for (key, value) in values {
-      typed_requests.cache_storage.insert(Cow::Owned(key), Cow::Owned(value));
+      requests.cache_storage.insert(Cow::Owned(key), Cow::Owned(value));
     }
   }
 
@@ -368,10 +350,7 @@ where
   {
     let tid = TypeId::of::<K>();
     let mut requests = self.inner.requests.lock().unwrap();
-    let typed_requests = requests
-      .entry(tid)
-      .or_insert_with(|| Requests::<K, T>::new(&self.cache_factory));
-    typed_requests.cache_storage.clear();
+    requests.cache_storage.clear();
   }
 
   /// Gets all values in the cache.
@@ -382,14 +361,11 @@ where
   {
     let tid = TypeId::of::<K>();
     let requests = self.inner.requests.lock().unwrap();
-    match requests.get(&tid) {
-      None => HashMap::new(),
-      Some(requests) => requests
+    requests
         .cache_storage
         .iter()
         .map(|(k, v)| (k.clone(), v.clone()))
-        .collect(),
-    }
+        .collect()
   }
 }
 

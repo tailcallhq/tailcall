@@ -4,7 +4,7 @@ pub mod blueprint;
 pub mod cache;
 pub mod cli;
 pub mod config;
-pub mod dataloader;
+pub mod graphql;
 pub mod directive;
 pub mod document;
 pub mod endpoint;

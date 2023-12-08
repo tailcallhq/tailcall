@@ -12,7 +12,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
-use crate::dataloader::{DataLoader, Loader};
+use crate::graphql::dataloader::{DataLoader, Loader};
 use crate::graphql_request_template::GraphqlRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]

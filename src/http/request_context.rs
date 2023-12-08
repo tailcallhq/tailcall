@@ -9,7 +9,7 @@ use super::{
 };
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
-use crate::dataloader::DataLoader;
+use crate::graphql::dataloader::DataLoader;
 
 #[derive(Setters)]
 pub struct RequestContext {

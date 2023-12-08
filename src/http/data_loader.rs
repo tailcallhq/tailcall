@@ -8,7 +8,7 @@ use async_graphql_value::ConstValue;
 
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
-use crate::dataloader::{DataLoader, Loader, NoCache};
+use crate::graphql::dataloader::{DataLoader, Loader, NoCache};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
@@ -49,7 +49,7 @@ impl HttpDataLoader {
     }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
