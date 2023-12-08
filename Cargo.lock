@@ -39,6 +39,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -46,6 +58,12 @@ checksum = "b2969dcb958b36655471fc61f7e416fa76033bdd4bfed0678d8fee1e2d07a1f0"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "allocator-api2"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
 name = "android-tzdata"
@@ -203,7 +221,8 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "6.0.11"
-source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "298a5d587d6e6fdb271bf56af2dc325a80eb291fd0fc979146584b9a05494a8c"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -221,7 +240,7 @@ dependencies = [
  "handlebars",
  "http",
  "indexmap",
- "lru",
+ "lru 0.7.8",
  "mime",
  "multer",
  "num-traits",
@@ -239,7 +258,8 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "6.0.11"
-source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f329c7eb9b646a72f70c9c4b516c70867d356ec46cb00dcac8ad343fd006b0"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -255,7 +275,8 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "6.0.11"
-source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6139181845757fd6a73fbb8839f3d036d7150b798db0e9bb3c6e83cdd65bd53b"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -266,7 +287,8 @@ dependencies = [
 [[package]]
 name = "async-graphql-value"
 version = "6.0.11"
-source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "323a5143f5bdd2030f45e3f2e0c821c9b1d36e79cf382129c64299c50a7f3750"
 dependencies = [
  "bytes",
  "indexmap",
@@ -1384,7 +1406,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash",
+ "ahash 0.7.7",
 ]
 
 [[package]]
@@ -1392,6 +1414,10 @@ name = "hashbrown"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f93e7192158dbcda357bdec5fb5788eebf8bbac027f3f33e719d29135ae84156"
+dependencies = [
+ "ahash 0.8.6",
+ "allocator-api2",
+]
 
 [[package]]
 name = "heck"
@@ -1871,6 +1897,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e999beba7b6e8345721bd280141ed958096a2e4abdf74f67ff4ce49b4b54e47a"
 dependencies = [
  "hashbrown 0.12.3",
+]
+
+[[package]]
+name = "lru"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2994eeba8ed550fd9b47a0b38f0242bc3344e496483c6180b69139cc2fa5d1d7"
+dependencies = [
+ "hashbrown 0.14.2",
 ]
 
 [[package]]
@@ -3047,6 +3082,10 @@ dependencies = [
  "derive_setters",
  "env_logger",
  "exitcode",
+ "fnv",
+ "futures-channel",
+ "futures-timer",
+ "futures-util",
  "http-cache-reqwest",
  "httpmock",
  "hyper",
@@ -3054,6 +3093,7 @@ dependencies = [
  "indexmap",
  "inquire",
  "log",
+ "lru 0.12.1",
  "mimalloc",
  "mini-v8",
  "mockito",
@@ -3721,3 +3761,23 @@ name = "yansi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
+
+[[package]]
+name = "zerocopy"
+version = "0.7.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d075cf85bbb114e933343e087b92f2146bac0d55b534cbb8188becf0039948e"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86cd5ca076997b97ef09d3ad65efe811fa68c9e874cb636ccb211223a813b0c2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]

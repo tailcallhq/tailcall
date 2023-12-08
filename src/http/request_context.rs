@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use async_graphql::dataloader::DataLoader;
+use crate::dataloader::DataLoader;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;

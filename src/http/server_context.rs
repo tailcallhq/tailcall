@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::dataloader::DataLoader;
+use crate::dataloader::DataLoader;
 use async_graphql::dynamic;
 
 use super::{DataLoaderRequest, HttpClient};

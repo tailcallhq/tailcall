@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::dataloader::{DataLoader, Loader};
+use crate::dataloader::{DataLoader, Loader};
 use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
