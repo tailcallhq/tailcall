@@ -29,7 +29,7 @@ calculate_value() {
 
 for bench in "${benchmarks[@]}"; do
         echo "$bench" 
-        echo "| Attribute         | Base      | New       |%change|"
+        echo "| Attribute         | Base      | PR        |%change|"
         echo "| ----------------- | ----------| ----------|-------|" 
     for attribute in "${attributes[@]}"; do
         value1=$(calculate_value "$file1" "$bench" "$attribute")
