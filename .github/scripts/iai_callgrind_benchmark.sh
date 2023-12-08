@@ -34,7 +34,7 @@ for bench in "${benchmarks[@]}"; do
 
         percent_change=$(( value1 ? ((value2 - value1) * 100) / value1 : 0 ))
        
-        printf "s\n" "$bench" >> "benches/iai-callgrind/compare.txt"
+        printf "$bench\n" >> "benches/iai-callgrind/compare.txt"
         echo "| Attribute    | Base    | New      | change |\n" >> "benches/iai-callgrind/compare.txt"
         echo "| -------------| --------| ---------|--------|\n" >> "benches/iai-callgrind/compare.txt"
         if ((percent_change > 10)); then
