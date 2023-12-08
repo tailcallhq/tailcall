@@ -1,11 +1,10 @@
-critcmp main_branch new_branch 
 echo "| Test                           | Base         | PR           | % change   |" 
 echo "|--------------------------------|--------------|--------------|------------|" 
 fail_ci=0
 critcmp main_branch new_branch | awk 'NR>2 {
     item = $1
-    change = $2
     before = $3
+    change = $5
     after = $7
     
     printf "| %-30s | %-20s | %-20s | %-10.2f |\n", item, before, after, change 
