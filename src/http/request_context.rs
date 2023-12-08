@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use crate::dataloader::DataLoader;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
@@ -10,6 +9,7 @@ use super::{
 };
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
+use crate::dataloader::DataLoader;
 
 #[derive(Setters)]
 pub struct RequestContext {
