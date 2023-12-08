@@ -49,6 +49,8 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 ## Benchmarks Comparison
 
+**Critrion Benchmarks**
+
 1. **Important:** Make sure all the commits are done.
 2. **Install critcmp:** Install criterion-compare.
    ```bash
@@ -58,12 +60,11 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
 
    ```bash
-   cargo install critcmp
    git checkout main
    cargo bench --features criterion -- --save-baseline main_branch
    git checkout -
    cargo bench --features criterion -- --save-baseline new_branch
-   bash .github/scripts/check_degradation.sh
+   bash .github/scripts/criterion_benchmark.sh
 
    ```
 
@@ -71,6 +72,25 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    The format for the "benches/critcmp.txt" file is:
    | Test | Base | PR | % change |
    |-------------------------------|--------------|------------------|------------|
+
+   **Iai-Callgrind Benchmarks**
+
+5. **Important:** Make sure all the commits are done.
+6. **Install critcmp:** Install iai-callgrind-runner.
+   ```bash
+   cargo install --version 0.7.3 iai-callgrind-runner
+   ```
+7. **Comparing Benchmarks:**
+   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
+
+   ```bash
+   git checkout main
+   cargo bench --features iai-callgrind >> "benches/iai-callgrind/old_benchmark.txt"
+   git checkout -
+   cargo bench --features iai-callgrind >> "benches/iai-callgrind/new_benchmark.txt"
+   bash .github/scripts/iai_callgrind_benchmark.sh
+
+   ```
 
 ## Documentation
 
