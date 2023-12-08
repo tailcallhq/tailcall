@@ -85,9 +85,7 @@ where
         let disable_cache = requests.disable_cache || disable_cache;
         if !disable_cache {
           for (key, value) in &values {
-            requests
-              .cache_storage
-              .insert(Cow::Borrowed(key), Cow::Borrowed(value));
+            requests.cache_storage.insert(Cow::Borrowed(key), Cow::Borrowed(value));
           }
         }
 
@@ -253,9 +251,7 @@ where
 
       requests.keys.extend(keys_set.clone());
       let (tx, rx) = oneshot::channel();
-      requests
-        .pending
-        .push((keys_set, ResSender { use_cache_values, tx }));
+      requests.pending.push((keys_set, ResSender { use_cache_values, tx }));
 
       if requests.keys.len() >= self.max_batch_size {
         (Action::ImmediateLoad(requests.take()), rx)
@@ -348,7 +344,7 @@ where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
-    let tid = TypeId::of::<K>();
+    let _tid = TypeId::of::<K>();
     let mut requests = self.inner.requests.lock().unwrap();
     requests.cache_storage.clear();
   }
@@ -359,13 +355,13 @@ where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
-    let tid = TypeId::of::<K>();
+    let _tid = TypeId::of::<K>();
     let requests = self.inner.requests.lock().unwrap();
     requests
-        .cache_storage
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect()
+      .cache_storage
+      .iter()
+      .map(|(k, v)| (k.clone(), v.clone()))
+      .collect()
   }
 }
 
