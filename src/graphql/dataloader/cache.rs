@@ -6,14 +6,16 @@ use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
 /// Factory for creating cache storage.
-pub trait CacheFactory: Send + Sync + 'static {
+pub trait CacheFactory<K, V>: Send + Sync + 'static
+where
+  K: Send + Sync + Clone + Eq + Hash + 'static,
+  V: Send + Sync + Clone + 'static
+{
+  type Storage: CacheStorage<Key = K, Value = V>;
+
   /// Create a cache storage.
   ///
-  /// TODO: When GAT is stable, this memory allocation can be optimized away.
-  fn create<K, V>(&self) -> Box<dyn CacheStorage<Key = K, Value = V>>
-  where
-    K: Send + Sync + Clone + Eq + Hash + 'static,
-    V: Send + Sync + Clone + 'static;
+  fn create(&self) -> Self::Storage;
 }
 
 /// Cache storage for [DataLoader](crate::dataloader::DataLoader).
@@ -45,17 +47,20 @@ pub trait CacheStorage: Send + Sync + 'static {
 /// No cache.
 pub struct NoCache;
 
-impl CacheFactory for NoCache {
-  fn create<K, V>(&self) -> Box<dyn CacheStorage<Key = K, Value = V>>
-  where
-    K: Send + Sync + Clone + Eq + Hash + 'static,
-    V: Send + Sync + Clone + 'static,
+impl<K, V> CacheFactory<K, V> for NoCache
+where
+  K: Send + Sync + Clone + Eq + Hash + 'static,
+  V: Send + Sync + Clone + 'static,
+{
+  type Storage = NoCacheImpl<K, V>;
+
+  fn create(&self) -> Self::Storage
   {
-    Box::new(NoCacheImpl { _mark1: PhantomData, _mark2: PhantomData })
+    NoCacheImpl { _mark1: PhantomData, _mark2: PhantomData }
   }
 }
 
-struct NoCacheImpl<K, V> {
+pub struct NoCacheImpl<K, V> {
   _mark1: PhantomData<K>,
   _mark2: PhantomData<V>,
 }
@@ -105,17 +110,20 @@ impl Default for HashMapCache<RandomState> {
   }
 }
 
-impl<S: Send + Sync + BuildHasher + Default + 'static> CacheFactory for HashMapCache<S> {
-  fn create<K, V>(&self) -> Box<dyn CacheStorage<Key = K, Value = V>>
-  where
-    K: Send + Sync + Clone + Eq + Hash + 'static,
-    V: Send + Sync + Clone + 'static,
+impl<K, V, S: Send + Sync + BuildHasher + Default + 'static> CacheFactory<K, V> for HashMapCache<S>
+where
+  K: Send + Sync + Clone + Eq + Hash + 'static,
+  V: Send + Sync + Clone + 'static,
+{
+  type Storage = HashMapCacheImpl<K, V, S>;
+
+  fn create(&self) -> Self::Storage
   {
-    Box::new(HashMapCacheImpl::<K, V, S>(HashMap::<K, V, S>::default()))
+    HashMapCacheImpl(HashMap::default())
   }
 }
 
-struct HashMapCacheImpl<K, V, S>(HashMap<K, V, S>);
+pub struct HashMapCacheImpl<K, V, S>(HashMap<K, V, S>);
 
 impl<K, V, S> CacheStorage for HashMapCacheImpl<K, V, S>
 where
@@ -163,17 +171,20 @@ impl LruCache {
   }
 }
 
-impl CacheFactory for LruCache {
-  fn create<K, V>(&self) -> Box<dyn CacheStorage<Key = K, Value = V>>
-  where
-    K: Send + Sync + Clone + Eq + Hash + 'static,
-    V: Send + Sync + Clone + 'static,
+impl<K, V> CacheFactory<K, V> for LruCache
+where
+  K: Send + Sync + Clone + Eq + Hash + 'static,
+  V: Send + Sync + Clone + 'static,
+{
+  type Storage = LruCacheImpl<K, V>;
+
+  fn create(&self) -> Self::Storage
   {
-    Box::new(LruCacheImpl(lru::LruCache::new(NonZeroUsize::new(self.cap).unwrap())))
+    LruCacheImpl(lru::LruCache::new(NonZeroUsize::new(self.cap).unwrap()))
   }
 }
 
-struct LruCacheImpl<K, V>(lru::LruCache<K, V>);
+pub struct LruCacheImpl<K, V>(lru::LruCache<K, V>);
 
 impl<K, V> CacheStorage for LruCacheImpl<K, V>
 where

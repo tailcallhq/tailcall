@@ -23,21 +23,21 @@ struct ResSender<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>> {
   tx: oneshot::Sender<Result<HashMap<K, T::Value>, T::Error>>,
 }
 
-struct Requests<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>> {
+struct Requests<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: CacheFactory<K, T::Value>> {
   keys: HashSet<K>,
   pending: Vec<(HashSet<K>, ResSender<K, T>)>,
-  cache_storage: Box<dyn CacheStorage<Key = K, Value = T::Value>>,
+  cache_storage: C::Storage,
   disable_cache: bool,
 }
 
 type KeysAndSender<K, T> = (HashSet<K>, Vec<(HashSet<K>, ResSender<K, T>)>);
 
-impl<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>> Requests<K, T> {
-  fn new<C: CacheFactory>(cache_factory: &C) -> Self {
+impl<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: CacheFactory<K, T::Value>> Requests<K, T, C> {
+  fn new<>(cache_factory: &C) -> Self {
     Self {
       keys: Default::default(),
       pending: Vec::new(),
-      cache_storage: cache_factory.create::<K, T::Value>(),
+      cache_storage: cache_factory.create(),
       disable_cache: false,
     }
   }
@@ -60,15 +60,16 @@ pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 's
   async fn load(&self, keys: &[K]) -> Result<HashMap<K, Self::Value>, Self::Error>;
 }
 
-struct DataLoaderInner<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>> {
-  requests: Mutex<Requests<K, T>>,
+struct DataLoaderInner<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: CacheFactory<K, T::Value>> {
+  requests: Mutex<Requests<K, T, C>>,
   loader: T,
 }
 
-impl<K, T> DataLoaderInner<K, T>
+impl<K, T, C> DataLoaderInner<K, T, C>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
+  C: CacheFactory<K, T::Value>,
 {
   #[cfg_attr(feature = "tracing", instrument(skip_all))]
   async fn do_load(&self, disable_cache: bool, (keys, senders): KeysAndSender<K, T>)
@@ -111,15 +112,15 @@ where
 /// Data loader.
 ///
 /// Reference: <https://github.com/facebook/dataloader>
-pub struct DataLoader<K: Send + Sync + Eq + Clone + Hash + 'static, T: Loader<K>> {
-  inner: Arc<DataLoaderInner<K, T>>,
+pub struct DataLoader<K: Send + Sync + Eq + Clone + Hash + 'static, T: Loader<K>, C: CacheFactory<K, T::Value> = NoCache> {
+  inner: Arc<DataLoaderInner<K, T, C>>,
   delay: Duration,
   max_batch_size: usize,
   disable_cache: AtomicBool,
   spawner: Box<dyn Fn(BoxFuture<'static, ()>) + Send + Sync>,
 }
 
-impl<K, T> DataLoader<K, T>
+impl<K, T> DataLoader<K, T, NoCache>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
@@ -141,13 +142,14 @@ where
   }
 }
 
-impl<K, T> DataLoader<K, T>
+impl<K, T, C> DataLoader<K, T, C>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
+  C: CacheFactory<K, T::Value>
 {
   /// Use `Loader` to create a [DataLoader] with a cache factory.
-  pub fn with_cache<S, R, C: CacheFactory>(loader: T, spawner: S, cache_factory: C) -> Self
+  pub fn with_cache<S, R>(loader: T, spawner: S, cache_factory: C) -> Self
   where
     S: Fn(BoxFuture<'static, ()>) -> R + Send + Sync + 'static,
   {
