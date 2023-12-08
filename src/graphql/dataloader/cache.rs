@@ -9,7 +9,7 @@ use std::num::NonZeroUsize;
 pub trait CacheFactory<K, V>: Send + Sync + 'static
 where
   K: Send + Sync + Clone + Eq + Hash + 'static,
-  V: Send + Sync + Clone + 'static
+  V: Send + Sync + Clone + 'static,
 {
   type Storage: CacheStorage<Key = K, Value = V>;
 
@@ -54,8 +54,7 @@ where
 {
   type Storage = NoCacheImpl<K, V>;
 
-  fn create(&self) -> Self::Storage
-  {
+  fn create(&self) -> Self::Storage {
     NoCacheImpl { _mark1: PhantomData, _mark2: PhantomData }
   }
 }
@@ -117,8 +116,7 @@ where
 {
   type Storage = HashMapCacheImpl<K, V, S>;
 
-  fn create(&self) -> Self::Storage
-  {
+  fn create(&self) -> Self::Storage {
     HashMapCacheImpl(HashMap::default())
   }
 }
@@ -178,8 +176,7 @@ where
 {
   type Storage = LruCacheImpl<K, V>;
 
-  fn create(&self) -> Self::Storage
-  {
+  fn create(&self) -> Self::Storage {
     LruCacheImpl(lru::LruCache::new(NonZeroUsize::new(self.cap).unwrap()))
   }
 }

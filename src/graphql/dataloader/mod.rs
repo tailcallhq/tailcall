@@ -33,13 +33,8 @@ struct Requests<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: C
 type KeysAndSender<K, T> = (HashSet<K>, Vec<(HashSet<K>, ResSender<K, T>)>);
 
 impl<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: CacheFactory<K, T::Value>> Requests<K, T, C> {
-  fn new<>(cache_factory: &C) -> Self {
-    Self {
-      keys: Default::default(),
-      pending: Vec::new(),
-      cache_storage: cache_factory.create(),
-      disable_cache: false,
-    }
+  fn new(cache_factory: &C) -> Self {
+    Self { keys: Default::default(), pending: Vec::new(), cache_storage: cache_factory.create(), disable_cache: false }
   }
 
   fn take(&mut self) -> KeysAndSender<K, T> {
@@ -112,7 +107,11 @@ where
 /// Data loader.
 ///
 /// Reference: <https://github.com/facebook/dataloader>
-pub struct DataLoader<K: Send + Sync + Eq + Clone + Hash + 'static, T: Loader<K>, C: CacheFactory<K, T::Value> = NoCache> {
+pub struct DataLoader<
+  K: Send + Sync + Eq + Clone + Hash + 'static,
+  T: Loader<K>,
+  C: CacheFactory<K, T::Value> = NoCache,
+> {
   inner: Arc<DataLoaderInner<K, T, C>>,
   delay: Duration,
   max_batch_size: usize,
@@ -146,7 +145,7 @@ impl<K, T, C> DataLoader<K, T, C>
 where
   K: Send + Sync + Hash + Eq + Clone + 'static,
   T: Loader<K>,
-  C: CacheFactory<K, T::Value>
+  C: CacheFactory<K, T::Value>,
 {
   /// Use `Loader` to create a [DataLoader] with a cache factory.
   pub fn with_cache<S, R>(loader: T, spawner: S, cache_factory: C) -> Self
