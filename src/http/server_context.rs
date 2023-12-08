@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::dataloader::DataLoader;
 use async_graphql::dynamic;
 
-use super::{HttpClient, DataLoaderRequest};
+use super::{DataLoaderRequest, HttpClient};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::http::{GraphqlDataLoader, HttpDataLoader};

@@ -5,7 +5,9 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext, DataLoaderRequest};
+use super::{
+  DataLoaderRequest, DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext,
+};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 
