@@ -216,7 +216,7 @@ jobs:
         run: |
           git fetch
           git checkout $BASE_BRANCH
-          
+
       - name: Run Criterion on main
         run: |
           echo -n > benches/iai-callgrind/old_benchmark.txt
