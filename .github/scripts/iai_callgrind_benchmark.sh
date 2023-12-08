@@ -44,5 +44,11 @@ for bench in "${benchmarks[@]}"; do
     done
     echo "----------------------------------"
 done
+content=$(cat enches/iai-callgrind/compare.txt)
+
+# Print the table with Markdown formatting
+echo "| attribute     | base    | pr      | percent_change |"
+echo "| ------------- | ------- | ------- | -------- |"
+echo "$content"
 
 exit "$fail_ci"
