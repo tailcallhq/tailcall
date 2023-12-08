@@ -416,19 +416,6 @@ mod tests {
       .unwrap(),
       (0..100).map(Option::Some).collect::<Vec<_>>()
     );
-
-    // assert_eq!(
-    //     futures_util::future::try_join_all((0..100i64).map({
-    //         let loader = loader.clone();
-    //         move |n| {
-    //             let loader = loader.clone();
-    //             async move { loader.load_one(n).await }
-    //         }
-    //     }))
-    //     .await
-    //     .unwrap(),
-    //     (0..100).map(Option::Some).collect::<Vec<_>>()
-    // );
   }
 
   #[tokio::test]
