@@ -49,7 +49,7 @@ impl HttpDataLoader {
     }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<HttpDataLoader, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader, NoCache> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)

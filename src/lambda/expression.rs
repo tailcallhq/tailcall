@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
+use std::hash::Hash;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -98,7 +99,7 @@ impl Expression {
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              let data_loader: Option<&DataLoader<HttpDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -124,7 +125,7 @@ impl Expression {
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              let data_loader: Option<&DataLoader<GraphqlDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -185,7 +186,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  data_loader: Option<&DataLoader<Dl>>,
+  data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response> {
   let headers = ctx
     .req_ctx

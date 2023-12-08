@@ -203,8 +203,7 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "6.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "298a5d587d6e6fdb271bf56af2dc325a80eb291fd0fc979146584b9a05494a8c"
+source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -240,8 +239,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "6.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7f329c7eb9b646a72f70c9c4b516c70867d356ec46cb00dcac8ad343fd006b0"
+source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -257,8 +255,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "6.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6139181845757fd6a73fbb8839f3d036d7150b798db0e9bb3c6e83cdd65bd53b"
+source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -269,8 +266,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-value"
 version = "6.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "323a5143f5bdd2030f45e3f2e0c821c9b1d36e79cf382129c64299c50a7f3750"
+source = "git+https://github.com/shashitnak/async-graphql.git?branch=dataloader-optimization#9ad6d3bc78bd57f280e4bb09c79bfdbe8ba80eb1"
 dependencies = [
  "bytes",
  "indexmap",

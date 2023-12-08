@@ -5,7 +5,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext};
+use super::{DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext, DataLoaderRequest};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 
@@ -15,8 +15,8 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  pub http_data_loaders: Arc<Vec<DataLoader<HttpDataLoader>>>,
-  pub gql_data_loaders: Arc<Vec<DataLoader<GraphqlDataLoader>>>,
+  pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }

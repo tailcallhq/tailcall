@@ -24,12 +24,12 @@ reqwest = { version = "0.11", features = [
    "rustls-tls"
 ], default-features = false }
 hyper = { version = "0.14", features = ["full"], default-features = false }
-async-graphql = { version = "6.0.11", features = [
+async-graphql = { git = "https://github.com/shashitnak/async-graphql.git", branch = "dataloader-optimization", features = [
    "dynamic-schema",
    "dataloader",
    "apollo_tracing"
 ] }
-async-graphql-value = "6.0.11"
+async-graphql-value = { git = "https://github.com/shashitnak/async-graphql.git", branch = "dataloader-optimization" }
 base64 = "0.21"
 indexmap = "2.1"
 once_cell = "1.19.0"

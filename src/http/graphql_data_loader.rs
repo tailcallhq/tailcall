@@ -20,7 +20,7 @@ impl GraphqlDataLoader {
     GraphqlDataLoader { client, batch }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader, NoCache> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
