@@ -1,23 +1,22 @@
-current_branch=$(git rev-parse --abbrev-ref HEAD) 
+printf "| Test                          | Base         | PR               | % change   |" >> "benches/critcmp.txt"
+printf "|-------------------------------|--------------|------------------|------------|" >> "benches/critcmp.txt"
 critcmp new_branch main_branch | awk 'NR>2 {
     item = $1
     before = $3
+    change = $5
     after = $7
-    before_val = ($3 ~ /ns/) ? $3 : ($3 ~ /µs/) ? $3 * 1000 : ($3 ~ /ms/) ? $3 * 1000000 : "invalid"
-    after_val = ($7 ~ /ns/) ? $7 : ($7 ~ /µs/) ? $7 * 1000 : ($7 ~ /ms/) ? $7 * 1000000 : "invalid"
+    
+    printf "| %-30s | %-20s | %-20s | %-10.2f |\n", item, before, after, change >> "benches/critcmp.txt"
 
-    if (before_val != "invalid" && after_val != "invalid") {
-        change = ((after_val - before_val) / before_val) * 100
-        gsub("%", "", change)  # Remove '%' symbol
+    if (change > 1.1) {
+         printf "Percentage change for %s exceeds 10%%.\n", item
+         flag=1
+    }
+}
 
-        printf "| %-30s | %-20s | %-20s | %-10.2f |\n", item, before, after, change >> "benches/critcmp.txt"
-
-        if (change > 10) {
-            printf "Percentage change for %s exceeds 10%%. Failing the workflow.\n", item
-            exit 1
-        }
-    } else {
-        printf "Invalid units detected for %s. Failing the workflow.\n", item
+END {
+    if (flag!=0) {
+        print "CI failed due to exceeding percentage change."
         exit 1
     }
 }'
