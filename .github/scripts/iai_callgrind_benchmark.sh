@@ -28,9 +28,9 @@ calculate_value() {
 }
 
 for bench in "${benchmarks[@]}"; do
-    printf "$bench\n" >> "benches/iai-callgrind/compare.txt"
-    echo "| Attribute    | Base    | New      | change |\n" >> "benches/iai-callgrind/compare.txt"
-    echo "| -------------| --------| ---------|--------|\n" >> "benches/iai-callgrind/compare.txt"
+        echo "$bench" 
+        echo "| Attribute         | Base      | New       |%change|"
+        echo "| ----------------- | ----------| ----------|-------|" 
     for attribute in "${attributes[@]}"; do
         value1=$(calculate_value "$file1" "$bench" "$attribute")
         value2=$(calculate_value "$file2" "$bench" "$attribute")
@@ -38,16 +38,16 @@ for bench in "${benchmarks[@]}"; do
         percent_change=$(( value1 ? ((value2 - value1) * 100) / value1 : 0 ))
        
         if ((percent_change > 10)); then
-            echo "$bench $attribute has a change of $percent_change%, within CI limits. (Original values: $value1 -> $value2)"
-            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> "benches/iai-callgrind/compare.txt"
+            echo "$bench $attribute has a change of $percent_change%, within CI limits. (Original values: $value1 -> $value2)" >> "benches/iai-callgrind/compare.txt"
+            printf "| %-17s | %-9s | %-9s | %-5.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" 
             fail_ci=1
         else
-            printf "| %-30s | %-20s | %-20s | %-10.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" >> "benches/iai-callgrind/compare.txt"
+            printf "| %-17s | %-9s | %-9s | %-5.2f |\n" "$attribute" "$value1" "$value2" "$percent_change" 
         fi
     done
-    echo "----------------------------------"
+    echo "-----------------------------------------------------"
 done
-content=$(cat benches/iai-callgrind/compare.txt)
-echo "$content"
-
-exit "$fail_ci"
+if [ "$fail_ci" -eq 1 ]; then
+    echo "$(cat benches/iai-callgrind/compare.txt)"
+    exit 1
+fi
