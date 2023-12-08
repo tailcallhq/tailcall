@@ -164,10 +164,10 @@ jobs:
         run: |
           cargo bench --features criterion -- --save-baseline new_branch
 
-      - name: Fetch target branch
+      - name: Switch to main
         run: |
           git fetch
-          git checkout ${{ github.sha }}
+          git checkout main
 
       - name: Run Criterion on main
         run: |
@@ -175,16 +175,66 @@ jobs:
 
       - name: Execute check_degradation.sh
         run: |
-          bash .github/scripts/check_degradation.sh
+          bash .github/scripts/criterion_benchmark.sh
 
-      - name: Comment on PR
+      - id: get_comment_body
+        name: Get Comment Body
+        working-directory: benches
+        run: |
+          body="$(cat critcmp.txt)"
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT     
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create Commit Comment
         uses: peter-evans/commit-comment@v3
         with:
-          msg: |
-            <details>
-            <summary>Benchmark Results</summary>
-            | Test                          | Base         | PR               | % change   |
-            |-------------------------------|--------------|------------------|------------|
-            $(cat benches/critcmp.txt)
-            </details>
-          token: ${{ secrets.GITHUB_TOKEN }}
+          sha: ${{github.event.pull_request.head.sha}}
+          body: ${{steps.get_comment_body.outputs.body}}
+
+  Build_time_compare:
+    name: iai_callgrind_benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install iai-callgrind-runner
+        run: cargo install --version 0.7.3 iai-callgrind-runner
+
+      - name: Install Valgrind
+        run: sudo apt-get update && sudo apt-get install valgrind
+
+      - name: Run iai-callgrind on branch
+        run: |
+          cargo bench --features iai-callgrind > "benches/iai-callgrind/new_benchmark.txt"
+
+      - name: Switch to main
+        run: |
+          git fetch
+          git checkout main
+
+      - name: Run Criterion on main
+        run: |
+          cargo bench --features iai-callgrind > "benches/iai-callgrind/old_benchmark.txt"
+
+      - name: Execute iai-callgrind_benchmark.sh
+        run: |
+          bash .github/scripts/iai_callgrind_benchmark.sh > table_output.txt && cat table_output.txt
+
+      - id: get_comment_body
+        name: Get Comment Body
+        run: |
+          body="$(cat table_output.txt)"
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT     
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{github.event.pull_request.head.sha}}
+          body: ${{steps.get_comment_body.outputs.body}}
