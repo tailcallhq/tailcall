@@ -59,6 +59,11 @@ num_cpus = "1.16.0"
 hyper-rustls = "0.24.2"
 rustls = "0.21.9"
 rustls-pemfile = "1.0.4"
+fnv = "1.0.7"
+futures-channel = { version = "0.3.13" }
+futures-timer = { version = "3.0.2" }
+futures-util = { version = "0.3.29" }
+lru = { version = "0.12.1" }
 
 [dev-dependencies]
 criterion = "0.5.1"

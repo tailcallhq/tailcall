@@ -4,7 +4,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::dataloader::{DataLoader, Loader};
 use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
@@ -13,13 +12,13 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
-use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
+use crate::data_loader::{DataLoader, Loader};
+use crate::graphql::{self, GraphqlDataLoader};
+use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
-use crate::request_template::RequestTemplate;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -39,12 +38,12 @@ pub enum Context {
 #[derive(Clone, Debug)]
 pub enum Unsafe {
   Http {
-    req_template: RequestTemplate,
+    req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
   },
   GraphQLEndpoint {
-    req_template: GraphqlRequestTemplate,
+    req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,
@@ -98,7 +97,7 @@ impl Expression {
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              let data_loader: Option<&DataLoader<HttpDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -124,7 +123,7 @@ impl Expression {
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              let data_loader: Option<&DataLoader<GraphqlDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -185,7 +184,7 @@ async fn execute_request_with_dl<
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-  data_loader: Option<&DataLoader<Dl>>,
+  data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response> {
   let headers = ctx
     .req_ctx

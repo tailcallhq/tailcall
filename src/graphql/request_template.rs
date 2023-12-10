@@ -14,7 +14,7 @@ use crate::path::PathGraphql;
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 /// TODO: add benchmarks for this
 #[derive(Setters, Debug, Clone)]
-pub struct GraphqlRequestTemplate {
+pub struct RequestTemplate {
   pub url: String,
   pub operation_type: GraphQLOperationType,
   pub operation_name: String,
@@ -22,7 +22,7 @@ pub struct GraphqlRequestTemplate {
   pub headers: Vec<(HeaderName, Mustache)>,
 }
 
-impl GraphqlRequestTemplate {
+impl RequestTemplate {
   fn create_headers<C: PathGraphql>(&self, ctx: &C) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
@@ -127,7 +127,7 @@ mod tests {
   use serde_json::json;
 
   use crate::config::GraphQLOperationType;
-  use crate::graphql_request_template::GraphqlRequestTemplate;
+  use crate::graphql::RequestTemplate;
   use crate::has_headers::HasHeaders;
   use crate::json::JsonLike;
   use crate::lambda::GraphQLOperationContext;
@@ -158,7 +158,7 @@ mod tests {
 
   #[test]
   fn test_query_without_args() {
-    let tmpl = GraphqlRequestTemplate::new(
+    let tmpl = RequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Query,
       "myQuery",
@@ -188,7 +188,7 @@ mod tests {
 
   #[test]
   fn test_query_with_args() {
-    let tmpl = GraphqlRequestTemplate::new(
+    let tmpl = RequestTemplate::new(
       "http://localhost:3000".to_string(),
       &GraphQLOperationType::Mutation,
       "create",

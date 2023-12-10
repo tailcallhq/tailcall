@@ -1,6 +1,6 @@
 use crate::blueprint::FieldDefinition;
 use crate::config::{self, Config, Field, GraphQLOperationType};
-use crate::graphql_request_template::GraphqlRequestTemplate;
+use crate::graphql::RequestTemplate;
 use crate::helpers;
 use crate::lambda::Lambda;
 use crate::try_fold::TryFold;
@@ -24,7 +24,7 @@ pub fn update_graphql<'a>(
       .zip(helpers::headers::to_headermap(&graphql.headers))
       .and_then(|(base_url, header_map)| {
         Valid::from(
-          GraphqlRequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
+          RequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
             .map_err(|e| ValidationError::new(e.to_string())),
         )
       })
