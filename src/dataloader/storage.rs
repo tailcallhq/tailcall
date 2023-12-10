@@ -1,19 +1,5 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::hash::Hash;
-
-/// Factory for creating cache storage.
-pub trait CacheFactory<K, V>: Send + Sync + 'static
-where
-  K: Send + Sync + Clone + Eq + Hash + 'static,
-  V: Send + Sync + Clone + 'static,
-{
-  type Storage: CacheStorage<Key = K, Value = V>;
-
-  /// Create a cache storage.
-  ///
-  fn create(&self) -> Self::Storage;
-}
 
 /// Cache storage for [DataLoader](crate::dataloader::DataLoader).
 pub trait CacheStorage: Send + Sync + 'static {
@@ -39,17 +25,4 @@ pub trait CacheStorage: Send + Sync + 'static {
 
   /// Returns an iterator over the key-value pairs in the cache.
   fn iter(&self) -> Box<dyn Iterator<Item = (&'_ Self::Key, &'_ Self::Value)> + '_>;
-}
-
-/// Trait for batch loading.
-#[async_trait::async_trait]
-pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 'static {
-  /// type of value.
-  type Value: Send + Sync + Clone + 'static;
-
-  /// Type of error.
-  type Error: Send + Clone + 'static;
-
-  /// Load the data set specified by the `keys`.
-  async fn load(&self, keys: &[K]) -> Result<HashMap<K, Self::Value>, Self::Error>;
 }

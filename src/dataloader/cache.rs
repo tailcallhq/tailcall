@@ -5,7 +5,8 @@ use std::hash::{BuildHasher, Hash};
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 
-use super::traits::{CacheFactory, CacheStorage};
+use super::factory::CacheFactory;
+use super::storage::CacheStorage;
 
 /// No cache.
 pub struct NoCache;
