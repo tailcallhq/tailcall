@@ -6,6 +6,7 @@ edition = "2021"
 [[bin]]
 name = "tailcall"
 path = "src/main.rs"
+bench = false
 
 [dependencies]
 anyhow = "1.0.75"
@@ -52,13 +53,14 @@ inquire = "0.6.2"
 log = "0.4.20"
 env_logger = "0.10.1"
 stripmargin = "0.1.1"
+lazy_static = "1.4"
 ring = "0.17.7"
 num_cpus = "1.16.0"
 hyper-rustls = "0.24.2"
 rustls = "0.21.9"
 rustls-pemfile = "1.0.4"
 fnv = "1.0.7"
-futures-channel = { version = "0.3.29" }
+futures-channel = { version = "0.3.13" }
 futures-timer = { version = "3.0.2" }
 futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
@@ -69,6 +71,8 @@ httpmock = "0.6"
 mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+iai-callgrind = "0.7.3"
+
 
 [profile.release]
 opt-level = 3
@@ -81,19 +85,56 @@ overflow-checks = false
 
 [features]
 unsafe-js = ["dep:mini-v8"]
+iai-callgrind = []
+criterion = []
+
+[lib]
+bench = false
 
 [[bench]]
 name = "json_like_bench"
 harness = false
+path = "benches/json_like_bench.rs"
+required-features = ["criterion"]
 
 [[bench]]
 name = "request_template_bench"
 harness = false
+path = "benches/request_template_bench.rs"
+required-features = ["criterion"]
 
 [[bench]]
 name = "data_loader_bench"
 harness = false
+path = "benches/data_loader_bench.rs"
+required-features = ["criterion"]
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
 harness = false
+path = "benches/impl_path_string_for_evaluation_context.rs"
+required-features = ["criterion"]
+
+[[bench]]
+name = "data_loader_bench_iai-callgrind"
+harness = false
+path = "benches/data_loader_bench_iai-callgrind.rs"
+required-features = ["iai-callgrind"]
+
+[[bench]]
+name = "json_like_bench_iai-callgrind"
+harness = false
+path = "benches/json_like_bench_iai-callgrind.rs"
+required-features = ["iai-callgrind"]
+
+[[bench]]
+name = "impl_path_string_for_evaluation_context_iai-callgrind"
+harness = false
+path = "benches/impl_path_string_for_evaluation_context_iai-callgrind.rs"
+required-features = ["iai-callgrind"]
+
+[[bench]]
+name = "request_template_bench_iai-callgrind"
+harness = false
+path = "benches/request_template_bench_iai-callgrind.rs"
+required-features = ["iai-callgrind"]
