@@ -13,8 +13,8 @@ use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
-use crate::graphql::{GraphqlDataLoader, GraphqlRequestTemplate};
-use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, HttpRequestTemplate, Response};
+use crate::graphql::{self, GraphqlDataLoader};
+use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -38,12 +38,12 @@ pub enum Context {
 #[derive(Clone, Debug)]
 pub enum Unsafe {
   Http {
-    req_template: HttpRequestTemplate,
+    req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
   },
   GraphQLEndpoint {
-    req_template: GraphqlRequestTemplate,
+    req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,

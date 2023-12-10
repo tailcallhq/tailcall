@@ -2,8 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::graphql::GraphqlRequestTemplate;
-use crate::http::HttpRequestTemplate;
+use crate::{graphql, http};
 
 #[derive(Clone)]
 pub struct Lambda<A> {
@@ -45,7 +44,7 @@ impl Lambda<serde_json::Value> {
     Lambda::new(Expression::Context(Context::Path(path)))
   }
 
-  pub fn from_request_template(req_template: HttpRequestTemplate) -> Lambda<serde_json::Value> {
+  pub fn from_request_template(req_template: http::RequestTemplate) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::Http {
       req_template,
       group_by: None,
@@ -54,7 +53,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_graphql_request_template(
-    req_template: GraphqlRequestTemplate,
+    req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
   ) -> Lambda<serde_json::Value> {
@@ -87,7 +86,7 @@ mod tests {
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
-  use crate::http::{HttpRequestTemplate, RequestContext};
+  use crate::http::{RequestContext, RequestTemplate};
   use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
 
   impl<B> Lambda<B>
@@ -129,7 +128,7 @@ mod tests {
         .json_body(json!({ "name": "Hans" }));
     });
 
-    let endpoint = HttpRequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
+    let endpoint = RequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
     let result = Lambda::from_request_template(endpoint).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")

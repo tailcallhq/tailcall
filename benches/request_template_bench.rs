@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
-use tailcall::http::HttpRequestTemplate;
+use tailcall::http::RequestTemplate;
 use tailcall::path::PathString;
 
 #[derive(Setters)]
@@ -31,13 +31,13 @@ impl HasHeaders for Context {
   }
 }
 fn benchmark_to_request(c: &mut Criterion) {
-  let tmpl_mustache = HttpRequestTemplate::try_from(Endpoint::new(
+  let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(
     "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string(),
   ))
   .unwrap();
 
   let tmpl_literal =
-    HttpRequestTemplate::try_from(Endpoint::new("http://localhost:3000/foo?a=bar&b=foo&c=baz".to_string())).unwrap();
+    RequestTemplate::try_from(Endpoint::new("http://localhost:3000/foo?a=bar&b=foo&c=baz".to_string())).unwrap();
 
   let ctx = Context::default().value(json!({
     "args": {

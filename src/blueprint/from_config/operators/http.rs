@@ -3,7 +3,7 @@ use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
-use crate::http::{HttpRequestTemplate, Method};
+use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -156,7 +156,7 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
           let output_schema = to_json_schema_for_field(field, config);
           let input_schema = to_json_schema_for_args(&field.args, config);
 
-          HttpRequestTemplate::try_from(
+          RequestTemplate::try_from(
             Endpoint::new(base_url.to_string())
               .method(http.method.clone())
               .query(query)
