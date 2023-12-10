@@ -5,7 +5,7 @@ use clap::Parser;
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
-use stripmargin::StripMargin;
+
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
