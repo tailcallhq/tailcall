@@ -180,7 +180,7 @@ jobs:
         run: |
           git fetch
           git checkout ${{ steps.determine_base_commit.outputs.base_commit }}
-          
+
       - name: Run Criterion on main
         run: |
           cargo bench --features criterion -- --save-baseline main_branch
@@ -222,7 +222,7 @@ jobs:
       - name: Determine Base Branch Commit
         id: determine_base_commit
         run: echo "::set-output name=base_commit::$(git rev-parse ${{ github.event.before }})"
-        
+
       - name: Run iai-callgrind on branch
         run: |
           echo -n > benches/iai-callgrind/new_benchmark.txt
@@ -232,7 +232,7 @@ jobs:
         run: |
           git fetch
           git checkout ${{ steps.determine_base_commit.outputs.base_commit }}
-          
+
       - name: Run iai-callgrind on main
         run: |
           echo -n > benches/iai-callgrind/old_benchmark.txt
