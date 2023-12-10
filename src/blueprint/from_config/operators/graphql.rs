@@ -1,6 +1,6 @@
 use crate::blueprint::FieldDefinition;
 use crate::config::{self, Config, Field, GraphQLOperationType};
-use crate::graphql_request_template::GraphqlRequestTemplate;
+use crate::graphql::GraphqlRequestTemplate;
 use crate::helpers;
 use crate::lambda::Lambda;
 use crate::try_fold::TryFold;

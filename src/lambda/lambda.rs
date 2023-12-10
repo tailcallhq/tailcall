@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::request_template::RequestTemplate;
+use crate::graphql::GraphqlRequestTemplate;
+use crate::http::RequestTemplate;
 
 #[derive(Clone)]
 pub struct Lambda<A> {
@@ -87,9 +87,8 @@ mod tests {
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
-  use crate::http::RequestContext;
+  use crate::http::{RequestContext, RequestTemplate};
   use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
-  use crate::request_template::RequestTemplate;
 
   impl<B> Lambda<B>
   where

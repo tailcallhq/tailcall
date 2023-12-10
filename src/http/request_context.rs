@@ -4,12 +4,11 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{
-  DataLoaderRequest, DefaultHttpClient, GraphqlDataLoader, HttpClient, HttpDataLoader, Response, ServerContext,
-};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
-use crate::graphql::dataloader::DataLoader;
+use crate::dataloader::DataLoader;
+use crate::graphql::GraphqlDataLoader;
+use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
 
 #[derive(Setters)]
 pub struct RequestContext {

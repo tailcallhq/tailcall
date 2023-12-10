@@ -5,8 +5,9 @@ use async_graphql::dynamic;
 use super::{DataLoaderRequest, HttpClient};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
-use crate::graphql::dataloader::DataLoader;
-use crate::http::{GraphqlDataLoader, HttpDataLoader};
+use crate::dataloader::DataLoader;
+use crate::graphql::GraphqlDataLoader;
+use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
 pub struct ServerContext {

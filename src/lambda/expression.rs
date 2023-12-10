@@ -12,14 +12,13 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
-use crate::graphql::dataloader::{DataLoader, Loader};
-use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, GraphqlDataLoader, HttpDataLoader, Response};
+use crate::dataloader::{DataLoader, Loader};
+use crate::graphql::{GraphqlDataLoader, GraphqlRequestTemplate};
+use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, RequestTemplate, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
-use crate::request_template::RequestTemplate;
 
 #[derive(Clone, Debug)]
 pub enum Expression {

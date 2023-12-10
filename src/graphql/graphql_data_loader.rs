@@ -7,7 +7,7 @@ use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
-use crate::graphql::dataloader::{DataLoader, Loader};
+use crate::dataloader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
 pub struct GraphqlDataLoader {

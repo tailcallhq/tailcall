@@ -1,5 +1,5 @@
 mod cache;
-mod dataloader;
+mod dataloader_impl;
 mod traits;
 
 use std::borrow::Cow;
@@ -8,7 +8,7 @@ use std::hash::Hash;
 use std::sync::Mutex;
 
 pub use cache::{HashMapCache, LruCache, NoCache};
-pub use dataloader::DataLoader;
+pub use dataloader_impl::DataLoader;
 use futures_channel::oneshot;
 #[cfg(feature = "tracing")]
 use tracing::{info_span, instrument, Instrument};
@@ -95,7 +95,7 @@ mod tests {
   use std::sync::Arc;
   use std::time::Duration;
 
-  use dataloader::DataLoader;
+  use dataloader_impl::DataLoader;
   use fnv::FnvBuildHasher;
 
   use super::*;

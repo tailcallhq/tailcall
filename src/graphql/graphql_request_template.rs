@@ -127,7 +127,7 @@ mod tests {
   use serde_json::json;
 
   use crate::config::GraphQLOperationType;
-  use crate::graphql_request_template::GraphqlRequestTemplate;
+  use crate::graphql::GraphqlRequestTemplate;
   use crate::has_headers::HasHeaders;
   use crate::json::JsonLike;
   use crate::lambda::GraphQLOperationContext;

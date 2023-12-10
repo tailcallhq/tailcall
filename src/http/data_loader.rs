@@ -8,7 +8,7 @@ use async_graphql_value::ConstValue;
 
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
-use crate::graphql::dataloader::{DataLoader, Loader};
+use crate::dataloader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
