@@ -4,8 +4,8 @@ use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main}
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
+use tailcall::http::RequestTemplate;
 use tailcall::path::PathString;
-use tailcall::request_template::RequestTemplate;
 
 #[derive(Setters)]
 struct Context {

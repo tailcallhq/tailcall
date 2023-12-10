@@ -14,7 +14,7 @@ use tracing::{info_span, instrument, Instrument};
 #[cfg(feature = "tracing")]
 use tracinglib as tracing;
 
-pub use super::cache::{HashMapCache, NoCache};
+pub use super::cache::NoCache;
 pub use super::factory::CacheFactory;
 pub use super::loader::Loader;
 pub use super::storage::CacheStorage;
@@ -363,6 +363,7 @@ mod tests {
   use fnv::FnvBuildHasher;
 
   use super::*;
+  use crate::data_loader::HashMapCache;
 
   struct MyLoader;
 
