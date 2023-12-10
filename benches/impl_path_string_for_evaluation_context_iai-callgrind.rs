@@ -1,10 +1,9 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use benchmark::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
+use iai_callgrind::{library_benchmark, library_benchmark_group, main};
+use tailcall::benchmark::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use tailcall::http::RequestContext;
 use tailcall::lambda::EvaluationContext;
 use tailcall::path_string::PathString;
 
-// constant input values for benchmarking
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
   &["value", "root"],
@@ -27,12 +26,9 @@ const HEADERS_VALUE: &[&[&str]] = &[&["headers", "existing"], &["headers", "miss
 
 const VARS_VALUE: &[&[&str]] = &[&["vars", "existing"], &["vars", "missing"]];
 
-fn to_bench_id(input: &[&str]) -> BenchmarkId {
-  BenchmarkId::new("input", input.join("."))
-}
-
 // Define the benchmark function
-fn bench_main(c: &mut Criterion) {
+#[library_benchmark]
+fn bench_main() {
   // Initialize the request context with test headers
   let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
@@ -45,7 +41,7 @@ fn bench_main(c: &mut Criterion) {
   // Run the assert_test function to ensure correctness of the EvaluationContext
   assert_test(&eval_ctx);
 
-  // Iterate over all input values and add benchmarks to Criterion
+  // Iterate over all input values and call path_string method
   let all_inputs = INPUT_VALUE
     .iter()
     .chain(ARGS_VALUE)
@@ -53,12 +49,15 @@ fn bench_main(c: &mut Criterion) {
     .chain(VARS_VALUE);
 
   for input in all_inputs {
-    c.bench_with_input(to_bench_id(input), input, |b, input| {
-      b.iter(|| eval_ctx.path_string(input));
-    });
+    let _result = eval_ctx.path_string(input);
   }
 }
 
-// Define the criterion group
-criterion_group!(benches, bench_main);
-criterion_main!(benches);
+// Define the benchmark group
+library_benchmark_group!(
+    name = bench;
+    benchmarks = bench_main
+);
+
+// Define the main function for IAI-callgrind
+main!(library_benchmark_groups = bench);

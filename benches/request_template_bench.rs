@@ -1,56 +1,26 @@
-use std::borrow::Cow;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use derive_setters::Setters;
-use hyper::HeaderMap;
 use serde_json::json;
-use tailcall::endpoint::Endpoint;
-use tailcall::has_headers::HasHeaders;
-use tailcall::http::RequestTemplate;
-use tailcall::path::PathString;
+use benchmark::{create_request_templates, Context};
 
-#[derive(Setters)]
-struct Context {
-  pub value: serde_json::Value,
-  pub headers: HeaderMap,
-}
-
-impl Default for Context {
-  fn default() -> Self {
-    Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
-  }
-}
-impl PathString for Context {
-  fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-    self.value.path_string(parts)
-  }
-}
-impl HasHeaders for Context {
-  fn headers(&self) -> &HeaderMap {
-    &self.headers
-  }
-}
+// Benchmark function to test the performance of to_request method
 fn benchmark_to_request(c: &mut Criterion) {
-  let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(
-    "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string(),
-  ))
-  .unwrap();
-
-  let tmpl_literal =
-    RequestTemplate::try_from(Endpoint::new("http://localhost:3000/foo?a=bar&b=foo&c=baz".to_string())).unwrap();
-
+  // request templates
+  let (tmpl_literal, tmpl_mustache) = create_request_templates();
+  // a context with a JSON value
   let ctx = Context::default().value(json!({
-    "args": {
-      "b": "foo"
-    }
+      "args": {
+          "b": "foo"
+      }
   }));
 
+  // Benchmark to_request method for a template with mustache literal expressions
   c.bench_function("with_mustache_literal", |b| {
     b.iter(|| {
       black_box(tmpl_literal.to_request(&ctx).unwrap());
     })
   });
 
+  // Benchmark to_request method for a template with mustache expressions
   c.bench_function("with_mustache_expressions", |b| {
     b.iter(|| {
       black_box(tmpl_mustache.to_request(&ctx).unwrap());
@@ -58,9 +28,12 @@ fn benchmark_to_request(c: &mut Criterion) {
   });
 }
 
+// criterion group for the benchmark
 criterion_group! {
     name = benches;
     config = Criterion::default();
     targets = benchmark_to_request
 }
+
+// Run the benchmarks
 criterion_main!(benches);
