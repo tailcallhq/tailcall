@@ -172,7 +172,7 @@ impl HttpSpec {
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
-    let server_context = ServerContext::new(blueprint, client);
+    let server_context = ServerContext::new(blueprint, client, vec![]);
     Arc::new(server_context)
   }
 }
@@ -342,8 +342,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_request::<GraphQLBatchRequest>(req, server_context).await
+    handle_request::<GraphQLBatchRequest>(req, server_context, false).await
   } else {
-    handle_request::<GraphQLRequest>(req, server_context).await
+    handle_request::<GraphQLRequest>(req, server_context, false).await
   }
 }

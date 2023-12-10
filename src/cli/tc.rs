@@ -19,7 +19,7 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level } => {
+    Command::Start { file_path, log_level, ttl } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
@@ -31,7 +31,7 @@ pub fn run() -> Result<()> {
         .enable_all()
         .build()?;
       let server = Server::new(config);
-      runtime.block_on(server.start())?;
+      runtime.block_on(server.start(ttl, file_path))?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

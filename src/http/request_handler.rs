@@ -98,7 +98,11 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   state: Arc<ServerContext>,
+  update_schema: bool,
 ) -> Result<Response<Body>> {
+  if update_schema {
+    state.update_schema().await;
+  }
   match *req.method() {
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),

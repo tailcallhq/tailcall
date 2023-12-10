@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
@@ -8,13 +9,25 @@ use super::{handle_request, log_launch};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
-pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<oneshot::Sender<()>>) -> anyhow::Result<()> {
+pub async fn start_http_1(
+  sc: Arc<ServerConfig>,
+  server_up_sender: Option<oneshot::Sender<()>>,
+  ttl: Option<u64>,
+) -> anyhow::Result<()> {
   let addr = sc.addr();
+  let ttl = ttl.unwrap_or_default();
+  let mut inst = Instant::now() + Duration::from_secs(ttl);
+
   let make_svc_single_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        let now = Instant::now();
+        let update_schema = ttl > 0 && (now - inst).as_secs() > ttl;
+        if update_schema {
+          inst = now;
+        }
+        handle_request::<GraphQLRequest>(req, state.server_context.clone(), update_schema)
       }))
     }
   });
@@ -23,7 +36,12 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        let now = Instant::now();
+        let update_schema = ttl > 0 && (now - inst).as_secs() > ttl;
+        if update_schema {
+          inst = now;
+        }
+        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone(), update_schema)
       }))
     }
   });

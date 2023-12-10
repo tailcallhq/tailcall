@@ -28,13 +28,13 @@ impl Server {
     rx
   }
 
-  pub async fn start(self) -> Result<()> {
+  pub async fn start(self, ttl: Option<u64>, file_paths: Vec<String>) -> Result<()> {
     let blueprint = Blueprint::try_from(&self.config).map_err(CLIError::from)?;
-    let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
+    let server_config = Arc::new(ServerConfig::new(blueprint.clone(), file_paths));
 
     match blueprint.server.http.clone() {
-      Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key, self.server_up_sender).await,
-      Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
+      Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key, self.server_up_sender, ttl).await,
+      Http::HTTP1 => start_http_1(server_config, self.server_up_sender, ttl).await,
     }
   }
 }

@@ -9,7 +9,7 @@ async fn test_server(configs: &[&str], url: &str) {
   let server_up_receiver = server.server_up_receiver();
 
   tokio::spawn(async move {
-    server.start().await.unwrap();
+    server.start(None, vec![]).await.unwrap();
   });
 
   server_up_receiver.await.expect("Server did not start up correctly");

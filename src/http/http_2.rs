@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 use std::io::BufReader;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use hyper::server::conn::AddrIncoming;
@@ -52,6 +53,7 @@ pub async fn start_http_2(
   cert: String,
   key: String,
   server_up_sender: Option<oneshot::Sender<()>>,
+  ttl: Option<u64>,
 ) -> anyhow::Result<()> {
   let addr = sc.addr();
   let cert_chain = load_cert(&cert).await?;
@@ -61,11 +63,20 @@ pub async fn start_http_2(
     .with_single_cert(cert_chain, key)?
     .with_http2_alpn()
     .with_incoming(incoming);
+
+  let ttl = ttl.unwrap_or_default();
+  let mut inst = Instant::now() + Duration::from_secs(ttl);
+
   let make_svc_single_req = make_service_fn(|_conn| {
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        let now = Instant::now();
+        let update_schema = ttl > 0 && (now - inst).as_secs() > ttl;
+        if update_schema {
+          inst = now;
+        }
+        handle_request::<GraphQLRequest>(req, state.server_context.clone(), update_schema)
       }))
     }
   });
@@ -74,7 +85,12 @@ pub async fn start_http_2(
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        let now = Instant::now();
+        let update_schema = ttl > 0 && (now - inst).as_secs() > ttl;
+        if update_schema {
+          inst = now;
+        }
+        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone(), update_schema)
       }))
     }
   });

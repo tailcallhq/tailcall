@@ -299,7 +299,7 @@ async fn test_execution() -> std::io::Result<()> {
           .to_result()
           .unwrap();
         let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-        let server_ctx = ServerContext::new(blueprint, client);
+        let server_ctx = ServerContext::new(blueprint, client, vec![]);
         let schema = &*server_ctx.schema.read().await;
 
         for q in spec.test_queries {

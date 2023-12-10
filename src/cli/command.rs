@@ -27,9 +27,9 @@ pub enum Command {
     file_path: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
-    /// The interval after which the configuration files that are served over HTTP will be reloaded
+    /// The Time To Live for configuration files fetched from file paths before automatic reload
     #[arg(long)]
-    poll: Option<u64>,
+    ttl: Option<u64>,
   },
 
   /// Validate a composition spec

@@ -13,9 +13,9 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-  pub fn new(blueprint: Blueprint) -> Self {
+  pub fn new(blueprint: Blueprint, file_paths: Vec<String>) -> Self {
     let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client)), blueprint }
+    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client, file_paths)), blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {
