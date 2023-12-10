@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use async_graphql::{Name, ServerError, Value};
+use async_graphql::context::SelectionField;
+use async_graphql::{Name, Value};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
@@ -88,14 +89,11 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
     Some(&TEST_ARGS)
   }
 
-  // Implement the missing methods
-  fn field(&'a self) -> Option<async_graphql::SelectionField<'a>> {
-    todo!() // You need to provide the actual implementation here
+  fn field(&'a self) -> Option<SelectionField> {
+    None
   }
 
-  fn add_error(&'a self, _: ServerError) {
-    todo!() // You need to provide the actual implementation here
-  }
+  fn add_error(&'a self, _: async_graphql::ServerError) {}
 }
 
 // assert that everything was set up correctly for the benchmark
