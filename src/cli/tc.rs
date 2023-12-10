@@ -55,50 +55,23 @@ pub fn run() -> Result<()> {
 
 pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+  let tailcallrc_path = format!("{}/.tailcallrc.graphql", file_path);
 
-  let ans = Confirm::new("Do you want to add a file to the project?")
-    .with_default(false)
-    .prompt();
+  if fs::metadata(&tailcallrc_path).is_ok() {
+    let ans = Confirm::new(".tailcallrc.graphql file already exists. Do you want to overwrite it?")
+      .with_default(false)
+      .prompt();
 
-  match ans {
-    Ok(true) => {
-      let file_name = inquire::Text::new("Enter the file name:")
-        .with_default(".graphql")
-        .prompt()
-        .unwrap_or_else(|_| String::from(".graphql"));
-
-      let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
-
-      let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
-        .with_default(false)
-        .prompt();
-
-      match confirm {
-        Ok(true) => {
-          fs::write(format!("{}/{}", file_path, &file_name), "")?;
-
-          let graphqlrc = format!(
-            r#"|schema:
-               |- './{}'
-               |- './.tailcallrc.graphql'
-          "#,
-            &file_name
-          )
-          .strip_margin();
-          fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
-        }
-        Ok(false) => (),
-        Err(e) => return Err(e.into()),
-      }
+    match ans {
+      Ok(true) => (),
+      Ok(false) => return Ok(()),
+      Err(e) => return Err(e.into()),
     }
-    Ok(false) => (),
-    Err(e) => return Err(e.into()),
+  } else {
+    Fmt::display(Fmt::heading(&".tailcallrc.graphql file created.".to_string()));
   }
 
-  fs::write(
-    format!("{}/.tailcallrc.graphql", file_path),
-    tailcallrc.as_ref().as_bytes(),
-  )?;
+  fs::write(tailcallrc_path, tailcallrc.as_ref().as_bytes())?;
   Ok(())
 }
 
