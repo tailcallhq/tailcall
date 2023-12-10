@@ -16,7 +16,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v8
+      - uses: actions/stale@v9
         with:
           stale-issue-message: |
             **Action required:** Issue inactive for ${{ env.DAYS_BEFORE_ISSUE_STALE }} days.
