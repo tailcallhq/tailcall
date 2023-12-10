@@ -168,6 +168,10 @@ jobs:
       - name: Install Critcmp
         run: cargo install critcmp
 
+      - name: Determine Base Branch Commit
+        id: determine_base_commit
+        run: echo "::set-output name=base_commit::$(git rev-parse ${{ github.event.before }})"
+
       - name: Run Criterion on branch
         run: |
           cargo bench --features criterion -- --save-baseline new_branch
@@ -175,8 +179,8 @@ jobs:
       - name: Switch to main
         run: |
           git fetch
-          git checkout main
-
+          git checkout ${{ steps.determine_base_commit.outputs.base_commit }}
+          
       - name: Run Criterion on main
         run: |
           cargo bench --features criterion -- --save-baseline main_branch
@@ -215,6 +219,10 @@ jobs:
       - name: Install Valgrind
         run: sudo apt-get update && sudo apt-get install valgrind
 
+      - name: Determine Base Branch Commit
+        id: determine_base_commit
+        run: echo "::set-output name=base_commit::$(git rev-parse ${{ github.event.before }})"
+        
       - name: Run iai-callgrind on branch
         run: |
           echo -n > benches/iai-callgrind/new_benchmark.txt
@@ -223,8 +231,8 @@ jobs:
       - name: Switch to main
         run: |
           git fetch
-          git checkout main
-
+          git checkout ${{ steps.determine_base_commit.outputs.base_commit }}
+          
       - name: Run iai-callgrind on main
         run: |
           echo -n > benches/iai-callgrind/old_benchmark.txt
