@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
-use crate::dataloader::DataLoader;
+use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
 

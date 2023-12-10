@@ -1,7 +1,3 @@
-mod cache;
-mod factory;
-mod loader;
-mod storage;
 use std::any::TypeId;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -10,17 +6,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-pub use cache::{HashMapCache, LruCache, NoCache};
-pub use factory::CacheFactory;
 use futures_channel::oneshot;
 use futures_timer::Delay;
 use futures_util::future::BoxFuture;
-pub use loader::Loader;
-pub use storage::CacheStorage;
 #[cfg(feature = "tracing")]
 use tracing::{info_span, instrument, Instrument};
 #[cfg(feature = "tracing")]
 use tracinglib as tracing;
+
+pub use super::cache::{HashMapCache, NoCache};
+pub use super::factory::CacheFactory;
+pub use super::loader::Loader;
+pub use super::storage::CacheStorage;
 
 /// Data loader.
 ///
