@@ -160,7 +160,7 @@ jobs:
   Criterion:
     name: Criterion Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'benchmark')
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
