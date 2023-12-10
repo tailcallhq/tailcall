@@ -6,13 +6,12 @@ use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
-use protobuf::reflect::FileDescriptor;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::grpc::protobuf::{ProtobufFile, ProtobufOperation, ProtobufService};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -89,48 +88,27 @@ message NewsList {
   // For now we need to write files to the disk.
   fs::write(&tempfile, proto).unwrap();
 
-  // Parse text `.proto` file to `FileDescriptorProto` message.
-  // Note this API is not stable and subject to change.
-  // But binary protos can always be generated manually with `protoc` command.
-  let file_descriptor_protos = protobuf_parse::Parser::new()
-    .pure()
-    .includes(&[temp_dir.path().to_path_buf()])
-    .input(&tempfile)
-    .parse_and_typecheck()?;
-
-  println!("{:?}", file_descriptor_protos.file_descriptors.len());
-
-  let file_descriptor_proto = file_descriptor_protos
-    .file_descriptors
-    .into_iter()
-    .next()
-    .expect("file descriptor proto");
-  let file_descriptor = FileDescriptor::new_dynamic(file_descriptor_proto, &[])?;
-
-  // Find the message descriptor for 'NewsList'.
-  let news_list_descriptor = file_descriptor
-    .message_by_package_relative_name("NewsList") // Todo: NewsList Name should not be hardcoded come from config //
-    .expect("message descriptor");
+  let file = ProtobufFile::new(&tempfile)?;
+  let service = ProtobufService::from_file(&file, "NewsService")?;
+  let operation = ProtobufOperation::new(&service, "GetNews")?;
 
   let mut headers = HeaderMap::new();
-  #[derive(Serialize, Default)]
-  struct Empty {} // Todo: Empty should not be hardcoded come from config //
   headers.insert(
     reqwest::header::CONTENT_TYPE,
     reqwest::header::HeaderValue::from_static("application/grpc"),
   );
 
   let response = client
-    .get("http://localhost:50051/NewsService/GetAllNews")
+    .get("http://localhost:50051/NewsService/GetNews")
     .headers(headers)
-    .body(serde_json::to_vec(&Empty {})?)
+    .body(operation.convert_input(r#"{ "id": "1" }"#)?)
     .send()
     .await?;
   if response.status().is_success() {
     let bytes = response.bytes().await?;
-    let news_list_message = news_list_descriptor.parse_from_bytes(&bytes[5..])?;
-    let news_list_json = protobuf_json_mapping::print_to_string(&*news_list_message)?; // Todo:  This should happen in graphql layer
-    Ok(Response::new(Body::from(news_list_json)))
+    Ok(Response::new(Body::from(serde_json::to_string(
+      &operation.convert_output(&bytes)?,
+    )?)))
   } else {
     todo!()
   }
@@ -182,7 +160,15 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::GET if req.uri().path() == "/test" => test(req, state.as_ref()).await,
+    hyper::Method::GET if req.uri().path() == "/test" => {
+      let r = test(req, state.as_ref()).await;
+
+      if r.is_err() {
+        dbg!(&r);
+      }
+
+      r
+    }
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     _ => not_found(),
