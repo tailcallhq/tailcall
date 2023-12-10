@@ -23,7 +23,7 @@ use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
 pub use request_handler::handle_request;
-pub use request_template::RequestTemplate;
+pub use request_template::HttpRequestTemplate;
 pub use response::*;
 pub use server::Server;
 pub use server_context::ServerContext;

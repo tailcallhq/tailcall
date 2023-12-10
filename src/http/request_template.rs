@@ -15,7 +15,7 @@ use crate::path::PathString;
 /// When `to_request` is called, all mustache templates are evaluated.
 /// To call `to_request` we need to provide a context.
 #[derive(Setters, Debug, Clone)]
-pub struct RequestTemplate {
+pub struct HttpRequestTemplate {
   pub root_url: Mustache,
   pub query: Vec<(String, Mustache)>,
   pub method: reqwest::Method,
@@ -24,7 +24,7 @@ pub struct RequestTemplate {
   pub endpoint: Endpoint,
 }
 
-impl RequestTemplate {
+impl HttpRequestTemplate {
   /// Creates a URL for the context
   /// Fills in all the mustache templates with required values.
   fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
@@ -137,7 +137,7 @@ impl RequestTemplate {
   }
 }
 
-impl TryFrom<Endpoint> for RequestTemplate {
+impl TryFrom<Endpoint> for HttpRequestTemplate {
   type Error = anyhow::Error;
   fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
     let path = Mustache::parse(endpoint.path.as_str())?;
@@ -172,7 +172,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::http::RequestTemplate;
+  use crate::http::HttpRequestTemplate;
   use crate::mustache::Mustache;
 
   #[derive(Setters)]
@@ -198,7 +198,7 @@ mod tests {
   }
   #[test]
   fn test_url() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000/").unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
@@ -206,7 +206,7 @@ mod tests {
 
   #[test]
   fn test_url_path() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
@@ -214,7 +214,7 @@ mod tests {
 
   #[test]
   fn test_url_path_template() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}").unwrap();
     let ctx = Context::default().value(json!({
       "bar": {
         "baz": "bar"
@@ -226,7 +226,7 @@ mod tests {
   }
   #[test]
   fn test_url_path_template_multi() {
-    let tmpl = RequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}").unwrap();
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000/foo/{{bar.baz}}/boozes/{{bar.booz}}").unwrap();
     let ctx = Context::default().value(json!({
       "bar": {
         "baz": "bar",
@@ -243,7 +243,7 @@ mod tests {
       ("bar".to_string(), Mustache::parse("1").unwrap()),
       ("baz".to_string(), Mustache::parse("2").unwrap()),
     ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().query(query);
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000").unwrap().query(query);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/?foo=0&bar=1&baz=2");
@@ -255,7 +255,7 @@ mod tests {
       ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
       ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
     ];
-    let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap().query(query);
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000/").unwrap().query(query);
     let ctx = Context::default().value(json!({
       "bar": {
         "id": 1
@@ -275,7 +275,9 @@ mod tests {
       ("bar".to_string(), Mustache::parse("bar").unwrap()),
       ("baz".to_string(), Mustache::parse("baz").unwrap()),
     ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .headers(headers);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.headers().get("foo").unwrap(), "foo");
@@ -289,7 +291,9 @@ mod tests {
       ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
       ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
     ];
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .headers(headers);
     let ctx = Context::default().value(json!({
       "bar": {
         "id": 1
@@ -305,7 +309,7 @@ mod tests {
   }
   #[test]
   fn test_method() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000")
       .unwrap()
       .method(reqwest::Method::POST);
     let ctx = Context::default();
@@ -314,7 +318,7 @@ mod tests {
   }
   #[test]
   fn test_body() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000")
       .unwrap()
       .body(Some(Mustache::parse("foo").unwrap()));
     let ctx = Context::default();
@@ -330,7 +334,7 @@ mod tests {
   }
   #[test]
   fn test_body_template() {
-    let tmpl = RequestTemplate::new("http://localhost:3000")
+    let tmpl = HttpRequestTemplate::new("http://localhost:3000")
       .unwrap()
       .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
     let ctx = Context::default().value(json!({
@@ -356,7 +360,7 @@ mod tests {
       .method(crate::http::Method::POST)
       .headers(headers)
       .body(Some("foo".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.method(), reqwest::Method::POST);
@@ -374,7 +378,7 @@ mod tests {
       .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
       .headers(headers)
       .body(Some("{{foo.bar}}".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default().value(json!({
       "foo": {
         "bar": "baz",
@@ -392,7 +396,7 @@ mod tests {
   #[test]
   fn test_from_endpoint_template_null_value() {
     let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/");
@@ -404,7 +408,7 @@ mod tests {
       ("b".to_string(), "1".to_string()),
       ("c".to_string(), "{{args.c}}".to_string()),
     ]);
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
@@ -415,7 +419,7 @@ mod tests {
     let endpoint = crate::endpoint::Endpoint::new(
       "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
     );
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default().value(json!({
       "args": {
         "b": "foo",
@@ -435,7 +439,7 @@ mod tests {
       ("e".to_string(), "{{args.e}}".to_string()),
       ("f".to_string(), "{{args.f}}".to_string()),
     ]);
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let ctx = Context::default().value(json!({
       "args": {
         "b": "foo",
@@ -449,7 +453,7 @@ mod tests {
   #[test]
   fn test_headers_forward() {
     let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+    let tmpl = HttpRequestTemplate::try_from(endpoint).unwrap();
     let mut headers = HeaderMap::new();
     headers.insert("baz", "qux".parse().unwrap());
     let ctx = Context::default().headers(headers);

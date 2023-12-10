@@ -1,7 +1,7 @@
 mod cache;
 mod factory;
-mod storage;
 mod loader;
+mod storage;
 use std::any::TypeId;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -12,11 +12,11 @@ use std::time::Duration;
 
 pub use cache::{HashMapCache, LruCache, NoCache};
 pub use factory::CacheFactory;
-pub use storage::CacheStorage;
 use futures_channel::oneshot;
 use futures_timer::Delay;
 use futures_util::future::BoxFuture;
 pub use loader::Loader;
+pub use storage::CacheStorage;
 #[cfg(feature = "tracing")]
 use tracing::{info_span, instrument, Instrument};
 #[cfg(feature = "tracing")]
