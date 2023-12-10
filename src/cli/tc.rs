@@ -11,29 +11,27 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::config_poll::ConfigLoader;
 use crate::config::Config;
-use crate::http::start_server;
+use crate::http::Server;
 use crate::print_schema;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level, poll } => {
+    Command::Start { file_path, log_level } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      let cl = poll.map(|poll| ConfigLoader::init(file_path, poll));
-
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
         .enable_all()
         .build()?;
-      runtime.block_on(start_server(config, cl))?;
+      let server = Server::new(config);
+      runtime.block_on(server.start())?;
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {

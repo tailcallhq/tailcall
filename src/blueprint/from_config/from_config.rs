@@ -43,7 +43,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   for def in blueprint.definitions.iter() {
     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
       for field in object_type_definition.fields.iter() {
-        if let Some(Expression::Unsafe(Unsafe::Http(_request_template, Some(_), _dl))) = field.resolver.clone() {
+        if let Some(Expression::Unsafe(Unsafe::Http { group_by: Some(_), .. })) = field.resolver.clone() {
           blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
           return blueprint;
         }
