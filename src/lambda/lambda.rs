@@ -2,8 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::graphql_request_template::GraphqlRequestTemplate;
-use crate::request_template::RequestTemplate;
+use crate::{graphql, http};
 
 #[derive(Clone)]
 pub struct Lambda<A> {
@@ -45,7 +44,7 @@ impl Lambda<serde_json::Value> {
     Lambda::new(Expression::Context(Context::Path(path)))
   }
 
-  pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
+  pub fn from_request_template(req_template: http::RequestTemplate) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::Http {
       req_template,
       group_by: None,
@@ -54,7 +53,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_graphql_request_template(
-    req_template: GraphqlRequestTemplate,
+    req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
   ) -> Lambda<serde_json::Value> {
@@ -87,9 +86,8 @@ mod tests {
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
-  use crate::http::RequestContext;
+  use crate::http::{RequestContext, RequestTemplate};
   use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
-  use crate::request_template::RequestTemplate;
 
   impl<B> Lambda<B>
   where

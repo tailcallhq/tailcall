@@ -172,8 +172,8 @@ mod tests {
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
+  use crate::http::RequestTemplate;
   use crate::mustache::Mustache;
-  use crate::request_template::RequestTemplate;
 
   #[derive(Setters)]
   struct Context {

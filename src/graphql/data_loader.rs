@@ -4,10 +4,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_graphql::async_trait;
-use async_graphql::dataloader::{DataLoader, Loader, NoCache};
 use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
+use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
 pub struct GraphqlDataLoader {
@@ -20,7 +20,7 @@ impl GraphqlDataLoader {
     GraphqlDataLoader { client, batch }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<GraphqlDataLoader, NoCache> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
