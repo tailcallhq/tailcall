@@ -84,9 +84,6 @@ fn log_launch_and_open_browser(sc: &ServerConfig) {
 fn open_browser(graphiql_url: String) {
   let opened = webbrowser::open_browser(webbrowser::Browser::Default, graphiql_url.as_str());
 
-  if opened.is_ok() {
-    log::info!("{} opened on your browser", graphiql_url);
-  }
 }
 
 #[cfg(test)]
