@@ -88,7 +88,7 @@ fn open_browser(graphiql_url: String) {
 
   match opened {
     Ok(_) => log::info!("{} opened on your browser", graphiql_url),
-    Err(e) => log::error!("Failed to open default browser, error: {}", e)
+    Err(e) => log::error!("Failed to open default browser, error: {}", e),
   };
 }
 
