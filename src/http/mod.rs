@@ -77,8 +77,6 @@ fn log_launch_and_open_browser(sc: &ServerConfig) {
     let url = sc.graphiql_url();
     log::info!("🌍 Playground: {}", url);
 
-    log::info!("🌍 Opening playground on your default browser");
-
     open_browser(url);
   }
 }
@@ -86,10 +84,9 @@ fn log_launch_and_open_browser(sc: &ServerConfig) {
 fn open_browser(graphiql_url: String) {
   let opened = webbrowser::open_browser(webbrowser::Browser::Default, graphiql_url.as_str());
 
-  match opened {
-    Ok(_) => log::info!("{} opened on your browser", graphiql_url),
-    Err(e) => log::error!("Failed to open default browser, error: {}", e),
-  };
+  if opened.is_ok() {
+    log::info!("{} opened on your browser", graphiql_url);
+  }
 }
 
 #[cfg(test)]
