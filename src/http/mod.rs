@@ -77,9 +77,7 @@ fn log_launch_and_open_browser(sc: &ServerConfig) {
     let url = sc.graphiql_url();
     log::info!("🌍 Playground: {}", url);
 
-    if webbrowser::open(url.as_str()).is_ok() {
-      log::info!("{} opened on your browser", url);
-    }
+    let _ = webbrowser::open(url.as_str());
   }
 }
 
