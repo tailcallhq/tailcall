@@ -78,6 +78,19 @@ fn log_launch(sc: &ServerConfig) {
   }
 }
 
+fn open_browser(graphiql_url: String) {
+  let opened = webbrowser::open_browser(webbrowser::Browser::Default, graphiql_url.as_str());
+
+  match opened {
+    Ok(_) => log::info!("{} opened on your browser", graphiql_url),
+    Err(e) => {
+      println!("error: {:?}", e);
+
+      log::error!("Failed to open default browser, error: {}", e);
+    }
+  };
+}
+
 #[cfg(test)]
 mod tests {
 
