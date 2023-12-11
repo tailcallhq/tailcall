@@ -124,7 +124,7 @@ mod tests {
 
   use super::{ProtobufFile, ProtobufOperation, ProtobufService};
 
-  const TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
+  static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_dir = root_dir.join(file!());
 
