@@ -3,12 +3,13 @@ use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 
 use futures_channel::oneshot;
 use futures_timer::Delay;
 use futures_util::future::BoxFuture;
+use tokio::sync::Mutex;
 #[cfg(feature = "tracing")]
 use tracing::{info_span, instrument, Instrument};
 #[cfg(feature = "tracing")]
@@ -106,12 +107,12 @@ where
   }
 
   /// Enable/Disable cache of specified loader.
-  pub fn enable_cache(&self, enable: bool)
+  pub async fn enable_cache(&self, enable: bool)
   where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
-    let mut requests = self.inner.requests.lock().unwrap();
+    let mut requests = self.inner.requests.lock().await;
     requests.disable_cache = !enable;
   }
 
@@ -141,7 +142,7 @@ where
     }
 
     let (action, rx) = {
-      let mut requests = self.inner.requests.lock().unwrap();
+      let mut requests = self.inner.requests.lock().await;
       let prev_count = requests.keys.len();
       let mut keys_set = HashSet::new();
       let mut use_cache_values = HashMap::new();
@@ -202,7 +203,7 @@ where
           Delay::new(delay).await;
 
           let keys = {
-            let mut requests = inner.requests.lock().unwrap();
+            let mut requests = inner.requests.lock().await;
             requests.take()
           };
 
@@ -231,7 +232,7 @@ where
     I: IntoIterator<Item = (K, T::Value)>,
     T: Loader<K>,
   {
-    let mut requests = self.inner.requests.lock().unwrap();
+    let mut requests = self.inner.requests.lock().await;
     for (key, value) in values {
       requests.cache_storage.insert(Cow::Owned(key), Cow::Owned(value));
     }
@@ -255,24 +256,24 @@ where
   /// **NOTE: If the cache type is [NoCache], this function will not take
   /// effect. **
   #[cfg_attr(feature = "tracing", instrument(skip_all))]
-  pub fn clear(&self)
+  pub async fn clear(&self)
   where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
     let _tid = TypeId::of::<K>();
-    let mut requests = self.inner.requests.lock().unwrap();
+    let mut requests = self.inner.requests.lock().await;
     requests.cache_storage.clear();
   }
 
   /// Gets all values in the cache.
-  pub fn get_cached_values(&self) -> HashMap<K, T::Value>
+  pub async fn get_cached_values(&self) -> HashMap<K, T::Value>
   where
     K: Send + Sync + Hash + Eq + Clone + 'static,
     T: Loader<K>,
   {
     let _tid = TypeId::of::<K>();
-    let requests = self.inner.requests.lock().unwrap();
+    let requests = self.inner.requests.lock().await;
     requests
       .cache_storage
       .iter()
@@ -328,7 +329,7 @@ where
     match self.loader.load(&keys).await {
       Ok(values) => {
         // update cache
-        let mut requests = self.requests.lock().unwrap();
+        let mut requests = self.requests.lock().await;
         let disable_cache = requests.disable_cache || disable_cache;
         if !disable_cache {
           for (key, value) in &values {
@@ -457,7 +458,7 @@ mod tests {
     );
 
     // Clear cache
-    loader.clear();
+    loader.clear().await;
     assert_eq!(
       loader.load_many(vec![1, 2, 3]).await.unwrap(),
       vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -488,7 +489,7 @@ mod tests {
     );
 
     // Clear cache
-    loader.clear();
+    loader.clear().await;
     assert_eq!(
       loader.load_many(vec![1, 2, 3]).await.unwrap(),
       vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -521,14 +522,14 @@ mod tests {
     loader.feed_many(vec![(1, 10), (2, 20), (3, 30)]).await;
 
     // All from the loader
-    loader.enable_cache(false);
+    loader.enable_cache(false).await;
     assert_eq!(
       loader.load_many(vec![1, 2, 3]).await.unwrap(),
       vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
     );
 
     // All from the cache
-    loader.enable_cache(true);
+    loader.enable_cache(true).await;
     assert_eq!(
       loader.load_many(vec![1, 2, 3]).await.unwrap(),
       vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
