@@ -91,6 +91,10 @@ impl RequestContext {
       self.set_min_max_age(-1);
     }
   }
+
+  pub fn is_batching_enabled(&self) -> bool {
+    return self.upstream.batch.is_some() && self.upstream.get_delay() != 0;
+  }
 }
 
 impl From<&ServerContext> for RequestContext {
