@@ -5,7 +5,6 @@ use anyhow::Result;
 use clap::Parser;
 use inquire::Confirm;
 use log::Level;
-use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
@@ -55,16 +54,8 @@ pub fn run() -> Result<()> {
 
 pub async fn init(file_path: &str) -> Result<()> {
   let file_name = ".tailcallrc.graphql";
-  let file_name_yml = ".graphqlrc.yml";
   let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
   let tailcallrc_path = Path::new(file_path).join(file_name);
-  let graphqlrc = format!(
-    r#"|schema:
-       |- './{}'
-    "#,
-    &file_name
-  )
-  .strip_margin();
 
   if let Some(parent) = tailcallrc_path.parent() {
     fs::create_dir_all(parent)?;
@@ -84,12 +75,8 @@ pub async fn init(file_path: &str) -> Result<()> {
   }
 
   fs::write(tailcallrc_path, tailcallrc)?;
-  fs::write(format!("{}/{}", file_path, file_name_yml), graphqlrc)?;
 
-  Fmt::display(Fmt::success(&format!(
-    "Created files in {}: {}, {}",
-    file_path, file_name, file_name_yml
-  )));
+  Fmt::display(Fmt::success(&format!("Created files in {}: {}", file_path, file_name,)));
 
   Ok(())
 }
