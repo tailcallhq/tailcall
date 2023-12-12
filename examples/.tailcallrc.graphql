@@ -1,51 +1,195 @@
 directive @server(
+  """
+  Enables Apollo tracing. Default is `false`.
+  """
   apolloTracing: Boolean
+
+  """
+  Controls Cache-Control headers in responses. Default is `false`.
+  """
   cacheControlHeader: Boolean
+
+  """
+  Enables GraphiQL IDE at root path. Default is `false`.
+  """
   graphiql: Boolean
+
+  """
+  Allows introspection queries. Default is `true`.
+  """
   introspection: Boolean
+
+  """
+  Validates incoming queries against schema. Default is `false`.
+  """
   queryValidation: Boolean
+
+  """
+  Validates responses from upstream services. Default is `false`.
+  """
   responseValidation: Boolean
+
+  """
+  Enables request batching.
+  """
   batchRequests: Boolean
+
+  """
+  Sets maximum query duration before termination.
+  """
   globalResponseTimeout: Int
+
+  """
+  Sets number of worker threads. Default is system core count.
+  """
   workers: Int
+
+  """
+  Sets server port. Default is `8000`.
+  """
   port: Int
+
+  """
+  Defines local variables for server operations.
+  """
   vars: [KeyValue]
+
+  """
+  Sets response headers for every request.
+  """
   responseHeaders: [KeyValue]
+
+  """
+  Sets server hostname. Default is `localhost`.
+  """
   hostname: String
+
+  """
+  Sets HTTP version. Options are `HTTP1` and `HTTP2`. Default is `HTTP1`.
+  """
   version: HttpVersion
+
+  """
+  Sets path to HTTPS certificate(s). Default is `null`.
+  """
   cert: String
+
+  """
+  Sets path to HTTPS key. Default is `null`.
+  """
   key: String
 ) on SCHEMA
-
 enum HttpVersion {
   HTTP1
   HTTP2
 }
 
 directive @upstream(
+  """
+  Specifies allowed HTTP headers for upstream services.
+  """
   allowedHeaders: [String]
+
+  """
+  Sets connection timeout in seconds.
+  """
   connectTimeout: Int
+
+  """
+  Sets interval between keep-alive messages in seconds.
+  """
   keepAliveInterval: Int
+
+  """
+  Sets timeout for keep-alive messages in seconds.
+  """
   keepAliveTimeout: Int
+
+  """
+  Enables keep-alive messages during idle connection.
+  """
   keepAliveWhileIdle: Boolean
+
+  """
+  Sets timeout for closing idle connections in seconds.
+  """
   poolIdleTimeout: Int
+
+  """
+  Sets maximum idle connections per host.
+  """
   poolMaxIdlePerHost: Int
+
+  """
+  Defines a proxy server for upstream requests.
+  """
   proxy: Proxy
+
+  """
+  Sets interval between TCP keep-alive messages in seconds.
+  """
   tcpKeepAlive: Int
+
+  """
+  Sets maximum response wait time in seconds.
+  """
   timeout: Int
+
+  """
+  Sets User-Agent header for HTTP requests.
+  """
   userAgent: String
+
+  """
+  Sets default base URL for APIs.
+  """
   baseURL: String
+
+  """
+  Enables HTTP caching. Default is `false`.
+  """
   httpCache: Boolean
+
+  """
+  Specifies batch settings.
+  """
   batch: Batch
 ) on SCHEMA
 
 directive @http(
-  path: String!
-  method: Method = GET
-  query: [KeyValue]
-  body: String
+  """
+  Sets base URL of the API.
+  """
   baseURL: String
+
+  """
+  Sets API endpoint.
+  """
+  path: String!
+
+  """
+  Sets HTTP method. Default is GET.
+  """
+  method: Method = GET
+
+  """
+  Sets query parameters of API call.
+  """
+  query: [KeyValue]
+
+  """
+  Sets body of API call.
+  """
+  body: String
+
+  """
+  Customizes headers of HTTP request.
+  """
   headers: [KeyValue]
+
+  """
+  Groups multiple data requests into a single call.
+  """
   groupBy: [String!]
 ) on FIELD_DEFINITION
 directive @addField(name: String, path: [String]!) on OBJECT
