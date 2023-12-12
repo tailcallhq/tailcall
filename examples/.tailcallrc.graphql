@@ -1,3 +1,7 @@
+"""
+The @server directive, used at the schema level, provides extensive server settings.
+It guides server behavior and optimizes tailcall for different scenarios.
+"""
 directive @server(
   """
   Enables Apollo tracing. Default is `false`.
@@ -84,6 +88,9 @@ enum HttpVersion {
   HTTP2
 }
 
+"""
+The @upstream directive manages upstream server connections, including settings like connection timeouts and keep-alive intervals. Defaults are used if not specified.
+"""
 directive @upstream(
   """
   Specifies allowed HTTP headers for upstream services.
@@ -156,6 +163,9 @@ directive @upstream(
   batch: Batch
 ) on SCHEMA
 
+"""
+The @http directive configures HTTP requests, including the API base URL, endpoint, method, and headers. It also allows grouping of multiple data requests into a single call.
+"""
 directive @http(
   """
   Sets base URL of the API.
