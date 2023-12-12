@@ -3,10 +3,11 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
-use colored::Colorize;
+
 use inquire::Confirm;
 use log::Level;
 use resource::resource_str;
+use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
@@ -55,31 +56,47 @@ pub fn run() -> Result<()> {
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
+  let file_name = ".tailcallrc.graphql";
+  let file_name_yml = ".graphqlrc.yml";
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
-  let tailcallrc_path = Path::new(file_path).join(".tailcallrc.graphql");
+  let tailcallrc_path = Path::new(file_path).join(file_name);
+  let graphqlrc = format!(
+    r#"|schema:
+       |- './{}'
+       |- './{}'
+    "#,
+    &file_name, file_name
+  )
+  .strip_margin();
 
   if let Some(parent) = tailcallrc_path.parent() {
     fs::create_dir_all(parent)?;
   }
 
   if tailcallrc_path.exists() {
-    let overwrite = Confirm::new("A .tailcallrc.graphql file already exists. Do you want to overwrite it?")
-      .with_default(false)
-      .prompt()?;
+    let overwrite = Confirm::new(&format!(
+      "File {} already exists. Do you want to overwrite it?",
+      file_name
+    ))
+    .with_default(false)
+    .prompt()?;
 
     if !overwrite {
       return Ok(());
     }
-  } else {
-    println!(
-      "{}",
-      format!("Created .tailcallrc.graphql file in {}", file_path).blue()
-    );
   }
 
   fs::write(tailcallrc_path, tailcallrc.as_ref().as_bytes())?;
+  fs::write(format!("{}/{}", file_path, file_name_yml), graphqlrc)?;
+
+  Fmt::display(Fmt::success(&format!(
+    "Created files in {}: {}, {}",
+    file_path, file_name, file_name_yml
+  )));
+
   Ok(())
 }
+
 pub fn display_schema(blueprint: &Blueprint) {
   Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
   let sdl = blueprint.to_schema();
