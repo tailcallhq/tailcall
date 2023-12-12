@@ -63,9 +63,8 @@ pub async fn init(file_path: &str) -> Result<()> {
   let graphqlrc = format!(
     r#"|schema:
        |- './{}'
-       |- './{}'
     "#,
-    &file_name, file_name
+    &file_name
   )
   .strip_margin();
 
