@@ -3,10 +3,8 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
-
 use inquire::Confirm;
 use log::Level;
-use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
@@ -58,7 +56,7 @@ pub fn run() -> Result<()> {
 pub async fn init(file_path: &str) -> Result<()> {
   let file_name = ".tailcallrc.graphql";
   let file_name_yml = ".graphqlrc.yml";
-  let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
   let tailcallrc_path = Path::new(file_path).join(file_name);
   let graphqlrc = format!(
     r#"|schema:
@@ -85,7 +83,7 @@ pub async fn init(file_path: &str) -> Result<()> {
     }
   }
 
-  fs::write(tailcallrc_path, tailcallrc.as_ref().as_bytes())?;
+  fs::write(tailcallrc_path, tailcallrc)?;
   fs::write(format!("{}/{}", file_path, file_name_yml), graphqlrc)?;
 
   Fmt::display(Fmt::success(&format!(
