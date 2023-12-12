@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
-use crate::config::{self, Upstream};
+use crate::config::{self, Batch, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
@@ -25,9 +25,11 @@ pub struct RequestContext {
 impl Default for RequestContext {
   fn default() -> Self {
     let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch::default());
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, config.upstream.clone())
+    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream)
   }
 }
 
@@ -115,9 +117,14 @@ impl From<&ServerContext> for RequestContext {
 #[cfg(test)]
 mod test {
 
+  use std::collections::BTreeSet;
+  use std::sync::Arc;
+
   use cache_control::Cachability;
 
-  use crate::http::RequestContext;
+  use crate::blueprint::Server;
+  use crate::config::{self, Batch};
+  use crate::http::{DefaultHttpClient, RequestContext};
 
   #[test]
   fn test_update_max_age_less_than_existing() {
@@ -151,8 +158,47 @@ mod test {
 
   #[test]
   fn test_update_cache_visibility_public() {
-    let req_ctx = RequestContext::default();
+    let req_ctx: RequestContext = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
     assert_eq!(req_ctx.is_cache_public(), None);
+  }
+
+  #[test]
+  fn test_is_batching_enabled_default() {
+    // create ctx with default batch
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch::default());
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert_eq!(req_ctx.is_batching_enabled(), true);
+  }
+
+  #[test]
+  fn test_is_batching_enabled_delay_set() {
+    // create ctx with batch that has a positive delay
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch { max_size: 100, delay: 2, headers: BTreeSet::new() });
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert_eq!(req_ctx.is_batching_enabled(), true);
+  }
+
+  #[test]
+  fn test_is_batching_enabled_delay_0() {
+    // create ctx with batch that has delay set to 0
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch { max_size: 100, delay: 0, headers: BTreeSet::new() });
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert_eq!(req_ctx.is_batching_enabled(), false);
   }
 }
