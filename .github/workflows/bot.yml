@@ -173,4 +173,3 @@ jobs:
         with:
           path: target/criterion
           key: criterion_benchmarks_${{ github.sha }}
-
