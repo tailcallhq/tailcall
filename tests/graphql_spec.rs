@@ -1,9 +1,9 @@
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
-use std::collections::BTreeMap;
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
@@ -17,7 +17,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext, HttpClient};
+use tailcall::http::{DefaultHttpClient, HttpClient, RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -294,7 +294,6 @@ async fn test_execution() -> std::io::Result<()> {
           .to_result()
           .unwrap();
         config.server.query_validation = Some(false);
-
         let blueprint = Valid::from(Blueprint::try_from(&config))
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()

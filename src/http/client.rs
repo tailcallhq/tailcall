@@ -27,7 +27,7 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    let upstream = config::Upstream::default();
+    let upstream = config::Upstream { name: Some("default".to_string()), ..Default::default() };
     //TODO: default is used only in tests. Drop default and move it to test.
     DefaultHttpClient::new(&upstream)
   }

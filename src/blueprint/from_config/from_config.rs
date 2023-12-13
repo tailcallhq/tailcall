@@ -3,9 +3,9 @@ use std::collections::{BTreeMap, HashMap};
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, Field};
+use crate::config::{Arg, Config, Field};
 use crate::json::JsonSchema;
-use crate::lambda::{Expression, Unsafe};
+
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 
@@ -31,7 +31,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
 
   let upstreams = to_upstreams().transform::<Blueprint>(
     |upstreams, blueprint| blueprint.upstreams(upstreams),
-    |blueprint| blueprint.upstreams
+    |blueprint| blueprint.upstreams,
   );
 
   server
@@ -49,8 +49,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
 //   for def in blueprint.definitions.iter() {
 //     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
 //       for field in object_type_definition.fields.iter() {
-//         if let Some(Expression::Unsafe(Unsafe::Http { group_by: Some(_), .. })) = field.resolver.clone() {
-//           blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
+//         if let Some(Expression::Unsafe(Unsafe::Http { group_by: Some(_), mut upstream,  .. })) = field.resolver.clone() {
+//           upstream.batch = upstream.batch.or(Some(Batch::default()));
 //           return blueprint;
 //         }
 //       }

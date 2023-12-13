@@ -1,7 +1,7 @@
 use crate::blueprint::from_config::to_type;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field};
+use crate::config::{Batch, Config, Field};
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, Lambda, Unsafe};
@@ -144,7 +144,10 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
         .and(Valid::from_option(
-          http.base_url.as_ref().or(config.upstreams.get(&http.upstream).base_url.as_ref()),
+          http
+            .base_url
+            .as_ref()
+            .or(config.upstreams.get(&http.upstream).base_url.as_ref()),
           "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_headermap(&http.headers))
@@ -170,14 +173,21 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         })
         .map(|req_template| {
           if !http.group_by.is_empty() && http.method == Method::GET {
+            let mut upstream = config.upstreams.get(&http.upstream);
+            // Apply batching if the field has a @http directive with groupBy field
+            upstream.batch = upstream.batch.or(Some(Batch::default()));
             b_field.resolver(Some(Expression::Unsafe(Unsafe::Http {
               req_template,
               group_by: Some(GroupBy::new(http.group_by.clone())),
               dl_id: None,
-              upstream: config.upstreams.get(&http.upstream)
+              upstream,
             })))
           } else {
-            b_field.resolver(Some(Lambda::from_request_template(req_template, config.upstreams.get(&http.upstream)).expression))
+            println!("config upstreams:");
+            println!("{:?}", config.upstreams);
+            b_field.resolver(Some(
+              Lambda::from_request_template(req_template, config.upstreams.get(&http.upstream)).expression,
+            ))
           }
         })
         .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))

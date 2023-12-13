@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, BTreeMap};
+use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::config::{Upstream, Upstreams};
+use crate::config::Upstreams;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -211,5 +211,4 @@ impl Blueprint {
     // generation of schema cannot fail.
     schema.finish().unwrap()
   }
-
 }

@@ -26,8 +26,21 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(upstreams(sd)).zip(types).zip(unions).zip(schema))
-    .map(|(((((server, upstream), upstreams), types), unions), schema)| Config { server, upstreams, types, unions, schema })
+    .and_then(|sd| {
+      server(sd)
+        .zip(upstream(sd))
+        .zip(upstreams(sd))
+        .zip(types)
+        .zip(unions)
+        .zip(schema)
+    })
+    .map(|(((((server, _upstream), upstreams), types), unions), schema)| Config {
+      server,
+      upstreams,
+      types,
+      unions,
+      schema,
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -44,7 +57,7 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
 fn process_schema_directives<T: DirectiveCodec<T> + Default>(
   schema_definition: &SchemaDefinition,
   directive_name: &str,
-) -> Valid<T, String> { 
+) -> Valid<T, String> {
   let mut res = Valid::succeed(T::default());
   for directive in schema_definition.directives.iter() {
     if directive.node.name.node.as_ref() == directive_name {
@@ -66,19 +79,32 @@ fn upstream_from_directive(directive: ConstDirective) -> Valid<Upstream, String>
 fn upstreams(schema_definition: &SchemaDefinition) -> Valid<Upstreams, String> {
   let directive_name = Upstream::directive_name();
 
-  let upstream_directives = schema_definition.directives.iter().filter_map(|directive| if directive.node.name.node.as_ref() == directive_name {
-    Some(directive.node.clone())
-  } else {
-    None
-  }).collect::<Vec<_>>();
-  
-  Valid::from_iter(upstream_directives, upstream_from_directive).map(|upstreams| {
+  let upstream_directives = schema_definition
+    .directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node.as_ref() == directive_name {
+        Some(directive.node.clone())
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>();
+
+  Valid::from_iter(upstream_directives, upstream_from_directive).map(|mut upstreams| {
     let mut upstream_map: BTreeMap<String, Upstream> = BTreeMap::new();
-    upstreams.iter().for_each(|upstream| {
+    upstreams.iter_mut().for_each(|upstream| {
+      // if let None = upstream.name {
+      //   upstream.name = Some("default".to_string());
+      // }
+
       upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
     });
-    if upstream_map.len() == 0 {
-      upstream_map.insert("default".to_string(), Upstream::default());
+    if upstream_map.is_empty() {
+      upstream_map.insert(
+        "default".to_string(),
+        Upstream { name: Some("default".to_string()), ..Default::default() },
+      );
     }
     Upstreams(upstream_map)
   })

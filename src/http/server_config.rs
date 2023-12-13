@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use client::DefaultHttpClient;
 
-use super::{ServerContext, HttpClient};
+use super::{HttpClient, ServerContext};
 use crate::blueprint::{Blueprint, Http};
 use crate::http::client;
 

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use cache_control::{Cachability, CacheControl};
@@ -5,14 +6,14 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
-use crate::config::{self, Upstream};
+use crate::config::{self};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
 
 #[derive(Setters)]
 pub struct RequestContext {
-  pub http_client: Arc<dyn HttpClient>,
+  pub http_clients: BTreeMap<String, Arc<dyn HttpClient>>,
   pub server: Server,
   // pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -27,16 +28,18 @@ impl Default for RequestContext {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(Arc::new(DefaultHttpClient::default()), server)
+    let mut http_clients: BTreeMap<String, Arc<dyn HttpClient>> = BTreeMap::new();
+    http_clients.insert("default".to_string(), Arc::new(DefaultHttpClient::default()));
+    RequestContext::new(http_clients, server)
   }
 }
 
 impl RequestContext {
   // pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
-  pub fn new(http_client: Arc<dyn HttpClient>, server: Server) -> Self {
+  pub fn new(http_clients: BTreeMap<String, Arc<dyn HttpClient>>, server: Server) -> Self {
     Self {
       req_headers: HeaderMap::new(),
-      http_client,
+      http_clients,
       server,
       // upstream,
       http_data_loaders: Arc::new(vec![]),
@@ -46,8 +49,8 @@ impl RequestContext {
     }
   }
 
-  pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-    self.http_client.execute(req).await
+  pub async fn execute(&self, req: reqwest::Request, upstream_name: &String) -> anyhow::Result<Response> {
+    self.http_clients.get(upstream_name).unwrap().execute(req).await
   }
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
@@ -97,7 +100,7 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     Self {
-      http_client: Arc::new(DefaultHttpClient::default()),
+      http_clients: server_ctx.http_clients.clone(),
       server: server_ctx.blueprint.server.clone(),
       // upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),

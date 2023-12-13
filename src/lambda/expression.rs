@@ -97,13 +97,12 @@ impl Expression {
           Unsafe::Http { req_template, dl_id, upstream, .. } => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
-
             let res = if is_get && upstream.batch.is_some() {
               let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader, &upstream).await?
+              execute_request_with_dl(ctx, req, data_loader, upstream).await?
             } else {
-              execute_raw_request(ctx, req).await?
+              execute_raw_request(ctx, req, upstream).await?
             };
 
             if ctx.req_ctx.server.get_enable_http_validation() {
@@ -116,20 +115,18 @@ impl Expression {
             }
 
             set_cache_control(ctx, &res);
-
             Ok(res.body)
           }
           Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, upstream, .. } => {
             let req = req_template.to_request(ctx)?;
 
-            let res = if upstream.batch.is_some()
-              && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            let res = if upstream.batch.is_some() && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
               let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader, &upstream).await?
+              execute_request_with_dl(ctx, req, data_loader, upstream).await?
             } else {
-              execute_raw_request(ctx, req).await?
+              execute_raw_request(ctx, req, upstream).await?
             };
 
             set_cache_control(ctx, &res);
@@ -169,11 +166,12 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationConte
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
+  upstream: &Upstream,
 ) -> Result<Response> {
   Ok(
     ctx
       .req_ctx
-      .execute(req)
+      .execute(req, upstream.name.as_ref().unwrap_or(&"default".to_string()))
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )
@@ -184,16 +182,12 @@ async fn execute_request_with_dl<
   Ctx: ResolverContextLike<'ctx>,
   Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
 >(
-  ctx: &EvaluationContext<'ctx, Ctx>,
+  _ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
   data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
   upstream: &Upstream,
 ) -> Result<Response> {
-  let headers = upstream
-    .batch
-    .clone()
-    .map(|s| s.headers)
-    .unwrap_or_default();
+  let headers = upstream.batch.clone().map(|s| s.headers).unwrap_or_default();
   let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
 
   Ok(

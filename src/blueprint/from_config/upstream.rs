@@ -1,8 +1,3 @@
-use super::TryFoldConfig;
-use crate::config::{Config, Upstream};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
-
 // pub fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
 //   TryFoldConfig::<Upstream>::new(|config, up| {
 //     let upstream = up.merge_right(config.upstream.clone());

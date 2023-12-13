@@ -1,9 +1,11 @@
 ---
 name: Batched graphql request to batched upstream query
 config: !inline
-  upstream:
-    batch:
-      delay: 1
+  upstreams:
+    default:
+      name: default
+      batch:
+        delay: 1
   server:
     batchRequests: true
   schema:

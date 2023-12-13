@@ -7,7 +7,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream, Upstreams};
+use super::{Server, Upstreams};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
@@ -122,7 +122,7 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     // let upstream = self.upstream.merge_right(other.upstream.clone());
-    let upstreams = self.upstreams.merge_right(&other.upstreams);    
+    let upstreams = self.upstreams.merge_right(&other.upstreams);
     // Self { server, upstream, upstreams, types, schema, unions }
     Self { server, upstreams, types, schema, unions }
   }
@@ -415,7 +415,6 @@ impl Config {
 
     config_reader.read().await
   }
-
 }
 
 #[cfg(test)]

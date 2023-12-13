@@ -10,7 +10,12 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
-  let mut upstream_directives =  config.upstreams.0.iter().map(|(_, upstream)| pos(upstream.to_directive())).collect::<Vec<_>>();
+  let mut upstream_directives = config
+    .upstreams
+    .0
+    .values()
+    .map(|upstream| pos(upstream.to_directive()))
+    .collect::<Vec<_>>();
   let mut directives = vec![pos(config.server.to_directive())];
   directives.append(&mut upstream_directives);
   let schema_definition = SchemaDefinition {

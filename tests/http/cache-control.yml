@@ -1,7 +1,9 @@
 ---
 name: Sending requests to verify Cache-Control behavior
 config: !inline
-  upstream:
+  upstreams:
+    default:
+      name: default
   schema:
     query: Query
   server:

@@ -1,7 +1,9 @@
 ---
 name: Sending a batched graphql request
 config: !inline
-  upstream: {}
+  upstreams:
+    default:
+      name: default
   server:
     batchRequests: true
   schema:

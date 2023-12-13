@@ -251,40 +251,41 @@ impl Upstreams {
       match other_upstream {
         Some(other_upstream) => {
           upstreams.insert(name.clone(), upstream.clone().merge_right(other_upstream.clone()));
-        },
+        }
         None => {
           upstreams.insert(name.clone(), upstream.clone());
         }
       }
     }
     for (name, other_upstream) in other.0.clone() {
-      let upstream = self.0.get(&name).clone();
-      match upstream {
-        None => {
-          upstreams.insert(name, other_upstream);
-        },
-        _ => {}
+      let upstream = self.0.get(&name);
+      if upstream.is_none() {
+        upstreams.insert(name, other_upstream);
       }
     }
     Self(upstreams)
   }
 
-  pub fn get<'a>(&self, name: &Option<String>) -> Upstream {
+  pub fn get(&self, name: &Option<String>) -> Upstream {
     match name {
-      Some(name) => {
-        match self.0.iter().find(|(upstream_name, _)| *upstream_name == name) {
-          Some((_, upstream)) => upstream.clone(),
-          None => self.get_default()
-        }
+      Some(name) => match self.0.iter().find(|(upstream_name, _)| *upstream_name == name) {
+        Some((_, upstream)) => upstream.clone(),
+        None => self.get_default(),
       },
-      None => self.get_default()
+      None => self.get_default(),
     }
   }
 
-  pub fn get_default<'a>(&self) -> Upstream {
-    self.0.iter().find(|(upstream_name, _)| **upstream_name == "default").unwrap().1.clone()
+  pub fn get_default(&self) -> Upstream {
+    self
+      .0
+      .iter()
+      .find(|(upstream_name, _)| **upstream_name == "default")
+      .unwrap()
+      .1
+      .clone()
   }
-  
+
   pub fn get_allowed_headers(&self) -> BTreeSet<String> {
     let mut allowed_headers = BTreeSet::new();
     self.0.iter().for_each(|(_, upstream)| {

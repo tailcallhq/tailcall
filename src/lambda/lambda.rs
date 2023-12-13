@@ -58,14 +58,14 @@ impl Lambda<serde_json::Value> {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
-    upstream: Upstream
+    upstream: Upstream,
   ) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
       req_template,
       field_name,
       batch,
       dl_id: None,
-      upstream
+      upstream,
     }))
   }
 }
@@ -90,7 +90,7 @@ mod tests {
   use serde_json::json;
 
   use crate::config::Upstream;
-use crate::endpoint::Endpoint;
+  use crate::endpoint::Endpoint;
   use crate::http::{RequestContext, RequestTemplate};
   use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
 
@@ -134,7 +134,13 @@ use crate::endpoint::Endpoint;
     });
 
     let endpoint = RequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
-    let result = Lambda::from_request_template(endpoint, Upstream::default()).eval().await.unwrap();
+    let result = Lambda::from_request_template(
+      endpoint,
+      Upstream { name: Some("default".to_string()), ..Default::default() },
+    )
+    .eval()
+    .await
+    .unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
   }

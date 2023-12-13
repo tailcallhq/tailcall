@@ -1,5 +1,8 @@
 name: Custom Headers
 config: !inline
+  upstreams:
+    default:
+      name: default
   server:
     responseHeaders:
       - key: x-id
