@@ -162,16 +162,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Build and run benchmarks
-        run: |
-          cargo bench
+      - name: Run cargo bench
+        run: cargo bench
 
-      - name: Save benchmark results to cache
-        uses: actions/cache@v3
+      - name: Cache benchmark results
+        uses: actions/cache@v2
         with:
-          path: |
-            target/criterion
-          key: ${{ runner.os }}-criterion-${{ hashFiles('target/criterion/**') }}
+          path: target/criterion
+          key: criterion_benchmarks_${{ github.sha }}
+
