@@ -49,7 +49,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 ## Benchmarks Comparison
 
-**Critrion Benchmarks**
+### Criterion Benchmarks
 
 1. **Important:** Make sure all the commits are done.
 2. **Install critcmp:** Install criterion-compare.
