@@ -1,5 +1,4 @@
 config: !file tests/http/config/multiple-upstream.graphql
-runner: only
 name: Simple GraphQL Request
 mock:
   - request:
