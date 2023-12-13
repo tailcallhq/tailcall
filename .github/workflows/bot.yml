@@ -158,8 +158,8 @@ jobs:
           commit_message: "style: apply lint fixes"
 
   Cache_Benchmarks:
-    name: Criterion benchmarks
-    runs-on: benchmarking-runner
+    name: Caching Criterion benchmarks 
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
