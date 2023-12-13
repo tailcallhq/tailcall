@@ -13,13 +13,14 @@ use crate::lambda::{DataLoaderId, Expression, Unsafe};
 pub struct ServerContext {
   pub schema: dynamic::Schema,
   pub http_client: Arc<dyn HttpClient>,
+  pub http2_client: Arc<dyn HttpClient>,
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
 }
 
 impl ServerContext {
-  pub fn new(mut blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
+  pub fn new(mut blueprint: Blueprint, http_client: Arc<dyn HttpClient>, http2_client: Arc<dyn HttpClient>) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
 
@@ -70,6 +71,7 @@ impl ServerContext {
     ServerContext {
       schema,
       http_client,
+      http2_client,
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),

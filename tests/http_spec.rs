@@ -172,7 +172,8 @@ impl HttpSpec {
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
-    let server_context = ServerContext::new(blueprint, client);
+    let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
+    let server_context = ServerContext::new(blueprint, client, http2_client);
     Arc::new(server_context)
   }
 }
@@ -241,6 +242,10 @@ impl HttpClient for MockHttpClient {
     response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
 
     Ok(response)
+  }
+
+  async fn execute_raw_request(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    todo!()
   }
 }
 

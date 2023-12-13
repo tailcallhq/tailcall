@@ -241,6 +241,7 @@ pub struct Field {
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
+  pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
   #[serde(rename = "const", default, skip_serializing_if = "is_default")]
@@ -251,7 +252,11 @@ pub struct Field {
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.graphql.is_some()
+    self.http.is_some()
+      || self.unsafe_operation.is_some()
+      || self.const_field.is_some()
+      || self.graphql.is_some()
+      || self.grpc.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -367,6 +372,19 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub struct Grpc {
+  pub service: String,
+  pub method: String,
+  pub body: Option<String>,
+  #[serde(rename = "baseURL")]
+  pub base_url: Option<String>,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+  pub proto_path: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]

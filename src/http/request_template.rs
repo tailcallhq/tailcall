@@ -6,6 +6,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use url::Url;
 
 use crate::endpoint::Endpoint;
+use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::mustache::Mustache;
 use crate::path::PathString;
@@ -101,6 +102,37 @@ impl RequestTemplate {
     Ok(req)
   }
 
+  pub fn to_grpc_request<C: PathString + HasHeaders>(
+    &self,
+    ctx: &C,
+    operation: &ProtobufOperation,
+  ) -> anyhow::Result<reqwest::Request> {
+    // Create url
+    let url = self.create_url(ctx)?;
+    let method = self.method.clone();
+    let mut req = reqwest::Request::new(method, url);
+    req = self.set_grpc_headers(req, ctx);
+    req = self.set_grpc_body(req, ctx, operation)?;
+    *req.version_mut() = reqwest::Version::HTTP_2;
+    Ok(req)
+  }
+  pub fn set_grpc_body<C: PathString + HasHeaders>(
+    &self,
+    mut req: reqwest::Request,
+    ctx: &C,
+    operation: &ProtobufOperation,
+  ) -> anyhow::Result<reqwest::Request> {
+    if let Some(body) = &self.body {
+      let body = body.render(ctx);
+      let body = operation.convert_input(body.as_str())?;
+      req.body_mut().replace(body.into());
+    } else {
+      let body = operation.convert_input("{}")?;
+      req.body_mut().replace(body.into());
+    }
+    Ok(req)
+  }
+
   /// Sets the body for the request
   fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     if let Some(body) = &self.body {
@@ -121,6 +153,19 @@ impl RequestTemplate {
       reqwest::header::CONTENT_TYPE,
       HeaderValue::from_static("application/json"),
     );
+    headers.extend(ctx.headers().to_owned());
+    req
+  }
+
+  /// Sets the headers for the request
+  fn set_grpc_headers<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+    let headers = self.create_headers(ctx);
+    if !headers.is_empty() {
+      req.headers_mut().extend(headers);
+    }
+
+    let headers = req.headers_mut();
+
     headers.extend(ctx.headers().to_owned());
     req
   }

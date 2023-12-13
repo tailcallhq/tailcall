@@ -204,6 +204,14 @@ directive @http(
   """
   groupBy: [String!]
 ) on FIELD_DEFINITION
+directive @grpc(
+  service: String!
+  method: String!
+  body: String
+  baseURL: String
+  headers: [KeyValue]
+  protoPath: String
+) on FIELD_DEFINITION
 """
 The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 """
