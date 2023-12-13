@@ -3,7 +3,6 @@ mod from_config;
 mod operators;
 mod schema;
 mod server;
-mod upstream;
 mod upstreams;
 
 pub use definitions::*;
@@ -11,7 +10,6 @@ pub use from_config::*;
 pub use operators::*;
 pub use schema::*;
 pub use server::*;
-pub use upstream::*;
 pub use upstreams::*;
 
 use super::Type;
