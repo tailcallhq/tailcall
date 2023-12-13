@@ -1,0 +1,28 @@
+schema 
+  @upstream(name: "foo", baseURL: "http://foo.com")
+  @upstream(name: "bar", baseURL: "http://bar.com") 
+  @upstream(baseURL: "http://baz.com")
+{
+  query: Query
+}
+
+type Foo {
+  id: Int
+  name: String
+}
+
+type Bar {
+  id: Int
+  name: String
+}
+
+type Baz {
+  id: Int
+  name: String
+}
+
+type Query {
+  foo: Foo @http(upstream: "foo", path: "/foo")
+  bar: Bar @http(upstream: "bar", path: "/bar")
+  baz: Baz @http(path: "/baz")
+}

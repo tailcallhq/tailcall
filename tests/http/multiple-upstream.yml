@@ -1,0 +1,53 @@
+config: !file tests/http/config/multiple-upstream.graphql
+runner: only
+name: Simple GraphQL Request
+mock:
+  - request:
+      url: http://foo.com/foo
+    response:
+      body:
+        id: 1
+        name: foo
+  - request:
+      url: http://bar.com/bar
+    response:
+      body:
+        id: 1
+        name: bar
+  - request:
+      url: http://baz.com/baz
+    response:
+      body:
+        id: 1
+        name: baz
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { foo { name } }
+    response:
+      body:
+        data:
+          foo:
+            name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bar { name } }
+    response:
+      body:
+        data:
+          bar:
+            name: bar
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { baz { name } }
+    response:
+      body:
+        data:
+          baz:
+            name: baz
