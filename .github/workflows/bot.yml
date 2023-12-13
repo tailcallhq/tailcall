@@ -158,33 +158,27 @@ jobs:
           commit_message: "style: apply lint fixes"
 
   Cache_Benchmarks:
-    name: Caching Criterion benchmarks 
+    name: Caching Criterion benchmarks
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Cache Criterion.rs results
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          stable: true
+
+      - name: Build and run benchmarks
+        run: |
+          cargo build --release
+          cargo bench
+
+      - name: Save benchmark results to cache
         uses: actions/cache@v2
         with:
-          path: target/criterion
-          key: ${{ runner.os }}-criterion-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-criterion-
+          path: |
+            target/criterion
+          key: ${{ runner.os }}-criterion-${{ hashFiles('target/criterion/**') }}
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install Dependencies
-        run: cargo build
-
-      - name: Run Benchmarks
-        run: cargo bench
-
-      - name: Upload benchmark results
-        uses: bheisler/criterion-pages@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
