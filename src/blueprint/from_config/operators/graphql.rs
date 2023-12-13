@@ -32,15 +32,9 @@ pub fn update_graphql<'a>(
         )
       })
       .map(|req_template| {
-        let field_name = graphql.name.clone();
         b_field.resolver(Some(
-          Lambda::from_graphql_request_template(
-            req_template,
-            field_name,
-            graphql.batch,
-            config.upstreams.get(&graphql.upstream),
-          )
-          .expression,
+          Lambda::from_graphql_request_template(req_template, graphql.clone(), config.upstreams.get(&graphql.upstream))
+            .expression,
         ))
       })
     },

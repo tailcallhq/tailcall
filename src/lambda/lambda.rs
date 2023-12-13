@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::config::Upstream;
+use crate::config::{GraphQL, Upstream};
 use crate::{graphql, http};
 
 #[derive(Clone)]
@@ -56,14 +56,13 @@ impl Lambda<serde_json::Value> {
 
   pub fn from_graphql_request_template(
     req_template: graphql::RequestTemplate,
-    field_name: String,
-    batch: bool,
+    graphql: GraphQL,
     upstream: Upstream,
   ) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
       req_template,
-      field_name,
-      batch,
+      field_name: graphql.name.clone(),
+      batch: graphql.batch,
       dl_id: None,
       upstream,
     }))
