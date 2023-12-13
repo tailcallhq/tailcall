@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
   BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType,
@@ -75,19 +75,48 @@ fn upstreams(schema_definition: &SchemaDefinition) -> Valid<Upstreams, String> {
     })
     .collect::<Vec<_>>();
 
-  Valid::from_iter(upstream_directives, upstream_from_directive).map(|mut upstreams| {
-    let mut upstream_map: BTreeMap<String, Upstream> = BTreeMap::new();
-    upstreams.iter_mut().for_each(|upstream| {
-      upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
-    });
-    if upstream_map.is_empty() {
-      upstream_map.insert(
-        "default".to_string(),
-        Upstream { name: Some("default".to_string()), ..Default::default() },
-      );
-    }
-    Upstreams(upstream_map)
-  })
+  Valid::from_iter(upstream_directives, upstream_from_directive)
+    .and_then(|upstreams| {
+      let mut names: BTreeSet<String> = BTreeSet::new();
+      let mut duplicate_names: BTreeSet<String> = BTreeSet::new();
+      let mut unnamed_count = 0;
+      for upstream in upstreams.iter() {
+        if let Some(name) = upstream.name.clone() {
+          if !names.contains(&name) {
+            names.insert(name);
+          } else {
+            duplicate_names.insert(name);
+          }
+        } else {
+          unnamed_count += 1;
+        }
+      }
+
+      if unnamed_count > 1 {
+        return Valid::fail("Only one upstream without a name can be present".to_string()).trace("upstreams");
+      }
+      if !duplicate_names.is_empty() {
+        return Valid::fail(format!(
+          "Multiple upstreams found with the same name for {}",
+          duplicate_names.into_iter().collect::<Vec<_>>().join(", ")
+        ))
+        .trace("upstreams");
+      }
+      Valid::succeed(upstreams)
+    })
+    .map(|mut upstreams| {
+      let mut upstream_map: BTreeMap<String, Upstream> = BTreeMap::new();
+      upstreams.iter_mut().for_each(|upstream| {
+        upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
+      });
+      if upstream_map.is_empty() {
+        upstream_map.insert(
+          "default".to_string(),
+          Upstream { name: Some("default".to_string()), ..Default::default() },
+        );
+      }
+      Upstreams(upstream_map)
+    })
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);

@@ -1,0 +1,20 @@
+#> server-sdl
+schema @upstream(name: "foo", baseURL: "http://foo.com") @upstream(name: "foo", baseURL: "http://bar.com") {
+  query: Query
+}
+
+type User {
+  name: String
+  address: Address
+}
+type Address {
+  city: String
+}
+
+type Query {
+  user: User
+}
+
+#> client-sdl
+type Failure @error(message: "Multiple upstreams found with the same name for foo", trace: ["upstreams"])
+

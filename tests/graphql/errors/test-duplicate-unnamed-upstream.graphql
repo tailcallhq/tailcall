@@ -1,0 +1,20 @@
+#> server-sdl
+schema @upstream(baseURL: "http://foo.com") @upstream(baseURL: "http://bar.com") {
+  query: Query
+}
+
+type User {
+  name: String
+  address: Address
+}
+type Address {
+  city: String
+}
+
+type Query {
+  user: User
+}
+
+#> client-sdl
+type Failure @error(message: "Only one upstream without a name can be present", trace: ["upstreams"])
+
