@@ -22,8 +22,6 @@ use crate::valid::Valid;
 pub struct Config {
   #[serde(default)]
   pub server: Server,
-  // #[serde(default)]
-  // pub upstream: Upstream,
   #[serde(default)]
   pub upstreams: Upstreams,
   pub schema: RootSchema,
@@ -121,9 +119,7 @@ impl Config {
     let types = merge_types(self.types, other.types.clone());
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
-    // let upstream = self.upstream.merge_right(other.upstream.clone());
     let upstreams = self.upstreams.merge_right(&other.upstreams);
-    // Self { server, upstream, upstreams, types, schema, unions }
     Self { server, upstreams, types, schema, unions }
   }
 }

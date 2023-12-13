@@ -26,21 +26,8 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| {
-      server(sd)
-        .zip(upstream(sd))
-        .zip(upstreams(sd))
-        .zip(types)
-        .zip(unions)
-        .zip(schema)
-    })
-    .map(|(((((server, _upstream), upstreams), types), unions), schema)| Config {
-      server,
-      upstreams,
-      types,
-      unions,
-      schema,
-    })
+    .and_then(|sd| server(sd).zip(upstreams(sd)).zip(types).zip(unions).zip(schema))
+    .map(|((((server, upstreams), types), unions), schema)| Config { server, upstreams, types, unions, schema })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -70,9 +57,6 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
   process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
-fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
-  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
-}
 fn upstream_from_directive(directive: ConstDirective) -> Valid<Upstream, String> {
   Upstream::from_directive(&directive)
 }
@@ -94,10 +78,6 @@ fn upstreams(schema_definition: &SchemaDefinition) -> Valid<Upstreams, String> {
   Valid::from_iter(upstream_directives, upstream_from_directive).map(|mut upstreams| {
     let mut upstream_map: BTreeMap<String, Upstream> = BTreeMap::new();
     upstreams.iter_mut().for_each(|upstream| {
-      // if let None = upstream.name {
-      //   upstream.name = Some("default".to_string());
-      // }
-
       upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
     });
     if upstream_map.is_empty() {

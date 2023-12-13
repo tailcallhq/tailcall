@@ -15,7 +15,6 @@ use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoad
 pub struct RequestContext {
   pub http_clients: BTreeMap<String, Arc<dyn HttpClient>>,
   pub server: Server,
-  // pub upstream: Upstream,
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -35,13 +34,11 @@ impl Default for RequestContext {
 }
 
 impl RequestContext {
-  // pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
   pub fn new(http_clients: BTreeMap<String, Arc<dyn HttpClient>>, server: Server) -> Self {
     Self {
       req_headers: HeaderMap::new(),
       http_clients,
       server,
-      // upstream,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
@@ -102,7 +99,6 @@ impl From<&ServerContext> for RequestContext {
     Self {
       http_clients: server_ctx.http_clients.clone(),
       server: server_ctx.blueprint.server.clone(),
-      // upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),

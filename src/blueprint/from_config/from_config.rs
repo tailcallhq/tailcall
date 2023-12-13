@@ -24,40 +24,13 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     |blueprint| blueprint.definitions,
   );
 
-  // let upstream = to_upstream().transform::<Blueprint>(
-  //   |upstream, blueprint| blueprint.upstream(upstream),
-  //   |blueprint| blueprint.upstream,
-  // );
-
   let upstreams = to_upstreams().transform::<Blueprint>(
     |upstreams, blueprint| blueprint.upstreams(upstreams),
     |blueprint| blueprint.upstreams,
   );
 
-  server
-    .and(schema)
-    .and(definitions)
-    // .and(upstream)
-    .and(upstreams)
-    // .update(apply_batching)
-    .update(compress)
+  server.and(schema).and(definitions).and(upstreams).update(compress)
 }
-
-// Apply batching if any of the fields have a @http directive with groupBy field
-
-// pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
-//   for def in blueprint.definitions.iter() {
-//     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
-//       for field in object_type_definition.fields.iter() {
-//         if let Some(Expression::Unsafe(Unsafe::Http { group_by: Some(_), mut upstream,  .. })) = field.resolver.clone() {
-//           upstream.batch = upstream.batch.or(Some(Batch::default()));
-//           return blueprint;
-//         }
-//       }
-//     }
-//   }
-//   blueprint
-// }
 
 pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
   to_json_schema(field, config)

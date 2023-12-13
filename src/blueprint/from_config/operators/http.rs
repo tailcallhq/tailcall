@@ -183,8 +183,6 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               upstream,
             })))
           } else {
-            println!("config upstreams:");
-            println!("{:?}", config.upstreams);
             b_field.resolver(Some(
               Lambda::from_request_template(req_template, config.upstreams.get(&http.upstream)).expression,
             ))

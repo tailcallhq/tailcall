@@ -100,7 +100,7 @@ impl Expression {
             let res = if is_get && upstream.batch.is_some() {
               let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader, upstream).await?
+              execute_request_with_dl(req, data_loader, upstream).await?
             } else {
               execute_raw_request(ctx, req, upstream).await?
             };
@@ -124,7 +124,7 @@ impl Expression {
             {
               let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader, upstream).await?
+              execute_request_with_dl(req, data_loader, upstream).await?
             } else {
               execute_raw_request(ctx, req, upstream).await?
             };
@@ -177,12 +177,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   )
 }
 
-async fn execute_request_with_dl<
-  'ctx,
-  Ctx: ResolverContextLike<'ctx>,
-  Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
->(
-  _ctx: &EvaluationContext<'ctx, Ctx>,
+async fn execute_request_with_dl<Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>>(
   req: Request,
   data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
   upstream: &Upstream,

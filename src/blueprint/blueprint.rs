@@ -20,7 +20,6 @@ pub struct Blueprint {
   pub definitions: Vec<Definition>,
   pub schema: SchemaDefinition,
   pub server: Server,
-  // pub upstream: Upstream,
   pub upstreams: Upstreams,
 }
 

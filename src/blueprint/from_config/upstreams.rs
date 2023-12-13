@@ -20,9 +20,6 @@ pub fn to_upstreams<'a>() -> TryFold<'a, Config, Upstreams, String> {
     })
     .map(|mut upstreams| {
       upstreams.iter_mut().for_each(|upstream| {
-        // if let None = upstream.name {
-        // 	upstream.name = Some("default".to_string());
-        // }
         upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
       });
       if upstream_map.is_empty() {
