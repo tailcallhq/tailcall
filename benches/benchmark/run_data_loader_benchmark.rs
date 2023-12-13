@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
-
 use tailcall::config::Batch;
 use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 

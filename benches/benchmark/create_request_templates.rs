@@ -1,10 +1,9 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
-
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
-use tailcall::path_string::PathString;
-use tailcall::request_template::RequestTemplate;
+use tailcall::http::RequestTemplate;
+use tailcall::path::PathString;
 
 // Context struct with setters using the derive_setters crate
 #[derive(Setters)]
