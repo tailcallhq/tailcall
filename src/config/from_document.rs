@@ -110,10 +110,7 @@ fn upstreams(schema_definition: &SchemaDefinition) -> Valid<Upstreams, String> {
         upstream_map.insert(upstream.name.clone().unwrap_or("default".to_string()), upstream.clone());
       });
       if upstream_map.is_empty() {
-        upstream_map.insert(
-          "default".to_string(),
-          Upstream { name: Some("default".to_string()), ..Default::default() },
-        );
+        upstream_map.insert("default".to_string(), Upstream::default());
       }
       Upstreams(upstream_map)
     })
