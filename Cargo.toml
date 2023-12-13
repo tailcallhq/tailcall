@@ -19,10 +19,7 @@ serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
 sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
-protobuf = "3.3.0"
-protobuf-parse = "3.3.0"
 tempfile = "3.8.1"
-protobuf-json-mapping = "3.3.0"
 
 reqwest = { version = "0.11", features = [
    "json",
@@ -69,6 +66,9 @@ futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 prettytable-rs = "^0.10"
+protox = "0.5.1"
+prost-reflect = { version = "0.12.0", features = ["serde"] }
+prost = "0.12.3"
 
 
 [dev-dependencies]
