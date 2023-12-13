@@ -24,7 +24,7 @@ pub enum Command {
   Start {
     /// Path for the configuration files or http(s) link to config files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
     #[arg(long)]
     log_level: Option<log::Level>,
   },
