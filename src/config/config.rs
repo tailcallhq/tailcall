@@ -397,7 +397,7 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url<Iter>(file_paths: Iter) -> Result<Config>
+  pub async fn from_iter<Iter>(file_paths: Iter) -> Result<Config>
   where
     Iter: Iterator,
     Iter::Item: AsRef<str>,
