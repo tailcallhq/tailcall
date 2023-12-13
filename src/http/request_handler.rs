@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::grpc::protobuf::{ProtobufFile, ProtobufOperation, ProtobufService};
+use crate::grpc::protobuf::{ProtobufSet, ProtobufOperation, ProtobufService};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -88,8 +88,8 @@ message NewsList {
   // For now we need to write files to the disk.
   fs::write(&tempfile, proto).unwrap();
 
-  let file = ProtobufFile::new(&tempfile)?;
-  let service = ProtobufService::from_file(&file, "NewsService")?;
+  let file = ProtobufSet::from_proto_file(&tempfile)?;
+  let service = ProtobufService::new(&file, "NewsService")?;
   let operation = ProtobufOperation::new(&service, "GetNews")?;
 
   let mut headers = HeaderMap::new();

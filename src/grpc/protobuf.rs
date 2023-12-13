@@ -1,65 +1,48 @@
-mod conversion;
+// mod conversion;
 
 use std::fmt::Debug;
 use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use async_graphql::Value;
-use protobuf::reflect::{FileDescriptor, MessageDescriptor, ServiceDescriptor};
-use protobuf_parse::Parser;
-
-use self::conversion::{json_str_to_proto, proto_to_value};
+use prost::{bytes::BufMut, Message};
+use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, ServiceDescriptor};
+use serde_json::Deserializer;
 
 #[derive(Debug)]
-pub struct ProtobufFile {
-  file_descriptor: FileDescriptor,
+pub struct ProtobufSet {
+  descriptor_pool: DescriptorPool,
 }
 
-impl ProtobufFile {
-  // there is no public methods in protobuf_parse to parse proto file as content
-  // that's why we need to actually use file from fs only
-  pub fn new(proto_path: &Path) -> Result<Self> {
+impl ProtobufSet {
+  // TODO: load definitions from proto file for now, but in future
+  // it could be more convenient to load FileDescriptorSet instead
+  // either from file or server reflection
+  pub fn from_proto_file(proto_path: &Path) -> Result<Self> {
     let parent_dir = proto_path
       .parent()
       .context("Failed to resolve parent dir for proto file")?;
 
-    let file_descriptor_protos = Parser::new()
-      .pure()
-      .include(parent_dir)
-      .input(proto_path)
-      .parse_and_typecheck()
+    let file_descriptor_set = protox::compile(&[proto_path], &[parent_dir])
       .with_context(|| format!("Failed to parse proto file {}", proto_path.display()))?;
 
-    // as we have only one proto file we should acquire only one file_descriptor
-    let file_descriptor_proto = file_descriptor_protos
-      .file_descriptors
-      .into_iter()
-      .next()
-      .with_context(|| format!("Failed to parse proto file {}", proto_path.display()))?;
+    let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
 
-    let file_descriptor = FileDescriptor::new_dynamic(file_descriptor_proto, &[])?;
-
-    Ok(Self { file_descriptor })
+    Ok(Self { descriptor_pool })
   }
 }
 
+#[derive(Debug)]
 pub struct ProtobufService {
   service_descriptor: ServiceDescriptor,
 }
 
-impl Debug for ProtobufService {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ProtobufService").finish()
-  }
-}
-
 // TODO: support for reflection
 impl ProtobufService {
-  pub fn from_file(file: &ProtobufFile, name: &str) -> Result<ProtobufService> {
+  pub fn new(file: &ProtobufSet, name: &str) -> Result<ProtobufService> {
     let service_descriptor = file
-      .file_descriptor
-      .services()
-      .find(|service| service.proto().name() == name)
+      .descriptor_pool
+      .get_service_by_name(name)
       .with_context(|| format!("Couldn't find definitions for service {name}"))?;
 
     Ok(Self { service_descriptor })
@@ -78,26 +61,28 @@ impl ProtobufOperation {
     let method = service
       .service_descriptor
       .methods()
-      .find(|method| method.proto().name() == method_name)
+      .find(|method| method.name() == method_name)
       .with_context(|| format!("Could't find method {method_name}"))?;
 
-    let input_type = method.input_type();
-    let output_type = method.output_type();
+    let input_type = method.input();
+    let output_type = method.output();
 
     Ok(Self { input_type, output_type })
   }
 
   pub fn convert_input(&self, input_json: &str) -> Result<Vec<u8>> {
-    let message = json_str_to_proto(&self.input_type, input_json)?;
-
-    let mut result: Vec<u8> = Vec::with_capacity(message.len() + 5);
+    let mut deserializer = Deserializer::from_str(input_json);
+    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer)?;
+    deserializer.end()?;
+    let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
     // set compression flag
-    result.push(0);
+    buf.put_u8(0);
     // next 4 bytes should encode message length
-    result.extend_from_slice(&(message.len() as u32).to_be_bytes());
-    result.extend(message);
+    buf.put_u32(message.encoded_len() as u32);
+    // encode the message itself
+    message.encode(&mut buf)?;
 
-    Ok(result)
+    Ok(buf)
   }
 
   pub fn convert_output(&self, bytes: &[u8]) -> Result<Value> {
@@ -108,9 +93,11 @@ impl ProtobufOperation {
     // see https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html#:~:text=Length%2DPrefixed%20Message%20Framing
     // 1st byte - compression flag
     // 2-4th bytes - length of the message
-    let message = self.output_type.parse_from_bytes(&bytes[5..])?;
+    let message = DynamicMessage::decode(self.output_type.clone(), &bytes[5..])?;
 
-    proto_to_value(&*message)
+    let json = serde_json::to_value(message)?;
+
+    Ok(async_graphql::Value::from_json(json)?)
   }
 }
 
@@ -122,7 +109,7 @@ mod tests {
   use once_cell::sync::Lazy;
   use serde_json::json;
 
-  use super::{ProtobufFile, ProtobufOperation, ProtobufService};
+  use super::{ProtobufOperation, ProtobufService, ProtobufSet};
 
   static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -144,7 +131,7 @@ mod tests {
   #[test]
   fn unknown_file() -> Result<()> {
     let proto_file = get_test_file("_unknown.proto");
-    let error = ProtobufFile::new(&proto_file).unwrap_err();
+    let error = ProtobufSet::from_proto_file(&proto_file).unwrap_err();
 
     assert_eq!(
       error.to_string(),
@@ -157,8 +144,8 @@ mod tests {
   #[test]
   fn service_not_found() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
-    let file = ProtobufFile::new(&proto_file)?;
-    let error = ProtobufService::from_file(&file, "_unknown").unwrap_err();
+    let file = ProtobufSet::from_proto_file(&proto_file)?;
+    let error = ProtobufService::new(&file, "_unknown").unwrap_err();
 
     assert_eq!(error.to_string(), "Couldn't find definitions for service _unknown");
 
@@ -168,8 +155,8 @@ mod tests {
   #[test]
   fn method_not_found() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
-    let file = ProtobufFile::new(&proto_file)?;
-    let service = ProtobufService::from_file(&file, "Greeter")?;
+    let file = ProtobufSet::from_proto_file(&proto_file)?;
+    let service = ProtobufService::new(&file, "Greeter")?;
     let error = ProtobufOperation::new(&service, "_unknown").unwrap_err();
 
     assert_eq!(error.to_string(), "Could't find method _unknown");
@@ -180,8 +167,8 @@ mod tests {
   #[test]
   fn greetings_proto_file() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
-    let file = ProtobufFile::new(&proto_file)?;
-    let service = ProtobufService::from_file(&file, "Greeter")?;
+    let file = ProtobufSet::from_proto_file(&proto_file)?;
+    let service = ProtobufService::new(&file, "Greeter")?;
     let operation = ProtobufOperation::new(&service, "SayHello")?;
 
     let input = operation.convert_input(r#"{ "name": "hello message" }"#)?;
@@ -205,8 +192,8 @@ mod tests {
   #[test]
   fn news_proto_file() -> Result<()> {
     let proto_file = get_test_file("news.proto");
-    let file = ProtobufFile::new(&proto_file)?;
-    let service = ProtobufService::from_file(&file, "NewsService")?;
+    let file = ProtobufSet::from_proto_file(&proto_file)?;
+    let service = ProtobufService::new(&file, "NewsService")?;
     let operation = ProtobufOperation::new(&service, "GetNews")?;
 
     let input = operation.convert_input(r#"{ "id": "1" }"#)?;
