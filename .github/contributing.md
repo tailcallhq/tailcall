@@ -73,7 +73,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    | Test | Base | PR | % change |
    |-------------------------------|--------------|------------------|------------|
 
-   **Iai-Callgrind Benchmarks**
+### Iai-Callgrind Benchmarks
 
 5. **Important:** Make sure all the commits are done.
 6. **Install critcmp:** Install iai-callgrind-runner.
