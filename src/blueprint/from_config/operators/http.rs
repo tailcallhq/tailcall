@@ -144,7 +144,7 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
         .and(Valid::from_option(
-          http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+          http.base_url.as_ref().or(config.upstreams.get(&http.upstream).base_url.as_ref()),
           "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_headermap(&http.headers))
@@ -174,9 +174,10 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               req_template,
               group_by: Some(GroupBy::new(http.group_by.clone())),
               dl_id: None,
+              upstream: config.upstreams.get(&http.upstream)
             })))
           } else {
-            b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+            b_field.resolver(Some(Lambda::from_request_template(req_template, config.upstreams.get(&http.upstream)).expression))
           }
         })
         .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))

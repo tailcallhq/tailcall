@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
+use std::collections::BTreeMap;
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
@@ -16,7 +17,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
+use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext, HttpClient};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -298,8 +299,11 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-        let server_ctx = ServerContext::new(blueprint, client);
+        let mut http_clients: BTreeMap<String, Arc<dyn HttpClient>> = BTreeMap::new();
+        blueprint.upstreams.0.iter().for_each(|(name, upstream)| {
+          http_clients.insert(name.clone(), Arc::new(DefaultHttpClient::new(upstream)));
+        });
+        let server_ctx = ServerContext::new(blueprint, http_clients);
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

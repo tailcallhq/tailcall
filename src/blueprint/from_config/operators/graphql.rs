@@ -18,7 +18,7 @@ pub fn update_graphql<'a>(
       let args = graphql.args.as_ref();
 
       Valid::from_option(
-        graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+        graphql.base_url.as_ref().or(config.upstreams.get(&graphql.upstream).base_url.as_ref()),
         "No base URL defined".to_string(),
       )
       .zip(helpers::headers::to_headermap(&graphql.headers))
@@ -31,7 +31,7 @@ pub fn update_graphql<'a>(
       .map(|req_template| {
         let field_name = graphql.name.clone();
         b_field.resolver(Some(
-          Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
+          Lambda::from_graphql_request_template(req_template, field_name, graphql.batch, config.upstreams.get(&graphql.upstream)).expression,
         ))
       })
     },

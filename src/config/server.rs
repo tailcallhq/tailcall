@@ -140,6 +140,8 @@ pub struct Proxy {
 #[serde(rename_all = "camelCase", default)]
 pub struct Upstream {
   #[serde(skip_serializing_if = "is_default")]
+  pub name: Option<String>,
+  #[serde(skip_serializing_if = "is_default")]
   pub pool_idle_timeout: Option<u64>,
   #[serde(skip_serializing_if = "is_default")]
   pub pool_max_idle_per_host: Option<usize>,
@@ -234,5 +236,60 @@ impl Upstream {
       batch
     });
     self
+  }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Default)]
+pub struct Upstreams(pub BTreeMap<String, Upstream>);
+
+impl Upstreams {
+  pub fn merge_right(self, other: &Self) -> Self {
+    let mut upstreams: BTreeMap<String, Upstream> = BTreeMap::new();
+
+    for (name, upstream) in &self.0 {
+      let other_upstream = other.0.get(name);
+      match other_upstream {
+        Some(other_upstream) => {
+          upstreams.insert(name.clone(), upstream.clone().merge_right(other_upstream.clone()));
+        },
+        None => {
+          upstreams.insert(name.clone(), upstream.clone());
+        }
+      }
+    }
+    for (name, other_upstream) in other.0.clone() {
+      let upstream = self.0.get(&name).clone();
+      match upstream {
+        None => {
+          upstreams.insert(name, other_upstream);
+        },
+        _ => {}
+      }
+    }
+    Self(upstreams)
+  }
+
+  pub fn get<'a>(&self, name: &Option<String>) -> Upstream {
+    match name {
+      Some(name) => {
+        match self.0.iter().find(|(upstream_name, _)| *upstream_name == name) {
+          Some((_, upstream)) => upstream.clone(),
+          None => self.get_default()
+        }
+      },
+      None => self.get_default()
+    }
+  }
+
+  pub fn get_default<'a>(&self) -> Upstream {
+    self.0.iter().find(|(upstream_name, _)| **upstream_name == "default").unwrap().1.clone()
+  }
+  
+  pub fn get_allowed_headers(&self) -> BTreeSet<String> {
+    let mut allowed_headers = BTreeSet::new();
+    self.0.iter().for_each(|(_, upstream)| {
+      allowed_headers.append(&mut upstream.get_allowed_headers());
+    });
+    allowed_headers
   }
 }

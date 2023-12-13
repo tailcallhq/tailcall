@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::config::GraphQLOperationType;
+use crate::config::{GraphQLOperationType, Upstream};
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
@@ -41,12 +41,14 @@ pub enum Unsafe {
     req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
+    upstream: Upstream,
   },
   GraphQLEndpoint {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,
+    upstream: Upstream,
   },
   JS(Box<Expression>, String),
 }
@@ -92,14 +94,14 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Unsafe(operation) => match operation {
-          Unsafe::Http { req_template, dl_id, .. } => {
+          Unsafe::Http { req_template, dl_id, upstream, .. } => {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
-            let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
+            let res = if is_get && upstream.batch.is_some() {
               let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
+              execute_request_with_dl(ctx, req, data_loader, &upstream).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -117,15 +119,15 @@ impl Expression {
 
             Ok(res.body)
           }
-          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, upstream, .. } => {
             let req = req_template.to_request(ctx)?;
 
-            let res = if ctx.req_ctx.upstream.batch.is_some()
+            let res = if upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
               let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
+              execute_request_with_dl(ctx, req, data_loader, &upstream).await?
             } else {
               execute_raw_request(ctx, req).await?
             };
@@ -185,10 +187,9 @@ async fn execute_request_with_dl<
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
   data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
+  upstream: &Upstream,
 ) -> Result<Response> {
-  let headers = ctx
-    .req_ctx
-    .upstream
+  let headers = upstream
     .batch
     .clone()
     .map(|s| s.headers)

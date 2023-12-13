@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
+use crate::config::Upstream;
 use crate::{graphql, http};
 
 #[derive(Clone)]
@@ -44,11 +45,12 @@ impl Lambda<serde_json::Value> {
     Lambda::new(Expression::Context(Context::Path(path)))
   }
 
-  pub fn from_request_template(req_template: http::RequestTemplate) -> Lambda<serde_json::Value> {
+  pub fn from_request_template(req_template: http::RequestTemplate, upstream: Upstream) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::Http {
       req_template,
       group_by: None,
       dl_id: None,
+      upstream,
     }))
   }
 
@@ -56,12 +58,14 @@ impl Lambda<serde_json::Value> {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
+    upstream: Upstream
   ) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
       req_template,
       field_name,
       batch,
       dl_id: None,
+      upstream
     }))
   }
 }
@@ -85,7 +89,8 @@ mod tests {
   use serde::de::DeserializeOwned;
   use serde_json::json;
 
-  use crate::endpoint::Endpoint;
+  use crate::config::Upstream;
+use crate::endpoint::Endpoint;
   use crate::http::{RequestContext, RequestTemplate};
   use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
 
@@ -129,7 +134,7 @@ mod tests {
     });
 
     let endpoint = RequestTemplate::try_from(Endpoint::new(server.url("/users").to_string())).unwrap();
-    let result = Lambda::from_request_template(endpoint).eval().await.unwrap();
+    let result = Lambda::from_request_template(endpoint, Upstream::default()).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
   }

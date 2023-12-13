@@ -14,7 +14,7 @@ use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoad
 pub struct RequestContext {
   pub http_client: Arc<dyn HttpClient>,
   pub server: Server,
-  pub upstream: Upstream,
+  // pub upstream: Upstream,
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -27,17 +27,18 @@ impl Default for RequestContext {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, config.upstream.clone())
+    RequestContext::new(Arc::new(DefaultHttpClient::default()), server)
   }
 }
 
 impl RequestContext {
-  pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
+  // pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
+  pub fn new(http_client: Arc<dyn HttpClient>, server: Server) -> Self {
     Self {
       req_headers: HeaderMap::new(),
       http_client,
       server,
-      upstream,
+      // upstream,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
@@ -96,9 +97,9 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     Self {
-      http_client: server_ctx.http_client.clone(),
+      http_client: Arc::new(DefaultHttpClient::default()),
       server: server_ctx.blueprint.server.clone(),
-      upstream: server_ctx.blueprint.upstream.clone(),
+      // upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),

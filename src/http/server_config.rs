@@ -1,9 +1,10 @@
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use client::DefaultHttpClient;
 
-use super::ServerContext;
+use super::{ServerContext, HttpClient};
 use crate::blueprint::{Blueprint, Http};
 use crate::http::client;
 
@@ -14,8 +15,11 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client)), blueprint }
+    let mut http_clients: BTreeMap<String, Arc<dyn HttpClient>> = BTreeMap::new();
+    blueprint.upstreams.0.iter().for_each(|(name, upstream)| {
+      http_clients.insert(name.clone(), Arc::new(DefaultHttpClient::new(upstream)));
+    });
+    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_clients)), blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {

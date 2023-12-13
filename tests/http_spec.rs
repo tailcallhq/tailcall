@@ -171,8 +171,13 @@ impl HttpSpec {
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient { spec: self.clone() });
-    let server_context = ServerContext::new(blueprint, client);
+    let mut http_clients: BTreeMap<String, Arc<dyn HttpClient>> = BTreeMap::new();
+    blueprint.upstreams.0.iter().for_each(|(name, _)| {
+      http_clients.insert(name.clone(), Arc::new(MockHttpClient { spec: self.clone() }));
+    });
+
+    // let client = Arc::new(MockHttpClient { spec: self.clone() });
+    let server_context = ServerContext::new(blueprint, http_clients);
     Arc::new(server_context)
   }
 }

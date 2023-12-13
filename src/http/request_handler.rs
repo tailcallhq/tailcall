@@ -25,8 +25,8 @@ fn not_found() -> Result<Response<Body>> {
 }
 
 fn create_request_context(req: &Request<Body>, server_ctx: &ServerContext) -> RequestContext {
-  let upstream = server_ctx.blueprint.upstream.clone();
-  let allowed = upstream.get_allowed_headers();
+  let upstreams = server_ctx.blueprint.upstreams.clone();
+  let allowed = upstreams.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
   RequestContext::from(server_ctx).req_headers(headers)
 }
