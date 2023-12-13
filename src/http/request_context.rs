@@ -13,6 +13,7 @@ use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoad
 #[derive(Setters)]
 pub struct RequestContext {
   pub http_client: Arc<dyn HttpClient>,
+  pub http2_client: Arc<dyn HttpClient>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -36,6 +37,7 @@ impl RequestContext {
     Self {
       req_headers: HeaderMap::new(),
       http_client,
+      http2_client: Arc::new(DefaultHttpClient::http2(&upstream)),
       server,
       upstream,
       http_data_loaders: Arc::new(vec![]),
@@ -47,6 +49,10 @@ impl RequestContext {
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
     self.http_client.execute(req).await
+  }
+
+  pub async fn execute_raw_request(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    self.http2_client.execute_raw_request(req).await
   }
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
@@ -97,6 +103,7 @@ impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     Self {
       http_client: server_ctx.http_client.clone(),
+      http2_client: server_ctx.http2_client.clone(),
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),

@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::fs;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -8,6 +9,7 @@ use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
+use url::Url;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
@@ -19,6 +21,7 @@ use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Respons
 use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
+use crate::mustache::Mustache;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -93,6 +96,53 @@ impl Expression {
         )),
         Expression::Unsafe(operation) => match operation {
           Unsafe::Http { req_template, dl_id, .. } => {
+            if let Some(value) = req_template.headers.iter().find(|(k, _)| k == "content-type") {
+              if value.1 == Mustache::parse("application/grpc")? {
+                let proto = r#"syntax = "proto3";
+
+                                    message News {
+                                        string id = 1;
+                                        string title = 2;
+                                        string body = 3;
+                                        string postImage = 4;
+                                    }
+                                    
+                                    service NewsService {
+                                        rpc GetAllNews (Empty) returns (NewsList) {}
+                                        rpc GetNews (NewsId) returns (News) {}
+                                        rpc DeleteNews (NewsId) returns (Empty) {}
+                                        rpc EditNews (News) returns (News) {}
+                                        rpc AddNews (News) returns (News) {}
+                                    }
+                                    
+                                    message NewsId {
+                                        string id = 1;/**/
+                                    }
+                                    
+                                    message Empty {}
+                                    
+                                    message NewsList {
+                                       repeated News news = 1;
+                                    }"#; // Todo:  auto generate at compile time from reflection
+                let path = Url::options().parse(&req_template.endpoint.path)?.path().to_string();
+                let parts: Vec<&str> = path.split('/').filter(|&s| !s.is_empty()).collect();
+                let temp_dir = tempfile::tempdir().unwrap();
+                let tempfile = temp_dir.path().join("news.proto");
+                // For now we need to write files to the disk.
+                fs::write(&tempfile, proto).unwrap();
+
+                let file = crate::grpc::protobuf::ProtobufFile::new(&tempfile)?;
+                let service = crate::grpc::protobuf::ProtobufService::from_file(&file, parts[0])?;
+                let operation = crate::grpc::protobuf::ProtobufOperation::new(&service, parts[1])?;
+                let req = req_template.to_grpc_request(ctx, &operation)?;
+                let res = execute_raw_grpc_request(ctx, req).await?;
+                if res.status().is_success() {
+                  let bytes = res.bytes().await?;
+                  let const_value = operation.convert_output(&bytes)?;
+                  return Ok(const_value);
+                }
+              }
+            }
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
@@ -172,6 +222,19 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx
       .req_ctx
       .execute(req)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+  )
+}
+
+async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  req: Request,
+) -> Result<reqwest::Response> {
+  Ok(
+    ctx
+      .req_ctx
+      .execute_raw_request(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )
