@@ -1,8 +1,7 @@
-schema 
+schema
   @upstream(name: "foo", baseURL: "http://foo.com")
-  @upstream(name: "bar", baseURL: "http://bar.com") 
-  @upstream(baseURL: "http://baz.com")
-{
+  @upstream(name: "bar", baseURL: "http://bar.com")
+  @upstream(baseURL: "http://baz.com") {
   query: Query
 }
 

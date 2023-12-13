@@ -5,7 +5,6 @@ use crate::blueprint::compress::compress;
 use crate::blueprint::*;
 use crate::config::{Arg, Config, Field};
 use crate::json::JsonSchema;
-
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 
