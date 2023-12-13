@@ -1,8 +1,9 @@
+pub mod benchmark;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
+use benchmark::run_data_loader_benchmark::{run_data_loader_benchmark, MockHttpClient};
 use criterion::{criterion_group, criterion_main, Criterion};
-use benchmark::{run_data_loader_benchmark, MockHttpClient};
 
 // Benchmark function for the data loader
 fn benchmark_data_loader(c: &mut Criterion) {

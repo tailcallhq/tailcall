@@ -1,6 +1,7 @@
+pub mod benchmark;
+use benchmark::gather_path_matches::gather_path_matches;
 use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
 use serde_json::json;
-use tailcall::benchmark::gather_path_matches;
 
 // iai-callgrind benchmark
 #[library_benchmark]

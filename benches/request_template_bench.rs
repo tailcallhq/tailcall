@@ -1,6 +1,7 @@
+pub mod benchmark;
+use benchmark::create_request_templates::{create_request_templates, Context};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde_json::json;
-use benchmark::{create_request_templates, Context};
 
 // Benchmark function to test the performance of to_request method
 fn benchmark_to_request(c: &mut Criterion) {

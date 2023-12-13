@@ -1,6 +1,7 @@
+pub mod benchmark;
+use benchmark::gather_path_matches::gather_path_matches;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde_json::json;
-use benchmark::gather_path_matches;
 
 fn benchmark_batched_body(c: &mut Criterion) {
   c.bench_function("test_batched_body", |b| {

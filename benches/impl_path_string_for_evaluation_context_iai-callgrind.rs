@@ -1,8 +1,9 @@
+pub mod benchmark;
+use benchmark::assert_test::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
-use tailcall::benchmark::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use tailcall::http::RequestContext;
 use tailcall::lambda::EvaluationContext;
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values

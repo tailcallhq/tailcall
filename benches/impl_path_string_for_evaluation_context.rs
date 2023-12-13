@@ -1,8 +1,9 @@
+pub mod benchmark;
+use benchmark::assert_test::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use benchmark::{assert_test, MockGraphqlContext, TEST_HEADERS, TEST_VARS};
 use tailcall::http::RequestContext;
 use tailcall::lambda::EvaluationContext;
-use tailcall::path_string::PathString;
+use tailcall::path::PathString;
 
 // constant input values for benchmarking
 const INPUT_VALUE: &[&[&str]] = &[

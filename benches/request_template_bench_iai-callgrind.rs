@@ -1,6 +1,7 @@
+pub mod benchmark;
+use benchmark::create_request_templates::{create_request_templates, Context};
 use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
 use serde_json::json;
-use tailcall::benchmark::{create_request_templates, Context};
 
 // Benchmark function for IAI-callgrind
 #[library_benchmark]
