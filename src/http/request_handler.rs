@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::grpc::protobuf::{ProtobufSet, ProtobufOperation, ProtobufService};
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufService, ProtobufSet};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
