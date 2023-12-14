@@ -71,9 +71,14 @@ impl ProtobufOperation {
     Ok(Self { input_type, output_type })
   }
 
-  pub fn convert_input(&self, input_json: &str) -> Result<Vec<u8>> {
-    let mut deserializer = Deserializer::from_str(input_json);
-    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer)?;
+  pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
+    let mut deserializer = Deserializer::from_str(input);
+    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
+      format!(
+        "Failed to parse input according to type {}",
+        self.input_type.full_name()
+      )
+    })?;
     deserializer.end()?;
     let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
     // set compression flag
@@ -94,7 +99,8 @@ impl ProtobufOperation {
     // see https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html#:~:text=Length%2DPrefixed%20Message%20Framing
     // 1st byte - compression flag
     // 2-4th bytes - length of the message
-    let message = DynamicMessage::decode(self.output_type.clone(), &bytes[5..])?;
+    let message = DynamicMessage::decode(self.output_type.clone(), &bytes[5..])
+      .with_context(|| format!("Failed to parse response for type {}", self.output_type.full_name()))?;
 
     let json = serde_json::to_value(message)?;
 

@@ -181,6 +181,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   Ok(
     ctx
       .req_ctx
+      .universal_http_client
       .execute(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
@@ -194,7 +195,8 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   Ok(
     ctx
       .req_ctx
-      .execute_raw_request(req)
+      .http2_only_client
+      .execute_raw(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )

@@ -173,7 +173,7 @@ impl HttpSpec {
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let server_context = ServerContext::new(blueprint, client, http2_client);
+    let server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
     Arc::new(server_context)
   }
 }
@@ -244,7 +244,7 @@ impl HttpClient for MockHttpClient {
     Ok(response)
   }
 
-  async fn execute_raw_request(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+  async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
     todo!()
   }
 }

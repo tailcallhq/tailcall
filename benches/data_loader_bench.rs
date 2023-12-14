@@ -22,7 +22,7 @@ impl HttpClient for MockHttpClient {
     Ok(Response::default())
   }
 
-  async fn execute_raw_request(&self, _req: Request) -> anyhow::Result<reqwest::Response> {
+  async fn execute_raw(&self, _req: Request) -> anyhow::Result<reqwest::Response> {
     todo!()
   }
 }

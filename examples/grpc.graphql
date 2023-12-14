@@ -7,14 +7,14 @@ type Query {
     @grpc(
       service: "NewsService"
       method: "GetAllNews"
-      baseURL: "http://localhost:4000"
+      baseURL: "http://localhost:50051"
       protoPath: "src/grpc/tests/news.proto"
     )
   newsById(news: NewsInput!): News
     @grpc(
       service: "NewsService"
       method: "GetNews"
-      baseURL: "http://localhost:4000"
+      baseURL: "http://localhost:50051"
       body: "{{args.news}}"
       protoPath: "src/grpc/tests/news.proto"
     )
