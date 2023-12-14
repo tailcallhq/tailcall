@@ -385,7 +385,7 @@ pub struct Grpc {
   pub proto_path: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
