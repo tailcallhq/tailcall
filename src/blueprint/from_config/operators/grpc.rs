@@ -53,8 +53,8 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         // For now we need to write files to the disk.
         fs::write(&tempfile, proto.as_str()).unwrap();
 
-        let file = crate::grpc::protobuf::ProtobufFile::new(&tempfile).unwrap();
-        let service = crate::grpc::protobuf::ProtobufService::from_file(&file, grpc.service.as_str()).unwrap();
+        let file = crate::grpc::protobuf::ProtobufSet::from_proto_file(&tempfile).unwrap();
+        let service = crate::grpc::protobuf::ProtobufService::new(&file, grpc.service.as_str()).unwrap();
         let operation = crate::grpc::protobuf::ProtobufOperation::new(&service, grpc.method.as_str()).unwrap();
 
         b_field.resolver(Some(
