@@ -24,8 +24,8 @@ impl ProtobufSet {
       .parent()
       .context("Failed to resolve parent dir for proto file")?;
 
-    let file_descriptor_set = protox::compile([proto_path], [parent_dir])
-      .with_context(|| format!("Failed to parse proto file {}", proto_path.display()))?;
+    let file_descriptor_set =
+      protox::compile([proto_path], [parent_dir]).with_context(|| "Failed to parse or load proto file".to_string())?;
 
     let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
 

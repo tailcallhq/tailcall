@@ -23,7 +23,11 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
       )
       .zip(
         Valid::from_option(
-          Some(PathBuf::from(&grpc.proto_path)),
+          Some({
+            let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            d.push(&grpc.proto_path);
+            d
+          }),
           "No proto path defined".to_string(),
         )
         .and_then(|path| {
