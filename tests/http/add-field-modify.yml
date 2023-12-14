@@ -1,0 +1,29 @@
+---
+config: !file tests/http/config/add-field-modify.graphql
+name: Add field modify
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+        address:
+          street: "Kulas Light"
+          city: "Gwenborough"
+          zipcode: "92998-3874"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user { name street city zipcode } }"
+    response:
+      body:
+        data:
+          user:
+            name: foo
+            street: "Kulas Light"
+            city: "Gwenborough"
+            zipcode: "92998-3874"
