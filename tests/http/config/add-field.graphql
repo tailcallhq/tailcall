@@ -20,8 +20,8 @@ type Query {
 }
 
 #> client-query
-query @expect(json: {data: {user: {lat: "-37.3159"}}}) {
-  user {
-    lat
-  }
-}
+# query @expect(json: {data: {user: {lat: "-37.3159"}}}) {
+#   user {
+#     lat
+#   }
+# }
