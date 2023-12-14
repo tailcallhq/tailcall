@@ -8,7 +8,7 @@ type Query {
       service: "NewsService"
       method: "GetAllNews"
       baseURL: "http://localhost:4000"
-      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/protobuf/tests/news.proto"
+      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/tests/news.proto"
     )
   newsById(news: NewsInput!): News
     @grpc(
@@ -16,7 +16,7 @@ type Query {
       method: "GetNews"
       baseURL: "http://localhost:4000"
       body: "{{args.news}}"
-      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/protobuf/tests/news.proto"
+      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/tests/news.proto"
     )
 }
 input NewsInput {
