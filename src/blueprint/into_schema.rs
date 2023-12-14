@@ -92,7 +92,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let cached_response = ctx.req_ctx.cache.read().unwrap().get(&key);
                 let const_value = match cached_response {
                   Some(const_value) => {
-                    println!("hitting cache for {const_value:?}");
                     const_value
                   }
                   None => {
