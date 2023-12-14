@@ -169,7 +169,7 @@ impl Type {
 
 pub type CacheRules = Vec<CacheRule>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CacheRule {
   MaxAge(u64),
 }
