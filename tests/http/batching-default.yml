@@ -1,0 +1,69 @@
+# #> server-sdl
+# schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+#   query: Query
+# }
+
+# type Query {
+#   posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+# }
+
+# type Post {
+#   id: Int
+#   title: String
+#   body: String
+#   userId: Int!
+#   user: User
+#     @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], groupBy: ["id"])
+# }
+
+# type User {
+#   id: Int
+#   name: String
+# }
+
+# #> client-query
+# # query @expect(json: {data: {posts: [{userId: 1, user: {id: 1}}, {userId: 2, user: {id: 2}}]}}) {
+# #   posts {
+# #     user {
+# #       id
+# #     }
+# #     userId
+# #   }
+# # }
+
+---
+config: !file tests/http/config/batching-default.graphql
+name: Batching default
+
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
+    response:
+      body:
+        - id: 11
+          userId: 1
+        - id: 3
+          userId: 2
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+    response:
+      body:
+        - id: 1
+        - id: 2
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { user { id } userId } }"
+    response:
+      body:
+        data:
+          posts:
+            - user:
+                id: 1
+              userId: 1
+            - user:
+                id: 2
+              userId: 2

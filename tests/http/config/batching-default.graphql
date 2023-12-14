@@ -22,11 +22,11 @@ type User {
 }
 
 #> client-query
-query @expect(json: {data: {posts: [{userId: 1, user: {id: 1}}, {userId: 2, user: {id: 2}}]}}) {
-  posts {
-    user {
-      id
-    }
-    userId
-  }
-}
+# query @expect(json: {data: {posts: [{userId: 1, user: {id: 1}}, {userId: 2, user: {id: 2}}]}}) {
+#   posts {
+#     user {
+#       id
+#     }
+#     userId
+#   }
+# }
