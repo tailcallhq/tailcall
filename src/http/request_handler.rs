@@ -1,5 +1,5 @@
 use std::collections::BTreeSet;
-use std::fs;
+
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -11,7 +11,7 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufService, ProtobufSet};
+
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -51,66 +51,6 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
     resp
       .headers_mut()
       .extend(server_ctx.blueprint.server.response_headers.clone());
-  }
-}
-
-pub async fn test(_req: Request<Body>, _server_ctx: &ServerContext) -> Result<Response<Body>> {
-  let client = reqwest::Client::builder().http2_prior_knowledge().build()?; // Todo reuse the client from server context // Current client only expose execute it should expose post
-  let proto = r#"syntax = "proto3";
-
-message News {
-    string id = 1;
-    string title = 2;
-    string body = 3;
-    string postImage = 4;
-}
-
-service NewsService {
-    rpc GetAllNews (Empty) returns (NewsList) {}
-    rpc GetNews (NewsId) returns (News) {}
-    rpc DeleteNews (NewsId) returns (Empty) {}
-    rpc EditNews (News) returns (News) {}
-    rpc AddNews (News) returns (News) {}
-}
-
-message NewsId {
-    string id = 1;
-}
-
-message Empty {}
-
-message NewsList {
-   repeated News news = 1;
-}"#; // Todo:  auto generate at compile time from reflection
-
-  let temp_dir = tempfile::tempdir().unwrap();
-  let tempfile = temp_dir.path().join("news.proto");
-  // For now we need to write files to the disk.
-  fs::write(&tempfile, proto).unwrap();
-
-  let file = ProtobufSet::from_proto_file(&tempfile)?;
-  let service = ProtobufService::new(&file, "NewsService")?;
-  let operation = ProtobufOperation::new(&service, "GetNews")?;
-
-  let mut headers = HeaderMap::new();
-  headers.insert(
-    reqwest::header::CONTENT_TYPE,
-    reqwest::header::HeaderValue::from_static("application/grpc"),
-  );
-
-  let response = client
-    .get("http://localhost:50051/NewsService/GetNews")
-    .headers(headers)
-    .body(operation.convert_input(r#"{ "id": "1" }"#)?)
-    .send()
-    .await?;
-  if response.status().is_success() {
-    let bytes = response.bytes().await?;
-    Ok(Response::new(Body::from(serde_json::to_string(
-      &operation.convert_output(&bytes)?,
-    )?)))
-  } else {
-    todo!()
   }
 }
 
@@ -160,15 +100,6 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::GET if req.uri().path() == "/test" => {
-      let r = test(req, state.as_ref()).await;
-
-      if r.is_err() {
-        dbg!(&r);
-      }
-
-      r
-    }
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
     _ => not_found(),
