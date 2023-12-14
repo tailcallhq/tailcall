@@ -20,14 +20,6 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
   pub timeout: Duration,
 }
 
-static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(RequestContext::default);
-
-impl Default for EvaluationContext<'static, EmptyResolverContext> {
-  fn default() -> Self {
-    Self::new(&REQUEST_CTX, &EmptyResolverContext)
-  }
-}
-
 impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
   pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
     Self { timeout: Duration::from_millis(5), req_ctx, graphql_ctx }

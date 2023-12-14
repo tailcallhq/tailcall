@@ -4,16 +4,21 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
+use super::{DefaultHttpClient, HttpClientOptions};
 use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
+use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
 
 #[derive(Setters)]
 pub struct RequestContext {
-  pub http_client: Arc<dyn HttpClient>,
-  pub http2_client: Arc<dyn HttpClient>,
+  // TODO: consider storing http clients where they are used i.e. expression and dataloaders
+  pub universal_http_client: Arc<dyn HttpClient>,
+  // http2 only client is required for grpc in cases the server supports only http2
+  // and the request will failed on protocol negotiation
+  // having separate client for now looks like the only way to do with reqwest
+  pub http2_only_client: Arc<dyn HttpClient>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -25,19 +30,17 @@ pub struct RequestContext {
 
 impl Default for RequestContext {
   fn default() -> Self {
-    let config = config::Config::default();
+    let config::Config { server, upstream, .. } = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(config.server.clone()).unwrap();
-    RequestContext::new(Arc::new(DefaultHttpClient::default()), server, config.upstream.clone())
-  }
-}
+    let server = Server::try_from(server).unwrap();
 
-impl RequestContext {
-  pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
     Self {
       req_headers: HeaderMap::new(),
-      http_client,
-      http2_client: Arc::new(DefaultHttpClient::http2(&upstream)),
+      universal_http_client: Arc::new(DefaultHttpClient::new(&upstream)),
+      http2_only_client: Arc::new(DefaultHttpClient::with_options(
+        &upstream,
+        HttpClientOptions { http2_only: true },
+      )),
       server,
       upstream,
       http_data_loaders: Arc::new(vec![]),
@@ -46,14 +49,9 @@ impl RequestContext {
       cache_public: Arc::new(Mutex::new(None)),
     }
   }
+}
 
-  pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-    self.http_client.execute(req).await
-  }
-
-  pub async fn execute_raw_request(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
-    self.http2_client.execute_raw_request(req).await
-  }
+impl RequestContext {
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
@@ -102,8 +100,8 @@ impl RequestContext {
 impl From<&ServerContext> for RequestContext {
   fn from(server_ctx: &ServerContext) -> Self {
     Self {
-      http_client: server_ctx.http_client.clone(),
-      http2_client: server_ctx.http2_client.clone(),
+      universal_http_client: server_ctx.universal_http_client.clone(),
+      http2_only_client: server_ctx.http2_only_client.clone(),
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
@@ -118,7 +116,10 @@ impl From<&ServerContext> for RequestContext {
 #[cfg(test)]
 mod test {
 
+  use std::sync::{Arc, Mutex};
+
   use cache_control::Cachability;
+  use hyper::HeaderMap;
 
   use crate::http::RequestContext;
 

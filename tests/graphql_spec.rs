@@ -16,7 +16,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{DefaultHttpClient, RequestContext, ServerContext};
+use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -298,9 +298,7 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-        let http2_client = Arc::new(DefaultHttpClient::http2(&blueprint.upstream));
-        let server_ctx = ServerContext::new(blueprint, client, http2_client);
+        let server_ctx = ServerContext::new(blueprint);
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

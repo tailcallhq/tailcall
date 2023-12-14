@@ -1,11 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use client::DefaultHttpClient;
-
 use super::ServerContext;
 use crate::blueprint::{Blueprint, Http};
-use crate::http::client;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
@@ -14,9 +11,7 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    let http2_client = Arc::new(DefaultHttpClient::http2(&blueprint.upstream));
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client, http2_client)), blueprint }
+    Self { server_context: Arc::new(ServerContext::new(blueprint.clone())), blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {
