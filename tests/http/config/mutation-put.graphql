@@ -1,4 +1,3 @@
-#> server-sdl
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
   mutation: Mutation
@@ -29,11 +28,4 @@ type Query {
 type User {
   id: Int
   name: String
-}
-
-#> client-query
-mutation @expect(json: {data: {insertPost: {body: "abc"}}}) {
-  insertPost(input: {body: "abc", title: "bar", userId: 1, id: 100}) {
-    body
-  }
 }
