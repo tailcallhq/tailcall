@@ -1,4 +1,5 @@
-use std::fs;
+
+use std::path::PathBuf;
 
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
 
@@ -45,15 +46,8 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         .into()
       })
       .map(|req_template| {
-        let proto = fs::read_to_string(&grpc.proto_path)
-          .map_err(|e| ValidationError::new(e.to_string()))
-          .unwrap();
-        let temp_dir = tempfile::tempdir().unwrap();
-        let tempfile = temp_dir.path().join(format!("{}.proto", grpc.service));
-        // For now we need to write files to the disk.
-        fs::write(&tempfile, proto.as_str()).unwrap();
-
-        let file = crate::grpc::protobuf::ProtobufSet::from_proto_file(&tempfile).unwrap();
+        let pathbuf = PathBuf::from(&grpc.proto_path);
+        let file = crate::grpc::protobuf::ProtobufSet::from_proto_file(&pathbuf).unwrap();
         let service = crate::grpc::protobuf::ProtobufService::new(&file, grpc.service.as_str()).unwrap();
         let operation = crate::grpc::protobuf::ProtobufOperation::new(&service, grpc.method.as_str()).unwrap();
 

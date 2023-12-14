@@ -5,7 +5,8 @@ use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use async_graphql::Value;
-use prost::{bytes::BufMut, Message};
+use prost::bytes::BufMut;
+use prost::Message;
 use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, ServiceDescriptor};
 use serde_json::Deserializer;
 
@@ -23,7 +24,7 @@ impl ProtobufSet {
       .parent()
       .context("Failed to resolve parent dir for proto file")?;
 
-    let file_descriptor_set = protox::compile(&[proto_path], &[parent_dir])
+    let file_descriptor_set = protox::compile([proto_path], [parent_dir])
       .with_context(|| format!("Failed to parse proto file {}", proto_path.display()))?;
 
     let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
