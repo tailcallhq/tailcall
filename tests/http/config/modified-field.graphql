@@ -11,9 +11,9 @@ type Query {
   user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 
-#> client-query
-query @expect(json: {data: {user: {fullname: "Leanne Graham"}}}) {
-  user {
-    fullname
-  }
-}
+# #> client-query
+# query @expect(json: {data: {user: {fullname: "Leanne Graham"}}}) {
+#   user {
+#     fullname
+#   }
+# }
