@@ -19,8 +19,6 @@ serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
 sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
-tempfile = "3.8.1"
-
 reqwest = { version = "0.11", features = [
    "json",
    "rustls-tls"

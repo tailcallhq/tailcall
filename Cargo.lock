@@ -3258,7 +3258,6 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "stripmargin",
- "tempfile",
  "thiserror",
  "tokio",
  "url",
