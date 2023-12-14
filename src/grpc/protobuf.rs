@@ -134,10 +134,7 @@ mod tests {
     let proto_file = get_test_file("_unknown.proto");
     let error = ProtobufSet::from_proto_file(&proto_file).unwrap_err();
 
-    assert_eq!(
-      error.to_string(),
-      format!("Failed to parse proto file {}", proto_file.display())
-    );
+    assert_eq!(error.to_string(), format!("Failed to parse or load proto file"));
 
     Ok(())
   }
