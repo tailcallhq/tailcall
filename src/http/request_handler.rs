@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -11,7 +10,6 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
