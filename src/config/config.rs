@@ -17,7 +17,7 @@ use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
   #[serde(default)]
@@ -124,7 +124,7 @@ impl Config {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   #[serde(default)]
@@ -188,7 +188,7 @@ fn merge_unions(
   self_unions
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq)]
 #[setters(strip_option)]
 pub struct RootSchema {
   pub query: Option<String>,
@@ -207,7 +207,7 @@ impl RootSchema {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq)]
 #[setters(strip_option)]
 pub struct Field {
   #[serde(rename = "type")]
@@ -258,14 +258,34 @@ impl Field {
     self.list = true;
     self
   }
+
+  pub fn int() -> Self {
+    Self { type_of: "Int".to_string(), ..Default::default() }
+  }
+
+  pub fn string() -> Self {
+    Self { type_of: "String".to_string(), ..Default::default() }
+  }
+
+  pub fn float() -> Self {
+    Self { type_of: "Float".to_string(), ..Default::default() }
+  }
+
+  pub fn boolean() -> Self {
+    Self { type_of: "Boolean".to_string(), ..Default::default() }
+  }
+
+  pub fn id() -> Self {
+    Self { type_of: "ID".to_string(), ..Default::default() }
+  }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Unsafe {
   pub script: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Modify {
   pub name: Option<String>,
   #[serde(default)]
@@ -273,12 +293,12 @@ pub struct Modify {
   pub omit: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Inline {
   pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Arg {
   #[serde(rename = "type")]
   pub type_of: String,
@@ -291,7 +311,7 @@ pub struct Arg {
   pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Union {
   pub types: BTreeSet<String>,
   pub doc: Option<String>,
@@ -304,7 +324,7 @@ impl Union {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct Http {
   pub path: String,
   #[serde(default)]
@@ -329,7 +349,7 @@ pub struct Http {
   pub upstream: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct GraphQL {
   pub name: String,
   pub args: Option<KeyValues>,
@@ -363,12 +383,12 @@ impl Display for GraphQLOperationType {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Const {
   pub data: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct AddField {
   pub name: String,
   pub path: Vec<String>,
@@ -402,7 +422,7 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url<Iter>(file_paths: Iter) -> Result<Config>
+  pub async fn from_iter<Iter>(file_paths: Iter) -> Result<Config>
   where
     Iter: Iterator,
     Iter::Item: AsRef<str>,
@@ -415,6 +435,8 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+  use pretty_assertions::assert_eq;
+
   use super::*;
 
   #[test]
@@ -435,5 +457,12 @@ mod tests {
   fn test_graphql_directive_name() {
     let name = GraphQL::directive_name();
     assert_eq!(name, "graphQL");
+  }
+
+  #[test]
+  fn test_from_sdl_empty() {
+    let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+    let expected = Config::default().types(vec![("Foo", Type::default().fields(vec![("a", Field::int())]))]);
+    assert_eq!(actual, expected);
   }
 }
