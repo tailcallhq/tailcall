@@ -1,5 +1,8 @@
 use std::borrow::Cow;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, SchemaBuilder, {self},
@@ -30,6 +33,26 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
+fn hash_const_value<H: Hasher>(const_value: &ConstValue, state: &mut H) {
+  match const_value {
+    ConstValue::Null => {}
+    ConstValue::Boolean(val) => val.hash(state),
+    ConstValue::Enum(name) => name.hash(state),
+    ConstValue::Number(num) => num.hash(state),
+    ConstValue::Binary(bytes) => bytes.hash(state),
+    ConstValue::String(string) => string.hash(state),
+    ConstValue::List(list) => list.iter().for_each(|val| hash_const_value(val, state)),
+    ConstValue::Object(object) => {
+      let mut tmp_list: Vec<_> = object.iter().collect();
+      tmp_list.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
+      tmp_list.iter().for_each(|(key, value)| {
+        key.hash(state);
+        hash_const_value(value, state);
+      })
+    }
+  }
+}
+
 fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
@@ -38,6 +61,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
+        let def_name = def.name.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
@@ -48,9 +72,42 @@ fn to_type(def: &Definition) -> dynamic::Type {
             }
             Some(expr) => {
               let expr = expr.to_owned();
+              let def_name = def_name.clone();
+              let field_name = field_name.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
-                let const_value = expr.eval(&ctx).await?;
+                let mut hasher = DefaultHasher::new();
+                let state = &mut hasher;
+                def_name.hash(state);
+                field_name.hash(state);
+
+                let mut args_list: Vec<_> = ctx.graphql_ctx.args.iter().collect();
+                args_list.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
+                args_list.iter().for_each(|(key, value)| {
+                  key.hash(state);
+                  hash_const_value(value.as_value(), state);
+                });
+
+                let key = hasher.finish();
+                let cached_response = ctx.req_ctx.cache.read().unwrap().get(&key);
+                let const_value = match cached_response {
+                  Some(const_value) => {
+                    println!("hitting cache for {const_value:?}");
+                    const_value
+                  }
+                  None => {
+                    let response = expr.eval(&ctx).await?;
+
+                    ctx
+                      .req_ctx
+                      .cache
+                      .write()
+                      .unwrap()
+                      .insert(key, response.clone(), Duration::from_secs(10));
+
+                    response
+                  }
+                };
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),
                   a => FieldValue::from(a),

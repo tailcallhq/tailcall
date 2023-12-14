@@ -139,6 +139,8 @@ pub struct Type {
   pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
   pub scalar: bool,
+  #[serde(skip)]
+  pub cache_rules: CacheRules,
 }
 
 impl Type {
@@ -163,6 +165,13 @@ impl Type {
     }
     Self { fields, ..self.clone() }
   }
+}
+
+pub type CacheRules = Vec<CacheRule>;
+
+#[derive(Clone, Debug)]
+pub enum CacheRule {
+  MaxAge(u64),
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {

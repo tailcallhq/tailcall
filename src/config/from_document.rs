@@ -7,8 +7,10 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
+use super::{CacheRule, CacheRules};
 use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
+use crate::json::JsonLike;
 use crate::valid::Valid;
 
 pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
@@ -73,17 +75,36 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
+    let cache_rules = type_definition
+      .node
+      .directives
+      .iter()
+      .find(|const_directive| const_directive.node.name.node.eq("cache"))
+      .map(|const_directive| {
+        const_directive
+          .node
+          .arguments
+          .iter()
+          .filter_map(|(name, value)| match name.node.as_str() {
+            "maxAge" => Some(CacheRule::MaxAge(value.node.as_u64_ok().unwrap())),
+            _ => None,
+          })
+          .collect()
+      })
+      .unwrap_or(vec![]);
     match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => to_object_type(
         &object_type,
         &type_definition.node.description,
         &type_definition.node.directives,
+        cache_rules,
       )
       .some(),
       TypeKind::Interface(interface_type) => to_object_type(
         &interface_type,
         &type_definition.node.description,
         &type_definition.node.directives,
+        cache_rules,
       )
       .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
@@ -120,10 +141,13 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<
 
   Valid::succeed(unions)
 }
+
+#[allow(clippy::too_many_arguments)]
 fn to_object_type<T>(
   object: &T,
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
+  cache_rules: CacheRules,
 ) -> Valid<config::Type, String>
 where
   T: ObjectLike,
@@ -136,7 +160,7 @@ where
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+    config::Type { fields, added_fields, doc, interface, implements, cache_rules, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
