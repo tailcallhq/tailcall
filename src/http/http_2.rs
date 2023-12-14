@@ -12,7 +12,7 @@ use tokio::fs::File;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use super::{handle_request, log_launch_and_open_browser};
+use super::{handle_request, log_launch_and_open_browser, DefaultHttpClient};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
@@ -65,7 +65,7 @@ pub async fn start_http_2(
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        handle_request::<GraphQLRequest, DefaultHttpClient>(req, state.server_context.clone())
       }))
     }
   });
@@ -74,7 +74,7 @@ pub async fn start_http_2(
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        handle_request::<GraphQLBatchRequest, DefaultHttpClient>(req, state.server_context.clone())
       }))
     }
   });

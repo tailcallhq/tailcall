@@ -9,7 +9,7 @@ use crate::http::client;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub server_context: Arc<ServerContext>,
+  pub server_context: Arc<ServerContext<DefaultHttpClient>>,
 }
 
 impl ServerConfig {

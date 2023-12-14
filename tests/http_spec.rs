@@ -165,7 +165,7 @@ impl HttpSpec {
     anyhow::Ok(spec?)
   }
 
-  async fn server_context(&self) -> Arc<ServerContext> {
+  async fn server_context(&self) -> Arc<ServerContext<MockHttpClient>> {
     let config = match self.config.clone() {
       ConfigSource::File(file) => Config::from_iter([file].iter()).await.unwrap(),
       ConfigSource::Inline(config) => config,
@@ -238,7 +238,7 @@ impl HttpClient for MockHttpClient {
     }
 
     // Set the body of the response.
-    response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
+    response.body = ConstValue::from_json(mock_response.0.body)?;
 
     Ok(response)
   }
@@ -342,8 +342,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_request::<GraphQLBatchRequest>(req, server_context).await
+    handle_request::<GraphQLBatchRequest, MockHttpClient>(req, server_context).await
   } else {
-    handle_request::<GraphQLRequest>(req, server_context).await
+    handle_request::<GraphQLRequest, MockHttpClient>(req, server_context).await
   }
 }

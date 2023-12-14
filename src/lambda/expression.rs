@@ -14,7 +14,7 @@ use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
-use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::http::{self, cache_policy, DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
 use crate::json::JsonLike;
@@ -73,9 +73,9 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send, Client: HttpClient>(
     &'a self,
-    ctx: &'a EvaluationContext<'a, Ctx>,
+    ctx: &'a EvaluationContext<'a, Ctx, Client>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
     Box::pin(async move {
       match self {
@@ -97,7 +97,7 @@ impl Expression {
             let is_get = req.method() == reqwest::Method::GET;
 
             let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader<Client>>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -123,7 +123,7 @@ impl Expression {
             let res = if ctx.req_ctx.upstream.batch.is_some()
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
+              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader<Client>>> =
                 dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
             } else {
@@ -156,7 +156,10 @@ impl Expression {
   }
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
+fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>, Client: HttpClient>(
+  ctx: &EvaluationContext<'ctx, Ctx, Client>,
+  res: &Response,
+) {
   if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
     if let Some(policy) = cache_policy(res) {
       ctx.req_ctx.set_cache_control(policy);
@@ -164,8 +167,8 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationConte
   }
 }
 
-async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
-  ctx: &EvaluationContext<'ctx, Ctx>,
+async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>, Client: HttpClient>(
+  ctx: &EvaluationContext<'ctx, Ctx, Client>,
   req: Request,
 ) -> Result<Response> {
   Ok(
@@ -181,8 +184,9 @@ async fn execute_request_with_dl<
   'ctx,
   Ctx: ResolverContextLike<'ctx>,
   Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+  Client: HttpClient,
 >(
-  ctx: &EvaluationContext<'ctx, Ctx>,
+  ctx: &EvaluationContext<'ctx, Ctx, Client>,
   req: Request,
   data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response> {
@@ -205,8 +209,8 @@ async fn execute_request_with_dl<
   )
 }
 
-fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
-  ctx: &EvaluationContext<'ctx, Ctx>,
+fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>, Client: HttpClient>(
+  ctx: &EvaluationContext<'ctx, Ctx, Client>,
   res: Response,
   field_name: &str,
 ) -> Result<async_graphql::Value> {

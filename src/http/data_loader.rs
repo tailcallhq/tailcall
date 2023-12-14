@@ -31,13 +31,17 @@ fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) 
 }
 
 #[derive(Clone)]
-pub struct HttpDataLoader {
-  pub client: Arc<dyn HttpClient>,
+pub struct HttpDataLoader<Client: HttpClient> {
+  pub client: Arc<Client>,
   pub group_by: Option<GroupBy>,
   pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
-impl HttpDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, group_by: Option<GroupBy>, is_list: bool) -> Self {
+
+impl<Client> HttpDataLoader<Client>
+where
+  Client: HttpClient,
+{
+  pub fn new(client: Arc<Client>, group_by: Option<GroupBy>, is_list: bool) -> Self {
     HttpDataLoader {
       client,
       group_by,
@@ -49,7 +53,7 @@ impl HttpDataLoader {
     }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader<Client>> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
@@ -57,7 +61,10 @@ impl HttpDataLoader {
 }
 
 #[async_trait::async_trait]
-impl Loader<DataLoaderRequest> for HttpDataLoader {
+impl<Client> Loader<DataLoaderRequest> for HttpDataLoader<Client>
+where
+  Client: HttpClient + 'static,
+{
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 

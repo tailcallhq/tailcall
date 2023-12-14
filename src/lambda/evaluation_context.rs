@@ -7,13 +7,13 @@ use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
 use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
-use crate::http::RequestContext;
+use crate::http::{DefaultHttpClient, HttpClient, RequestContext};
 
 // TODO: rename to ResolverContext
 #[derive(Clone, Setters)]
 #[setters(strip_option)]
-pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
-  pub req_ctx: &'a RequestContext,
+pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>, Client: HttpClient + 'static> {
+  pub req_ctx: &'a RequestContext<Client>,
   pub graphql_ctx: &'a Ctx,
 
   // TODO: JS timeout should be read from server settings
@@ -22,14 +22,14 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
 
 static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(RequestContext::default);
 
-impl Default for EvaluationContext<'static, EmptyResolverContext> {
+impl Default for EvaluationContext<'static, EmptyResolverContext, DefaultHttpClient> {
   fn default() -> Self {
     Self::new(&REQUEST_CTX, &EmptyResolverContext)
   }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
-  pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>, Client: HttpClient> EvaluationContext<'a, Ctx, Client> {
+  pub fn new(req_ctx: &'a RequestContext<Client>, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx, Client> {
     Self { timeout: Duration::from_millis(5), req_ctx, graphql_ctx }
   }
 
@@ -68,7 +68,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
   }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>, Client: HttpClient> GraphQLOperationContext
+  for EvaluationContext<'a, Ctx, Client>
+{
   fn selection_set(&self) -> Option<String> {
     let selection_set = self.graphql_ctx.field()?.selection_set();
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::dynamic;
 
-use super::{DataLoaderRequest, HttpClient};
+use super::{DataLoaderRequest, DefaultHttpClient, HttpClient};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::data_loader::DataLoader;
@@ -10,16 +10,22 @@ use crate::graphql::GraphqlDataLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
-pub struct ServerContext {
+pub struct ServerContext<Client = DefaultHttpClient>
+where
+  Client: HttpClient + 'static,
+{
   pub schema: dynamic::Schema,
-  pub http_client: Arc<dyn HttpClient>,
+  pub http_client: Arc<Client>,
   pub blueprint: Blueprint,
-  pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
-  pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader<Client>>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader<Client>>>>,
 }
 
-impl ServerContext {
-  pub fn new(mut blueprint: Blueprint, http_client: Arc<dyn HttpClient>) -> Self {
+impl<Client> ServerContext<Client>
+where
+  Client: HttpClient,
+{
+  pub fn new(mut blueprint: Blueprint, http_client: Arc<Client>) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
 

@@ -11,18 +11,21 @@ use crate::graphql::GraphqlDataLoader;
 use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
 
 #[derive(Setters)]
-pub struct RequestContext {
-  pub http_client: Arc<dyn HttpClient>,
+pub struct RequestContext<Client = DefaultHttpClient>
+where
+  Client: HttpClient + 'static,
+{
+  pub http_client: Arc<Client>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
-  pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader<Client>>>>,
+  pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader<Client>>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
 
-impl Default for RequestContext {
+impl Default for RequestContext<DefaultHttpClient> {
   fn default() -> Self {
     let config = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
@@ -31,8 +34,11 @@ impl Default for RequestContext {
   }
 }
 
-impl RequestContext {
-  pub fn new(http_client: Arc<dyn HttpClient>, server: Server, upstream: Upstream) -> Self {
+impl<Client> RequestContext<Client>
+where
+  Client: HttpClient,
+{
+  pub fn new(http_client: Arc<Client>, server: Server, upstream: Upstream) -> Self {
     Self {
       req_headers: HeaderMap::new(),
       http_client,
@@ -93,8 +99,11 @@ impl RequestContext {
   }
 }
 
-impl From<&ServerContext> for RequestContext {
-  fn from(server_ctx: &ServerContext) -> Self {
+impl<Client> From<&ServerContext<Client>> for RequestContext<Client>
+where
+  Client: HttpClient,
+{
+  fn from(server_ctx: &ServerContext<Client>) -> Self {
     Self {
       http_client: server_ctx.http_client.clone(),
       server: server_ctx.blueprint.server.clone(),

@@ -10,17 +10,23 @@ use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 
-pub struct GraphqlDataLoader {
-  pub client: Arc<dyn HttpClient>,
+pub struct GraphqlDataLoader<Client>
+where
+  Client: HttpClient,
+{
+  pub client: Arc<Client>,
   pub batch: bool,
 }
 
-impl GraphqlDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, batch: bool) -> Self {
+impl<Client> GraphqlDataLoader<Client>
+where
+  Client: HttpClient,
+{
+  pub fn new(client: Arc<Client>, batch: bool) -> Self {
     GraphqlDataLoader { client, batch }
   }
 
-  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader> {
+  pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader<Client>> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
@@ -28,7 +34,10 @@ impl GraphqlDataLoader {
 }
 
 #[async_trait::async_trait]
-impl Loader<DataLoaderRequest> for GraphqlDataLoader {
+impl<Client> Loader<DataLoaderRequest> for GraphqlDataLoader<Client>
+where
+  Client: HttpClient + 'static,
+{
   type Value = Response;
   type Error = Arc<anyhow::Error>;
 

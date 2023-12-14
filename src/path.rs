@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use serde_json::json;
 
+use crate::http::HttpClient;
 use crate::json::JsonLike;
 use crate::lambda::{EvaluationContext, ResolverContextLike};
 
@@ -48,7 +49,7 @@ fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
   }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>, Client: HttpClient> PathString for EvaluationContext<'a, Ctx, Client> {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
 
@@ -66,7 +67,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
   }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike<'a>, Client: HttpClient> PathGraphql for EvaluationContext<'a, Ctx, Client> {
   fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
     let ctx = self;
 
@@ -97,7 +98,7 @@ mod tests {
     use indexmap::IndexMap;
     use once_cell::sync::Lazy;
 
-    use crate::http::RequestContext;
+    use crate::http::{RequestContext, DefaultHttpClient};
     use crate::lambda::{EvaluationContext, ResolverContextLike};
     use crate::path::{PathGraphql, PathString};
 
@@ -169,7 +170,7 @@ mod tests {
       req_ctx
     });
 
-    static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext>> =
+    static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext, DefaultHttpClient>> =
       Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext));
 
     #[test]
