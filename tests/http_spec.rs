@@ -333,12 +333,20 @@ async fn http_spec_e2e() -> anyhow::Result<()> {
 async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
   let method = downstream_assertion.request.0.method.clone();
+  let headers = downstream_assertion.request.0.headers.clone();
   let url = downstream_assertion.request.0.url.clone();
   let server_context = spec.server_context().await;
-  let req = Request::builder()
-    .method(method.to_hyper())
-    .uri(url.as_str())
-    .body(Body::from(query_string))?;
+  let req = headers
+    .into_iter()
+    .fold(
+      Request::builder()
+        .method(method.to_hyper())
+        .uri(url.as_str()),
+        |acc, (key, value)| {
+      acc.header(key, value)
+    });
+
+  let req = req.body(Body::from(query_string))?;
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
