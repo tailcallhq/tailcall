@@ -91,9 +91,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let key = hasher.finish();
                 let cached_response = ctx.req_ctx.cache.read().unwrap().get(&key);
                 let const_value = match cached_response {
-                  Some(const_value) => {
-                    const_value
-                  }
+                  Some(const_value) => const_value,
                   None => {
                     let response = expr.eval(&ctx).await?;
 
