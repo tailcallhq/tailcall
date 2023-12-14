@@ -16,7 +16,7 @@ assert:
       url: http://localhost:8080/graphql
       body:
         query: "query { username }"
-  
+
     response:
       body:
         data:

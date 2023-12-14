@@ -10,6 +10,7 @@ mock:
         name: foo
         address:
           street: "Kulas Light"
+
 assert:
   - request:
       method: POST

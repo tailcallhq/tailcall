@@ -31,6 +31,7 @@ config: !inline
       fields:
         user1:
           type: User2
+
 mock:
   - request:
       url: https://jsonplaceholder.typicode.com/users/1
@@ -38,6 +39,7 @@ mock:
       body:
         id: 1
         name: "Leanne Graham"
+
 assert:
   - request:
       method: POST

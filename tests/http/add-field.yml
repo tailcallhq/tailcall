@@ -18,7 +18,7 @@ assert:
       url: http://localhost:8080/graphql
       body:
         query: "query { user { lat } }"
-      
+
     response:
       body:
         data:

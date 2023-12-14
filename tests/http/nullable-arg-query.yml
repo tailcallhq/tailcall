@@ -30,7 +30,7 @@ assert:
       url: http://localhost:8080/graphql
       body:
         query: "query { users { id } }"
-    
+
     response:
       body:
         data:
@@ -51,7 +51,7 @@ assert:
       url: http://localhost:8080/graphql
       body:
         query: "query { users(id: 1) { id } }"
-    
+
     response:
       body:
         data:

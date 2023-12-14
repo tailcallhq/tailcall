@@ -336,15 +336,10 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
   let headers = downstream_assertion.request.0.headers.clone();
   let url = downstream_assertion.request.0.url.clone();
   let server_context = spec.server_context().await;
-  let req = headers
-    .into_iter()
-    .fold(
-      Request::builder()
-        .method(method.to_hyper())
-        .uri(url.as_str()),
-        |acc, (key, value)| {
-      acc.header(key, value)
-    });
+  let req = headers.into_iter().fold(
+    Request::builder().method(method.to_hyper()).uri(url.as_str()),
+    |acc, (key, value)| acc.header(key, value),
+  );
 
   let req = req.body(Body::from(query_string))?;
 

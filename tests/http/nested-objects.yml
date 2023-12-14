@@ -11,6 +11,7 @@ mock:
         address:
           geo:
             lat: "-37.3159"
+
 assert:
   - request:
       method: POST

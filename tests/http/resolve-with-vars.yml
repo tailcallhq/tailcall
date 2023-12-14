@@ -8,6 +8,7 @@ mock:
       body:
         - id: 1
           name: "Leanne Graham"
+
 assert:
   - request:
       url: http://localhost:8080/graphql
