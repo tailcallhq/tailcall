@@ -438,6 +438,7 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   use super::*;
+  use crate::config::Upstream;
 
   #[test]
   fn test_field_has_or_not_batch_resolver() {
@@ -462,7 +463,12 @@ mod tests {
   #[test]
   fn test_from_sdl_empty() {
     let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
-    let expected = Config::default().types(vec![("Foo", Type::default().fields(vec![("a", Field::int())]))]);
+    let expected = Config::default()
+      .types(vec![("Foo", Type::default().fields(vec![("a", Field::int())]))])
+      .upstreams(Upstreams(BTreeMap::from_iter(vec![(
+        "default".to_string(),
+        Upstream::default(),
+      )])));
     assert_eq!(actual, expected);
   }
 }
