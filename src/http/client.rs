@@ -107,10 +107,6 @@ impl DefaultHttpClient {
 
   pub async fn execute_raw_request(&self, request: reqwest::Request) -> reqwest_middleware::Result<reqwest::Response> {
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response1 = self.client.execute(request).await;
-    println!("response1: {:?}", response1);
-    let response = response1?.error_for_status();
-    println!("response: {:?}", response);
-    Ok(response?)
+    Ok(self.client.execute(request).await?.error_for_status()?)
   }
 }

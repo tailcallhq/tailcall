@@ -23,6 +23,7 @@ pub struct RequestTemplate {
   pub headers: Vec<(String, Mustache)>,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
+  pub grpc: Option<ProtobufOperation>,
 }
 
 impl RequestTemplate {
@@ -102,34 +103,32 @@ impl RequestTemplate {
     Ok(req)
   }
 
-  pub fn to_grpc_request<C: PathString + HasHeaders>(
-    &self,
-    ctx: &C,
-    operation: &ProtobufOperation,
-  ) -> anyhow::Result<reqwest::Request> {
+  pub fn to_grpc_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
     // Create url
     let url = self.create_url(ctx)?;
     let method = self.method.clone();
     let mut req = reqwest::Request::new(method, url);
     req = self.set_grpc_headers(req, ctx);
-    req = self.set_grpc_body(req, ctx, operation)?;
+    req = self.set_grpc_body(req, ctx)?;
     *req.version_mut() = reqwest::Version::HTTP_2;
     Ok(req)
   }
-  pub fn set_grpc_body<C: PathString + HasHeaders>(
+  fn set_grpc_body<C: PathString + HasHeaders>(
     &self,
     mut req: reqwest::Request,
     ctx: &C,
-    operation: &ProtobufOperation,
   ) -> anyhow::Result<reqwest::Request> {
-    if let Some(body) = &self.body {
-      let body = body.render(ctx);
-      let body = operation.convert_input(body.as_str())?;
-      req.body_mut().replace(body.into());
-    } else {
-      let body = operation.convert_input("{}")?;
-      req.body_mut().replace(body.into());
+    if let Some(operation) = &self.grpc {
+      if let Some(body) = &self.body {
+        let body = body.render(ctx);
+        let body = operation.convert_input(body.as_str())?;
+        req.body_mut().replace(body.into());
+      } else {
+        let body = operation.convert_input("{}")?;
+        req.body_mut().replace(body.into());
+      }
     }
+
     Ok(req)
   }
 
@@ -178,6 +177,7 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
+      grpc: Default::default(),
     })
   }
 }
@@ -204,7 +204,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
       None
     };
 
-    Ok(Self { root_url: path, query, method, headers, body, endpoint })
+    Ok(Self { root_url: path, query, method, headers, body, endpoint, grpc: None })
   }
 }
 

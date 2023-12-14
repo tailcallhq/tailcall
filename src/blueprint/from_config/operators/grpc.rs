@@ -1,3 +1,5 @@
+use std::fs;
+
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
 
 use crate::blueprint::{to_json_schema_for_args, to_json_schema_for_field, FieldDefinition};
@@ -15,7 +17,6 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
       let Some(grpc) = &field.grpc else {
         return Valid::succeed(b_field);
       };
-
       Valid::from_option(
         grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
@@ -43,7 +44,23 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         .map_err(|e| ValidationError::new(e.to_string()))
         .into()
       })
-      .map(|req_template| b_field.resolver(Some(Lambda::from_request_template(req_template).expression)))
+      .map(|req_template| {
+        let proto = fs::read_to_string(&grpc.proto_path)
+          .map_err(|e| ValidationError::new(e.to_string()))
+          .unwrap();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let tempfile = temp_dir.path().join(format!("{}.proto", grpc.service));
+        // For now we need to write files to the disk.
+        fs::write(&tempfile, proto.as_str()).unwrap();
+
+        let file = crate::grpc::protobuf::ProtobufFile::new(&tempfile).unwrap();
+        let service = crate::grpc::protobuf::ProtobufService::from_file(&file, grpc.service.as_str()).unwrap();
+        let operation = crate::grpc::protobuf::ProtobufOperation::new(&service, grpc.method.as_str()).unwrap();
+
+        b_field.resolver(Some(
+          Lambda::from_request_template(req_template.grpc(Some(operation))).expression,
+        ))
+      })
     },
   )
 }

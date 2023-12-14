@@ -49,7 +49,7 @@ impl ProtobufService {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProtobufOperation {
   input_type: MessageDescriptor,
   output_type: MessageDescriptor,

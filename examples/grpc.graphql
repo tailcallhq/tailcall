@@ -3,9 +3,28 @@ schema @server(port: 8000, graphiql: true) @upstream(httpCache: true) {
 }
 
 type Query {
-  news: NewsData @grpc(service: "NewsService", method: "GetAllNews", baseURL: "http://localhost:4000")
+  news: NewsData
+    @grpc(
+      service: "NewsService"
+      method: "GetAllNews"
+      baseURL: "http://localhost:4000"
+      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/protobuf/tests/news.proto"
+    )
+  newsById(news: NewsInput!): News
+    @grpc(
+      service: "NewsService"
+      method: "GetNews"
+      baseURL: "http://localhost:4000"
+      body: "{{args.news}}"
+      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/protobuf/tests/news.proto"
+    )
 }
-
+input NewsInput {
+  id: String!
+  title: String
+  body: String
+  postImage: String
+}
 type NewsData {
   news: [News]
 }
