@@ -9,7 +9,7 @@ type Query {
       service: "YourServiceName"
       method: "GetAllNews"
       baseURL: "http://localhost:4000"
-      protoPath: "/Users/amit/IdeaProjects/tailcall/src/grpc/tests/news.proto"
+      protoPath: "tests/graphql/errors/proto/news.proto"
     )
 }
 
