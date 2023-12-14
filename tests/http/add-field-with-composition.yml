@@ -1,6 +1,6 @@
 ---
-config: !file tests/http/config/inline-field-with-composition.graphql
-name: Inline field with composition
+config: !file tests/http/config/add-field-with-composition.graphql
+name: Add field with composition
 mock:
   - request:
       url: http://jsonplaceholder.typicode.com/users/1
