@@ -372,6 +372,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Grpc {
   pub service: String,
   pub method: String,
@@ -381,7 +382,7 @@ pub struct Grpc {
   #[serde(default)]
   #[serde(skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  pub proto_path: Option<String>,
+  pub proto_path: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
