@@ -60,11 +60,11 @@ fn default_status() -> u16 {
 struct UpstreamRequest(APIRequest);
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
   response: DownstreamResponse,
@@ -77,13 +77,13 @@ enum ConfigSource {
   Inline(Config),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Mock {
   request: UpstreamRequest,
   response: UpstreamResponse,
 }
 
-#[derive(Serialize, Deserialize, Clone, Setters)]
+#[derive(Serialize, Deserialize, Clone, Setters, Debug)]
 #[serde(rename_all = "camelCase")]
 struct HttpSpec {
   config: ConfigSource,
