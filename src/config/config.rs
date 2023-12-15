@@ -139,7 +139,7 @@ pub struct Type {
   pub variants: Option<BTreeSet<String>>,
   #[serde(default)]
   pub scalar: bool,
-  #[serde(skip)]
+  #[serde(default)]
   pub cache_rules: CacheRules,
 }
 
@@ -167,11 +167,10 @@ impl Type {
   }
 }
 
-pub type CacheRules = Vec<CacheRule>;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum CacheRule {
-  MaxAge(u64),
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CacheRules {
+  pub max_age: Option<u64>,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
@@ -239,6 +238,7 @@ pub struct Field {
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
   pub graphql: Option<GraphQL>,
+  pub cache_rules: Option<CacheRules>,
 }
 
 impl Field {

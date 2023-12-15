@@ -7,10 +7,9 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{CacheRule, CacheRules};
+use super::CacheRules;
 use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
-use crate::json::JsonLike;
 use crate::valid::Valid;
 
 pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
@@ -75,23 +74,23 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
-    let cache_rules = type_definition
+    let cache_rules: Option<CacheRules> = type_definition
       .node
       .directives
       .iter()
-      .find(|const_directive| const_directive.node.name.node.eq("cache"))
+      .find(|const_directive| const_directive.node.name.node.to_ascii_lowercase().eq("cache"))
       .map(|const_directive| {
-        const_directive
-          .node
-          .arguments
-          .iter()
-          .filter_map(|(name, value)| match name.node.as_str() {
-            "maxAge" => Some(CacheRule::MaxAge(value.node.as_u64_ok().unwrap())),
-            _ => None,
-          })
-          .collect()
-      })
-      .unwrap_or(vec![]);
+        serde_json::from_value(serde_json::Value::Object(
+          const_directive
+            .node
+            .arguments
+            .iter()
+            .map(|(key, value)| (key.to_string(), value.node.clone().into_json().unwrap()))
+            .collect(),
+        ))
+        .unwrap()
+      });
+
     match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => to_object_type(
         &object_type,
@@ -108,7 +107,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
       )
       .some(),
       TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-      TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
+      TypeKind::InputObject(input_object_type) => to_input_object(input_object_type, cache_rules).some(),
       TypeKind::Union(_) => Valid::none(),
       TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
     }
@@ -147,7 +146,7 @@ fn to_object_type<T>(
   object: &T,
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
-  cache_rules: CacheRules,
+  cache_rules: Option<CacheRules>,
 ) -> Valid<config::Type, String>
 where
   T: ObjectLike,
@@ -156,11 +155,11 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields).map(|fields| {
+  to_fields(fields, cache_rules).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, cache_rules, ..Default::default() }
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -171,36 +170,52 @@ fn to_enum(enum_type: EnumType) -> config::Type {
     .collect();
   config::Type { variants: Some(variants), ..Default::default() }
 }
-fn to_input_object(input_object_type: InputObjectType) -> Valid<config::Type, String> {
-  to_input_object_fields(&input_object_type.fields).map(|fields| config::Type { fields, ..Default::default() })
+fn to_input_object(input_object_type: InputObjectType, cache_rules: Option<CacheRules>) -> Valid<config::Type, String> {
+  to_input_object_fields(&input_object_type.fields, cache_rules)
+    .map(|fields| config::Type { fields, ..Default::default() })
 }
 
-fn to_fields_inner<T, F>(fields: &Vec<Positioned<T>>, transform: F) -> Valid<BTreeMap<String, config::Field>, String>
+fn to_fields_inner<T, F>(
+  fields: &Vec<Positioned<T>>,
+  cache_rules: Option<CacheRules>,
+  transform: F,
+) -> Valid<BTreeMap<String, config::Field>, String>
 where
-  F: Fn(&T) -> Valid<config::Field, String>,
+  F: Fn(&T, Option<CacheRules>) -> Valid<config::Field, String>,
   T: HasName,
 {
   Valid::from_iter(fields, |field| {
     let field_name = pos_name_to_string(field.node.name());
-    transform(&field.node).map(|field| (field_name, field))
+    transform(&field.node, cache_rules.clone()).map(|field| (field_name, field))
   })
   .map(BTreeMap::from_iter)
 }
-fn to_fields(fields: &Vec<Positioned<FieldDefinition>>) -> Valid<BTreeMap<String, config::Field>, String> {
-  to_fields_inner(fields, to_field)
+fn to_fields(
+  fields: &Vec<Positioned<FieldDefinition>>,
+  cache_rules: Option<CacheRules>,
+) -> Valid<BTreeMap<String, config::Field>, String> {
+  to_fields_inner(fields, cache_rules, to_field)
 }
 fn to_input_object_fields(
   input_object_fields: &Vec<Positioned<InputValueDefinition>>,
+  cache_rules: Option<CacheRules>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
-  to_fields_inner(input_object_fields, to_input_object_field)
+  to_fields_inner(input_object_fields, cache_rules, to_input_object_field)
 }
-fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
-  to_common_field(field_definition, to_args(field_definition))
+fn to_field(field_definition: &FieldDefinition, cache_rules: Option<CacheRules>) -> Valid<config::Field, String> {
+  to_common_field(field_definition, to_args(field_definition), cache_rules)
 }
-fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
-  to_common_field(field_definition, BTreeMap::new())
+fn to_input_object_field(
+  field_definition: &InputValueDefinition,
+  cache_rules: Option<CacheRules>,
+) -> Valid<config::Field, String> {
+  to_common_field(field_definition, BTreeMap::new(), cache_rules)
 }
-fn to_common_field<F>(field: &F, args: BTreeMap<String, config::Arg>) -> Valid<config::Field, String>
+fn to_common_field<F>(
+  field: &F,
+  args: BTreeMap<String, config::Arg>,
+  cache_rules: Option<CacheRules>,
+) -> Valid<config::Field, String>
 where
   F: Fieldlike,
 {
@@ -233,6 +248,7 @@ where
         unsafe_operation,
         const_field,
         graphql,
+        cache_rules,
       }
     })
 }

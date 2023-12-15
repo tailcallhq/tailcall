@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use std::time::Duration;
 
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, SchemaBuilder, {self},
@@ -10,6 +9,7 @@ use async_graphql::dynamic::{
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::{Blueprint, Definition, Type};
+use crate::graphql::ResCache;
 use crate::http::RequestContext;
 use crate::lambda::EvaluationContext;
 
@@ -62,6 +62,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
         let def_name = def.name.clone();
+        let cache_rules = field.cache_rules.clone();
+        let res_cache = ResCache::new(cache_rules);
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
@@ -74,12 +76,17 @@ fn to_type(def: &Definition) -> dynamic::Type {
               let expr = expr.to_owned();
               let def_name = def_name.clone();
               let field_name = field_name.clone();
+              let res_cache = res_cache.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                 let mut hasher = DefaultHasher::new();
                 let state = &mut hasher;
                 def_name.hash(state);
                 field_name.hash(state);
+
+                if let Some(const_value) = ctx.graphql_ctx.parent_value.as_value() {
+                  hash_const_value(const_value, state)
+                }
 
                 let mut args_list: Vec<_> = ctx.graphql_ctx.args.iter().collect();
                 args_list.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
@@ -89,22 +96,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 });
 
                 let key = hasher.finish();
-                let cached_response = ctx.req_ctx.cache.read().unwrap().get(&key);
-                let const_value = match cached_response {
-                  Some(const_value) => const_value,
-                  None => {
-                    let response = expr.eval(&ctx).await?;
+                let const_value = res_cache.fetch(&ctx, &expr, key).await?;
 
-                    ctx
-                      .req_ctx
-                      .cache
-                      .write()
-                      .unwrap()
-                      .insert(key, response.clone(), Duration::from_secs(10));
-
-                    response
-                  }
-                };
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),
                   a => FieldValue::from(a),
