@@ -11,7 +11,7 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::config::Config;
+use crate::config::{Config, Source};
 use crate::http::Server;
 use crate::print_schema;
 
@@ -33,7 +33,7 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
+    Command::Check { file_path, n_plus_one_queries, schema, out_file_name } => {
       let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
@@ -41,6 +41,9 @@ pub fn run() -> Result<()> {
           display_config(&config, n_plus_one_queries);
           if schema {
             display_schema(&blueprint);
+          }
+          if let Some(out_file) = out_file_name {
+            write_output_file(&out_file, &config)?;
           }
           Ok(())
         }
@@ -110,4 +113,20 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
+}
+
+fn write_output_file(filename: &String, config: &Config) -> Result<()> {
+  let filetype = Source::detect(filename)?;
+
+  let contents = match filetype {
+    Source::GraphQL => config.to_sdl(),
+    Source::Json => config.to_json().unwrap_or_default(),
+    Source::Yml => config.to_yaml().unwrap_or_default(),
+  };
+
+  Fmt::display(Fmt::success(
+    &format!("Schema has been written to {}", filename).to_string(),
+  ));
+  fs::write(filename, contents).unwrap();
+  Ok(())
 }

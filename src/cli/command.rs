@@ -42,6 +42,10 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Name of the file to save configuration in
+    #[arg(short, long("out"))]
+    out_file_name: Option<String>,
   },
   /// Initialize a new project
   Init { file_path: String },
