@@ -164,6 +164,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
+      - name: Install Dependencies
+        run: cargo build --release --features criterion
+        
       - name: Cache Criterion Benchmarks
         uses: actions/cache@v2
         with:
