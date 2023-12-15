@@ -19,7 +19,7 @@ inquire = {version = "0.6.2",optional = true}
 #safe
 hyper = { version = "0.14", features = ["server"], default-features = false }
 sha2 = { version = "0.10", features = ["std"] }
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["rt","time"] }
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
 thiserror = "1.0.50"
