@@ -4091,7 +4091,6 @@ dependencies = [
  "lazy_static",
  "serde_json",
  "tailcall",
- "tokio",
  "web-sys",
  "worker",
 ]

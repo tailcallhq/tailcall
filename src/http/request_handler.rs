@@ -13,9 +13,9 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
     GraphiQLSource::build()
-      .title("Tailcall - GraphQL IDE")
-      .endpoint("/graphql")
-      .finish(),
+        .title("Tailcall - GraphQL IDE")
+        .endpoint("/graphql")
+        .finish(),
   )))
 }
 
