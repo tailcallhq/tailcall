@@ -1,10 +1,11 @@
 use anyhow::anyhow;
+#[cfg(feature = "default")]
 use tokio::fs::File;
+#[cfg(feature = "default")]
 use tokio::io::AsyncReadExt;
 use url::Url;
 
 use crate::config::{Config, Source};
-
 pub struct ConfigReader {
   file_paths: Vec<String>,
 }
@@ -19,6 +20,7 @@ impl ConfigReader {
   }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
+    #[cfg(feature = "default")]
     for path in &self.file_paths {
       let conf = if let Ok(url) = Url::parse(path) {
         Self::from_url(url).await?
@@ -30,10 +32,12 @@ impl ConfigReader {
     }
     Ok(config)
   }
+  #[cfg(feature = "default")]
   async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
     let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
     Config::from_source(source, &server_sdl)
   }
+  #[cfg(feature = "default")]
   async fn read_file(file_path: &str) -> anyhow::Result<(String, Source)> {
     let mut f = File::open(file_path).await?;
     let mut buffer = Vec::new();

@@ -14,7 +14,6 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
-
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
@@ -47,6 +46,7 @@ pub fn run() -> Result<()> {
         Err(e) => Err(e.into()),
       }
     }
+    
     Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
 }

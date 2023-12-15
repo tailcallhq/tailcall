@@ -10,7 +10,6 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
     GraphiQLSource::build()
@@ -30,7 +29,6 @@ fn create_request_context(req: &Request<Body>, server_ctx: &ServerContext) -> Re
   let headers = create_allowed_headers(req.headers(), &allowed);
   RequestContext::from(server_ctx).req_headers(headers)
 }
-
 fn update_cache_control_header(
   response: GraphQLResponse,
   server_ctx: &ServerContext,
@@ -47,8 +45,8 @@ fn update_cache_control_header(
 pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &ServerContext) {
   if !server_ctx.blueprint.server.response_headers.is_empty() {
     resp
-      .headers_mut()
-      .extend(server_ctx.blueprint.server.response_headers.clone());
+        .headers_mut()
+        .extend(server_ctx.blueprint.server.response_headers.clone());
   }
 }
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
@@ -91,7 +89,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
   new_headers
 }
-
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   state: Arc<ServerContext>,

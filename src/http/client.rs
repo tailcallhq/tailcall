@@ -1,5 +1,5 @@
 use std::time::Duration;
-
+#[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -27,7 +27,7 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    let upstream = config::Upstream::default();
+    let upstream = Upstream::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     DefaultHttpClient::new(&upstream)
   }
@@ -35,23 +35,23 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(upstream: &Upstream) -> Self {
-    let mut builder = Client::builder()
-      .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
-      .timeout(Duration::from_secs(upstream.get_timeout()))
-      .connect_timeout(Duration::from_secs(upstream.get_connect_timeout()))
-      .http2_keep_alive_interval(Some(Duration::from_secs(upstream.get_keep_alive_interval())))
-      .http2_keep_alive_timeout(Duration::from_secs(upstream.get_keep_alive_timeout()))
-      .http2_keep_alive_while_idle(upstream.get_keep_alive_while_idle())
-      .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
-      .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
-      .user_agent(upstream.get_user_agent());
-
+    let mut builder = Client::builder();
+      // .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
+      // .timeout(Duration::from_secs(upstream.get_timeout()))
+      // .connect_timeout(Duration::from_secs(upstream.get_connect_timeout()))
+      // .http2_keep_alive_interval(Some(Duration::from_secs(upstream.get_keep_alive_interval())))
+      // .http2_keep_alive_timeout(Duration::from_secs(upstream.get_keep_alive_timeout()))
+      // .http2_keep_alive_while_idle(upstream.get_keep_alive_while_idle())
+      // .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
+      // .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
+      // .user_agent(upstream.get_user_agent());
+    #[cfg(feature = "default")]
     if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
 
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
-
+    #[cfg(feature = "default")]
     if upstream.get_enable_http_cache() {
       client = client.with(Cache(HttpCache {
         mode: CacheMode::Default,

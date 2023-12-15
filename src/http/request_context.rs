@@ -8,8 +8,9 @@ use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
+use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response, ServerContext};
 
+use crate::http::DefaultHttpClient;
 #[derive(Setters)]
 pub struct RequestContext {
   pub http_client: Arc<dyn HttpClient>,

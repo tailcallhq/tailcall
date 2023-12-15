@@ -110,7 +110,7 @@ impl Display for CLIError {
           &self.colored(format!("❯ {}", description).as_str(), color),
           root_padding_size,
         )
-        .as_str(),
+            .as_str(),
       )?;
     }
 
@@ -151,8 +151,8 @@ impl From<hyper::Error> for CLIError {
     let message = error.to_string();
     if message.to_lowercase().contains("os error 48") {
       cli_error
-        .description("The port is already in use".to_string())
-        .caused_by(vec![CLIError::new(message.as_str())])
+          .description("The port is already in use".to_string())
+          .caused_by(vec![CLIError::new(message.as_str())])
     } else {
       cli_error.description(message)
     }
@@ -181,16 +181,16 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
   fn from(error: ValidationError<&'a str>) -> Self {
     CLIError::new("Invalid Configuration").caused_by(
       error
-        .as_vec()
-        .iter()
-        .map(|cause| {
-          let mut err = CLIError::new(cause.message).trace(Vec::from(cause.trace.clone()));
-          if let Some(description) = cause.description {
-            err = err.description(description.to_owned());
-          }
-          err
-        })
-        .collect(),
+          .as_vec()
+          .iter()
+          .map(|cause| {
+            let mut err = CLIError::new(cause.message).trace(Vec::from(cause.trace.clone()));
+            if let Some(description) = cause.description {
+              err = err.description(description.to_owned());
+            }
+            err
+          })
+          .collect(),
     )
   }
 }
@@ -199,10 +199,10 @@ impl From<ValidationError<String>> for CLIError {
   fn from(error: ValidationError<String>) -> Self {
     CLIError::new("Invalid Configuration").caused_by(
       error
-        .as_vec()
-        .iter()
-        .map(|cause| CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone())))
-        .collect(),
+          .as_vec()
+          .iter()
+          .map(|cause| CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone())))
+          .collect(),
     )
   }
 }
@@ -270,7 +270,7 @@ mod tests {
     let error = CLIError::new("Server could not be started").description("The port is already in use".to_string());
     let expected = r"|Error: Server could not be started
                      |       ❯ The port is already in use"
-      .strip_margin();
+        .strip_margin();
 
     assert_eq!(error.to_string(), expected);
   }
@@ -278,12 +278,12 @@ mod tests {
   #[test]
   fn test_title_description_trace() {
     let error = CLIError::new("Server could not be started")
-      .description("The port is already in use".to_string())
-      .trace(vec!["@server".into(), "port".into()]);
+        .description("The port is already in use".to_string())
+        .trace(vec!["@server".into(), "port".into()]);
 
     let expected = r"|Error: Server could not be started
                      |       ❯ The port is already in use [at @server.port]"
-      .strip_margin();
+        .strip_margin();
 
     assert_eq!(error.to_string(), expected);
   }
@@ -291,12 +291,12 @@ mod tests {
   #[test]
   fn test_title_trace_caused_by() {
     let error = CLIError::new("Configuration Error").caused_by(vec![CLIError::new("Base URL needs to be specified")
-      .trace(vec!["User".into(), "posts".into(), "@http".into(), "baseURL".into()])]);
+        .trace(vec!["User".into(), "posts".into(), "@http".into(), "baseURL".into()])]);
 
     let expected = r"|Error: Configuration Error
                      |Caused by:
                      |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
-      .strip_margin();
+        .strip_margin();
 
     assert_eq!(error.to_string(), expected);
   }
@@ -317,8 +317,8 @@ mod tests {
         "baseURL".into(),
       ]),
       CLIError::new("Base URL needs to be specified")
-        .description("Set `baseURL` in @http or @server directives".into())
-        .trace(vec!["Query".into(), "users".into(), "@http".into(), "baseURL".into()]),
+          .description("Set `baseURL` in @http or @server directives".into())
+          .trace(vec!["Query".into(), "users".into(), "@http".into(), "baseURL".into()]),
       CLIError::new("Base URL needs to be specified").trace(vec![
         "Query".into(),
         "posts".into(),
@@ -334,7 +334,7 @@ mod tests {
                      |  • Base URL needs to be specified
                      |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                      |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
-      .strip_margin();
+        .strip_margin();
 
     assert_eq!(error.to_string(), expected);
   }
@@ -342,20 +342,20 @@ mod tests {
   #[test]
   fn test_from_validation() {
     let cause = Cause::new("Base URL needs to be specified")
-      .description("Set `baseURL` in @http or @server directives")
-      .trace(VecDeque::from(vec![
-        "Query".to_string(),
-        "users".to_string(),
-        "@http".to_string(),
-        "baseURL".to_string(),
-      ]));
+        .description("Set `baseURL` in @http or @server directives")
+        .trace(VecDeque::from(vec![
+          "Query".to_string(),
+          "users".to_string(),
+          "@http".to_string(),
+          "baseURL".to_string(),
+        ]));
     let valid = ValidationError::from(cause);
     let error = CLIError::from(valid);
     let expected = r"|Error: Invalid Configuration
                      |Caused by:
                      |  • Base URL needs to be specified
                      |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
-      .strip_margin();
+        .strip_margin();
 
     assert_eq!(error.to_string(), expected);
   }

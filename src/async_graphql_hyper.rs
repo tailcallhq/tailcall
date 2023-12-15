@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use anyhow::Result;
-use async_graphql::{BatchResponse, Executor};
+use async_graphql::{async_trait, BatchResponse, Executor};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
