@@ -43,7 +43,7 @@ pub enum Command {
     #[arg(short, long)]
     schema: bool,
 
-    /// Name of the file to save configuration in
+    /// Path of the file to save final configuration in
     #[arg(short, long("out"))]
     out_file_name: Option<String>,
   },
