@@ -15,6 +15,7 @@ pub struct ProtobufSet {
   descriptor_pool: DescriptorPool,
 }
 
+// TODO: support for reflection
 impl ProtobufSet {
   // TODO: load definitions from proto file for now, but in future
   // it could be more convenient to load FileDescriptorSet instead
@@ -39,6 +40,15 @@ impl ProtobufSet {
 
     Ok(Self { descriptor_pool })
   }
+
+  pub fn find_service(&self, name: &str) -> Result<ProtobufService> {
+    let service_descriptor = self
+      .descriptor_pool
+      .get_service_by_name(name)
+      .with_context(|| format!("Couldn't find definitions for service {name}"))?;
+
+    Ok(ProtobufService { service_descriptor })
+  }
 }
 
 #[derive(Debug)]
@@ -46,15 +56,18 @@ pub struct ProtobufService {
   service_descriptor: ServiceDescriptor,
 }
 
-// TODO: support for reflection
 impl ProtobufService {
-  pub fn new(file: &ProtobufSet, name: &str) -> Result<ProtobufService> {
-    let service_descriptor = file
-      .descriptor_pool
-      .get_service_by_name(name)
-      .with_context(|| format!("Couldn't find definitions for service {name}"))?;
+  pub fn find_operation(&self, method_name: &str) -> Result<ProtobufOperation> {
+    let method = self
+      .service_descriptor
+      .methods()
+      .find(|method| method.name() == method_name)
+      .with_context(|| format!("Could't find method {method_name}"))?;
 
-    Ok(Self { service_descriptor })
+    let input_type = method.input();
+    let output_type = method.output();
+
+    Ok(ProtobufOperation { input_type, output_type })
   }
 }
 
@@ -66,19 +79,6 @@ pub struct ProtobufOperation {
 
 // TODO: support compression
 impl ProtobufOperation {
-  pub fn new(service: &ProtobufService, method_name: &str) -> Result<Self> {
-    let method = service
-      .service_descriptor
-      .methods()
-      .find(|method| method.name() == method_name)
-      .with_context(|| format!("Could't find method {method_name}"))?;
-
-    let input_type = method.input();
-    let output_type = method.output();
-
-    Ok(Self { input_type, output_type })
-  }
-
   pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
     let mut deserializer = Deserializer::from_str(input);
     let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
@@ -124,7 +124,7 @@ mod tests {
   use once_cell::sync::Lazy;
   use serde_json::json;
 
-  use super::{ProtobufOperation, ProtobufService, ProtobufSet};
+  use super::ProtobufSet;
 
   static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -157,7 +157,7 @@ mod tests {
   fn service_not_found() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
     let file = ProtobufSet::from_proto_file(&proto_file)?;
-    let error = ProtobufService::new(&file, "_unknown").unwrap_err();
+    let error = file.find_service("_unknown").unwrap_err();
 
     assert_eq!(error.to_string(), "Couldn't find definitions for service _unknown");
 
@@ -168,8 +168,8 @@ mod tests {
   fn method_not_found() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
     let file = ProtobufSet::from_proto_file(&proto_file)?;
-    let service = ProtobufService::new(&file, "Greeter")?;
-    let error = ProtobufOperation::new(&service, "_unknown").unwrap_err();
+    let service = file.find_service("Greeter")?;
+    let error = service.find_operation("_unknown").unwrap_err();
 
     assert_eq!(error.to_string(), "Could't find method _unknown");
 
@@ -180,8 +180,8 @@ mod tests {
   fn greetings_proto_file() -> Result<()> {
     let proto_file = get_test_file("greetings.proto");
     let file = ProtobufSet::from_proto_file(&proto_file)?;
-    let service = ProtobufService::new(&file, "Greeter")?;
-    let operation = ProtobufOperation::new(&service, "SayHello")?;
+    let service = file.find_service("Greeter")?;
+    let operation = service.find_operation("SayHello")?;
 
     let input = operation.convert_input(r#"{ "name": "hello message" }"#)?;
 
@@ -205,8 +205,8 @@ mod tests {
   fn news_proto_file() -> Result<()> {
     let proto_file = get_test_file("news.proto");
     let file = ProtobufSet::from_proto_file(&proto_file)?;
-    let service = ProtobufService::new(&file, "NewsService")?;
-    let operation = ProtobufOperation::new(&service, "GetNews")?;
+    let service = file.find_service("NewsService")?;
+    let operation = service.find_operation("GetNews")?;
 
     let input = operation.convert_input(r#"{ "id": "1" }"#)?;
 

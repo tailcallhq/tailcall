@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::blueprint::FieldDefinition;
 use crate::config::{Config, Field, Grpc};
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufService, ProtobufSet};
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::lambda::Lambda;
 use crate::mustache::Mustache;
@@ -30,12 +30,18 @@ fn to_operation(grpc: &Grpc) -> Valid<ProtobufOperation, String> {
   Valid::from(
     ProtobufSet::from_proto_file(Path::new(&grpc.proto_path)).map_err(|e| ValidationError::new(e.to_string())),
   )
-  .and_then(|service| {
-    Valid::from(ProtobufService::new(&service, grpc.service.as_str()).map_err(|e| ValidationError::new(e.to_string())))
-  })
-  .and_then(|operation| {
+  .and_then(|set| {
     Valid::from(
-      ProtobufOperation::new(&operation, grpc.method.as_str()).map_err(|e| ValidationError::new(e.to_string())),
+      set
+        .find_service(grpc.service.as_str())
+        .map_err(|e| ValidationError::new(e.to_string())),
+    )
+  })
+  .and_then(|service| {
+    Valid::from(
+      service
+        .find_operation(grpc.method.as_str())
+        .map_err(|e| ValidationError::new(e.to_string())),
     )
   })
 }

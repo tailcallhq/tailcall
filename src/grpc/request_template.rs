@@ -96,7 +96,7 @@ mod tests {
 
   use super::RequestTemplate;
   use crate::{
-    grpc::protobuf::{ProtobufOperation, ProtobufService, ProtobufSet},
+    grpc::protobuf::{ProtobufOperation, ProtobufSet},
     mustache::Mustache,
   };
 
@@ -109,9 +109,9 @@ mod tests {
     test_file.push("greetings.proto");
 
     let protobuf_set = ProtobufSet::from_proto_file(&test_file).unwrap();
-    let service = ProtobufService::new(&protobuf_set, "Greeter").unwrap();
+    let service = protobuf_set.find_service("Greeter").unwrap();
 
-    ProtobufOperation::new(&service, "SayHello").unwrap()
+    service.find_operation("SayHello").unwrap()
   });
 
   #[derive(Setters)]
@@ -167,7 +167,9 @@ mod tests {
       ])
     );
 
-    req.body().map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())));
+    req
+      .body()
+      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())));
   }
 
   #[test]
@@ -181,6 +183,8 @@ mod tests {
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
 
-    req.body().map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())));
+    req
+      .body()
+      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())));
   }
 }
