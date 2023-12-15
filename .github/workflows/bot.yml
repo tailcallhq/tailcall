@@ -171,7 +171,7 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
 
       - name: Run Criterion Benchmarks
-        run: cargo criterion --message-format=json > benches/main_benchmarks.json
+        run: cargo bench --message-format=json > benches/main_benchmarks.json
         
       - name: Print Benchmark Results
         run: cat benches/main_benchmarks.json
