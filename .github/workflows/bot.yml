@@ -170,6 +170,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install cargo-criterion
+        run: cargo install cargo-criterion
+
       - name: Cache Criterion Benchmarks
         uses: actions/cache@v2
         with:
