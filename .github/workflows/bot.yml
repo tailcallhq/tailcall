@@ -164,16 +164,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
         with:
-          cache: true
-          cache-target: debug
-
-      - name: Install dependencies
-        run: |
-          rustup update
-          cargo install --force criterion@0.3.0
+          toolchain: stable
+          override: true
 
       - name: Cache Criterion Benchmarks
         uses: actions/cache@v2
