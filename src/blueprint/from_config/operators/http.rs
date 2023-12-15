@@ -147,8 +147,8 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
           http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
           "No base URL defined".to_string(),
         ))
-        .zip(helpers::headers::to_headermap(&http.headers))
-        .and_then(|(base_url, header_map)| {
+        .zip(helpers::headers::to_headervec(&http.headers))
+        .and_then(|(base_url, headers)| {
           let mut base_url = base_url.trim_end_matches('/').to_owned();
           base_url.push_str(http.path.clone().as_str());
 
@@ -162,9 +162,9 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               .query(query)
               .output(output_schema)
               .input(input_schema)
-              .body(http.body.clone())
-              .headers(header_map),
+              .body(http.body.clone()),
           )
+          .map(|req_tmpl| req_tmpl.headers(headers))
           .map_err(|e| ValidationError::new(e.to_string()))
           .into()
         })

@@ -7,6 +7,7 @@ use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
+use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
@@ -17,6 +18,7 @@ pub struct ServerContext {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub grpc_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GrpcDataLoader>>>,
 }
 
 impl ServerContext {
@@ -37,6 +39,7 @@ impl ServerContext {
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
+    let mut grpc_data_loaders = vec![];
 
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
@@ -73,6 +76,18 @@ impl ServerContext {
 
                 gql_data_loaders.push(graphql_data_loader);
               }
+
+              Unsafe::Grpc { req_template, .. } => {
+                let data_loader = GrpcDataLoader::new(http2_only_client.clone(), req_template.operation.clone())
+                  .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
+
+                field.resolver = Some(Expression::Unsafe(Unsafe::Grpc {
+                  req_template: req_template.clone(),
+                  dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                }));
+
+                grpc_data_loaders.push(data_loader);
+              }
               _ => {}
             }
           }
@@ -89,6 +104,7 @@ impl ServerContext {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
+      grpc_data_loaders: Arc::new(grpc_data_loaders),
     }
   }
 }

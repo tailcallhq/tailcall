@@ -2,12 +2,12 @@ use std::borrow::Cow;
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::header::HeaderValue;
 use url::Url;
 
 use crate::endpoint::Endpoint;
-use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
+use crate::helpers::headers::MustacheHeaders;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -20,10 +20,9 @@ pub struct RequestTemplate {
   pub root_url: Mustache,
   pub query: Vec<(String, Mustache)>,
   pub method: reqwest::Method,
-  pub headers: Vec<(String, Mustache)>,
+  pub headers: MustacheHeaders,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
-  pub grpc: Option<ProtobufOperation>,
 }
 
 impl RequestTemplate {
@@ -81,10 +80,8 @@ impl RequestTemplate {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
-      if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
-        if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-          header_map.insert(header_name, header_value);
-        }
+      if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+        header_map.insert(k, header_value);
       }
     }
 
@@ -99,35 +96,6 @@ impl RequestTemplate {
     let mut req = reqwest::Request::new(method, url);
     req = self.set_headers(req, ctx);
     req = self.set_body(req, ctx);
-
-    Ok(req)
-  }
-
-  pub fn to_grpc_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
-    // Create url
-    let url = self.create_url(ctx)?;
-    let method = self.method.clone();
-    let mut req = reqwest::Request::new(method, url);
-    req = self.set_grpc_headers(req, ctx);
-    req = self.set_grpc_body(req, ctx)?;
-    *req.version_mut() = reqwest::Version::HTTP_2;
-    Ok(req)
-  }
-  fn set_grpc_body<C: PathString + HasHeaders>(
-    &self,
-    mut req: reqwest::Request,
-    ctx: &C,
-  ) -> anyhow::Result<reqwest::Request> {
-    if let Some(operation) = &self.grpc {
-      if let Some(body) = &self.body {
-        let body = body.render(ctx);
-        let body = operation.convert_input(body.as_str())?;
-        req.body_mut().replace(body.into());
-      } else {
-        let body = operation.convert_input("{}")?;
-        req.body_mut().replace(body.into());
-      }
-    }
 
     Ok(req)
   }
@@ -156,19 +124,6 @@ impl RequestTemplate {
     req
   }
 
-  /// Sets the headers for the request
-  fn set_grpc_headers<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
-    let headers = self.create_headers(ctx);
-    if !headers.is_empty() {
-      req.headers_mut().extend(headers);
-    }
-
-    let headers = req.headers_mut();
-
-    headers.extend(ctx.headers().to_owned());
-    req
-  }
-
   pub fn new(root_url: &str) -> anyhow::Result<Self> {
     Ok(Self {
       root_url: Mustache::parse(root_url)?,
@@ -177,7 +132,6 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
-      grpc: Default::default(),
     })
   }
 }
@@ -195,7 +149,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     let headers = endpoint
       .headers
       .iter()
-      .map(|(k, v)| Ok((k.as_str().into(), Mustache::parse(v.to_str()?)?)))
+      .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
 
     let body = if let Some(body) = &endpoint.body {
@@ -204,7 +158,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
       None
     };
 
-    Ok(Self { root_url: path, query, method, headers, body, endpoint, grpc: None })
+    Ok(Self { root_url: path, query, method, headers, body, endpoint })
   }
 }
 
@@ -213,12 +167,13 @@ mod tests {
   use std::borrow::Cow;
 
   use derive_setters::Setters;
+  use hyper::header::HeaderName;
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::http::RequestTemplate;
   use crate::mustache::Mustache;
+  use super::RequestTemplate;
 
   #[derive(Setters)]
   struct Context {
@@ -316,9 +271,9 @@ mod tests {
   #[test]
   fn test_headers() {
     let headers = vec![
-      ("foo".to_string(), Mustache::parse("foo").unwrap()),
-      ("bar".to_string(), Mustache::parse("bar").unwrap()),
-      ("baz".to_string(), Mustache::parse("baz").unwrap()),
+      (HeaderName::from_static("foo"), Mustache::parse("foo").unwrap()),
+      (HeaderName::from_static("bar"), Mustache::parse("bar").unwrap()),
+      (HeaderName::from_static("baz"), Mustache::parse("baz").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = Context::default();
@@ -330,9 +285,9 @@ mod tests {
   #[test]
   fn test_header_template() {
     let headers = vec![
-      ("foo".to_string(), Mustache::parse("0").unwrap()),
-      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
+      (HeaderName::from_static("foo"), Mustache::parse("0").unwrap()),
+      (HeaderName::from_static("bar"), Mustache::parse("{{bar.id}}").unwrap()),
+      (HeaderName::from_static("baz"), Mustache::parse("{{baz.id}}").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = Context::default().value(json!({

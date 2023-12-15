@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
+use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -14,6 +15,10 @@ use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
+use crate::grpc;
+use crate::grpc::data_loader::GrpcDataLoader;
+use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::request::execute_operation_request;
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -46,6 +51,10 @@ pub enum Unsafe {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
+    dl_id: Option<DataLoaderId>,
+  },
+  Grpc {
+    req_template: grpc::RequestTemplate,
     dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
@@ -93,16 +102,6 @@ impl Expression {
         )),
         Expression::Unsafe(operation) => match operation {
           Unsafe::Http { req_template, dl_id, .. } => {
-            if let Some(operation) = &req_template.grpc {
-              let req = req_template.to_grpc_request(ctx)?;
-              let res = execute_raw_grpc_request(ctx, req).await?;
-              if res.status().is_success() {
-                let bytes = res.bytes().await?;
-                let const_value = operation.convert_output(&bytes)?;
-                return Ok(const_value);
-              }
-            }
-
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
@@ -142,6 +141,21 @@ impl Expression {
 
             set_cache_control(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
+          }
+          Unsafe::Grpc { req_template, dl_id } => {
+            let req = req_template.to_request(ctx)?;
+
+            let res = if ctx.req_ctx.upstream.batch.is_some() {
+              let data_loader: Option<&DataLoader<DataLoaderRequest, GrpcDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+              execute_request_with_dl(ctx, req, data_loader).await?
+            } else {
+              execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+            };
+
+            set_cache_control(ctx, &res);
+
+            Ok(res.body)
           }
           Unsafe::JS(input, script) => {
             let result;
@@ -191,12 +205,10 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-) -> Result<reqwest::Response> {
+  operation: &ProtobufOperation,
+) -> Result<Response> {
   Ok(
-    ctx
-      .req_ctx
-      .http2_only_client
-      .execute_raw(req)
+    execute_operation_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )
