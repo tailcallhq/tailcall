@@ -3,10 +3,9 @@ use std::time::Duration;
 
 use async_graphql::{Name, SelectionField, ServerError, Value};
 use derive_setters::Setters;
-use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
-use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
+use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext

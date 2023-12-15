@@ -21,10 +21,10 @@ pub fn update_graphql<'a>(
         graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
       )
-      .zip(helpers::headers::to_headermap(&graphql.headers))
-      .and_then(|(base_url, header_map)| {
+      .zip(helpers::headers::to_headervec(&graphql.headers))
+      .and_then(|(base_url, headers)| {
         Valid::from(
-          RequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, header_map)
+          RequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, headers)
             .map_err(|e| ValidationError::new(e.to_string())),
         )
       })

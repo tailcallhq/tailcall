@@ -9,6 +9,7 @@ use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
+use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
 
 #[derive(Setters)]
@@ -24,6 +25,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub grpc_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -45,6 +47,7 @@ impl Default for RequestContext {
       upstream,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
+      grpc_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -107,6 +110,7 @@ impl From<&ServerContext> for RequestContext {
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
+      grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -115,11 +119,7 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-
-  use std::sync::{Arc, Mutex};
-
   use cache_control::Cachability;
-  use hyper::HeaderMap;
 
   use crate::http::RequestContext;
 
