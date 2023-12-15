@@ -170,8 +170,11 @@ jobs:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
 
+      - name: Build Benches
+        run: cargo build --benches --release
+
       - name: Run Criterion Benchmarks
         run: cargo bench --message-format=json > benches/main_benchmarks.json
-
+        
       - name: Print Benchmark Results
         run: cat benches/main_benchmarks.json
