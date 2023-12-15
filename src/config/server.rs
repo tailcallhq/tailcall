@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
   pub apollo_tracing: Option<bool>,

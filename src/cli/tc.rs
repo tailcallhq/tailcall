@@ -18,12 +18,11 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_path, log_level } => {
+    Command::Start { file_paths, log_level } => {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
+      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_paths.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -34,8 +33,7 @@ pub fn run() -> Result<()> {
       Ok(())
     }
     Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::from_file_or_url(file_path.iter()).await })?;
+      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
