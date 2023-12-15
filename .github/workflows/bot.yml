@@ -170,11 +170,6 @@ jobs:
           cache: true
           cache-target: debug
 
-      - name: Install dependencies
-        run: |
-          rustup update
-          cargo install --force criterion
-
       - name: Cache Criterion Benchmarks
         uses: actions/cache@v2
         with:
