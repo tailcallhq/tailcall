@@ -54,18 +54,6 @@ directive @server(
 
   """
   This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.
-
-  ```graphql
-  schema @server(vars: {key: "apiKey", value: "YOUR_API_KEY_HERE"}) {
-    query: Query
-    mutation: Mutation
-  }
-
-  type Query {
-    externalData: Data
-      @http(path: "/external-api/data", headers: [{key: "Authorization", value: "Bearer {{vars.apiKey}}"}])
-  }
-  ```
   """
   vars: [KeyValue]
 
@@ -73,13 +61,6 @@ directive @server(
   `responseHeaders` appends headers to all server responses, aiding cross-origin requests or extra headers for downstream services.
 
   The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services.
-
-  ```graphql
-  schema @server(responseHeaders: [{key: "X-Allowed-Roles", value: "admin,user"}]) {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   responseHeaders: [KeyValue]
 
@@ -95,25 +76,11 @@ directive @server(
 
   """
   `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
-
-  ```graphql
-  schema @server(cert: "./cert.pem") {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   cert: String
 
   """
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-
-  ```graphql
-  schema @server(key: "./key.pem") {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   key: String
 ) on SCHEMA
@@ -129,13 +96,6 @@ The `upstream` directive allows you to control various aspects of the upstream s
 directive @upstream(
   """
   `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. If not set, no headers are forwarded, enhancing security but possibly limiting data flow.
-
-  ```graphql
-  schema @upstream(allowedHeaders: ["Authorization", "X-Api-Key"]) {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   allowedHeaders: [String]
   """
@@ -169,13 +129,6 @@ directive @upstream(
 
   """
   The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.
-
-  ```graphql
-  schema @upstream(proxy: {url: "http://localhost:3000"}, baseURL: "http://jsonplaceholder.typicode.com") {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   proxy: Proxy
 
@@ -193,59 +146,29 @@ directive @upstream(
   userAgent: String
   """
   This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.
-
-  ```graphql
-  schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   baseURL: String
   """
   Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.
-
-  ```graphql
-  schema @upstream(httpCache: false) {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   httpCache: Boolean
   """
   An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).
-
-  ```graphql
-  schema @upstream(batch: {maxSize: 1000, delay: 10, headers: ["X-Server", "Authorization"]}) {
-    query: Query
-    mutation: Mutation
-  }
-  ```
   """
   batch: Batch
 ) on SCHEMA
 
 """
-This **@http** operator serves as an indication of a field or node that is underpinned by a REST API.
+@http
+The @http operator indicates that a field or node is backed by a REST API.
 
-```graphql
-type Query {
-  user(id: ID!): User @http(path: "/users")
-}
-```
-
-Here, the `@http` operator is linked to the `user` field of the `Query` type, indicating it's backed by a REST API. The [path](#path) argument `/users` specifies the REST API path. Thus, a GET request to `https://jsonplaceholder.typicode.com/users` is made when querying the `user` field.
+For instance, if you add the @http operator to the `users` field of the Query type with a path argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
+The path argument specifies the path of the REST API.
+In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
 """
 directive @http(
   """
   This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.
-
-  ```
-  type Query {
-    user(id: ID!): User @http(path: "/users")
-  }
-  ```
 
   For dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -257,177 +180,45 @@ directive @http(
   method: Method = GET
 
   """
-  This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. For example:
-
-  ```graphql
-  type Query {
-    userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
-  }
-  ```
+  This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
   """
   query: [KeyValue]
 
   """
-  The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables. For example:
-
-  ```graphql
-  type Mutation {
-    createUser(input: UserInput!): User @http(method: "POST", path: "/users", body: "{{args.input}}")
-  }
-  ```
+  The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.
   """
   body: String
 
   """
-  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@server` operator.
-
-  ```graphql
-  type Query {
-    user(id: ID!): User @http(path: "/users", baseURL: "https://jsonplaceholder.typicode.com")
-  }
-  ```
+  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@server` operator
   """
   baseURL: String
 
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.
-
-  For instance:
-
-  ```
-  type Mutation {
-    createUser(input: UserInput!): User @http(path: "/users", headers: [{key: "X-Server", value: "Tailcall"}])
-  }
-  ```
-
-  In this example, a request to `/users` will include an additional HTTP header `X-Server` with the value `Tailcall`.
-
-  You can make use of mustache templates to provide dynamic values for headers, derived from the arguments or [context](https://tailcall.run/docs/guides/context/) provided in the request. For example:
-
-  ```
-  type Mutation {
-    users(name: String): User
-      @http(path: "/users", headers: [{key: "X-Server", value: "Tailcall"}, {key: "User-Name", value: "{{args.name}}"}])
-  }
-  ```
   """
   headers: [KeyValue]
 
   """
+  The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   groupBy: [String!]
 ) on FIELD_DEFINITION
 """
-The `@addField` operator, used on `User`, creates a `street` field in `User`. The `path` argument shows the fields to traverse from `address` to the desired field. We can use `@modify(omit: true)` to remove `address` from the schema, as `street` is now in `User`.
-
-Post application, the schema becomes:
-
-```graphql
-schema {
-  query: Query
-}
-
-type User {
-  id: Int!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
-  street: String
-}
-
-type Query {
-  user(id: Int): Post!
-}
-```
-
-In the example, `@modify(omit: true)` on `address` removes the `Address` type from the schema.
-
-`@addField` handles field nullability. If a path field is nullable, the result is nullable.
-
-`@addField` also supports indexing. For a `posts` field of type `[Post]`, to get the first post's title, specify the path as [`"posts"`,`"0"`,`"title"`].
-
-```graphql
-type User @addField(name: "firstPostTitle", path: ["posts", "0", "title"]) {
-  id: Int!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
-  posts: Post @http(path: "/users/{{value.id}}/posts")
-}
-
-type Post {
-  id: Int!
-  userId: Int!
-  title: String!
-  body: String!
-}
-```
+The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 """
 directive @addField(name: String, path: [String]!) on OBJECT
 """
-The `@modify` operator in GraphQL allows you to change field or node attributes in your schema. Here's how:
-
-### name
-
-The `name` argument in `@modify` lets you rename a field or node. This is useful when the field name in your data source doesn't match your schema's desired field name. Example:
-
-```graphql
-type User {
-  id: Int! @modify(name: "userId")
-}
-```
-
-Here, `@modify(name: "userId")` instructs GraphQL to present the field as `userId` in your schema, even though it's referred to as `id` in the data source.
-
-### omit
-
-The `omit` argument in `@modify` lets you exclude a field or node from your schema. This is useful for hiding certain data from the client. Example:
-
-```graphql
-type User {
-  id: Int! @modify(omit: true)
-}
-```
-
-Here, `@modify(omit: true)` instructs GraphQL not to include the `id` field in the schema, making it inaccessible to the client.
+The `@modify` operator in GraphQL allows you to change field or node attributes in your schema. more info [here](https://tailcall.run/docs/guides/operators/#modify)
 """
 directive @modify(omit: Boolean, name: String) on FIELD_DEFINITION
 
 """
 The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-
-```graphql
-type Post {
-  id: Int!
-  name: String!
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}], groupBy: ["id"])
-}
-```
-
-- `query: {key: "id", value: "{{value.userId}}"}]`: Here, TailCall CLI is instructed to generate a URL where the user id aligns with the `userId` from the parent `Post`. For a batch of posts, the CLI compiles a single URL, such as `/users?id=1&id=2&id=3...id=10`, consolidating multiple requests into one.
 """
 directive @groupBy(path: [String!]) on FIELD_DEFINITION
 """
-The `@const` operators allows us to embed a constant response for the schema. For eg:
-
-```graphql
-schema {
-  query: Query
-}
-
-type Query {
-  user: User @const(data: {name: "John", age: 12})
-}
-
-type User {
-  name: String
-  age: Int
-}
-```
+The `@const` operators allows us to embed a constant response for the schema.
 """
 directive @const(data: JSON) on FIELD_DEFINITION
 directive @graphQL(
