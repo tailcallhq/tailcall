@@ -1,4 +1,3 @@
-use std::time::Duration;
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
