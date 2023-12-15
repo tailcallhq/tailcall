@@ -1,7 +1,7 @@
 // mod conversion;
 
-use std::fmt::Debug;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::{env::current_dir, fmt::Debug};
 
 use anyhow::{bail, Context, Result};
 use async_graphql::Value;
@@ -20,12 +20,20 @@ impl ProtobufSet {
   // it could be more convenient to load FileDescriptorSet instead
   // either from file or server reflection
   pub fn from_proto_file(proto_path: &Path) -> Result<Self> {
+    let proto_path = if proto_path.is_relative() {
+      let dir = current_dir()?;
+
+      dir.join(proto_path)
+    } else {
+      PathBuf::from(proto_path)
+    };
+
     let parent_dir = proto_path
       .parent()
       .context("Failed to resolve parent dir for proto file")?;
 
-    let file_descriptor_set =
-      protox::compile([proto_path], [parent_dir]).with_context(|| "Failed to parse or load proto file".to_string())?;
+    let file_descriptor_set = protox::compile([proto_path.as_path()], [parent_dir])
+      .with_context(|| "Failed to parse or load proto file".to_string())?;
 
     let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
 

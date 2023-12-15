@@ -1,10 +1,11 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
 
 use crate::blueprint::{to_json_schema_for_args, to_json_schema_for_field, FieldDefinition};
 use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufService, ProtobufSet};
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::Lambda;
 use crate::try_fold::TryFold;
@@ -22,29 +23,17 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         "No base URL defined".to_string(),
       )
       .zip(
-        Valid::from_option(
-          Some({
-            let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            d.push(&grpc.proto_path);
-            d
-          }),
-          "No proto path defined".to_string(),
+        Valid::from(
+          ProtobufSet::from_proto_file(Path::new(&grpc.proto_path)).map_err(|e| ValidationError::new(e.to_string())),
         )
-        .and_then(|path| {
-          Valid::from(
-            crate::grpc::protobuf::ProtobufSet::from_proto_file(&path).map_err(|e| ValidationError::new(e.to_string())),
-          )
-        })
         .and_then(|service| {
           Valid::from(
-            crate::grpc::protobuf::ProtobufService::new(&service, grpc.service.as_str())
-              .map_err(|e| ValidationError::new(e.to_string())),
+            ProtobufService::new(&service, grpc.service.as_str()).map_err(|e| ValidationError::new(e.to_string())),
           )
         })
         .and_then(|operation| {
           Valid::from(
-            crate::grpc::protobuf::ProtobufOperation::new(&operation, grpc.method.as_str())
-              .map_err(|e| ValidationError::new(e.to_string())),
+            ProtobufOperation::new(&operation, grpc.method.as_str()).map_err(|e| ValidationError::new(e.to_string())),
           )
         }),
       )
@@ -52,9 +41,9 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
       .and_then(|((base_url, operation), mut header_map)| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
-        base_url.push_str(grpc.service.clone().as_str());
+        base_url.push_str(&grpc.service);
         base_url.push('/');
-        base_url.push_str(grpc.method.clone().as_str());
+        base_url.push_str(&grpc.method);
         header_map.insert(CONTENT_TYPE, HeaderValue::from_static("application/grpc"));
 
         let output_schema = to_json_schema_for_field(field, config);
