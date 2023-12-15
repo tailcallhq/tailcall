@@ -166,7 +166,12 @@ jobs:
 
       - name: Set up Rust
         uses: actions/setup-rust@v1
-        
+
+      - name: Install dependencies
+        run: |
+          rustup update
+          cargo install --force criterion
+
       - name: Cache Criterion Benchmarks
         uses: actions/cache@v2
         with:
