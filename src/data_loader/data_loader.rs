@@ -298,7 +298,8 @@ type KeysAndSender<K, T> = (HashSet<K>, Vec<(HashSet<K>, ResSender<K, T>)>);
 
 impl<K: Send + Sync + Hash + Eq + Clone + 'static, T: Loader<K>, C: CacheFactory<K, T::Value>> Requests<K, T, C> {
   fn new(cache_factory: &C) -> Self {
-    Self { keys: Default::default(), pending: Vec::new(), cache_storage: cache_factory.create(), disable_cache: false }
+    Self { keys: Default::default(), pending: Vec::new(), cache_storage: cache_factory.
+        create(), disable_cache: false }
   }
 
   fn take(&mut self) -> KeysAndSender<K, T> {
