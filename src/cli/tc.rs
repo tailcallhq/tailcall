@@ -124,9 +124,9 @@ fn write_output_file(filename: &String, config: &Config) -> Result<()> {
     Source::Yml => config.to_yaml().unwrap_or_default(),
   };
 
+  fs::write(filename, contents).unwrap();
   Fmt::display(Fmt::success(
     &format!("Schema has been written to {}", filename).to_string(),
   ));
-  fs::write(filename, contents).unwrap();
   Ok(())
 }
