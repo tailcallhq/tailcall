@@ -120,11 +120,11 @@ fn write_output_file(filename: &String, config: &Config) -> Result<()> {
 
   let contents = match filetype {
     Source::GraphQL => config.to_sdl(),
-    Source::Json => config.to_json().unwrap_or_default(),
-    Source::Yml => config.to_yaml().unwrap_or_default(),
+    Source::Json => config.to_json()?,
+    Source::Yml => config.to_yaml()?,
   };
 
-  fs::write(filename, contents).unwrap();
+  fs::write(filename, contents)?;
   Fmt::display(Fmt::success(
     &format!("Schema has been written to {}", filename).to_string(),
   ));
