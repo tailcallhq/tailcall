@@ -5,29 +5,42 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
+  #[serde(default, skip_serializing_if = "is_default")]
   pub apollo_tracing: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub cache_control_header: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub graphiql: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub introspection: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub query_validation: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub response_validation: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub batch_requests: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub global_response_timeout: Option<i64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub workers: Option<usize>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub hostname: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
   pub response_headers: KeyValues,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub version: Option<HttpVersion>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub cert: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub key: Option<String>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub pipeline_flush: Option<bool>,
 }
 
@@ -139,34 +152,33 @@ pub struct Proxy {
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Upstream {
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub pool_idle_timeout: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub pool_max_idle_per_host: Option<usize>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub keep_alive_interval: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub keep_alive_timeout: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub keep_alive_while_idle: Option<bool>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub proxy: Option<Proxy>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub connect_timeout: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub timeout: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub tcp_keep_alive: Option<u64>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub user_agent: Option<String>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub allowed_headers: Option<BTreeSet<String>>,
-  #[serde(rename = "baseURL")]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub http_cache: Option<bool>,
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
 }
 

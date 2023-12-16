@@ -16,7 +16,7 @@ impl ConfigWriter {
   pub async fn write(&self, filename: &String) -> Result<()> {
     let contents = match Source::detect(filename)? {
       Source::GraphQL => self.config.to_sdl(),
-      Source::Json => self.config.to_json()?,
+      Source::Json => self.config.to_json(true)?,
       Source::Yml => self.config.to_yaml()?,
     };
 
