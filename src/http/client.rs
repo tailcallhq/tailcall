@@ -2,7 +2,7 @@ use std::time::Duration;
 
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use reqwest::Client;
+use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
@@ -88,9 +88,11 @@ impl DefaultHttpClient {
     log::info!("{} {} ", request.method(), request.url());
     let _response = Response::default();
     #[cfg(feature = "default")]
-    let _response = self.client.execute(request).await?;
-    #[cfg(feature = "default")]
-    let _response = Response::from_response(_response).await?;
+    let _response = self.tc_execute(request).await?;
     Ok(_response)
+  }
+  async fn tc_execute(&self, request: Request) -> anyhow::Result<Response> {
+    let response = self.client.execute(request).await?;
+    Response::from_response(response).await
   }
 }
