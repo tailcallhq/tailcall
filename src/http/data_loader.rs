@@ -78,8 +78,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         first_url.query_pairs_mut().extend_pairs(url.query_pairs());
       }
       // todo!()
+      let res = self.client.execute(request).await?;
       // let res = self.client.execute(request)?;
-      let res = self.client.execute(request)?;
       #[allow(clippy::mutable_key_type)]
       let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
       let path = &group_by.path();
@@ -97,8 +97,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
     } else {
       let results = keys.iter().map(|key| async {
         // todo!()
-        // let result = self.client.execute(key.to_request()).await;
-        let result = self.client.execute(key.to_request());
+        let result = self.client.execute(key.to_request()).await;
+        // let result = self.client.execute(key.to_request());
         (key.clone(), result)
       });
 

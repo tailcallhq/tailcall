@@ -1,22 +1,35 @@
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use reqwest::Client;
+
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+
 
 use super::Response;
 use crate::config::Upstream;
 
+
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
-  fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
 }
 
 #[async_trait::async_trait]
 impl HttpClient for DefaultHttpClient {
-  fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+    #[cfg(feature = "default")]
+    return self.execute(req).await;
+
+    /*  let client = reqwest::Client::new();
+    let req = convert_reqwest_to_hyper(req).unwrap();
+    let res = client.execute(req).await.unwrap();
+    let body_bytes = hyper::body::to_bytes(res.into_body()).await.unwrap().to_vec();
+    println!("{}",String::from_utf8(body_bytes).unwrap());*/
+    // let x = req.data().await.unwrap().unwrap();
+    // println!("{:?}",x);
+    // let x = self.client.execute(req).await?.error_for_stat us()?;
     // todo!();
     /*let x = async_std::task::block_on(async move {
-      let response = self.execute(req).await;
+
       return match response {
         Ok(resource) => Ok(resource),
         Err(e) => {
@@ -26,6 +39,25 @@ impl HttpClient for DefaultHttpClient {
     });*/
     Ok(Response::default())
   }
+}
+
+fn convert_reqwest_to_hyper(req: reqwest::Request) -> Result<hyper::Request<hyper::Body>, Box<dyn std::error::Error>> {
+  let method = req.method().clone();
+  let uri: hyper::Uri = req.url().as_str().parse()?;
+
+  let mut hyper_req = hyper::Request::builder().method(method).uri(uri);
+
+  for (key, value) in req.headers().iter() {
+    hyper_req = hyper_req.header(key.as_str(), value.to_str().unwrap());
+  }
+  let body = if let Some(reqwest_body) = req.body() {
+    let whole_body = reqwest_body.as_bytes().unwrap_or(&[]);
+    hyper::Body::from(whole_body.to_vec())
+  } else {
+    hyper::Body::empty()
+  };
+
+  Ok(hyper_req.body(body)?)
 }
 
 #[derive(Clone)]
@@ -43,7 +75,7 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(upstream: &Upstream) -> Self {
-    let mut builder = Client::builder();
+    let mut builder = reqwest::Client::builder();
     // .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
     // .timeout(Duration::from_secs(upstream.get_timeout()))
     // .connect_timeout(Duration::from_secs(upstream.get_connect_timeout()))
@@ -71,7 +103,7 @@ impl DefaultHttpClient {
     DefaultHttpClient { client: client.build() }
   }
 
-  pub async fn execute(&self, request: reqwest::Request) -> reqwest_middleware::Result<Response> {
+  pub async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
     log::info!("{} {} ", request.method(), request.url());
     let response = self.client.execute(request).await?.error_for_status()?;
     let response = Response::from_response(response).await?;

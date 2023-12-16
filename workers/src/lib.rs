@@ -5,7 +5,6 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, DefaultHttpClient, ServerContext};
-use worker::wasm_bindgen::JsCast;
 use worker::Fetch::Url;
 use worker::*;
 
@@ -107,7 +106,7 @@ fn convert_method(worker_method: Method) -> hyper::Method {
   .unwrap()
 }
 
-async fn convert_to_hyper_request(mut worker_request: worker::Request) -> hyper::Request<hyper::Body> {
+async fn convert_to_hyper_request(mut worker_request: Request) -> hyper::Request<hyper::Body> {
   let body = worker_request.text().await.unwrap();
   let method = worker_request.method();
   let uri = worker_request.url().unwrap().as_str().to_string();
