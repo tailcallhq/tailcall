@@ -1,0 +1,37 @@
+---
+config: !file tests/http/config/add-field-with-composition.graphql
+name: Add field with composition
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+        address:
+          geo:
+            lat: "-37.3159"
+            lng: "81.1496"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { lat }"
+
+    response:
+      body:
+        data:
+          lat: "-37.3159"
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { lng }"
+
+    response:
+      body:
+        data:
+          lng: "81.1496"
