@@ -46,7 +46,7 @@ pub fn run() -> Result<()> {
         Err(e) => Err(e.into()),
       }
     }
-    
+
     Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
 }

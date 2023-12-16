@@ -16,9 +16,9 @@ fn main() -> Result<()> {
       // Ensure all errors are converted to CLIErrors before being printed.
       let cli_error = error.downcast::<CLIError>().unwrap_or_else(|error| {
         let sources = error
-            .source()
-            .map(|error| vec![CLIError::new(error.to_string().as_str())])
-            .unwrap_or_default();
+          .source()
+          .map(|error| vec![CLIError::new(error.to_string().as_str())])
+          .unwrap_or_default();
 
         CLIError::new(&error.to_string()).caused_by(sources)
       });

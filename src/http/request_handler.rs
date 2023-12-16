@@ -13,9 +13,9 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
     GraphiQLSource::build()
-        .title("Tailcall - GraphQL IDE")
-        .endpoint("/graphql")
-        .finish(),
+      .title("Tailcall - GraphQL IDE")
+      .endpoint("/graphql")
+      .finish(),
   )))
 }
 
@@ -45,8 +45,8 @@ fn update_cache_control_header(
 pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &ServerContext) {
   if !server_ctx.blueprint.server.response_headers.is_empty() {
     resp
-        .headers_mut()
-        .extend(server_ctx.blueprint.server.response_headers.clone());
+      .headers_mut()
+      .extend(server_ctx.blueprint.server.response_headers.clone());
   }
 }
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
