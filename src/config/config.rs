@@ -125,7 +125,7 @@ impl Config {
     Self { server, upstream, types, schema, unions }
   }
 
-  pub async fn write(self, filename: &String) -> Result<()> {
+  pub async fn write_file(self, filename: &String) -> Result<()> {
     let config_writer = ConfigWriter::init(self);
 
     config_writer.write(filename).await
@@ -420,11 +420,12 @@ impl Config {
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
   }
+
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_iter<Iter>(file_paths: Iter) -> Result<Config>
+  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
   where
     Iter: Iterator,
     Iter::Item: AsRef<str>,
