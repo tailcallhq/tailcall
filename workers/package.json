@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy --minify",
-    "publish": "wrangler publish --minify",
-    "dev": "wrangler dev --local"
+    "deploy": "npx wrangler deploy --minify",
+    "publish": "npx wrangler publish --minify",
+    "dev": "npx wrangler dev --local"
   },
   "devDependencies": {
     "wrangler": "^3.21.0"
