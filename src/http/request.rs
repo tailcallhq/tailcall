@@ -21,19 +21,37 @@ pub fn to_reqwest(req: worker::Request) -> reqwest::Request {
   reqwest_request
 }
 
-pub fn to_worker(req: reqwest::Request) -> worker::Request {
+pub fn convert_method(worker_method: &Method) -> worker::Method {
+  let method_str = &*worker_method.to_string().to_uppercase();
+
+  match method_str {
+    "GET" => Ok(worker::Method::Get),
+    "POST" => Ok(worker::Method::Post),
+    "PUT" => Ok(worker::Method::Put),
+    "DELETE" => Ok(worker::Method::Delete),
+    "HEAD" => Ok(worker::Method::Head),
+    "OPTIONS" => Ok(worker::Method::Options),
+    "PATCH" => Ok(worker::Method::Patch),
+    "CONNECT" => Ok(worker::Method::Connect),
+    "TRACE" => Ok(worker::Method::Trace),
+    _ => Err("Unsupported HTTP method"),
+  }
+  .unwrap()
+}
+
+pub fn to_worker(req: &reqwest::Request) -> worker::Request {
   let method = match req.method() {
     &Method::POST => WorkerMethod::Post,
     _ => WorkerMethod::Get,
   };
   let url = req.url().as_str();
-  let mut worker_request = WorkerRequest::new(url, method).unwrap();
-  for (name, value) in req.headers().iter() {
+
+  /*for (name, value) in req.headers().iter() {
     worker_request
-      .headers_mut()
+      .head()
       .unwrap()
       .append(name.as_str(), value.to_str().unwrap())
       .unwrap();
-  }
-  worker_request
+  }*/
+  WorkerRequest::new(url, method).unwrap()
 }

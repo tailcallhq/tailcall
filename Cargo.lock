@@ -2732,6 +2732,7 @@ dependencies = [
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "webpki-roots",
  "winreg",
@@ -3240,7 +3241,6 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-value",
- "async-std",
  "async-trait",
  "base64 0.21.5",
  "cache_control",
@@ -4105,6 +4105,7 @@ dependencies = [
  "lazy_static",
  "serde_json",
  "tailcall",
+ "tokio",
  "web-sys",
  "worker",
 ]

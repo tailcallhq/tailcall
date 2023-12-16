@@ -1,10 +1,11 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, DefaultHttpClient, ServerContext};
+use tokio::sync::RwLock;
 use worker::Fetch::Url;
 use worker::*;
 
@@ -48,13 +49,13 @@ fn start() {
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
-  let x = get_option();
+  let x = get_option().await;
   if x.is_none() {
     let cfg = Config::from_sdl(&make_req().await.unwrap()).to_result().unwrap();
     let blueprint = Blueprint::try_from(&cfg).unwrap();
     let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
     let serv_ctx = Arc::new(ServerContext::new(blueprint, http_client));
-    *SERV_CTX.write().unwrap() = Some(serv_ctx);
+    *SERV_CTX.write().await = Some(serv_ctx);
     return Response::ok(cfg.to_sdl());
   }
   let x = handle_request::<GraphQLRequest>(convert_to_hyper_request(req).await, x.unwrap().clone())
@@ -64,8 +65,8 @@ async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
   Ok(resp)
 }
 
-fn get_option() -> Option<Arc<ServerContext>> {
-  SERV_CTX.read().unwrap().clone()
+async fn get_option() -> Option<Arc<ServerContext>> {
+  SERV_CTX.read().await.clone()
 }
 
 async fn make_request(response: hyper::Response<hyper::Body>) -> Response {

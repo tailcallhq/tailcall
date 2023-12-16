@@ -12,8 +12,8 @@ impl Response {
   pub async fn from_response(resp: reqwest::Response) -> Result<Self> {
     let status = resp.status();
     let headers = resp.headers().to_owned();
-    let body = resp.text().await?;
-    let json = serde_json::from_str(&body)?;
+    let body = resp.bytes().await?;
+    let json = serde_json::from_slice(&body)?;
     Ok(Response { status, headers, body: json })
   }
 }
