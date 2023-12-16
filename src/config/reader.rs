@@ -81,11 +81,13 @@ mod reader_tests {
     cfg = cfg.types([("Test", Type::default())].to_vec());
 
     let server = start_mock_server();
-    let header_serv = server
-      .mock(|when, then| {
-        when.method(httpmock::Method::GET).path("/");
-        then.status(200).header("content-type", "application/graphql").body(cfg.to_sdl());
-      });
+    let header_serv = server.mock(|when, then| {
+      when.method(httpmock::Method::GET).path("/");
+      then
+        .status(200)
+        .header("content-type", "application/graphql")
+        .body(cfg.to_sdl());
+    });
 
     let mut json = String::new();
     tokio::fs::File::open("examples/jsonplaceholder.json")
@@ -95,15 +97,14 @@ mod reader_tests {
       .await
       .unwrap();
 
-    let foo_json_serv = server
-      .mock(|when, then| {
-        when.method(httpmock::Method::GET).path("/foo.json");
-        then.status(200).body(json);
-      });
+    let foo_json_serv = server.mock(|when, then| {
+      when.method(httpmock::Method::GET).path("/foo.json");
+      then.status(200).body(json);
+    });
 
     let port = server.port();
     let files: Vec<String> = [
-      "examples/jsonplaceholder.yml",   // config from local file
+      "examples/jsonplaceholder.yml",                       // config from local file
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]
