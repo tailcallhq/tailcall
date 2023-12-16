@@ -1,9 +1,8 @@
 {
   "server": {
-    "port": 8000,
     "graphiql": true,
-    "queryValidation": false,
-    "hostname": "0.0.0.0"
+    "hostname": "0.0.0.0",
+    "port": 8000
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
@@ -46,6 +45,18 @@
           "list": true,
           "http": {
             "path": "/posts"
+          }
+        },
+        "user": {
+          "type": "User",
+          "args": {
+            "id": {
+              "type": "Int",
+              "required": true
+            }
+          },
+          "http": {
+            "path": "/users/{{args.id}}"
           }
         }
       }
