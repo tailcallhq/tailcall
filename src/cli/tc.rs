@@ -43,7 +43,10 @@ pub fn run() -> Result<()> {
             display_schema(&blueprint);
           }
           if let Some(out_file) = out_file_path {
-            tokio::runtime::Runtime::new()?.block_on(async { config.to_file(&out_file).await })?;
+            tokio::runtime::Runtime::new()?.block_on(async { config.write(&out_file).await })?;
+            Fmt::display(Fmt::success(
+              &format!("Schema has been written to {}", out_file).to_string(),
+            ));
           }
           Ok(())
         }

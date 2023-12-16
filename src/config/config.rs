@@ -125,7 +125,7 @@ impl Config {
     Self { server, upstream, types, schema, unions }
   }
 
-  pub async fn to_file(self, filename: &String) -> Result<()> {
+  pub async fn write(self, filename: &String) -> Result<()> {
     let config_writer = ConfigWriter::init(self);
 
     config_writer.write(filename).await
