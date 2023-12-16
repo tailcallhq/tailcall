@@ -1,5 +1,5 @@
 mod definitions;
-mod from_config;
+pub mod from_config;
 mod operators;
 mod schema;
 mod server;

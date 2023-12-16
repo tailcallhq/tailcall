@@ -1,6 +1,6 @@
 mod blueprint;
 mod compress;
-mod from_config;
+pub mod from_config;
 mod into_schema;
 mod timeout;
 

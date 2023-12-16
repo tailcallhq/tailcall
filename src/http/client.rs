@@ -1,3 +1,4 @@
+use std::time::Duration;
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
@@ -8,14 +9,23 @@ use crate::config::Upstream;
 
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
+  fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
 }
 
 #[async_trait::async_trait]
 impl HttpClient for DefaultHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-    let response = self.execute(req).await?;
-    Ok(response)
+  fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+    // todo!();
+    /*let x = async_std::task::block_on(async move {
+      let response = self.execute(req).await;
+      return match response {
+        Ok(resource) => Ok(resource),
+        Err(e) => {
+          Err(anyhow::anyhow!("{}",e.to_string()))
+        }
+      }
+    });*/
+    Ok(Response::default())
   }
 }
 

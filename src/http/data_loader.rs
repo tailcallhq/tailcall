@@ -77,8 +77,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         let url = request.url();
         first_url.query_pairs_mut().extend_pairs(url.query_pairs());
       }
-
-      let res = self.client.execute(request).await?;
+      // todo!()
+      // let res = self.client.execute(request)?;
+      let res = self.client.execute(request)?;
       #[allow(clippy::mutable_key_type)]
       let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
       let path = &group_by.path();
@@ -86,7 +87,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
       for key in &keys {
         let req = key.to_request();
-        let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
+        let query_set: HashMap<_, _> = req.url().query_pairs().collect();
         let id = query_set
           .get(group_by.key())
           .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
@@ -95,7 +96,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
       Ok(hashmap)
     } else {
       let results = keys.iter().map(|key| async {
-        let result = self.client.execute(key.to_request()).await;
+        // todo!()
+        // let result = self.client.execute(key.to_request()).await;
+        let result = self.client.execute(key.to_request());
         (key.clone(), result)
       });
 

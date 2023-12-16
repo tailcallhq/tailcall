@@ -21,6 +21,7 @@ lazy_static = { version = "1.4.0", features = [] }
 
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
+http = "1.0.0"
 
 [dependencies.web-sys]
 features = [
