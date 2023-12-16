@@ -49,7 +49,6 @@ pub fn run() -> Result<()> {
             Fmt::display(Fmt::success(
               &format!("Schema has been written to {}", out_file).to_string(),
             ));
-            
           }
           Ok(())
         }

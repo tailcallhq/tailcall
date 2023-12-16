@@ -362,7 +362,7 @@ pub struct Http {
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  #[serde(rename = "groupBy", default,  skip_serializing_if = "is_default")]
+  #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
 }
 
