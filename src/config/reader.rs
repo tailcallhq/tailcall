@@ -1,8 +1,7 @@
 use anyhow::anyhow;
 #[cfg(feature = "default")]
-use tokio::fs::File;
-#[cfg(feature = "default")]
-use tokio::io::AsyncReadExt;
+use tokio::{fs::File, io::AsyncReadExt};
+
 use url::Url;
 
 use crate::config::{Config, Source};
@@ -21,6 +20,9 @@ impl ConfigReader {
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
     #[cfg(feature = "default")]
+    // we don't need this function for worker
+    // but it's called elsewhere and we are sure that this won't be called from worker
+    // so for sake of readability we put the parts of function under feature instead of the function
     for path in &self.file_paths {
       let conf = if let Ok(url) = Url::parse(path) {
         Self::from_url(url).await?
