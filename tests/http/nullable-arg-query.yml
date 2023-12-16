@@ -1,0 +1,59 @@
+---
+config: !file tests/http/config/nullable-arg-query.graphql
+name: Nullable arg query
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users
+      method: GET
+    response:
+      body:
+        - id: 1
+        - id: 2
+        - id: 3
+        - id: 4
+        - id: 5
+        - id: 6
+        - id: 7
+        - id: 8
+        - id: 9
+        - id: 10
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1
+      method: GET
+    response:
+      body:
+        - id: 1
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { users { id } }"
+
+    response:
+      body:
+        data:
+          users:
+            - id: 1
+            - id: 2
+            - id: 3
+            - id: 4
+            - id: 5
+            - id: 6
+            - id: 7
+            - id: 8
+            - id: 9
+            - id: 10
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { users(id: 1) { id } }"
+
+    response:
+      body:
+        data:
+          users:
+            - id: 1

@@ -7,6 +7,7 @@ mod n_plus_one;
 mod reader;
 mod server;
 mod source;
+mod writer;
 
 pub use config::*;
 pub use key_values::*;

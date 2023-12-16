@@ -1,0 +1,35 @@
+---
+config: !file tests/http/config/add-field-with-modify.graphql
+name: Add field with modify
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: "Leanne Graham"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/2
+    response:
+      body:
+        id: 2
+        name: "Ervin Howell"
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user1 }"
+    response:
+      body:
+        data:
+          user1: "Leanne Graham"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user2 }"
+    response:
+      body:
+        data:
+          user2: "Ervin Howell"

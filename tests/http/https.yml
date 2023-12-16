@@ -1,0 +1,40 @@
+---
+name: Against a server with HTTPS
+config: !inline
+  server: {}
+  upstream:
+    baseURL: https://jsonplaceholder.typicode.com
+  schema:
+    query: Query
+  types:
+    Query:
+      fields:
+        firstUser:
+          type: User
+          http:
+            path: /users/1
+            baseURL: https://jsonplaceholder.typicode.com
+    User:
+      fields:
+        id:
+          type: Int
+        name:
+          type: String
+mock:
+  - request:
+      url: https://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: "Leanne Graham"
+assert:
+  - request:
+      url: http://localhost:8080/graphql
+      method: POST
+      body:
+        query: "query { firstUser { name } }"
+    response:
+      body:
+        data:
+          firstUser:
+            name: "Leanne Graham"

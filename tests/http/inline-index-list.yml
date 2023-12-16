@@ -1,0 +1,21 @@
+---
+config: !file tests/http/config/inline-index-list.graphql
+name: Test inline index list
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users
+    response:
+      body:
+        - id: 1
+          name: "Leanne Graham"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { username }"
+    response:
+      body:
+        data:
+          username: "Leanne Graham"
