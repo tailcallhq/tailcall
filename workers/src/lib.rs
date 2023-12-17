@@ -4,10 +4,10 @@ use anyhow::anyhow;
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
+use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, DefaultHttpClient, ServerContext};
 use tokio::sync::RwLock;
-use worker::Fetch::Url;
 use worker::*;
 
 lazy_static! {
@@ -18,9 +18,7 @@ lazy_static! {
 async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
   let mut x = get_option().await;
   if x.is_none() {
-    let cfg = Config::from_sdl(&make_req().await?)
-      .to_result()
-      .map_err(|e| Error::from(format!("{}", e)))?;
+    let cfg = make_req().await.map_err(|e| Error::from(format!("{}", e)))?;
     let blueprint = Blueprint::try_from(&cfg).map_err(|e| Error::from(format!("{}", e)))?;
     let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
     let serv_ctx = Arc::new(ServerContext::new(blueprint, http_client));
@@ -54,14 +52,11 @@ async fn make_request(response: hyper::Response<hyper::Body>) -> anyhow::Result<
     .map_err(|x| anyhow!("Some error occurred while making req: {}", x.to_string()))?;
   Ok(response)
 }
-
-async fn make_req() -> Result<String> {
-  let mut resp =
-    Url("https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".parse()?)
-      .send()
-      .await?;
-  let txt = resp.text().await?;
-  Ok(txt)
+async fn make_req() -> anyhow::Result<Config> {
+  let reader = ConfigReader::init(
+    ["https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql"].iter(),
+  );
+  reader.read().await
 }
 
 fn convert_method(worker_method: Method) -> hyper::Method {

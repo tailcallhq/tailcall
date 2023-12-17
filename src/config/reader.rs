@@ -18,18 +18,21 @@ impl ConfigReader {
   }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    #[cfg(feature = "default")]
     // we don't need this function for worker
     // but it's called elsewhere and we are sure that this won't be called from worker
     // so for sake of readability we put the parts of function under feature instead of the function
     for path in &self.file_paths {
-      let conf = if let Ok(url) = Url::parse(path) {
-        Self::from_url(url).await?
+      if let Ok(url) = Url::parse(path) {
+        let conf = Self::from_url(url).await?;
+        config = config.clone().merge_right(&conf);
       } else {
+        #[cfg(feature = "default")]
         let path = path.trim_end_matches('/');
-        Self::from_file_path(path).await?
+        let _conf = Config::default();
+        #[cfg(feature = "default")]
+        let _conf = Self::from_file_path(path).await?;
+        config = config.clone().merge_right(&_conf);
       };
-      config = config.clone().merge_right(&conf);
     }
     Ok(config)
   }
