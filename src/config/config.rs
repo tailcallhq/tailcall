@@ -241,6 +241,7 @@ pub struct Field {
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
@@ -376,16 +377,16 @@ pub struct Http {
 pub struct Grpc {
   pub service: String,
   pub method: String,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub body: Option<String>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   pub proto_path: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
