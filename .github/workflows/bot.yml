@@ -173,7 +173,7 @@ jobs:
       - name: Run Criterion Benchmarks
         run: |
           cargo install cargo-criterion
-          cargo criterion --message-format=json > benches/compare_benchmarks.json
+          cargo criterion --message-format=json > compare_benchmarks/main_benchmarks.json
           cargo run -p compare_benchmarks -- compare_benchmarks/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
