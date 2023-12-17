@@ -7,7 +7,6 @@ mod http_1;
 #[cfg(feature = "default")]
 mod http_2;
 mod method;
-mod request;
 mod request_context;
 mod request_handler;
 mod request_template;

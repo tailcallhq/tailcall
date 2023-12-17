@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -9,59 +10,32 @@ use tokio::sync::RwLock;
 use worker::Fetch::Url;
 use worker::*;
 
-/*use std::sync::Arc;
-use hyper::Body;
-use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::Blueprint;
-use tailcall::cli::CLIError;
-use tailcall::config::Config;
-use tailcall::http::{DefaultHttpClient, handle_request, ServerContext};
-*/
 lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<ServerContext>>> = RwLock::new(None);
 }
-// #[event(f)]
-
-#[event(start)]
-fn start() {
-  /*    let u = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql";
-      let window = web_sys::window().unwrap();
-      async_std::task::block_on(async move {
-          let mut resp = Url(
-              "https://httpbin.org/anything"
-                  .parse().unwrap(),
-          )
-              .send().await.unwrap();
-          let txt = resp.text().await.unwrap();
-          *SDL.write().unwrap() = format!("{:#?}", txt);
-      });
-  */
-
-  // *SDL.write().unwrap() = format!("{:?}",x);
-  /*
-  async_std::task::block_on(async {
-        // let client = reqwest::Client::new();
-        // let response = client.get(url).send().await.unwrap();
-        let body = reqwest::get("https://www.rust-lang.org").await;
-
-    });*/
-}
 
 #[event(fetch)]
-async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
-  let x = get_option().await;
+async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
+  let mut x = get_option().await;
   if x.is_none() {
-    let cfg = Config::from_sdl(&make_req().await.unwrap()).to_result().unwrap();
-    let blueprint = Blueprint::try_from(&cfg).unwrap();
+    let cfg = Config::from_sdl(&make_req().await?)
+      .to_result()
+      .map_err(|e| Error::from(format!("{}", e)))?;
+    let blueprint = Blueprint::try_from(&cfg).map_err(|e| Error::from(format!("{}", e)))?;
     let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
     let serv_ctx = Arc::new(ServerContext::new(blueprint, http_client));
-    *SERV_CTX.write().await = Some(serv_ctx);
-    return Response::ok(cfg.to_sdl());
+    *SERV_CTX.write().await = Some(serv_ctx.clone());
+    x = Some(serv_ctx);
   }
-  let x = handle_request::<GraphQLRequest>(convert_to_hyper_request(req).await, x.unwrap().clone())
+  let resp = handle_request::<GraphQLRequest>(
+    convert_to_hyper_request(req).await?,
+    x.ok_or(Error::from("Unable to initiate connection"))?.clone(),
+  )
+  .await
+  .map_err(|e| Error::from(format!("{}", e)))?;
+  let resp = make_request(resp)
     .await
-    .unwrap();
-  let resp = make_request(x).await;
+    .map_err(|x| Error::from(format!("Some error occurred while making req: {}", x)))?;
   Ok(resp)
 }
 
@@ -69,28 +43,29 @@ async fn get_option() -> Option<Arc<ServerContext>> {
   SERV_CTX.read().await.clone()
 }
 
-async fn make_request(response: hyper::Response<hyper::Body>) -> Response {
-  let buf = hyper::body::to_bytes(response).await.unwrap();
-  let text = std::str::from_utf8(&buf).unwrap();
-  let mut response = Response::ok(text).unwrap();
-  response.headers_mut().append("Content-Type", "text/html").unwrap();
+async fn make_request(response: hyper::Response<hyper::Body>) -> anyhow::Result<Response> {
+  let buf = hyper::body::to_bytes(response).await?;
+  let text = std::str::from_utf8(&buf)?;
+  let mut response =
+    Response::ok(text).map_err(|x| anyhow!("Some error occurred while making req: {}", x.to_string()))?;
   response
+    .headers_mut()
+    .append("Content-Type", "text/html")
+    .map_err(|x| anyhow!("Some error occurred while making req: {}", x.to_string()))?;
+  Ok(response)
 }
 
 async fn make_req() -> Result<String> {
-  let mut resp = Url(
-    "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql"
-      .parse()
-      .unwrap(),
-  )
-  .send()
-  .await?;
+  let mut resp =
+    Url("https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".parse()?)
+      .send()
+      .await?;
   let txt = resp.text().await?;
   Ok(txt)
 }
 
 fn convert_method(worker_method: Method) -> hyper::Method {
-  let method_str = &*worker_method.to_string();
+  let method_str = &*worker_method.to_string().to_uppercase();
 
   match method_str {
     "GET" => Ok(hyper::Method::GET),
@@ -107,14 +82,16 @@ fn convert_method(worker_method: Method) -> hyper::Method {
   .unwrap()
 }
 
-async fn convert_to_hyper_request(mut worker_request: Request) -> hyper::Request<hyper::Body> {
-  let body = worker_request.text().await.unwrap();
+async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::Request<hyper::Body>> {
+  let body = worker_request.text().await?;
   let method = worker_request.method();
-  let uri = worker_request.url().unwrap().as_str().to_string();
+  let uri = worker_request.url()?.as_str().to_string();
   let headers = worker_request.headers();
   let mut builder = hyper::Request::builder().method(convert_method(method)).uri(uri);
   for (k, v) in headers {
     builder = builder.header(k, v);
   }
-  builder.body(hyper::body::Body::from(body)).unwrap()
+  builder
+      .body(hyper::body::Body::from(body))
+      .map_err(|e| Error::from(format!("{}", e)))
 }

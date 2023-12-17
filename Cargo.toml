@@ -17,10 +17,9 @@ rustls-pemfile = {version = "1.0.4",optional = true}
 inquire = {version = "0.6.2",optional = true}
 
 #safe
-worker = "0.0.18"
 hyper = { version = "0.14", features = ["server"], default-features = false    }
 sha2 = { version = "0.10", features = ["std"] }
-tokio = { version = "1", features = ["rt","time"] }
+tokio = { version = "1.35.0", features = ["rt","time"] }
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
 thiserror = "1.0.50"
@@ -31,7 +30,6 @@ serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
 reqwest = { version = "0.11", features = [
    "json",
-   "wasm-streams",
    "rustls-tls"
 ], default-features = false }
 async-graphql = { version = "6.0.11", features = ["dynamic-schema", "dataloader", "apollo_tracing"] }
@@ -60,6 +58,7 @@ futures-timer = { version = "3.0.2" }
 futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
+async-std = {version = "1.12.0",features = ["wasm-bindgen-futures", "unstable"]}
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -86,6 +85,7 @@ overflow-checks = false
 [features]
 unsafe-js = ["dep:mini-v8"]
 default = ["tokio/fs", "tokio/rt-multi-thread", "mimalloc", "http-cache-reqwest","moka", "hyper-rustls", "rustls", "rustls-pemfile","inquire"]
+worker-sep = []
 
 [[bench]]
 name = "json_like_bench"

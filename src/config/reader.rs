@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 #[cfg(feature = "default")]
 use tokio::{fs::File, io::AsyncReadExt};
-
 use url::Url;
 
 use crate::config::{Config, Source};

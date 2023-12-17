@@ -20,25 +20,6 @@ impl HttpClient for DefaultHttpClient {
   }
 }
 
-fn convert_reqwest_to_hyper(req: reqwest::Request) -> Result<hyper::Request<hyper::Body>, Box<dyn std::error::Error>> {
-  let method = req.method().clone();
-  let uri: hyper::Uri = req.url().as_str().parse()?;
-
-  let mut hyper_req = hyper::Request::builder().method(method).uri(uri);
-
-  for (key, value) in req.headers().iter() {
-    hyper_req = hyper_req.header(key.as_str(), value.to_str().unwrap());
-  }
-  let body = if let Some(reqwest_body) = req.body() {
-    let whole_body = reqwest_body.as_bytes().unwrap_or(&[]);
-    hyper::Body::from(whole_body.to_vec())
-  } else {
-    hyper::Body::empty()
-  };
-
-  Ok(hyper_req.body(body)?)
-}
-
 #[derive(Clone)]
 pub struct DefaultHttpClient {
   client: ClientWithMiddleware,
@@ -84,15 +65,23 @@ impl DefaultHttpClient {
 
     DefaultHttpClient { client: client.build() }
   }
+
+  #[inline(always)]
   pub async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
     log::info!("{} {} ", request.method(), request.url());
-    let _response = Response::default();
+    #[cfg(feature = "worker-sep")]
+    let _response = async_std::task::spawn_local(Self::tc_execute_client(self.client.clone(), request)).await?;
     #[cfg(feature = "default")]
     let _response = self.tc_execute(request).await?;
     Ok(_response)
   }
   async fn tc_execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
     let response = self.client.execute(request).await?;
+    Response::from_response(response).await
+  }
+  #[allow(dead_code)]
+  async fn tc_execute_client(client: ClientWithMiddleware, request: reqwest::Request) -> anyhow::Result<Response> {
+    let response = client.execute(request).await?;
     Response::from_response(response).await
   }
 }

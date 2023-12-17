@@ -2732,7 +2732,6 @@ dependencies = [
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-streams",
  "web-sys",
  "webpki-roots",
  "winreg",
@@ -3241,6 +3240,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-value",
+ "async-std",
  "async-trait",
  "base64 0.21.5",
  "cache_control",
@@ -3287,7 +3287,6 @@ dependencies = [
  "tokio",
  "url",
  "webbrowser",
- "worker",
 ]
 
 [[package]]
@@ -3773,6 +3772,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 
 [[package]]
+name = "wasm-rs-async-executor"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fed8e8c10166d28c68859dd5d159d408fa50fdf668ae39461f2ea41148655d52"
+dependencies = [
+ "futures",
+]
+
+[[package]]
 name = "wasm-streams"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4098,7 +4106,6 @@ name = "workers"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-std",
  "derive_setters",
  "http 1.0.0",
  "hyper",
@@ -4106,7 +4113,7 @@ dependencies = [
  "serde_json",
  "tailcall",
  "tokio",
- "web-sys",
+ "wasm-rs-async-executor",
  "worker",
 ]
 
