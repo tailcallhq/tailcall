@@ -83,6 +83,14 @@ overflow-checks = false
 [features]
 unsafe-js = ["dep:mini-v8"]
 
+[workspace]
+members = ["compare_benchmarks"]
+
+[workspace.dependencies]
+prettytable-rs = "^0.10"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
 [[bench]]
 name = "json_like_bench"
 harness = false

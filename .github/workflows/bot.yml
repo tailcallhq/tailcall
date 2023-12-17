@@ -170,11 +170,11 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install cargo-criterion
-        run: cargo install cargo-criterion
-
       - name: Run Criterion Benchmarks
-        run: cargo criterion --message-format=json > benches/main_benchmarks.json
+        run: |
+          cargo install cargo-criterion
+          cargo criterion --message-format=json > benches/compare_benchmarks.json
+          cargo run -p compare_benchmarks -- compare_benchmarks/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v2
@@ -183,6 +183,3 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
           restore-keys: |
             criterion_benchmarks_
-
-      - name: Print Benchmark Results
-        run: cat benches/main_benchmarks.json
