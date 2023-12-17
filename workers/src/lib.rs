@@ -92,6 +92,6 @@ async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::
     builder = builder.header(k, v);
   }
   builder
-      .body(hyper::body::Body::from(body))
-      .map_err(|e| Error::from(format!("{}", e)))
+    .body(hyper::body::Body::from(body))
+    .map_err(|e| Error::from(format!("{}", e)))
 }

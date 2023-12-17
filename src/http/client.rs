@@ -35,7 +35,7 @@ impl Default for DefaultHttpClient {
 
 impl DefaultHttpClient {
   pub fn new(_upstream: &Upstream) -> Self {
-    let mut _builder = Client::builder();
+    let _builder = Client::builder();
     #[cfg(feature = "default")]
     let mut _builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(_upstream.get_tcp_keep_alive())))
@@ -69,7 +69,7 @@ impl DefaultHttpClient {
   #[inline(always)]
   pub async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
     log::info!("{} {} ", request.method(), request.url());
-    #[cfg(feature = "worker-sep")]
+    #[cfg(not(feature = "default"))]
     let _response = async_std::task::spawn_local(Self::tc_execute_client(self.client.clone(), request)).await?;
     #[cfg(feature = "default")]
     let _response = self.tc_execute(request).await?;

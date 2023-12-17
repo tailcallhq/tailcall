@@ -14,7 +14,7 @@ hyper = { version = "0.14", features = [], default-features = false }
 tokio = "1"
 worker = "0.0.18"
 serde_json = "1.0.108"
-tailcall = {path = "..", features = ["worker-sep"], default-features = false}
+tailcall = {path = "..", default-features = false}
 lazy_static = { version = "1.4.0", features = [] }
 
 anyhow = "1.0.75"

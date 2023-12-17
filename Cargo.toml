@@ -85,7 +85,6 @@ overflow-checks = false
 [features]
 unsafe-js = ["dep:mini-v8"]
 default = ["tokio/fs", "tokio/rt-multi-thread", "mimalloc", "http-cache-reqwest","moka", "hyper-rustls", "rustls", "rustls-pemfile","inquire"]
-worker-sep = []
 
 [[bench]]
 name = "json_like_bench"
