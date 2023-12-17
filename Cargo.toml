@@ -67,7 +67,6 @@ webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 [dev-dependencies]
 criterion = "0.5.1"
 httpmock = "0.6"
-mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 
