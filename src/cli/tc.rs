@@ -22,7 +22,8 @@ pub fn run() -> Result<()> {
       env_logger::Builder::new()
         .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
         .init();
-      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_paths.iter()).await })?;
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -32,14 +33,21 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_path.iter()).await })?;
+    Command::Check { file_path, n_plus_one_queries, schema, out_file_path } => {
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config);
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
           if schema {
             display_schema(&blueprint);
+          }
+          if let Some(out_file) = out_file_path {
+            tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
+            Fmt::display(Fmt::success(
+              &format!("Schema has been written to {}", out_file).to_string(),
+            ));
           }
           Ok(())
         }
