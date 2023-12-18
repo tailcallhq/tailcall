@@ -183,3 +183,57 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
           restore-keys: |
             criterion_benchmarks_
+
+  Criterion_compare:
+    name: Comparing Micro Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Restore file
+        uses: actions/cache@v2
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.sha }}
+          restore-keys: |
+            criterion_benchmarks_
+
+      - name: Print Criterion Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/benchmarks.json
+          rust-script benches/parse_json_benchmark benches/benchmarks.json
+
+      - name: Compare Criterion Benchmarks
+        run: |
+          rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
+
+      - id: cat_md
+        name: Cat Markdown
+        working-directory: benches
+        run: |
+          cat benchmark.md
+
+      - id: get_comment_body
+        name: Get Comment Body
+        working-directory: benches
+        run: |
+          body="$(cat benchmark.md)"
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{github.event.pull_request.head.sha}}
+          body: ${{steps.get_comment_body.outputs.body}}
