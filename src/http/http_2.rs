@@ -12,7 +12,7 @@ use tokio::fs::File;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use super::{handle_request, log_launch};
+use super::{handle_request, log_launch_and_open_browser};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
@@ -81,7 +81,7 @@ pub async fn start_http_2(
 
   let builder = Server::builder(acceptor).http2_only(true);
 
-  log_launch(sc.as_ref());
+  log_launch_and_open_browser(sc.as_ref());
 
   if let Some(sender) = server_up_sender {
     sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;

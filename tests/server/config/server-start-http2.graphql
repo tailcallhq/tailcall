@@ -5,7 +5,6 @@ schema
     hostname: "localhost"
     cert: "./tests/server/config/example.crt"
     key: "./tests/server/config/example.key"
-    graphiql: true
   ) {
   query: Query
 }

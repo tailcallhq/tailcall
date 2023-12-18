@@ -1,0 +1,48 @@
+---
+config: !file tests/http/config/nesting-level3.graphql
+name: Nesting level 3
+mock:
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/posts/1
+    response:
+      body:
+        userId: 1
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: Leanne Graham
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1/todos
+    response:
+      body:
+        - completed: false
+        - completed: false
+        - completed: false
+        - completed: true
+        - completed: false
+        - completed: false
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { post { user { todos { completed } } } }"
+    response:
+      status: 200
+      body:
+        data:
+          post:
+            user:
+              todos:
+                - completed: false
+                - completed: false
+                - completed: false
+                - completed: true
+                - completed: false
+                - completed: false

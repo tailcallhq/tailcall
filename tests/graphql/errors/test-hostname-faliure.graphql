@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(graphiql: true, hostname: "abc") {
+schema @server(hostname: "abc") {
   query: Query
 }
 

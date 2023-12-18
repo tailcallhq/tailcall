@@ -11,13 +11,14 @@ use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
+use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
   #[serde(default)]
@@ -28,7 +29,7 @@ pub struct Config {
   #[serde(default)]
   #[setters(skip)]
   pub types: BTreeMap<String, Type>,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
 }
 impl Config {
@@ -83,8 +84,12 @@ impl Config {
     Ok(serde_yaml::to_string(self)?)
   }
 
-  pub fn to_json(&self) -> Result<String> {
-    Ok(serde_json::to_string(self)?)
+  pub fn to_json(&self, pretty: bool) -> Result<String> {
+    if pretty {
+      Ok(serde_json::to_string_pretty(self)?)
+    } else {
+      Ok(serde_json::to_string(self)?)
+    }
   }
 
   pub fn to_document(&self) -> ServiceDocument {
@@ -123,21 +128,28 @@ impl Config {
 
     Self { server, upstream, types, schema, unions }
   }
+
+  pub async fn write_file(self, filename: &String) -> Result<()> {
+    let config_writer = ConfigWriter::init(self);
+
+    config_writer.write(filename).await
+  }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub added_fields: Vec<AddField>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub doc: Option<String>,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub interface: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub implements: BTreeSet<String>,
-  #[serde(rename = "enum", default)]
+  #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
   pub variants: Option<BTreeSet<String>>,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub scalar: bool,
 }
 
@@ -189,11 +201,13 @@ fn merge_unions(
   self_unions
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct RootSchema {
   pub query: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub mutation: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub subscription: Option<String>,
 }
 
@@ -208,27 +222,30 @@ impl RootSchema {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
-  #[serde(rename = "type")]
+  #[serde(rename = "type", default, skip_serializing_if = "is_default")]
   pub type_of: String,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub list: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub required: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub list_type_required: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub args: BTreeMap<String, Arg>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub doc: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
-  #[serde(rename = "unsafe")]
+  #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
-
-  #[serde(rename = "const")]
+  #[serde(rename = "const", default, skip_serializing_if = "is_default")]
   pub const_field: Option<Const>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
 }
 
@@ -259,40 +276,63 @@ impl Field {
     self.list = true;
     self
   }
+
+  pub fn int() -> Self {
+    Self { type_of: "Int".to_string(), ..Default::default() }
+  }
+
+  pub fn string() -> Self {
+    Self { type_of: "String".to_string(), ..Default::default() }
+  }
+
+  pub fn float() -> Self {
+    Self { type_of: "Float".to_string(), ..Default::default() }
+  }
+
+  pub fn boolean() -> Self {
+    Self { type_of: "Boolean".to_string(), ..Default::default() }
+  }
+
+  pub fn id() -> Self {
+    Self { type_of: "ID".to_string(), ..Default::default() }
+  }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Unsafe {
   pub script: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Modify {
+  #[serde(default, skip_serializing_if = "is_default")]
   pub name: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub omit: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Inline {
   pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Arg {
   #[serde(rename = "type")]
   pub type_of: String,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub list: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub required: bool,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub doc: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Union {
   pub types: BTreeSet<String>,
   pub doc: Option<String>,
@@ -305,39 +345,37 @@ impl Union {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Http {
   pub path: String,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub method: Method,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub query: KeyValues,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub input: Option<JsonSchema>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub output: Option<JsonSchema>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub body: Option<String>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  #[serde(default)]
-  #[serde(rename = "groupBy", skip_serializing_if = "is_default")]
+  #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct GraphQL {
   pub name: String,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
   #[serde(rename = "baseURL")]
   pub base_url: Option<String>,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
-  #[serde(default)]
-  #[serde(skip_serializing_if = "is_default")]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub batch: bool,
 }
 
@@ -358,12 +396,12 @@ impl Display for GraphQLOperationType {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Const {
   pub data: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct AddField {
   pub name: String,
   pub path: Vec<String>,
@@ -393,11 +431,12 @@ impl Config {
       Source::Yml => Ok(Config::from_yaml(schema)?),
     }
   }
+
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn from_file_or_url<Iter>(file_paths: Iter) -> Result<Config>
+  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
   where
     Iter: Iterator,
     Iter::Item: AsRef<str>,
@@ -410,6 +449,8 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+  use pretty_assertions::assert_eq;
+
   use super::*;
 
   #[test]
@@ -430,5 +471,12 @@ mod tests {
   fn test_graphql_directive_name() {
     let name = GraphQL::directive_name();
     assert_eq!(name, "graphQL");
+  }
+
+  #[test]
+  fn test_from_sdl_empty() {
+    let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+    let expected = Config::default().types(vec![("Foo", Type::default().fields(vec![("a", Field::int())]))]);
+    assert_eq!(actual, expected);
   }
 }

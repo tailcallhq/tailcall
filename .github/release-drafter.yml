@@ -68,6 +68,7 @@ autolabeler:
       - '/chore\/.+/'
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
+      - '/renovate\/.+/'
   - label: "bug"
     branch:
       - '/fix\/.+/'

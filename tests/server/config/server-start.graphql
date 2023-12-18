@@ -1,4 +1,4 @@
-schema @server(port: 8800, graphiql: true) {
+schema @server(port: 8800) {
   query: Query
 }
 
