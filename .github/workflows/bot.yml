@@ -170,7 +170,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Print Criterion Benchmarks
+      - name: Run Benchmarks
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
