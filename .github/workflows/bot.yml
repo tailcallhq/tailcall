@@ -158,7 +158,7 @@ jobs:
           commit_message: "style: apply lint fixes"
 
   Cache_Benchmarks:
-    name: Caching Criterion benchmarks
+    name: Micro Benchmarks
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
