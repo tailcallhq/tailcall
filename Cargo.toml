@@ -8,6 +8,10 @@ name = "tailcall"
 path = "src/main.rs"
 
 [dependencies]
+# the dependencies that might cause error in wasm (workers workspace) must contain optional = true and
+# should be added to default feature below.
+# it would be nice to keep dependencies seperate, the dependencies specific to tailcall (and not wasm)
+# should be placed here:
 mimalloc = { version = "0.1.39", default-features = false, optional = true}
 http-cache-reqwest = { version = "0.12.0", features = ["manager-moka"], default-features = false, optional = true }
 moka = { version = "0.12.1", default-features = false, features = ["future"], optional = true }
@@ -16,7 +20,7 @@ rustls = {version = "0.21.9",optional = true}
 rustls-pemfile = {version = "1.0.4",optional = true}
 inquire = {version = "0.6.2",optional = true}
 
-#safe
+#safe for workers workspace.
 hyper = { version = "0.14", features = ["server"], default-features = false    }
 tokio = { version = "1.35.0", features = ["rt","time"] }
 anyhow = "1.0.75"

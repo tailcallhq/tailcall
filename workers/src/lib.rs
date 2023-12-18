@@ -1,4 +1,6 @@
-use std::sync::Arc;
+mod cache;
+
+use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
@@ -6,15 +8,39 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, DefaultHttpClient, ServerContext};
-use std::sync::RwLock;
 use worker::*;
+
+use crate::cache::TTLCache;
 
 lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<ServerContext>>> = RwLock::new(None);
 }
 
+lazy_static! {
+    static ref CACHE: RwLock<TTLCache> = {
+        RwLock::new(TTLCache::new(1000,100)) // change the values to change capacity and TTL (in secs) respectively
+    };
+}
+
+async fn make_req() -> Result<Config> {
+  let reader = ConfigReader::init(
+    [
+      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql", // add/edit the SDL links to this list
+    ]
+    .iter(),
+  );
+  reader
+    .read()
+    .await
+    .map_err(|e| Error::from(format!("{}", e.to_string())))
+}
+
 #[event(fetch)]
-async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
+async fn main(mut req: Request, _: Env, _: Context) -> Result<Response> {
+  let body = req.text().await?;
+  if let Some(x) = CACHE.write().unwrap().get(&body) {
+    return Response::from_body(ResponseBody::Body(x.as_bytes().to_vec()));
+  }
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
     let cfg = make_req().await.map_err(|e| Error::from(format!("{}", e)))?;
@@ -25,14 +51,14 @@ async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
     server_ctx = Some(serv_ctx);
   }
   let resp = handle_request::<GraphQLRequest>(
-    convert_to_hyper_request(req).await?,
+    convert_to_hyper_request(req, body.clone()).await?,
     server_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
   )
   .await
   .map_err(|e| Error::from(format!("{}", e)))?;
-  let resp = make_request(resp)
-    .await
-    .map_err(|e| Error::from(format!("{}", e)))?;
+  let mut resp = make_request(resp).await.map_err(|e| Error::from(format!("{}", e)))?;
+  let val = resp.text().await?;
+  CACHE.write().unwrap().put(body.clone(), val);
   Ok(resp)
 }
 
@@ -41,21 +67,16 @@ async fn get_option() -> Option<Arc<ServerContext>> {
 }
 
 async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {
-  let buf = hyper::body::to_bytes(response).await.map_err(|e|Error::from(format!("{}", e.to_string())))?;
-  let text = std::str::from_utf8(&buf).map_err(|e|Error::from(format!("{}", e.to_string())))?;
-  let mut response =
-    Response::ok(text).map_err(|e| Error::from(format!("{}", e.to_string())))?;
+  let buf = hyper::body::to_bytes(response)
+    .await
+    .map_err(|e| Error::from(format!("{}", e.to_string())))?;
+  let text = std::str::from_utf8(&buf).map_err(|e| Error::from(format!("{}", e.to_string())))?;
+  let mut response = Response::ok(text).map_err(|e| Error::from(format!("{}", e.to_string())))?;
   response
     .headers_mut()
     .append("Content-Type", "text/html")
     .map_err(|e| Error::from(format!("{}", e.to_string())))?;
   Ok(response)
-}
-async fn make_req() -> Result<Config> {
-  let reader = ConfigReader::init(
-    ["https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql"].iter(),
-  );
-  reader.read().await.map_err(|e|Error::from(format!("{}", e.to_string())))
 }
 
 fn convert_method(worker_method: Method) -> hyper::Method {
@@ -76,8 +97,8 @@ fn convert_method(worker_method: Method) -> hyper::Method {
   .unwrap()
 }
 
-async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::Request<hyper::Body>> {
-  let body = worker_request.text().await?;
+async fn convert_to_hyper_request(worker_request: Request, body: String) -> Result<hyper::Request<hyper::Body>> {
+  // let body = worker_request.text().await?;
   let method = worker_request.method();
   let uri = worker_request.url()?.as_str().to_string();
   let headers = worker_request.headers();

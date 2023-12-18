@@ -74,7 +74,6 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
       let mut response = async_graphql::Response::default();
       let server_error = ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
       response.errors = vec![server_error];
-
       Ok(GraphQLResponse::from(response).to_response()?)
     }
   }
