@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -14,28 +14,39 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
       };
 
-      validate_type_has_resolvers(query_type_name, query, &config.types)
+      validate_type_has_resolvers((query_type_name, query), &config.types, HashSet::new())
     })
     .unit()
 }
 
 /// Validates that all the root type fields has resolver
 /// making into the account the nesting
-fn validate_type_has_resolvers(name: &str, ty: &Type, types: &BTreeMap<String, Type>) -> Valid<(), String> {
+fn validate_type_has_resolvers<'a>(
+  (name, ty): (&'a str, &Type),
+  types: &BTreeMap<String, Type>,
+  mut visited_types: HashSet<&'a str>,
+) -> Valid<(), String> {
+  if !visited_types.insert(name) {
+    return Valid::<(), String>::fail("Found cyclic type definition without resolvers".to_owned());
+  }
   Valid::from_iter(ty.fields.iter(), |(name, field)| {
-    validate_field_has_resolver(name, field, types)
+    validate_field_has_resolver((name, field), types, visited_types.clone())
   })
   .trace(name)
   .unit()
 }
 
-pub fn validate_field_has_resolver(name: &str, field: &Field, types: &BTreeMap<String, Type>) -> Valid<(), String> {
+pub fn validate_field_has_resolver(
+  (name, field): (&str, &Field),
+  types: &BTreeMap<String, Type>,
+  visited_types: HashSet<&str>,
+) -> Valid<(), String> {
   Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
     .when(|| {
       if !field.has_resolver() {
         let f_type = &field.type_of;
         if let Some(ty) = types.get(f_type) {
-          let res = validate_type_has_resolvers(f_type, ty, types);
+          let res = validate_type_has_resolvers((f_type, ty), types, visited_types.clone());
           return !res.is_succeed();
         } else {
           return true;
@@ -71,7 +82,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
       return Valid::fail("Mutation type is not defined".to_owned()).trace(mutation_type_name);
     };
 
-    validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
+    validate_type_has_resolvers((mutation_type_name, mutation), &config.types, HashSet::new())
   } else {
     Valid::succeed(())
   }
