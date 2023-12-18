@@ -25,7 +25,7 @@ pub struct Blueprint {
   pub upstream: Upstream,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
   NamedType { name: String, non_null: bool },
   ListType { of_type: Box<Type>, non_null: bool },
