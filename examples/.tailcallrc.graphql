@@ -207,7 +207,7 @@ directive @http(
 """
 The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 """
-directive @addField(name: String, path: [String]!) on OBJECT
+directive @addField(name: String, path: [String]!) repeatable on OBJECT
 """
 The `@modify` operator in GraphQL allows you to change field or node attributes in your schema. more info [here](https://tailcall.run/docs/guides/operators/#modify)
 """
