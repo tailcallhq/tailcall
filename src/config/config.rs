@@ -11,6 +11,7 @@ use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
+#[cfg(feature = "default")]
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
@@ -129,6 +130,7 @@ impl Config {
     Self { server, upstream, types, schema, unions }
   }
 
+  #[cfg(feature = "default")]
   pub async fn write_file(self, filename: &String) -> Result<()> {
     let config_writer = ConfigWriter::init(self);
 

@@ -13,6 +13,7 @@ mod request_template;
 mod response;
 #[cfg(feature = "default")]
 mod server;
+#[cfg(feature = "default")]
 mod server_config;
 mod server_context;
 
@@ -31,7 +32,7 @@ pub use response::*;
 #[cfg(feature = "default")]
 pub use server::Server;
 pub use server_context::ServerContext;
-
+#[cfg(feature = "default")]
 use self::server_config::ServerConfig;
 
 pub fn cache_policy(res: &Response) -> Option<CacheControl> {
@@ -74,6 +75,7 @@ pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
   min
 }
 
+#[cfg(feature = "default")]
 fn log_launch_and_open_browser(sc: &ServerConfig) {
   let addr = sc.addr().to_string();
   log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());

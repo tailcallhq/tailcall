@@ -7,6 +7,7 @@ mod n_plus_one;
 pub mod reader;
 mod server;
 mod source;
+#[cfg(feature = "default")]
 mod writer;
 
 pub use config::*;
