@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use regex::Regex;
 
@@ -292,7 +292,8 @@ pub fn update_nested_resolvers<'a>(
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
     move |(config, field, _, name), mut b_field| {
-      if !field.has_resolver() && validate_field_has_resolver(name, field, &config.types).is_succeed() {
+      if !field.has_resolver() && validate_field_has_resolver((name, field), &config.types, HashSet::new()).is_succeed()
+      {
         b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(Default::default()))));
       }
 
