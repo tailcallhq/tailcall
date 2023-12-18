@@ -61,3 +61,56 @@ impl ResCache {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use std::thread;
+  use std::time::Duration;
+
+  use async_graphql_value::ConstValue;
+
+  use super::ResCache;
+  use crate::config::CacheRules;
+
+  #[test]
+  fn test_res_cache_insert() {
+    let max_age = Some(1);
+    let cache = ResCache::new(CacheRules { max_age });
+    let key = 10;
+    let value: ConstValue = "value".into();
+    cache.insert(key, &value);
+    assert_eq!(cache.get(&key), Some(value));
+  }
+
+  #[test]
+  fn test_res_cache_ttl() {
+    let max_age = Some(1);
+    let cache = ResCache::new(CacheRules { max_age });
+    let key = 10;
+    let value: ConstValue = "value".into();
+    cache.insert(key, &value);
+    assert_eq!(cache.get(&key), Some(value));
+    thread::sleep(Duration::from_secs(1));
+    assert_eq!(
+      cache.get(&key),
+      None,
+      "cache shouldn't contain the value after `CacheRules.max_age` secs have passed"
+    );
+  }
+
+  #[test]
+  fn test_res_cache_remove() {
+    let max_age = Some(100);
+    let cache = ResCache::new(CacheRules { max_age });
+    let key = 10;
+    let value: ConstValue = "value".into();
+    cache.insert(key, &value);
+    assert_eq!(cache.get(&key), Some(value));
+    cache.remove(&key);
+    assert_eq!(
+      cache.get(&key),
+      None,
+      "cache shouldn't contain the value after `CacheRules.max_age` secs have passed"
+    );
+  }
+}

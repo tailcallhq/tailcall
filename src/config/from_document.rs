@@ -74,22 +74,8 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
-    let cache_rules: Option<CacheRules> = type_definition
-      .node
-      .directives
-      .iter()
-      .find(|const_directive| const_directive.node.name.node.to_ascii_lowercase().eq("cache"))
-      .map(|const_directive| {
-        serde_json::from_value(serde_json::Value::Object(
-          const_directive
-            .node
-            .arguments
-            .iter()
-            .map(|(key, value)| (key.to_string(), value.node.clone().into_json().unwrap()))
-            .collect(),
-        ))
-        .unwrap()
-      });
+    let directives = &type_definition.node.directives;
+    let cache_rules: Option<CacheRules> = CacheRules::from_directives_slice(directives);
 
     match type_definition.node.kind.clone() {
       TypeKind::Object(object_type) => to_object_type(
@@ -214,7 +200,7 @@ fn to_input_object_field(
 fn to_common_field<F>(
   field: &F,
   args: BTreeMap<String, config::Arg>,
-  cache_rules: Option<CacheRules>,
+  parent_cache_rules: Option<CacheRules>,
 ) -> Valid<config::Field, String>
 where
   F: Fieldlike,
@@ -236,6 +222,7 @@ where
     .map(|(http, graphql)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
+      let cache_rules: Option<CacheRules> = CacheRules::from_directives_slice(directives);
       config::Field {
         type_of,
         list,
@@ -248,7 +235,7 @@ where
         unsafe_operation,
         const_field,
         graphql,
-        cache_rules,
+        cache_rules: cache_rules.or(parent_cache_rules),
       }
     })
 }
