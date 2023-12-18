@@ -93,7 +93,7 @@ impl RequestContext {
   }
 
   pub fn is_batching_enabled(&self) -> bool {
-    return self.upstream.batch.is_some() && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1);
+    self.upstream.batch.is_some() && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1)
   }
 }
 
@@ -171,7 +171,7 @@ mod test {
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
-    assert_eq!(req_ctx.is_batching_enabled(), true);
+    assert!(req_ctx.is_batching_enabled());
   }
 
   #[test]
@@ -184,7 +184,7 @@ mod test {
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
-    assert_eq!(req_ctx.is_batching_enabled(), true);
+    assert!(req_ctx.is_batching_enabled());
   }
 
   #[test]
@@ -197,7 +197,7 @@ mod test {
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
-    assert_eq!(req_ctx.is_batching_enabled(), false);
+    assert!(!req_ctx.is_batching_enabled());
   }
 
   #[test]
@@ -210,7 +210,7 @@ mod test {
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
-    assert_eq!(req_ctx.is_batching_enabled(), true);
+    assert!(req_ctx.is_batching_enabled());
   }
 
   #[test]
@@ -223,6 +223,6 @@ mod test {
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
-    assert_eq!(req_ctx.is_batching_enabled(), false);
+    assert!(!req_ctx.is_batching_enabled());
   }
 }
