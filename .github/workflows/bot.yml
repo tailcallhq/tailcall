@@ -174,7 +174,7 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          rust-script benches/criterion_compare benches/main_benchmarks.json
+          rust-script benches/parse_json_benchmark benches/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v2
