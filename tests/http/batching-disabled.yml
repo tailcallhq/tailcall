@@ -1,0 +1,51 @@
+---
+config: !file tests/http/config/batching-disabled.graphql
+name: Batching disabled
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+    response:
+      body:
+        - id: 1
+          name: "Leanne Graham"
+        - id: 2
+          name: "Ervin Howell"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1
+    response:
+      body:
+        - id: 1
+          name: "Leanne Graham"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=2
+    response:
+      body:
+        - id: 2
+          name: "Leanne Graham"
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1&id=2
+    response:
+      body:
+        - id: -1
+          name: "THIS SHOULD NOT BE CALLED"                
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=2&id=1
+    response:
+      body:
+        - id: -1
+          name: "THIS SHOULD NOT BE CALLED"      
+
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u1: user(id: 1) {id} u2: user(id: 2) {id} }"
+    response:
+      body:
+        data:
+          u1:
+            id: 1
+          u2: 
+            id: 2
