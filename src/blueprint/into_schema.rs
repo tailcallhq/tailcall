@@ -63,7 +63,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field_name = &field.name.clone();
         let def_name = def.name.clone();
         let cache_rules = field.cache_rules.clone();
-        println!("{def_name}.{field_name}: {cache_rules:?}");
         let res_cache = ResCache::new(cache_rules);
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();

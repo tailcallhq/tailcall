@@ -168,7 +168,7 @@ impl Type {
   }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CacheRules {
   pub max_age: Option<u64>,
