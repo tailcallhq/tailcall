@@ -775,15 +775,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compare_benchmarks"
-version = "0.1.0"
-dependencies = [
- "prettytable-rs",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3220,6 +3211,7 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "pretty_assertions",
+ "prettytable-rs",
  "regex",
  "reqwest",
  "reqwest-middleware",

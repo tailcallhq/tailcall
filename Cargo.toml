@@ -63,6 +63,7 @@ futures-timer = { version = "3.0.2" }
 futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
+prettytable-rs = "^0.10"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -82,14 +83,6 @@ overflow-checks = false
 
 [features]
 unsafe-js = ["dep:mini-v8"]
-
-[workspace]
-members = ["compare_benchmarks"]
-
-[workspace.dependencies]
-prettytable-rs = "^0.10"
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
 
 [[bench]]
 name = "json_like_bench"

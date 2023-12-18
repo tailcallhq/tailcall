@@ -170,11 +170,11 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Run Criterion Benchmarks
+      - name: Print Criterion Benchmarks
         run: |
-          cargo install cargo-criterion
-          cargo criterion --message-format=json > compare_benchmarks/main_benchmarks.json
-          cargo run -p compare_benchmarks -- compare_benchmarks/main_benchmarks.json
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/main_benchmarks.json
+          rust-script benches/criterion_compare benches/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v2
