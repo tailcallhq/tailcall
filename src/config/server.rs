@@ -220,6 +220,10 @@ impl Upstream {
     self.batch.clone().unwrap_or_default().delay
   }
 
+  pub fn get_max_size(&self) -> usize {
+    self.batch.clone().unwrap_or_default().max_size
+  }
+
   pub fn merge_right(mut self, other: Self) -> Self {
     self.allowed_headers = other.allowed_headers.map(|other| {
       if let Some(mut self_headers) = self.allowed_headers {

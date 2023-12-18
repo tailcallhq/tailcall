@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
-use crate::config::{self, Batch, Upstream};
+use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpDataLoader, Response, ServerContext};
@@ -93,7 +93,7 @@ impl RequestContext {
   }
 
   pub fn is_batching_enabled(&self) -> bool {
-    return self.upstream.batch.is_some() && self.upstream.get_delay() != 0;
+    return self.upstream.batch.is_some() && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1);
   }
 }
 
@@ -192,7 +192,33 @@ mod test {
     // create ctx with batch that has delay set to 0
     let config = config::Config::default();
     let mut upstream = config.upstream.clone();
-    upstream.batch = Some(Batch { max_size: 100, delay: 0, headers: BTreeSet::new() });
+    upstream.batch = Some(Batch { max_size: 0, delay: 0, headers: BTreeSet::new() });
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert_eq!(req_ctx.is_batching_enabled(), false);
+  }
+
+  #[test]
+  fn test_is_batching_enabled_when_max_size_1() {
+    // create ctx with batch that has delay set to 0
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch { max_size: 1, delay: 0, headers: BTreeSet::new() });
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert_eq!(req_ctx.is_batching_enabled(), true);
+  }
+
+  #[test]
+  fn test_is_batching_disabled_when_max_size_0() {
+    // create ctx with batch that has delay set to 0
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch { max_size: 0, delay: 0, headers: BTreeSet::new() });
     let server = Server::try_from(config.server.clone()).unwrap();
 
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
