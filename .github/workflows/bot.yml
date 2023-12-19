@@ -26,16 +26,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Print Content of a.md
+        run: |
+          cat a.md
+        working-directory: benches  # Change this to the appropriate directory if a.md is located elsewhere
+
       - name: Prepare Comment Content
         run: |
           echo "Main Benchmarks:" > comment_content.txt
           cat a.md >> comment_content.txt
         working-directory: benches
 
-      - name: Comment on Pull Request
+      - name: Comment on Commit
         run: |
-          gh pr comment ${{ github.event.number }} --body-file comment_content.txt
+          gh pr review ${{ github.event.number }} --body-file comment_content.txt --commit ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
