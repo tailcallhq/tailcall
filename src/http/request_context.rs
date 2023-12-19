@@ -45,9 +45,7 @@ impl RequestContext {
   }
 
   pub async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
-    // todo!()
     self.http_client.execute(req).await
-    // self.http_client.execute(req)
   }
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
