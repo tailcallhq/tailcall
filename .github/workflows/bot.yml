@@ -188,6 +188,9 @@ jobs:
     name: Comparing Micro Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
       - name: Check out code
         uses: actions/checkout@v2
