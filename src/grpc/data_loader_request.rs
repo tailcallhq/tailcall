@@ -1,9 +1,8 @@
-use anyhow::Result;
-use std::{
-  collections::{hash_map::DefaultHasher, BTreeSet},
-  hash::{Hash, Hasher},
-};
+use std::collections::hash_map::DefaultHasher;
+use std::collections::BTreeSet;
+use std::hash::{Hash, Hasher};
 
+use anyhow::Result;
 use prost_reflect::DynamicMessage;
 
 use super::request_template::RenderedRequestTemplate;
@@ -58,21 +57,18 @@ impl DataLoaderRequest {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::BTreeSet, path::PathBuf};
+  use std::collections::BTreeSet;
+  use std::path::PathBuf;
 
-  use crate::grpc::{
-    protobuf::{ProtobufOperation, ProtobufSet},
-    request_template::RenderedRequestTemplate,
-  };
-  use hyper::{
-    header::{HeaderName, HeaderValue},
-    HeaderMap,
-  };
+  use hyper::header::{HeaderName, HeaderValue};
+  use hyper::HeaderMap;
   use once_cell::sync::Lazy;
   use pretty_assertions::assert_eq;
   use url::Url;
 
   use super::DataLoaderRequest;
+  use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+  use crate::grpc::request_template::RenderedRequestTemplate;
 
   static PROTOBUF_OPERATION: Lazy<ProtobufOperation> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

@@ -9,14 +9,13 @@ use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 use prost_reflect::DynamicMessage;
 
+use super::data_loader_request::DataLoaderRequest;
+use super::protobuf::{get_field_value_as_str, ProtobufOperation};
+use super::request::execute_grpc_request;
 use crate::config::{Batch, GrpcBatchOperation};
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{HttpClient, Response};
 use crate::json::JsonLike;
-
-use super::data_loader_request::DataLoaderRequest;
-use super::protobuf::{get_field_value_as_str, ProtobufOperation};
-use super::request::execute_grpc_request;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
@@ -36,11 +35,11 @@ impl GrpcDataLoader {
     let results = keys.iter().map(|key| async {
       let result = match key.to_request() {
         Ok(req) => execute_grpc_request(self.client.deref(), &self.operation, req).await,
-        Err(error) => Err(error.into()),
+        Err(error) => Err(error),
       };
 
       // TODO: do we have to clone keys here? join_all seems like returns the results in passed order
-      return (key.clone(), result);
+      (key.clone(), result)
     });
 
     let results = join_all(results).await;
@@ -109,9 +108,9 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     if let Some(batch) = &self.batch {
-      self.load_with_batch(batch, keys).await.map_err(|e| Arc::new(e))
+      self.load_with_batch(batch, keys).await.map_err(Arc::new)
     } else {
-      self.load_dedupe_only(keys).await.map_err(|e| Arc::new(e))
+      self.load_dedupe_only(keys).await.map_err(Arc::new)
     }
   }
 }

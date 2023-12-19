@@ -1,4 +1,4 @@
-schema @server(port: 8000, graphiql: true) @upstream(httpCache: true, batch: { delay: 10 }) {
+schema @server(port: 8000, graphiql: true) @upstream(httpCache: true, batch: {delay: 10}) {
   query: Query
 }
 
@@ -16,11 +16,8 @@ type Query {
       method: "GetNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
-      protoPath: "src/grpc/tests/news.proto",
-      batch: {
-        method: "GetMultipleNews",
-        groupBy: ["news", "id"]
-      }
+      protoPath: "src/grpc/tests/news.proto"
+      batch: {method: "GetMultipleNews", groupBy: ["news", "id"]}
     )
 }
 input NewsInput {

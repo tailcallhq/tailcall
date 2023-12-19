@@ -1,7 +1,8 @@
 // mod conversion;
 
+use std::env::current_dir;
+use std::fmt::Debug;
 use std::path::{Path, PathBuf};
-use std::{env::current_dir, fmt::Debug};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
@@ -199,9 +200,8 @@ mod tests {
   use prost_reflect::Value;
   use serde_json::json;
 
-  use crate::grpc::protobuf::{protobuf_value_as_str, get_field_value_as_str};
-
   use super::ProtobufSet;
+  use crate::grpc::protobuf::{get_field_value_as_str, protobuf_value_as_str};
 
   static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

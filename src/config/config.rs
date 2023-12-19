@@ -386,7 +386,7 @@ pub struct Grpc {
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   pub proto_path: String,
-  pub batch: Option<GrpcBatch>
+  pub batch: Option<GrpcBatch>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -400,7 +400,7 @@ pub struct GrpcBatch {
 #[derive(Debug, Clone)]
 pub struct GrpcBatchOperation {
   pub operation: ProtobufOperation,
-  pub group_by: GroupBy
+  pub group_by: GroupBy,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

@@ -285,7 +285,7 @@ input Batch {
 }
 
 input GrpcBatch {
-  method: String!,
+  method: String!
   groupBy: [String!]!
 }
 

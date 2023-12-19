@@ -1,9 +1,8 @@
 use anyhow::{bail, Result};
 use reqwest::Request;
 
-use crate::http::{HttpClient, Response};
-
 use super::protobuf::ProtobufOperation;
+use crate::http::{HttpClient, Response};
 
 pub async fn execute_grpc_request(
   client: &dyn HttpClient,
