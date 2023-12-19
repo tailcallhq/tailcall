@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -179,6 +179,7 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
+          echo "Main Benchmarks:" > benches/main_benchmarks.md
           rust-script benches/parse_json_benchmark benches/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
@@ -188,6 +189,12 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
           restore-keys: |
             criterion_benchmarks_
+
+      - name: Comment on Commit
+        run: |
+          gh pr comment ${{ github.event.number }} --body-file benches/main_benchmarks.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   Criterion_compare:
     name: Comparing Micro Benchmarks
@@ -218,14 +225,16 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
+          echo "New Benchmarks:" > benches/benchmarks.md
           rust-script benches/parse_json_benchmark benches/benchmarks.json
+
+      - name: Comment on Commit
+        run: |
+          gh pr comment ${{ github.event.number }} --body-file benches/benchmarks.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compare Criterion Benchmarks
         run: |
           rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
-
-      - id: cat_md
-        name: Cat Markdown
-        working-directory: benches
-        run: |
-          cat benchmark.md
+          cat benches/benchmark.md
