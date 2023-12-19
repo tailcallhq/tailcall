@@ -1,0 +1,21 @@
+config: !file tests/http/config/grpc.graphql
+name: Grpc datasource
+mock:
+  - request:
+      url: http://localhost:50051/NewsService/GetAllNews
+      method: POST
+    response:
+      body: \0\0\0\0L\n$\n\x011\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n$\n\x012\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { news {news{ id }} }"
+    response:
+      body:
+        data:
+          news:
+            news:
+              - id: "1"
+              - id: "2"

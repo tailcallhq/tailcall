@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::{graphql, http, grpc};
+use crate::{graphql, grpc, http};
 
 #[derive(Clone)]
 pub struct Lambda<A> {

@@ -1,7 +1,5 @@
-use crate::{
-  mustache::Mustache,
-  valid::{Valid, ValidationError},
-};
+use crate::mustache::Mustache;
+use crate::valid::{Valid, ValidationError};
 
 pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
   let Some(body) = body else {
@@ -17,9 +15,9 @@ pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
 
 #[cfg(test)]
 mod tests {
-  use crate::{mustache::Mustache, valid::Valid};
-
   use super::to_body;
+  use crate::mustache::Mustache;
+  use crate::valid::Valid;
 
   #[test]
   fn no_body() {

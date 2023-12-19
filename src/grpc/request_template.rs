@@ -84,21 +84,18 @@ impl RequestTemplate {
 
 #[cfg(test)]
 mod tests {
-  use std::{borrow::Cow, path::PathBuf};
+  use std::borrow::Cow;
+  use std::path::PathBuf;
 
   use derive_setters::Setters;
-  use hyper::{
-    header::{HeaderName, HeaderValue},
-    HeaderMap, Method, Version,
-  };
+  use hyper::header::{HeaderName, HeaderValue};
+  use hyper::{HeaderMap, Method, Version};
   use once_cell::sync::Lazy;
   use pretty_assertions::assert_eq;
 
   use super::RequestTemplate;
-  use crate::{
-    grpc::protobuf::{ProtobufOperation, ProtobufSet},
-    mustache::Mustache,
-  };
+  use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+  use crate::mustache::Mustache;
 
   static PROTOBUF_OPERATION: Lazy<ProtobufOperation> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -167,9 +164,9 @@ mod tests {
       ])
     );
 
-    req
-      .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())));
+    if let Some(body) = req.body() {
+      assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref()))
+    }
   }
 
   #[test]
@@ -183,8 +180,8 @@ mod tests {
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
 
-    req
-      .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())));
+    if let Some(body) = req.body() {
+      assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref()))
+    }
   }
 }
