@@ -231,7 +231,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
-      cache_rules: type_of.cache.clone(),
+      cache: type_of.cache.clone(),
     })
   })
 }
@@ -254,7 +254,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
-      cache_rules: field.cache.clone().unwrap_or(Cache::default()),
+      cache: field.cache.clone().unwrap_or(Cache::default()),
     })
   })
 }

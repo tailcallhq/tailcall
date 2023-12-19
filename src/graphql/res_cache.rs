@@ -11,7 +11,7 @@ const DEFAULT_MAX_AGE: u64 = 30;
 
 #[derive(Clone)]
 pub struct ResCache {
-  cache_rules: Cache,
+  cache: Cache,
   data: Arc<RwLock<TtlCache<u64, ConstValue>>>,
 }
 
@@ -19,20 +19,20 @@ impl std::fmt::Debug for ResCache {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "ResCache {{cache_rules: {:?}, capacity: {:?}}}",
-      self.cache_rules,
+      "ResCache {{cache: {:?}, capacity: {:?}}}",
+      self.cache,
       self.data.read().unwrap().capacity()
     )
   }
 }
 
 impl ResCache {
-  pub fn new(cache_rules: Cache) -> Self {
-    ResCache { cache_rules, data: Arc::new(RwLock::new(TtlCache::new(1000))) }
+  pub fn new(cache: Cache) -> Self {
+    ResCache { cache, data: Arc::new(RwLock::new(TtlCache::new(1000))) }
   }
 
   fn insert(&self, key: u64, value: &ConstValue) -> Option<ConstValue> {
-    let ttl = Duration::from_secs(self.cache_rules.max_age.unwrap_or(DEFAULT_MAX_AGE));
+    let ttl = Duration::from_secs(self.cache.max_age.unwrap_or(DEFAULT_MAX_AGE));
     self.data.write().unwrap().insert(key, value.clone(), ttl)
   }
 
