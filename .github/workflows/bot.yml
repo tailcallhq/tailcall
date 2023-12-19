@@ -28,6 +28,7 @@ jobs:
 
       - name: Prepare Comment Content
         run: |
+          touch benches/comment_content.txt
           echo "Main Benchmarks:" > benches/comment_content.txt
           cat benches/a.md >> benches/comment_content.txt
         working-directory: benches
