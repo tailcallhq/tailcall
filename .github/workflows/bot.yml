@@ -34,7 +34,7 @@ jobs:
 
       - name: Comment on Commit
         run: |
-          gh pr review ${{ github.event.number }} --body-file benches/comment_content.txt
+           gh pr review ${{ github.event.number }} --comment --body-file benches/comment_content.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
