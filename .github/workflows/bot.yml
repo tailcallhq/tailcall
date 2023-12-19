@@ -32,9 +32,13 @@ jobs:
           echo "Main Benchmarks:" > benches/comment_content.txt
           cat benches/a.md >> benches/comment_content.txt
 
+      - name: Get Commit SHA
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "COMMIT_SHA=${COMMIT_SHA}" >> $GITHUB_ENV
+
       - name: Comment on Commit
         run: |
-           gh pr review ${{ github.event.number }} --comment --body-file benches/comment_content.txt
+          gh pr review ${{ github.event.number }} --comment --body-file benches/comment_content.txt --commit-sha $COMMIT_SHA
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
