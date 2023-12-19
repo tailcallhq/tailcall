@@ -56,13 +56,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
   fs::write(markdown_output_file_path, comparison_table_markdown)?;
 
-  // Check for benchmarks exceeding the 1% change threshold
+  // Collect benchmarks exceeding the 1% change threshold
   let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
     .iter()
     .zip(new_benchmarks.iter())
     .filter_map(|(old, new)| {
       let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-      if percentage_change.abs() > 1.0 {
+      if percentage_change > 1.0 {
         Some(old.id.clone())
       } else {
         None
@@ -70,13 +70,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .collect();
 
-  // If there are benchmarks exceeding the threshold, print their names
+  // Print the benchmarks exceeding the threshold
   if !benchmarks_exceeding_threshold.is_empty() {
     let exceeding_benchmarks_str = benchmarks_exceeding_threshold.join(", ");
     println!(
       "Benchmarks exceeding the 1% change threshold: {}",
       exceeding_benchmarks_str
     );
+
+    // Fail the CI with a non-zero exit code
+    eprintln!("Error: Benchmarks exceeding the 1% change threshold");
+    std::process::exit(1);
   }
 
   Ok(())
