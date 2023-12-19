@@ -49,7 +49,7 @@ pub enum Command {
 
     /// Operations to check
     #[arg(short, long, value_delimiter=',', num_args = 1..)]
-    operation: Vec<String>,
+    operations: Vec<String>,
   },
 
   /// Merge multiple configuration file into one
