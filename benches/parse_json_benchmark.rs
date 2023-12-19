@@ -2,14 +2,12 @@
 
 //! ```cargo
 //! [dependencies]
-//! prettytable-rs = "^0.10"
 //! serde_json = "1.0"
 //! serde = { version = "1", features = ["derive"] }
 //! ```
 
 use std::{env, fs};
 
-use prettytable::{row, Table};
 use serde::Deserialize;
 use serde_json::from_str;
 
@@ -40,6 +38,15 @@ impl Metric {
   }
 }
 
+fn format_value(value: f64, unit: &str) -> String {
+  match unit {
+    "ns" if value >= 1000.0 => format!("{:.2} μs", value / 1000.0),
+    "μs" if value >= 1000.0 => format!("{:.2} ms", value / 1000.0),
+    "ms" if value >= 1000.0 => format!("{:.2} s", value / 1000.0),
+    _ => format!("{:.2} {}", value, unit),
+  }
+}
+
 pub fn parse_json(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
   // Read the JSON file content
   let content = fs::read_to_string(file_path)?;
@@ -54,15 +61,15 @@ pub fn parse_json(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn print_table(benchmarks: &[Benchmark]) {
-  // Create a table
-  let mut table = Table::new();
+  // Create a table header
+  let mut markdown_table = String::new();
+  markdown_table.push_str("| Benchmark | Estimate | Lower Bound | Upper Bound |\n");
+  markdown_table.push_str("| --- | --- | --- | --- |\n");
 
-  // Add rows for each benchmark and its metrics
+  // Add rows for each benchmark and its typical metric
   for benchmark in benchmarks {
-    // Round off the numbers
+    // Round off the numbers for typical metric
     let rounded_typical = benchmark.typical.round();
-    let rounded_mean = benchmark.mean.round();
-    let rounded_median = benchmark.median.round();
 
     // Format the benchmark name
     let benchmark_name = if benchmark.id.starts_with(':') {
@@ -71,55 +78,51 @@ fn print_table(benchmarks: &[Benchmark]) {
       benchmark.id.clone()
     };
 
-    table.add_row(row!["Benchmark", benchmark_name,]);
-    table.add_row(row!["Metric", "estimate", "lower_bound", "upper_bound", "unit",]);
-    // Add additional rows for typical, median, and mean metrics
-    table.add_row(row![
-      "Typical",
-      format!("{:.2}", rounded_typical.estimate),
-      format!("{:.2}", rounded_typical.lower_bound),
-      format!("{:.2}", rounded_typical.upper_bound),
-      &rounded_typical.unit,
-    ]);
-    table.add_row(row![
-      "Mean",
-      format!("{:.2}", rounded_mean.estimate),
-      format!("{:.2}", rounded_mean.lower_bound),
-      format!("{:.2}", rounded_mean.upper_bound),
-      &rounded_mean.unit,
-    ]);
-    table.add_row(row![
-      "Median",
-      format!("{:.2}", rounded_median.estimate),
-      format!("{:.2}", rounded_median.lower_bound),
-      format!("{:.2}", rounded_median.upper_bound),
-      &rounded_median.unit,
-    ]);
+    // Format the typical metric values using the format_value function
+    let formatted_estimate = format_value(rounded_typical.estimate, &rounded_typical.unit);
+    let formatted_lower_bound = format_value(rounded_typical.lower_bound, &rounded_typical.unit);
+    let formatted_upper_bound = format_value(rounded_typical.upper_bound, &rounded_typical.unit);
 
-    // Add a separator row between benchmarks
-    table.add_row(row!["", "", "", ""]);
+    // Add row for typical metric without the unit column
+    markdown_table.push_str(&format!(
+      "| {} | {} | {} | {} |\n",
+      benchmark_name, formatted_estimate, formatted_lower_bound, formatted_upper_bound,
+    ));
   }
 
-  // Print the table
-  table.printstd();
+  // Write the Markdown table to the file
+  let file_path = "benches/main_benchmarks.md";
+  fs::write(file_path, markdown_table).expect("Failed to write Markdown table to file");
+  println!("Markdown table (Typical values) written to {}", file_path);
 }
 
 fn main() {
   // Retrieve command-line arguments
   let args: Vec<String> = env::args().collect();
 
-  // Check if a file name argument is provided
-  if args.len() != 2 {
-    eprintln!("Usage: {} <file_path>", args[0]);
+  // Check if two file name arguments are provided
+  if args.len() != 3 {
+    eprintln!("Usage: {} <input_file_path> <output_file_path>", args[0]);
     std::process::exit(1);
   }
 
-  // Extract the file name from command-line arguments
-  let file_path = &args[1];
+  // Extract the input and output file names from command-line arguments
+  let input_file_path = &args[1];
+  let _output_file_path = &args[2]; // <-- Add an underscore to indicate it's intentionally unused
 
   // Attempt to parse the JSON file and print the table
-  match parse_json(file_path) {
+  match parse_json(input_file_path) {
     Ok(_) => println!("Table printed successfully."),
-    Err(err) => eprintln!("Error: {}", err),
+    Err(err) => {
+      eprintln!("Error: {}", err);
+      std::process::exit(1);
+    }
+  }
+
+  // Optionally, you can also print the table to the specified output file
+  // Instead of printing to the console, write the Markdown table to the file
+  if let Err(err) = parse_json(input_file_path) {
+    eprintln!("Error: {}", err);
+    std::process::exit(1);
   }
 }
