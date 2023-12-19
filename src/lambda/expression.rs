@@ -18,7 +18,8 @@ use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
-use crate::grpc::request::execute_operation_request;
+use crate::grpc::request::execute_grpc_request;
+use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -144,13 +145,14 @@ impl Expression {
             parse_graphql_response(ctx, res, field_name)
           }
           Unsafe::Grpc { req_template, dl_id, .. } => {
-            let req = req_template.to_request(ctx)?;
+            let rendered = req_template.render(ctx)?;
 
             let res = if ctx.req_ctx.upstream.batch.is_some() {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, GrpcDataLoader>> =
+              let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
+              execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
             } else {
+              let req = rendered.to_request()?;
               execute_raw_grpc_request(ctx, req, &req_template.operation).await?
             };
 
@@ -209,9 +211,37 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   operation: &ProtobufOperation,
 ) -> Result<Response> {
   Ok(
-    execute_operation_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
+    execute_grpc_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+  )
+}
+
+async fn execute_grpc_request_with_dl<
+  'ctx,
+  Ctx: ResolverContextLike<'ctx>,
+  Dl: Loader<grpc::DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  rendered: RenderedRequestTemplate,
+  data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
+) -> Result<Response> {
+  let headers = ctx
+    .req_ctx
+    .upstream
+    .batch
+    .clone()
+    .map(|s| s.headers)
+    .unwrap_or_default();
+  let endpoint_key = grpc::DataLoaderRequest::new(rendered, headers);
+
+  Ok(
+    data_loader
+      .unwrap()
+      .load_one(endpoint_key)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?
+      .unwrap_or_default(),
   )
 }
 

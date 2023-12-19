@@ -3,19 +3,20 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
+use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use hyper::body::Bytes;
+use prost_reflect::DynamicMessage;
 
 use crate::config::{Batch, GrpcBatchOperation};
 use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, HttpClient, Response};
+use crate::http::{HttpClient, Response};
 use crate::json::JsonLike;
 
-use super::protobuf::ProtobufOperation;
-use super::request::execute_operation_request;
+use super::data_loader_request::DataLoaderRequest;
+use super::protobuf::{get_field_value_as_str, ProtobufOperation};
+use super::request::execute_grpc_request;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
@@ -33,7 +34,10 @@ impl GrpcDataLoader {
 
   async fn load_dedupe_only(&self, keys: &[DataLoaderRequest]) -> anyhow::Result<HashMap<DataLoaderRequest, Response>> {
     let results = keys.iter().map(|key| async {
-      let result = execute_operation_request(self.client.deref(), &self.operation, key.to_request()).await;
+      let result = match key.to_request() {
+        Ok(req) => execute_grpc_request(self.client.deref(), &self.operation, req).await,
+        Err(error) => Err(error.into()),
+      };
 
       // TODO: do we have to clone keys here? join_all seems like returns the results in passed order
       return (key.clone(), result);
@@ -54,22 +58,16 @@ impl GrpcDataLoader {
     &self,
     batch: &GrpcBatchOperation,
     keys: &[DataLoaderRequest],
-  ) -> anyhow::Result<HashMap<DataLoaderRequest, Response>> {
-    let inputs: Vec<&[u8]> = keys
+  ) -> Result<HashMap<DataLoaderRequest, Response>> {
+    let inputs = keys
       .iter()
-      .map(|key| {
-        key
-          .body()
-          .map(|body| body.as_bytes())
-          .unwrap_or_default()
-          .unwrap_or_default()
-      })
-      .collect();
-    let multiple_request = batch.operation.collect_multiple_inputs(inputs)?;
+      .map(|key| key.to_message())
+      .collect::<Result<Vec<DynamicMessage>>>()?;
+    let multiple_request = batch.operation.convert_multiple_messages(&inputs)?;
 
-    let mut first_request = keys[0].clone();
+    let mut first_request = keys[0].clone().to_request()?;
 
-    // TODO: move url management to execute_operation_request?
+    // TODO: move url management to execute_grpc_request?
     let url = first_request.url_mut();
     url.set_path(&format!(
       "{}/{}",
@@ -78,40 +76,24 @@ impl GrpcDataLoader {
     ));
     first_request.body_mut().replace(multiple_request.into());
 
-    let response = execute_operation_request(self.client.deref(), &batch.operation, first_request.to_request()).await?;
+    let response = execute_grpc_request(self.client.deref(), &batch.operation, first_request).await?;
 
     let path = &batch.group_by.path();
     let response_body = response.body.group_by(path);
 
-    dbg!(&response_body);
-
     let mut result = HashMap::new();
 
-    for key in keys {
-      let value: serde_json::Value = serde_json::from_slice(
-        key
-          .body()
-          .ok_or(anyhow!("Body should be defined"))?
-          .as_bytes()
-          .unwrap_or_default(),
-      )?;
-      let id = value
-        .get(batch.group_by.key())
-        .ok_or(anyhow!("Unable to find key"))?
-        .as_str()
-        .unwrap_or_default();
-      dbg!(&id);
+    for (key, input) in keys.iter().zip(inputs) {
+      let id = get_field_value_as_str(input, batch.group_by.key())?;
       let res = response.clone().body(
         response_body
-          .get(id)
+          .get(&id)
           .and_then(|a| a.first().cloned().cloned())
           .unwrap_or(ConstValue::Null),
       );
 
       result.insert(key.clone(), res);
     }
-
-    dbg!(&result);
 
     Ok(result)
   }

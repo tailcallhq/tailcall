@@ -3,12 +3,48 @@
 use std::path::{Path, PathBuf};
 use std::{env::current_dir, fmt::Debug};
 
-use anyhow::{bail, Context, Result, anyhow};
+use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
-use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, ServiceDescriptor, MethodDescriptor};
+use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor};
 use serde_json::Deserializer;
+
+fn message_to_bytes(message: DynamicMessage) -> Result<Vec<u8>> {
+  let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
+  // set compression flag
+  buf.put_u8(0);
+  // next 4 bytes should encode message length
+  buf.put_u32(message.encoded_len() as u32);
+  // encode the message itself
+  message.encode(&mut buf)?;
+
+  Ok(buf)
+}
+
+pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
+  use prost_reflect::Value;
+
+  match value {
+    Value::I32(v) => v.to_string(),
+    Value::I64(v) => v.to_string(),
+    Value::U32(v) => v.to_string(),
+    Value::U64(v) => v.to_string(),
+    Value::F32(v) => v.to_string(),
+    Value::F64(v) => v.to_string(),
+    Value::EnumNumber(v) => v.to_string(),
+    Value::String(s) => s.clone(),
+    _ => Default::default(),
+  }
+}
+
+pub fn get_field_value_as_str(message: DynamicMessage, field_name: &str) -> Result<String> {
+  let field = message
+    .get_field_by_name(field_name)
+    .ok_or(anyhow!("Unable to find key"))?;
+
+  Ok(protobuf_value_as_str(&field))
+}
 
 #[derive(Debug)]
 pub struct ProtobufSet {
@@ -71,7 +107,7 @@ impl ProtobufService {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtobufOperation {
   method: MethodDescriptor,
   input_type: MessageDescriptor,
@@ -88,8 +124,8 @@ impl ProtobufOperation {
     self.method.parent_service().name()
   }
 
-  pub fn convert_input(&self, input: &[u8]) -> Result<Vec<u8>> {
-    let mut deserializer = Deserializer::from_slice(input);
+  pub fn to_message(&self, input: &str) -> Result<DynamicMessage> {
+    let mut deserializer = Deserializer::from_str(input);
     let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
       format!(
         "Failed to parse input according to type {}",
@@ -97,30 +133,44 @@ impl ProtobufOperation {
       )
     })?;
     deserializer.end()?;
-    let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
-    // set compression flag
-    buf.put_u8(0);
-    // next 4 bytes should encode message length
-    buf.put_u32(message.encoded_len() as u32);
-    // encode the message itself
-    message.encode(&mut buf)?;
 
-    Ok(buf)
+    Ok(message)
   }
 
-  pub fn collect_multiple_inputs(&self, inputs: Vec<&[u8]>) -> Result<Vec<u8>> {
-    let field_descriptor = self.input_type.fields().next().ok_or(anyhow!("Unable to find any fields on type"))?;
+  pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
+    let mut deserializer = Deserializer::from_str(input);
+    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
+      format!(
+        "Failed to parse input according to type {}",
+        self.input_type.full_name()
+      )
+    })?;
+    deserializer.end()?;
 
-    let mut multiple_input = Vec::from(format!("{{\"{}\":[", field_descriptor.name()));
+    message_to_bytes(message)
+  }
 
-    for input in inputs {
-      multiple_input.extend_from_slice(input);
-      multiple_input.extend(b",");
-    }
-    multiple_input.pop();
-    multiple_input.extend(b"]}");
+  pub fn convert_multiple_messages(&self, child_messages: &Vec<DynamicMessage>) -> Result<Vec<u8>> {
+    // Find the field of list type that should hold child messages
+    let field_descriptor = self
+      .input_type
+      .fields()
+      .find(|field| field.is_list())
+      .ok_or(anyhow!("Unable to find list field on type"))?;
 
-    Ok(multiple_input)
+    let mut message = DynamicMessage::new(self.input_type.clone());
+
+    message.set_field(
+      &field_descriptor,
+      prost_reflect::Value::List(
+        child_messages
+          .iter()
+          .map(|message| prost_reflect::Value::Message(message.clone()))
+          .collect(),
+      ),
+    );
+
+    message_to_bytes(message)
   }
 
   pub fn convert_output(&self, bytes: &[u8]) -> Result<Value> {
@@ -146,7 +196,10 @@ mod tests {
 
   use anyhow::Result;
   use once_cell::sync::Lazy;
+  use prost_reflect::Value;
   use serde_json::json;
+
+  use crate::grpc::protobuf::{protobuf_value_as_str, get_field_value_as_str};
 
   use super::ProtobufSet;
 
@@ -165,6 +218,23 @@ mod tests {
 
     test_file.push(name);
     test_file
+  }
+
+  #[test]
+  fn convert_value() {
+    assert_eq!(
+      protobuf_value_as_str(&Value::String("test string".to_owned())),
+      "test string".to_owned()
+    );
+    assert_eq!(protobuf_value_as_str(&Value::I32(25)), "25".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::F32(1.25)), "1.25".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::I64(35)), "35".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::F64(3.38)), "3.38".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::EnumNumber(55)), "55".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::Bool(false)), "".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::Map(Default::default())), "".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::List(Default::default())), "".to_owned());
+    assert_eq!(protobuf_value_as_str(&Value::Bytes(Default::default())), "".to_owned());
   }
 
   #[test]
@@ -207,7 +277,11 @@ mod tests {
     let service = file.find_service("Greeter")?;
     let operation = service.find_operation("SayHello")?;
 
-    let input = operation.convert_input(br#"{ "name": "hello message" }"#)?;
+    let message = operation.to_message(r#"{ "name": "hello message" }"#)?;
+
+    assert_eq!(get_field_value_as_str(message, "name")?, "hello message");
+
+    let input = operation.convert_input(r#"{ "name": "hello message" }"#)?;
 
     assert_eq!(input, b"\0\0\0\0\x0f\n\rhello message");
 
@@ -232,7 +306,7 @@ mod tests {
     let service = file.find_service("NewsService")?;
     let operation = service.find_operation("GetNews")?;
 
-    let input = operation.convert_input(br#"{ "id": "1" }"#)?;
+    let input = operation.convert_input(r#"{ "id": "1" }"#)?;
 
     assert_eq!(input, b"\0\0\0\0\x03\n\x011");
 
@@ -244,6 +318,42 @@ mod tests {
       serde_json::to_value(parsed)?,
       json!({
         "id": "1", "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
+      })
+    );
+
+    Ok(())
+  }
+
+  #[test]
+  fn news_proto_file_multiple_messages() -> Result<()> {
+    let proto_file = get_test_file("news.proto");
+    let file = ProtobufSet::from_proto_file(&proto_file)?;
+    let service = file.find_service("NewsService")?;
+    let single_operation = service.find_operation("GetNews")?;
+    let multiple_operation = service.find_operation("GetMultipleNews")?;
+
+    let child_messages = vec![
+      single_operation.to_message(r#"{ "id": "3" }"#)?,
+      single_operation.to_message(r#"{ "id": "5" }"#)?,
+      single_operation.to_message(r#"{ "id": "1" }"#)?,
+    ];
+
+    let multiple_message = multiple_operation.convert_multiple_messages(&child_messages)?;
+
+    assert_eq!(multiple_message, b"\0\0\0\0\x0f\n\x03\n\x013\n\x03\n\x015\n\x03\n\x011");
+
+    let output = b"\0\0\0\0r\n$\n\x011\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n$\n\x015\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
+
+    let parsed = multiple_operation.convert_output(output)?;
+
+    assert_eq!(
+      serde_json::to_value(parsed)?,
+      json!({
+        "news": [
+          { "id": "1", "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
+          { "id": "3", "title": "Note 3", "body": "Content 3", "postImage": "Post image 3" },
+          { "id": "5", "title": "Note 5", "body": "Content 5", "postImage": "Post image 5" },
+        ]
       })
     );
 

@@ -9,6 +9,7 @@ use crate::blueprint::Server;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
+use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
 
@@ -25,7 +26,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub grpc_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GrpcDataLoader>>>,
+  pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }

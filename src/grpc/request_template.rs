@@ -1,6 +1,8 @@
+use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
+use prost_reflect::DynamicMessage;
 use reqwest::header::HeaderValue;
 use url::Url;
 
@@ -20,8 +22,16 @@ pub struct RequestTemplate {
   pub operation: ProtobufOperation,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderedRequestTemplate {
+  pub url: Url,
+  pub headers: HeaderMap,
+  pub body: String,
+  pub operation: ProtobufOperation,
+}
+
 impl RequestTemplate {
-  fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+  fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
     let url = url::Url::parse(self.url.render(ctx).as_str())?;
 
     Ok(url)
@@ -41,33 +51,23 @@ impl RequestTemplate {
     header_map
   }
 
-  pub fn to_request<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<reqwest::Request> {
+  pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
     let url = self.create_url(ctx)?;
-    let mut req = reqwest::Request::new(Method::POST, url);
-    req = self.set_headers(req, ctx);
-    req = self.set_body(req, ctx)?;
-    *req.version_mut() = reqwest::Version::HTTP_2;
-    Ok(req)
+    let headers = self.render_headers(ctx);
+    let body = self.render_body(ctx);
+    Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
   }
 
-  fn set_body<C: PathString + HasHeaders>(
-    &self,
-    mut req: reqwest::Request,
-    ctx: &C,
-  ) -> anyhow::Result<reqwest::Request> {
-    let body = if let Some(body) = &self.body {
+  fn render_body<C: PathString + HasHeaders>(&self, ctx: &C) -> String {
+    if let Some(body) = &self.body {
       body.render(ctx)
     } else {
       "{}".to_owned()
-    };
-
-    req.body_mut().replace(body.into());
-
-    Ok(req)
+    }
   }
 
-  fn set_headers<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
-    let req_headers = req.headers_mut();
+  fn render_headers<C: PathString + HasHeaders>(&self, ctx: &C) -> HeaderMap {
+    let mut req_headers = HeaderMap::new();
 
     let headers = self.create_headers(ctx);
     if !headers.is_empty() {
@@ -75,7 +75,25 @@ impl RequestTemplate {
     }
 
     req_headers.extend(ctx.headers().to_owned());
+
+    req_headers
+  }
+}
+
+impl RenderedRequestTemplate {
+  pub fn to_message(&self) -> Result<DynamicMessage> {
+    self.operation.to_message(&self.body)
+  }
+
+  pub fn to_request(&self) -> Result<reqwest::Request> {
+    let mut req = reqwest::Request::new(Method::POST, self.url.clone());
+    *req.version_mut() = reqwest::Version::HTTP_2;
+    req.headers_mut().extend(self.headers.clone());
     req
+      .body_mut()
+      .replace(self.operation.convert_input(self.body.as_str())?.into());
+
+    Ok(req)
   }
 }
 
@@ -145,7 +163,8 @@ mod tests {
       body: None,
     };
     let ctx = Context::default();
-    let req = tmpl.to_request(&ctx).unwrap();
+    let rendered = tmpl.render(&ctx).unwrap();
+    let req = rendered.to_request().unwrap();
 
     assert_eq!(req.url().as_str(), "http://localhost:3000/");
     assert_eq!(req.method(), Method::POST);
@@ -166,7 +185,7 @@ mod tests {
 
     req
       .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(b"{}".as_ref())));
+      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())));
   }
 
   #[test]
@@ -178,10 +197,11 @@ mod tests {
       body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
     };
     let ctx = Context::default();
-    let req = tmpl.to_request(&ctx).unwrap();
+    let rendered = tmpl.render(&ctx).unwrap();
+    let req = rendered.to_request().unwrap();
 
     req
       .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(r#"{ "name": "test" }"#.as_ref())));
+      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())));
   }
 }
