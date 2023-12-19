@@ -5,7 +5,7 @@ use regex::Regex;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{CacheRules, Config, Field, GraphQLOperationType, Union};
+use crate::config::{Cache, Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
@@ -231,7 +231,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
-      cache_rules: type_of.cache_rules.clone(),
+      cache_rules: type_of.cache.clone(),
     })
   })
 }
@@ -254,7 +254,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
-      cache_rules: field.cache_rules.clone().unwrap_or(CacheRules::default()),
+      cache_rules: field.cache.clone().unwrap_or(Cache::default()),
     })
   })
 }
@@ -367,7 +367,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
-            cache_rules: source_field.cache_rules.clone(),
+            cache: source_field.cache.clone(),
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

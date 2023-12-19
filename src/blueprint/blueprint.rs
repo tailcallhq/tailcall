@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::config::{CacheRules, Upstream};
+use crate::config::{Cache, Upstream};
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -86,7 +86,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
-  pub cache_rules: CacheRules,
+  pub cache_rules: Cache,
 }
 
 #[derive(Clone, Debug)]
@@ -134,7 +134,7 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  pub cache_rules: CacheRules,
+  pub cache_rules: Cache,
 }
 
 impl FieldDefinition {

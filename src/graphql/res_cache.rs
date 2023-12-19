@@ -4,14 +4,14 @@ use std::time::Duration;
 use async_graphql_value::ConstValue;
 use ttl_cache::TtlCache;
 
-use crate::config::CacheRules;
+use crate::config::Cache;
 use crate::lambda::{EvaluationContext, Expression, ResolverContextLike};
 
 const DEFAULT_MAX_AGE: u64 = 30;
 
 #[derive(Clone)]
 pub struct ResCache {
-  cache_rules: CacheRules,
+  cache_rules: Cache,
   data: Arc<RwLock<TtlCache<u64, ConstValue>>>,
 }
 
@@ -27,7 +27,7 @@ impl std::fmt::Debug for ResCache {
 }
 
 impl ResCache {
-  pub fn new(cache_rules: CacheRules) -> Self {
+  pub fn new(cache_rules: Cache) -> Self {
     ResCache { cache_rules, data: Arc::new(RwLock::new(TtlCache::new(1000))) }
   }
 
@@ -70,12 +70,12 @@ mod tests {
   use async_graphql_value::ConstValue;
 
   use super::ResCache;
-  use crate::config::CacheRules;
+  use crate::config::Cache;
 
   #[test]
   fn test_res_cache_insert() {
     let max_age = Some(1);
-    let cache = ResCache::new(CacheRules { max_age });
+    let cache = ResCache::new(Cache { max_age });
     let key = 10;
     let value: ConstValue = "value".into();
     cache.insert(key, &value);
@@ -85,7 +85,7 @@ mod tests {
   #[test]
   fn test_res_cache_ttl() {
     let max_age = Some(1);
-    let cache = ResCache::new(CacheRules { max_age });
+    let cache = ResCache::new(Cache { max_age });
     let key = 10;
     let value: ConstValue = "value".into();
     cache.insert(key, &value);
@@ -101,7 +101,7 @@ mod tests {
   #[test]
   fn test_res_cache_remove() {
     let max_age = Some(100);
-    let cache = ResCache::new(CacheRules { max_age });
+    let cache = ResCache::new(Cache { max_age });
     let key = 10;
     let value: ConstValue = "value".into();
     cache.insert(key, &value);

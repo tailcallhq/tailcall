@@ -141,7 +141,7 @@ pub struct Type {
   #[serde(default)]
   pub scalar: bool,
   #[serde(default)]
-  pub cache_rules: CacheRules,
+  pub cache: Cache,
 }
 
 impl Type {
@@ -170,12 +170,12 @@ impl Type {
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct CacheRules {
+pub struct Cache {
   pub max_age: Option<u64>,
 }
 
-impl CacheRules {
-  pub fn from_directives_slice(directives: &[Positioned<ConstDirective>]) -> Option<CacheRules> {
+impl Cache {
+  pub fn from_directives_slice(directives: &[Positioned<ConstDirective>]) -> Option<Cache> {
     directives
       .iter()
       .find(|const_directive| const_directive.node.name.node.to_ascii_lowercase().eq("cache"))
@@ -258,7 +258,7 @@ pub struct Field {
   #[serde(rename = "const")]
   pub const_field: Option<Const>,
   pub graphql: Option<GraphQL>,
-  pub cache_rules: Option<CacheRules>,
+  pub cache: Option<Cache>,
 }
 
 impl Field {
