@@ -26,11 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Print Content of a.md
-        run: |
-          cat a.md
-        working-directory: benches  # Change this to the appropriate directory if a.md is located elsewhere
-
       - name: Prepare Comment Content
         run: |
           echo "Main Benchmarks:" > benches/comment_content.txt
