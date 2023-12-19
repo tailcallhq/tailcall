@@ -77,13 +77,18 @@ impl ServerContext {
                 gql_data_loaders.push(graphql_data_loader);
               }
 
-              Unsafe::Grpc { req_template, .. } => {
-                let data_loader = GrpcDataLoader::new(http2_only_client.clone(), req_template.operation.clone())
-                  .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
+              Unsafe::Grpc { req_template, batch, .. } => {
+                let data_loader = GrpcDataLoader {
+                  client: http2_only_client.clone(),
+                  operation: req_template.operation.clone(),
+                  batch: batch.clone(),
+                };
+                let data_loader = data_loader.to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
                 field.resolver = Some(Expression::Unsafe(Unsafe::Grpc {
                   req_template: req_template.clone(),
                   dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                  batch: batch.clone(),
                 }));
 
                 grpc_data_loaders.push(data_loader);

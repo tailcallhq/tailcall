@@ -3,11 +3,11 @@
 use std::path::{Path, PathBuf};
 use std::{env::current_dir, fmt::Debug};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context, Result, anyhow};
 use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
-use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, ServiceDescriptor};
+use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, ServiceDescriptor, MethodDescriptor};
 use serde_json::Deserializer;
 
 #[derive(Debug)]
@@ -67,20 +67,29 @@ impl ProtobufService {
     let input_type = method.input();
     let output_type = method.output();
 
-    Ok(ProtobufOperation { input_type, output_type })
+    Ok(ProtobufOperation { method, input_type, output_type })
   }
 }
 
 #[derive(Debug, Clone)]
 pub struct ProtobufOperation {
+  method: MethodDescriptor,
   input_type: MessageDescriptor,
   output_type: MessageDescriptor,
 }
 
 // TODO: support compression
 impl ProtobufOperation {
-  pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
-    let mut deserializer = Deserializer::from_str(input);
+  pub fn name(&self) -> &str {
+    self.method.name()
+  }
+
+  pub fn service_name(&self) -> &str {
+    self.method.parent_service().name()
+  }
+
+  pub fn convert_input(&self, input: &[u8]) -> Result<Vec<u8>> {
+    let mut deserializer = Deserializer::from_slice(input);
     let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
       format!(
         "Failed to parse input according to type {}",
@@ -97,6 +106,21 @@ impl ProtobufOperation {
     message.encode(&mut buf)?;
 
     Ok(buf)
+  }
+
+  pub fn collect_multiple_inputs(&self, inputs: Vec<&[u8]>) -> Result<Vec<u8>> {
+    let field_descriptor = self.input_type.fields().next().ok_or(anyhow!("Unable to find any fields on type"))?;
+
+    let mut multiple_input = Vec::from(format!("{{\"{}\":[", field_descriptor.name()));
+
+    for input in inputs {
+      multiple_input.extend_from_slice(input);
+      multiple_input.extend(b",");
+    }
+    multiple_input.pop();
+    multiple_input.extend(b"]}");
+
+    Ok(multiple_input)
   }
 
   pub fn convert_output(&self, bytes: &[u8]) -> Result<Value> {
@@ -183,7 +207,7 @@ mod tests {
     let service = file.find_service("Greeter")?;
     let operation = service.find_operation("SayHello")?;
 
-    let input = operation.convert_input(r#"{ "name": "hello message" }"#)?;
+    let input = operation.convert_input(br#"{ "name": "hello message" }"#)?;
 
     assert_eq!(input, b"\0\0\0\0\x0f\n\rhello message");
 
@@ -208,7 +232,7 @@ mod tests {
     let service = file.find_service("NewsService")?;
     let operation = service.find_operation("GetNews")?;
 
-    let input = operation.convert_input(r#"{ "id": "1" }"#)?;
+    let input = operation.convert_input(br#"{ "id": "1" }"#)?;
 
     assert_eq!(input, b"\0\0\0\0\x03\n\x011");
 

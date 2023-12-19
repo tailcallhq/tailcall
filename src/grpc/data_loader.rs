@@ -3,27 +3,28 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::anyhow;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
+use async_graphql_value::ConstValue;
+use hyper::body::Bytes;
 
-use crate::config::Batch;
+use crate::config::{Batch, GrpcBatchOperation};
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
+use crate::json::JsonLike;
 
 use super::protobuf::ProtobufOperation;
 use super::request::execute_operation_request;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
-  client: Arc<dyn HttpClient>,
-  operation: ProtobufOperation,
+  pub(crate) client: Arc<dyn HttpClient>,
+  pub(crate) operation: ProtobufOperation,
+  pub(crate) batch: Option<GrpcBatchOperation>,
 }
 
 impl GrpcDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, operation: ProtobufOperation) -> Self {
-    GrpcDataLoader { client, operation }
-  }
-
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GrpcDataLoader> {
     DataLoader::new(self, tokio::spawn)
       .delay(Duration::from_millis(batch.delay as u64))
@@ -49,8 +50,70 @@ impl GrpcDataLoader {
     Ok(hashmap)
   }
 
-  async fn load_with_batch(&self, keys: &[DataLoaderRequest]) -> anyhow::Result<HashMap<DataLoaderRequest, Response>> {
-    todo!()
+  async fn load_with_batch(
+    &self,
+    batch: &GrpcBatchOperation,
+    keys: &[DataLoaderRequest],
+  ) -> anyhow::Result<HashMap<DataLoaderRequest, Response>> {
+    let inputs: Vec<&[u8]> = keys
+      .iter()
+      .map(|key| {
+        key
+          .body()
+          .map(|body| body.as_bytes())
+          .unwrap_or_default()
+          .unwrap_or_default()
+      })
+      .collect();
+    let multiple_request = batch.operation.collect_multiple_inputs(inputs)?;
+
+    let mut first_request = keys[0].clone();
+
+    // TODO: move url management to execute_operation_request?
+    let url = first_request.url_mut();
+    url.set_path(&format!(
+      "{}/{}",
+      batch.operation.service_name(),
+      batch.operation.name()
+    ));
+    first_request.body_mut().replace(multiple_request.into());
+
+    let response = execute_operation_request(self.client.deref(), &batch.operation, first_request.to_request()).await?;
+
+    let path = &batch.group_by.path();
+    let response_body = response.body.group_by(path);
+
+    dbg!(&response_body);
+
+    let mut result = HashMap::new();
+
+    for key in keys {
+      let value: serde_json::Value = serde_json::from_slice(
+        key
+          .body()
+          .ok_or(anyhow!("Body should be defined"))?
+          .as_bytes()
+          .unwrap_or_default(),
+      )?;
+      let id = value
+        .get(batch.group_by.key())
+        .ok_or(anyhow!("Unable to find key"))?
+        .as_str()
+        .unwrap_or_default();
+      dbg!(&id);
+      let res = response.clone().body(
+        response_body
+          .get(id)
+          .and_then(|a| a.first().cloned().cloned())
+          .unwrap_or(ConstValue::Null),
+      );
+
+      result.insert(key.clone(), res);
+    }
+
+    dbg!(&result);
+
+    Ok(result)
   }
 }
 
@@ -64,7 +127,10 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     // TODO: don't use dataloader for grpc inside mutations
-
-    self.load_dedupe_only(keys).await.map_err(|e| Arc::new(e))
+    if let Some(batch) = &self.batch {
+      self.load_with_batch(batch, keys).await.map_err(|e| Arc::new(e))
+    } else {
+      self.load_dedupe_only(keys).await.map_err(|e| Arc::new(e))
+    }
   }
 }

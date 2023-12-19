@@ -16,7 +16,11 @@ type Query {
       method: "GetNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
-      protoPath: "src/grpc/tests/news.proto"
+      protoPath: "src/grpc/tests/news.proto",
+      batch: {
+        method: "GetMultipleNews",
+        groupBy: ["news", "id"]
+      }
     )
 }
 input NewsInput {

@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
@@ -57,12 +55,11 @@ impl RequestTemplate {
     mut req: reqwest::Request,
     ctx: &C,
   ) -> anyhow::Result<reqwest::Request> {
-    let input = if let Some(body) = &self.body {
-      Cow::Owned(body.render(ctx))
+    let body = if let Some(body) = &self.body {
+      body.render(ctx)
     } else {
-      Cow::Borrowed("{}")
+      "{}".to_owned()
     };
-    let body = self.operation.convert_input(&input)?;
 
     req.body_mut().replace(body.into());
 
@@ -169,7 +166,7 @@ mod tests {
 
     req
       .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())));
+      .map(|body| assert_eq!(body.as_bytes(), Some(b"{}".as_ref())));
   }
 
   #[test]
@@ -185,6 +182,6 @@ mod tests {
 
     req
       .body()
-      .map(|body| assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())));
+      .map(|body| assert_eq!(body.as_bytes(), Some(r#"{ "name": "test" }"#.as_ref())));
   }
 }

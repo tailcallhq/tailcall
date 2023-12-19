@@ -7,6 +7,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::group_by::GroupBy;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
@@ -14,6 +15,7 @@ use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
+use crate::grpc::protobuf::ProtobufOperation;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
@@ -384,6 +386,21 @@ pub struct Grpc {
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   pub proto_path: String,
+  pub batch: Option<GrpcBatch>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GrpcBatch {
+  pub method: String,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub group_by: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct GrpcBatchOperation {
+  pub operation: ProtobufOperation,
+  pub group_by: GroupBy
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
