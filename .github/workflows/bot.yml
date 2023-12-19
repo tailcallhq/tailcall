@@ -28,7 +28,7 @@ jobs:
 
       - name: Comment on Pull Request
         run: |
-          gh pr comment ${{ github.event.number }} --body "Here are the benchmark results:" --path benches/benchmark.md
+          gh pr comment ${{ github.event.number }} --body "Here are the benchmark results:" --path a.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
