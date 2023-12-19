@@ -6,6 +6,7 @@ use prost_reflect::DynamicMessage;
 use reqwest::header::HeaderValue;
 use url::Url;
 
+use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
@@ -20,6 +21,7 @@ pub struct RequestTemplate {
   pub headers: MustacheHeaders,
   pub body: Option<Mustache>,
   pub operation: ProtobufOperation,
+  pub operation_type: GraphQLOperationType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -111,6 +113,7 @@ mod tests {
 
   use super::RequestTemplate;
   use crate::{
+    config::GraphQLOperationType,
     grpc::protobuf::{ProtobufOperation, ProtobufSet},
     mustache::Mustache,
   };
@@ -161,6 +164,7 @@ mod tests {
       )],
       operation: PROTOBUF_OPERATION.clone(),
       body: None,
+      operation_type: GraphQLOperationType::Query,
     };
     let ctx = Context::default();
     let rendered = tmpl.render(&ctx).unwrap();
@@ -195,6 +199,7 @@ mod tests {
       headers: vec![],
       operation: PROTOBUF_OPERATION.clone(),
       body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+      operation_type: GraphQLOperationType::Query,
     };
     let ctx = Context::default();
     let rendered = tmpl.render(&ctx).unwrap();

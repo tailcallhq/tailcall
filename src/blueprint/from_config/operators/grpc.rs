@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::blueprint::FieldDefinition;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field, Grpc, GrpcBatchOperation};
+use crate::config::{Config, Field, GraphQLOperationType, Grpc, GrpcBatchOperation};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::lambda::Lambda;
@@ -58,7 +58,9 @@ fn to_operations(grpc: &Grpc) -> Valid<(ProtobufOperation, Option<GrpcBatchOpera
   })
 }
 
-pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+pub fn update_grpc<'a>(
+  operation_type: &'a GraphQLOperationType,
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
     |(config, field, _type_of, _), b_field| {
       let Some(grpc) = &field.grpc else {
@@ -70,7 +72,8 @@ pub fn update_grpc<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         .zip(helpers::headers::to_headervec(&grpc.headers))
         .zip(helpers::body::to_body(grpc.body.as_deref()))
         .map(|(((url, (operation, batch)), headers), body)| {
-          let request_template = RequestTemplate { url, headers, operation, body };
+          let request_template =
+            RequestTemplate { url, headers, operation, body, operation_type: operation_type.to_owned() };
 
           b_field.resolver(Some(
             Lambda::from_grpc_request_template(request_template, batch).expression,

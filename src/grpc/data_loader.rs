@@ -108,7 +108,6 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    // TODO: don't use dataloader for grpc inside mutations
     if let Some(batch) = &self.batch {
       self.load_with_batch(batch, keys).await.map_err(|e| Arc::new(e))
     } else {

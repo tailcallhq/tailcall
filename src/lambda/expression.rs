@@ -57,7 +57,7 @@ pub enum Unsafe {
   Grpc {
     req_template: grpc::RequestTemplate,
     dl_id: Option<DataLoaderId>,
-    batch: Option<GrpcBatchOperation>
+    batch: Option<GrpcBatchOperation>,
   },
   JS(Box<Expression>, String),
 }
@@ -147,7 +147,10 @@ impl Expression {
           Unsafe::Grpc { req_template, dl_id, .. } => {
             let rendered = req_template.render(ctx)?;
 
-            let res = if ctx.req_ctx.upstream.batch.is_some() {
+            let res = if ctx.req_ctx.upstream.batch.is_some()
+              // TODO: share check for operation_type for resolvers
+              && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            {
               let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
               execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
