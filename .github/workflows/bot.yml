@@ -33,6 +33,7 @@ jobs:
 
       - name: Prepare Comment Content
         run: |
+          cat a.md > benches/comment_content.txt
           echo "Main Benchmarks:" > comment_content.txt
           cat a.md >> comment_content.txt
         working-directory: benches
