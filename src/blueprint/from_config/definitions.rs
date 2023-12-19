@@ -5,7 +5,7 @@ use regex::Regex;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Cache, Config, Field, GraphQLOperationType, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
@@ -254,7 +254,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
-      cache: field.cache.clone().unwrap_or(Cache::default()),
+      cache: field.cache.clone(),
     })
   })
 }

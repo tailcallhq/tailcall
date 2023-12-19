@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 
 use anyhow::Result;
-use async_graphql::parser::types::{ConstDirective, ServiceDocument};
-use async_graphql::Positioned;
+use async_graphql::parser::types::{ServiceDocument};
+
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -141,7 +141,7 @@ pub struct Type {
   #[serde(default)]
   pub scalar: bool,
   #[serde(default)]
-  pub cache: Cache,
+  pub cache: Option<Cache>,
 }
 
 impl Type {
@@ -172,25 +172,6 @@ impl Type {
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
   pub max_age: Option<u64>,
-}
-
-impl Cache {
-  pub fn from_directives_slice(directives: &[Positioned<ConstDirective>]) -> Option<Cache> {
-    directives
-      .iter()
-      .find(|const_directive| const_directive.node.name.node.to_ascii_lowercase().eq("cache"))
-      .map(|const_directive| {
-        serde_json::from_value(serde_json::Value::Object(
-          const_directive
-            .node
-            .arguments
-            .iter()
-            .map(|(key, value)| (key.to_string(), value.node.clone().into_json().unwrap()))
-            .collect(),
-        ))
-        .unwrap()
-      })
-  }
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {

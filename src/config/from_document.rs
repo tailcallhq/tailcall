@@ -75,29 +75,28 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     let directives = &type_definition.node.directives;
-    let cache: Option<Cache> = Cache::from_directives_slice(directives);
-
-    match type_definition.node.kind.clone() {
-      TypeKind::Object(object_type) => to_object_type(
-        &object_type,
-        &type_definition.node.description,
-        &type_definition.node.directives,
-        cache,
-      )
-      .some(),
-      TypeKind::Interface(interface_type) => to_object_type(
-        &interface_type,
-        &type_definition.node.description,
-        &type_definition.node.directives,
-        cache,
-      )
-      .some(),
-      TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-      TypeKind::InputObject(input_object_type) => to_input_object(input_object_type, cache).some(),
-      TypeKind::Union(_) => Valid::none(),
-      TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
-    }
-    .map(|option| (type_name, option))
+    Cache::from_directives(directives.iter())
+      .and_then(|cache| match type_definition.node.kind.clone() {
+        TypeKind::Object(object_type) => to_object_type(
+          &object_type,
+          &type_definition.node.description,
+          &type_definition.node.directives,
+          cache,
+        )
+        .some(),
+        TypeKind::Interface(interface_type) => to_object_type(
+          &interface_type,
+          &type_definition.node.description,
+          &type_definition.node.directives,
+          cache,
+        )
+        .some(),
+        TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
+        TypeKind::InputObject(input_object_type) => to_input_object(input_object_type, cache).some(),
+        TypeKind::Union(_) => Valid::none(),
+        TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+      })
+      .map(|option| (type_name, option))
   })
   .map(|vec| {
     BTreeMap::from_iter(
@@ -218,10 +217,10 @@ where
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
-    .map(|(http, graphql)| {
+    .zip(Cache::from_directives(directives.iter()))
+    .map(|((http, graphql), cache)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
-      let cache: Option<Cache> = Cache::from_directives_slice(directives);
       config::Field {
         type_of,
         list,
