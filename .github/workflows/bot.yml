@@ -239,7 +239,7 @@ jobs:
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
           echo "New Benchmarks:" > benches/benchmarks.md
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json benches/benchmarks.md
+          rust-script benches/parse_json_benchmark benches/benchmarks.json benches/benchmarks.md
 
       - id: get_comment_body
         name: Get Comment Body
