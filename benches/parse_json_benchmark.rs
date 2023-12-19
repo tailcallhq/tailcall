@@ -100,18 +100,29 @@ fn main() {
   // Retrieve command-line arguments
   let args: Vec<String> = env::args().collect();
 
-  // Check if a file name argument is provided
-  if args.len() != 2 {
-    eprintln!("Usage: {} <file_path>", args[0]);
+  // Check if two file name arguments are provided
+  if args.len() != 3 {
+    eprintln!("Usage: {} <input_file_path> <output_file_path>", args[0]);
     std::process::exit(1);
   }
 
-  // Extract the file name from command-line arguments
-  let file_path = &args[1];
+  // Extract the input and output file names from command-line arguments
+  let input_file_path = &args[1];
+  let _output_file_path = &args[2]; // <-- Add an underscore to indicate it's intentionally unused
 
   // Attempt to parse the JSON file and print the table
-  match parse_json(file_path) {
+  match parse_json(input_file_path) {
     Ok(_) => println!("Table printed successfully."),
-    Err(err) => eprintln!("Error: {}", err),
+    Err(err) => {
+      eprintln!("Error: {}", err);
+      std::process::exit(1);
+    }
+  }
+
+  // Optionally, you can also print the table to the specified output file
+  // Instead of printing to the console, write the Markdown table to the file
+  if let Err(err) = parse_json(input_file_path) {
+    eprintln!("Error: {}", err);
+    std::process::exit(1);
   }
 }
