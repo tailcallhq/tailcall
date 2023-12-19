@@ -224,19 +224,3 @@ jobs:
         working-directory: benches
         run: |
           cat benchmark.md
-
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: benches
-        run: |
-          body="$(cat benchmark.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
-        with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
