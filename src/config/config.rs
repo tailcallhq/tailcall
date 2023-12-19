@@ -2,8 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 
 use anyhow::Result;
-use async_graphql::parser::types::{ServiceDocument};
-
+use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
