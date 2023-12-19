@@ -46,7 +46,7 @@ impl DefaultHttpClient {
   pub async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
     log::info!("{} {} ", request.method(), request.url());
     #[cfg(not(feature = "default"))]
-    let response = async_std::task::spawn_local(Self::tc_execute_client(self.client.clone(), request)).await?;
+    let response = async_std::task::spawn_local(self.tc_execute(request)).await?;
     #[cfg(feature = "default")]
     let response = self.tc_execute(request).await?;
     Ok(response)
@@ -56,7 +56,7 @@ impl DefaultHttpClient {
     let response = self.client.execute(request).await?;
     Response::from_response(response).await
   }
-  #[allow(dead_code)]
+  #[cfg(not(feature = "default"))]
   async fn tc_execute_client(client: ClientWithMiddleware, request: reqwest::Request) -> anyhow::Result<Response> {
     let response = client.execute(request).await?;
     Response::from_response(response).await
