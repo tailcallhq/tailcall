@@ -34,13 +34,13 @@ jobs:
       - name: Prepare Comment Content
         run: |
           cat a.md > benches/comment_content.txt
-          echo "Main Benchmarks:" > comment_content.txt
-          cat a.md >> comment_content.txt
+          echo "Main Benchmarks:" > benches/comment_content.txt
+          cat a.md >> benches/comment_content.txt
         working-directory: benches
 
       - name: Comment on Commit
         run: |
-          gh pr review ${{ github.event.number }} --body-file comment_content.txt
+          gh pr review ${{ github.event.number }} --body-file benches/comment_content.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
