@@ -170,6 +170,11 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Switch Branch
+        run: |
+          git fetch
+          git switch main
+
       - name: Run Benchmarks
         run: |
           cargo install cargo-criterion rust-script
