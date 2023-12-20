@@ -32,7 +32,7 @@ jobs:
 
 
       - name: Create comment
-        uses: peter-evans/create-pull-request-comment@v2  # Update to the correct version if available
+        uses: docker://docker.pkg.github.com/peter-evans/create-pull-request-comment/create-pull-request-comment:v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}  # Use github.repository instead of github.event.repository.full_name
