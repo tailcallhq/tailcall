@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration for file types to be tested via prettier
-FILE_TYPES="{graphql,yml,json,md}"
+FILE_TYPES="{graphql,yml,json,md,ts,js}"
 
 run_cargo_fmt() {
     MODE=$1
