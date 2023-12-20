@@ -30,6 +30,10 @@ jobs:
         id: readfile
         run: echo "::set-output name=content::$(cat benches/a.md)"
 
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+ 
       - name: Create comment
         uses: peter-evans/create-pull-request-comment@v1
         with:
