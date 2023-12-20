@@ -26,19 +26,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read file content
-        id: readfile
-        run: echo "::set-output name=content::$(cat benches/a.md)"
+      - name: Print File Content
+        run: cat benches/a.md
 
+      - name: Render template
+        id: template
+        uses: chuhlomin/render-template@v1.4
+        with:
+          template: benches/a.md
+          vars: |
+            foo: this
+            bar: that
 
       - name: Create comment
-        uses: docker://ghcr.io/peter-evans/create-pull-request-comment:v2
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          pull-request-number: ${{ github.event.pull_request.number }}
-          body: |
-            File content:
-            ```
-            ${{ steps.readfile.outputs.content }}
-            ```
+          issue-number: 1
+          body: ${{ steps.template.outputs.result }}
