@@ -5,7 +5,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(path: "/posts") @cache(maxAge: 30)
 }
 
 type User @cache(maxAge: 30) {
