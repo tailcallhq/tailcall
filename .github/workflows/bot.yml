@@ -42,6 +42,7 @@ jobs:
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v3
         with:
+          issue-number: ${{ github.event.pull_request.number }}
           pull-request-number: ${{ github.event.pull_request.number }}
           body: ${{ steps.print-content.outputs.stdout }}${{ steps.template.outputs.result }}
           reactions: '+1'
