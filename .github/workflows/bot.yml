@@ -15,17 +15,10 @@ on:
         description: "Branch to run benchmark on"
         required: true
         default: "main"
-
 jobs:
-  benchmark:
-    name: Macro Benchmarks
+  example-job:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-
       - name: Print File Content
         run: cat benches/a.md
         id: print-content
@@ -43,6 +36,7 @@ jobs:
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          pull-request-number: ${{ github.event.pull_request.number }}
           body: ${{ steps.print-content.outputs.stdout }}${{ steps.template.outputs.result }}
           reactions: '+1'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
