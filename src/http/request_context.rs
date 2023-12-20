@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
@@ -101,7 +102,7 @@ impl RequestContext {
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: u64) -> Option<ConstValue> {
+  pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
     self.cache.insert(key, value, ttl)
   }
 }

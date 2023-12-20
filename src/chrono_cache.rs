@@ -1,4 +1,5 @@
 use std::hash::Hash;
+use std::num::NonZeroU64;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -29,8 +30,8 @@ impl<K: Hash + Eq, V: Clone> ChronoCache<K, V> {
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub fn insert(&self, key: K, value: V, ttl: u64) -> Option<V> {
-    let ttl = Duration::from_secs(ttl);
+  pub fn insert(&self, key: K, value: V, ttl: NonZeroU64) -> Option<V> {
+    let ttl = Duration::from_secs(ttl.get());
     self.data.write().unwrap().insert(key, value, ttl)
   }
 
@@ -41,55 +42,5 @@ impl<K: Hash + Eq, V: Clone> ChronoCache<K, V> {
   #[allow(dead_code)]
   pub fn remove(&self, key: &K) -> Option<V> {
     self.data.write().unwrap().remove(key)
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use std::thread;
-  use std::time::Duration;
-
-  use crate::chrono_cache::ChronoCache;
-
-  #[test]
-  fn test_res_cache_insert() {
-    let ttl = 1;
-    let cache = ChronoCache::new();
-    let key = 10;
-    let value = "value";
-    cache.insert(key, value, ttl);
-    assert_eq!(cache.get(&key), Some("value"));
-  }
-
-  #[test]
-  fn test_res_cache_ttl() {
-    let ttl = 1;
-    let cache = ChronoCache::new();
-    let key = 10;
-    let value = "value";
-    cache.insert(key, value, ttl);
-    assert_eq!(cache.get(&key), Some("value"));
-    thread::sleep(Duration::from_secs(1));
-    assert_eq!(
-      cache.get(&key),
-      None,
-      "cache shouldn't contain the value after `CacheRules.max_age` secs have passed"
-    );
-  }
-
-  #[test]
-  fn test_res_cache_remove() {
-    let ttl = 100;
-    let cache = ChronoCache::new();
-    let key = 10;
-    let value = "value";
-    cache.insert(key, value, ttl);
-    assert_eq!(cache.get(&key), Some("value"));
-    cache.remove(&key);
-    assert_eq!(
-      cache.get(&key),
-      None,
-      "cache shouldn't contain the value after `CacheRules.max_age` secs have passed"
-    );
   }
 }

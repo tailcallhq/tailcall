@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
+use std::num::NonZeroU64;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -170,7 +171,7 @@ impl Type {
 #[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
-  pub max_age: Option<u64>,
+  pub max_age: Option<NonZeroU64>,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {

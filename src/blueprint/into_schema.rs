@@ -90,19 +90,22 @@ fn to_type(def: &Definition) -> dynamic::Type {
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                 let key = get_cache_key(&ctx, hasher);
-                let const_value = if let None | Some(Cache { max_age: None }) = cache {
-                  expr.eval(&ctx).await?
-                } else if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
-                  // Return value from cache
-                  const_value
-                } else {
-                  // Since first if block didn't run, it means `cache.unwrap().max_age.unwrap()` will never fail
-                  let max_age = cache.unwrap().max_age.unwrap();
-                  let const_value = expr.eval(&ctx).await?;
-                  // Write value to cache
-                  ctx.req_ctx.cache_insert(key, const_value.clone(), max_age);
-                  const_value
+
+                let const_value = match cache {
+                  Some(Cache { max_age: Some(ttl) }) => {
+                    if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
+                      // Return value from cache
+                      const_value
+                    } else {
+                      let const_value = expr.eval(&ctx).await?;
+                      // Write value to cache
+                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
+                      const_value
+                    }
+                  }
+                  _ => expr.eval(&ctx).await?,
                 };
+
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),
                   a => FieldValue::from(a),
@@ -124,6 +127,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
       for interface in def.implements.iter() {
         object = object.implement(interface.clone());
       }
+
       dynamic::Type::Object(object)
     }
     Definition::InterfaceTypeDefinition(def) => {
@@ -134,6 +138,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
           to_type_ref(&field.of_type),
         ));
       }
+
       dynamic::Type::Interface(interface)
     }
     Definition::InputObjectTypeDefinition(def) => {
@@ -144,6 +149,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
           to_type_ref(&field.of_type),
         ));
       }
+
       dynamic::Type::InputObject(input_object)
     }
     Definition::ScalarTypeDefinition(def) => {
@@ -153,10 +159,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
       }
       dynamic::Type::Scalar(scalar)
     }
-
     Definition::EnumTypeDefinition(def) => {
       let mut enum_type = dynamic::Enum::new(def.name.clone());
-
       for value in def.enum_values.iter() {
         enum_type = enum_type.item(dynamic::EnumItem::new(value.name.clone()));
       }
