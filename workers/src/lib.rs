@@ -29,10 +29,7 @@ async fn make_req() -> Result<Config> {
     ]
     .iter(),
   );
-  reader
-    .read()
-    .await
-    .map_err(conv_err)
+  reader.read().await.map_err(conv_err)
 }
 
 #[event(fetch)]
@@ -67,9 +64,7 @@ async fn get_option() -> Option<Arc<ServerContext>> {
 }
 
 async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {
-  let buf = hyper::body::to_bytes(response)
-    .await
-    .map_err(conv_err)?;
+  let buf = hyper::body::to_bytes(response).await.map_err(conv_err)?;
   let text = std::str::from_utf8(&buf).map_err(conv_err)?;
   let mut response = Response::ok(text).map_err(conv_err)?;
   response
@@ -105,9 +100,7 @@ async fn convert_to_hyper_request(worker_request: Request, body: String) -> Resu
   for (k, v) in headers {
     builder = builder.header(k, v);
   }
-  builder
-    .body(hyper::body::Body::from(body))
-    .map_err(conv_err)
+  builder.body(hyper::body::Body::from(body)).map_err(conv_err)
 }
 
 fn conv_err<T: std::fmt::Display>(e: T) -> Error {
