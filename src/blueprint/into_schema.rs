@@ -11,7 +11,8 @@ use async_graphql_value::ConstValue;
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::graphql::ResCache;
 use crate::http::RequestContext;
-use crate::lambda::EvaluationContext;
+use crate::json::JsonLike;
+use crate::lambda::{EvaluationContext, ResolverContextLike};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -33,6 +34,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
+// FIXME: move Hasher implementation for Const into const_utils.
 fn hash_const_value<H: Hasher>(const_value: &ConstValue, state: &mut H) {
   match const_value {
     ConstValue::Null => {}
@@ -61,10 +63,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
-        let def_name = def.name.clone();
+        let type_name = def.name.clone();
         let cache = field.cache.clone();
         // FIXME: Create a global res_cache once and use it for all fields
-        let res_cache = ResCache::new(cache.unwrap());
+        let cache = ResCache::new(cache.unwrap());
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
@@ -73,22 +75,38 @@ fn to_type(def: &Definition) -> dynamic::Type {
               let ctx = EvaluationContext::new(req_ctx, &ctx);
               FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
             }
+
+            // FIXME: Move cache_key logic into a separate function
+            // FIXME: Move cache_get logic into a separate function
             Some(expr) => {
               let expr = expr.to_owned();
-              let def_name = def_name.clone();
+              let type_name = type_name.clone();
               let field_name = field_name.clone();
-              let res_cache = res_cache.clone();
+              let cache = cache.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                 let mut hasher = DefaultHasher::new();
                 let state = &mut hasher;
-                def_name.hash(state);
+
+                // Hash on type name
+                type_name.hash(state);
+
+                // Hash on field name
                 field_name.hash(state);
 
-                if let Some(const_value) = ctx.graphql_ctx.parent_value.as_value() {
+                // Hash on parent value
+                if let Some(const_value) = ctx
+                  .graphql_ctx
+                  .parent_value
+                  .as_value()
+                  // TODO: handle _id, id, or any field that has @key on it.
+                  .and_then(|data| data.get_key("id"))
+                {
+                  // Hash on parent's id only?
                   hash_const_value(const_value, state)
                 }
 
+                // FIXME: can we leverage index-map for hashing
                 let mut args_list: Vec<_> = ctx.graphql_ctx.args.iter().collect();
                 args_list.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
                 args_list.iter().for_each(|(key, value)| {
@@ -97,7 +115,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 });
 
                 let key = hasher.finish();
-                let const_value = res_cache.fetch(&ctx, &expr, key).await?;
+                let const_value = cache.fetch(&ctx, &expr, key).await?;
 
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),

@@ -55,6 +55,9 @@ impl ResCache {
     if let Some(value) = self.get(&key) {
       Ok(value)
     } else {
+      // FIXME: move eval outside of ResCache
+      // Cache should only be concerned with reads and writes to it's own store.
+      // It should not be concerned with how to evaluate the expression.
       let value = expr.eval(ctx).await?;
       self.insert(key, &value);
       Ok(value)
