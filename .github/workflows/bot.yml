@@ -26,13 +26,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare Comment Content
-        run: |
-          echo "Main Benchmarks:" > benches/comment_content.txt
-          cat benches/a.md >> benches/comment_content.txt
+      - name: Read file content
+        id: readfile
+        run: echo "::set-output name=content::$(cat benches/a.md)"
 
-      - name: Comment on Commit
-        run: |
-          gh pr comment ${{ github.event.number }} --body-file benches/comment_content.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create comment
+        uses: peter-evans/create-pull-request-comment@v1
+        with:
+         token: ${{ secrets.GITHUB_TOKEN }}
+         repository: ${{ github.event.repository.full_name }}
+         pull-request-number: ${{ github.event.pull_request.number }}
+         body: |
+           File content:
+           ```
+            ${{ steps.readfile.outputs.content }}
+            ```     
