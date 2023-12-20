@@ -28,6 +28,7 @@ jobs:
 
       - name: Print File Content
         run: cat benches/a.md
+        id: print-content
 
       - name: Render template
         id: template
@@ -42,4 +43,5 @@ jobs:
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: 1
-          body: ${{ steps.template.outputs.result }}
+          body: ${{ steps.print-content.outputs.stdout }}${{ steps.template.outputs.result }}
+          reactions: '+1'
