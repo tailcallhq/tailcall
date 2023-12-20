@@ -3,14 +3,14 @@ schema @server(port: 8000, graphiql: true) @upstream(httpCache: true, batch: {de
 }
 
 type Query {
-  news: NewsData
+  news: NewsData!
     @grpc(
       service: "NewsService"
       method: "GetAllNews"
       baseURL: "http://localhost:50051"
       protoPath: "src/grpc/tests/news.proto"
     )
-  newsById(news: NewsInput!): News
+  newsById(news: NewsInput!): News!
     @grpc(
       service: "NewsService"
       method: "GetNews"
@@ -20,18 +20,18 @@ type Query {
     )
 }
 input NewsInput {
-  id: String!
+  id: String
   title: String
   body: String
   postImage: String
 }
 type NewsData {
-  news: [News]
+  news: [News]!
 }
 
 type News {
-  id: Int!
-  title: String!
-  body: String!
-  postImage: String!
+  id: String
+  title: String
+  body: String
+  postImage: String
 }
