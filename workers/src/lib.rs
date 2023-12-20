@@ -32,7 +32,7 @@ async fn make_req() -> Result<Config> {
   reader
     .read()
     .await
-    .map_err(|e| Error::from(format!("{}", e.to_string())))
+    .map_err(conv_err)
 }
 
 #[event(fetch)]
@@ -43,8 +43,8 @@ async fn main(mut req: Request, _: Env, _: Context) -> Result<Response> {
   }
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
-    let cfg = make_req().await.map_err(|e| Error::from(format!("{}", e)))?;
-    let blueprint = Blueprint::try_from(&cfg).map_err(|e| Error::from(format!("{}", e)))?;
+    let cfg = make_req().await.map_err(conv_err)?;
+    let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
     let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
     let serv_ctx = Arc::new(ServerContext::new(blueprint, http_client));
     *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
@@ -55,8 +55,8 @@ async fn main(mut req: Request, _: Env, _: Context) -> Result<Response> {
     server_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
   )
   .await
-  .map_err(|e| Error::from(format!("{}", e)))?;
-  let mut resp = make_request(resp).await.map_err(|e| Error::from(format!("{}", e)))?;
+  .map_err(conv_err)?;
+  let mut resp = make_request(resp).await.map_err(conv_err)?;
   let val = resp.text().await?;
   CACHE.write().unwrap().put(body.clone(), val);
   Ok(resp)
@@ -69,13 +69,13 @@ async fn get_option() -> Option<Arc<ServerContext>> {
 async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {
   let buf = hyper::body::to_bytes(response)
     .await
-    .map_err(|e| Error::from(format!("{}", e.to_string())))?;
-  let text = std::str::from_utf8(&buf).map_err(|e| Error::from(format!("{}", e.to_string())))?;
-  let mut response = Response::ok(text).map_err(|e| Error::from(format!("{}", e.to_string())))?;
+    .map_err(conv_err)?;
+  let text = std::str::from_utf8(&buf).map_err(conv_err)?;
+  let mut response = Response::ok(text).map_err(conv_err)?;
   response
     .headers_mut()
     .append("Content-Type", "text/html")
-    .map_err(|e| Error::from(format!("{}", e.to_string())))?;
+    .map_err(conv_err)?;
   Ok(response)
 }
 
@@ -98,7 +98,6 @@ fn convert_method(worker_method: Method) -> hyper::Method {
 }
 
 async fn convert_to_hyper_request(worker_request: Request, body: String) -> Result<hyper::Request<hyper::Body>> {
-  // let body = worker_request.text().await?;
   let method = worker_request.method();
   let uri = worker_request.url()?.as_str().to_string();
   let headers = worker_request.headers();
@@ -108,5 +107,9 @@ async fn convert_to_hyper_request(worker_request: Request, body: String) -> Resu
   }
   builder
     .body(hyper::body::Body::from(body))
-    .map_err(|e| Error::from(format!("{}", e)))
+    .map_err(conv_err)
+}
+
+fn conv_err<T: std::fmt::Display>(e: T) -> Error {
+  Error::from(format!("{}", e.to_string()))
 }

@@ -16,6 +16,8 @@ tailcall = {path = "..", default-features = false}
 lazy_static = { version = "1.4.0", features = [] }
 lru = "0.12.1"
 wasm-timer = "0.2.5"
+tokio = {features = ["rt"], version = "1.35.1"}
+
 [profile.release]
 lto = true
 strip = true
