@@ -60,11 +60,11 @@ fn default_status() -> u16 {
 struct UpstreamRequest(APIRequest);
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
   response: DownstreamResponse,
@@ -77,13 +77,13 @@ enum ConfigSource {
   Inline(Config),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Mock {
   request: UpstreamRequest,
   response: UpstreamResponse,
 }
 
-#[derive(Serialize, Deserialize, Clone, Setters)]
+#[derive(Serialize, Deserialize, Clone, Setters, Debug)]
 #[serde(rename_all = "camelCase")]
 struct HttpSpec {
   config: ConfigSource,
@@ -167,7 +167,7 @@ impl HttpSpec {
 
   async fn server_context(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::from_file_or_url([file].iter()).await.unwrap(),
+      ConfigSource::File(file) => Config::read_from_files([file].iter()).await.unwrap(),
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
@@ -333,11 +333,15 @@ async fn http_spec_e2e() -> anyhow::Result<()> {
 async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
   let method = downstream_assertion.request.0.method.clone();
+  let headers = downstream_assertion.request.0.headers.clone();
   let url = downstream_assertion.request.0.url.clone();
   let server_context = spec.server_context().await;
-  let req = Request::builder()
-    .method(method.to_hyper())
-    .uri(url.as_str())
+  let req = headers
+    .into_iter()
+    .fold(
+      Request::builder().method(method.to_hyper()).uri(url.as_str()),
+      |acc, (key, value)| acc.header(key, value),
+    )
     .body(Body::from(query_string))?;
 
   // TODO: reuse logic from server.rs to select the correct handler

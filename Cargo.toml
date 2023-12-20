@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.75"
 derive_setters = "0.1.6"
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 mimalloc = { version = "0.1.39", default-features = false }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -64,11 +64,11 @@ futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 ttl_cache = "0.5.1"
+prettytable-rs = "^0.10"
 
 [dev-dependencies]
 criterion = "0.5.1"
 httpmock = "0.6"
-mockito = "1.2.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 

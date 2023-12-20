@@ -1,0 +1,22 @@
+---
+config: !file tests/http/config/modified-field.graphql
+name: Modified field
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: "Leanne Graham"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user { fullname } }"
+    response:
+      body:
+        data:
+          user:
+            fullname: "Leanne Graham"

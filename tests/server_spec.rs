@@ -4,7 +4,7 @@ use tailcall::config::Config;
 use tailcall::http::Server;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let config = Config::from_file_or_url(configs.iter()).await.unwrap();
+  let config = Config::read_from_files(configs.iter()).await.unwrap();
   let mut server = Server::new(config);
   let server_up_receiver = server.server_up_receiver();
 

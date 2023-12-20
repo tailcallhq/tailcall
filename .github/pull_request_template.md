@@ -12,5 +12,7 @@ Fixes #... _(Replace "..." with the issue number)_
 **Checklist:**
 
 - [ ] I have added relevant unit & integration tests.
-- [ ] I have updated the documentation accordingly (if applicable).
+- [ ] I have updated the [documentation website] accordingly.
 - [ ] I have performed a self-review of my own code.
+
+[documentation website]: https://github.com/tailcallhq/tailcallhq.github.io

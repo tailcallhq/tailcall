@@ -1,0 +1,21 @@
+schema {
+  query: Query
+}
+
+type User {
+  address: Address
+}
+
+type Address {
+  street: String
+  geo: Geo
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}

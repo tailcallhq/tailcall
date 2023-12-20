@@ -1,0 +1,12 @@
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+}
+
+type Query {
+  user(id: Int!): [User]
+    @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+}

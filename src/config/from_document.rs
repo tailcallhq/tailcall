@@ -12,6 +12,9 @@ use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
+const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
+  &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };
+
 pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let type_definitions: Vec<_> = doc
     .definitions
@@ -32,14 +35,14 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
-  let p = doc.definitions.iter().find_map(|def| match def {
-    TypeSystemDefinition::Schema(schema_definition) => Some(&schema_definition.node),
-    _ => None,
-  });
-  p.map_or_else(
-    || Valid::fail("schema not found".to_string()).trace("schema"),
-    Valid::succeed,
-  )
+  doc
+    .definitions
+    .iter()
+    .find_map(|def| match def {
+      TypeSystemDefinition::Schema(schema_definition) => Some(&schema_definition.node),
+      _ => None,
+    })
+    .map_or_else(|| Valid::succeed(DEFAULT_SCHEMA_DEFINITION), Valid::succeed)
 }
 
 fn process_schema_directives<T: DirectiveCodec<T> + Default>(

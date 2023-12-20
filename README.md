@@ -2,6 +2,9 @@
 
 Tailcall is an open-source solution for building [high-performance] GraphQL backends.
 
+Please support us by giving the repository a star
+![image](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/star-our-repo.gif)
+
 [high-performance]: https://github.com/tailcallhq/graphql-benchmarks
 
 [![Open Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dopen&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=open)

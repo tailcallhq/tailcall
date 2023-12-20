@@ -33,14 +33,14 @@ fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) 
 #[derive(Clone)]
 pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
-  pub batched: Option<GroupBy>,
+  pub group_by: Option<GroupBy>,
   pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, batched: Option<GroupBy>, is_list: bool) -> Self {
+  pub fn new(client: Arc<dyn HttpClient>, group_by: Option<GroupBy>, is_list: bool) -> Self {
     HttpDataLoader {
       client,
-      batched,
+      group_by,
       body: if is_list {
         get_body_value_list
       } else {
@@ -65,7 +65,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    if let Some(group_by) = &self.batched {
+    if let Some(group_by) = &self.group_by {
       let mut keys = keys.to_vec();
       keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
 
