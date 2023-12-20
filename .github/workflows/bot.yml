@@ -19,23 +19,22 @@ jobs:
   example-job:
     runs-on: ubuntu-latest
     steps:
-      - name: List Files in Directory
-        run: ls benches/
-        
-      - name: Render template
-        id: template
+      - name: Print File Content
+        run: cat benches/a.md
+
+      - name: Render content
+        id: rendered-content
         uses: chuhlomin/render-template@v1.4
         with:
           template: /github/workspace/benches/a.md
           vars: |
             foo: this
             bar: that
-        
+
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v3
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ steps.print-content.outputs.stdout }}${{ steps.template.outputs.result }}
+          body: ${{ steps.rendered-content.outputs.result }}
           reactions: '+1'
-          token: ${{ secrets.GITHUB_TOKEN }}
 
