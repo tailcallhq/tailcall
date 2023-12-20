@@ -184,8 +184,9 @@ mod tests {
       ])
     );
 
-    if let Some(body) = req
-      .body() { assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref())) }
+    if let Some(body) = req.body() {
+      assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\0".as_ref()))
+    }
   }
 
   #[test]
@@ -201,7 +202,8 @@ mod tests {
     let rendered = tmpl.render(&ctx).unwrap();
     let req = rendered.to_request().unwrap();
 
-    if let Some(body) = req
-      .body() { assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref())) }
+    if let Some(body) = req.body() {
+      assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref()))
+    }
   }
 }

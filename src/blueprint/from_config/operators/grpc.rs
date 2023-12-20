@@ -2,7 +2,7 @@ use std::path::Path;
 
 use prost_reflect::Kind;
 
-use crate::blueprint::FieldDefinition;
+use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType, Grpc, GrpcBatchOperation};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -14,7 +14,9 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{config, helpers};
 
-fn generate_json_schema(msg_descriptor: &prost_reflect::MessageDescriptor) -> anyhow::Result<JsonSchema> {
+fn generate_json_schema(
+  msg_descriptor: &prost_reflect::MessageDescriptor,
+) -> Result<JsonSchema, ValidationError<String>> {
   let mut map = std::collections::HashMap::new();
   let fields = msg_descriptor.fields();
 
@@ -57,18 +59,49 @@ fn generate_json_schema(msg_descriptor: &prost_reflect::MessageDescriptor) -> an
   Ok(JsonSchema::Obj(map))
 }
 fn compare_json_schema(a: &JsonSchema, b: &JsonSchema, name: &str) -> Valid<(), String> {
-  match (a, b) {
-    (JsonSchema::Str, JsonSchema::Str) => Valid::succeed(()),
-    (JsonSchema::Num, JsonSchema::Num) => Valid::succeed(()),
-    (JsonSchema::Bool, JsonSchema::Bool) => Valid::succeed(()),
-    (JsonSchema::Arr(a), JsonSchema::Arr(b)) => compare_json_schema(a, b, name),
-    (JsonSchema::Opt(a), JsonSchema::Opt(b)) => compare_json_schema(a, b, name),
-    (JsonSchema::Obj(a), JsonSchema::Obj(b)) => Valid::from_iter(a.iter(), |(key, a)| {
-      Valid::from_option(b.get(key), format!("missing key: {}", key)).and_then(|b| compare_json_schema(a, b, key))
-    })
-    .unit(),
-    _ => Valid::fail(format!("expected {:?}, got {:?}", a, b)).trace(name),
+  match a {
+    JsonSchema::Obj(a) => {
+      if let JsonSchema::Obj(b) = b {
+        return Valid::from_iter(b.iter(), |(key, b)| {
+          Valid::from_option(a.get(key), format!("missing key: {}", key)).and_then(|a| compare_json_schema(a, b, key))
+        })
+        .trace(name)
+        .unit();
+      } else {
+        return Valid::fail("expected Object type".to_string()).trace(name);
+      }
+    }
+    JsonSchema::Arr(a) => {
+      if let JsonSchema::Arr(b) = b {
+        return compare_json_schema(a, b, name);
+      } else {
+        return Valid::fail("expected Array type".to_string()).trace(name);
+      }
+    }
+    JsonSchema::Opt(a) => {
+      if let JsonSchema::Opt(b) = b {
+        compare_json_schema(a, b, name).unit();
+      } else {
+        return Valid::fail("expected type to be optional".to_string()).trace(name);
+      }
+    }
+    JsonSchema::Str => {
+      if b != a {
+        return Valid::fail(format!("expected String, got {:?}", b)).trace(name);
+      }
+    }
+    JsonSchema::Num => {
+      if b != a {
+        return Valid::fail(format!("expected Number, got {:?}", b)).trace(name);
+      }
+    }
+    JsonSchema::Bool => {
+      if b != a {
+        return Valid::fail(format!("expected Boolean, got {:?}", b)).trace(name);
+      }
+    }
   }
+  Valid::succeed(())
 }
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
   Valid::from_option(
@@ -117,23 +150,33 @@ fn to_operations(grpc: &Grpc) -> Valid<(ProtobufOperation, Option<GrpcBatchOpera
   })
 }
 
-fn validate_schema(config: &Config, field: &Field, operation: &ProtobufOperation, name: &str) -> Valid<(), String> {
+fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
+  let field_schema = crate::blueprint::to_json_schema_for_field(field, config);
+  let args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config);
+  FieldSchema { args: args_schema, field: field_schema }
+}
+pub struct FieldSchema {
+  pub args: JsonSchema,
+  pub field: JsonSchema,
+}
+fn validate_schema(field_schema: FieldSchema, operation: &ProtobufOperation, name: &str) -> Valid<(), String> {
   let input_type = &operation.input_type;
   let output_type = &operation.output_type;
 
-  let _input_schema = generate_json_schema(input_type).unwrap();
-  let output_schema = generate_json_schema(output_type).unwrap();
-
-  let field_schema = crate::blueprint::to_json_schema_for_field(field, config);
-  let _args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config);
-  compare_json_schema(&output_schema, &field_schema, name)
+  Valid::from(generate_json_schema(input_type))
+    .zip(Valid::from(generate_json_schema(output_type)))
+    .and_then(|(_input_schema, output_schema)| {
+      let fields = field_schema.field;
+      let _args = field_schema.args;
+      compare_json_schema(&fields, &output_schema, name)
+    })
 }
 
 pub fn update_grpc<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _type_of, name), b_field| {
+    |(config, field, _type_of, _name), b_field| {
       let Some(grpc) = &field.grpc else {
         return Valid::succeed(b_field);
       };
@@ -143,7 +186,8 @@ pub fn update_grpc<'a>(
         .zip(helpers::headers::to_headervec(&grpc.headers))
         .zip(helpers::body::to_body(grpc.body.as_deref()))
         .and_then(|(((url, (operation, batch)), headers), body)| {
-          validate_schema(config, field, &operation, name).and_then(|_| {
+          let field_schema = json_schema_from_field(config, field);
+          validate_schema(field_schema, &operation, field.name()).and_then(|_| {
             let request_template =
               RequestTemplate { url, headers, operation, body, operation_type: operation_type.to_owned() };
 
