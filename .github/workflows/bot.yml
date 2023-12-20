@@ -35,7 +35,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
  
       - name: Create comment
-        uses: peter-evans/create-pull-request-comment@v1
+        uses: peter-evans/create-pull-request-comment@v2  # Update to the correct version if available
         with:
          token: ${{ secrets.GITHUB_TOKEN }}
          repository: ${{ github.event.repository.full_name }}
