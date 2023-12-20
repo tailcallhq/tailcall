@@ -97,14 +97,11 @@ impl RequestContext {
   }
 
   pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-    let res = self.cache.get(key);
-    println!("response from cache for key {key}: {res:?}");
-    res
+    self.cache.get(key)
   }
 
   #[allow(clippy::too_many_arguments)]
   pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: u64) -> Option<ConstValue> {
-    println!("inserting into cache with key {key} and {ttl:?}");
     self.cache.insert(key, value, ttl)
   }
 }
