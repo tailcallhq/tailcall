@@ -97,11 +97,14 @@ impl RequestContext {
   }
 
   pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-    self.cache.get(key)
+    let res = self.cache.get(key);
+    println!("response from cache for key {key}: {res:?}");
+    res
   }
 
   #[allow(clippy::too_many_arguments)]
   pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: u64) -> Option<ConstValue> {
+    println!("inserting into cache with key {key} and {ttl:?}");
     self.cache.insert(key, value, ttl)
   }
 }
@@ -115,7 +118,7 @@ impl From<&ServerContext> for RequestContext {
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
-      cache: ChronoCache::new(),
+      cache: server_ctx.cache.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
