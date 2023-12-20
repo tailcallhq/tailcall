@@ -8,7 +8,7 @@ type Query {
   posts: [Post] @http(path: "/posts")
 }
 
-type User {
+type User @cache(maxAge: 30) {
   id: Int!
   name: String!
   username: String!
@@ -17,7 +17,7 @@ type User {
   website: String
 }
 
-type Post {
+type Post @cache(maxAge: 30) {
   id: Int!
   userId: Int!
   title: String!
