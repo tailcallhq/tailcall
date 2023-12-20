@@ -31,17 +31,16 @@ jobs:
         run: echo "::set-output name=content::$(cat benches/a.md)"
 
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
- 
       - name: Create comment
         uses: peter-evans/create-pull-request-comment@v2  # Update to the correct version if available
         with:
-         token: ${{ secrets.GITHUB_TOKEN }}
-         repository: ${{ github.event.repository.full_name }}
-         pull-request-number: ${{ github.event.pull_request.number }}
-         body: |
-           File content:
-           ```
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}  # Use github.repository instead of github.event.repository.full_name
+          pull-request-number: ${{ github.event.pull_request.number }}
+          body: |
+            File content:
+            ```
             ${{ steps.readfile.outputs.content }}
+            ```
+
  
