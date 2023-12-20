@@ -19,6 +19,9 @@ jobs:
   example-job:
     runs-on: ubuntu-latest
     steps:
+      - name: List Files in Directory
+        run: ls benches/
+        
       - name: Render template
         id: template
         uses: chuhlomin/render-template@v1.4
@@ -27,8 +30,6 @@ jobs:
           vars: |
             foo: this
             bar: that
-      - name: List Files in Directory
-        run: ls benches/
         
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v3
