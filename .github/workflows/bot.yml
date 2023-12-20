@@ -32,7 +32,7 @@ jobs:
 
 
       - name: Create comment
-        uses: docker://docker.pkg.github.com/peter-evans/create-pull-request-comment/create-pull-request-comment:v2
+        uses: docker://ghcr.io/peter-evans/create-pull-request-comment:v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
