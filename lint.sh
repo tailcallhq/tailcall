@@ -25,9 +25,9 @@ run_cargo_clippy() {
 run_prettier() {
     MODE=$1
     if [ "$MODE" == "check" ]; then
-        prettier --check "**/*.$FILE_TYPES"
+        prettier -c .prettierrc  --check "**/*.$FILE_TYPES"
     else
-        prettier --write "**/*.$FILE_TYPES"
+        prettier -c .prettierrc  --write "**/*.$FILE_TYPES"
     fi
     return $?
 }
