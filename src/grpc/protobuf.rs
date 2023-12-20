@@ -111,8 +111,8 @@ impl ProtobufService {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtobufOperation {
   method: MethodDescriptor,
-  input_type: MessageDescriptor,
-  output_type: MessageDescriptor,
+  pub input_type: MessageDescriptor,
+  pub output_type: MessageDescriptor,
 }
 
 // TODO: support compression
