@@ -27,7 +27,9 @@ jobs:
           vars: |
             foo: this
             bar: that
-
+      - name: List Files in Directory
+        run: ls benches/
+        
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v3
         with:
