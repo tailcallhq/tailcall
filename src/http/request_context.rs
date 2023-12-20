@@ -1,10 +1,12 @@
 use std::sync::{Arc, Mutex};
 
+use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
+use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -18,6 +20,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub cache: ChronoCache<u64, ConstValue>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -40,6 +43,7 @@ impl RequestContext {
       upstream,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
+      cache: ChronoCache::new(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -91,6 +95,15 @@ impl RequestContext {
       self.set_min_max_age(-1);
     }
   }
+
+  pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
+    self.cache.get(key)
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: u64) -> Option<ConstValue> {
+    self.cache.insert(key, value, ttl)
+  }
 }
 
 impl From<&ServerContext> for RequestContext {
@@ -102,6 +115,7 @@ impl From<&ServerContext> for RequestContext {
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
+      cache: ChronoCache::new(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
