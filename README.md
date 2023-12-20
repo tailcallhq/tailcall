@@ -12,7 +12,7 @@ Tailcall is an open-source solution for building [high-performance] GraphQL back
 [![Codecov](https://img.shields.io/codecov/c/github/tailcallhq/tailcall?style=for-the-badge)](https://app.codecov.io/gh/tailcallhq/tailcall)
 
 Please support us by giving the repository a star 🙌
-![image](https://raw.githubusercontent.com/main/assets/star-our-repo.gif)
+![image](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/star-our-repo.gif)
 
 ## Installation
 
