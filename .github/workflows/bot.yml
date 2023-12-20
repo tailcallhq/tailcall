@@ -173,11 +173,6 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Switch Branch
-        run: |
-          git fetch
-          git switch main
-
       - name: Run Benchmarks
         run: |
           cargo install cargo-criterion rust-script
@@ -238,8 +233,11 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
-          echo "New Benchmarks:" > benches/benchmarks.md
-          rust-script benches/parse_json_benchmark benches/benchmarks.json benches/benchmarks.md
+
+      - name: Compare Criterion Benchmarks
+        run: |
+          rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
+          cat benches/benchmark.md
 
       - id: get_comment_body
         name: Get Comment Body
@@ -256,8 +254,3 @@ jobs:
         with:
           sha: ${{github.event.pull_request.head.sha}}
           body: ${{steps.get_comment_body.outputs.body}}
-
-      - name: Compare Criterion Benchmarks
-        run: |
-          rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
-          cat benches/benchmark.md
