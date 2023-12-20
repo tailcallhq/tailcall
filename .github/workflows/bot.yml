@@ -19,10 +19,6 @@ jobs:
   example-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Print File Content
-        run: cat benches/a.md
-        id: print-content
-
       - name: Render template
         id: template
         uses: chuhlomin/render-template@v1.4
