@@ -35,12 +35,10 @@ jobs:
         uses: docker://docker.pkg.github.com/peter-evans/create-pull-request-comment/create-pull-request-comment:v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}  # Use github.repository instead of github.event.repository.full_name
+          repository: ${{ github.repository }}
           pull-request-number: ${{ github.event.pull_request.number }}
           body: |
             File content:
             ```
             ${{ steps.readfile.outputs.content }}
             ```
-
- 
