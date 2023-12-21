@@ -205,20 +205,14 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Restore file
-        uses: actions/cache@v2
-        with:
-          path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.sha }}
-          restore-keys: |
-            criterion_benchmarks_
-
-      - name: Print Criterion Benchmarks
+      - name: Run Criterion Benchmarks
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
           rust-script benches/parse_json_benchmark benches/benchmarks.json benches/change_benchmarks.md
-          cat benches/change_benchmarks.md
+
+      - name: Print Criterion Benchmarks
+        run: cat benches/change_benchmarks.md
 
       - name: Compare Criterion Benchmarks
         run: |
