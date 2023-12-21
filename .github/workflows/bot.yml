@@ -160,6 +160,7 @@ jobs:
   Cache_Benchmarks:
     name: Micro Benchmarks
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
     permissions:
       pull-requests: write
       contents: write
@@ -188,7 +189,7 @@ jobs:
           restore-keys: |
             criterion_benchmarks_
 
-  Criterion_compare:
+  Criterion_Compare:
     name: Comparing Micro Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -209,20 +210,20 @@ jobs:
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.sha }}
-          restore-keys: criterion_benchmarks_
-          fail-on-cache-miss: true
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            fail-on-cache-miss: true
 
       - name: Run Criterion Benchmarks
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
-          rust-script benches/parse_json_benchmark benches/benchmarks.json benches/change_benchmarks.md
+          rust-script benches/json_to_md benches/benchmarks.json benches/change_benchmarks.md
 
       - name: Print Criterion Benchmarks
         run: cat benches/change_benchmarks.md
 
-      - name: Compare Criterion Benchmarks
+      - name: Print Benchmark Comparision
         run: rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json table
 
       - name: Check Degradation
