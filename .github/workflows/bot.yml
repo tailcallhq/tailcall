@@ -177,8 +177,8 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          echo "Main Benchmarks:" > benches/main_benchmarks.md
           rust-script benches/parse_json_benchmark benches/main_benchmarks.json benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v2
@@ -187,22 +187,6 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
           restore-keys: |
             criterion_benchmarks_
-
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: benches
-        run: |
-          body="$(cat main_benchmarks.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
-        with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
 
   Criterion_compare:
     name: Comparing Micro Benchmarks
@@ -233,24 +217,13 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
+          rust-script benches/parse_json_benchmark benches/main_benchmarks.json benches/change_benchmarks.md
+          cat benches/change_benchmarks.md
 
       - name: Compare Criterion Benchmarks
         run: |
           rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
           cat benches/benchmark.md
 
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: benches
-        run: |
-          body="$(cat benchmarks.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
-        with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
+      - name: Check Degradation
+        run: rust-script benches/criterion_compare  benches/main_benchmarks.json benches/benchmarks.json check

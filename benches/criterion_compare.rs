@@ -29,9 +29,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Get command-line arguments
   let args: Vec<String> = env::args().collect();
 
-  // Check if two file paths are provided
-  if args.len() != 3 {
-    eprintln!("Usage: {} <old_file_path> <new_file_path>", args[0]);
+  // Check if two or three file paths are provided
+  if args.len() != 3 && args.len() != 4 {
+    eprintln!("Usage: {} <old_file_path> <new_file_path> [check]", args[0]);
     std::process::exit(1);
   }
 
@@ -52,35 +52,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Specify the output file path for Markdown
   let markdown_output_file_path = "benches/benchmark.md";
 
-  // Generate the comparison table in markdown and write it to the output file
-  let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
-  fs::write(markdown_output_file_path, comparison_table_markdown)?;
+  // Check if the "check" argument is provided
+  if args.len() == 4 && args[3] == "check" {
+    // Collect benchmarks exceeding the 1% change threshold
+    let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
+      .iter()
+      .zip(new_benchmarks.iter())
+      .filter_map(|(old, new)| {
+        let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
+        if percentage_change > 1.0 {
+          Some((old.id.clone(), percentage_change))
+        } else {
+          None
+        }
+      })
+      .collect();
 
-  // Collect benchmarks exceeding the 1% change threshold
-  let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
-    .iter()
-    .zip(new_benchmarks.iter())
-    .filter_map(|(old, new)| {
-      let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-      if percentage_change > 1.0 {
-        Some(old.id.clone())
-      } else {
-        None
+    // Print the benchmarks exceeding the threshold along with the percentage change
+    if !benchmarks_exceeding_threshold.is_empty() {
+      println!("Benchmarks exceeding the 1% change threshold:");
+
+      for (benchmark_id, percentage_change) in benchmarks_exceeding_threshold {
+        // Color the output in red
+        println!("\x1b[31m  {}: {:.2}%\x1b[0m", benchmark_id, percentage_change);
       }
-    })
-    .collect();
 
-  // Print the benchmarks exceeding the threshold
-  if !benchmarks_exceeding_threshold.is_empty() {
-    let exceeding_benchmarks_str = benchmarks_exceeding_threshold.join(", ");
-    println!(
-      "Benchmarks exceeding the 1% change threshold: {}",
-      exceeding_benchmarks_str
-    );
-
-    // Fail the CI with a non-zero exit code
-    eprintln!("Error: Benchmarks exceeding the 1% change threshold");
-    std::process::exit(1);
+      // Fail the CI with a non-zero exit code
+      eprintln!("Error: Benchmarks exceeding the 1% change threshold");
+      std::process::exit(1);
+    }
+  } else {
+    // Generate the comparison table in markdown and write it to the output file
+    let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
+    fs::write(markdown_output_file_path, comparison_table_markdown)?;
   }
 
   Ok(())
