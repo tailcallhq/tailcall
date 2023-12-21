@@ -14,6 +14,7 @@ use crate::cli::fmt::Fmt;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
+use crate::cli::CLIError;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
@@ -37,7 +38,7 @@ pub fn run() -> Result<()> {
     Command::Check { file_path, n_plus_one_queries, schema, out_file_path } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
-      let blueprint = Blueprint::try_from(&config);
+      let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
