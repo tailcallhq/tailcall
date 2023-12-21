@@ -24,7 +24,7 @@ prettytable-rs = "0.10"
 #safe for workers workspace.
 hyper = { version = "0.14", features = ["server"], default-features = false    }
 tokio = { version = "1.35.0", features = ["rt","time"] }
-anyhow = "1.0.75"
+anyhow = "1.0.76"
 derive_setters = "0.1.6"
 thiserror = "1.0.50"
 serde_json = "1.0"
@@ -45,7 +45,7 @@ clap = { version = "4.4.11", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 reqwest-middleware = "0.2.4"
-async-trait = "0.1.74"
+async-trait = "0.1.75"
 serde_path_to_error = "0.1.14"
 cache_control = "0.2.0"
 nom = "7.1.3"
