@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
@@ -9,8 +8,7 @@ use async_graphql::dynamic::{
 use async_graphql_value::ConstValue;
 
 use super::hash_const_value;
-use crate::blueprint::{Blueprint, Definition, Type};
-use crate::config::Cache;
+use crate::blueprint::{Blueprint, Cache, Definition, Type};
 use crate::http::RequestContext;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
@@ -64,16 +62,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
-      let mut hasher = DefaultHasher::new();
-      // Hash on type name
-      def.name.hash(&mut hasher);
       for field in def.fields.iter() {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
-        let mut hasher = hasher.clone();
-        // Hash on field name
-        field_name.hash(&mut hasher);
         let cache = field.cache.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
@@ -85,14 +77,13 @@ fn to_type(def: &Definition) -> dynamic::Type {
             }
             Some(expr) => {
               let expr = expr.to_owned();
-              let hasher = hasher.clone();
               let cache = cache.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
-                let key = get_cache_key(&ctx, hasher);
 
                 let const_value = match cache {
-                  Some(Cache { max_age: Some(ttl) }) => {
+                  Some(Cache { max_age: ttl, hasher }) => {
+                    let key = get_cache_key(&ctx, hasher);
                     if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
                       // Return value from cache
                       const_value

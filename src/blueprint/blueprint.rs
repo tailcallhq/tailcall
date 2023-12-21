@@ -1,4 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
+use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -8,7 +10,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::config::{Cache, Upstream};
+use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -86,7 +88,6 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
-  pub cache: Option<Cache>,
 }
 
 #[derive(Clone, Debug)]
@@ -124,6 +125,12 @@ pub struct InputFieldDefinition {
   pub of_type: Type,
   pub default_value: Option<serde_json::Value>,
   pub description: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Cache {
+  pub max_age: NonZeroU64,
+  pub hasher: DefaultHasher,
 }
 
 #[derive(Clone, Debug, Setters, Default)]

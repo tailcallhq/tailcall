@@ -31,7 +31,7 @@ impl<K: Hash + Eq, V: Clone> ChronoCache<K, V> {
 
   #[allow(clippy::too_many_arguments)]
   pub fn insert(&self, key: K, value: V, ttl: NonZeroU64) -> Option<V> {
-    let ttl = Duration::from_secs(ttl.get());
+    let ttl = Duration::from_millis(ttl.get());
     self.data.write().unwrap().insert(key, value, ttl)
   }
 
