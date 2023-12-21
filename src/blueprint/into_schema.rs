@@ -33,29 +33,32 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
-fn get_cache_key<'a, H: Hasher>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, mut hasher: H) -> u64 {
-  let state = &mut hasher;
+fn get_cache_key<'a, H: Hasher + Clone>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, mut hasher: H) -> Option<u64> {
   // Hash on parent value
   if let Some(const_value) = ctx
     .graphql_ctx
     .parent_value
     .as_value()
     // TODO: handle _id, id, or any field that has @key on it.
-    .and_then(|data| data.get_key("id"))
+    .map(|data| data.get_key("id"))
   {
     // Hash on parent's id only?
-    hash_const_value(const_value, state)
+    hash_const_value(const_value?, &mut hasher)
   }
-  let mut arg_keys: Vec<_> = ctx.graphql_ctx.args.keys().collect();
-  arg_keys.sort();
-  arg_keys.iter().for_each(|key| {
-    key.hash(state);
-    if let Some(value) = ctx.graphql_ctx.args.get(key) {
-      hash_const_value(value.as_value(), state)
-    }
-  });
 
-  state.finish()
+  let key = ctx
+    .graphql_ctx
+    .args
+    .iter()
+    .map(|(key, value)| {
+      let mut hasher = hasher.clone();
+      key.hash(&mut hasher);
+      hash_const_value(value.as_value(), &mut hasher);
+      hasher.finish()
+    })
+    .fold(hasher.finish(), |acc, val| acc ^ val);
+
+  Some(key)
 }
 
 fn to_type(def: &Definition) -> dynamic::Type {
@@ -81,9 +84,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                let const_value = match cache {
-                  Some(Cache { max_age: ttl, hasher }) => {
-                    let key = get_cache_key(&ctx, hasher);
+                let ttl_and_key = cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
+                let const_value = match ttl_and_key {
+                  Some((ttl, key)) => {
                     if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
                       // Return value from cache
                       log::info!("Reading from cache. key = {key}");
