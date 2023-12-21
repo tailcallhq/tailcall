@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration for file types to be tested via prettier
-FILE_TYPES="{graphql,yml,json,md,ts}"
+FILE_TYPES="{graphql,yml,json,md,ts,js}"
 
 run_cargo_fmt() {
     MODE=$1
@@ -16,7 +16,14 @@ run_cargo_fmt() {
 run_cargo_clippy() {
     MODE=$1
     CMD="cargo +nightly clippy --all-targets --all-features"
-    [ "$MODE" == "check" ] || CMD="$CMD --fix --allow-staged --allow-dirty"
+    if [ "$MODE" == "fix" ]; then
+        # if mode is fix first run clippy with --fix flag as usual
+        $CMD --fix --allow-staged --allow-dirty
+    fi
+    # call anyway check command without --fix despite actual $MODE
+    # this is to show error as warnings similar to check mode
+    # since clippy won't fail on warnings when --fix and -D warnings are used together
+    # see https://github.com/rust-lang/rust-clippy/issues/11241
     CMD="$CMD -- -D warnings"
     $CMD
     return $?
@@ -25,9 +32,9 @@ run_cargo_clippy() {
 run_prettier() {
     MODE=$1
     if [ "$MODE" == "check" ]; then
-        prettier --check "**/*.$FILE_TYPES"
+        prettier -c .prettierrc --check "**/*.$FILE_TYPES"
     else
-        prettier --write "**/*.$FILE_TYPES"
+        prettier -c .prettierrc --write "**/*.$FILE_TYPES"
     fi
     return $?
 }
