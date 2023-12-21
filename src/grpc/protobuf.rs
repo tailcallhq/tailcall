@@ -151,7 +151,7 @@ impl ProtobufOperation {
     message_to_bytes(message)
   }
 
-  pub fn convert_multiple_messages(&self, child_messages: &Vec<DynamicMessage>) -> Result<Vec<u8>> {
+  pub fn convert_multiple_messages(&self, child_messages: &[DynamicMessage]) -> Result<Vec<u8>> {
     // Find the field of list type that should hold child messages
     let field_descriptor = self
       .input_type

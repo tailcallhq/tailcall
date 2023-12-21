@@ -13,7 +13,7 @@ use crate::helpers::headers::MustacheHeaders;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
-const GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
+static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
@@ -42,7 +42,7 @@ impl RequestTemplate {
   fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
     let mut header_map = HeaderMap::new();
 
-    header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE);
+    header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
 
     for (k, v) in &self.headers {
       if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
