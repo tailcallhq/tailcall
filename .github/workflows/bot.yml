@@ -160,7 +160,7 @@ jobs:
   Cache_Benchmarks:
     name: Micro Benchmarks
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       pull-requests: write
       contents: write
@@ -211,8 +211,6 @@ jobs:
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            fail-on-cache-miss: true
 
       - name: Run Criterion Benchmarks
         run: |
