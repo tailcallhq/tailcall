@@ -223,7 +223,6 @@ jobs:
       - name: Compare Criterion Benchmarks
         run: |
           rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json table
-          cat benches/benchmark.md
 
       - name: Check Degradation
         run: rust-script benches/criterion_compare  benches/main_benchmarks.json benches/benchmarks.json check
