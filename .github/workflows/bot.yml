@@ -217,7 +217,7 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json benches/change_benchmarks.md
+          rust-script benches/parse_json_benchmark benches/benchmarks.json benches/change_benchmarks.md
           cat benches/change_benchmarks.md
 
       - name: Compare Criterion Benchmarks
