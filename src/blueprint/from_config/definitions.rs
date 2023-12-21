@@ -246,7 +246,7 @@ fn update_args<'a>(
     let cache = field
       .cache
       .as_ref()
-      .and_then(|config::Cache { max_age }| Some(Cache { max_age: (*max_age)?, hasher }));
+      .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
 
     // TODO! assert type name
     Valid::from_iter(field.args.iter(), |(name, arg)| {

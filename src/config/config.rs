@@ -180,10 +180,10 @@ impl Type {
   }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
-  pub max_age: Option<NonZeroU64>,
+  pub max_age: NonZeroU64,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
