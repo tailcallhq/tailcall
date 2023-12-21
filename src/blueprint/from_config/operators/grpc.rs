@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use prost_reflect::Kind;
-
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType, Grpc, GrpcBatchOperation};
@@ -14,95 +12,6 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{config, helpers};
 
-fn generate_json_schema(
-  msg_descriptor: &prost_reflect::MessageDescriptor,
-) -> Result<JsonSchema, ValidationError<String>> {
-  let mut map = std::collections::HashMap::new();
-  let fields = msg_descriptor.fields();
-
-  for field in fields {
-    let field_schema = match field.kind() {
-      Kind::Double => JsonSchema::Num,
-      Kind::Float => JsonSchema::Num,
-      Kind::Int32 => JsonSchema::Num,
-      Kind::Int64 => JsonSchema::Num,
-      Kind::Uint32 => JsonSchema::Num,
-      Kind::Uint64 => JsonSchema::Num,
-      Kind::Sint32 => JsonSchema::Num,
-      Kind::Sint64 => JsonSchema::Num,
-      Kind::Fixed32 => JsonSchema::Num,
-      Kind::Fixed64 => JsonSchema::Num,
-      Kind::Sfixed32 => JsonSchema::Num,
-      Kind::Sfixed64 => JsonSchema::Num,
-      Kind::Bool => JsonSchema::Bool,
-      Kind::String => JsonSchema::Str,
-      Kind::Bytes => JsonSchema::Str,
-      Kind::Message(msg) => generate_json_schema(&msg)?,
-      Kind::Enum(_) => {
-        todo!("Enum")
-      }
-    };
-    let field_schema = if field.cardinality().eq(&prost_reflect::Cardinality::Optional) {
-      JsonSchema::Opt(Box::new(field_schema))
-    } else {
-      field_schema
-    };
-    let field_schema = if field.is_list() {
-      JsonSchema::Arr(Box::new(field_schema))
-    } else {
-      field_schema
-    };
-
-    map.insert(field.name().to_string(), field_schema);
-  }
-
-  Ok(JsonSchema::Obj(map))
-}
-fn compare_json_schema(a: &JsonSchema, b: &JsonSchema, name: &str) -> Valid<(), String> {
-  match a {
-    JsonSchema::Obj(a) => {
-      if let JsonSchema::Obj(b) = b {
-        return Valid::from_iter(b.iter(), |(key, b)| {
-          Valid::from_option(a.get(key), format!("missing key: {}", key)).and_then(|a| compare_json_schema(a, b, key))
-        })
-        .trace(name)
-        .unit();
-      } else {
-        return Valid::fail("expected Object type".to_string()).trace(name);
-      }
-    }
-    JsonSchema::Arr(a) => {
-      if let JsonSchema::Arr(b) = b {
-        return compare_json_schema(a, b, name);
-      } else {
-        return Valid::fail("expected Array type".to_string()).trace(name);
-      }
-    }
-    JsonSchema::Opt(a) => {
-      if let JsonSchema::Opt(b) = b {
-        compare_json_schema(a, b, name).unit();
-      } else {
-        return Valid::fail("expected type to be optional".to_string()).trace(name);
-      }
-    }
-    JsonSchema::Str => {
-      if b != a {
-        return Valid::fail(format!("expected String, got {:?}", b)).trace(name);
-      }
-    }
-    JsonSchema::Num => {
-      if b != a {
-        return Valid::fail(format!("expected Number, got {:?}", b)).trace(name);
-      }
-    }
-    JsonSchema::Bool => {
-      if b != a {
-        return Valid::fail(format!("expected Boolean, got {:?}", b)).trace(name);
-      }
-    }
-  }
-  Valid::succeed(())
-}
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
   Valid::from_option(
     grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
@@ -163,12 +72,12 @@ fn validate_schema(field_schema: FieldSchema, operation: &ProtobufOperation, nam
   let input_type = &operation.input_type;
   let output_type = &operation.output_type;
 
-  Valid::from(generate_json_schema(input_type))
-    .zip(Valid::from(generate_json_schema(output_type)))
+  Valid::from(JsonSchema::try_from(input_type))
+    .zip(Valid::from(JsonSchema::try_from(output_type)))
     .and_then(|(_input_schema, output_schema)| {
       let fields = field_schema.field;
       let _args = field_schema.args;
-      compare_json_schema(&fields, &output_schema, name)
+      fields.compare(&output_schema, name)
     })
 }
 
