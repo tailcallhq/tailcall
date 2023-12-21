@@ -23,7 +23,7 @@ impl HttpClient for MockHttpClient {
   }
 
   async fn execute_raw(&self, _req: Request) -> anyhow::Result<reqwest::Response> {
-    todo!()
+    unimplemented!("not needed for this test")
   }
 }
 fn benchmark_data_loader(c: &mut Criterion) {
