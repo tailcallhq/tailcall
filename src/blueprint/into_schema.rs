@@ -43,6 +43,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     .parent_value
     .as_value()
     // TODO: handle _id, id, or any field that has @key on it.
+    .filter(|value| value != &&ConstValue::Null)
     .map(|data| data.get_key("id"))
   {
     // Hash on parent's id only?
