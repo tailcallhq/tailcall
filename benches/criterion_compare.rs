@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   // Check if two or three file paths are provided
   if args.len() != 3 && args.len() != 4 {
-    eprintln!("Usage: {} <old_file_path> <new_file_path> [check]", args[0]);
+    eprintln!("Usage: {} <old_file_path> <new_file_path> [check | table]", args[0]);
     std::process::exit(1);
   }
 
@@ -52,40 +52,75 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Specify the output file path for Markdown
   let markdown_output_file_path = "benches/benchmark.md";
 
-  // Check if the "check" argument is provided
-  if args.len() == 4 && args[3] == "check" {
-    // Collect benchmarks exceeding the 1% change threshold
-    let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
-      .iter()
-      .zip(new_benchmarks.iter())
-      .filter_map(|(old, new)| {
-        let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-        if percentage_change > 1.0 {
-          Some((old.id.clone(), percentage_change))
-        } else {
-          None
-        }
-      })
-      .collect();
-
-    // Print the benchmarks exceeding the threshold along with the percentage change
-    if !benchmarks_exceeding_threshold.is_empty() {
-      println!("Benchmarks exceeding the 1% change threshold:");
-
-      for (benchmark_id, percentage_change) in benchmarks_exceeding_threshold {
-        // Color the output in red
-        println!("\x1b[31m  {}: {:.2}%\x1b[0m", benchmark_id, percentage_change);
-      }
-
-      // Fail the CI with a non-zero exit code
-      eprintln!("Error: Benchmarks exceeding the 1% change threshold");
+  // Check the command-line argument
+  match args.get(3).map(|s| s.as_str()) {
+    Some("check") => {
+      perform_check(&old_benchmarks, &new_benchmarks)?;
+    }
+    Some("table") => {
+      // Generate the comparison table in markdown and write it to the output file
+      let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
+      fs::write(markdown_output_file_path, comparison_table_markdown)?;
+      generate_and_print_table(&old_benchmarks, &new_benchmarks)?;
+    }
+    None => {
+      // Generate the comparison table in markdown and write it to the output file
+      let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
+      fs::write(markdown_output_file_path, comparison_table_markdown)?;
+      generate_and_print_table(&old_benchmarks, &new_benchmarks)?;
+      perform_check(&old_benchmarks, &new_benchmarks)?;
+    }
+    Some(arg) => {
+      eprintln!(
+        "Error: Invalid argument '{}'. Please use 'check', 'table', or no argument.",
+        arg
+      );
       std::process::exit(1);
     }
-  } else {
-    // Generate the comparison table in markdown and write it to the output file
-    let comparison_table_markdown = generate_comparison_table_markdown(&old_benchmarks, &new_benchmarks)?;
-    fs::write(markdown_output_file_path, comparison_table_markdown)?;
   }
+
+  Ok(())
+}
+
+fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> Result<(), Box<dyn std::error::Error>> {
+  // Collect benchmarks exceeding the 1% change threshold
+  let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
+    .iter()
+    .zip(new_benchmarks.iter())
+    .filter_map(|(old, new)| {
+      let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
+      if percentage_change > 1.0 {
+        Some((old.id.clone(), percentage_change))
+      } else {
+        None
+      }
+    })
+    .collect();
+
+  // Print the benchmarks exceeding the threshold along with the percentage change
+  if !benchmarks_exceeding_threshold.is_empty() {
+    println!("Benchmarks exceeding the 1% change threshold:");
+
+    for (benchmark_id, percentage_change) in benchmarks_exceeding_threshold {
+      // Color the output in red
+      println!("\x1b[31m  {}: {:.2}%\x1b[0m", benchmark_id, percentage_change);
+    }
+
+    // Fail the CI with a non-zero exit code
+    eprintln!("Error: Benchmarks exceeding the 1% change threshold");
+    std::process::exit(1);
+  }
+
+  Ok(())
+}
+
+fn generate_and_print_table(
+  old_benchmarks: &[Benchmark],
+  new_benchmarks: &[Benchmark],
+) -> Result<(), Box<dyn std::error::Error>> {
+  // Generate the comparison table in markdown and print it
+  let comparison_table_markdown = generate_comparison_table_markdown(old_benchmarks, new_benchmarks)?;
+  println!("{}", comparison_table_markdown);
 
   Ok(())
 }
