@@ -2,10 +2,10 @@ use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
-use prost_reflect::DynamicMessage;
 use reqwest::header::HeaderValue;
 use url::Url;
 
+use super::request::create_grpc_request;
 use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
@@ -83,19 +83,16 @@ impl RequestTemplate {
 }
 
 impl RenderedRequestTemplate {
-  pub fn to_message(&self) -> Result<DynamicMessage> {
-    self.operation.to_message(&self.body)
-  }
-
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
     *req.version_mut() = reqwest::Version::HTTP_2;
     req.headers_mut().extend(self.headers.clone());
-    req
-      .body_mut()
-      .replace(self.operation.convert_input(self.body.as_str())?.into());
 
-    Ok(req)
+    Ok(create_grpc_request(
+      self.url.clone(),
+      self.headers.clone(),
+      self.operation.convert_input(self.body.as_str())?,
+    ))
   }
 }
 

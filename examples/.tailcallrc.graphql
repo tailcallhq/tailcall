@@ -240,9 +240,9 @@ directive @grpc(
   """
   protoPath: String
   """
-  The `batch` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
-  batch: GrpcBatch
+  groupBy: [String!]
 ) on FIELD_DEFINITION
 """
 The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
@@ -313,17 +313,6 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
-}
-
-input GrpcBatch {
-  """
-  The gRPC method which should be used to batch the requests. For instance `GetAllNews`.
-  """
-  method: String!
-  """
-  The key path in the response which should be used to group the requests. For instance `["news","id"]`.
-  """
-  groupBy: [String!]!
 }
 
 scalar JSON

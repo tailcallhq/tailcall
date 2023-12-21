@@ -2,11 +2,11 @@ use std::path::Path;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field, GraphQLOperationType, Grpc, GrpcBatchOperation};
+use crate::config::{Config, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
-use crate::lambda::Lambda;
+use crate::lambda::{Expression, Lambda, Unsafe};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -28,7 +28,7 @@ fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
   })
 }
 
-fn to_operations(grpc: &Grpc) -> Valid<(ProtobufOperation, Option<GrpcBatchOperation>), String> {
+fn to_operation(grpc: &Grpc) -> Valid<ProtobufOperation, String> {
   Valid::from(
     ProtobufSet::from_proto_file(Path::new(&grpc.proto_path)).map_err(|e| ValidationError::new(e.to_string())),
   )
@@ -40,22 +40,11 @@ fn to_operations(grpc: &Grpc) -> Valid<(ProtobufOperation, Option<GrpcBatchOpera
     )
   })
   .and_then(|service| {
-    let operation = Valid::from(
+    Valid::from(
       service
         .find_operation(&grpc.method)
         .map_err(|e| ValidationError::new(e.to_string())),
-    );
-
-    if let Some(batch) = &grpc.batch {
-      return operation.zip(Valid::from(
-        service
-          .find_operation(&batch.method)
-          .map(|operation| Some(GrpcBatchOperation { operation, group_by: GroupBy::new(batch.group_by.clone()) }))
-          .map_err(|e| ValidationError::new(e.to_string())),
-      ));
-    }
-
-    operation.zip(Valid::succeed(None))
+    )
   })
 }
 
@@ -91,18 +80,32 @@ pub fn update_grpc<'a>(
       };
 
       to_url(grpc, config)
-        .zip(to_operations(grpc))
+        .zip(to_operation(grpc))
         .zip(helpers::headers::to_headervec(&grpc.headers))
         .zip(helpers::body::to_body(grpc.body.as_deref()))
-        .and_then(|(((url, (operation, batch)), headers), body)| {
+        .and_then(|(((url, operation), headers), body)| {
           let field_schema = json_schema_from_field(config, field);
-          validate_schema(field_schema, &operation, field.name()).and_then(|_| {
-            let request_template =
-              RequestTemplate { url, headers, operation, body, operation_type: operation_type.to_owned() };
 
-            Valid::succeed(b_field.resolver(Some(
-              Lambda::from_grpc_request_template(request_template, batch).expression,
-            )))
+          // TODO: fix validation for grpc with groupBy
+          let validation = if grpc.group_by.is_empty() {
+            validate_schema(field_schema, &operation, field.name()).unit()
+          } else {
+            Valid::succeed(())
+          };
+
+          validation.and_then(|_| {
+            let req_template =
+              RequestTemplate { url, headers, operation, body, operation_type: operation_type.clone() };
+
+            if !grpc.group_by.is_empty() {
+              Valid::succeed(b_field.resolver(Some(Expression::Unsafe(Unsafe::Grpc {
+                req_template,
+                group_by: Some(GroupBy::new(grpc.group_by.clone())),
+                dl_id: None,
+              }))))
+            } else {
+              Valid::succeed(b_field.resolver(Some(Lambda::from_grpc_request_template(req_template).expression)))
+            }
           })
         })
     },

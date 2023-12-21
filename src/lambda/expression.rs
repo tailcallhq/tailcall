@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use super::ResolverContextLike;
 use crate::config::group_by::GroupBy;
-use crate::config::{GraphQLOperationType, GrpcBatchOperation};
+use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc;
@@ -56,8 +56,8 @@ pub enum Unsafe {
   },
   Grpc {
     req_template: grpc::RequestTemplate,
+    group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
-    batch: Option<GrpcBatchOperation>,
   },
   JS(Box<Expression>, String),
 }

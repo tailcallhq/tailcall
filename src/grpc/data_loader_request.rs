@@ -3,13 +3,12 @@ use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
-use prost_reflect::DynamicMessage;
 
 use super::request_template::RenderedRequestTemplate;
 
 #[derive(Debug, Clone, Eq)]
 pub struct DataLoaderRequest {
-  template: RenderedRequestTemplate,
+  pub template: RenderedRequestTemplate,
   batch_headers: BTreeSet<String>,
 }
 
@@ -44,10 +43,6 @@ impl PartialEq for DataLoaderRequest {
 impl DataLoaderRequest {
   pub fn new(template: RenderedRequestTemplate, batch_headers: BTreeSet<String>) -> Self {
     Self { template, batch_headers }
-  }
-
-  pub fn to_message(&self) -> Result<DynamicMessage> {
-    self.template.to_message()
   }
 
   pub fn to_request(&self) -> Result<reqwest::Request> {

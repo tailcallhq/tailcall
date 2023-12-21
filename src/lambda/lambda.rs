@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 
 use super::expression;
 use super::expression::{Context, Expression, Unsafe};
-use crate::config::GrpcBatchOperation;
 use crate::{graphql, grpc, http};
 
 #[derive(Clone)]
@@ -66,11 +65,12 @@ impl Lambda<serde_json::Value> {
     }))
   }
 
-  pub fn from_grpc_request_template(
-    req_template: grpc::RequestTemplate,
-    batch: Option<GrpcBatchOperation>,
-  ) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::Grpc { req_template, batch, dl_id: None }))
+  pub fn from_grpc_request_template(req_template: grpc::RequestTemplate) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Unsafe(Unsafe::Grpc {
+      req_template,
+      group_by: None,
+      dl_id: None,
+    }))
   }
 }
 

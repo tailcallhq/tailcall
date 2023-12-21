@@ -1,5 +1,3 @@
-// mod conversion;
-
 use std::env::current_dir;
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
@@ -10,6 +8,15 @@ use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor};
 use serde_json::Deserializer;
+
+fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
+  let mut deserializer = Deserializer::from_str(input);
+  let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)
+    .with_context(|| format!("Failed to parse input according to type {}", descriptor.full_name()))?;
+  deserializer.end()?;
+
+  Ok(message)
+}
 
 fn message_to_bytes(message: DynamicMessage) -> Result<Vec<u8>> {
   let mut buf: Vec<u8> = Vec::with_capacity(message.encoded_len() + 5);
@@ -39,7 +46,7 @@ pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
   }
 }
 
-pub fn get_field_value_as_str(message: DynamicMessage, field_name: &str) -> Result<String> {
+pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Result<String> {
   let field = message
     .get_field_by_name(field_name)
     .ok_or(anyhow!("Unable to find key"))?;
@@ -125,33 +132,17 @@ impl ProtobufOperation {
     self.method.parent_service().name()
   }
 
-  pub fn to_message(&self, input: &str) -> Result<DynamicMessage> {
-    let mut deserializer = Deserializer::from_str(input);
-    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
-      format!(
-        "Failed to parse input according to type {}",
-        self.input_type.full_name()
-      )
-    })?;
-    deserializer.end()?;
-
-    Ok(message)
-  }
-
   pub fn convert_input(&self, input: &str) -> Result<Vec<u8>> {
-    let mut deserializer = Deserializer::from_str(input);
-    let message = DynamicMessage::deserialize(self.input_type.clone(), &mut deserializer).with_context(|| {
-      format!(
-        "Failed to parse input according to type {}",
-        self.input_type.full_name()
-      )
-    })?;
-    deserializer.end()?;
+    let message = to_message(&self.input_type, input)?;
 
     message_to_bytes(message)
   }
 
-  pub fn convert_multiple_messages(&self, child_messages: &[DynamicMessage]) -> Result<Vec<u8>> {
+  pub fn convert_multiple_inputs<'a>(
+    &self,
+    child_inputs: impl Iterator<Item = &'a str>,
+    id: &str,
+  ) -> Result<(Vec<u8>, Vec<String>)> {
     // Find the field of list type that should hold child messages
     let field_descriptor = self
       .input_type
@@ -159,19 +150,30 @@ impl ProtobufOperation {
       .find(|field| field.is_list())
       .ok_or(anyhow!("Unable to find list field on type"))?;
 
+    let field_kind = field_descriptor.kind();
+    let child_message_descriptor = field_kind.as_message().ok_or(anyhow!("Couldn't resolve message"))?;
     let mut message = DynamicMessage::new(self.input_type.clone());
+
+    let child_messages = child_inputs
+      .map(|input| to_message(child_message_descriptor, input))
+      .collect::<Result<Vec<DynamicMessage>>>()?;
+
+    let ids = child_messages
+      .iter()
+      .map(|message| get_field_value_as_str(message, id))
+      .collect::<Result<Vec<String>>>()?;
 
     message.set_field(
       &field_descriptor,
       prost_reflect::Value::List(
         child_messages
-          .iter()
-          .map(|message| prost_reflect::Value::Message(message.clone()))
+          .into_iter()
+          .map(prost_reflect::Value::Message)
           .collect(),
       ),
     );
 
-    message_to_bytes(message)
+    message_to_bytes(message).map(|result| (result, ids))
   }
 
   pub fn convert_output(&self, bytes: &[u8]) -> Result<Value> {
@@ -200,8 +202,7 @@ mod tests {
   use prost_reflect::Value;
   use serde_json::json;
 
-  use super::ProtobufSet;
-  use crate::grpc::protobuf::{get_field_value_as_str, protobuf_value_as_str};
+  use super::*;
 
   static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -277,14 +278,6 @@ mod tests {
     let service = file.find_service("Greeter")?;
     let operation = service.find_operation("SayHello")?;
 
-    let message = operation.to_message(r#"{ "name": "hello message" }"#)?;
-
-    assert_eq!(get_field_value_as_str(message, "name")?, "hello message");
-
-    let input = operation.convert_input(r#"{ "name": "hello message" }"#)?;
-
-    assert_eq!(input, b"\0\0\0\0\x0f\n\rhello message");
-
     let output = b"\0\0\0\0\x0e\n\x0ctest message";
 
     let parsed = operation.convert_output(output)?;
@@ -329,18 +322,14 @@ mod tests {
     let proto_file = get_test_file("news.proto");
     let file = ProtobufSet::from_proto_file(&proto_file)?;
     let service = file.find_service("NewsService")?;
-    let single_operation = service.find_operation("GetNews")?;
     let multiple_operation = service.find_operation("GetMultipleNews")?;
 
-    let child_messages = vec![
-      single_operation.to_message(r#"{ "id": "3" }"#)?,
-      single_operation.to_message(r#"{ "id": "5" }"#)?,
-      single_operation.to_message(r#"{ "id": "1" }"#)?,
-    ];
+    let child_messages = vec![r#"{ "id": "3" }"#, r#"{ "id": "5" }"#, r#"{ "id": "1" }"#];
 
-    let multiple_message = multiple_operation.convert_multiple_messages(&child_messages)?;
+    let (multiple_message, grouped) = multiple_operation.convert_multiple_inputs(child_messages.into_iter(), "id")?;
 
     assert_eq!(multiple_message, b"\0\0\0\0\x0f\n\x03\n\x013\n\x03\n\x015\n\x03\n\x011");
+    assert_eq!(grouped, vec!["3".to_owned(), "5".to_owned(), "1".to_owned()]);
 
     let output = b"\0\0\0\0r\n$\n\x011\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n$\n\x015\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
 

@@ -7,13 +7,14 @@ use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use prost_reflect::DynamicMessage;
 
 use super::data_loader_request::DataLoaderRequest;
-use super::protobuf::{get_field_value_as_str, ProtobufOperation};
+use super::protobuf::ProtobufOperation;
 use super::request::execute_grpc_request;
-use crate::config::{Batch, GrpcBatchOperation};
+use crate::config::group_by::GroupBy;
+use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
+use crate::grpc::request::create_grpc_request;
 use crate::http::{HttpClient, Response};
 use crate::json::JsonLike;
 
@@ -21,7 +22,7 @@ use crate::json::JsonLike;
 pub struct GrpcDataLoader {
   pub(crate) client: Arc<dyn HttpClient>,
   pub(crate) operation: ProtobufOperation,
-  pub(crate) batch: Option<GrpcBatchOperation>,
+  pub(crate) group_by: Option<GroupBy>,
 }
 
 impl GrpcDataLoader {
@@ -53,37 +54,29 @@ impl GrpcDataLoader {
     Ok(hashmap)
   }
 
-  async fn load_with_batch(
+  async fn load_with_group_by(
     &self,
-    batch: &GrpcBatchOperation,
+    group_by: &GroupBy,
     keys: &[DataLoaderRequest],
   ) -> Result<HashMap<DataLoaderRequest, Response>> {
-    let inputs = keys
-      .iter()
-      .map(|key| key.to_message())
-      .collect::<Result<Vec<DynamicMessage>>>()?;
-    let multiple_request = batch.operation.convert_multiple_messages(&inputs)?;
+    let inputs = keys.iter().map(|key| key.template.body.as_str());
+    let (multiple_body, grouped_keys) = self.operation.convert_multiple_inputs(inputs, group_by.key())?;
 
-    let mut first_request = keys[0].clone().to_request()?;
+    let first_request = keys[0].clone();
+    let multiple_request = create_grpc_request(
+      first_request.template.url,
+      first_request.template.headers,
+      multiple_body,
+    );
 
-    // TODO: move url management to execute_grpc_request?
-    let url = first_request.url_mut();
-    url.set_path(&format!(
-      "{}/{}",
-      batch.operation.service_name(),
-      batch.operation.name()
-    ));
-    first_request.body_mut().replace(multiple_request.into());
+    let response = execute_grpc_request(self.client.deref(), &self.operation, multiple_request).await?;
 
-    let response = execute_grpc_request(self.client.deref(), &batch.operation, first_request).await?;
-
-    let path = &batch.group_by.path();
+    let path = &group_by.path();
     let response_body = response.body.group_by(path);
 
     let mut result = HashMap::new();
 
-    for (key, input) in keys.iter().zip(inputs) {
-      let id = get_field_value_as_str(input, batch.group_by.key())?;
+    for (key, id) in keys.iter().zip(grouped_keys) {
       let res = response.clone().body(
         response_body
           .get(&id)
@@ -107,8 +100,8 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     &self,
     keys: &[DataLoaderRequest],
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
-    if let Some(batch) = &self.batch {
-      self.load_with_batch(batch, keys).await.map_err(Arc::new)
+    if let Some(group_by) = &self.group_by {
+      self.load_with_group_by(group_by, keys).await.map_err(Arc::new)
     } else {
       self.load_dedupe_only(keys).await.map_err(Arc::new)
     }
