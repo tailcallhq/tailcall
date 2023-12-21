@@ -4,33 +4,33 @@ config: !inline
   upstream:
     baseURL: "http://jsonplaceholder.typicode.com"
     httpCache: true
-    batch: 
+    batch:
       delay: 0
       maxSize: 0
   server:
     port: 8000
     hostname: "0.0.0.0"
-  schema: 
+  schema:
     query: Query
-  types: 
-    Query: 
+  types:
+    Query:
       fields:
-        user: 
+        user:
           type: User
-          args: 
-            id: 
+          args:
+            id:
               type: Int
               required: true
-          http: 
+          http:
             path: "/users?id={{args.id}}"
             groupBy: ["id"]
     User:
       fields:
-        id: 
+        id:
           type: Int
-        name: 
+        name:
           type: String
-        username: 
+        username:
           type: String
 
 mock:
@@ -59,14 +59,13 @@ mock:
     response:
       body:
         - id: -1
-          name: "THIS SHOULD NOT BE CALLED"                
+          name: "THIS SHOULD NOT BE CALLED"
   - request:
       url: http://jsonplaceholder.typicode.com/users?id=2&id=1
     response:
       body:
         - id: -1
-          name: "THIS SHOULD NOT BE CALLED"      
-
+          name: "THIS SHOULD NOT BE CALLED"
 
 assert:
   - request:
@@ -79,5 +78,5 @@ assert:
         data:
           u1:
             id: 1
-          u2: 
+          u2:
             id: 2
