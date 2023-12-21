@@ -1,6 +1,38 @@
 ---
-config: !file tests/http/config/batching-disabled.graphql
 name: Batching disabled
+config: !inline
+  upstream:
+    baseURL: "http://jsonplaceholder.typicode.com"
+    httpCache: true
+    batch: 
+      delay: 0
+      maxSize: 0
+  server:
+    port: 8000
+    hostname: "0.0.0.0"
+  schema: 
+    query: Query
+  types: 
+    Query: 
+      fields:
+        user: 
+          type: User
+          args: 
+            id: 
+              type: Int
+              required: true
+          http: 
+            path: "/users?id={{args.id}}"
+            groupBy: ["id"]
+    User:
+      fields:
+        id: 
+          type: Int
+        name: 
+          type: String
+        username: 
+          type: String
+
 mock:
   - request:
       url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
