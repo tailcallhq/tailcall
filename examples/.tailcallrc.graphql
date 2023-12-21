@@ -190,7 +190,7 @@ directive @http(
   body: String
 
   """
-  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@server` operator
+  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
   """
   baseURL: String
 
@@ -204,13 +204,44 @@ directive @http(
   """
   groupBy: [String!]
 ) on FIELD_DEFINITION
+
+"""
+@grpc
+The @grpc operator indicates that a field or node is backed by a gRPC API.
+
+For instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
+The `service` argument specifies the name of the gRPC service.
+The `method` argument specifies the name of the gRPC method.
+In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.
+"""
 directive @grpc(
+  """
+  This refers to the gRPC service you're going to call. For instance `NewsService`.
+  """
   service: String!
+  """
+  This refers to the gRPC method you're going to call. For instance `GetAllNews`.
+  """
   method: String!
+  """
+  This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.
+  """
   body: String
+  """
+  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
+  """
   baseURL: String
+  """
+  The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc.
+  """
   headers: [KeyValue]
+  """
+  The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.
+  """
   protoPath: String
+  """
+  The `batch` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
   batch: GrpcBatch
 ) on FIELD_DEFINITION
 """
@@ -285,7 +316,13 @@ input Batch {
 }
 
 input GrpcBatch {
+  """
+  The gRPC method which should be used to batch the requests. For instance `GetAllNews`.
+  """
   method: String!
+  """
+  The key path in the response which should be used to group the requests. For instance `["news","id"]`.
+  """
   groupBy: [String!]!
 }
 
