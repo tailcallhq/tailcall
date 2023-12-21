@@ -73,7 +73,7 @@ async function genServerPackage(buildDefinitions: string[]) {
 
   const postInstallScriptContent = `const version = "${packageVersion}";\n${postInstallScript}`
   const preInstallScriptContent = `const optionalDependencies = ${JSON.stringify(
-    optionalDependencies
+    optionalDependencies,
   )};\n${preInstallScript}`
 
   await fs.writeFile(resolve(scriptsPath, "post-install.js"), postInstallScriptContent, "utf8")
