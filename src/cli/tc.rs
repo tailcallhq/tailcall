@@ -11,10 +11,10 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
-use crate::cli::CLIError;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
