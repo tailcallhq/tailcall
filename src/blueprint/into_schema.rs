@@ -33,7 +33,10 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
-fn get_cache_key<'a, H: Hasher + Clone>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, mut hasher: H) -> Option<u64> {
+fn get_cache_key<'a, H: Hasher + Clone>(
+  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
+  mut hasher: H,
+) -> Option<u64> {
   // Hash on parent value
   if let Some(const_value) = ctx
     .graphql_ctx
@@ -84,7 +87,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                let ttl_and_key = cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
+                let ttl_and_key =
+                  cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
                 let const_value = match ttl_and_key {
                   Some((ttl, key)) => {
                     if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
