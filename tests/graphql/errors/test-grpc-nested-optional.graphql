@@ -25,4 +25,4 @@ type News {
 }
 
 #> client-sdl
-type Failure @error(message: "expected type to be optional", trace: ["Query", "news", "@grpc", "NewsData", "news"])
+type Failure @error(message: "expected type to be required", trace: ["Query", "news", "@grpc", "NewsData", "news"])

@@ -10,6 +10,7 @@ message News {
 service NewsService {
     rpc GetAllNews (Empty) returns (NewsList) {}
     rpc GetNews (NewsId) returns (News) {}
+    rpc GetMultipleNews (MultipleNewsId) returns (NewsList) {}
     rpc DeleteNews (NewsId) returns (Empty) {}
     rpc EditNews (News) returns (News) {}
     rpc AddNews (News) returns (News) {}
@@ -19,8 +20,12 @@ message NewsId {
     string id = 1;
 }
 
+message MultipleNewsId {
+    repeated NewsId ids = 1;
+}
+
 message Empty {}
 
 message NewsList {
-   repeated News news = 1;
+    repeated News news = 1;
 }

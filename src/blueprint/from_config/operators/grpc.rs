@@ -70,6 +70,30 @@ fn validate_schema(field_schema: FieldSchema, operation: &ProtobufOperation, nam
     })
 }
 
+fn validate_group_by(
+  field_schema: &FieldSchema,
+  operation: &ProtobufOperation,
+  group_by: Vec<String>,
+) -> Valid<(), String> {
+  let input_type = &operation.input_type;
+  let output_type = &operation.output_type;
+  let output_type = output_type
+    .fields()
+    .find(|f| f.name() == group_by[0])
+    .ok_or(ValidationError::new(format!("field {} not found", group_by[0])))
+    .and_then(|f| JsonSchema::try_from(&f));
+
+  Valid::from(JsonSchema::try_from(input_type))
+    .zip(Valid::from(output_type))
+    .and_then(|(_input_schema, output_schema)| {
+      let fields = &field_schema.field;
+      let args = &field_schema.args;
+      let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
+      let _args = JsonSchema::Arr(Box::new(args.to_owned()));
+      fields.compare(&output_schema, group_by[0].as_str())
+    })
+}
+
 pub fn update_grpc<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
@@ -86,11 +110,10 @@ pub fn update_grpc<'a>(
         .and_then(|(((url, operation), headers), body)| {
           let field_schema = json_schema_from_field(config, field);
 
-          // TODO: fix validation for grpc with groupBy
           let validation = if grpc.group_by.is_empty() {
             validate_schema(field_schema, &operation, field.name()).unit()
           } else {
-            Valid::succeed(())
+            validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
           };
 
           validation.and_then(|_| {
