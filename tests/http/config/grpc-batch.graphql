@@ -21,7 +21,7 @@ type Query {
     )
 }
 input NewsInput {
-  id: String
+  id: Int
   title: String
   body: String
   postImage: String
@@ -31,7 +31,7 @@ type NewsData {
 }
 
 type News {
-  id: String
+  id: Int
   title: String
   body: String
   postImage: String

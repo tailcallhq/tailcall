@@ -294,18 +294,18 @@ mod tests {
     let service = file.find_service("NewsService")?;
     let operation = service.find_operation("GetNews")?;
 
-    let input = operation.convert_input(r#"{ "id": "1" }"#)?;
+    let input = operation.convert_input(r#"{ "id": 1 }"#)?;
 
-    assert_eq!(input, b"\0\0\0\0\x03\n\x011");
+    assert_eq!(input, b"\0\0\0\0\x02\x08\x01");
 
-    let output = b"\0\0\0\0$\n\x011\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1";
+    let output = b"\0\0\0\x005\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1";
 
     let parsed = operation.convert_output(output)?;
 
     assert_eq!(
       serde_json::to_value(parsed)?,
       json!({
-        "id": "1", "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
+        "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
       })
     );
 
@@ -319,14 +319,17 @@ mod tests {
     let service = file.find_service("NewsService")?;
     let multiple_operation = service.find_operation("GetMultipleNews")?;
 
-    let child_messages = vec![r#"{ "id": "3" }"#, r#"{ "id": "5" }"#, r#"{ "id": "1" }"#];
+    let child_messages = vec![r#"{ "id": 3 }"#, r#"{ "id": 5 }"#, r#"{ "id": 1 }"#];
 
     let (multiple_message, grouped) = multiple_operation.convert_multiple_inputs(child_messages.into_iter(), "id")?;
 
-    assert_eq!(multiple_message, b"\0\0\0\0\x0f\n\x03\n\x013\n\x03\n\x015\n\x03\n\x011");
+    assert_eq!(
+      multiple_message,
+      b"\0\0\0\0\x0c\n\x02\x08\x03\n\x02\x08\x05\n\x02\x08\x01"
+    );
     assert_eq!(grouped, vec!["3".to_owned(), "5".to_owned(), "1".to_owned()]);
 
-    let output = b"\0\0\0\0r\n$\n\x011\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n$\n\x015\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
+    let output = b"\0\0\0\0o\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
 
     let parsed = multiple_operation.convert_output(output)?;
 
@@ -334,9 +337,9 @@ mod tests {
       serde_json::to_value(parsed)?,
       json!({
         "news": [
-          { "id": "1", "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
-          { "id": "3", "title": "Note 3", "body": "Content 3", "postImage": "Post image 3" },
-          { "id": "5", "title": "Note 5", "body": "Content 5", "postImage": "Post image 5" },
+          { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
+          { "id": 3, "title": "Note 3", "body": "Content 3", "postImage": "Post image 3" },
+          { "id": 5, "title": "Note 5", "body": "Content 5", "postImage": "Post image 5" },
         ]
       })
     );

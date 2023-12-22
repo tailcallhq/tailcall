@@ -4,21 +4,21 @@ mock:
   - request:
       url: http://localhost:50051/NewsService/GetMultipleNews
       method: POST
-      body: \0\0\0\0\n\n\x03\n\x012\n\x03\n\x013
+      body: \0\0\0\0\n\x02\x08\x02\n\x02\x08\x03
     response:
-      body: \0\0\0\0L\n$\n\x012\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
+      body: \0\0\0\0t\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
   - request:
       url: http://localhost:50051/NewsService/GetMultipleNews
       method: POST
-      body: \0\0\0\0\n\n\x03\n\x013\n\x03\n\x012
+      body: \0\0\0\0\n\x02\x08\x03\n\x02\x08\x02
     response:
-      body: \0\0\0\0L\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n$\n\x013\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
+      body: \0\0\0\0t\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: 'query { newsById2: newsById(news: {id: "2"}) { title }, newsById3: newsById(news: {id: "3"}) { title } }'
+        query: "query { newsById2: newsById(news: {id: 2}) { title }, newsById3: newsById(news: {id: 3}) { title } }"
     response:
       body:
         data:

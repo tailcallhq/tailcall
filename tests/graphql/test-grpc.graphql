@@ -5,14 +5,14 @@ schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {
 
 input NewsInput {
   body: String
-  id: String
+  id: Int
   postImage: String
   title: String
 }
 
 type News {
   body: String
-  id: String
+  id: Int
   postImage: String
   title: String
 }
@@ -30,7 +30,7 @@ type Query {
 #> client-sdl
 type News {
   body: String
-  id: String
+  id: Int
   postImage: String
   title: String
 }
@@ -41,7 +41,7 @@ type NewsData {
 
 input NewsInput {
   body: String
-  id: String
+  id: Int
   postImage: String
   title: String
 }

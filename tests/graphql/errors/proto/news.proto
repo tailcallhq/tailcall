@@ -1,30 +1,30 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 message News {
-    string id = 1;
+    int32 id = 1;
     string title = 2;
     string body = 3;
     string postImage = 4;
 }
 
 service NewsService {
-    rpc GetAllNews (Empty) returns (NewsList) {}
+    rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
     rpc GetNews (NewsId) returns (News) {}
     rpc GetMultipleNews (MultipleNewsId) returns (NewsList) {}
-    rpc DeleteNews (NewsId) returns (Empty) {}
+    rpc DeleteNews (NewsId) returns (google.protobuf.Empty) {}
     rpc EditNews (News) returns (News) {}
     rpc AddNews (News) returns (News) {}
 }
 
 message NewsId {
-    string id = 1;
+    int32 id = 1;
 }
 
 message MultipleNewsId {
     repeated NewsId ids = 1;
 }
-
-message Empty {}
 
 message NewsList {
     repeated News news = 1;
