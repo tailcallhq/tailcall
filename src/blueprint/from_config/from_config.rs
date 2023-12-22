@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
+use crate::blueprint::from_config::upstream;
 use crate::config::{Arg, Batch, Config, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, Unsafe};
@@ -47,54 +48,59 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
 }
 
 fn typecheck_definition(def: &Definition, blueprint: &Blueprint) -> Valid<(), String> {
-    let query_def = blueprint.definitions.iter().find(|d| d.name() == blueprint.schema.query);
-    match def {
-        Definition::ObjectTypeDefinition(ObjectTypeDefinition { name, fields, .. }) => {
-            if name != "Query" {
-                Valid::succeed(()) // TODO: handle other cases
-            } else {
-                fields.iter().fold(Valid::succeed(()), |acc, field| {
-                    let valid_field = if let Some(resolver) = &field.resolver {
-                        match resolver {
-                            Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. }) => {
-                                match query_def {
-                                     Some(Definition::ObjectTypeDefinition(ObjectTypeDefinition { fields, .. })) => {
-                                         if let Some(base_url) = &blueprint.upstream.base_url {
-                                             if base_url == &req_template.url {
-                                                 // this hits a user defined field
-                                                 if let Some(q) = fields.iter().find(|f| f.name == req_template.operation_name) {
-                                                     if q.of_type == field.of_type {
-                                                         Valid::succeed(())
-                                                     } else {
-                                                         Valid::from_validation_err(ValidationError::new(format!("Mismatched return type")))
-                                                     }
-                                                 } else {
-                                                     Valid::from_validation_err(ValidationError::new(format!("No GraphQL endpoint with name {}", req_template.operation_name)))
-                                                 }
-                                             } else {
-                                                 // this is an external call
-                                                 Valid::succeed(())
-                                             }
-                                         } else {
-                                             // no base url defined in upstream, this must be an
-                                             // external call
-                                             Valid::succeed(())
-                                         }
+    let maybe_upstream_query = &blueprint.upstream.query;
+    if let Some(upstream_query) = maybe_upstream_query {
+        let query_def = blueprint.definitions.iter().find(|d| d.name() == upstream_query);
+        match def {
+            Definition::ObjectTypeDefinition(ObjectTypeDefinition { name, fields, .. }) => {
+                if name != "Query" {
+                    Valid::succeed(()) // TODO: handle other cases
+                } else {
+                    fields.iter().fold(Valid::succeed(()), |acc, field| {
+                        let valid_field = if let Some(resolver) = &field.resolver {
+                            match resolver {
+                                Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. }) => {
+                                    match query_def {
+                                        Some(Definition::ObjectTypeDefinition(ObjectTypeDefinition { fields, .. })) => {
+                                            if let Some(base_url) = &blueprint.upstream.base_url {
+                                                if base_url == &req_template.url {
+                                                    // this hits a user defined field
+                                                    if let Some(q) = fields.iter().find(|f| f.name == req_template.operation_name) {
+                                                        if q.of_type == field.of_type {
+                                                            Valid::succeed(())
+                                                        } else {
+                                                            Valid::from_validation_err(ValidationError::new(format!("Mismatched return type")))
+                                                        }
+                                                    } else {
+                                                        Valid::from_validation_err(ValidationError::new(format!("No GraphQL endpoint with name {}", req_template.operation_name)))
+                                                    }
+                                                } else {
+                                                    // this is an external call
+                                                    Valid::succeed(())
+                                                }
+                                            } else {
+                                                // no base url defined in upstream, this must be an
+                                                // external call
+                                                Valid::succeed(())
+                                            }
+                                        }
+                                        None => Valid::from_validation_err(ValidationError::new(format!("No query object defined"))),
+                                        _ => Valid::succeed(())
                                     }
-                                    None => Valid::from_validation_err(ValidationError::new(format!("No query object defined"))),
-                                    _ => Valid::succeed(())
                                 }
+                                _ => Valid::succeed(()) // TODO
                             }
-                            _ => Valid::succeed(()) // TODO
-                        }
-                    } else {
-                        Valid::succeed(())
-                    };
-                    acc.and(valid_field)
-                })
+                        } else {
+                            Valid::succeed(())
+                        };
+                        acc.and(valid_field)
+                    })
+                }
             }
+            _ => Valid::succeed(()) // TODO: what should happen for other cases?
         }
-        _ => Valid::succeed(()) // TODO: what should happen for other cases?
+    } else {
+        Valid::from_validation_err(ValidationError::new(format!("No upstream schema defined")))
     }
 }
 

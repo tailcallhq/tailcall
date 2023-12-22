@@ -1,0 +1,21 @@
+schema
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, query: UpstreamQuery) {
+  query: Query
+}
+
+type UpstreamQuery {
+  posts: [User]
+}
+
+type Query {
+  posts: [Post] @graphQL(name: "posts")
+}
+
+type User {
+  name: String!
+}
+
+type Post {
+  id: Int!
+}

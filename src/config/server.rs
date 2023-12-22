@@ -180,6 +180,8 @@ pub struct Upstream {
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub query: Option<String>,
 }
 
 impl Upstream {
@@ -252,6 +254,7 @@ impl Upstream {
       batch.headers.extend(other.headers);
       batch
     });
+    self.query = other.query.or(self.query);
     self
   }
 }
