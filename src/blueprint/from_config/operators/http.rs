@@ -143,6 +143,11 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
 
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .and(
+          Valid::<(), String>::fail("GroupBy can only be applied if batching is enabled".to_string()).when(|| {
+            (config.upstream.get_delay() < 1 || config.upstream.get_max_size() < 1) && !http.group_by.is_empty()
+          }),
+        )
         .and(Valid::from_option(
           http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
           "No base URL defined".to_string(),

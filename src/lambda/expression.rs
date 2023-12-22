@@ -107,7 +107,7 @@ impl Expression {
             let req = req_template.to_request(ctx)?;
             let is_get = req.method() == reqwest::Method::GET;
 
-            let res = if is_get && ctx.req_ctx.upstream.batch.is_some() {
+            let res = if is_get && ctx.req_ctx.is_batching_enabled() {
               let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
               execute_request_with_dl(ctx, req, data_loader).await?
