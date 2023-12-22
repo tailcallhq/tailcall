@@ -273,10 +273,15 @@ impl Field {
     if self.const_field.is_some() {
       directives.push(Const::trace_name())
     }
+    if self.grpc.is_some() {
+      directives.push(Grpc::trace_name())
+    }
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
     self.http.as_ref().is_some_and(|http| !http.group_by.is_empty())
+      || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
+      || self.grpc.as_ref().is_some_and(|grpc| !grpc.group_by.is_empty())
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
