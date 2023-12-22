@@ -38,7 +38,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
-        let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref.clone(), move |ctx| {
+        let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
           match &field.resolver {
@@ -48,20 +48,13 @@ fn to_type(def: &Definition) -> dynamic::Type {
             }
             Some(expr) => {
               let expr = expr.to_owned();
-              let field_of_type = type_ref.clone();
-
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                 let const_value = expr.eval(&ctx).await?;
                 let p = match const_value {
-                  ConstValue::List(a) => match field_of_type {
-                    dynamic::TypeRef::Named(_) => FieldValue::from(a[0].clone()),
-                    dynamic::TypeRef::NonNull(_) => FieldValue::from(a),
-                    dynamic::TypeRef::List(_) => FieldValue::list(a),
-                  },
+                  ConstValue::List(a) => FieldValue::list(a),
                   a => FieldValue::from(a),
                 };
-
                 Ok(Some(p))
               })
             }

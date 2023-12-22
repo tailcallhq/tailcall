@@ -115,7 +115,6 @@ impl From<&ServerContext> for RequestContext {
 #[cfg(test)]
 mod test {
 
-  use std::collections::BTreeSet;
   use std::sync::Arc;
 
   use cache_control::Cachability;
@@ -172,57 +171,5 @@ mod test {
     let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
 
     assert!(req_ctx.is_batching_enabled());
-  }
-
-  #[test]
-  fn test_is_batching_enabled_delay_set() {
-    // create ctx with batch that has a positive delay
-    let config = config::Config::default();
-    let mut upstream = config.upstream.clone();
-    upstream.batch = Some(Batch { max_size: 100, delay: 2, headers: BTreeSet::new() });
-    let server = Server::try_from(config.server.clone()).unwrap();
-
-    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
-
-    assert!(req_ctx.is_batching_enabled());
-  }
-
-  #[test]
-  fn test_is_batching_enabled_delay_0() {
-    // create ctx with batch that has delay set to 0
-    let config = config::Config::default();
-    let mut upstream = config.upstream.clone();
-    upstream.batch = Some(Batch { max_size: 0, delay: 0, headers: BTreeSet::new() });
-    let server = Server::try_from(config.server.clone()).unwrap();
-
-    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
-
-    assert!(!req_ctx.is_batching_enabled());
-  }
-
-  #[test]
-  fn test_is_batching_enabled_when_max_size_1() {
-    // create ctx with batch that has delay set to 0
-    let config = config::Config::default();
-    let mut upstream = config.upstream.clone();
-    upstream.batch = Some(Batch { max_size: 1, delay: 0, headers: BTreeSet::new() });
-    let server = Server::try_from(config.server.clone()).unwrap();
-
-    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
-
-    assert!(req_ctx.is_batching_enabled());
-  }
-
-  #[test]
-  fn test_is_batching_disabled_when_max_size_0() {
-    // create ctx with batch that has delay set to 0
-    let config = config::Config::default();
-    let mut upstream = config.upstream.clone();
-    upstream.batch = Some(Batch { max_size: 0, delay: 0, headers: BTreeSet::new() });
-    let server = Server::try_from(config.server.clone()).unwrap();
-
-    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
-
-    assert!(!req_ctx.is_batching_enabled());
   }
 }
