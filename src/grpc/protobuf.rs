@@ -165,12 +165,7 @@ impl ProtobufOperation {
 
     message.set_field(
       &field_descriptor,
-      prost_reflect::Value::List(
-        child_messages
-          .into_iter()
-          .map(prost_reflect::Value::Message)
-          .collect(),
-      ),
+      prost_reflect::Value::List(child_messages.into_iter().map(prost_reflect::Value::Message).collect()),
     );
 
     message_to_bytes(message).map(|result| (result, ids))
