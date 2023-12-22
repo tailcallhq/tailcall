@@ -87,6 +87,7 @@ impl JsonSchema {
     }
   }
 
+  // TODO: add unit tests
   pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
     match self {
       JsonSchema::Obj(a) => {

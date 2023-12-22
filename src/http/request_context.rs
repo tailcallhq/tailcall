@@ -18,7 +18,7 @@ pub struct RequestContext {
   // TODO: consider storing http clients where they are used i.e. expression and dataloaders
   pub universal_http_client: Arc<dyn HttpClient>,
   // http2 only client is required for grpc in cases the server supports only http2
-  // and the request will failed on protocol negotiation
+  // and the request will fail on protocol negotiation
   // having separate client for now looks like the only way to do with reqwest
   pub http2_only_client: Arc<dyn HttpClient>,
   pub server: Server,
