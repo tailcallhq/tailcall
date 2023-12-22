@@ -64,6 +64,10 @@ futures-util = { version = "0.3.29" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 prettytable-rs = "^0.10"
+protox = "0.5.1"
+prost-reflect = { version = "0.12.0", features = ["serde"] }
+prost = "0.12.3"
+
 
 [dev-dependencies]
 criterion = "0.5.1"

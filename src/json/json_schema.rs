@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::Name;
+use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
 use crate::valid::Valid;
@@ -86,6 +87,53 @@ impl JsonSchema {
     }
   }
 
+  // TODO: add unit tests
+  pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
+    match self {
+      JsonSchema::Obj(a) => {
+        if let JsonSchema::Obj(b) = other {
+          return Valid::from_iter(b.iter(), |(key, b)| {
+            Valid::from_option(a.get(key), format!("missing key: {}", key)).and_then(|a| a.compare(b, key))
+          })
+          .trace(name)
+          .unit();
+        } else {
+          return Valid::fail("expected Object type".to_string()).trace(name);
+        }
+      }
+      JsonSchema::Arr(a) => {
+        if let JsonSchema::Arr(b) = other {
+          return a.compare(b, name);
+        } else {
+          return Valid::fail("expected Non repeatable type".to_string()).trace(name);
+        }
+      }
+      JsonSchema::Opt(a) => {
+        if let JsonSchema::Opt(b) = other {
+          return a.compare(b, name);
+        } else {
+          return Valid::fail("expected type to be required".to_string()).trace(name);
+        }
+      }
+      JsonSchema::Str => {
+        if other != self {
+          return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
+        }
+      }
+      JsonSchema::Num => {
+        if other != self {
+          return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
+        }
+      }
+      JsonSchema::Bool => {
+        if other != self {
+          return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
+        }
+      }
+    }
+    Valid::succeed(())
+  }
+
   pub fn optional(self) -> JsonSchema {
     JsonSchema::Opt(Box::new(self))
   }
@@ -96,6 +144,63 @@ impl JsonSchema {
 
   pub fn is_required(&self) -> bool {
     !self.is_optional()
+  }
+}
+
+impl TryFrom<&MessageDescriptor> for JsonSchema {
+  type Error = crate::valid::ValidationError<String>;
+
+  fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
+    let mut map = std::collections::HashMap::new();
+    let fields = value.fields();
+
+    for field in fields {
+      let field_schema = JsonSchema::try_from(&field)?;
+
+      map.insert(field.name().to_string(), field_schema);
+    }
+
+    Ok(JsonSchema::Obj(map))
+  }
+}
+
+impl TryFrom<&FieldDescriptor> for JsonSchema {
+  type Error = crate::valid::ValidationError<String>;
+
+  fn try_from(value: &FieldDescriptor) -> Result<Self, Self::Error> {
+    let field_schema = match value.kind() {
+      Kind::Double => JsonSchema::Num,
+      Kind::Float => JsonSchema::Num,
+      Kind::Int32 => JsonSchema::Num,
+      Kind::Int64 => JsonSchema::Num,
+      Kind::Uint32 => JsonSchema::Num,
+      Kind::Uint64 => JsonSchema::Num,
+      Kind::Sint32 => JsonSchema::Num,
+      Kind::Sint64 => JsonSchema::Num,
+      Kind::Fixed32 => JsonSchema::Num,
+      Kind::Fixed64 => JsonSchema::Num,
+      Kind::Sfixed32 => JsonSchema::Num,
+      Kind::Sfixed64 => JsonSchema::Num,
+      Kind::Bool => JsonSchema::Bool,
+      Kind::String => JsonSchema::Str,
+      Kind::Bytes => JsonSchema::Str,
+      Kind::Message(msg) => JsonSchema::try_from(&msg)?,
+      Kind::Enum(_) => {
+        todo!("Enum")
+      }
+    };
+    let field_schema = if value.cardinality().eq(&prost_reflect::Cardinality::Optional) {
+      JsonSchema::Opt(Box::new(field_schema))
+    } else {
+      field_schema
+    };
+    let field_schema = if value.is_list() {
+      JsonSchema::Arr(Box::new(field_schema))
+    } else {
+      field_schema
+    };
+
+    Ok(field_schema)
   }
 }
 
