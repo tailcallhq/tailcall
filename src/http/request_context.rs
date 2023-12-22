@@ -124,13 +124,12 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-  
 
   use cache_control::Cachability;
 
   use crate::blueprint::Server;
   use crate::config::{self, Batch};
-  use crate::http::{RequestContext};
+  use crate::http::RequestContext;
 
   #[test]
   fn test_update_max_age_less_than_existing() {
