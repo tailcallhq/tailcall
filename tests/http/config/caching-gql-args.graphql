@@ -3,7 +3,11 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
 }
 
 type Query @cache(maxAge: 3000) {
-  bar(id: Int!, flag: Boolean!): Bar @http(path: "/bar?id={{args.id}}&flag={{args.flag}}")
+  bar(id: Int!, flag: Boolean!, dummy: Dummy): Bar @http(path: "/bar?id={{args.id}}&flag={{args.flag}}")
+}
+
+type Dummy {
+  list: [Int]
 }
 
 type Bar {

@@ -21,7 +21,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query { bar(id: 1, flag: true) { id dir } }"
+        query: "query { bar(id: 1, flag: true, dummy: { list: [1] }) { id dir } }"
     response:
       body:
         data:
@@ -31,7 +31,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query { bar(id: 2, flag: false) { id dir } }"
+        query: "query { bar(id: 2, flag: false, dummy: { list: [1] }) { id dir } }"
     response:
       body:
         data:
@@ -41,7 +41,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query { bar(id: 3, flag: false) { id dir } }"
+        query: "query { bar(id: 3, flag: false, dummy: { list: [1] }) { id dir } }"
     response:
       body:
         data:
@@ -51,7 +51,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query { bar(id: 2, flag: false) { id dir } }"
+        query: "query { bar(id: 2, flag: false, dummy: { list: [1] }) { id dir } }"
     response:
       body:
         data:
