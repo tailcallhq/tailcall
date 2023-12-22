@@ -1,0 +1,59 @@
+config: !file tests/http/config/caching-gql-args.graphql
+name: Caching Graphql args
+mock:
+  - request:
+      url: http://example.com/bar?id=1&flag=true
+    response:
+      body:
+        id: 1
+  - request:
+      url: http://example.com/bar?id=2&flag=false
+    response:
+      body:
+        id: 2
+  - request:
+      url: http://example.com/bar?id=3&flag=false
+    response:
+      body:
+        id: 3
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar(id: 1, flag: true, dummy: { list: [1] }) { id dir } }"
+    response:
+      body:
+        data:
+          bar:
+            id: 1
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar(id: 2, flag: false, dummy: { list: [1] }) { id dir } }"
+    response:
+      body:
+        data:
+          bar:
+            id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar(id: 3, flag: false, dummy: { list: [1] }) { id dir } }"
+    response:
+      body:
+        data:
+          bar:
+            id: 3
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar(id: 2, flag: false, dummy: { list: [1] }) { id dir } }"
+    response:
+      body:
+        data:
+          bar:
+            id: 2
