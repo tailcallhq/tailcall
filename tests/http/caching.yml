@@ -6,44 +6,37 @@ mock:
     response:
       body:
         - id: 1
-          fooId: 1
-        - id: 2
-          fooId: 1
+          foo:
+            id: 2
         - id: 3
-          fooId: 2
-        - id: 4
-          fooId: 2
-  - request:
-      url: http://example.com/foos?id=1&id=2
-    response:
-      body:
-        - id: 1
-          name: foo1
-        - id: 2
-          name: foo2
+          foo:
+            id: 4
+        - id: 5
+          foo:
+            id: 6
+        - id: 7
+          foo:
+            id: 8
 assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: query { bars { foo { id } fooId id } }
+        query: query { bars { id foo { id } } }
     response:
       body:
         data:
           bars:
-            - fooId: 1
-              id: 1
+            - id: 1
               foo:
-                - id: 1
-            - id: 2
-              fooId: 1
-              foo:
-                - id: 1
+                id: 2
             - id: 3
-              fooId: 2
               foo:
-                - id: 2
-            - id: 4
-              fooId: 2
+                id: 4
+            - id: 5
               foo:
-                - id: 2
+                id: 6
+            - id: 7
+              foo:
+                id: 8
+

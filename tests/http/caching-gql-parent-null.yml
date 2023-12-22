@@ -1,0 +1,25 @@
+config: !file tests/http/config/caching-gql-parent-null.graphql
+name: Caching Parent Null
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
+      body:
+        - id: 1
+        - id: 3
+        - id: 5
+        - id: 7
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { id } }
+    response:
+      body:
+        data:
+          bars:
+            - id: 1
+            - id: 3
+            - id: 5
+            - id: 7

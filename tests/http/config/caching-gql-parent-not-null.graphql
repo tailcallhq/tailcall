@@ -2,15 +2,15 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
   query: Query
 }
 
-type Query @cache(maxAge: 100) {
+type Query {
   bars: [Bar] @http(path: "/bars")
 }
 
 type Foo {
-  id: Int!
+  id: Int
 }
 
 type Bar {
-  id: Int
-  foo: Foo
+  id: Int!
+  foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
 }

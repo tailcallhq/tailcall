@@ -1,0 +1,53 @@
+config: !file tests/http/config/caching-collision.graphql
+name: Caching Collision
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
+      body:
+        - id: ooaigfiuasdhngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+        - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+        - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+        - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehduaidkjlanbviagsidjfoijsadopfijopijsdf
+  - request:
+      url: http://example.com/foo?id=ooaigfiuasdhngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+    response:
+      body:
+        id: 1
+  - request:
+      url: http://example.com/foo?id=ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+    response:
+      body:
+        id: 2
+  - request:
+      url: http://example.com/foo?id=ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+    response:
+      body:
+        id: 3
+  - request:
+      url: http://example.com/foo?id=ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehduaidkjlanbviagsidjfoijsadopfijopijsdf
+    response:
+      body:
+        id: 4
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { foo { id } id } }
+    response:
+      body:
+        data:
+          bars:
+            - id: ooaigfiuasdhngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+              foo:
+                id: 1
+            - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuarbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+              foo:
+                id: 2
+            - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehfuaidkjlanbviagsidjfoijsadopfijopijsdf
+              foo:
+                id: 3
+            - id: ooaigfiuasd9ngiuoervoaskbiaeughiwjefadngiuaerghieuhrbuafndalmsvjkzsbviehduaidkjlanbviagsidjfoijsadopfijopijsdf
+              foo:
+                id: 4

@@ -11,6 +11,7 @@ type Foo {
 }
 
 type Bar {
-  id: Int
-  foo: Foo
+  id: String!
+  foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
 }
+
