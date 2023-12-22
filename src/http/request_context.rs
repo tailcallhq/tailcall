@@ -91,6 +91,10 @@ impl RequestContext {
       self.set_min_max_age(-1);
     }
   }
+
+  pub fn is_batching_enabled(&self) -> bool {
+    self.upstream.batch.is_some() && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1)
+  }
 }
 
 impl From<&ServerContext> for RequestContext {
@@ -111,9 +115,13 @@ impl From<&ServerContext> for RequestContext {
 #[cfg(test)]
 mod test {
 
+  use std::sync::Arc;
+
   use cache_control::Cachability;
 
-  use crate::http::RequestContext;
+  use crate::blueprint::Server;
+  use crate::config::{self, Batch};
+  use crate::http::{DefaultHttpClient, RequestContext};
 
   #[test]
   fn test_update_max_age_less_than_existing() {
@@ -147,8 +155,21 @@ mod test {
 
   #[test]
   fn test_update_cache_visibility_public() {
-    let req_ctx = RequestContext::default();
+    let req_ctx: RequestContext = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
     assert_eq!(req_ctx.is_cache_public(), None);
+  }
+
+  #[test]
+  fn test_is_batching_enabled_default() {
+    // create ctx with default batch
+    let config = config::Config::default();
+    let mut upstream = config.upstream.clone();
+    upstream.batch = Some(Batch::default());
+    let server = Server::try_from(config.server.clone()).unwrap();
+
+    let req_ctx: RequestContext = RequestContext::new(Arc::new(DefaultHttpClient::default()), server, upstream);
+
+    assert!(req_ctx.is_batching_enabled());
   }
 }
