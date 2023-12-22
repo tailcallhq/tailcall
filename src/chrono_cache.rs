@@ -12,12 +12,6 @@ pub struct ChronoCache<K: Hash + Eq, V> {
   data: Arc<RwLock<TtlCache<K, V>>>,
 }
 
-impl<K: Hash + Eq, V> std::fmt::Debug for ChronoCache<K, V> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "ResCache {{capacity: {:?}}}", self.data.read().unwrap().capacity())
-  }
-}
-
 impl<K: Hash + Eq, V: Clone> Default for ChronoCache<K, V> {
   fn default() -> Self {
     Self::new()
@@ -37,10 +31,5 @@ impl<K: Hash + Eq, V: Clone> ChronoCache<K, V> {
 
   pub fn get(&self, key: &K) -> Option<V> {
     self.data.read().unwrap().get(key).cloned()
-  }
-
-  #[allow(dead_code)]
-  pub fn remove(&self, key: &K) -> Option<V> {
-    self.data.write().unwrap().remove(key)
   }
 }
