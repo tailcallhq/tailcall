@@ -31,6 +31,7 @@ impl Mustache {
     }
   }
 
+  // TODO: infallible function, no need to return Result
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
     match result {

@@ -1,43 +1,43 @@
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
+use hyper::header::HeaderName;
 
 use crate::config::KeyValues;
+use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError};
 
-pub fn to_headermap(headers: &KeyValues) -> Valid<HeaderMap, String> {
+pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
+
+pub fn to_headervec(headers: &KeyValues) -> Valid<Vec<(HeaderName, Mustache)>, String> {
   Valid::from_iter(headers.iter(), |(k, v)| {
     let name =
       Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))).trace(k);
 
-    let value =
-      Valid::from(HeaderValue::from_str(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))).trace(v);
+    let value = Valid::from(Mustache::parse(v.as_str()).map_err(|e| ValidationError::new(e.to_string()))).trace(v);
 
     name.zip(value).map(|(name, value)| (name, value))
   })
-  .map(HeaderMap::from_iter)
 }
 
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use hyper::header::{HeaderName, HeaderValue};
-  use hyper::HeaderMap;
+  use hyper::header::HeaderName;
 
-  use super::to_headermap;
+  use super::to_headervec;
   use crate::config::KeyValues;
+  use crate::mustache::Mustache;
 
   #[test]
   fn valid_headers() -> Result<()> {
     let input: KeyValues = serde_json::from_str(r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#)?;
 
-    let headers = to_headermap(&input).to_result()?;
+    let headers = to_headervec(&input).to_result()?;
 
     assert_eq!(
       headers,
-      HeaderMap::from_iter(vec![
-        (HeaderName::from_bytes(b"a")?, HeaderValue::from_static("str")),
-        (HeaderName::from_bytes(b"b")?, HeaderValue::from_static("123"))
-      ])
+      vec![
+        (HeaderName::from_bytes(b"a")?, Mustache::parse("str")?),
+        (HeaderName::from_bytes(b"b")?, Mustache::parse("123")?)
+      ]
     );
 
     Ok(())
@@ -47,7 +47,7 @@ mod tests {
   fn not_valid_due_to_utf8() {
     let input: KeyValues =
       serde_json::from_str(r#"[{"key": "😅", "value": "str"}, {"key": "b", "value": "🦀"}]"#).unwrap();
-    let error = to_headermap(&input).to_result().unwrap_err();
+    let error = to_headervec(&input).to_result().unwrap_err();
 
     // HeaderValue should be parsed just fine despite non-visible ascii symbols range
     // see https://github.com/hyperium/http/issues/519

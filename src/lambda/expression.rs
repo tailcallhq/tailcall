@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::future::Future;
+use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -14,6 +15,11 @@ use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
+use crate::grpc;
+use crate::grpc::data_loader::GrpcDataLoader;
+use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::request::execute_grpc_request;
+use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -46,6 +52,11 @@ pub enum Unsafe {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
+    dl_id: Option<DataLoaderId>,
+  },
+  Grpc {
+    req_template: grpc::RequestTemplate,
+    group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
@@ -133,6 +144,25 @@ impl Expression {
             set_cache_control(ctx, &res);
             parse_graphql_response(ctx, res, field_name)
           }
+          Unsafe::Grpc { req_template, dl_id, .. } => {
+            let rendered = req_template.render(ctx)?;
+
+            let res = if ctx.req_ctx.upstream.batch.is_some()
+              // TODO: share check for operation_type for resolvers
+              && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            {
+              let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
+                dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+              execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+            } else {
+              let req = rendered.to_request()?;
+              execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+            };
+
+            set_cache_control(ctx, &res);
+
+            Ok(res.body)
+          }
           Unsafe::JS(input, script) => {
             let result;
             #[cfg(not(feature = "unsafe-js"))]
@@ -171,9 +201,50 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   Ok(
     ctx
       .req_ctx
+      .universal_http_client
       .execute(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+  )
+}
+
+async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  req: Request,
+  operation: &ProtobufOperation,
+) -> Result<Response> {
+  Ok(
+    execute_grpc_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+  )
+}
+
+async fn execute_grpc_request_with_dl<
+  'ctx,
+  Ctx: ResolverContextLike<'ctx>,
+  Dl: Loader<grpc::DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  rendered: RenderedRequestTemplate,
+  data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
+) -> Result<Response> {
+  let headers = ctx
+    .req_ctx
+    .upstream
+    .batch
+    .clone()
+    .map(|s| s.headers)
+    .unwrap_or_default();
+  let endpoint_key = grpc::DataLoaderRequest::new(rendered, headers);
+
+  Ok(
+    data_loader
+      .unwrap()
+      .load_one(endpoint_key)
+      .await
+      .map_err(|e| EvaluationError::IOException(e.to_string()))?
+      .unwrap_or_default(),
   )
 }
 
