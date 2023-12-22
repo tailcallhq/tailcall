@@ -33,6 +33,38 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
+fn get_cache_key<'a, H: Hasher + Clone>(
+  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
+  mut hasher: H,
+) -> Option<u64> {
+  // Hash on parent value
+  if let Some(const_value) = ctx
+    .graphql_ctx
+    .parent_value
+    .as_value()
+    // TODO: handle _id, id, or any field that has @key on it.
+    .filter(|value| value != &&ConstValue::Null)
+    .map(|data| data.get_key("id"))
+  {
+    // Hash on parent's id only?
+    hash_const_value(const_value?, &mut hasher)
+  }
+
+  let key = ctx
+    .graphql_ctx
+    .args
+    .iter()
+    .map(|(key, value)| {
+      let mut hasher = hasher.clone();
+      key.hash(&mut hasher);
+      hash_const_value(value.as_value(), &mut hasher);
+      hasher.finish()
+    })
+    .fold(hasher.finish(), |acc, val| acc ^ val);
+
+  Some(key)
+}
+
 fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
