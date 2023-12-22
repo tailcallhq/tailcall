@@ -48,7 +48,7 @@ pub enum Command {
     out_file_path: Option<String>,
 
     /// Operations to check
-    #[arg(short, long, value_delimiter=',', num_args = 1..)]
+    #[arg(short('p'), long, value_delimiter=',', num_args = 1..)]
     operations: Vec<String>,
   },
 

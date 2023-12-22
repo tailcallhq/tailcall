@@ -41,10 +41,7 @@ pub fn run() -> Result<()> {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
-      let _operations = operations
-        .iter()
-        .map(|op| Operation::from_file_path(op))
-        .collect::<Vec<Result<Operation>>>();
+
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
@@ -52,6 +49,7 @@ pub fn run() -> Result<()> {
           if schema {
             display_schema(&blueprint);
           }
+
           if let Some(out_file) = out_file_path {
             tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
             Fmt::display(Fmt::success(

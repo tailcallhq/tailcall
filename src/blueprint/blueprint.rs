@@ -7,7 +7,7 @@ use async_graphql::{Response, *};
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::into_schema::create_dumb_schema;
+use super::into_schema::{create, SchemaModifiers};
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
@@ -223,8 +223,9 @@ impl Blueprint {
 
   /// Generate a dumb schema useful for validation.
   pub fn to_validation_schema(&self) -> Schema {
-    create_dumb_schema(self)
+    create(self, Some(SchemaModifiers { no_resolver: true }))
       .validation_mode(ValidationMode::Strict)
+      .disable_introspection()
       .finish()
       .unwrap()
   }

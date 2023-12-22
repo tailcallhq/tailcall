@@ -33,39 +33,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
-fn get_cache_key<'a, H: Hasher + Clone>(
-  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
-  mut hasher: H,
-) -> Option<u64> {
-  // Hash on parent value
-  if let Some(const_value) = ctx
-    .graphql_ctx
-    .parent_value
-    .as_value()
-    // TODO: handle _id, id, or any field that has @key on it.
-    .filter(|value| value != &&ConstValue::Null)
-    .map(|data| data.get_key("id"))
-  {
-    // Hash on parent's id only?
-    hash_const_value(const_value?, &mut hasher)
-  }
-
-  let key = ctx
-    .graphql_ctx
-    .args
-    .iter()
-    .map(|(key, value)| {
-      let mut hasher = hasher.clone();
-      key.hash(&mut hasher);
-      hash_const_value(value.as_value(), &mut hasher);
-      hasher.finish()
-    })
-    .fold(hasher.finish(), |acc, val| acc ^ val);
-
-  Some(key)
-}
-
-fn to_type(def: &Definition) -> dynamic::Type {
+fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
@@ -75,6 +43,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field_name = &field.name.clone();
         let cache = field.cache.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
+          if no_resolver {
+            return FieldFuture::from_value(None);
+          }
+
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
           match &field.resolver {
@@ -177,49 +149,18 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: &Blueprint) -> SchemaBuilder {
-  let query = blueprint.query();
-  let mutation = blueprint.mutation();
-  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-  for def in blueprint.definitions.iter() {
-    schema = schema.register(to_type(def));
-  }
-
-  schema
+#[derive(Copy, Clone, Debug)]
+pub struct SchemaModifiers {
+  pub no_resolver: bool,
 }
 
-pub(crate) fn create_dumb_schema(blueprint: &Blueprint) -> SchemaBuilder {
+pub(crate) fn create(blueprint: &Blueprint, modifiers: Option<SchemaModifiers>) -> SchemaBuilder {
   let query = blueprint.query();
   let mutation = blueprint.mutation();
   let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
   for def in blueprint.definitions.iter() {
-    let type_def = match def {
-      Definition::ObjectTypeDefinition(def) => {
-        let mut object = dynamic::Object::new(def.name.clone());
-        for field in def.fields.iter() {
-          let field = field.clone();
-          let type_ref = to_type_ref(&field.of_type);
-          let field_name = &field.name.clone();
-          let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |_ctx| {
-            FieldFuture::new(async { Ok(None::<FieldValue>) })
-          });
-          for arg in field.args.iter() {
-            dyn_schema_field =
-              dyn_schema_field.argument(dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)));
-          }
-          object = object.field(dyn_schema_field);
-        }
-        for interface in def.implements.iter() {
-          object = object.implement(interface.clone());
-        }
-
-        dynamic::Type::Object(object)
-      }
-      _ => to_type(def),
-    };
-    schema = schema.register(type_def);
+    schema = schema.register(to_type(def, modifiers.map(|a| a.no_resolver).unwrap_or(false)));
   }
 
   schema
@@ -227,6 +168,6 @@ pub(crate) fn create_dumb_schema(blueprint: &Blueprint) -> SchemaBuilder {
 
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
-    create(blueprint)
+    create(blueprint, None)
   }
 }
