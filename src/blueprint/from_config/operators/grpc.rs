@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use prost_reflect::FieldDescriptor;
+
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType, Grpc};
@@ -77,11 +79,14 @@ fn validate_group_by(
 ) -> Valid<(), String> {
   let input_type = &operation.input_type;
   let output_type = &operation.output_type;
-  let output_type = output_type
-    .fields()
-    .find(|f| f.name() == group_by[0])
-    .ok_or(ValidationError::new(format!("field {} not found", group_by[0])))
-    .and_then(|f| JsonSchema::try_from(&f));
+  let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> =
+    None.ok_or(ValidationError::new(format!("field {} not found", group_by[0])));
+  for item in group_by.iter().take(&group_by.len() - 1) {
+    field_descriptor = output_type
+      .get_field_by_json_name(item.as_str())
+      .ok_or(ValidationError::new(format!("field {} not found", item)));
+  }
+  let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
 
   Valid::from(JsonSchema::try_from(input_type))
     .zip(Valid::from(output_type))
