@@ -3,6 +3,7 @@ use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
 use super::Config;
+use crate::blueprint::TypeLike;
 use crate::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -34,7 +35,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -70,7 +71,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -105,7 +106,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -118,7 +119,7 @@ fn config_document(config: &Config) -> ServiceDocument {
               .map(|(name, arg)| {
                 let base_type = if arg.list {
                   async_graphql::parser::types::BaseType::List(Box::new(Type {
-                    nullable: !arg.required,
+                    nullable: !arg.list_type_required(),
                     base: async_graphql::parser::types::BaseType::Named(Name::new(arg.type_of.clone())),
                   }))
                 } else {
@@ -184,6 +185,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     field.const_field.as_ref().map(|d| pos(d.to_directive())),
     field.modify.as_ref().map(|d| pos(d.to_directive())),
     field.graphql.as_ref().map(|d| pos(d.to_directive())),
+    field.grpc.as_ref().map(|d| pos(d.to_directive())),
   ];
 
   directives.into_iter().flatten().collect()

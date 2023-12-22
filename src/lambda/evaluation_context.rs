@@ -3,10 +3,9 @@ use std::time::Duration;
 
 use async_graphql::{Name, SelectionField, ServerError, Value};
 use derive_setters::Setters;
-use once_cell::sync::Lazy;
 use reqwest::header::HeaderMap;
 
-use super::{EmptyResolverContext, GraphQLOperationContext, ResolverContextLike};
+use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -18,14 +17,6 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
 
   // TODO: JS timeout should be read from server settings
   pub timeout: Duration,
-}
-
-static REQUEST_CTX: Lazy<RequestContext> = Lazy::new(RequestContext::default);
-
-impl Default for EvaluationContext<'static, EmptyResolverContext> {
-  fn default() -> Self {
-    Self::new(&REQUEST_CTX, &EmptyResolverContext)
-  }
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
