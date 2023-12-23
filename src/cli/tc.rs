@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use inquire::Confirm;
 use log::Level;
+use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
@@ -51,30 +52,71 @@ pub fn run() -> Result<()> {
 }
 
 pub async fn init(file_path: &str) -> Result<()> {
-  let file_name = ".tailcallrc.graphql";
-  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
-  let tailcallrc_path = Path::new(file_path).join(file_name);
+  let tailcall_rc = ".tailcallrc.graphql";
+  let graphql_rc = ".graphqlrc.yml";  
+  let tailcallrc_data = include_str!("../../examples/.tailcallrc.graphql");
+  let graphql_rc_exists = fs::metadata(format!("{}/{}", file_path, graphql_rc)).is_ok();
+  let path = Path::new(file_path).join(tailcall_rc);
 
-  if let Some(parent) = tailcallrc_path.parent() {
+  if let Some(parent) = path.parent() {
     fs::create_dir_all(parent)?;
   }
 
-  if tailcallrc_path.exists() {
-    let overwrite = Confirm::new(&format!(
-      "File {} already exists. Do you want to overwrite it?",
-      file_name
-    ))
-    .with_default(false)
-    .prompt()?;
+  if !graphql_rc_exists {
+    fs::write(format!("{}/{}", file_path, graphql_rc), "")?;
 
-    if !overwrite {
-      return Ok(());
-    }
+    let graphqlrc = r#"|schema:
+         |- './.tailcallrc.graphql'
+    "#
+    .strip_margin();
+
+    fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
+    Fmt::display(Fmt::success(&format!("Created file .graphqlrc.yml in {}", file_path)));
   }
 
-  fs::write(tailcallrc_path, tailcallrc)?;
+  let tailcall_exists = fs::metadata(format!("{}/{}", file_path, tailcall_rc)).is_ok();
 
-  Fmt::display(Fmt::success(&format!("Created files in {}: {}", file_path, file_name,)));
+  if tailcall_exists {
+    let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", tailcall_rc))
+      .with_default(false)
+      .prompt();
+
+    match confirm {
+      Ok(true) => fs::write(format!("{}/{}", file_path, tailcall_rc), tailcallrc_data)?,
+      Ok(false) => (),
+      Err(e) => return Err(e.into()),
+    };
+  } else {
+    fs::write(format!("{}/{}", file_path, tailcall_rc), tailcallrc_data)?;
+    Fmt::display(Fmt::success(&format!("Created file .tailcallrc.graphql in {}", file_path)));
+  }
+
+  let graphqlrc_path = format!("{}/.graphqlrc.yml", file_path);
+  let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
+
+  if !graphqlrc.contains(tailcall_rc) {
+    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", tailcall_rc))
+      .with_default(false)
+      .prompt();
+
+    match confirm {
+      Ok(true) => {
+        let mut schema_line = graphqlrc
+          .lines()
+          .find(|line| line.contains("schema:"))
+          .unwrap()
+          .to_string();
+
+        schema_line.push_str("\n  - './.tailcallrc.graphql'");
+
+        let updated = graphqlrc.replace("schema:", &schema_line);
+
+        fs::write(graphqlrc_path, updated)?;
+      }
+      Ok(false) => (),
+      Err(e) => return Err(e.into()),
+    }
+  }
 
   Ok(())
 }
