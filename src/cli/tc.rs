@@ -57,13 +57,11 @@ pub fn run() -> Result<()> {
             ));
           }
 
-          match tokio::runtime::Runtime::new()?
-            .block_on(async { blueprint.validate_operations(operations).await })
-            .to_result()
-          {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e.into()),
-          }
+          Ok(
+            tokio::runtime::Runtime::new()?
+              .block_on(async { blueprint.validate_operations(operations).await })
+              .to_result()?,
+          )
         }
         Err(e) => Err(e.into()),
       }
