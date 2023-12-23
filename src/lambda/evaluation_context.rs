@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use async_graphql::{Name, SelectionField, ServerError, Value};
@@ -52,6 +53,10 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     let vars = &self.req_ctx.server.vars;
 
     vars.get(key).map(|v| v.as_str())
+  }
+
+  pub fn vars(&self) -> &BTreeMap<String, String> {
+    &self.req_ctx.server.vars
   }
 
   pub fn add_error(&self, error: ServerError) {

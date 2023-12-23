@@ -1,15 +1,12 @@
 ---
 name: Http with args as body
-runner: fail
 config: !file tests/http/config/args-body.graphql
 
 mock:
   - request:
       url: http://jsonplaceholder.typicode.com/users
       method: POST
-      body:
-        id: 1
-        name: foo
+      body: '{"id":1,"name":"foo"}'
     response:
       body:
         id: 1
@@ -25,4 +22,5 @@ assert:
       body:
         data:
           firstUser:
+            id: 1
             name: foo
