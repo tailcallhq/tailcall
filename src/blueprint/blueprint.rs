@@ -1,4 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
+use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -125,6 +127,12 @@ pub struct InputFieldDefinition {
   pub description: Option<String>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Cache {
+  pub max_age: NonZeroU64,
+  pub hasher: DefaultHasher,
+}
+
 #[derive(Clone, Debug, Setters, Default)]
 pub struct FieldDefinition {
   pub name: String,
@@ -133,6 +141,7 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
+  pub cache: Option<Cache>,
 }
 
 impl FieldDefinition {

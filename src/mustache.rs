@@ -2,10 +2,10 @@ use nom::{Finish, IResult};
 
 use crate::path::{PathGraphql, PathString};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
   Literal(String),
   Expression(Vec<String>),

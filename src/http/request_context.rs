@@ -1,11 +1,14 @@
+use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
+use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, HttpClientOptions};
 use crate::blueprint::Server;
+use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -26,6 +29,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
@@ -48,6 +52,7 @@ impl Default for RequestContext {
       upstream,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
+      cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
@@ -100,6 +105,15 @@ impl RequestContext {
     }
   }
 
+  pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
+    self.cache.get(key)
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
+    self.cache.insert(key, value, ttl)
+  }
+
   pub fn is_batching_enabled(&self) -> bool {
     self.upstream.batch.is_some() && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1)
   }
@@ -115,6 +129,7 @@ impl From<&ServerContext> for RequestContext {
       req_headers: HeaderMap::new(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
+      cache: server_ctx.cache.clone(),
       grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),

@@ -290,6 +290,16 @@ directive @graphQL(
   batch: Boolean
 ) on FIELD_DEFINITION
 
+"""
+The @cache operator enables caching for the query, field or type it is applied to.
+"""
+directive @cache(
+  """
+  Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
+  """
+  maxAge: Int!
+) on FIELD_DEFINITION
+
 enum Method {
   GET
   POST

@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
+use std::num::NonZeroU64;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -151,6 +152,8 @@ pub struct Type {
   pub variants: Option<BTreeSet<String>>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub scalar: bool,
+  #[serde(default)]
+  pub cache: Option<Cache>,
 }
 
 impl Type {
@@ -175,6 +178,12 @@ impl Type {
     }
     Self { fields, ..self.clone() }
   }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Cache {
+  pub max_age: NonZeroU64,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
@@ -249,6 +258,7 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  pub cache: Option<Cache>,
 }
 
 impl Field {

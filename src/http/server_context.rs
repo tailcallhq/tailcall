@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic;
+use async_graphql_value::ConstValue;
 
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
+use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -19,6 +21,7 @@ pub struct ServerContext {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
 }
 
@@ -110,6 +113,7 @@ impl ServerContext {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
+      cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
     }
   }
