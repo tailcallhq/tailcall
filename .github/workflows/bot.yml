@@ -207,14 +207,14 @@ jobs:
           override: true
 
       - name: Restore file
-        uses: actions/cache@v2
+        id: restore_file
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-
-      - name: Fail if no cache
-        run: exit 1
-        if: ${{ !fromJson(steps.restore_file.outputs.cache-hit) }}
+          restore-keys: |
+            criterion_benchmarks_
+            fail-on-cache-miss: true
 
       - name: Run Criterion Benchmarks
         run: |
