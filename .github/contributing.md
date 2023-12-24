@@ -68,7 +68,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
    ```
 
-4. **Check the Results:** If the benchmarks show more than 1% degradation, the script will exit with an error. Please check "benches/benchmark.md" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
+4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/benchmark.md" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
 
 ## Documentation
 

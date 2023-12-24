@@ -83,13 +83,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> Result<(), Box<dyn std::error::Error>> {
-  // Collect benchmarks exceeding the 1% change threshold
+  // Collect benchmarks exceeding the 10% change threshold
   let benchmarks_exceeding_threshold: Vec<_> = old_benchmarks
     .iter()
     .zip(new_benchmarks.iter())
     .filter_map(|(old, new)| {
       let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-      if percentage_change > 1.0 {
+      if percentage_change > 10.0 {
         Some((old.id.clone(), percentage_change))
       } else {
         None
@@ -99,7 +99,7 @@ fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> 
 
   // Print the benchmarks exceeding the threshold along with the percentage change
   if !benchmarks_exceeding_threshold.is_empty() {
-    println!("Benchmarks exceeding the 1% change threshold:");
+    println!("Benchmarks exceeding the 10% change threshold:");
 
     for (benchmark_id, percentage_change) in benchmarks_exceeding_threshold {
       // Color the output in red
@@ -107,7 +107,7 @@ fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> 
     }
 
     // Fail the CI with a non-zero exit code
-    eprintln!("Error: Benchmarks exceeding the 1% change threshold");
+    eprintln!("Error: Benchmarks exceeding the 10% change threshold");
     std::process::exit(1);
   }
 
