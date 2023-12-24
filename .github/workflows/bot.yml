@@ -217,6 +217,7 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/benchmarks.json
+          git fetch
           git checkout main
           cargo criterion --message-format=json > benches/main_benchmarks.json
           rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
