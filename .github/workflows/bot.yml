@@ -211,7 +211,10 @@ jobs:
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-          fail-on-cache-miss: true
+
+      - name: Fail if no cache
+        run: exit 1
+        if: ${{ !fromJson(steps.restore_file.outputs.cache-hit) }}
 
       - name: Run Criterion Benchmarks
         run: |
