@@ -15,26 +15,208 @@ on:
         description: "Branch to run benchmark on"
         required: true
         default: "main"
+
 jobs:
-  example-job:
-    runs-on: ubuntu-latest
+  benchmark:
+    name: Macro Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark') || github.event_name == 'push'
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
-      - name: Print File Content
-        run: cat benches/a.md
+      - uses: actions/checkout@v4
 
-      - name: Render content
-        id: rendered-content
-        uses: chuhlomin/render-template@v1.4
+      - name: Install Stable Toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          template: /github/workspace/benches/a.md
-          vars: |
-            foo: this
-            bar: that
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
 
-      - name: Create comment
-        uses: peter-evans/create-or-update-comment@v3
+      - name: Cache Rust Dependencies
+        uses: actions/cache@v3
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ steps.rendered-content.outputs.result }}
-          reactions: '+1'
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Run Cargo Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Run Tailcall
+        run: |
+          ./target/release/tailcall start ci-benchmark/benchmark.graphql --log-level error &
+
+      - name: Install Nginx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx
+
+      - name: Clean Up
+        run: |
+          sudo rm -rf /etc/nginx/sites-enabled/default
+
+      - name: Copy Nginx Configuration
+        working-directory: ci-benchmark
+        run: |
+          sudo cp nginx.conf /etc/nginx/
+
+      - name: Test Nginx Configuration
+        run: |
+          sudo nginx -t
+
+      - name: Start Nginx
+        run: |
+          sudo systemctl start nginx
+
+      - name: Install Wrk
+        run: |
+          sudo apt-get install -y wrk
+
+      - name: Run Test Query
+        run: |
+          curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
+
+      - name: Warmup Wrk
+        working-directory: ci-benchmark
+        run: |
+          wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql
+
+      - id: run_wrk
+        name: Run Wrk
+        working-directory: ci-benchmark
+        run: |
+          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+
+      - id: convert_wrk_output_markdown
+        name: Convert Output to Markdown
+        working-directory: ci-benchmark
+        run: |
+          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
+
+      - id: cat_md
+        name: Cat Markdown
+        working-directory: ci-benchmark
+        run: |
+          cat wrk-output.md
+
+      - id: get_comment_body
+        name: Get Comment Body
+        working-directory: ci-benchmark
+        run: |
+          body="$(cat wrk-output.md)"
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{github.event.pull_request.head.sha}}
+          body: ${{steps.get_comment_body.outputs.body}}
+
+  lint:
+    name: CI:Lint
+    if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Install Prettier
+        run: npm install --global prettier
+      - name: Install Stable Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+      - name: Cache Rust Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/checkout@v4
+      - name: Run lint script
+        run: ./lint.sh --mode=fix
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: apply lint fixes"
+
+  Cache_Benchmarks:
+    name: Micro Benchmarks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Run Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/main_benchmarks.json
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
+
+      - name: Cache Criterion Benchmarks Json
+        uses: actions/cache@v2
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.sha }}
+          restore-keys: |
+            criterion_benchmarks_
+
+  Criterion_Compare:
+    name: Comparing Micro Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Restore file
+        uses: actions/cache@v2
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run Criterion Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/benchmarks.json
+          git checkout main
+          cargo criterion --message-format=json > benches/main_benchmarks.json
+          rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
