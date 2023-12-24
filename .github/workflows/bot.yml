@@ -160,6 +160,10 @@ jobs:
   Cache_Benchmarks:
     name: Micro Benchmarks
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -174,7 +178,8 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v2
@@ -183,3 +188,42 @@ jobs:
           key: criterion_benchmarks_${{ github.sha }}
           restore-keys: |
             criterion_benchmarks_
+
+  Criterion_Compare:
+    name: Comparing Micro Benchmarks
+    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Restore file
+        uses: actions/cache@v2
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run Criterion Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/benchmarks.json
+          rust-script benches/json_to_md benches/benchmarks.json benches/change_benchmarks.md
+
+      - name: Print Criterion Benchmarks
+        run: cat benches/change_benchmarks.md
+
+      - name: Print Benchmark Comparision
+        run: rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json table
+
+      - name: Check Degradation
+        run: rust-script benches/criterion_compare  benches/main_benchmarks.json benches/benchmarks.json check
