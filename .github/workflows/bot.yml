@@ -207,7 +207,8 @@ jobs:
           override: true
 
       - name: Restore file
-        uses: actions/cache@v2
+        id: restore_file
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
