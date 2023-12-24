@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
+use std::num::NonZeroU64;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
@@ -151,6 +152,8 @@ pub struct Type {
   pub variants: Option<BTreeSet<String>>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub scalar: bool,
+  #[serde(default)]
+  pub cache: Option<Cache>,
 }
 
 impl Type {
@@ -175,6 +178,12 @@ impl Type {
     }
     Self { fields, ..self.clone() }
   }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Cache {
+  pub max_age: NonZeroU64,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
@@ -241,17 +250,24 @@ pub struct Field {
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
   #[serde(rename = "const", default, skip_serializing_if = "is_default")]
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  pub cache: Option<Cache>,
 }
 
 impl Field {
   pub fn has_resolver(&self) -> bool {
-    self.http.is_some() || self.unsafe_operation.is_some() || self.const_field.is_some() || self.graphql.is_some()
+    self.http.is_some()
+      || self.unsafe_operation.is_some()
+      || self.const_field.is_some()
+      || self.graphql.is_some()
+      || self.grpc.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -267,10 +283,15 @@ impl Field {
     if self.const_field.is_some() {
       directives.push(Const::trace_name())
     }
+    if self.grpc.is_some() {
+      directives.push(Grpc::trace_name())
+    }
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
     self.http.as_ref().is_some_and(|http| !http.group_by.is_empty())
+      || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
+      || self.grpc.as_ref().is_some_and(|grpc| !grpc.group_by.is_empty())
   }
   pub fn to_list(mut self) -> Self {
     self.list = true;
@@ -363,6 +384,22 @@ pub struct Http {
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
+  pub group_by: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Grpc {
+  pub service: String,
+  pub method: String,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub body: Option<String>,
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+  pub base_url: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub headers: KeyValues,
+  pub proto_path: String,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
 }
 

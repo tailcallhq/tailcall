@@ -1,4 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
+use std::hash::Hash;
 
 use regex::Regex;
 
@@ -235,8 +237,17 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
   })
 }
 
-fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|(_, field, _, name), _| {
+fn update_args<'a>(
+  hasher: DefaultHasher,
+) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+  TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, name), _| {
+    let mut hasher = hasher.clone();
+    name.hash(&mut hasher);
+    let cache = field
+      .cache
+      .as_ref()
+      .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
+
     // TODO! assert type name
     Valid::from_iter(field.args.iter(), |(name, arg)| {
       Valid::succeed(InputFieldDefinition {
@@ -253,6 +264,7 @@ fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
+      cache,
     })
   })
 }
@@ -323,8 +335,12 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
-    update_args()
+    let mut hasher = DefaultHasher::new();
+    object_name.hash(&mut hasher);
+
+    update_args(hasher)
       .and(update_http().trace(config::Http::trace_name().as_str()))
+      .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
@@ -362,9 +378,11 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             doc: None,
             modify: source_field.modify.clone(),
             http: source_field.http.clone(),
+            grpc: source_field.grpc.clone(),
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
+            cache: source_field.cache.clone(),
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

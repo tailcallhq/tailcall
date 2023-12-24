@@ -4,7 +4,7 @@ schema
   query: Query
 }
 
-type Query {
+type Query @cache(maxAge: 30000) {
   posts: [Post] @http(path: "/posts")
 }
 

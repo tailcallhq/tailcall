@@ -52,8 +52,17 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
     let ctx = self;
 
-    if path.len() < 2 {
+    if path.is_empty() {
       return None;
+    }
+
+    if path.len() == 1 {
+      return match path[0].as_ref() {
+        "value" => convert_value(ctx.path_value(&[] as &[T])?),
+        "args" => Some(json!(ctx.graphql_ctx.args()?).to_string().into()),
+        "vars" => Some(json!(ctx.vars()).to_string().into()),
+        _ => None,
+      };
     }
 
     path.split_first().and_then(|(head, tail)| match head.as_ref() {
@@ -184,6 +193,12 @@ mod tests {
       );
       assert_eq!(EVAL_CTX.path_string(&["value", "missing"]), None);
       assert_eq!(EVAL_CTX.path_string(&["value", "nested", "missing"]), None);
+      assert_eq!(
+        EVAL_CTX.path_string(&["value"]),
+        Some(Cow::Borrowed(
+          r#"{"bool":true,"nested":{"existing":"nested-test"},"number":2,"str":"str-test"}"#
+        ))
+      );
 
       // args
       assert_eq!(
@@ -196,6 +211,12 @@ mod tests {
       );
       assert_eq!(EVAL_CTX.path_string(&["args", "missing"]), None);
       assert_eq!(EVAL_CTX.path_string(&["args", "nested", "missing"]), None);
+      assert_eq!(
+        EVAL_CTX.path_string(&["args"]),
+        Some(Cow::Borrowed(
+          r#"{"nested":{"existing":"nested-test"},"root":"root-test"}"#
+        ))
+      );
 
       // headers
       assert_eq!(
@@ -207,6 +228,10 @@ mod tests {
       // vars
       assert_eq!(EVAL_CTX.path_string(&["vars", "existing"]), Some(Cow::Borrowed("var")));
       assert_eq!(EVAL_CTX.path_string(&["vars", "missing"]), None);
+      assert_eq!(
+        EVAL_CTX.path_string(&["vars"]),
+        Some(Cow::Borrowed(r#"{"existing":"var"}"#))
+      );
     }
 
     #[test]

@@ -68,7 +68,7 @@ fn print_table(benchmarks: &[Benchmark]) {
 
   // Add rows for each benchmark and its typical metric
   for benchmark in benchmarks {
-    // Round off the numbers for typical metric
+    // Round off the numbers for the typical metric
     let rounded_typical = benchmark.typical.round();
 
     // Format the benchmark name
@@ -90,10 +90,17 @@ fn print_table(benchmarks: &[Benchmark]) {
     ));
   }
 
+  // Get the output file path from the command-line arguments
+  let args: Vec<String> = env::args().collect();
+  if args.len() != 3 {
+    eprintln!("Usage: {} <input_file_path> <output_file_path>", args[0]);
+    std::process::exit(1);
+  }
+  let _output_file_path = &args[2];
+
   // Write the Markdown table to the file
-  let file_path = "benches/main_benchmarks.md";
-  fs::write(file_path, markdown_table).expect("Failed to write Markdown table to file");
-  println!("Markdown table (Typical values) written to {}", file_path);
+  fs::write(_output_file_path, markdown_table).expect("Failed to write Markdown table to file");
+  println!("Markdown table (Typical values) written to {}", _output_file_path);
 }
 
 fn main() {
@@ -108,7 +115,6 @@ fn main() {
 
   // Extract the input and output file names from command-line arguments
   let input_file_path = &args[1];
-  let _output_file_path = &args[2]; // <-- Add an underscore to indicate it's intentionally unused
 
   // Attempt to parse the JSON file and print the table
   match parse_json(input_file_path) {
@@ -117,12 +123,5 @@ fn main() {
       eprintln!("Error: {}", err);
       std::process::exit(1);
     }
-  }
-
-  // Optionally, you can also print the table to the specified output file
-  // Instead of printing to the console, write the Markdown table to the file
-  if let Err(err) = parse_json(input_file_path) {
-    eprintln!("Error: {}", err);
-    std::process::exit(1);
   }
 }
