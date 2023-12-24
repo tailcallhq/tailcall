@@ -15,7 +15,7 @@ on:
         description: "Branch to run benchmark on"
         required: true
         default: "main"
-
+ 
 jobs:
   benchmark:
     name: Macro Benchmarks
