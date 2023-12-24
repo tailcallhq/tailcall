@@ -1,0 +1,12 @@
+schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{args}}")
+}
+
+type User {
+  id: Int
+  name: String
+}
