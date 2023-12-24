@@ -58,9 +58,9 @@ hyper-rustls = "0.24.2"
 rustls = "0.21.9"
 rustls-pemfile = "1.0.4"
 fnv = "1.0.7"
-futures-channel = { version = "0.3.29" }
+futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.2" }
-futures-util = { version = "0.3.29" }
+futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 ttl_cache = "0.5.1"
