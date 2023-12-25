@@ -71,13 +71,14 @@ autolabeler:
       - '/chore\/.+/'
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
-      - '/renovate\/.+/'
+      - '!/renovate\//'
   - label: "renovate"
     branch:
       - '/renovate\/.+/'
   - label: "bug"
     branch:
       - '/fix\/.+/'
+      - '!/renovate\//'
     title:
       - "/fix/i"
   - label: "enhancement"
