@@ -206,6 +206,19 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Restore latest pr cache file before merge
+        id: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
+        uses: actions/cache@v2
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_cfa2ca0e5c63d42504f3d9ee3853112428f1f6fd
+          fail-on-cache-miss: true
+
+      - name: Print latesst 
+        run: |
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
+
       - name: Restore latest cache file
         id: criterion_benchmarks_710f769a58f6e2b234c8607cd5bc83f03fe30cd7
         uses: actions/cache@v2
@@ -217,19 +230,6 @@ jobs:
       - name: Print latesst 
         run: |
           cargo install cargo-criterion rust-script
-          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
-          cat benches/main_benchmarks.md
-
-      - name: Restore latest pr cache file before merge
-        id: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
-        uses: actions/cache@v2
-        with:
-          path: benches/main_benchmarks.json
-          key: criterion_benchmarks_cfa2ca0e5c63d42504f3d9ee3853112428f1f6fd
-          fail-on-cache-miss: true
-
-      - name: Print latesst 
-        run: |
           rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
