@@ -206,11 +206,11 @@ jobs:
           override: true
 
       - name: Restore latest pr cache file before merge
-        id: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
+        id: criterion_benchmarks_de5ea0ee2afc9b612c658852f65a9500d7964bea
         uses: actions/cache@v2
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
+          key: criterion_benchmarks_de5ea0ee2afc9b612c658852f65a9500d7964bea
           fail-on-cache-miss: true
 
       - name: Print cache 
