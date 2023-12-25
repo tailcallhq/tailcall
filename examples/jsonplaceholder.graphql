@@ -1,6 +1,6 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+@server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+@upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, proxy: {url: "http://localhost:3000"}) {
   query: Query
 }
 
