@@ -231,5 +231,4 @@ jobs:
 
       - name: Print cache 
         run: |
-          rust-script benches/json_to_md benches/main_benchmarks.json benches/change_benchmarks.md
           cat benches/main_benchmarks.json
