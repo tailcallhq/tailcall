@@ -216,7 +216,7 @@ jobs:
       - name: Print cache 
         run: |
           cargo install cargo-criterion rust-script
-          rust-script benches/json_to_md benches/benchmarks.json benches/main_benchmarks.md
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
       - name: Delete the restored cache
@@ -234,5 +234,5 @@ jobs:
 
       - name: Print cache 
         run: |
-          rust-script benches/json_to_md benches/benchmarks.json benches/change_benchmarks.md
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/change_benchmarks.md
           cat benches/change_benchmarks.md
