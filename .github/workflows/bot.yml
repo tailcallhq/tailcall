@@ -211,7 +211,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          key: criterion_benchmarks_28b610d79741fc6be7ad42e0d55743c51a47a764
           fail-on-cache-miss: true
 
       - name: Run Criterion Benchmarks
