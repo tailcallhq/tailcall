@@ -216,6 +216,7 @@ jobs:
 
       - name: Print latesst 
         run: |
+          cargo install cargo-criterion rust-script
           rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
@@ -229,7 +230,5 @@ jobs:
 
       - name: Print latesst 
         run: |
-          cargo install cargo-criterion rust-script
           rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
           cat benches/main_benchmarks.md
-
