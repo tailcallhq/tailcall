@@ -1,7 +1,7 @@
+use cli::server::Server;
 use reqwest::Client;
 use serde_json::json;
-use tailcall::config::Config;
-use tailcall::http::Server;
+use tc_core::config::Config;
 
 async fn test_server(configs: &[&str], url: &str) {
   let config = Config::read_from_files(configs.iter()).await.unwrap();

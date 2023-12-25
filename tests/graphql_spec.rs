@@ -2,6 +2,7 @@ use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
 use std::path::PathBuf;
+use std::pin;
 use std::sync::{Arc, Once};
 
 use async_graphql::parser::types::TypeSystemDefinition;
@@ -13,12 +14,12 @@ use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
-use tailcall::directive::DirectiveCodec;
-use tailcall::http::{RequestContext, ServerContext};
-use tailcall::print_schema;
-use tailcall::valid::{Cause, Valid};
+use tc_core::blueprint::Blueprint;
+use tc_core::config::Config;
+use tc_core::directive::DirectiveCodec;
+use tc_core::http::{RequestContext, ServerContext};
+use tc_core::print_schema;
+use tc_core::valid::{Cause, Valid};
 
 static INIT: Once = Once::new();
 
@@ -266,7 +267,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
-    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
+    let actual = print_schema::print_schema(Blueprint::try_from(&config).unwrap().to_schema());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
       assert_ne!(actual, expected, "ClientSDL: {}", spec.path.display());

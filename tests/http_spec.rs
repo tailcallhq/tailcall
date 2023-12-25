@@ -16,10 +16,10 @@ use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tc_core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use tc_core::blueprint::Blueprint;
+use tc_core::config::{Config, Source};
+use tc_core::http::{handle_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -40,7 +40,7 @@ struct APIRequest {
   #[serde(default)]
   headers: BTreeMap<String, String>,
   #[serde(default)]
-  body: serde_json::Value,
+  body: Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -51,7 +51,7 @@ struct APIResponse {
   #[serde(default)]
   headers: BTreeMap<String, String>,
   #[serde(default)]
-  body: serde_json::Value,
+  body: Value,
 }
 fn default_status() -> u16 {
   200

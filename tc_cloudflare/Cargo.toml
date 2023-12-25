@@ -1,0 +1,25 @@
+[package]
+name = "tc-cloudflare"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.wasm-pack.profile.release]
+opt-level = "z"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hyper = { version = "0.14", default-features = false }
+worker = "0.0.18"
+lazy_static = { version = "1.4.0", features = [] }
+lru = "0.12.1"
+wasm-timer = "0.2.5"
+tokio = {features = ["rt"], version = "1.35.1"}
+tc_core = {path = "../tc_core", default-features = false}
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+opt-level = 'z'
