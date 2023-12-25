@@ -213,16 +213,16 @@ jobs:
           key: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
           fail-on-cache-miss: true
 
-      - name: Print latesst 
+      - name: Print cache 
         run: |
           cargo install cargo-criterion rust-script
-          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
+          rust-script benches/json_to_md benches/benchmarks.json benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
-      - name: Print latesst 
+      - name: Delete the restored cache
         run: |
-          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
-          cat benches/main_benchmarks.md
+          rm -rf benches/main_benchmarks.json
+          rm benches/main_benchmarks.md
 
       - name: Restore latest cache file
         id: criterion_benchmarks_710f769a58f6e2b234c8607cd5bc83f03fe30cd7
@@ -232,7 +232,7 @@ jobs:
           key: criterion_benchmarks_710f769a58f6e2b234c8607cd5bc83f03fe30cd7
           fail-on-cache-miss: true
 
-      - name: Delete the restored cache
+      - name: Print cache 
         run: |
-          rm -rf benches/main_benchmarks.json
-          rm benches/main_benchmarks.md
+          rust-script benches/json_to_md benches/benchmarks.json benches/change_benchmarks.md
+          cat benches/change_benchmarks.md
