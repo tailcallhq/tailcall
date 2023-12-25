@@ -215,14 +215,11 @@ jobs:
 
       - name: Print cache 
         run: |
-          cargo install cargo-criterion rust-script
-          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
-          cat benches/main_benchmarks.md
+          cat benches/main_benchmarks.json
 
       - name: Delete the restored cache
         run: |
           rm -rf benches/main_benchmarks.json
-          rm benches/main_benchmarks.md
 
       - name: Restore latest cache file
         id: criterion_benchmarks_d472628e53dfe09ab8d4ac7cec120c050197baa2
@@ -235,4 +232,4 @@ jobs:
       - name: Print cache 
         run: |
           rust-script benches/json_to_md benches/main_benchmarks.json benches/change_benchmarks.md
-          cat benches/change_benchmarks.md
+          cat benches/main_benchmarks.json
