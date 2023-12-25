@@ -204,11 +204,11 @@ jobs:
           override: true
 
       - name: Restore latest pr cache file before merge
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-          fail-on-cache-miss: true
+        fail-on-cache-miss: true
 
       - name: Print cache 
         run: |
