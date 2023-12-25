@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use async_graphql::{Name, SelectionField, ServerError, Value};
+use async_graphql::{SelectionField, ServerError, Value};
 use derive_setters::Setters;
 use reqwest::header::HeaderMap;
 
@@ -118,12 +118,13 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
   Cow::Owned(format!("({})", args))
 }
 
+// TODO: this is the same code as src/json/json_like.rs::get_path
 pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
   let mut value = Some(input);
   for name in path {
     match value {
       Some(Value::Object(map)) => {
-        value = map.get(&Name::new(name));
+        value = map.get(name.as_ref());
       }
 
       Some(Value::List(list)) => {
