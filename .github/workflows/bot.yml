@@ -211,7 +211,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_cfa2ca0e5c63d42504f3d9ee3853112428f1f6fd
+          key: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
           fail-on-cache-miss: true
 
       - name: Print latesst 
@@ -225,7 +225,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_28b610d79741fc6be7ad42e0d55743c51a47a764
+          key: criterion_benchmarks_710f769a58f6e2b234c8607cd5bc83f03fe30cd7
           fail-on-cache-miss: true
 
       - name: Print latesst 
