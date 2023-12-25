@@ -189,9 +189,8 @@ jobs:
           restore-keys: |
             criterion_benchmarks_
 
-  Criterion_Compare:
-    name: Comparing Micro Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
+  Checking_Cache:
+    name: Checking Cache Values
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
