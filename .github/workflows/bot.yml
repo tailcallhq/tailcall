@@ -160,6 +160,10 @@ jobs:
   Cache_Benchmarks:
     name: Micro Benchmarks
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -174,12 +178,11 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json
+          rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
-          restore-keys: |
-            criterion_benchmarks_
