@@ -156,7 +156,7 @@ impl JsonLike for async_graphql::Value {
           let index = token.as_ref().parse::<usize>().ok()?;
           seq.get(index)?
         }
-        ConstValue::Object(map) => map.get(&async_graphql::Name::new(token))?,
+        ConstValue::Object(map) => map.get(token.as_ref())?,
         _ => return None,
       };
     }
