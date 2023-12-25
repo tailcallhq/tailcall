@@ -161,9 +161,6 @@ jobs:
     name: Micro Benchmarks
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    permissions:
-      pull-requests: write
-      contents: write
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -182,12 +179,10 @@ jobs:
           cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
-          restore-keys: |
-            criterion_benchmarks_
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
@@ -207,7 +202,7 @@ jobs:
           override: true
 
       - name: Restore file
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
