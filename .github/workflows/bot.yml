@@ -210,11 +210,7 @@ jobs:
           uses: actions/cache@v2
           with:
             path: benches/main_benchmarks.json
-            key: criterion_benchmarks_${{ github.event.before }}
-
-        - name: Print cache key
-          run: |
-            echo "Cache key: ${{ steps.criterion_benchmarks_restore.outputs.key }}"
+            key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
   
         - name: Print restored cache
           run: |
