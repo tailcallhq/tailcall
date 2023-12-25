@@ -216,8 +216,8 @@ jobs:
 
       - name: Print latesst 
         run: |
+          cargo install cargo-criterion rust-script
           rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
-
 
       - name: Restore latest pr cache file before merge
         id: criterion_benchmarks_3d12440db60d174ae5483a5ad8ef138334b96616
@@ -230,4 +230,3 @@ jobs:
       - name: Print latesst 
         run: |
           rust-script benches/json_to_md benches/main_benchmarks.json benches/main_benchmarks.md
-
