@@ -189,35 +189,35 @@ jobs:
           restore-keys: |
             criterion_benchmarks_
 
-Checking_Cache:
-  name: Checking Cache Values
-  runs-on: ubuntu-latest
-  permissions:
-    pull-requests: write
-    contents: write
-  steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+  Checking_Cache:
+    name: Checking Cache Values
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+        - name: Check out code
+          uses: actions/checkout@v2
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
+        - name: Install Rust
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: stable
+            override: true
 
-    - name: Restore latest pr cache file before merge
-      id: criterion_benchmarks_restore
-      uses: actions/cache@v2
-      with:
-        path: benches/main_benchmarks.json
-        key: criterion_benchmarks_${{ github.event.before }}
-        restore-keys: |
-          criterion_benchmarks_
+        - name: Restore latest pr cache file before merge
+          id: criterion_benchmarks_restore
+          uses: actions/cache@v2
+          with:
+            path: benches/main_benchmarks.json
+            key: criterion_benchmarks_${{ github.event.before }}
+            restore-keys: |
+              criterion_benchmarks_
 
-    - name: Print cache key
-      run: |
-        echo "Cache key: ${{ steps.criterion_benchmarks_restore.outputs.key }}"
-
-    - name: Print restored cache
-      run: |
-        cat benches/main_benchmarks.json
+        - name: Print cache key
+          run: |
+            echo "Cache key: ${{ steps.criterion_benchmarks_restore.outputs.key }}"
+  
+        - name: Print restored cache
+          run: |
+            cat benches/main_benchmarks.json
