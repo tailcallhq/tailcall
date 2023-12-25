@@ -71,7 +71,6 @@ autolabeler:
       - '/chore\/.+/'
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
-      - '/renovate\/.+/'
   - label: "renovate"
     branch:
       - '/renovate\/.+/'
