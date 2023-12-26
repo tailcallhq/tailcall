@@ -213,7 +213,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response> {
+  async fn execute(&self, req: reqwest::Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 

@@ -13,6 +13,8 @@ use crate::grpc::protobuf::ProtobufOperation;
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
   async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response>;
+  #[cfg(feature = "default")]
+  async fn execute_raw(&self, req: Request) -> anyhow::Result<reqwest::Response>;
 }
 
 #[async_trait::async_trait]
@@ -31,13 +33,18 @@ impl HttpClient for DefaultHttpClient {
       }
     };
   }
+
+  async fn execute_raw(&self, request: Request) -> anyhow::Result<reqwest::Response> {
+    log::info!("{} {} {:?} {:?}", request.method(), request.url(), request.version(), request.headers());
+    Ok(self.client.execute(request).await?.error_for_status()?)
+  }
 }
 
 impl DefaultHttpClient {
   #[cfg(feature = "default")]
   async fn tc_execute(&self, request: Request) -> anyhow::Result<Response> {
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response = self.execute_raw(request).await?;
+    let response = self.client.execute(request).await?;
     Response::from_response(response, None).await
   }
   async fn wasm_execute(client: ClientWithMiddleware, request: Request) -> anyhow::Result<Response> {
@@ -47,7 +54,7 @@ impl DefaultHttpClient {
   #[cfg(feature = "default")]
   async fn tc_execute_grpc(&self, request: Request, operation: &ProtobufOperation) -> anyhow::Result<Response> {
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response = self.execute_raw(request).await?;
+    let response = self.client.execute(request).await?;
     Response::from_response(response, Some(operation.clone())).await
   }
   async fn wasm_execute_grpc(
