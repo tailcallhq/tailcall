@@ -23,13 +23,17 @@ impl HttpClient for DefaultHttpClient {
     return match operation {
       None => {
         #[cfg(feature = "default")]
-        return self.tc_execute(req).await;
-        async_std::task::spawn_local(Self::wasm_execute(self.client.clone(), req)).await
+        let response = self.tc_execute(req).await;
+        #[cfg(not(feature = "default"))]
+        let response = async_std::task::spawn_local(Self::wasm_execute(self.client.clone(), req)).await;
+        response
       }
       Some(operation) => {
         #[cfg(feature = "default")]
-        return self.tc_execute_grpc(req, operation).await;
-        async_std::task::spawn_local(Self::wasm_execute_grpc(self.client.clone(), req, operation.clone())).await
+        let response =  self.tc_execute_grpc(req, operation).await;
+        #[cfg(not(feature = "default"))]
+        let response = async_std::task::spawn_local(Self::wasm_execute_grpc(self.client.clone(), req, operation.clone())).await;
+        response
       }
     };
   }
@@ -47,6 +51,7 @@ impl DefaultHttpClient {
     let response = self.client.execute(request).await?;
     Response::from_response(response, None).await
   }
+  #[cfg(not(feature = "default"))]
   async fn wasm_execute(client: ClientWithMiddleware, request: Request) -> anyhow::Result<Response> {
     let response = client.execute(request).await?.error_for_status()?;
     Response::from_response(response, None).await
@@ -57,6 +62,7 @@ impl DefaultHttpClient {
     let response = self.client.execute(request).await?;
     Response::from_response(response, Some(operation.clone())).await
   }
+  #[cfg(not(feature = "default"))]
   async fn wasm_execute_grpc(
     client: ClientWithMiddleware,
     request: Request,
