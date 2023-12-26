@@ -1,4 +1,4 @@
-use std::net::{SocketAddr, Ipv4Addr, IpAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use super::ServerContext;
