@@ -9,7 +9,7 @@ type Query {
       service: "NewsService"
       method: "GetAllNews"
       baseURL: "http://localhost:50051"
-      protoPath: "src/grpc/tests/news.proto"
+      protoPath: "tc_core/src/grpc/tests/news.proto"
     )
   newsById(news: NewsInput!): News!
     @grpc(
@@ -17,7 +17,7 @@ type Query {
       method: "GetNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
-      protoPath: "src/grpc/tests/news.proto"
+      protoPath: "tc_core/src/grpc/tests/news.proto"
     )
   newsByIdBatch(news: NewsInput!): News!
     @grpc(
@@ -25,7 +25,7 @@ type Query {
       method: "GetMultipleNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
-      protoPath: "src/grpc/tests/news.proto"
+      protoPath: "tc_core/src/grpc/tests/news.proto"
       groupBy: ["news", "id"]
     )
 }

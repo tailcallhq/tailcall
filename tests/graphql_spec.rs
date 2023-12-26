@@ -2,7 +2,6 @@ use std::fmt::Debug;
 #[cfg(test)]
 use std::fs;
 use std::path::PathBuf;
-use std::pin;
 use std::sync::{Arc, Once};
 
 use async_graphql::parser::types::TypeSystemDefinition;
