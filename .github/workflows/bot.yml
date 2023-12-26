@@ -160,6 +160,9 @@ jobs:
   Cache_Benchmarks:
     name: Micro Benchmarks
     if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
