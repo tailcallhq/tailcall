@@ -30,7 +30,9 @@ impl OperationSpec {
       if path.is_file() && path.extension().unwrap_or_default() == "graphql" {
         let contents = fs::read_to_string(path.clone())?;
 
-        for component in contents.split("#>") {}
+        for component in contents.split("#>") {
+          println!("{}", component);
+        }
       }
     }
     Ok(vec![])
