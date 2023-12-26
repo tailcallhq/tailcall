@@ -33,9 +33,9 @@ impl HttpClient for DefaultHttpClient {
       }
     };
   }
-
+  #[cfg(feature = "default")]
   async fn execute_raw(&self, request: Request) -> anyhow::Result<reqwest::Response> {
-    log::info!("{} {} {:?} {:?}", request.method(), request.url(), request.version(), request.headers());
+    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
     Ok(self.client.execute(request).await?.error_for_status()?)
   }
 }
