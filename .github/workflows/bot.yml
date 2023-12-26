@@ -159,6 +159,10 @@ jobs:
 
   Cache_Benchmarks:
     name: Micro Benchmarks
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -177,9 +181,7 @@ jobs:
           rust-script benches/parse_json_benchmark benches/main_benchmarks.json
 
       - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
-          restore-keys: |
-            criterion_benchmarks_
