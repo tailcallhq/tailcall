@@ -19,6 +19,7 @@ use serde_json::Value;
 use tc_core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tc_core::blueprint::Blueprint;
 use tc_core::config::{Config, Source};
+use tc_core::grpc::protobuf::ProtobufOperation;
 use tc_core::http::{handle_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
@@ -212,7 +213,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 

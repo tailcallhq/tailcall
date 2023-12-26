@@ -31,7 +31,7 @@ impl ConfigReader {
     }
     Ok(config)
   }
-
+  #[cfg(feature = "default")]
   async fn default_read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
     for path in &self.file_paths {

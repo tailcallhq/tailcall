@@ -43,6 +43,7 @@ lru = { version = "0.12.1" }
 num_cpus = "1.16.0"
 
 http-cache-reqwest = { version = "0.12.0", features = ["manager-moka"], default-features = false, optional = true}
+async-std = { version = "1.12.0",features = ["unstable","wasm-bindgen-futures"] }
 
 [features]
 default = ["tokio/fs","http-cache-reqwest"]

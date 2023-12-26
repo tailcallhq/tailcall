@@ -85,7 +85,9 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-    *req.version_mut() = reqwest::Version::HTTP_2;
+    #[cfg(feature = "default")]
+    set_version(req.version_mut());
+    // *req.version_mut() = reqwest::Version::HTTP_2;
     req.headers_mut().extend(self.headers.clone());
 
     Ok(create_grpc_request(
@@ -94,6 +96,10 @@ impl RenderedRequestTemplate {
       self.operation.convert_input(self.body.as_str())?,
     ))
   }
+}
+#[cfg(feature = "default")]
+fn set_version(version: &mut reqwest::Version) {
+  *version = reqwest::Version::HTTP_2;
 }
 
 #[cfg(test)]

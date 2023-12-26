@@ -202,7 +202,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx
       .req_ctx
       .universal_http_client
-      .execute(req)
+      .execute(req, None)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )

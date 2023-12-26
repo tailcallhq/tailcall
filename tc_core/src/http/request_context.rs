@@ -6,7 +6,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, HttpClientOptions};
+use super::DefaultHttpClient;
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
@@ -45,7 +45,7 @@ impl Default for RequestContext {
     #[cfg(feature = "default")]
     let http2_only_client = Arc::new(DefaultHttpClient::with_options(
       &upstream,
-      HttpClientOptions { http2_only: true },
+      super::HttpClientOptions { http2_only: true },
     ));
     Self {
       req_headers: HeaderMap::new(),

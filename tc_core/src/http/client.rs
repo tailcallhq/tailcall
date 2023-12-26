@@ -1,30 +1,62 @@
+#[cfg(feature = "default")]
 use std::time::Duration;
 
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use reqwest::Client;
+use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::Response;
 use crate::config::{self, Upstream};
+use crate::grpc::protobuf::ProtobufOperation;
 
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response>;
+  async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response>;
 }
 
 #[async_trait::async_trait]
 impl HttpClient for DefaultHttpClient {
-  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
-    let response = self.execute_raw(request).await?;
-    let response = Response::from_response(response).await?;
-    Ok(response)
+  async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response> {
+    return match operation {
+      None => {
+        #[cfg(feature = "default")]
+        return self.tc_execute(req).await;
+        async_std::task::spawn_local(Self::wasm_execute(self.client.clone(), req)).await
+      }
+      Some(operation) => {
+        #[cfg(feature = "default")]
+        return self.tc_execute_grpc(req, operation).await;
+        async_std::task::spawn_local(Self::wasm_execute_grpc(self.client.clone(), req, operation.clone())).await
+      }
+    };
   }
+}
 
-  async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+impl DefaultHttpClient {
+  #[cfg(feature = "default")]
+  async fn tc_execute(&self, request: Request) -> anyhow::Result<Response> {
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    Ok(self.client.execute(request).await?.error_for_status()?)
+    let response = self.execute_raw(request).await?;
+    Response::from_response(response, None).await
+  }
+  async fn wasm_execute(client: ClientWithMiddleware, request: Request) -> anyhow::Result<Response> {
+    let response = client.execute(request).await?.error_for_status()?;
+    Response::from_response(response, None).await
+  }
+  #[cfg(feature = "default")]
+  async fn tc_execute_grpc(&self, request: Request, operation: &ProtobufOperation) -> anyhow::Result<Response> {
+    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
+    let response = self.execute_raw(request).await?;
+    Response::from_response(response, Some(operation.clone())).await
+  }
+  async fn wasm_execute_grpc(
+    client: ClientWithMiddleware,
+    request: Request,
+    operation: ProtobufOperation,
+  ) -> anyhow::Result<Response> {
+    let response = client.execute(request).await?.error_for_status()?;
+    Response::from_response(response, Some(operation)).await
   }
 }
 
@@ -47,11 +79,11 @@ pub struct HttpClientOptions {
 }
 
 impl DefaultHttpClient {
-  pub fn new(upstream: &Upstream) -> Self {
+  pub fn new(_upstream: &Upstream) -> Self {
     #[cfg(target_arch = "wasm32")]
     return Self::wasm_client();
     #[cfg(feature = "default")]
-    Self::with_options(upstream, HttpClientOptions::default())
+    Self::with_options(_upstream, HttpClientOptions::default())
   }
   #[cfg(target_arch = "wasm32")]
   pub fn wasm_client() -> Self {

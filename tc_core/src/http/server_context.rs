@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
+use super::{DataLoaderRequest, DefaultHttpClient, HttpClient};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -31,7 +31,7 @@ impl ServerContext {
     #[cfg(feature = "default")]
     let http2_only_client = Arc::new(DefaultHttpClient::with_options(
       &blueprint.upstream,
-      HttpClientOptions { http2_only: true },
+      super::HttpClientOptions { http2_only: true },
     ));
     #[cfg(target_arch = "wasm32")]
     let http2_only_client = Arc::new(DefaultHttpClient::default());
