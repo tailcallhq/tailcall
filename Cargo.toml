@@ -8,12 +8,12 @@ name = "tailcall"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0.77"
+mimalloc = { version = "0.1.39", default-features = false }
 tc_core = { path = "tc_core" }
 cli = { path = "tc_cli" }
 mini-v8 = { version = "0.4.1", optional = true }
-anyhow = "1.0.76"
 exitcode = "1.1.2"
-mimalloc = { version = "0.1.39", default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"
