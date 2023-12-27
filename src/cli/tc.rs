@@ -23,9 +23,10 @@ pub fn run() -> Result<()> {
   let short_env_filter_var_name = "TC_LOG_LEVEL";
 
   // Check if TAILCALL_LOG_LEVEL is defined, otherwise use TC_LOG_LEVEL
-  let filter_env_name = match env::var(long_env_filter_var_name) {
-    Ok(_) => long_env_filter_var_name,
-    Err(_) => short_env_filter_var_name,
+  let filter_env_name = if env::var(long_env_filter_var_name).is_ok() {
+    long_env_filter_var_name
+  } else {
+    short_env_filter_var_name
   };
 
   // use the log level from the env if there is one, othwerise use the default.
