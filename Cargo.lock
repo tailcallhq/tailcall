@@ -3469,7 +3469,6 @@ dependencies = [
  "serde_yaml",
  "stripmargin",
  "tc_core",
- "thiserror",
  "tokio",
  "url",
 ]
