@@ -88,5 +88,5 @@ async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::
 }
 
 fn conv_err<T: std::fmt::Display>(e: T) -> Error {
-  Error::from(format!("{}", e.to_string()))
+  Error::from(format!("{}", e))
 }
