@@ -30,9 +30,10 @@ impl HttpClient for DefaultHttpClient {
       }
       Some(operation) => {
         #[cfg(feature = "default")]
-        let response =  self.tc_execute_grpc(req, operation).await;
+        let response = self.tc_execute_grpc(req, operation).await;
         #[cfg(not(feature = "default"))]
-        let response = async_std::task::spawn_local(Self::wasm_execute_grpc(self.client.clone(), req, operation.clone())).await;
+        let response =
+          async_std::task::spawn_local(Self::wasm_execute_grpc(self.client.clone(), req, operation.clone())).await;
         response
       }
     };
