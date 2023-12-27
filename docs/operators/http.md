@@ -1,6 +1,5 @@
 ---
 title: "@http"
-sidebar_position: 3
 ---
 
 This **@http** operator serves as an indication of a field or node that is underpinned by a REST API. For Example:
