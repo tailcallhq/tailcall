@@ -1,6 +1,5 @@
 ---
 title: "@server"
-sidebar_position: 1
 ---
 
 The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.

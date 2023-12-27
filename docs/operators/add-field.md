@@ -1,6 +1,5 @@
 ---
 title: "@addField"
-sidebar_position: 6
 ---
 
 The `@addField` operator simplifies data structures and queries by adding a field that _inlines_ or flattens a nested field or node within your schema. It works by modifying the schema and the data transformation process, simplifying how nested data is accessed and presented.

@@ -1,6 +1,5 @@
 ---
 title: "@graphQL"
-sidebar_position: 4
 ---
 
 ## @graphQL

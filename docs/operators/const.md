@@ -1,6 +1,5 @@
 ---
 title: "@const"
-sidebar_position: 7
 ---
 
 The `@const` operators allows us to embed a constant response for the schema. For eg:
