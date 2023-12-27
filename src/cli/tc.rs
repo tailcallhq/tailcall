@@ -18,20 +18,8 @@ use crate::print_schema;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
-  // set the log level
-  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
-  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
 
-  // Check if TAILCALL_LOG_LEVEL is defined, otherwise use TC_LOG_LEVEL
-
-  let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
-    .map(|_| LONG_ENV_FILTER_VAR_NAME)
-    .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
-
-  // use the log level from the env if there is one, othwerise use the default.
-  let env = Env::new().filter_or(filter_env_name, "info");
-
-  env_logger::Builder::from_env(env).init();
+  logger_init();
 
   match cli.command {
     Command::Start { file_paths } => {
@@ -130,4 +118,21 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
+}
+
+// initialize logger
+fn logger_init() {
+  // set the log level
+  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
+  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
+
+  // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
+  let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
+    .map(|_| LONG_ENV_FILTER_VAR_NAME)
+    .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
+
+  // use the log level from the env if there is one, othwerise use the default.
+  let env = Env::new().filter_or(filter_env_name, "info");
+
+  env_logger::Builder::from_env(env).init();
 }
