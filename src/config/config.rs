@@ -154,6 +154,8 @@ pub struct Type {
   pub scalar: bool,
   #[serde(default)]
   pub cache: Option<Cache>,
+  #[serde(default)]
+  pub protected: bool
 }
 
 impl Type {
@@ -185,6 +187,9 @@ impl Type {
 pub struct Cache {
   pub max_age: NonZeroU64,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct Protected {}
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
   for (name, mut other_type) in other_types {
@@ -259,6 +264,8 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
   pub cache: Option<Cache>,
+  #[serde(default)]
+  pub protected: bool,
 }
 
 impl Field {

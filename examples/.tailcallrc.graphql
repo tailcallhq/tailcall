@@ -298,7 +298,9 @@ directive @cache(
   Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
   """
   maxAge: Int!
-) on FIELD_DEFINITION
+) on FIELD_DEFINITION | OBJECT
+
+directive @protected on FIELD_DEFINITION | OBJECT
 
 enum Method {
   GET

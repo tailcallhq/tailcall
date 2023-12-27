@@ -265,6 +265,7 @@ fn update_args<'a>(
       directives: Vec::new(),
       resolver: None,
       cache,
+      protected: field.protected,
     })
   })
 }
@@ -346,6 +347,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_nested_resolvers())
+      .and(update_protected())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
@@ -383,6 +385,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
             cache: source_field.cache.clone(),
+            protected: source_field.protected,
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {

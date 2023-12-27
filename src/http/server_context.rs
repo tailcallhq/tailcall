@@ -112,7 +112,7 @@ impl ServerContext {
 
     // TODO: parse from config
     let jwt_options = serde_json::from_value::<JwtProviderOptions>(json!({
-      "issuer": "mes",
+      "issuer": "me",
       "jwks": {
         "file": "test.json"
       }

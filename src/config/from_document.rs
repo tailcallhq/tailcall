@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::Cache;
+use super::{Cache, Protected};
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -143,12 +143,22 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields, cache).map(|fields| {
-    let doc = description.as_ref().map(|pos| pos.node.clone());
-    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-    let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
-  })
+  to_fields(fields, cache)
+    .zip(Protected::from_directives(directives.iter()))
+    .map(|(fields, protected)| {
+      let doc = description.as_ref().map(|pos| pos.node.clone());
+      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+      let added_fields = to_add_fields_from_directives(&directives);
+      config::Type {
+        fields,
+        added_fields,
+        doc,
+        interface,
+        implements,
+        protected: protected.is_some(),
+        ..Default::default()
+      }
+    })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -220,9 +230,10 @@ where
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
-    .zip(Cache::from_directives(directives.iter()))
     .zip(Grpc::from_directives(directives.iter()))
-    .map(|(((http, graphql), cache), grpc)| {
+    .zip(Cache::from_directives(directives.iter()))
+    .zip(Protected::from_directives(directives.iter()))
+    .map(|((((http, graphql), grpc), cache), protected)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {
@@ -239,6 +250,7 @@ where
         const_field,
         graphql,
         cache: cache.or(parent_cache),
+        protected: protected.is_some(),
       }
     })
 }

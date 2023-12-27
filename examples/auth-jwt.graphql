@@ -9,7 +9,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{args.id}}")
 }
 
-type User {
+type User @protected {
   id: Int!
   name: String!
   username: String!
@@ -22,6 +22,6 @@ type Post {
   id: Int!
   userId: Int!
   title: String!
-  body: String!
+  body: String! @protected
   user: User @http(path: "/users/{{value.userId}}")
 }
