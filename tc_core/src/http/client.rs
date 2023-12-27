@@ -13,8 +13,6 @@ use crate::grpc::protobuf::ProtobufOperation;
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
   async fn execute(&self, req: Request, operation: Option<&ProtobufOperation>) -> anyhow::Result<Response>;
-  #[cfg(feature = "default")]
-  async fn execute_raw(&self, req: Request) -> anyhow::Result<reqwest::Response>;
 }
 
 #[async_trait::async_trait]
@@ -37,11 +35,6 @@ impl HttpClient for DefaultHttpClient {
         response
       }
     };
-  }
-  #[cfg(feature = "default")]
-  async fn execute_raw(&self, request: Request) -> anyhow::Result<reqwest::Response> {
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    Ok(self.client.execute(request).await?.error_for_status()?)
   }
 }
 

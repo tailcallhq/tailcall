@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
-use reqwest::Request;
-use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
+use tc_core::config::Batch;
+use tc_core::grpc::protobuf::ProtobufOperation;
+use tc_core::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -16,14 +16,10 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, _req: reqwest::Request, _: Option<&ProtobufOperation>) -> anyhow::Result<Response> {
     self.request_count.fetch_add(1, Ordering::SeqCst);
     // You can mock the actual response as per your need
     Ok(Response::default())
-  }
-
-  async fn execute_raw(&self, _req: Request) -> anyhow::Result<reqwest::Response> {
-    unimplemented!("not needed for this test")
   }
 }
 fn benchmark_data_loader(c: &mut Criterion) {

@@ -1,3 +1,4 @@
+#![allow(clippy::module_inception)]
 pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod chrono_cache;
@@ -18,3 +19,6 @@ pub mod path;
 pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
+
+#[cfg(feature = "unsafe-js")]
+pub mod javascript;
