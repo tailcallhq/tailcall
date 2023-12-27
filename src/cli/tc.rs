@@ -19,14 +19,14 @@ use crate::print_schema;
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
   // set the log level
-  let long_env_filter_var_name = "TAILCALL_LOG_LEVEL";
-  let short_env_filter_var_name = "TC_LOG_LEVEL";
+  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
+  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
 
   // Check if TAILCALL_LOG_LEVEL is defined, otherwise use TC_LOG_LEVEL
-  let filter_env_name = if env::var(long_env_filter_var_name).is_ok() {
-    long_env_filter_var_name
+  let filter_env_name = if env::var(LONG_ENV_FILTER_VAR_NAME).is_ok() {
+    LONG_ENV_FILTER_VAR_NAME
   } else {
-    short_env_filter_var_name
+    SHORT_ENV_FILTER_VAR_NAME
   };
 
   // use the log level from the env if there is one, othwerise use the default.
