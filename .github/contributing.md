@@ -64,7 +64,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo criterion --message-format=json > benches/main_benchmarks.json
    git checkout -
    cargo criterion --message-format=json > benches/benchmarks.json
-   rust-script benches/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
+   rust-script src/criterion_compare benches/main_benchmarks.json benches/benchmarks.json
 
    ```
 
