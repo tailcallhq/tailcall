@@ -30,7 +30,7 @@ pub struct DataLoader<
   delay: Duration,
   max_batch_size: usize,
   disable_cache: AtomicBool,
-  // spawner: Box<dyn Fn(BoxFuture<'static, ()>) + Send + Sync>,
+
 }
 
 impl<K, T> DataLoader<K, T, NoCache>
@@ -39,20 +39,12 @@ where
   T: Loader<K>,
 {
   /// Use `Loader` to create a [DataLoader] that does not cache records.
-  pub fn new(loader: T,
-    //  spawner: S
-  ) -> Self
-  // where
-    // S: Fn(BoxFuture<'static, ()>) -> R + Send + Sync + 'static,
-  {
+  pub fn new(loader: T) -> Self{
     Self {
       inner: Arc::new(DataLoaderInner { requests: Mutex::new(Requests::new(&NoCache)), loader }),
       delay: Duration::from_millis(1),
       max_batch_size: 1000,
       disable_cache: false.into(),
-      // spawner: Box::new(move |fut| {
-      //   // spawner(fut);
-      // }),
     }
   }
 }
@@ -64,20 +56,12 @@ where
   C: CacheFactory<K, T::Value>,
 {
   /// Use `Loader` to create a [DataLoader] with a cache factory.
-  pub fn with_cache(loader: T,
-    //  spawner: S,
-      cache_factory: C) -> Self
-  // where
-    // S: Fn(BoxFuture<'static, ()>) -> R + Send + Sync + 'static,
-  {
+  pub fn with_cache(loader: T,cache_factory: C) -> Self {
     Self {
       inner: Arc::new(DataLoaderInner { requests: Mutex::new(Requests::new(&cache_factory)), loader }),
       delay: Duration::from_millis(1),
       max_batch_size: 1000,
       disable_cache: false.into(),
-      // spawner: Box::new(move |fut| {
-      //   spawner(fut);
-      // }),
     }
   }
 
@@ -194,7 +178,7 @@ where
         #[cfg(feature = "tracing")]
         let task = task.instrument(info_span!("immediate_load")).in_current_span();
 
-        // (self.spawner)(Box::pin(task));
+
         tokio::spawn(Box::pin(task));
       }
       Action::StartFetch => {
@@ -216,7 +200,6 @@ where
         };
         #[cfg(feature = "tracing")]
         let task = task.instrument(info_span!("start_fetch")).in_current_span();
-        // (self.spawner)(Box::pin(task));
         tokio::spawn(Box::pin(task));
       }
       Action::Delay => {}
