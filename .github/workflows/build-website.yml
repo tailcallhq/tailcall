@@ -1,0 +1,22 @@
+name: Deploy & Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build_website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build website
+        env:
+          TARGET_REPO_OWNER: "tailcallhq" # Replace with the owner of the target repository
+          TARGET_REPO_NAME: "tailcallhq.github.io" # Replace with the name of the target repository
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.WEBSITE_TOKEN }}" \
+            -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/$TARGET_REPO_OWNER/$TARGET_REPO_NAME/dispatches \
+            --data '{"event_type": "build-and-deploy"}'
