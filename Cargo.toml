@@ -8,7 +8,7 @@ name = "tailcall"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.76"
+anyhow = "1.0.77"
 derive_setters = "0.1.6"
 thiserror = "1.0.52"
 mimalloc = { version = "0.1.39", default-features = false }
