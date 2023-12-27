@@ -1,15 +1,16 @@
-use hyper::{Body, Request};
 use thiserror::Error;
 
-use crate::valid::Valid;
+use crate::{valid::Valid, http::RequestContext};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum AuthError {
   #[error("Haven't found auth parameters")]
   Missing,
+  #[error("Auth validation failed")]
+  ValidationFailed
 }
 
 #[async_trait::async_trait]
 pub(crate) trait AuthProvider {
-  async fn validate(&mut self, request: &Request<Body>) -> Valid<(), AuthError>;
+  async fn validate(&self, req_ctx: &RequestContext) -> Valid<(), AuthError>;
 }

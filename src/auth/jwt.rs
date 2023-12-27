@@ -4,27 +4,27 @@ use std::time::Duration;
 use headers::authorization::Bearer;
 use headers::Authorization;
 use headers::HeaderMapExt;
-use hyper::Body;
-use hyper::Request;
 use jwtk::jwk::Jwk;
 use jwtk::jwk::JwkSet;
 use jwtk::jwk::JwkSetVerifier;
 use jwtk::jwk::RemoteJwksVerifier;
+use jwtk::HeaderAndClaims;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::http::RequestContext;
 use crate::valid::Valid;
 
 use super::base::{AuthError, AuthProvider};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum JwtProviderJwksOptions {
   File(PathBuf),
   Remote { url: String },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JwtProviderOptions {
   issuer: Option<String>,
   #[serde(default)]
@@ -74,29 +74,48 @@ impl From<JwtProviderOptions> for JwtProvider {
 
 #[async_trait::async_trait]
 impl AuthProvider for JwtProvider {
-  async fn validate(&mut self, request: &Request<Body>) -> Valid<(), AuthError> {
-    dbg!(&request.headers());
+  async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
+    dbg!(&request.req_headers);
     let token = self.resolve_token(request);
 
     let Some(token) = token else {
       return Valid::fail(AuthError::Missing);
     };
 
+    self.validate_token(&token).await
+  }
+}
+
+impl JwtProvider {
+  fn resolve_token(&self, request: &RequestContext) -> Option<String> {
+    let value = request.req_headers.typed_get::<Authorization<Bearer>>();
+
+    value.map(|token| token.token().to_owned())
+  }
+
+  async fn validate_token(&self, token: &str) -> Valid<(), AuthError> {
     // TODO: set client?
     let j = RemoteJwksVerifier::new("http://127.0.0.1:3000/jwks".into(), None, Duration::from_secs(5 * 3600));
     let c = j.verify::<()>(&token).await.unwrap();
 
     dbg!(&c);
 
-    Valid::succeed(())
+    self.validate_claims(&c)
   }
-}
 
-impl JwtProvider {
-  fn resolve_token(&self, request: &Request<Body>) -> Option<String> {
-    let value = request.headers().typed_get::<Authorization<Bearer>>();
+  fn validate_claims(&self, parsed: &HeaderAndClaims<()>) -> Valid<(), AuthError> {
+    let iss_valid = self
+      .options
+      .issuer
+      .as_ref()
+      .map(|issuer| parsed.claims().iss.as_ref().map(|iss| iss == issuer).unwrap_or(false))
+      .unwrap_or(true);
 
-    value.map(|token| token.token().to_owned())
+    if !iss_valid {
+      return Valid::fail(AuthError::ValidationFailed);
+    }
+
+    Valid::succeed(())
   }
 }
 
@@ -111,7 +130,7 @@ mod tests {
   fn jwt_options_parse() -> Result<()> {
     let options: JwtProviderOptions = serde_json::from_value(json!({
       "jwks": {
-        "file": "test.txt"
+        "file": "test-jwks.json"
       }
     }))?;
 
@@ -128,5 +147,51 @@ mod tests {
     assert!(matches!(options.jwks, JwtProviderJwksOptions::Remote { .. }));
 
     Ok(())
+  }
+
+  #[tokio::test]
+  async fn validate_token_issuer() {
+    // token with issuer = "me"
+    // token is valid for 10 years. It it expired, update it =)
+    let token = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw";
+
+    let jwt_options: JwtProviderOptions = serde_json::from_value(json!({
+      "jwks": {
+        "file": "test-jwks.json"
+      }
+    }))
+    .unwrap();
+    let jwt_provider = JwtProvider::from(jwt_options);
+
+    let valid = jwt_provider.validate_token(token).await;
+
+    assert!(valid.is_succeed());
+
+    let jwt_options: JwtProviderOptions = serde_json::from_value(json!({
+      "issuer": "me",
+      "jwks": {
+        "file": "test-jwks.json"
+      }
+    }))
+    .unwrap();
+    let jwt_provider = JwtProvider::from(jwt_options);
+
+    let valid = jwt_provider.validate_token(token).await;
+
+    assert!(valid.is_succeed());
+
+    let jwt_options: JwtProviderOptions = serde_json::from_value(json!({
+      "issuer": "another",
+      "jwks": {
+        "file": "test-jwks.json"
+      }
+    }))
+    .unwrap();
+    let jwt_provider = JwtProvider::from(jwt_options);
+
+    let valid = jwt_provider.validate_token(token).await;
+
+    // TODO: validate the error
+    assert!(!valid.is_succeed());
   }
 }

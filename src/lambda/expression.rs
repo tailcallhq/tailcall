@@ -33,6 +33,7 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
+  Protected(Box<Expression>)
 }
 
 #[derive(Clone, Debug)]
@@ -102,6 +103,10 @@ impl Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
+        Expression::Protected(expr) => {
+          ctx.req_ctx.auth_ctx.validate(ctx.req_ctx).await.to_result()?;
+          expr.eval(ctx).await
+        },
         Expression::Unsafe(operation) => match operation {
           Unsafe::Http { req_template, dl_id, .. } => {
             let req = req_template.to_request(ctx)?;

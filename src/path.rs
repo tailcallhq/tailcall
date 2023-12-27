@@ -171,7 +171,7 @@ mod tests {
     }
 
     static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-      let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+      let mut req_ctx = RequestContext::default().allowed_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
 

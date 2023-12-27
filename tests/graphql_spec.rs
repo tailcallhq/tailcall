@@ -304,7 +304,7 @@ async fn test_execution() -> std::io::Result<()> {
         for q in spec.test_queries {
           let mut headers = HeaderMap::new();
           headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
-          let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+          let req_ctx = Arc::new(RequestContext::from(&server_ctx).allowed_headers(headers));
           let req = Request::from(q.query.as_str()).data(req_ctx.clone());
           let res = schema.execute(req).await;
           let json = serde_json::to_string(&res).unwrap();

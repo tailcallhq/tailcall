@@ -135,7 +135,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn bench_main(c: &mut Criterion) {
-  let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+  let mut req_ctx = RequestContext::default().allowed_headers(TEST_HEADERS.clone());
 
   req_ctx.server.vars = TEST_VARS.clone();
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);

@@ -7,6 +7,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, HttpClientOptions};
+use crate::auth::context::AuthContext;
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
@@ -27,10 +28,13 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
+  // request headers from client that will be sent to upstream
+  pub allowed_headers: HeaderMap,
+  pub auth_ctx: AuthContext,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+  pub cache: ChronoCache<u64, ConstValue>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
 }
@@ -43,6 +47,7 @@ impl Default for RequestContext {
 
     Self {
       req_headers: HeaderMap::new(),
+      allowed_headers: HeaderMap::new(),
       universal_http_client: Arc::new(DefaultHttpClient::new(&upstream)),
       http2_only_client: Arc::new(DefaultHttpClient::with_options(
         &upstream,
@@ -50,10 +55,11 @@ impl Default for RequestContext {
       )),
       server,
       upstream,
+      auth_ctx: AuthContext::default(),
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
-      cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(vec![]),
+      cache: ChronoCache::new(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }
@@ -127,10 +133,12 @@ impl From<&ServerContext> for RequestContext {
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
+      allowed_headers: HeaderMap::new(),
+      auth_ctx: (&server_ctx.auth_ctx).into(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
-      cache: server_ctx.cache.clone(),
       grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
+      cache: server_ctx.cache.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
     }

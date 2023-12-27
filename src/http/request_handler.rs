@@ -6,13 +6,10 @@ use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
-use serde_json::json;
 
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::auth::base::AuthProvider;
-use crate::auth::jwt::{JwtProvider, JwtProviderOptions};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -31,7 +28,9 @@ fn create_request_context(req: &Request<Body>, server_ctx: &ServerContext) -> Re
   let upstream = server_ctx.blueprint.upstream.clone();
   let allowed = upstream.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
-  RequestContext::from(server_ctx).req_headers(headers)
+  RequestContext::from(server_ctx)
+    .req_headers(req.headers().clone())
+    .allowed_headers(headers)
 }
 
 fn update_cache_control_header(
@@ -60,15 +59,6 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   server_ctx: &ServerContext,
 ) -> Result<Response<Body>> {
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
-  // TODO: move out of here
-  let jwt_options = serde_json::from_value::<JwtProviderOptions>(json!({
-    "jwks": {
-      "file": "test.json"
-    }
-  }))?;
-  dbg!(&jwt_options);
-  let mut jwt_provider = JwtProvider::from(jwt_options);
-  dbg!(jwt_provider.validate(&req).await);
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
   let request = serde_json::from_slice::<T>(&bytes);
   match request {
