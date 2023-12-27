@@ -1,6 +1,5 @@
 ---
 title: "@modify"
-sidebar_position: 5
 ---
 
 The `@modify` operator in GraphQL provides the flexibility to alter the attributes of a field or a node within your GraphQL schema. Here's how you can use this operator:
