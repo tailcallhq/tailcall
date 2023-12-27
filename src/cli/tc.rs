@@ -1,9 +1,9 @@
-use std::fs;
+use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
+use env_logger::Env;
 use inquire::Confirm;
-use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
@@ -20,10 +20,20 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   match cli.command {
-    Command::Start { file_paths, log_level } => {
-      env_logger::Builder::new()
-        .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
-        .init();
+    Command::Start { file_paths } => {
+      let long_env_filter_var_name = "TAILCALL_LOG_LEVEL";
+      let short_env_filter_var_name = "TC_LOG_LEVEL";
+
+      // Check if TAILCALL_LOG_LEVEL is defined, otherwise use TC_LOG_LEVEL
+      let filter_env_name = match env::var(long_env_filter_var_name) {
+        Ok(_) => long_env_filter_var_name,
+        Err(_) => short_env_filter_var_name,
+      };
+
+      // use the log level from the env if there is one, othwerise use the default.
+      let env = Env::new().filter_or(filter_env_name, "info");
+
+      env_logger::Builder::from_env(env).init();
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
