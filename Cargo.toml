@@ -8,8 +8,8 @@ name = "tailcall"
 path = "src/main.rs"
 
 [dependencies]
-tc_core = {path = "tc_core" }
-cli = {path = "tc_cli" }
+tc_core = { path = "tc_core" }
+cli = { path = "tc_cli" }
 mini-v8 = { version = "0.4.1", optional = true }
 anyhow = "1.0.76"
 exitcode = "1.1.2"
@@ -31,7 +31,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 env_logger = "0.10.1"
 log = "0.4.20"
-tokio = {version = "1.35.1",features = ["full"]}
+tokio = { version = "1.35.1", features = ["full"] }
 async-graphql-value = "6.0.11"
 url = "2"
 reqwest = { version = "0.11", features = [
@@ -42,6 +42,12 @@ async-trait = "0.1.75"
 
 [workspace]
 members = [
+    ".",
+    "tc_core",
+    "tc_cli",
+    "tc_cloudflare"
+]
+default-members = [
     ".",
     "tc_core",
     "tc_cli",
