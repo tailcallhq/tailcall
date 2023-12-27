@@ -51,7 +51,7 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          ./target/release/tailcall start ci-benchmark/benchmark.graphql --log-level error &
+          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/benchmark.graphql &
 
       - name: Install Wrk
         run: |
