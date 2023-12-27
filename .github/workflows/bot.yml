@@ -53,28 +53,6 @@ jobs:
         run: |
           ./target/release/tailcall start ci-benchmark/benchmark.graphql --log-level error &
 
-      - name: Install Nginx
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y nginx
-
-      - name: Clean Up
-        run: |
-          sudo rm -rf /etc/nginx/sites-enabled/default
-
-      - name: Copy Nginx Configuration
-        working-directory: ci-benchmark
-        run: |
-          sudo cp nginx.conf /etc/nginx/
-
-      - name: Test Nginx Configuration
-        run: |
-          sudo nginx -t
-
-      - name: Start Nginx
-        run: |
-          sudo systemctl start nginx
-
       - name: Install Wrk
         run: |
           sudo apt-get install -y wrk
