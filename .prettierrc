@@ -10,7 +10,8 @@
         "add-field-many-list.graphql",
         "add-field-many.graphql",
         "inline-many.graphql",
-        "inline-many-list.graphql"
+        "inline-many-list.graphql",
+        "test-grpc.graphql"
       ],
       "options": {
         "printWidth": 200

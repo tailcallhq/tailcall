@@ -1,11 +1,8 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-
-use client::DefaultHttpClient;
 
 use super::ServerContext;
 use crate::blueprint::{Blueprint, Http};
-use crate::http::client;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
@@ -14,8 +11,7 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone(), http_client)), blueprint }
+    Self { server_context: Arc::new(ServerContext::new(blueprint.clone())), blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {
@@ -34,7 +30,12 @@ impl ServerConfig {
       "HTTP/2" => "https",
       _ => "http",
     };
-    let addr = self.addr().to_string();
+    let mut addr = self.addr();
+
+    if addr.ip().is_unspecified() {
+      addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), addr.port());
+    }
+
     format!("{}://{}", protocol, addr)
   }
 

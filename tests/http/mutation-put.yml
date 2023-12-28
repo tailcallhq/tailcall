@@ -1,0 +1,31 @@
+---
+config: !file tests/http/config/mutation-put.graphql
+name: Mutation put
+
+mock:
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: Leanne Graham
+  - request:
+      method: PUT
+      url: http://jsonplaceholder.typicode.com/posts/100
+      body: '{"body":"abc","id":100,"title":"bar","userId":1}'
+    response:
+      body:
+        body: abc
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: 'mutation { insertPost(input: { body: "abc", title: "bar", userId: 1, id: 100 }) { body } }'
+    response:
+      body:
+        data:
+          insertPost:
+            body: abc
