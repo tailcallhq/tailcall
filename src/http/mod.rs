@@ -21,7 +21,7 @@ pub use data_loader::*;
 pub use data_loader_request::*;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
-pub use request_context::RequestContext;
+pub use request_context::{RequestContext, NumRequestsFetched};
 pub use request_handler::handle_request;
 pub use request_template::RequestTemplate;
 pub use response::*;

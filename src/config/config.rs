@@ -186,6 +186,37 @@ pub struct Cache {
   pub max_age: NonZeroU64,
 }
 
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum RateLimitUnit {
+  Second,
+  Minute,
+  Hour,
+  Day,
+  Month,
+  Year
+}
+
+impl RateLimitUnit {
+  pub fn into_secs(self) -> u64 {
+    match self {
+      Self::Second => 1,
+      Self::Minute => 60,
+      Self::Hour => 60*60,
+      Self::Day => 24*60*60,
+      Self::Month => 28*24*60*60,
+      Self::Year => 365*28*24*60*60,
+    }
+  }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RateLimit {
+  pub unit: RateLimitUnit,
+  pub requests_per_unit: NonZeroU64
+}
+
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
   for (name, mut other_type) in other_types {
     if let Some(self_type) = self_types.remove(&name) {
@@ -258,7 +289,10 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<RateLimit>
 }
 
 impl Field {

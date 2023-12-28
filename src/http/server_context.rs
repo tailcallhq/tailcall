@@ -1,8 +1,10 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
+use super::request_context::NumRequestsFetched;
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
@@ -23,6 +25,7 @@ pub struct ServerContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>
 }
 
 impl ServerContext {
@@ -106,6 +109,8 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
 
+    // let (req_sender, req_receiver) = mpsc::channel(1000);
+
     ServerContext {
       schema,
       universal_http_client,
@@ -115,6 +120,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
+      num_requests_fetched: Arc::new(Mutex::new(HashMap::new()))
     }
   }
 }

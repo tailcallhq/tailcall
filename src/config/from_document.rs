@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::Cache;
+use super::{Cache, RateLimit};
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -222,7 +222,8 @@ where
     .zip(GraphQL::from_directives(directives.iter()))
     .zip(Cache::from_directives(directives.iter()))
     .zip(Grpc::from_directives(directives.iter()))
-    .map(|(((http, graphql), cache), grpc)| {
+    .zip(RateLimit::from_directives(directives.iter()))
+    .map(|((((http, graphql), cache), grpc), rate_limit)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {
@@ -239,6 +240,7 @@ where
         const_field,
         graphql,
         cache: cache.or(parent_cache),
+        rate_limit
       }
     })
 }

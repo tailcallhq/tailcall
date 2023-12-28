@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
@@ -9,7 +10,7 @@ use async_graphql_value::ConstValue;
 
 use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};
-use crate::http::RequestContext;
+use crate::http::{RequestContext, NumRequestsFetched};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
@@ -74,6 +75,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
         let cache = field.cache.clone();
+        let field_id = format!("{}.{}", def.name, field.name);
+        println!("{field_id}: {:?}, {:?}", field.rate_limit, &3);
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
@@ -85,8 +88,32 @@ fn to_type(def: &Definition) -> dynamic::Type {
             Some(expr) => {
               let expr = expr.to_owned();
               let cache = cache.clone();
+              let rate_limit = field.rate_limit.clone();
+              let field_id = field_id.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
+
+                if let Some(rate_limit) = rate_limit {
+                  let mut mtx_guard = ctx
+                    .req_ctx
+                    .num_requests_fetched
+                    .lock()
+                    .unwrap();
+                  let nrf = mtx_guard
+                    .entry(field_id)
+                    .or_insert(NumRequestsFetched { last_fetched: SystemTime::now(), num_requests: 0 });
+
+                  let duration = nrf.last_fetched.elapsed().unwrap();
+                  if duration < rate_limit.duration && nrf.num_requests < rate_limit.requests.get() as usize {
+                    nrf.num_requests += 1;
+                    nrf.last_fetched = SystemTime::now();
+                  } else if duration >= rate_limit.duration {
+                    nrf.last_fetched = SystemTime::now();
+                    nrf.num_requests = 1;
+                  } else {
+                    Err(anyhow::anyhow!("RATE LIMIT REACHED"))?
+                  }
+                }
 
                 let ttl_and_key =
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));

@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
@@ -33,6 +35,12 @@ pub struct RequestContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
+  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>
+}
+
+pub struct NumRequestsFetched {
+  pub last_fetched: SystemTime,
+  pub num_requests: usize
 }
 
 impl Default for RequestContext {
@@ -56,6 +64,7 @@ impl Default for RequestContext {
       grpc_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      num_requests_fetched: Arc::new(Mutex::new(HashMap::new())),
     }
   }
 }
@@ -133,6 +142,7 @@ impl From<&ServerContext> for RequestContext {
       grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      num_requests_fetched: server_ctx.num_requests_fetched.clone(),
     }
   }
 }
