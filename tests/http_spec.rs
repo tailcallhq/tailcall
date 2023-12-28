@@ -122,11 +122,6 @@ impl HttpSpec {
         let spec: HttpSpec =
           Self::from_source(source, contents).map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
 
-        spec.env.iter().for_each(|(key, value)| {
-          println!("setting env var: {}={}", key, value);
-          println!("env var is: {}", std::env::var(key).unwrap_or_default());
-        });
-          // println!("spec: {:?}", spec);
         files.push(spec.path(path));
       }
     }
