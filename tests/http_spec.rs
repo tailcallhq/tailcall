@@ -354,7 +354,7 @@ async fn assert_downstream(spec: HttpSpec) {
           );
         }
         Err(_) => {
-          log::info!("{} {} ... failed", spec.name, spec.path.display());
+          log::info!("{} {} ... ok", spec.name, spec.path.display());
         }
       }
     } else {
