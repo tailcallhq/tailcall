@@ -418,7 +418,6 @@ async fn http_spec_e2e() -> anyhow::Result<()> {
   let spec = HttpSpec::filter_specs(spec);
   let tasks: Vec<_> = spec
     .into_iter()
-    .filter(|spec| spec.name == "With Env")
     .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
     .collect();
   for task in tasks {
