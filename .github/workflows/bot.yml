@@ -178,7 +178,7 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          ./scripts/json_to_md benches/main_benchmarks.json > benches/main_benchmarks.md
+          ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
@@ -221,7 +221,7 @@ jobs:
         run: cat benches/change_benchmarks.md
 
       - name: Print Benchmark Comparision
-        run: ./scripts/criterion_compare benches/main_benchmarks.json benches/benchmarks.json table
+        run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table
 
       - name: Check Degradation
-        run: ./scripts/criterion_compare  benches/main_benchmarks.json benches/benchmarks.json check
+        run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json check
