@@ -1,9 +1,32 @@
 ---
-name: Custom Env
-config: !file tests/http/config/with-env.graphql
+name: Env Value
+config: !inline
+  server:
+  upstream:
+    baseURL: http://jsonplaceholder.typicode.com
+  schema:
+    query: Query
+  types:
+    Query:
+      fields:
+        post:
+          type: Post
+          http:
+            path: /posts/{{env.ID}}
+    Post:
+      fields:
+        id:
+          type: Int
+        title:
+          type: String
+        userId:
+          type: Int
+          required: true
+        body:
+          type: String
 
 env:
-  POST_ID: 1
+  ID: 1
 
 mock:
   - request:
