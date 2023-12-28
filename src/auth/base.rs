@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::{valid::Valid, http::RequestContext};
 
-#[derive(Debug, Error, Clone)]
+#[derive(Debug, Error, Clone, PartialEq)]
 pub enum AuthError {
   #[error("Haven't found auth parameters")]
   Missing,

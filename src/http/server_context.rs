@@ -118,7 +118,6 @@ impl ServerContext {
       }
     }))
     .unwrap();
-    dbg!(&jwt_options);
     let mut jwt_provider = JwtProvider::from(jwt_options);
 
     ServerContext {
