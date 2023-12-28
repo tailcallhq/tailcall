@@ -158,6 +158,10 @@ directive @upstream(
   batch: Batch
 ) on SCHEMA
 
+directive @auth(
+  JWT: AuthJWT
+) on SCHEMA
+
 """
 @http
 The @http operator indicates that a field or node is backed by a REST API.
@@ -325,6 +329,17 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
+}
+
+input AuthJWTJwks {
+  file: String
+  url: String
+}
+
+input AuthJWT {
+  issuer: String
+  audiences: [String!]
+  jwks: AuthJWTJwks!
 }
 
 scalar JSON

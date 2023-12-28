@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream};
+use super::{Server, Upstream, Auth};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
@@ -26,6 +26,8 @@ pub struct Config {
   pub server: Server,
   #[serde(default)]
   pub upstream: Upstream,
+  #[serde(default)]
+  pub auth: Auth,
   pub schema: RootSchema,
   #[serde(default)]
   #[setters(skip)]
@@ -126,8 +128,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
+    let auth = self.auth.merge_right(other.auth.clone());
 
-    Self { server, upstream, types, schema, unions }
+    Self { server, upstream, auth, types, schema, unions }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {

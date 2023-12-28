@@ -1,6 +1,7 @@
 schema
   @server(port: 8000, graphiql: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
+  @auth(JWT: { jwks: { file: "jwks.json" } }) {
   query: Query
 }
 

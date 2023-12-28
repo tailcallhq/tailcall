@@ -1,3 +1,4 @@
+mod auth;
 mod config;
 mod from_document;
 pub mod group_by;
@@ -9,6 +10,7 @@ mod server;
 mod source;
 mod writer;
 
+pub use auth::*;
 pub use config::*;
 pub use key_values::*;
 pub use server::*;

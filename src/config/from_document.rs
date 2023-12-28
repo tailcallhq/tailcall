@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{Cache, Protected};
+use super::{Auth, Cache, Protected};
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -30,8 +30,22 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema))
-    .map(|((((server, upstream), types), unions), schema)| Config { server, upstream, types, unions, schema })
+    .and_then(|sd| {
+      server(sd)
+        .zip(upstream(sd))
+        .zip(auth(sd))
+        .zip(types)
+        .zip(unions)
+        .zip(schema)
+    })
+    .map(|(((((server, upstream), auth), types), unions), schema)| Config {
+      server,
+      upstream,
+      auth,
+      types,
+      unions,
+      schema,
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -61,9 +75,15 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
   process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
+
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
+
+fn auth(schema_definition: &SchemaDefinition) -> Valid<Auth, String> {
+  process_schema_directives(schema_definition, config::Auth::directive_name().as_str())
+}
+
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
   let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);

@@ -24,14 +24,14 @@ use self::validation::validate_iss;
 
 use super::base::{AuthError, AuthProvider};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum JwtProviderJwksOptions {
   File(PathBuf),
   Remote { url: String },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct JwtProviderOptions {
   issuer: Option<String>,
   #[serde(default)]
