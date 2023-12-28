@@ -1,10 +1,14 @@
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::future::Future;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
+
+use async_graphql_value::ConstValue;
 use reqwest::Request;
 use serde::Serialize;
 use serde_json::Value;
@@ -33,6 +37,7 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
+  Cache(Cache),
 }
 
 #[derive(Clone, Debug)]
@@ -60,6 +65,12 @@ pub enum Unsafe {
     dl_id: Option<DataLoaderId>,
   },
   JS(Box<Expression>, String),
+}
+
+#[derive(Clone, Debug)]
+struct Cache {
+  max_age: i32,
+  source: Box<Expression>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -181,9 +192,68 @@ impl Expression {
             result
           }
         },
+        Expression::Cache(cache) => {
+          if let Some(key) = get_cache_key(ctx, DefaultHasher::new()) {
+            if let Some(cache_value) = ctx.req_ctx.cache_get(&key) {
+              Ok(cache_value.to_owned())
+            } else {
+              cache.source.eval(ctx).await
+            }
+          } else {
+            cache.source.eval(ctx).await
+          }
+        }
       }
     })
   }
+}
+
+pub fn hash_const_value<H: Hasher>(const_value: &ConstValue, state: &mut H) {
+  match const_value {
+    ConstValue::Null => {}
+    ConstValue::Boolean(val) => val.hash(state),
+    ConstValue::Enum(name) => name.hash(state),
+    ConstValue::Number(num) => num.hash(state),
+    ConstValue::Binary(bytes) => bytes.hash(state),
+    ConstValue::String(string) => string.hash(state),
+    ConstValue::List(list) => list.iter().for_each(|val| hash_const_value(val, state)),
+    ConstValue::Object(object) => {
+      let mut tmp_list: Vec<_> = object.iter().collect();
+      tmp_list.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
+      tmp_list.iter().for_each(|(key, value)| {
+        key.hash(state);
+        hash_const_value(value, state);
+      })
+    }
+  }
+}
+
+fn get_cache_key<'a, H: Hasher + Clone>(
+  ctx: &'a EvaluationContext<'a, impl ResolverContextLike<'a>>,
+  mut hasher: H,
+) -> Option<u64> {
+  // Hash on parent value
+  if let Some(const_value) = ctx
+    .graphql_ctx
+    .value()
+    // TODO: handle _id, id, or any field that has @key on it.
+    .filter(|value| value != &&ConstValue::Null)
+    .map(|data| data.get_key("id"))
+  {
+    // Hash on parent's id only?
+    hash_const_value(const_value?, &mut hasher)
+  }
+
+  let key = ctx.graphql_ctx.args().map(|value_map| value_map
+        .iter()
+        .map(|(key, value)| {
+          let mut hasher = hasher.clone();
+          key.hash(&mut hasher);
+          hash_const_value(value, &mut hasher);
+          hasher.finish()
+        })
+        .fold(hasher.finish(), |acc, val| acc ^ val));
+  key
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
