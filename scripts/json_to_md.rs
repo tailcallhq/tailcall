@@ -90,17 +90,13 @@ fn print_table(benchmarks: &[Benchmark]) {
     ));
   }
 
-  // Get the output file path from the command-line arguments
   let args: Vec<String> = env::args().collect();
-  if args.len() != 3 {
-    eprintln!("Usage: {} <input_file_path> <output_file_path>", args[0]);
+  if args.len() != 2 {
+    eprintln!("Usage: {} <input_file_path>", args[0]);
     std::process::exit(1);
   }
-  let _output_file_path = &args[2];
 
-  // Write the Markdown table to the file
-  fs::write(_output_file_path, markdown_table).expect("Failed to write Markdown table to file");
-  println!("Markdown table (Typical values) written to {}", _output_file_path);
+  println!("{}", markdown_table);
 }
 
 fn main() {
@@ -108,12 +104,12 @@ fn main() {
   let args: Vec<String> = env::args().collect();
 
   // Check if two file name arguments are provided
-  if args.len() != 3 {
-    eprintln!("Usage: {} <input_file_path> <output_file_path>", args[0]);
+  if args.len() != 2 {
+    eprintln!("Usage: {} <input_file_path>", args[0]);
     std::process::exit(1);
   }
 
-  // Extract the input and output file names from command-line arguments
+  // Extract the input file name from command-line arguments
   let input_file_path = &args[1];
 
   // Attempt to parse the JSON file and print the table
