@@ -25,7 +25,7 @@ pub struct ServerContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>
+  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>,
 }
 
 impl ServerContext {
@@ -120,7 +120,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
-      num_requests_fetched: Arc::new(Mutex::new(HashMap::new()))
+      num_requests_fetched: Arc::new(Mutex::new(HashMap::new())),
     }
   }
 }

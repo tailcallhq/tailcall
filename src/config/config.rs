@@ -194,7 +194,7 @@ pub enum RateLimitUnit {
   Hour,
   Day,
   Month,
-  Year
+  Year,
 }
 
 impl RateLimitUnit {
@@ -202,10 +202,10 @@ impl RateLimitUnit {
     match self {
       Self::Second => 1,
       Self::Minute => 60,
-      Self::Hour => 60*60,
-      Self::Day => 24*60*60,
-      Self::Month => 28*24*60*60,
-      Self::Year => 365*28*24*60*60,
+      Self::Hour => 60 * 60,
+      Self::Day => 24 * 60 * 60,
+      Self::Month => 28 * 24 * 60 * 60,
+      Self::Year => 365 * 28 * 24 * 60 * 60,
     }
   }
 }
@@ -214,7 +214,7 @@ impl RateLimitUnit {
 #[serde(rename_all = "camelCase")]
 pub struct RateLimit {
   pub unit: RateLimitUnit,
-  pub requests_per_unit: NonZeroU64
+  pub requests_per_unit: NonZeroU64,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
@@ -292,7 +292,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub rate_limit: Option<RateLimit>
+  pub rate_limit: Option<RateLimit>,
 }
 
 impl Field {

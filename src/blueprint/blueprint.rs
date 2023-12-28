@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
-use std::time::{SystemTime, Duration};
+use std::time::Duration;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
-use crate::config::{Upstream, self, RateLimitUnit};
+use crate::config::{self, Upstream};
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -137,16 +137,13 @@ pub struct Cache {
 #[derive(Clone, Debug)]
 pub struct RateLimit {
   pub duration: Duration,
-  pub requests: NonZeroU64
+  pub requests: NonZeroU64,
 }
 
 impl From<config::RateLimit> for RateLimit {
   fn from(config::RateLimit { unit, requests_per_unit }: config::RateLimit) -> Self {
     let duration = Duration::from_secs(unit.into_secs());
-    RateLimit {
-      duration,
-      requests: requests_per_unit
-    }
+    RateLimit { duration, requests: requests_per_unit }
   }
 }
 

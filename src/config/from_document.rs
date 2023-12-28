@@ -240,7 +240,7 @@ where
         const_field,
         graphql,
         cache: cache.or(parent_cache),
-        rate_limit
+        rate_limit,
       }
     })
 }

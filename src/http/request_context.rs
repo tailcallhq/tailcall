@@ -35,12 +35,12 @@ pub struct RequestContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
-  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>
+  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>,
 }
 
 pub struct NumRequestsFetched {
   pub last_fetched: SystemTime,
-  pub num_requests: usize
+  pub num_requests: usize,
 }
 
 impl Default for RequestContext {

@@ -10,7 +10,7 @@ use async_graphql_value::ConstValue;
 
 use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};
-use crate::http::{RequestContext, NumRequestsFetched};
+use crate::http::{NumRequestsFetched, RequestContext};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
@@ -94,11 +94,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
                 if let Some(rate_limit) = rate_limit {
-                  let mut mtx_guard = ctx
-                    .req_ctx
-                    .num_requests_fetched
-                    .lock()
-                    .unwrap();
+                  let mut mtx_guard = ctx.req_ctx.num_requests_fetched.lock().unwrap();
                   let nrf = mtx_guard
                     .entry(field_id)
                     .or_insert(NumRequestsFetched { last_fetched: SystemTime::now(), num_requests: 0 });
