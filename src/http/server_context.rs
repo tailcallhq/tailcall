@@ -114,11 +114,11 @@ impl ServerContext {
     let jwt_options = serde_json::from_value::<JwtProviderOptions>(json!({
       "issuer": "me",
       "jwks": {
-        "file": "test.json"
+        "file": "examples/jwks.json"
       }
     }))
     .unwrap();
-    let mut jwt_provider = JwtProvider::from(jwt_options);
+    let mut jwt_provider = JwtProvider::try_from(jwt_options).unwrap();
 
     ServerContext {
       schema,

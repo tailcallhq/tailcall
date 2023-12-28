@@ -1,13 +1,13 @@
 mod validation;
 
 use std::collections::HashSet;
+use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
 use headers::authorization::Bearer;
 use headers::Authorization;
 use headers::HeaderMapExt;
-use jwtk::jwk::Jwk;
 use jwtk::jwk::JwkSet;
 use jwtk::jwk::JwkSetVerifier;
 use jwtk::jwk::RemoteJwksVerifier;
@@ -15,6 +15,7 @@ use jwtk::HeaderAndClaims;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::helpers::config_path::config_path;
 use crate::http::RequestContext;
 use crate::valid::Valid;
 
@@ -38,10 +39,18 @@ pub struct JwtProviderOptions {
   jwks: JwtProviderJwksOptions,
 }
 
+// only used in tests and uses mocked implementation
 #[cfg(test)]
 impl Default for JwtProviderOptions {
   fn default() -> Self {
-    let jwks = JwtProviderJwksOptions::File(PathBuf::from("test-file.json"));
+    let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut test_file = root_dir.join(file!());
+
+    test_file.pop();
+    test_file.push("tests");
+    test_file.push("jwks.json");
+
+    let jwks = JwtProviderJwksOptions::File(test_file);
 
     Self { issuer: Default::default(), audiences: Default::default(), jwks }
   }
@@ -52,24 +61,33 @@ enum JwksVerifier {
   Remote(RemoteJwksVerifier),
 }
 
-impl From<&JwtProviderJwksOptions> for JwksVerifier {
-  fn from(value: &JwtProviderJwksOptions) -> Self {
+impl TryFrom<&JwtProviderJwksOptions> for JwksVerifier {
+  type Error = anyhow::Error;
+
+  fn try_from(value: &JwtProviderJwksOptions) -> anyhow::Result<Self> {
     match value {
       JwtProviderJwksOptions::File(path) => {
-        // TODO: mock value
-        let mut jwk = Jwk::default();
-        jwk.kty = "RSA".to_owned();
-        jwk.use_ = Some("sig".to_owned());
-        jwk.alg = Some("RS256".to_owned());
-        jwk.kid = Some("I48qMJp566SSKQogYXYtHBo9q6ZcEKHixNPeNoxV1c8".to_owned());
-        jwk.n = Some("ksMb5oMlhJ_HzAebCuBG6-v5Qc4J111ur7Aux6-8SbxzqFONsf2Bw6ATG8pAfNeZ-USA3_T1mGkYTDvfoggXnxsduWV_lePZKKOq_Qp_EDdzic1bVTJQDad3CXldR3wV6UFDtMx6cCLXxPZM5n76e7ybPt0iNgwoGpJE28emMZJXrnEUFzxwFMq61UlzWEumYqW3uOUVp7r5XAF5jQ_1nQAnpHBnRFzdNPVb3E6odMGu3jgp8mkPbPMP16Fund4LVplLz8yrsE9TdVrSdYJThylRWn_BwvJ0DjUcp8ibJya86iClUlixAmBwR9NdStHwQqHwmMXMKkTXo-ytRmSUobzxX9T8ESkij6iBhQpmDMD3FbkK30Y7pUVEBBOyDfNcWOhholjOj9CRrxu9to5rc2wvufe24VlbKb9wngS_uGfK4AYvVyrcjdYMFkdqw-Mft14HwzdO2BTS0TeMDZuLmYhj_bu5_g2Zu6PH5OpIXF6Fi8_679pCG8wWAcFQrFrM0eA70wD_SqD_BXn6pWRpFXlcRy_7PWTZ3QmC7ycQFR6Wc6Px44y1xDUoq3rH0RlZkeicfvP6FRlpjFU7xF6LjAfd9ciYBZfJll6PE7zf-i_ZXEslv-tJ5-30-I4Slwj0tDrZ2Z54OgAg07AIwAiI5o4y-0vmuhUscNpfZsGAGhE".to_owned());
-        jwk.e = Some("AQAB".to_owned());
+        let file = fs::read_to_string(config_path(&path)?)?;
+        let jwks: JwkSet = serde_json::from_str(&file)?;
 
-        let jwks = JwkSet { keys: vec![jwk] };
-
-        Self::Local(jwks.verifier())
+        Ok(Self::Local(jwks.verifier()))
       }
-      JwtProviderJwksOptions::Remote { url } => todo!(),
+      JwtProviderJwksOptions::Remote { url } => Ok(Self::Remote(RemoteJwksVerifier::new(
+        url.to_owned(),
+        // TODO: set client?
+        None,
+        // TODO: set duration from config
+        Duration::from_secs(5 * 3600),
+      ))),
+    }
+  }
+}
+
+impl JwksVerifier {
+  async fn verify(&self, token: &str) -> jwtk::Result<HeaderAndClaims<()>> {
+    match self {
+      JwksVerifier::Local(verifier) => verifier.verify(token),
+      JwksVerifier::Remote(verifier) => verifier.verify(token).await,
     }
   }
 }
@@ -79,11 +97,12 @@ pub struct JwtProvider {
   verifier: JwksVerifier,
 }
 
-impl From<JwtProviderOptions> for JwtProvider {
-  fn from(options: JwtProviderOptions) -> Self {
-    let verifier = JwksVerifier::from(&options.jwks);
+impl TryFrom<JwtProviderOptions> for JwtProvider {
+  type Error = anyhow::Error;
+  fn try_from(options: JwtProviderOptions) -> anyhow::Result<Self> {
+    let verifier = JwksVerifier::try_from(&options.jwks)?;
 
-    Self { options, verifier }
+    Ok(Self { options, verifier })
   }
 }
 
@@ -108,9 +127,7 @@ impl JwtProvider {
   }
 
   async fn validate_token(&self, token: &str) -> Valid<(), AuthError> {
-    // TODO: set client?
-    let j = RemoteJwksVerifier::new("http://127.0.0.1:3000/jwks".into(), None, Duration::from_secs(5 * 3600));
-    let c = j.verify::<()>(&token).await.unwrap();
+    let c = self.verifier.verify(&token).await.unwrap();
 
     self.validate_claims(&c)
   }
@@ -129,8 +146,7 @@ impl JwtProvider {
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use jwtk::OneOrMany;
-use serde_json::json;
+  use serde_json::json;
 
   use crate::valid::ValidationError;
 
@@ -145,7 +161,7 @@ use serde_json::json;
   fn jwt_options_parse() -> Result<()> {
     let options: JwtProviderOptions = serde_json::from_value(json!({
       "jwks": {
-        "file": "test-jwks.json"
+        "file": "tests/server/config/jwks.json"
       }
     }))?;
 
@@ -165,9 +181,9 @@ use serde_json::json;
   }
 
   #[tokio::test]
-  async fn validate_token_iss() {
+  async fn validate_token_iss() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -175,7 +191,7 @@ use serde_json::json;
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.issuer = Some("me".to_owned());
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -183,17 +199,19 @@ use serde_json::json;
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.issuer = Some("another".to_owned());
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 
     assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn validate_token_aud() {
+  async fn validate_token_aud() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -201,7 +219,7 @@ use serde_json::json;
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.audiences = HashSet::from_iter(["them".to_string()]);
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -209,10 +227,11 @@ use serde_json::json;
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.audiences = HashSet::from_iter(["anothem".to_string()]);
-    let jwt_provider = JwtProvider::from(jwt_options);
+    let jwt_provider = JwtProvider::try_from(jwt_options)?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 
     assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
+    Ok(())
   }
 }

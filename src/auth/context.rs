@@ -33,13 +33,10 @@ impl GlobalAuthContext {
 impl AuthContext {
   pub async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
     if let Some(valid) = self.auth_result.lock().unwrap().as_ref() {
-      dbg!("From cache", valid);
       return valid.clone();
     }
 
     let result = self.global_ctx.validate(request).await;
-
-    dbg!("resolved", &result);
 
     self.auth_result.lock().unwrap().replace(result.clone());
 
