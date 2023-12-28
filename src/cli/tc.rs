@@ -62,11 +62,11 @@ pub fn run() -> Result<()> {
 pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
 
-  let ans = Confirm::new("Do you want to add a file to the project?")
+  let answer = Confirm::new("Do you want to add a file to the project?")
     .with_default(false)
     .prompt();
 
-  match ans {
+  match answer {
     Ok(true) => {
       let file_name = inquire::Text::new("Enter the file name:")
         .with_default(".graphql")
