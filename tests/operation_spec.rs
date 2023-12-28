@@ -13,7 +13,7 @@ struct OperationQuerySpec {
 }
 
 impl OperationSpec {
-  fn new(path: PathBuf, content: &str) -> OperationSpec {
+  fn new(_path: PathBuf, _content: &str) -> OperationSpec {
     // TODO: Fill this later
     OperationSpec { test_queries: vec![] }
   }
@@ -23,7 +23,7 @@ impl OperationSpec {
     dir_path.push(path);
 
     let entries = fs::read_dir(dir_path.clone())?;
-    let mut files: Vec<OperationSpec> = vec![];
+    let _files: Vec<OperationSpec> = vec![];
 
     for entry in entries {
       let path = entry?.path();

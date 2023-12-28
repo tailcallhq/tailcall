@@ -28,20 +28,19 @@ type Post {
 }
 
 #> client-query
-query @diagnostic(0) {
-    user(id: 1) {
-        id
-        name
-        username
-    }
+query @diagnostic(count: 0) {
+  user(id: 1) {
+    id
+    name
+    username
+  }
 }
 
-
 #> client-query
-query @diagnostic(1) {
-    user(id: 1) {
-        id
-        nome
-        username
-    }
+query @diagnostic(count: 1) {
+  user(id: 1) {
+    id
+    nome
+    username
+  }
 }

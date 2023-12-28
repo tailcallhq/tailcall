@@ -9,9 +9,9 @@ use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
-use crate::cli::CLIError;
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
@@ -176,27 +176,4 @@ fn logger_init() {
   let env = Env::new().filter_or(filter_env_name, "info");
 
   env_logger::Builder::from_env(env).init();
-}
-
-fn validate_operations(blueprint: &Blueprint, operations: Vec<String>) -> Valid<Vec<()>, String> {
-  match tokio::runtime::Runtime::new() {
-        Ok(runtime) => runtime.block_on(async {
-    let schema = blueprint.to_validation_schema();
-    let mut execution = vec![];
-
-    Valid::from_iter(operations.iter(), |op| {
-                let handle = tokio::spawn(async {
-      match tokio::fs::read_to_string(op).await {
-        Ok(operation) => {
-        let Response { errors, .. } = schema.execute(&operation).await;
-            Fmt::format_operation(op, &errors)
-                    }
-        Err(_) => Valid::fail(format!("Cannot read operation {}", op)),
-      }
-                });
-
-        })
-  })
-        Err(_) => Valid::fail("Cannot create tokio runtime".to_string()),
-    }
 }
