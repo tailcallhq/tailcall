@@ -53,28 +53,6 @@ jobs:
         run: |
           TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/benchmark.graphql &
 
-      - name: Install Nginx
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y nginx
-
-      - name: Clean Up
-        run: |
-          sudo rm -rf /etc/nginx/sites-enabled/default
-
-      - name: Copy Nginx Configuration
-        working-directory: ci-benchmark
-        run: |
-          sudo cp nginx.conf /etc/nginx/
-
-      - name: Test Nginx Configuration
-        run: |
-          sudo nginx -t
-
-      - name: Start Nginx
-        run: |
-          sudo systemctl start nginx
-
       - name: Install Wrk
         run: |
           sudo apt-get install -y wrk
@@ -180,12 +158,6 @@ jobs:
           cargo criterion --message-format=json > benches/main_benchmarks.json
           ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
           cat benches/main_benchmarks.md
-
-      - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v3
-        with:
-          path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.sha }}
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
