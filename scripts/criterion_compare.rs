@@ -11,6 +11,8 @@ use std::{env, fs};
 use serde::Deserialize;
 use serde_json::from_str;
 
+const CHANGE_THRESHOLD: f32 = 10.0;
+
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 struct Benchmark {
@@ -89,7 +91,7 @@ fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> 
     .zip(new_benchmarks.iter())
     .filter_map(|(old, new)| {
       let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-      if percentage_change > 10.0 {
+      if percentage_change > CHANGE_THRESHOLD {
         Some((old.id.clone(), percentage_change))
       } else {
         None
