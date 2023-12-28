@@ -1,0 +1,26 @@
+name: PR Naming Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  pr-naming-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check PR Title Format
+        id: check-title
+        run: |
+          titleRegex="^[a-zA-Z]+(\([a-zA-Z]*\)): .+"
+          title="${{ github.event.pull_request.title }}"
+          
+          if ! [[ "$title" =~ $titleRegex ]]; then
+            echo "Error: Invalid PR title format. Please follow the format: <type>(<optional scope>): <title>"
+            exit 1
+          else
+            echo "Success: PR title format is valid!"
+          fi
