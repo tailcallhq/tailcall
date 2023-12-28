@@ -1,0 +1,31 @@
+---
+name: Custom Env
+config: !file tests/http/config/with-env.graphql
+
+env:
+  POST_ID: 1
+
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts/1
+    response:
+      body:
+        id: 1
+        title: "Post 1"
+        body: "Post 1 body"
+        userId: 1
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { post {id title body userId} }"
+    response:
+      body:
+        data:
+          post:
+            id: 1
+            title: "Post 1"
+            body: "Post 1 body"
+            userId: 1
