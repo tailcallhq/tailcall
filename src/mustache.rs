@@ -82,10 +82,17 @@ fn parse_name(input: &str) -> IResult<&str, String> {
     nom::sequence::tuple((
       nom::character::complete::multispace0,
       nom::character::complete::alpha1,
-      nom::character::complete::alphanumeric0,
+      nom::multi::many0(nom::branch::alt((
+        nom::character::complete::alphanumeric1,
+        nom::bytes::complete::tag("_"),
+      ))),
       nom::character::complete::multispace0,
     )),
-    |(_, a, b, _)| format!("{}{}", a, b),
+    |(_, a, b, _)| {
+      let b: String = b.into_iter().collect();
+
+      format!("{}{}", a, b)
+    },
   )(input)
 }
 
