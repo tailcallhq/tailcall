@@ -2,10 +2,10 @@ use nom::{Finish, IResult};
 
 use crate::path::{PathGraphql, PathString};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
   Literal(String),
   Expression(Vec<String>),
@@ -31,6 +31,7 @@ impl Mustache {
     }
   }
 
+  // TODO: infallible function, no need to return Result
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
     match result {

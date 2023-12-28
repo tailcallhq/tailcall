@@ -1,9 +1,9 @@
-use std::fs;
+use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
+use env_logger::Env;
 use inquire::Confirm;
-use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
@@ -11,6 +11,7 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
@@ -18,12 +19,12 @@ use crate::print_schema;
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
+  logger_init();
+
   match cli.command {
-    Command::Start { file_paths, log_level } => {
-      env_logger::Builder::new()
-        .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
-        .init();
-      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_paths.iter()).await })?;
+    Command::Start { file_paths } => {
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -33,14 +34,21 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(async { Config::from_iter(file_path.iter()).await })?;
-      let blueprint = Blueprint::try_from(&config);
+    Command::Check { file_path, n_plus_one_queries, schema, out_file_path } => {
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
+      let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
         Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
           if schema {
             display_schema(&blueprint);
+          }
+          if let Some(out_file) = out_file_path {
+            tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
+            Fmt::display(Fmt::success(
+              &format!("Schema has been written to {}", out_file).to_string(),
+            ));
           }
           Ok(())
         }
@@ -110,4 +118,21 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
+}
+
+// initialize logger
+fn logger_init() {
+  // set the log level
+  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
+  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
+
+  // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
+  let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
+    .map(|_| LONG_ENV_FILTER_VAR_NAME)
+    .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
+
+  // use the log level from the env if there is one, othwerise use the default.
+  let env = Env::new().filter_or(filter_env_name, "info");
+
+  env_logger::Builder::from_env(env).init();
 }

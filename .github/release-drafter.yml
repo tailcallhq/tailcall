@@ -34,6 +34,9 @@ categories:
   - title: "💥Breaking Changes"
     labels:
       - "breaking change"
+  - title: "🔧 Dependency Updates"
+    labels:
+      - "renovate"
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
@@ -68,10 +71,14 @@ autolabeler:
       - '/chore\/.+/'
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
+      - '!/renovate\//'
+  - label: "renovate"
+    branch:
       - '/renovate\/.+/'
   - label: "bug"
     branch:
       - '/fix\/.+/'
+      - '!/renovate\//'
     title:
       - "/fix/i"
   - label: "enhancement"

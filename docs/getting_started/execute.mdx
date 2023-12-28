@@ -1,0 +1,56 @@
+---
+title: Execute
+sidebar_position: 4
+---
+
+1. Open a web browser and go to [http://localhost:8000](http://localhost:8000). This should load the GraphiQL interface.
+2. In the query editor of GraphiQL, enter the following query
+
+   ```graphql showLineNumbers
+   query {
+     users {
+       id
+       name
+       posts {
+         title
+       }
+     }
+   }
+   ```
+
+3. After running the query in GraphiQL, expect to see a JSON response structured like this:
+
+   ```json showLineNumbers
+   {
+     "data": {
+       "users": [
+         {
+           "id": 1,
+           "name": "Leanne Graham",
+           "posts": [
+             {
+               "title": "sunt aut facere repellat provident occaecati excepturi option reprehenderit"
+             }
+             // Additional posts truncated for brevity
+           ]
+         },
+         {
+           "id": 2,
+           "name": "Ervin Howell",
+           "posts": [
+             {
+               "title": "et ea vero quia laudantium autem"
+             },
+             {
+               "title": "in quibusdam tempore odit est dolorem"
+             }
+             // Additional posts truncated for brevity
+           ]
+         }
+         // Additional users truncated for brevity
+       ]
+     }
+   }
+   ```
+
+You can now add additional fields, and compose more queries together!
