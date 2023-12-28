@@ -60,6 +60,7 @@ impl DefaultHttpClient {
       .http2_keep_alive_while_idle(upstream.get_keep_alive_while_idle())
       .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
       .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
+      .use_rustls_tls()
       .user_agent(upstream.get_user_agent());
 
     if options.http2_only {
