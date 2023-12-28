@@ -47,6 +47,29 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo test
    ```
 
+## Benchmarks Comparison
+
+### Criterion Benchmarks
+
+1. **Important:** Make sure all the commits are done.
+2. **Install packages:** Install cargo-criterion rust-script.
+   ```bash
+   cargo install cargo-criterion rust-script
+   ```
+3. **Comparing Benchmarks:**
+   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
+
+   ```bash
+   git checkout main
+   cargo criterion --message-format=json > main.json
+   git checkout -
+   cargo criterion --message-format=json > feature.json
+   ./scripts/criterion_compare.rs base.json main.json table
+
+   ```
+
+4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/benchmark.md" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
+
 ## Documentation
 
 1. **Update README:** If your changes necessitate a change in the way users interact with the application, update the README accordingly.
