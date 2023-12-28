@@ -141,7 +141,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -156,10 +156,50 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json
+          ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
+
+  Criterion_Compare:
+    name: Comparing Micro Benchmarks
+    if: github.ref != 'refs/heads/main'
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Restore file
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
+
+      - name: Run Criterion Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/benchmarks.json
+          ./scripts/json_to_md.rs benches/benchmarks.json > benches/change_benchmarks.md
+
+      - name: Print Criterion Benchmarks
+        run: cat benches/change_benchmarks.md
+
+      - name: Print Benchmark Comparision
+        run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table
+
+      - name: Check Degradation
+        run: ./scripts/criterion_compare.rs  benches/main_benchmarks.json benches/benchmarks.json check
