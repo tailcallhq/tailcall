@@ -91,7 +91,7 @@ fn perform_check(old_benchmarks: &[Benchmark], new_benchmarks: &[Benchmark]) -> 
     .zip(new_benchmarks.iter())
     .filter_map(|(old, new)| {
       let percentage_change = calculate_percentage_change(old.typical.estimate, new.typical.estimate);
-      if percentage_change > CHANGE_THRESHOLD {
+      if percentage_change > CHANGE_THRESHOLD.into() {
         Some((old.id.clone(), percentage_change))
       } else {
         None
