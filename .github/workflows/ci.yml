@@ -10,7 +10,7 @@ on:
   release:
     types: [published]
 jobs:
-  check_spelling: 
+  check_spelling:
     name: Check spelling
     runs-on: ubuntu-latest
 
