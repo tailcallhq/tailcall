@@ -141,7 +141,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -168,7 +168,7 @@ jobs:
   Criterion_Compare:
     name: Comparing Micro Benchmarks
     if: github.ref != 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     permissions:
       pull-requests: write
       contents: write
