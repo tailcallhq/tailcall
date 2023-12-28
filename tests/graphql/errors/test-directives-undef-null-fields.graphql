@@ -27,7 +27,7 @@ type Post {
   user: User @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
   nonNullableUser: User! @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
   userArg: User @http(path: "/users/{{args.id}}", baseURL: "http://localhost:8080")
-  userInvalidDirective: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
+  userInvalidDirective: User @http(path: "/users/{{value.userId}}", baseURL: "http://localhost:8080")
   userNonScalar: User @http(path: "/users/{{value.nonNullableUser}}", baseURL: "http://localhost:8080")
   userNullable: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
   nestedUserNullable: User

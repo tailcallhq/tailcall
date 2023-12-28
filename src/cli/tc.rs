@@ -131,7 +131,7 @@ fn logger_init() {
     .map(|_| LONG_ENV_FILTER_VAR_NAME)
     .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
 
-  // use the log level from the env if there is one, othwerise use the default.
+  // use the log level from the env if there is one, otherwise use the default.
   let env = Env::new().filter_or(filter_env_name, "info");
 
   env_logger::Builder::from_env(env).init();
