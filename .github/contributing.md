@@ -64,7 +64,7 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo criterion --message-format=json > main.json
    git checkout -
    cargo criterion --message-format=json > feature.json
-   scripts/criterion_compare base.json main.json
+   ./scripts/criterion_compare.rs base.json main.json table
 
    ```
 
