@@ -10,6 +10,13 @@ on:
   release:
     types: [published]
 jobs:
+  check_spelling: 
+    name: Check spelling
+    uses: codespell-project/actions-codespell@v2
+    with:
+      skip: .git,*/package.json,*/package-lock.json,*.lock,.github,.vscode,assets
+      ignore_words_file: .codespellignore
+
   check_if_build:
     name: Check if Build
     runs-on: ubuntu-latest
