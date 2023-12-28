@@ -62,11 +62,11 @@ pub fn run() -> Result<()> {
 pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
 
-  let ans = Confirm::new("Do you want to add a file to the project?")
+  let answer = Confirm::new("Do you want to add a file to the project?")
     .with_default(false)
     .prompt();
 
-  match ans {
+  match answer {
     Ok(true) => {
       let file_name = inquire::Text::new("Enter the file name:")
         .with_default(".graphql")
@@ -131,7 +131,7 @@ fn logger_init() {
     .map(|_| LONG_ENV_FILTER_VAR_NAME)
     .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
 
-  // use the log level from the env if there is one, othwerise use the default.
+  // use the log level from the env if there is one, otherwise use the default.
   let env = Env::new().filter_or(filter_env_name, "info");
 
   env_logger::Builder::from_env(env).init();

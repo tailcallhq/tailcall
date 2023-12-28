@@ -25,4 +25,4 @@ type News {
 }
 
 #> client-sdl
-type Failure @error(message: "Could't find method X", trace: ["Query", "news", "@grpc"])
+type Failure @error(message: "Couldn't find method X", trace: ["Query", "news", "@grpc"])
