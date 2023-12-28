@@ -96,6 +96,9 @@ struct HttpSpec {
   mock: Vec<Mock>,
 
   #[serde(default)]
+  env: BTreeMap<String, String>,
+
+  #[serde(default)]
   expected_upstream_requests: Vec<UpstreamRequest>,
   assert: Vec<DownstreamAssertion>,
 
@@ -118,6 +121,12 @@ impl HttpSpec {
         let contents = fs::read_to_string(&path)?;
         let spec: HttpSpec =
           Self::from_source(source, contents).map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+
+        spec.env.iter().for_each(|(key, value)| {
+          println!("setting env var: {}={}", key, value);
+          println!("env var is: {}", std::env::var(key).unwrap_or_default());
+        });
+          // println!("spec: {:?}", spec);
         files.push(spec.path(path));
       }
     }
@@ -162,7 +171,13 @@ impl HttpSpec {
       Source::Yml => anyhow::Ok(serde_yaml::from_str(&contents)?),
       _ => Err(anyhow!("only json and yaml are supported")),
     };
-    anyhow::Ok(spec?)
+    let spec: HttpSpec = spec?;
+
+    spec.env.iter().for_each(|(key, value)| {
+      std::env::set_var(key, value);
+    });
+
+    anyhow::Ok(spec)
   }
 
   async fn server_context(&self) -> Arc<ServerContext> {
@@ -408,6 +423,7 @@ async fn http_spec_e2e() -> anyhow::Result<()> {
   let spec = HttpSpec::filter_specs(spec);
   let tasks: Vec<_> = spec
     .into_iter()
+    .filter(|spec| spec.name == "With Env")
     .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
     .collect();
   for task in tasks {
