@@ -159,6 +159,12 @@ jobs:
           ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
           cat benches/main_benchmarks.md
 
+      - name: Cache Criterion Benchmarks Json
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.sha }}
+
   Criterion_Compare:
     name: Comparing Micro Benchmarks
     if: contains(github.event.pull_request.labels.*.name, 'benchmark') || github.event_name == 'push'
