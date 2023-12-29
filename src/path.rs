@@ -70,7 +70,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
       "args" => convert_value(ctx.arg(tail)?),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-      "env" => std::env::var(tail[0].as_ref()).ok().map(|v| v.into()),
+      "env" => ctx.env_var(tail[0].as_ref()).map(|v| v.into()),
       _ => None,
     })
   }
@@ -89,7 +89,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
       "args" => Some(ctx.arg(tail)?.to_string()),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-      "env" => std::env::var(tail[0].as_ref()).ok().map(|v| format!(r#""{v}""#)),
+      "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
       _ => None,
     })
   }
