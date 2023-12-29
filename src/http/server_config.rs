@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use super::ServerContext;
@@ -30,7 +30,12 @@ impl ServerConfig {
       "HTTP/2" => "https",
       _ => "http",
     };
-    let addr = self.addr().to_string();
+    let mut addr = self.addr();
+
+    if addr.ip().is_unspecified() {
+      addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), addr.port());
+    }
+
     format!("{}://{}", protocol, addr)
   }
 

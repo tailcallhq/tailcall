@@ -8,7 +8,7 @@ name = "tailcall"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.76"
+anyhow = "1.0.77"
 derive_setters = "0.1.6"
 thiserror = "1.0.52"
 mimalloc = { version = "0.1.39", default-features = false }
@@ -34,7 +34,7 @@ base64 = "0.21"
 indexmap = "2.1"
 once_cell = "1.19.0"
 mini-v8 = { version = "0.4.1", optional = true }
-clap = { version = "4.4.11", features = ["derive"] }
+clap = { version = "4.4.12", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 http-cache-reqwest = { version = "0.12.0", features = [
@@ -43,7 +43,7 @@ http-cache-reqwest = { version = "0.12.0", features = [
 reqwest-middleware = "0.2.4"
 async-trait = "0.1.75"
 serde_path_to_error = "0.1.14"
-moka = { version = "0.12.1", default-features = false, features = ["future"] }
+moka = { version = "0.12.2", default-features = false, features = ["future"] }
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
