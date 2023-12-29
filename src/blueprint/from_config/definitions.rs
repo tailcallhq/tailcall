@@ -243,10 +243,6 @@ fn update_args<'a>(
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, name), _| {
     let mut hasher = hasher.clone();
     name.hash(&mut hasher);
-    let cache = field
-      .cache
-      .as_ref()
-      .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
 
     // TODO! assert type name
     Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -264,7 +260,6 @@ fn update_args<'a>(
       of_type: to_type(*field, None),
       directives: Vec::new(),
       resolver: None,
-      cache,
     })
   })
 }
@@ -346,6 +341,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_nested_resolvers())
+      .and(update_cache())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 

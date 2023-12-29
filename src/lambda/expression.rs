@@ -77,6 +77,14 @@ impl Cache {
   pub fn new(max_age: NonZeroU64, source: Box<Expression>) -> Self {
     Self { max_age, source }
   }
+
+  pub fn max_age(&self) -> NonZeroU64 {
+    self.max_age
+  }
+
+  pub fn source(&self) -> &Expression {
+    &self.source
+  }
 }
 
 #[derive(Clone, Copy, Debug)]

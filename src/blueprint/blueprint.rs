@@ -141,7 +141,6 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
-  pub cache: Option<Cache>,
 }
 
 impl FieldDefinition {

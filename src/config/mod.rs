@@ -5,7 +5,7 @@ mod into_document;
 mod key_values;
 mod n_plus_one;
 mod reader;
-mod server;
+pub mod server;
 mod source;
 mod writer;
 
