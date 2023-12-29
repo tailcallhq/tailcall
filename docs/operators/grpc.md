@@ -16,7 +16,7 @@ type Query {
 
 In this example, when the `users` field is queried, the GraphQL server will make a gRPC request to the `ListUsers` method of the `UserService`.
 
-### Sample `.proto` File
+### Sample proto File
 
 The `.proto` file defines the structure of the gRPC service and its methods. Here is a simplified example:
 
@@ -45,7 +45,7 @@ message UserGetReply {
 }
 ```
 
-### `service`
+### service
 
 Indicates the gRPC service to be called. This should match the service name as defined in the `.proto` file.
 
@@ -62,7 +62,7 @@ type Query {
 }
 ```
 
-### `method`
+### method
 
 Indicates the specific gRPC method to be invoked within the specified service. This should match the method name as defined in the `.proto` file.
 
@@ -79,7 +79,7 @@ type Query {
 }
 ```
 
-### `protoPath`
+### protoPath
 
 Path to the `.proto` file, containing service and method definitions for request/response encoding and decoding. The path can be relative or absolute. If the path is relative, it is resolved relative to the directory where the tailcall command is run from.
 
@@ -96,7 +96,7 @@ type Query {
 }
 ```
 
-### `baseURL`
+### baseURL
 
 Indicates the base URL for the gRPC API. If omitted, the default URL defined in the `@upstream` operator is used.
 
@@ -114,7 +114,7 @@ type Query {
 }
 ```
 
-### `body`
+### body
 
 Outlines the arguments for the gRPC call. The `body` field is used to specify the arguments for the gRPC call. It can be static or dynamic. Here's an example:
 
@@ -136,7 +136,7 @@ type Query {
 }
 ```
 
-### `headers`
+### headers
 
 Custom headers for the gRPC request can be specified using the `headers` argument. This is particularly useful for passing authentication tokens or other contextual information.
 
@@ -155,7 +155,7 @@ type Query {
 }
 ```
 
-### `groupBy`
+### groupBy
 
 The `groupBy` argument is used to optimize batch requests by grouping them based on specified response keys. This can significantly improve performance in scenarios with multiple, similar requests.
 
