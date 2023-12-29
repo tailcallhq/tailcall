@@ -1,6 +1,7 @@
 ---
 title: Leveraging HTTP/2 with tailcall
 ---
+
 HTTP/2 is a modern protocol that significantly improves web performance by introducing features like multiplexing, header compression, and more efficient connection handling. Tailcall, through its @http operator, enables seamless integration and utilization of HTTP/2 capabilities for both inbound and outbound API requests.
 
 ## Certificate and Key Generation
@@ -8,20 +9,24 @@ HTTP/2 is a modern protocol that significantly improves web performance by intro
 Before setting up HTTP/2 with Tailcall, you'll need a certificate and a key file for secure communication over HTTPS. Follow these steps to generate them
 
 ### 1.`Generate a Private Key`:
+
 Run the following command in your terminal to generate a private key:
 
 ```bash
 openssl genpkey -algorithm RSA -out key.pem -aes256
 ```
+
 This command generates an encrypted RSA private key and stores it in a file named `key.pem`. You'll be prompted to set a passphrase for added security.
 
 ### 2.`Generate a Certificate Signing Request (CSR)`
+
 Use the following command to generate a CSR:
 
 ```bash
 openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out cert.pem
 ```
-This command creates a self-signed certificate (cert.pem) 
+
+This command creates a self-signed certificate (cert.pem)
 
 :::tip
 Ensure the `cert.pem` and `key.pem` files are securely stored and accessible to your Tailcall server for HTTPS communication.
@@ -39,7 +44,8 @@ schema @server(port: 8000, graphiql: true, http: HTTP2, cert: "./cert.pem", key:
   mutation: Mutation
 }
 ```
-:::Note 
+
+:::Note
 Ensure the cert and key value matches with the file path
 :::
 [getting started]: https://tailcall.run/docs/getting_started/configuration/
@@ -72,6 +78,7 @@ type Query {
   userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
 }
 ```
+
 - Utilize query parameters with Mustache templates to dynamically construct URLs.
 
 #### Request body:
@@ -81,21 +88,18 @@ type Mutation {
   createUser(input: UserInput!): User @http(method: "POST", path: "/users", body: "{{args.input}}")
 }
 ```
+
 - For methods like POST, use the body field to include data in the request body, substituting variables using Mustache templates.
 
 #### Custom Headers:
 
 ```graphql
 type Mutation {
-  users(name: String): User @http(
-    path: "/users",
-    headers: [
-      {key: "X-Server", value: "Tailcall"},
-      {key: "User-Name", value: "{{args.name}}"}
-    ]
-  )
+  users(name: String): User
+    @http(path: "/users", headers: [{key: "X-Server", value: "Tailcall"}, {key: "User-Name", value: "{{args.name}}"}])
 }
 ```
+
 - Customize headers using Mustache templates for dynamic values, derived from request arguments or context.
 
 ### Conclusion
