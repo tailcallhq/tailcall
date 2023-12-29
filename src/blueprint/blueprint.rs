@@ -11,7 +11,7 @@ use serde_json::Value;
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
-use crate::lambda::{self, Expression, Lambda};
+use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -158,14 +158,6 @@ impl FieldDefinition {
       None => Some(default_res.expression),
       Some(expr) => Some(other(Lambda::new(expr)).expression),
     };
-    self
-  }
-
-  pub fn resolver_cached(mut self, max_age: NonZeroU64) -> Self {
-    self.resolver = Some(Expression::Cache(lambda::Cache::new(
-      max_age,
-      Box::new(self.resolver.unwrap()),
-    )));
     self
   }
 }
