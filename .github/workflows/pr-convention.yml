@@ -1,0 +1,14 @@
+name: PR Title Validation
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  title-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: naveenk1223/action-pr-title@master
+        with:
+          regex: '^[a-zA-Z]+(\([a-zA-Z]+\))?: .+'
+          allowed_prefixes: "feat,fix,docs,style,refactor,test,chore,ci,perf,revert"
+          prefix_case_sensitive: false

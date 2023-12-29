@@ -101,7 +101,7 @@ impl ProtobufService {
       .service_descriptor
       .methods()
       .find(|method| method.name() == method_name)
-      .with_context(|| format!("Could't find method {method_name}"))?;
+      .with_context(|| format!("Couldn't find method {method_name}"))?;
 
     let input_type = method.input();
     let output_type = method.output();
@@ -256,7 +256,7 @@ mod tests {
     let service = file.find_service("Greeter")?;
     let error = service.find_operation("_unknown").unwrap_err();
 
-    assert_eq!(error.to_string(), "Could't find method _unknown");
+    assert_eq!(error.to_string(), "Couldn't find method _unknown");
 
     Ok(())
   }

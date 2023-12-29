@@ -173,12 +173,12 @@ In this given example, the `globalResponseTimeout` is set to `5000` milliseconds
 It's crucial to set an appropriate response timeout, especially in production environments. This not only optimizes resource utilization but also acts as a security measure against potential denial-of-service attacks where adversaries might run complex queries to exhaust server resources.
 :::
 
-## http
+## version
 
 The version of HTTP to be used by the server. If not specified, the default value is `HTTP1`. The available options are `HTTP1` and `HTTP2`.
 
 ```graphql showLineNumbers
-schema @server(http: HTTP2) {
+schema @server(version: HTTP2) {
   query: Query
   mutation: Mutation
 }

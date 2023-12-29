@@ -16,6 +16,7 @@ Certainly! Here's the table with hyperlinks added back to the operator names:
 | [@cache](cache.md)        | Enables caching for the query, field or type it is applied to.                                               |
 | [@const](const.md)        | Allows embedding of a constant response within the schema.                                                   |
 | [@graphQL](graphql.md)    | Resolves a field or node by a GraphQL API.                                                                   |
+| [@grpc](grpc.md)          | Resolves a field or node by a gRPC API.                                                                      |
 | [@http](http.md)          | Resolves a field or node by a REST API.                                                                      |
 | [@modify](modify.md)      | Enables changes to attributes of fields or nodes in the schema.                                              |
 | [@server](server.md)      | Provides server configurations for behavior tuning and tailcall optimization in various use-cases.           |
