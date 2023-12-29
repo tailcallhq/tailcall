@@ -8,7 +8,7 @@ use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
-use super::command::{Cli, Command};
+use super::command::{Cli, Command, FormatOption};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
@@ -54,6 +54,18 @@ pub fn run() -> Result<()> {
         }
         Err(e) => Err(e.into()),
       }
+    }
+    Command::Compose { file_path, format } => {
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
+
+      Fmt::display(match format {
+        FormatOption::YML => config.to_yaml()?,
+        FormatOption::GQL => config.to_sdl(),
+        FormatOption::JSON => config.to_json(true)?,
+      });
+
+      Ok(())
     }
     Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }

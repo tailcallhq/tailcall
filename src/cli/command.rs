@@ -18,6 +18,26 @@ pub struct Cli {
   pub command: Command,
 }
 
+#[derive(Clone)]
+pub enum FormatOption {
+  YML,
+  GQL,
+  JSON,
+}
+
+impl std::str::FromStr for FormatOption {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s.to_lowercase().as_str() {
+      "json" => Ok(FormatOption::JSON),
+      "yml" | "yaml" => Ok(FormatOption::YML),
+      "graphql" | "gql" => Ok(FormatOption::GQL),
+      _ => Err(format!("Invalid format: {}", s)),
+    }
+  }
+}
+
 #[derive(Subcommand)]
 pub enum Command {
   /// Starts the GraphQL server on the configured port
@@ -45,6 +65,18 @@ pub enum Command {
     #[arg(short, long("out"))]
     out_file_path: Option<String>,
   },
+
+  /// Merge multiple configuration file into one
+  Compose {
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_path: Vec<String>,
+
+    /// Format of the result. Accepted values: JSON|YML|GQL. For blueprint option, only YML and JSON are allowed
+    #[clap(short, long, default_value = "json")]
+    format: FormatOption,
+  },
+
   /// Initialize a new project
   Init { file_path: String },
 }
