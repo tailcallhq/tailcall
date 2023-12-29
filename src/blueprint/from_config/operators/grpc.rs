@@ -8,7 +8,7 @@ use crate::config::{Config, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
-use crate::lambda::{Expression, Lambda, Unsafe};
+use crate::lambda::{Expression, Lambda, Unsafe, self};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -128,13 +128,23 @@ pub fn update_grpc<'a>(
               RequestTemplate { url, headers, operation, body, operation_type: operation_type.clone() };
 
             if !grpc.group_by.is_empty() {
-              Valid::succeed(b_field.resolver(Some(Expression::Unsafe(Unsafe::Grpc {
+              let source = Expression::Unsafe(Unsafe::Grpc {
                 req_template,
                 group_by: Some(GroupBy::new(grpc.group_by.clone())),
                 dl_id: None,
-              }))))
+              });
+              if let Some(cache) = &field.cache {
+                Valid::succeed(b_field.resolver(Some(Expression::Cache(lambda::Cache::new(cache.max_age, Box::new(source))))))
+              } else {
+                Valid::succeed(b_field.resolver(Some(source)))
+              }
             } else {
-              Valid::succeed(b_field.resolver(Some(Lambda::from_grpc_request_template(req_template).expression)))
+              let source = Lambda::from_grpc_request_template(req_template).expression;
+              if let Some(cache) = &field.cache {
+                Valid::succeed(b_field.resolver(Some(Expression::Cache(lambda::Cache::new(cache.max_age, Box::new(source))))))
+              } else {
+                Valid::succeed(b_field.resolver(Some(source)))
+              }
             }
           })
         })

@@ -5,6 +5,7 @@ use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, Lambda, Unsafe};
+use crate::lambda;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{config, helpers};
@@ -175,13 +176,23 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
         })
         .map(|req_template| {
           if !http.group_by.is_empty() && http.method == Method::GET {
-            b_field.resolver(Some(Expression::Unsafe(Unsafe::Http {
-              req_template,
-              group_by: Some(GroupBy::new(http.group_by.clone())),
-              dl_id: None,
-            })))
+            let source = Expression::Unsafe(Unsafe::Http {
+                req_template,
+                group_by: Some(GroupBy::new(http.group_by.clone())),
+                dl_id: None,
+              });
+            if let Some(cache) = &field.cache {
+              b_field.resolver(Some(Expression::Cache(lambda::Cache::new (cache.max_age, Box::new(source)))))
+            } else {
+              b_field.resolver(Some(source))
+            }
           } else {
-            b_field.resolver(Some(Lambda::from_request_template(req_template).expression))
+            let source = Lambda::from_request_template(req_template).expression;
+            if let Some(cache) = &field.cache {
+              b_field.resolver(Some(Expression::Cache(lambda::Cache::new (cache.max_age, Box::new(source)))))
+            } else {
+              b_field.resolver(Some(source))
+            }
           }
         })
         .and_then(|b_field| validate_field(type_of, config, &b_field).map_to(b_field))

@@ -69,9 +69,15 @@ pub enum Unsafe {
 }
 
 #[derive(Clone, Debug)]
-struct Cache {
+pub struct Cache {
   max_age: NonZeroU64,
   source: Box<Expression>,
+}
+
+impl Cache {
+  pub fn new(max_age: NonZeroU64, source: Box<Expression>) -> Self {
+    Self { max_age, source }
+  }
 }
 
 #[derive(Clone, Copy, Debug)]
