@@ -42,7 +42,6 @@ jobs:
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     steps:
-      - uses: mozilla-actions/sccache-action@v0.0.3
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
@@ -62,17 +61,11 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Install llvm-tools-preview
-        run: rustup component add llvm-tools-preview
-
       - name: Run Cargo Test
         uses: actions-rs/cargo@v1
         with:
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
-        env:
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v3
