@@ -8,6 +8,9 @@ pub trait ResolverContextLike<'a> {
   fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
   fn field(&'a self) -> Option<SelectionField>;
   fn add_error(&'a self, error: ServerError);
+  fn env_var(&'a self, key: &str) -> Option<String> {
+    std::env::var(key).ok()
+  }
 }
 
 pub struct EmptyResolverContext;
