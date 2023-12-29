@@ -62,6 +62,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Install llvm-tools-preview
+        run: rustup component add llvm-tools-preview
+
       - name: Run Cargo Test
         uses: actions-rs/cargo@v1
         with:
