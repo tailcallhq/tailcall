@@ -238,7 +238,12 @@ mod tests {
       // envs
       std::env::set_var("x-existing", "env");
       assert_eq!(EVAL_CTX.path_string(&["env", "x-existing"]), Some(Cow::Borrowed("env")));
-      assert_eq!(EVAL_CTX.path_string(&["env", "x-missing"]), None)
+      assert_eq!(EVAL_CTX.path_string(&["env", "x-missing"]), None);
+
+      // other value types
+      assert_eq!(EVAL_CTX.path_string(&["foo", "key"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["bar", "key"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["baz", "key"]), None);
     }
 
     #[test]
@@ -287,6 +292,11 @@ mod tests {
         Some("\"env\"".to_owned())
       );
       assert_eq!(EVAL_CTX.path_graphql(&["env", "x-missing"]), None);
+
+      // other value types
+      assert_eq!(EVAL_CTX.path_graphql(&["foo", "key"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["bar", "key"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["baz", "key"]), None);
     }
   }
 }
