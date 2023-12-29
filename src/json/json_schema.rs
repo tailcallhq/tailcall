@@ -11,6 +11,7 @@ pub enum JsonSchema {
   Obj(HashMap<String, JsonSchema>),
   Arr(Box<JsonSchema>),
   Opt(Box<JsonSchema>),
+  Ref(String),
   Str,
   Num,
   Bool,
@@ -34,7 +35,11 @@ impl Default for JsonSchema {
 
 impl JsonSchema {
   // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-  pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
+  pub fn validate(
+    &self,
+    value: &async_graphql::Value,
+    schema_map: &HashMap<String, JsonSchema>,
+  ) -> Valid<(), &'static str> {
     match self {
       JsonSchema::Str => match value {
         async_graphql::Value::String(_) => Valid::succeed(()),
@@ -52,7 +57,7 @@ impl JsonSchema {
         async_graphql::Value::List(list) => {
           // TODO: add unit tests
           Valid::from_iter(list.iter().enumerate(), |(i, item)| {
-            schema.validate(item).trace(i.to_string().as_str())
+            schema.validate(item, schema_map).trace(i.to_string().as_str())
           })
           .unit()
         }
@@ -64,12 +69,12 @@ impl JsonSchema {
           async_graphql::Value::Object(map) => Valid::from_iter(field_schema_list, |(name, schema)| {
             if schema.is_required() {
               if let Some(field_value) = map.get::<str>(name.as_ref()) {
-                schema.validate(field_value).trace(name)
+                schema.validate(field_value, schema_map).trace(name)
               } else {
                 Valid::fail("expected field to be non-nullable").trace(name)
               }
             } else if let Some(field_value) = map.get::<str>(name.as_ref()) {
-              schema.validate(field_value).trace(name)
+              schema.validate(field_value, schema_map).trace(name)
             } else {
               Valid::succeed(())
             }
@@ -80,7 +85,11 @@ impl JsonSchema {
       }
       JsonSchema::Opt(schema) => match value {
         async_graphql::Value::Null => Valid::succeed(()),
-        _ => schema.validate(value),
+        _ => schema.validate(value, schema_map),
+      },
+      JsonSchema::Ref(field_type_name) => match schema_map.get(field_type_name) {
+        Some(ref_schema) => ref_schema.validate(value, schema_map),
+        None => Valid::fail("Internal Server Error"),
       },
     }
   }
@@ -138,6 +147,10 @@ impl JsonSchema {
 
   pub fn is_optional(&self) -> bool {
     matches!(self, JsonSchema::Opt(_))
+  }
+
+  pub fn is_reference(&self) -> bool {
+    matches!(self, JsonSchema::Ref(_))
   }
 
   pub fn is_required(&self) -> bool {
@@ -204,6 +217,8 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+
   use async_graphql::Name;
   use indexmap::IndexMap;
 
@@ -214,7 +229,7 @@ mod tests {
   fn test_validate_string() {
     let schema = JsonSchema::Str;
     let value = async_graphql::Value::String("hello".to_string());
-    let result = schema.validate(&value);
+    let result = schema.validate(&value, &HashMap::new());
     assert_eq!(result, Valid::succeed(()));
   }
 
@@ -227,7 +242,7 @@ mod tests {
       map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
       map
     });
-    let result = schema.validate(&value);
+    let result = schema.validate(&value, &HashMap::new());
     assert_eq!(result, Valid::succeed(()));
   }
 
@@ -240,7 +255,7 @@ mod tests {
       map.insert(Name::new("age"), async_graphql::Value::String("1".to_string()));
       map
     });
-    let result = schema.validate(&value);
+    let result = schema.validate(&value, &HashMap::new());
     assert_eq!(result, Valid::fail("expected number").trace("age"));
   }
 
@@ -253,7 +268,7 @@ mod tests {
       map
     });
 
-    let result = schema.validate(&value);
+    let result = schema.validate(&value, &HashMap::new());
     assert_eq!(result, Valid::succeed(()));
   }
 }

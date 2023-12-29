@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::blueprint::from_config::to_type;
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
@@ -158,14 +160,15 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
           base_url.push_str(http.path.clone().as_str());
 
           let query = http.query.clone().iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-          let output_schema = to_json_schema_for_field(field, config);
-          let input_schema = to_json_schema_for_args(&field.args, config);
+          let (output_schema, schema_map) = to_json_schema_for_field(field, config, HashMap::new());
+          let input_schema = to_json_schema_for_args(&field.args, config, HashMap::new());
 
           RequestTemplate::try_from(
             Endpoint::new(base_url.to_string())
               .method(http.method.clone())
               .query(query)
               .output(output_schema)
+              .schema_map(schema_map)
               .input(input_schema)
               .body(http.body.clone()),
           )

@@ -119,7 +119,7 @@ impl Expression {
               req_template
                 .endpoint
                 .output
-                .validate(&res.body)
+                .validate(&res.body, &req_template.endpoint.schema_map)
                 .to_result()
                 .map_err(EvaluationError::from)?;
             }

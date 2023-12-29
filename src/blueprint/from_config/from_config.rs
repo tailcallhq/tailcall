@@ -53,17 +53,29 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   blueprint
 }
 
-pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-  to_json_schema(field, config)
+pub fn to_json_schema_for_field(
+  field: &Field,
+  config: &Config,
+  processed_types: HashMap<String, JsonSchema>,
+) -> (JsonSchema, HashMap<String, JsonSchema>) {
+  to_json_schema(field, config, processed_types)
 }
-pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
+pub fn to_json_schema_for_args(
+  args: &BTreeMap<String, Arg>,
+  config: &Config,
+  processed_types: HashMap<String, JsonSchema>,
+) -> JsonSchema {
   let mut schema_fields = HashMap::new();
   for (name, arg) in args.iter() {
-    schema_fields.insert(name.clone(), to_json_schema(arg, config));
+    schema_fields.insert(name.clone(), to_json_schema(arg, config, processed_types.clone()).0);
   }
   JsonSchema::Obj(schema_fields)
 }
-fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
+fn to_json_schema<T>(
+  field: &T,
+  config: &Config,
+  mut processed_types: HashMap<String, JsonSchema>,
+) -> (JsonSchema, HashMap<String, JsonSchema>)
 where
   T: TypeLike,
 {
@@ -71,15 +83,25 @@ where
   let list = field.list();
   let required = field.non_null();
   let type_ = config.find_type(type_of);
+
   let schema = match type_ {
     Some(type_) => {
       let mut schema_fields = HashMap::new();
-      for (name, field) in type_.fields.iter() {
-        if field.unsafe_operation.is_none() && field.http.is_none() {
-          schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
+      if processed_types.contains_key(field.name()) {
+        JsonSchema::Ref(field.name().to_string())
+      } else {
+        processed_types.insert(field.name().to_string(), JsonSchema::Ref("#".to_string()));
+        for (name, field) in type_.fields.iter() {
+          if field.unsafe_operation.is_none() && field.http.is_none() {
+            let schema_value = to_json_schema_for_field(field, config, processed_types.clone()).0;
+            schema_fields.insert(name.clone(), schema_value.clone());
+            if !schema_value.is_reference() {
+              processed_types.insert(field.name().to_string(), schema_value);
+            }
+          }
         }
+        JsonSchema::Obj(schema_fields)
       }
-      JsonSchema::Obj(schema_fields)
     }
     None => match type_of {
       "String" => JsonSchema::Str {},
@@ -90,7 +112,7 @@ where
     },
   };
 
-  if !required {
+  let final_schema = if !required {
     if list {
       JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
     } else {
@@ -100,7 +122,10 @@ where
     JsonSchema::Arr(Box::new(schema))
   } else {
     schema
-  }
+  };
+
+  processed_types.insert(field.name().to_string(), final_schema.clone());
+  (final_schema, processed_types)
 }
 
 impl TryFrom<&Config> for Blueprint {

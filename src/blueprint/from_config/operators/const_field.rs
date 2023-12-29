@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::*;
@@ -15,13 +17,16 @@ pub fn update_const_field<'a>(
       Some(const_field) => {
         let data = const_field.data.to_owned();
         match ConstValue::from_json(data.to_owned()) {
-          Ok(gql_value) => match to_json_schema_for_field(field, config).validate(&gql_value).to_result() {
-            Ok(_) => {
-              updated_b_field.resolver = Some(Literal(data));
-              Valid::succeed(updated_b_field)
+          Ok(gql_value) => {
+            let (schema, schema_map) = to_json_schema_for_field(field, config, HashMap::new());
+            match schema.validate(&gql_value, &schema_map).to_result() {
+              Ok(_) => {
+                updated_b_field.resolver = Some(Literal(data));
+                Valid::succeed(updated_b_field)
+              }
+              Err(err) => Valid::from_validation_err(err.transform(&|a| a.to_owned())),
             }
-            Err(err) => Valid::from_validation_err(err.transform(&|a| a.to_owned())),
-          },
+          }
           Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
         }
       }
