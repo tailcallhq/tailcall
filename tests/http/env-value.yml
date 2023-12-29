@@ -20,7 +20,7 @@ config: !inline
         post3:
           type: Post
           http:
-            path: /posts/{{env.POST_QUITE_NESTED_ID}}
+            path: /posts/{{env.NESTED_POST_ID}}
     Post:
       fields:
         id:
@@ -36,33 +36,39 @@ config: !inline
 env:
   ID: 1
   POST_ID: 2
-  POST_QUITE_NESTED_ID: 3
+  NESTED_POST_ID: 3
+
+post1: &post1
+  id: 1
+  title: "Post 1"
+  body: "Post 1 body"
+  userId: 1
+
+post2: &post2
+  id: 2
+  title: "Post 2"
+  body: "Post 2 body"
+  userId: 2
+
+post3: &post3
+  id: 3
+  title: "Post 3"
+  body: "Post 3 body"
+  userId: 3
 
 mock:
   - request:
       url: http://jsonplaceholder.typicode.com/posts/1
     response:
-      body:
-        id: 1
-        title: "Post 1"
-        body: "Post 1 body"
-        userId: 1
+      body: *post1
   - request:
       url: http://jsonplaceholder.typicode.com/posts/2
     response:
-      body:
-        id: 2
-        title: "Post 2"
-        body: "Post 2 body"
-        userId: 2
+      body: *post2
   - request:
       url: http://jsonplaceholder.typicode.com/posts/3
     response:
-      body:
-        id: 3
-        title: "Post 3"
-        body: "Post 3 body"
-        userId: 3
+      body: *post3
 
 assert:
   - request:
@@ -73,18 +79,6 @@ assert:
     response:
       body:
         data:
-          post1:
-            id: 1
-            title: "Post 1"
-            body: "Post 1 body"
-            userId: 1
-          post2:
-            id: 2
-            title: "Post 2"
-            body: "Post 2 body"
-            userId: 2
-          post3:
-            id: 3
-            title: "Post 3"
-            body: "Post 3 body"
-            userId: 3
+          post1: *post1
+          post2: *post2
+          post3: *post3
