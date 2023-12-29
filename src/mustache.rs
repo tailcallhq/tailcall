@@ -34,8 +34,6 @@ impl Mustache {
   // TODO: infallible function, no need to return Result
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
-    println!("str: {:?}", str);
-    println!("result: {:?}", result);
     match result {
       Ok((_, mustache)) => Ok(mustache),
       Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
