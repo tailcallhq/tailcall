@@ -1,0 +1,20 @@
+schema @server(port: 8000, graphiql: true) @auth(JWT: {jwks: {file: "tests/server/config/jwks.json"}}) {
+  query: Query
+}
+
+type Query {
+  public_scalar: String! @const(data: "data from public scalar")
+  private_scalar: String! @protected @const(data: "data from private scalar")
+  private_nested_field: PrivateNested!
+  private_type: PrivateType
+}
+
+type PrivateNested {
+  name: String! @const(data: "private nested name")
+  nested: String! @protected @const(data: "private nested")
+}
+
+type PrivateType @protected {
+  name: String! @const(data: "private type name")
+  nested: String! @const(data: "private type nested")
+}

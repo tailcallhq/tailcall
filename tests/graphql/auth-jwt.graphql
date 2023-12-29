@@ -1,0 +1,17 @@
+#> server-sdl
+schema @server @upstream @auth(JWT: {audiences: [], issuer: null, jwks: {file: "tests/server/config/jwks.json"}}) {
+  query: Query
+}
+
+type Query {
+  data: String @const(data: "data") @protected
+}
+
+#> client-sdl
+type Query {
+  data: String
+}
+
+schema {
+  query: Query
+}
