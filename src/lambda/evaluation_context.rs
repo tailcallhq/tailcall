@@ -50,7 +50,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
   }
 
   pub fn env_var(&self, key: &str) -> Option<String> {
-    self.graphql_ctx.env_var(key)
+    self.req_ctx.env_vars.get(key).cloned()
   }
 
   pub fn var(&self, key: &str) -> Option<&str> {

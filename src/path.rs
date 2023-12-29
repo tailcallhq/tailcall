@@ -99,7 +99,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 mod tests {
   mod evaluation_context {
     use std::borrow::Cow;
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, HashMap};
+    use std::sync::Arc;
 
     use async_graphql::SelectionField;
     use async_graphql_value::{ConstValue as Value, Name, Number};
@@ -154,6 +155,14 @@ mod tests {
       map
     });
 
+    static TEST_ENV_VARS: Lazy<HashMap<String, String>> = Lazy::new(|| {
+      let mut map = HashMap::new();
+
+      map.insert("existing".to_owned(), "env".to_owned());
+
+      map
+    });
+
     struct MockGraphqlContext;
 
     impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
@@ -176,6 +185,7 @@ mod tests {
       let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
+      req_ctx.env_vars = Arc::new(TEST_ENV_VARS.clone());
 
       req_ctx
     });
@@ -236,8 +246,7 @@ mod tests {
       );
 
       // envs
-      std::env::set_var("x-existing", "env");
-      assert_eq!(EVAL_CTX.path_string(&["env", "x-existing"]), Some(Cow::Borrowed("env")));
+      assert_eq!(EVAL_CTX.path_string(&["env", "existing"]), Some(Cow::Borrowed("env")));
       assert_eq!(EVAL_CTX.path_string(&["env", "x-missing"]), None);
 
       // other value types
@@ -286,9 +295,8 @@ mod tests {
       assert_eq!(EVAL_CTX.path_graphql(&["vars", "missing"]), None);
 
       // envs
-      std::env::set_var("x-existing", "env");
       assert_eq!(
-        EVAL_CTX.path_graphql(&["env", "x-existing"]),
+        EVAL_CTX.path_graphql(&["env", "existing"]),
         Some("\"env\"".to_owned())
       );
       assert_eq!(EVAL_CTX.path_graphql(&["env", "x-missing"]), None);
