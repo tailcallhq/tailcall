@@ -79,6 +79,7 @@ impl ServerContext {
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn check_resolver(
     field: &mut blueprint::FieldDefinition,
     expr: &Expression,
