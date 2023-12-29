@@ -63,7 +63,7 @@ By default, the log level is set to `info`.
 
 Log levels are hierarchical, meaning if you set the log level to a specific level, it includes all the levels above it. For example, setting the log level to `info` will include logs at the `info`, `warn`, and `error` levels, but exclude `debug` and `trace` logs.
 
-![Hierarchy of Log Levels](../../assets/logging.svg)
+![Hierarchy of Log Levels](../../assets/logging.png)
 
 :::info
 Log levels are flexible and can be provided in either uppercase or lowercase. For instance, setting `TAILCALL_LOG_LEVEL=DEBUG` or `TAILCALL_LOG_LEVEL=debug` will yield the same result.
