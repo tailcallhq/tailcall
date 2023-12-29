@@ -26,14 +26,14 @@ QUIC is a newer protocol developed by Google. It's designed to make web communic
 
 ### Why Managing Connections is Important?
 
-- **Performance Overhead
-  **: Establishing TCP connections, particularly in HTTP/1.x, can be resource-intensive due to the need for a complete TCP handshake for each new connection. This process adds latency and consumes system resources.
+- **Performance Overhead**:
+  Establishing TCP connections, particularly in HTTP/1.x, can be resource-intensive due to the need for a complete TCP handshake for each new connection. This process adds latency and consumes system resources.
 
-- **Limited Ports on Client Side
-  **: Each TCP connection from a client requires a unique combination of an IP address and a port number. The number of available ports on a client machine is finite. Excessive creation of new connections can lead to port exhaustion on the client side, preventing it from establishing new connections.
+- **Limited Ports on Client Side**:
+  Each TCP connection from a client requires a unique combination of an IP address and a port number. The number of available ports on a client machine is finite. Excessive creation of new connections can lead to port exhaustion on the client side, preventing it from establishing new connections.
 
-- **Connection Pooling
-  **: Connection pooling helps mitigate some of these issues by reusing existing connections for multiple requests. This reduces the frequency of connection establishments (and thus the handshake overhead), conserves client-side ports. This approach enhances application performance by minimizing the resources and time spent on managing connections. however, it can lead to other issues like stale connections, connection timeouts, and connection leaks. hence it is important to tune the connection pool to avoid these issues.
+- **Connection Pooling**:
+  Connection pooling helps mitigate some of these issues by reusing existing connections for multiple requests. This reduces the frequency of connection establishments (and thus the handshake overhead), conserves client-side ports. This approach enhances application performance by minimizing the resources and time spent on managing connections. however, it can lead to other issues like stale connections, connection timeouts, and connection leaks. hence it is important to tune the connection pool to avoid these issues.
 
 ## Tuning HTTP Client in Tailcall
 
