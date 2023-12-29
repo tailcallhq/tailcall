@@ -21,9 +21,6 @@ pub fn update_modify<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Ty
 
           let lambda = Lambda::context_field(b_field.name.clone());
           b_field = b_field.resolver_or_default(lambda, |r| r);
-          if let Some(cache) = &field.cache  {
-            b_field = b_field.resolver_cached(cache.max_age)
-          }
           b_field = b_field.name(new_name.clone());
         }
       }

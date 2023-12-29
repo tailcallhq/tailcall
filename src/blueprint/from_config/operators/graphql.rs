@@ -2,8 +2,7 @@ use crate::blueprint::FieldDefinition;
 use crate::config::{self, Config, Field, GraphQLOperationType};
 use crate::graphql::RequestTemplate;
 use crate::helpers;
-use crate::lambda::{Lambda, Expression};
-use crate::lambda;
+use crate::lambda::Lambda;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 
@@ -31,14 +30,9 @@ pub fn update_graphql<'a>(
       })
       .map(|req_template| {
         let field_name = graphql.name.clone();
-        let source = Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression;
-        if let Some(cache) = &field.cache {
-          b_field.resolver(Some(Expression::Cache(lambda::Cache::new(cache.max_age, Box::new(source)))))
-        } else {
-          b_field.resolver(Some(
-            source
-          ))
-        }
+        b_field.resolver(Some(
+          Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression,
+        ))
       })
     },
   )

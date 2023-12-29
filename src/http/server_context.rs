@@ -5,14 +5,14 @@ use async_graphql_value::ConstValue;
 
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition};
+use crate::blueprint::{Blueprint, Definition, self};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
-use crate::lambda::{DataLoaderId, Expression, Unsafe};
+use crate::lambda::{DataLoaderId, Expression, Unsafe, Cache};
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
@@ -100,6 +100,7 @@ impl ServerContext {
               _ => {}
             }
           }
+          Self::with_cached(field);
         }
       }
     }
@@ -116,5 +117,11 @@ impl ServerContext {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
     }
+  }
+
+  fn with_cached(field: &mut blueprint::FieldDefinition) {
+    if let Some(cache) = &field.cache {
+      field.resolver = Some(Expression::Cache(Cache::new (cache.max_age, Box::new(field.resolver.as_ref().unwrap().clone()))));
+    };
   }
 }
