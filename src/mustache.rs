@@ -34,6 +34,8 @@ impl Mustache {
   // TODO: infallible function, no need to return Result
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
+    println!("str: {:?}", str);
+    println!("result: {:?}", result);
     match result {
       Ok((_, mustache)) => Ok(mustache),
       Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
@@ -231,6 +233,18 @@ mod tests {
     fn test_new_number() {
       let mustache = Mustache::parse("123").unwrap();
       assert_eq!(mustache, Mustache::from(vec![Segment::Literal("123".to_string())]));
+    }
+
+    #[test]
+    fn parse_env_name() {
+      let result = Mustache::parse("{{env.FOO}}").unwrap();
+      assert_eq!(result, Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO".to_string()])]));
+    }
+
+    #[test]
+    fn parse_env_with_underscores() {
+      let result = Mustache::parse("{{env.FOO_BAR}}").unwrap();
+      assert_eq!(result, Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO_BAR".to_string()])]));
     }
   }
   mod render {
