@@ -2,6 +2,7 @@ mod validation;
 
 use std::collections::HashSet;
 use std::fs;
+use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -14,29 +15,44 @@ use jwtk::jwk::RemoteJwksVerifier;
 use jwtk::HeaderAndClaims;
 use serde::Deserialize;
 use serde::Serialize;
+use url::Url;
 
 use crate::helpers::config_path::config_path;
 use crate::http::RequestContext;
 use crate::valid::Valid;
+use crate::valid::ValidationError;
 
 use self::validation::validate_aud;
 use self::validation::validate_iss;
 
 use super::base::{AuthError, AuthProvider};
 
+mod remote {
+  use std::num::NonZeroU64;
+
+  pub fn default_max_age() -> NonZeroU64 {
+    NonZeroU64::new(5 * 60 * 1000).unwrap()
+  }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum JwtProviderJwksOptions {
   File(PathBuf),
-  Remote { url: String },
+  #[serde(rename_all = "camelCase")]
+  Remote {
+    url: String,
+    #[serde(default = "remote::default_max_age")]
+    max_age: NonZeroU64,
+  },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct JwtProviderOptions {
-  issuer: Option<String>,
+  pub issuer: Option<String>,
   #[serde(default)]
-  audiences: HashSet<String>,
-  jwks: JwtProviderJwksOptions,
+  pub audiences: HashSet<String>,
+  pub jwks: JwtProviderJwksOptions,
 }
 
 // only used in tests and uses mocked implementation
@@ -61,25 +77,34 @@ enum JwksVerifier {
   Remote(RemoteJwksVerifier),
 }
 
-impl TryFrom<&JwtProviderJwksOptions> for JwksVerifier {
-  type Error = anyhow::Error;
-
-  fn try_from(value: &JwtProviderJwksOptions) -> anyhow::Result<Self> {
+impl JwksVerifier {
+  pub fn parse(value: &JwtProviderJwksOptions) -> Valid<Self, String> {
     match value {
-      JwtProviderJwksOptions::File(path) => {
-        let file = fs::read_to_string(config_path(&path)?)?;
-        let jwks: JwkSet = serde_json::from_str(&file)?;
+      JwtProviderJwksOptions::File(path) => Valid::from(
+        config_path(&path)
+          .and_then(|path| fs::read_to_string(&path))
+          .map_err(|e| ValidationError::new(e.to_string())),
+      )
+      .and_then(|file| {
+        let de = &mut serde_json::Deserializer::from_str(&file);
 
-        Ok(Self::Local(jwks.verifier()))
+        Valid::from(serde_path_to_error::deserialize(de).map_err(|e| ValidationError::from(e)))
+      })
+      .trace(&format!("{}", path.display()))
+      .trace("file")
+      .map(|jwks: JwkSet| Self::Local(jwks.verifier())),
+      JwtProviderJwksOptions::Remote { url, max_age } => {
+        Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).map_to(Self::Remote(
+          RemoteJwksVerifier::new(
+            url.to_owned(),
+            // TODO: set client?
+            None,
+            Duration::from_millis(max_age.get()),
+          ),
+        ))
       }
-      JwtProviderJwksOptions::Remote { url } => Ok(Self::Remote(RemoteJwksVerifier::new(
-        url.to_owned(),
-        // TODO: set client?
-        None,
-        // TODO: set duration from config
-        Duration::from_secs(5 * 3600),
-      ))),
     }
+    .trace("jwks")
   }
 }
 
@@ -97,12 +122,9 @@ pub struct JwtProvider {
   verifier: JwksVerifier,
 }
 
-impl TryFrom<JwtProviderOptions> for JwtProvider {
-  type Error = anyhow::Error;
-  fn try_from(options: JwtProviderOptions) -> anyhow::Result<Self> {
-    let verifier = JwksVerifier::try_from(&options.jwks)?;
-
-    Ok(Self { options, verifier })
+impl JwtProvider {
+  pub fn parse(options: JwtProviderOptions) -> Valid<Self, String> {
+    JwksVerifier::parse(&options.jwks).map(|verifier| Self { options, verifier })
   }
 }
 
@@ -127,9 +149,10 @@ impl JwtProvider {
   }
 
   async fn validate_token(&self, token: &str) -> Valid<(), AuthError> {
-    let c = self.verifier.verify(&token).await.unwrap();
+    let verification = self.verifier.verify(&token).await;
 
-    self.validate_claims(&c)
+    Valid::from(verification.map_err(|_| ValidationError::new(AuthError::ValidationNotAccessible)))
+      .and_then(|v| self.validate_claims(&v))
   }
 
   fn validate_claims(&self, parsed: &HeaderAndClaims<()>) -> Valid<(), AuthError> {
@@ -183,7 +206,7 @@ mod tests {
   #[tokio::test]
   async fn validate_token_iss() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -191,7 +214,7 @@ mod tests {
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.issuer = Some("me".to_owned());
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -199,7 +222,7 @@ mod tests {
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.issuer = Some("another".to_owned());
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 
@@ -211,7 +234,7 @@ mod tests {
   #[tokio::test]
   async fn validate_token_aud() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -219,7 +242,7 @@ mod tests {
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.audiences = HashSet::from_iter(["them".to_string()]);
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -227,7 +250,7 @@ mod tests {
 
     let mut jwt_options = JwtProviderOptions::default();
     jwt_options.audiences = HashSet::from_iter(["anothem".to_string()]);
-    let jwt_provider = JwtProvider::try_from(jwt_options)?;
+    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 

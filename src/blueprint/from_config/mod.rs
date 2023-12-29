@@ -1,3 +1,4 @@
+mod auth;
 mod definitions;
 mod from_config;
 mod operators;
@@ -5,6 +6,7 @@ mod schema;
 mod server;
 mod upstream;
 
+pub use auth::*;
 pub use definitions::*;
 pub use from_config::*;
 pub use operators::*;

@@ -2,11 +2,9 @@ use std::sync::Arc;
 
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
-use serde_json::json;
 
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::auth::context::GlobalAuthContext;
-use crate::auth::jwt::{JwtProvider, JwtProviderOptions};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -109,24 +107,14 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
-
-    // TODO: parse from config
-    let jwt_options = serde_json::from_value::<JwtProviderOptions>(json!({
-      "issuer": "me",
-      "jwks": {
-        "file": "examples/jwks.json"
-      }
-    }))
-    .unwrap();
-    let mut jwt_provider = JwtProvider::try_from(jwt_options).unwrap();
+    let auth_ctx = GlobalAuthContext::from(&blueprint);
 
     ServerContext {
       schema,
       universal_http_client,
       http2_only_client,
       blueprint,
-      // TODO: fetch from blueprint
-      auth_ctx: Arc::new(GlobalAuthContext { jwt_provider: Some(jwt_provider) }),
+      auth_ctx: Arc::new(auth_ctx),
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
       grpc_data_loaders: Arc::new(grpc_data_loaders),

@@ -6,6 +6,8 @@ use crate::{valid::Valid, http::RequestContext};
 pub enum AuthError {
   #[error("Haven't found auth parameters")]
   Missing,
+  #[error("Couldn't validate auth request")]
+  ValidationNotAccessible,
   #[error("Auth validation failed")]
   ValidationFailed
 }

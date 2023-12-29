@@ -33,7 +33,7 @@ async fn token_handler(state: Arc<State>) -> Result<Response<Body>> {
     .set_iss("me")
     .set_sub("you")
     .add_aud("them")
-    .set_exp_from_now(Duration::from_secs(5 * 3600));
+    .set_exp_from_now(Duration::from_secs(24 * 365 * 10 * 3600));
   let token = sign(&mut token, &state.k)?;
 
   Ok(Response::new(Body::from(

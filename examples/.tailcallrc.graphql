@@ -331,9 +331,14 @@ input Batch {
   headers: [String]
 }
 
+input AuthJwtJwksRemote {
+  url: String!
+  maxAge: Int
+}
+
 input AuthJWTJwks {
   file: String
-  url: String
+  remote: AuthJwtJwksRemote
 }
 
 input AuthJWT {

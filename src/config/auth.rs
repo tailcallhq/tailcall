@@ -5,7 +5,7 @@ use crate::auth::jwt::JwtProviderOptions;
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct Auth {
   #[serde(rename = "JWT")]
-  jwt: Option<JwtProviderOptions>,
+  pub(crate) jwt: Option<JwtProviderOptions>,
 }
 
 impl Auth {
