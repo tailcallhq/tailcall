@@ -295,10 +295,7 @@ mod tests {
       assert_eq!(EVAL_CTX.path_graphql(&["vars", "missing"]), None);
 
       // envs
-      assert_eq!(
-        EVAL_CTX.path_graphql(&["env", "existing"]),
-        Some("\"env\"".to_owned())
-      );
+      assert_eq!(EVAL_CTX.path_graphql(&["env", "existing"]), Some("\"env\"".to_owned()));
       assert_eq!(EVAL_CTX.path_graphql(&["env", "x-missing"]), None);
 
       // other value types
