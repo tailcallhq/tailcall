@@ -61,13 +61,10 @@ impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
-    let http_server = match config_server.clone().get_version() {
+    let http_server: Valid<Http, String> = match config_server.clone().get_version() {
       HttpVersion::HTTP2 => {
-        let cert = Valid::from_option(
-          config_server.cert.clone(),
-          "Certificate is required for HTTP2".to_string(),
-        );
-        let key = Valid::from_option(config_server.key.clone(), "Key is required for HTTP2".to_string());
+        let cert: Valid<String, String> = Valid::succeed(config_server.cert.clone().unwrap_or("".to_string()));
+        let key: Valid<String, String> = Valid::succeed(config_server.key.clone().unwrap_or("".to_string()));
 
         cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
       }

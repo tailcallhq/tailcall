@@ -54,46 +54,87 @@ pub async fn start_http_2(
   server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
   let addr = sc.addr();
-  let cert_chain = load_cert(&cert).await?;
-  let key = load_private_key(&key).await?;
   let incoming = AddrIncoming::bind(&addr)?;
-  let acceptor = TlsAcceptor::builder()
-    .with_single_cert(cert_chain, key)?
-    .with_http2_alpn()
-    .with_incoming(incoming);
-  let make_svc_single_req = make_service_fn(|_conn| {
-    let state = Arc::clone(&sc);
-    async move {
-      Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest>(req, state.server_context.clone())
-      }))
+  if cert.is_empty() | key.is_empty() {
+    let make_svc_single_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
+
+    let make_svc_batch_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
+
+    let builder = Server::builder(incoming);
+
+    log_launch_and_open_browser(sc.as_ref());
+
+    if let Some(sender) = server_up_sender {
+      sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
-  });
 
-  let make_svc_batch_req = make_service_fn(|_conn| {
-    let state = Arc::clone(&sc);
-    async move {
-      Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
-      }))
-    }
-  });
+    let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
+      builder.serve(make_svc_batch_req).await
+    } else {
+      builder.serve(make_svc_single_req).await
+    };
 
-  let builder = Server::builder(acceptor).http2_only(true);
+    let result = server.map_err(CLIError::from);
 
-  log_launch_and_open_browser(sc.as_ref());
-
-  if let Some(sender) = server_up_sender {
-    sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
-  }
-
-  let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
-    builder.serve(make_svc_batch_req).await
+    Ok(result?)
   } else {
-    builder.serve(make_svc_single_req).await
-  };
+    let cert_chain = load_cert(&cert).await?;
+    let key = load_private_key(&key).await?;
 
-  let result = server.map_err(CLIError::from);
+    let acceptor = TlsAcceptor::builder()
+      .with_single_cert(cert_chain, key)?
+      .with_http2_alpn()
+      .with_incoming(incoming);
+    let make_svc_single_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
 
-  Ok(result?)
+    let make_svc_batch_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
+
+    let builder = Server::builder(acceptor).http2_only(true);
+
+    log_launch_and_open_browser(sc.as_ref());
+
+    if let Some(sender) = server_up_sender {
+      sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
+    }
+
+    let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
+      builder.serve(make_svc_batch_req).await
+    } else {
+      builder.serve(make_svc_single_req).await
+    };
+
+    let result = server.map_err(CLIError::from);
+
+    Ok(result?)
+  }
 }
+
+

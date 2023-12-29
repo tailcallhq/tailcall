@@ -1,8 +1,8 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{ IpAddr, Ipv4Addr, SocketAddr };
 use std::sync::Arc;
 
 use super::ServerContext;
-use crate::blueprint::{Blueprint, Http};
+use crate::blueprint::{ Blueprint, Http };
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
@@ -27,7 +27,14 @@ impl ServerConfig {
 
   pub fn graphiql_url(&self) -> String {
     let protocol = match self.http_version().as_str() {
-      "HTTP/2" => "https",
+      "HTTP/2" => {
+        match &self.blueprint.server.http {
+          Http::HTTP2 { cert, key } => {
+            if cert.is_empty() | key.is_empty() { "http" } else { "https" }
+          }
+          _ => "http",
+        }
+      }
       _ => "http",
     };
     let mut addr = self.addr();
