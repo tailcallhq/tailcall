@@ -50,7 +50,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
   }
 
   pub fn env_var(&self, key: &str) -> Option<String> {
-    std::env::var(key).ok()
+    self.graphql_ctx.env_var(key)
   }
 
   pub fn var(&self, key: &str) -> Option<&str> {
