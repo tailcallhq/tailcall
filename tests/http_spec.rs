@@ -161,12 +161,11 @@ impl HttpSpec {
         .init();
     });
 
-    let spec = match source {
+    let spec: HttpSpec = match source {
       Source::Json => anyhow::Ok(serde_json::from_str(&contents)?),
       Source::Yml => anyhow::Ok(serde_yaml::from_str(&contents)?),
       _ => Err(anyhow!("only json and yaml are supported")),
-    };
-    let spec: HttpSpec = spec?;
+    }?;
 
     spec.env.iter().for_each(|(key, value)| {
       std::env::set_var(key, value);
