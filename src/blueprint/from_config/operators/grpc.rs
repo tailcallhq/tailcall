@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use prost_reflect::FieldDescriptor;
@@ -51,8 +52,8 @@ fn to_operation(grpc: &Grpc) -> Valid<ProtobufOperation, String> {
 }
 
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
-  let field_schema = crate::blueprint::to_json_schema_for_field(field, config);
-  let args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config);
+  let field_schema = crate::blueprint::to_json_schema_for_field(field, config, HashMap::new()).0;
+  let args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config, HashMap::new());
   FieldSchema { args: args_schema, field: field_schema }
 }
 pub struct FieldSchema {

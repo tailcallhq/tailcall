@@ -137,6 +137,13 @@ impl JsonSchema {
           return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
         }
       }
+      JsonSchema::Ref(a) => {
+        if let JsonSchema::Ref(b) = other {
+          if a != b {
+            return Valid::fail(format!("expected {:?}, got {:?}", a, b)).trace(name);
+          }
+        }
+      }
     }
     Valid::succeed(())
   }
