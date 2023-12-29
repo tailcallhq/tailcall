@@ -2,6 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::future::Future;
 use std::hash::{Hash, Hasher};
+use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -69,7 +70,7 @@ pub enum Unsafe {
 
 #[derive(Clone, Debug)]
 struct Cache {
-  max_age: i32,
+  max_age: NonZeroU64,
   source: Box<Expression>,
 }
 
@@ -197,10 +198,14 @@ impl Expression {
             if let Some(cache_value) = ctx.req_ctx.cache_get(&key) {
               Ok(cache_value.to_owned())
             } else {
-              cache.source.eval(ctx).await
+              let result = cache.source.eval(ctx).await;
+              if let Ok(val) = &result {
+                ctx.req_ctx.cache_insert(key, val.clone(), cache.max_age);
+              }
+              result
             }
           } else {
-            cache.source.eval(ctx).await
+              cache.source.eval(ctx).await
           }
         }
       }
