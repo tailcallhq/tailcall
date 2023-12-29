@@ -236,13 +236,22 @@ mod tests {
     #[test]
     fn parse_env_name() {
       let result = Mustache::parse("{{env.FOO}}").unwrap();
-      assert_eq!(result, Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO".to_string()])]));
+      assert_eq!(
+        result,
+        Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO".to_string()])])
+      );
     }
 
     #[test]
     fn parse_env_with_underscores() {
       let result = Mustache::parse("{{env.FOO_BAR}}").unwrap();
-      assert_eq!(result, Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO_BAR".to_string()])]));
+      assert_eq!(
+        result,
+        Mustache::from(vec![Segment::Expression(vec![
+          "env".to_string(),
+          "FOO_BAR".to_string()
+        ])])
+      );
     }
   }
   mod render {
