@@ -168,7 +168,7 @@ where
     .map(|(fields, protected)| {
       let doc = description.as_ref().map(|pos| pos.node.clone());
       let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-      let added_fields = to_add_fields_from_directives(&directives);
+      let added_fields = to_add_fields_from_directives(directives);
       config::Type {
         fields,
         added_fields,

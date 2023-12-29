@@ -7,25 +7,17 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use headers::authorization::Bearer;
-use headers::Authorization;
-use headers::HeaderMapExt;
-use jwtk::jwk::JwkSet;
-use jwtk::jwk::JwkSetVerifier;
-use jwtk::jwk::RemoteJwksVerifier;
+use headers::{Authorization, HeaderMapExt};
+use jwtk::jwk::{JwkSet, JwkSetVerifier, RemoteJwksVerifier};
 use jwtk::HeaderAndClaims;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
+use self::validation::{validate_aud, validate_iss};
+use super::base::{AuthError, AuthProvider};
 use crate::helpers::config_path::config_path;
 use crate::http::RequestContext;
-use crate::valid::Valid;
-use crate::valid::ValidationError;
-
-use self::validation::validate_aud;
-use self::validation::validate_iss;
-
-use super::base::{AuthError, AuthProvider};
+use crate::valid::{Valid, ValidationError};
 
 mod remote {
   use std::num::NonZeroU64;
@@ -81,14 +73,14 @@ impl JwksVerifier {
   pub fn parse(value: &JwtProviderJwksOptions) -> Valid<Self, String> {
     match value {
       JwtProviderJwksOptions::File(path) => Valid::from(
-        config_path(&path)
-          .and_then(|path| fs::read_to_string(&path))
+        config_path(path)
+          .and_then(fs::read_to_string)
           .map_err(|e| ValidationError::new(e.to_string())),
       )
       .and_then(|file| {
         let de = &mut serde_json::Deserializer::from_str(&file);
 
-        Valid::from(serde_path_to_error::deserialize(de).map_err(|e| ValidationError::from(e)))
+        Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
       })
       .trace(&format!("{}", path.display()))
       .trace("file")
@@ -149,7 +141,7 @@ impl JwtProvider {
   }
 
   async fn validate_token(&self, token: &str) -> Valid<(), AuthError> {
-    let verification = self.verifier.verify(&token).await;
+    let verification = self.verifier.verify(token).await;
 
     Valid::from(verification.map_err(|_| ValidationError::new(AuthError::ValidationNotAccessible)))
       .and_then(|v| self.validate_claims(&v))
@@ -171,9 +163,8 @@ mod tests {
   use anyhow::Result;
   use serde_json::json;
 
-  use crate::valid::ValidationError;
-
   use super::*;
+  use crate::valid::ValidationError;
 
   // token with issuer = "me" and audience = ["them"]
   // token is valid for 10 years. It it expired, update it =)
@@ -212,16 +203,14 @@ mod tests {
 
     assert!(valid.is_succeed());
 
-    let mut jwt_options = JwtProviderOptions::default();
-    jwt_options.issuer = Some("me".to_owned());
+    let jwt_options = JwtProviderOptions { issuer: Some("me".to_owned()), ..Default::default() };
     let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
-    let mut jwt_options = JwtProviderOptions::default();
-    jwt_options.issuer = Some("another".to_owned());
+    let jwt_options = JwtProviderOptions { issuer: Some("another".to_owned()), ..Default::default() };
     let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
@@ -240,16 +229,15 @@ mod tests {
 
     assert!(valid.is_succeed());
 
-    let mut jwt_options = JwtProviderOptions::default();
-    jwt_options.audiences = HashSet::from_iter(["them".to_string()]);
+    let jwt_options = JwtProviderOptions { audiences: HashSet::from_iter(["them".to_string()]), ..Default::default() };
     let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
-    let mut jwt_options = JwtProviderOptions::default();
-    jwt_options.audiences = HashSet::from_iter(["anothem".to_string()]);
+    let jwt_options =
+      JwtProviderOptions { audiences: HashSet::from_iter(["anothem".to_string()]), ..Default::default() };
     let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();

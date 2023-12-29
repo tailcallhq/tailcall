@@ -6,17 +6,17 @@
 //!
 //! Tokens will be issued at http://127.0.0.1:3000/token
 
+use std::convert::Infallible;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
+
 use anyhow::{bail, Result};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
-use jwtk::{
-  jwk::{JwkSet, WithKid},
-  rsa::RsaAlgorithm,
-  sign, HeaderAndClaims, PublicKeyToJwk, SomePrivateKey,
-};
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use std::{sync::Arc, time::Duration};
+use jwtk::jwk::{JwkSet, WithKid};
+use jwtk::rsa::RsaAlgorithm;
+use jwtk::{sign, HeaderAndClaims, PublicKeyToJwk, SomePrivateKey};
 
 struct State {
   k: WithKid<SomePrivateKey>,

@@ -29,10 +29,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     |blueprint| blueprint.upstream,
   );
 
-  let auth = to_auth().transform::<Blueprint>(
-    |auth, blueprint| blueprint.auth(auth),
-    |blueprint| blueprint.auth,
-  );
+  let auth = to_auth().transform::<Blueprint>(|auth, blueprint| blueprint.auth(auth), |blueprint| blueprint.auth);
 
   server
     .and(schema)

@@ -36,8 +36,8 @@ assert:
               • Haven't found auth parameters []
 
             locations:
-            - column: 3
-              line: 2
+              - column: 3
+                line: 2
 
   - request:
       method: POST

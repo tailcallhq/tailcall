@@ -1,7 +1,6 @@
-
 #![allow(clippy::module_inception)]
-pub mod auth;
 pub mod async_graphql_hyper;
+pub mod auth;
 pub mod blueprint;
 pub mod cache;
 pub mod chrono_cache;

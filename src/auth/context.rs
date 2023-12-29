@@ -1,11 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{blueprint::Blueprint, http::RequestContext, valid::Valid};
-
-use super::{
-  base::{AuthError, AuthProvider},
-  jwt::JwtProvider,
-};
+use super::base::{AuthError, AuthProvider};
+use super::jwt::JwtProvider;
+use crate::blueprint::Blueprint;
+use crate::http::RequestContext;
+use crate::valid::Valid;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {

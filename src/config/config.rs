@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream, Auth};
+use super::{Auth, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
@@ -158,7 +158,7 @@ pub struct Type {
   #[serde(default)]
   pub cache: Option<Cache>,
   #[serde(default)]
-  pub protected: bool
+  pub protected: bool,
 }
 
 impl Type {

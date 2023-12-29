@@ -1,6 +1,7 @@
 use thiserror::Error;
 
-use crate::{valid::Valid, http::RequestContext};
+use crate::http::RequestContext;
+use crate::valid::Valid;
 
 #[derive(Debug, Error, Clone, PartialEq)]
 pub enum AuthError {
@@ -9,7 +10,7 @@ pub enum AuthError {
   #[error("Couldn't validate auth request")]
   ValidationNotAccessible,
   #[error("Auth validation failed")]
-  ValidationFailed
+  ValidationFailed,
 }
 
 #[async_trait::async_trait]

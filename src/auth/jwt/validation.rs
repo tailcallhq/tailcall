@@ -48,8 +48,7 @@ mod tests {
 
     #[test]
     fn validate_iss_defined() {
-      let mut options = JwtProviderOptions::default();
-      options.issuer = Some("iss".to_owned());
+      let options = JwtProviderOptions { issuer: Some("iss".to_owned()), ..Default::default() };
       let mut claims = Claims::<()>::default();
 
       assert!(!validate_iss(&options, &claims));
@@ -89,8 +88,10 @@ mod tests {
 
     #[test]
     fn validate_aud_defined() {
-      let mut options = JwtProviderOptions::default();
-      options.audiences = HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]);
+      let options = JwtProviderOptions {
+        audiences: HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]),
+        ..Default::default()
+      };
       let mut claims = Claims::<()>::default();
 
       assert!(!validate_aud(&options, &claims));

@@ -1,5 +1,5 @@
 #> server-sdl
-schema @auth(JWT: { jwks: { file: "__unknown.json" } }) {
+schema @auth(JWT: {jwks: {file: "__unknown.json"}}) {
   query: Query
 }
 

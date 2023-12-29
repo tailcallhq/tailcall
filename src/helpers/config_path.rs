@@ -1,7 +1,5 @@
-use std::{
-  env::current_dir,
-  path::{Path, PathBuf},
-};
+use std::env::current_dir;
+use std::path::{Path, PathBuf};
 
 pub fn config_path(path: &Path) -> Result<PathBuf, std::io::Error> {
   let path = if path.is_relative() {
