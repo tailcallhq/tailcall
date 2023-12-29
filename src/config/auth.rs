@@ -12,4 +12,8 @@ impl Auth {
   pub fn merge_right(self, other: Auth) -> Self {
     Self { jwt: self.jwt.or(other.jwt) }
   }
+
+  pub fn is_some(&self) -> bool {
+    self.jwt.is_some()
+  }
 }
