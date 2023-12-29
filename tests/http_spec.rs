@@ -167,10 +167,6 @@ impl HttpSpec {
       _ => Err(anyhow!("only json and yaml are supported")),
     }?;
 
-    spec.env.iter().for_each(|(key, value)| {
-      std::env::set_var(key, value);
-    });
-
     anyhow::Ok(spec)
   }
 
@@ -182,7 +178,9 @@ impl HttpSpec {
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
+    let mut server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
+    server_context.env_vars = Arc::new(self.env.clone().into_iter().collect());
+
     Arc::new(server_context)
   }
 }
