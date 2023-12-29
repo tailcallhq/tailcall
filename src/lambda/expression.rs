@@ -8,7 +8,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-
 use async_graphql_value::ConstValue;
 use reqwest::Request;
 use serde::Serialize;
@@ -211,7 +210,7 @@ impl Expression {
               result
             }
           } else {
-              cache.source.eval(ctx).await
+            cache.source.eval(ctx).await
           }
         }
       }
@@ -255,15 +254,17 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     hash_const_value(const_value?, &mut hasher)
   }
 
-  let key = ctx.graphql_ctx.args().map(|value_map| value_map
-        .iter()
-        .map(|(key, value)| {
-          let mut hasher = hasher.clone();
-          key.hash(&mut hasher);
-          hash_const_value(value, &mut hasher);
-          hasher.finish()
-        })
-        .fold(hasher.finish(), |acc, val| acc ^ val));
+  let key = ctx.graphql_ctx.args().map(|value_map| {
+    value_map
+      .iter()
+      .map(|(key, value)| {
+        let mut hasher = hasher.clone();
+        key.hash(&mut hasher);
+        hash_const_value(value, &mut hasher);
+        hasher.finish()
+      })
+      .fold(hasher.finish(), |acc, val| acc ^ val)
+  });
   key
 }
 
