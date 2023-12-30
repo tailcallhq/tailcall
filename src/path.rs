@@ -70,6 +70,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
       "args" => convert_value(ctx.arg(tail)?),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
+      "env" => ctx.env_var(tail[0].as_ref()).map(|v| v.into()),
       _ => None,
     })
   }
@@ -88,6 +89,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
       "args" => Some(ctx.arg(tail)?.to_string()),
       "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
       "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+      "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
       _ => None,
     })
   }
@@ -97,7 +99,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 mod tests {
   mod evaluation_context {
     use std::borrow::Cow;
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, HashMap};
+    use std::sync::Arc;
 
     use async_graphql::SelectionField;
     use async_graphql_value::{ConstValue as Value, Name, Number};
@@ -152,6 +155,14 @@ mod tests {
       map
     });
 
+    static TEST_ENV_VARS: Lazy<HashMap<String, String>> = Lazy::new(|| {
+      let mut map = HashMap::new();
+
+      map.insert("existing".to_owned(), "env".to_owned());
+
+      map
+    });
+
     struct MockGraphqlContext;
 
     impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
@@ -174,6 +185,7 @@ mod tests {
       let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
+      req_ctx.env_vars = Arc::new(TEST_ENV_VARS.clone());
 
       req_ctx
     });
@@ -232,6 +244,15 @@ mod tests {
         EVAL_CTX.path_string(&["vars"]),
         Some(Cow::Borrowed(r#"{"existing":"var"}"#))
       );
+
+      // envs
+      assert_eq!(EVAL_CTX.path_string(&["env", "existing"]), Some(Cow::Borrowed("env")));
+      assert_eq!(EVAL_CTX.path_string(&["env", "x-missing"]), None);
+
+      // other value types
+      assert_eq!(EVAL_CTX.path_string(&["foo", "key"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["bar", "key"]), None);
+      assert_eq!(EVAL_CTX.path_string(&["baz", "key"]), None);
     }
 
     #[test]
@@ -272,6 +293,15 @@ mod tests {
       // vars
       assert_eq!(EVAL_CTX.path_graphql(&["vars", "existing"]), Some("\"var\"".to_owned()));
       assert_eq!(EVAL_CTX.path_graphql(&["vars", "missing"]), None);
+
+      // envs
+      assert_eq!(EVAL_CTX.path_graphql(&["env", "existing"]), Some("\"env\"".to_owned()));
+      assert_eq!(EVAL_CTX.path_graphql(&["env", "x-missing"]), None);
+
+      // other value types
+      assert_eq!(EVAL_CTX.path_graphql(&["foo", "key"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["bar", "key"]), None);
+      assert_eq!(EVAL_CTX.path_graphql(&["baz", "key"]), None);
     }
   }
 }

@@ -94,8 +94,8 @@ impl<'a> MustachePartsValidator<'a> {
           return Valid::fail(format!("var '{tail}' is not set in the server config"));
         }
       }
-      "headers" => {
-        // "headers" refers to the header values known at runtime, which we can't
+      "headers" | "env" => {
+        // "headers" and "env" refers to values known at runtime, which we can't
         // validate here
       }
       _ => {
