@@ -1,0 +1,198 @@
+[
+  {
+    "name": "breaking",
+    "color": "d73a4a",
+    "description": "Introduces a breaking change.",
+    "aliases": ["breaking change", "breaking-change", "Type: Breaking Change", "type: breaking"]
+  },
+  {
+    "name": "effort: 1",
+    "color": "91ca55"
+  },
+  {
+    "name": "effort: 2",
+    "color": "c2e2a2"
+  },
+  {
+    "name": "effort: 3",
+    "color": "e9f4dc"
+  },
+  {
+    "name": "effort: 5",
+    "color": "fef6d7"
+  },
+  {
+    "name": "effort: 8",
+    "color": "fef2c0"
+  },
+  {
+    "name": "effort: 13",
+    "color": "fbca04"
+  },
+  {
+    "name": "good first issue",
+    "color": "7057ff",
+    "description": "Good for newcomers.",
+    "aliases": [
+      "beginner-friendly",
+      "beginner",
+      "good for beginner",
+      "Good for beginners",
+      "good-starter-issue",
+      "starter-issue",
+      "starter",
+      "status: good starter issue"
+    ]
+  },
+  {
+    "name": "help",
+    "color": "0e8a16",
+    "aliases": ["help wanted", "Patch Welcome", "status: help wanted", "Status: PR Welcome", "Status: Ready for PR"]
+  },
+  {
+    "name": "priority: now",
+    "color": "d73a4a",
+    "aliases": ["priority: critical", "Priority: Critical"]
+  },
+  {
+    "name": "priority: soon",
+    "color": "ffb8c6",
+    "aliases": ["priority: medium", "Priority: Medium"]
+  },
+  {
+    "name": "priority: 2day",
+    "color": "fbca04",
+    "aliases": ["priority: high", "Priority: High"]
+  },
+  {
+    "name": "semantic-release",
+    "color": "e6e6e6"
+  },
+  {
+    "name": "state: approved",
+    "color": "91ca55",
+    "description": "Approved to proceed.",
+    "aliases": ["approved"]
+  },
+  {
+    "name": "state: blocked",
+    "color": "d73a4a",
+    "description": "Something is blocking action.",
+    "aliases": ["blocked", "Status: Blocked", "status: blocked"]
+  },
+  {
+    "name": "state: pending",
+    "color": "fbca04",
+    "description": "Action is underway but awaiting other tasks or data before completion.",
+    "aliases": ["in progress", "on hold", "pending", "Status: In Progress", "Status: Review Needed", "watchlist"]
+  },
+  {
+    "name": "state: inactive",
+    "color": "e6e6e6",
+    "description": "No current action needed/possible; issue fixed, out of scope, or superseded.",
+    "aliases": [
+      "duplicate",
+      "invalid",
+      "stale",
+      "Status: Abandoned",
+      "status: duplicate",
+      "status: wontfix",
+      "wont-fix",
+      "wontfix"
+    ]
+  },
+  {
+    "name": "type: bug",
+    "color": "d73a4a",
+    "description": "Something isn't working.",
+    "aliases": ["bug", "Type: Bug"]
+  },
+  {
+    "name": "type: chore",
+    "color": "fef2c0",
+    "description": "Routine tasks like conversions, reorganization, and maintenance work.",
+    "aliases": [
+      "chore",
+      "dependabot",
+      "dependencies",
+      "dependency",
+      "greenkeeper",
+      "legal",
+      "maintenance",
+      "Type: Maintenance",
+      "type: maintenance"
+    ]
+  },
+  {
+    "name": "type: discussion",
+    "color": "d4c5f9",
+    "description": "Questions, proposals and info that requires discussion.",
+    "aliases": [
+      "discussion",
+      "feedback",
+      "help wanted",
+      "idea",
+      "Idea",
+      "Proposal",
+      "proposal",
+      "question",
+      "type: design",
+      "Type: Question",
+      "type: question"
+    ]
+  },
+  {
+    "name": "type: docs",
+    "color": "fef2c0",
+    "description": "Related to documentation and information.",
+    "aliases": ["doc", "docs", "document", "documentation", "documents", "Type: Documentation", "type: documentation"]
+  },
+  {
+    "name": "type: feature",
+    "color": "5ebeff",
+    "description": "Brand new functionality, features, pages, workflows, endpoints, etc.",
+    "aliases": ["addition", "enhancement", "feature", "type: enhancement", "Type: Feature"]
+  },
+  {
+    "name": "type: fix",
+    "color": "91ca55",
+    "description": "Iterations on existing features or infrastructure.",
+    "aliases": ["fix", "improvement", "optimization", "refactor", "Type: Fix", "Type: Refactoring"]
+  },
+  {
+    "name": "type: security",
+    "color": "d73a4a",
+    "description": "Something is vulnerable or not secure.",
+    "aliases": ["security"]
+  },
+  {
+    "name": "type: testing",
+    "color": "fbca04",
+    "description": "Related to testing.",
+    "aliases": ["test", "testing"]
+  },
+  {
+    "name": "work: chaotic",
+    "color": "fbca04",
+    "description": "The situation is chaotic, novel practices used.",
+    "aliases": ["chaotic"]
+  },
+  {
+    "name": "work: complex",
+    "color": "d4c5f9",
+    "description": "The situation is complex, emergent practices used.",
+    "aliases": ["complex"]
+  },
+  {
+    "name": "work: complicated",
+    "color": "ffb8c6",
+    "description": "The situation is complicated, good practices used.",
+    "aliases": ["complicated"]
+  },
+  {
+    "name": "work: obvious",
+    "color": "91ca55",
+    "description": "The situation is obvious, best practices used.",
+    "aliases": ["obvious"]
+  }
+]
