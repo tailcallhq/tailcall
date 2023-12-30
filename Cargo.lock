@@ -761,11 +761,10 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "colored"
-version = "2.0.4"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2674ec482fbc38012cf31e6c42ba0177b431a0cb6f15fe40efa5aab1bda516f6"
+checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
 dependencies = [
- "is-terminal",
  "lazy_static",
  "windows-sys 0.48.0",
 ]
@@ -3306,6 +3305,8 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "stripmargin",
+ "tc_cli",
+ "tc_core",
  "thiserror",
  "tokio",
  "ttl_cache",
@@ -3320,6 +3321,84 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba323866e5d033818e3240feeb9f7db2c4296674e4d9e16b97b7bf8f490434e8"
 dependencies = [
  "pin-utils",
+]
+
+[[package]]
+name = "tc_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "async-graphql-value",
+ "cache_control",
+ "clap",
+ "colored",
+ "derive_setters",
+ "env_logger",
+ "exitcode",
+ "http-cache-reqwest",
+ "hyper",
+ "hyper-rustls",
+ "inquire",
+ "log",
+ "mimalloc",
+ "mini-v8",
+ "pretty_assertions",
+ "regex",
+ "reqwest",
+ "resource",
+ "rustls",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "stripmargin",
+ "tc_core",
+ "thiserror",
+ "tokio",
+ "webbrowser",
+]
+
+[[package]]
+name = "tc_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "async-graphql-value",
+ "async-std",
+ "async-trait",
+ "cache_control",
+ "derive_setters",
+ "fnv",
+ "futures-channel",
+ "futures-timer",
+ "futures-util",
+ "http-cache-reqwest",
+ "httpmock",
+ "hyper",
+ "indexmap",
+ "log",
+ "lru 0.12.1",
+ "nom",
+ "num_cpus",
+ "once_cell",
+ "pretty_assertions",
+ "prettytable-rs",
+ "prost",
+ "prost-reflect",
+ "protox",
+ "regex",
+ "reqwest",
+ "reqwest-middleware",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_urlencoded",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "ttl_cache",
+ "url",
 ]
 
 [[package]]
@@ -3440,9 +3519,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.34.0"
+version = "1.35.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0c014766411e834f7af5b8f4cf46257aab4036ca95e9d2c144a10f59ad6f5b9"
+checksum = "c89b4efa943be685f629b149f53829423f8f5531ea21249408e8e2f8671ec104"
 dependencies = [
  "backtrace",
  "bytes",

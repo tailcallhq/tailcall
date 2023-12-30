@@ -4,7 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
-use crate::valid::ValidationError;
+use tc_core::valid::ValidationError;
 
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {
@@ -221,7 +221,7 @@ mod tests {
   use stripmargin::StripMargin;
 
   use super::*;
-  use crate::valid::Cause;
+  use tc_core::valid::Cause;
 
   #[test]
   fn test_no_newline() {

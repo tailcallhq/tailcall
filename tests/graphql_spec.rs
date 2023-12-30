@@ -13,12 +13,12 @@ use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
-use tailcall::directive::DirectiveCodec;
-use tailcall::http::{RequestContext, ServerContext};
-use tailcall::print_schema;
-use tailcall::valid::{Cause, Valid};
+use tc_core::blueprint::Blueprint;
+use tc_core::config::Config;
+use tc_core::directive::DirectiveCodec;
+use tc_core::http::{RequestContext,server_context::ServerContext};
+use tc_core::print_schema;
+use tc_core::valid::{Cause, Valid};
 
 static INIT: Once = Once::new();
 

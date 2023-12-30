@@ -8,7 +8,7 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::ServerContext;
+use super::server_context::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 fn graphiql() -> Result<Response<Body>> {
@@ -44,7 +44,7 @@ fn update_cache_control_header(
   response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &ServerContext) {
+pub fn update_response_headers(resp: &mut Response<Body>, server_ctx: &ServerContext) {
   if !server_ctx.blueprint.server.response_headers.is_empty() {
     resp
       .headers_mut()

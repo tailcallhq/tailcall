@@ -1,13 +1,17 @@
+workspace = { members = [ "tc_cli","tc_core"] }
 [package]
 name = "tailcall"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 
 [[bin]]
 name = "tailcall"
-path = "src/main.rs"
+path = "tc_cli/src/main.rs"
 
 [dependencies]
+tc_cli = {path = "tc_cli"}
+tc_core = {path = "tc_core"}
 anyhow = "1.0.78"
 derive_setters = "0.1.6"
 thiserror = "1.0.53"

@@ -4,8 +4,9 @@ use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use super::{handle_request, log_launch_and_open_browser};
-use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use tc_core::http::handle_request;
+use super::log_launch_and_open_browser;
+use tc_core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
 
 pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<oneshot::Sender<()>>) -> anyhow::Result<()> {
@@ -36,7 +37,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
   }
 
-  let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
+  let server: Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
     builder.serve(make_svc_batch_req).await
   } else {
     builder.serve(make_svc_single_req).await

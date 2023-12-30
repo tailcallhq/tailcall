@@ -1,17 +1,13 @@
-mod client;
+pub mod client;
 mod data_loader;
 
 mod data_loader_request;
-mod http_1;
-mod http_2;
 mod method;
 mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
-mod server;
-mod server_config;
-mod server_context;
+pub mod server_context;
 
 use std::time::Duration;
 
@@ -25,11 +21,6 @@ pub use request_context::RequestContext;
 pub use request_handler::handle_request;
 pub use request_template::RequestTemplate;
 pub use response::*;
-pub use server::Server;
-pub use server_context::ServerContext;
-
-use self::server_config::ServerConfig;
-
 pub fn cache_policy(res: &Response) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;
   let value = header.to_str().ok()?;
@@ -68,17 +59,6 @@ pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
     }
   }
   min
-}
-
-fn log_launch_and_open_browser(sc: &ServerConfig) {
-  let addr = sc.addr().to_string();
-  log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());
-  if sc.graphiql() {
-    let url = sc.graphiql_url();
-    log::info!("🌍 Playground: {}", url);
-
-    let _ = webbrowser::open(url.as_str());
-  }
 }
 
 #[cfg(test)]

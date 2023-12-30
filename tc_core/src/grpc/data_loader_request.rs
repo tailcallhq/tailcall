@@ -66,9 +66,9 @@ mod tests {
   use crate::grpc::request_template::RenderedRequestTemplate;
 
   static PROTOBUF_OPERATION: Lazy<ProtobufOperation> = Lazy::new(|| {
-    let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root_dir.pop();
     let mut test_file = root_dir.join(file!());
-
     test_file.pop();
     test_file.push("tests");
     test_file.push("greetings.proto");

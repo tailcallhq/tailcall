@@ -1,6 +1,6 @@
 use anyhow::Result;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
+#[cfg(feature = "default")]
+use tokio::{fs::File,io::AsyncWriteExt};
 
 use crate::config::{Config, Source};
 
@@ -19,8 +19,9 @@ impl ConfigWriter {
       Source::Json => self.config.to_json(true)?,
       Source::Yml => self.config.to_yaml()?,
     };
-
+    #[cfg(feature = "default")]
     let mut file = File::create(filename).await?;
+    #[cfg(feature = "default")]
     file.write_all(contents.as_bytes()).await?;
 
     Ok(())
