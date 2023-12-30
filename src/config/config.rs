@@ -396,6 +396,12 @@ pub enum ExprBody {
     None,
     #[serde(rename = "http")]
     Http(Http),
+    #[serde(rename = "grpc")]
+    Grpc(Grpc),
+    #[serde(rename = "graphQL")]
+    GraphQL(GraphQL),
+    #[serde(rename = "const")]
+    Const(Const)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
