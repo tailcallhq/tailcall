@@ -391,7 +391,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum ExprBody {
+pub enum ExprNode {
   #[serde(rename = "http")]
   Http(Http),
   #[serde(rename = "grpc")]
@@ -404,7 +404,7 @@ pub enum ExprBody {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Expr {
-  pub body: ExprBody,
+  pub body: ExprNode,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
