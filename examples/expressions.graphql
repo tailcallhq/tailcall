@@ -5,9 +5,8 @@ schema
 }
 
 type Query {
-  posts: [Post] @expr(body: { http: { path: "/posts" } }) # @http(path: "/posts")
-  # TODO: Support args
-  # user(id: Int!): User @http(path: "/users/{{args.id}}")
+  posts: [Post] @expr(body: { http: { path: "/posts" } })
+  user(id: Int!): User @expr(body: { http: { path: "/users/{{args.id}}" } })
 }
 
 type User {
