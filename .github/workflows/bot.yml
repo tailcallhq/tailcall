@@ -182,13 +182,6 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Restore file
-        uses: actions/cache@v3
-        with:
-          path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-          fail-on-cache-miss: true
-
       - name: Run Criterion Benchmarks
         run: |
           cargo install cargo-criterion rust-script
@@ -197,6 +190,13 @@ jobs:
 
       - name: Print Criterion Benchmarks
         run: cat benches/change_benchmarks.md
+
+      - name: Restore file
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
 
       - name: Print Benchmark Comparision
         run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic;
@@ -23,6 +24,7 @@ pub struct ServerContext {
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+  pub env_vars: Arc<HashMap<String, String>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub auth_ctx: Arc<GlobalAuthContext>,
 }
@@ -107,6 +109,7 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
+    let env = std::env::vars().collect();
     let auth_ctx = GlobalAuthContext::from(&blueprint);
 
     ServerContext {
@@ -119,6 +122,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       cache: ChronoCache::new(),
+      env_vars: Arc::new(env),
     }
   }
 }

@@ -49,6 +49,10 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     value.to_str().ok()
   }
 
+  pub fn env_var(&self, key: &str) -> Option<&str> {
+    self.req_ctx.env_vars.get(key).map(|v| v.as_str())
+  }
+
   pub fn var(&self, key: &str) -> Option<&str> {
     let vars = &self.req_ctx.server.vars;
 

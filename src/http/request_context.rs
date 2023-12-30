@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
@@ -37,6 +38,7 @@ pub struct RequestContext {
   pub cache: ChronoCache<u64, ConstValue>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
+  pub env_vars: Arc<HashMap<String, String>>,
 }
 
 impl Default for RequestContext {
@@ -62,6 +64,7 @@ impl Default for RequestContext {
       cache: ChronoCache::new(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(HashMap::new()),
     }
   }
 }
@@ -141,6 +144,7 @@ impl From<&ServerContext> for RequestContext {
       cache: server_ctx.cache.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      env_vars: server_ctx.env_vars.clone(),
     }
   }
 }
