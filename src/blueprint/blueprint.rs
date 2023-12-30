@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -125,12 +123,6 @@ pub struct InputFieldDefinition {
   pub of_type: Type,
   pub default_value: Option<serde_json::Value>,
   pub description: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct Cache {
-  pub max_age: NonZeroU64,
-  pub hasher: DefaultHasher,
 }
 
 #[derive(Clone, Debug, Setters, Default)]
