@@ -391,7 +391,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
-pub enum ExprBody {
+pub enum ExprNode {
     #[default]
     None,
     #[serde(rename = "http")]
@@ -401,12 +401,28 @@ pub enum ExprBody {
     #[serde(rename = "graphQL")]
     GraphQL(GraphQL),
     #[serde(rename = "const")]
-    Const(Const)
+    Const(Const),
+    #[serde(rename = "if")]
+    If {
+        condition: Box<ExprNode>,
+        then: Box<ExprNode>,
+        #[serde(rename = "else")]
+        els: Box<ExprNode>
+    },
+    #[serde(rename = "gt")]
+    GreaterThan {
+        left: Box<ExprNode>,
+        right: Box<ExprNode>,
+    },
+    #[serde(rename = "literal")]
+    Literal(Value),
+    #[serde(rename = "var")]
+    Variable(String)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Expr {
-    pub body: ExprBody
+    pub body: ExprNode
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

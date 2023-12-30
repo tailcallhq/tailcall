@@ -33,6 +33,11 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
+  If {
+      condition: Box<Expression>,
+      then: Box<Expression>,
+      els: Box<Expression>
+  }
 }
 
 #[derive(Clone, Debug)]
