@@ -38,7 +38,7 @@ impl Hash for DataLoaderRequest {
 }
 
 impl PartialEq for DataLoaderRequest {
-  fn eq(&self, other: &Self) -> bool { // needs fix
+  fn eq(&self, other: &Self) -> bool {
     let mut hasher_self = DefaultHasher::new();
     self.hash(&mut hasher_self);
     let hash_self = hasher_self.finish();
