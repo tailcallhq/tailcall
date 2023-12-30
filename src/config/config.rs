@@ -390,23 +390,21 @@ pub struct Http {
   pub group_by: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum ExprBody {
-    #[default]
-    None,
-    #[serde(rename = "http")]
-    Http(Http),
-    #[serde(rename = "grpc")]
-    Grpc(Grpc),
-    #[serde(rename = "graphQL")]
-    GraphQL(GraphQL),
-    #[serde(rename = "const")]
-    Const(Const)
+  #[serde(rename = "http")]
+  Http(Http),
+  #[serde(rename = "grpc")]
+  Grpc(Grpc),
+  #[serde(rename = "graphQL")]
+  GraphQL(GraphQL),
+  #[serde(rename = "const")]
+  Const(Const),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Expr {
-    pub body: ExprBody
+  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
