@@ -13,11 +13,7 @@ pub fn update_expr<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
             ExprBody::Http(http) => {
                 let field_with_http = (*field).clone().http(http.clone());
                 let http_field_def = update_http()
-                    .try_fold(&(config, &field_with_http, ty, name), b_field)
-                    .map(|v| {
-                        dbg!(&v.resolver);
-                        v
-                    });
+                    .try_fold(&(config, &field_with_http, ty, name), b_field);
                 http_field_def
             },
             _ => Valid::fail(format!("invalid expr: unsupported operator in body"))
