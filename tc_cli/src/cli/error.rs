@@ -2,9 +2,8 @@ use std::fmt::{Debug, Display};
 
 use colored::Colorize;
 use derive_setters::Setters;
-use thiserror::Error;
-
 use tc_core::valid::ValidationError;
+use thiserror::Error;
 
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {
@@ -219,9 +218,9 @@ mod tests {
 
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
+  use tc_core::valid::Cause;
 
   use super::*;
-  use tc_core::valid::Cause;
 
   #[test]
   fn test_no_newline() {

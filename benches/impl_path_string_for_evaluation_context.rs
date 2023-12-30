@@ -8,9 +8,9 @@ use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use tailcall::http::RequestContext;
-use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
+use tc_core::http::RequestContext;
+use tc_core::lambda::{EvaluationContext, ResolverContextLike};
+use tc_core::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values

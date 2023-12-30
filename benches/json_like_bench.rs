@@ -18,7 +18,7 @@ fn benchmark_batched_body(c: &mut Criterion) {
       });
 
       black_box(
-        serde_json::to_value(tailcall::json::gather_path_matches(
+        serde_json::to_value(tc_core::json::gather_path_matches(
           &input,
           &["data".into(), "user".into(), "id".into()],
           vec![],

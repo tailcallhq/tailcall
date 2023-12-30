@@ -19,7 +19,8 @@ use serde_json::Value;
 use tc_core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tc_core::blueprint::Blueprint;
 use tc_core::config::{Config, Source};
-use tc_core::http::{handle_request, HttpClient, Method, Response, server_context::ServerContext};
+use tc_core::http::server_context::ServerContext;
+use tc_core::http::{handle_request, HttpClient, Method, Response};
 use url::Url;
 
 static INIT: Once = Once::new();

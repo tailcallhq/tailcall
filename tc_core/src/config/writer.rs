@@ -1,6 +1,6 @@
 use anyhow::Result;
 #[cfg(feature = "default")]
-use tokio::{fs::File,io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::config::{Config, Source};
 

@@ -1,8 +1,8 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use tc_core::http::server_context::ServerContext;
 use tc_core::blueprint::{Blueprint, Http};
+use tc_core::http::server_context::ServerContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,

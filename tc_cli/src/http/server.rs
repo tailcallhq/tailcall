@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use tc_core::blueprint::{Blueprint, Http};
+use tc_core::config::Config;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use tc_core::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
-use tc_core::config::Config;
 
 pub struct Server {
   config: Config,

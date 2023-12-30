@@ -7,7 +7,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::http::{DefaultHttpClient, HttpClientOptions};
+use super::server_context::ServerContext;
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
@@ -15,8 +15,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader};
-use super::server_context::ServerContext;
+use crate::http::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions, HttpDataLoader};
 
 #[derive(Setters)]
 pub struct RequestContext {

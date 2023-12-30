@@ -16,7 +16,8 @@ use serde_json::Value;
 use tc_core::blueprint::Blueprint;
 use tc_core::config::Config;
 use tc_core::directive::DirectiveCodec;
-use tc_core::http::{RequestContext,server_context::ServerContext};
+use tc_core::http::server_context::ServerContext;
+use tc_core::http::RequestContext;
 use tc_core::print_schema;
 use tc_core::valid::{Cause, Valid};
 

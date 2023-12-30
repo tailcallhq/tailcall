@@ -184,7 +184,7 @@ impl ProtobufOperation {
 
     let json = serde_json::to_value(message)?;
 
-    Ok(async_graphql::Value::from_json(json)?)
+    Ok(Value::from_json(json)?)
   }
 }
 

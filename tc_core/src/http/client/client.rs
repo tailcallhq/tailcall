@@ -1,8 +1,8 @@
-use crate::http::Response;
 #[cfg(feature = "default")]
 pub use super::client_cli::*;
 #[cfg(not(feature = "default"))]
 pub use super::client_wasm::*;
+use crate::http::Response;
 
 #[async_trait::async_trait]
 pub trait HttpClient: Sync + Send {
