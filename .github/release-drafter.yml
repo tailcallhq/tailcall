@@ -72,6 +72,9 @@ autolabeler:
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
       - '!/renovate\//'
+    title:
+      - '/chore\/.+/'
+      - '/refactor\/.+/'
   - label: "renovate"
     branch:
       - '/renovate\/.+/'
@@ -85,6 +88,8 @@ autolabeler:
     branch:
       - '/feat\/.+/'
       - '/refactor\/.+/'
+    title:
+      - "/feat/i"
   - label: "docs"
     files:
       - "*.md"
