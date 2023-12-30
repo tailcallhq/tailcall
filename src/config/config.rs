@@ -258,6 +258,8 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub expr: Option<Expr>,
   pub cache: Option<Cache>,
 }
 
@@ -268,6 +270,7 @@ impl Field {
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
+      || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -385,6 +388,19 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub enum ExprBody {
+    #[default]
+    None,
+    #[serde(rename = "http")]
+    Http(Http),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub struct Expr {
+    pub body: ExprBody
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
