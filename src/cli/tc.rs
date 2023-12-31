@@ -80,9 +80,7 @@ pub async fn init(file_path: &str) -> Result<()> {
   let yml_file_name = ".graphqlrc.yml";
   let yml_exists = fs::metadata(format!("{}/{}", file_path, yml_file_name)).is_ok();
 
-  if yml_exists {
-    // what should we do in this case?
-  } else {
+  if !yml_exists {
     fs::write(format!("{}/{}", file_path, yml_file_name), "")?;
 
     let graphqlrc = r#"|schema:
