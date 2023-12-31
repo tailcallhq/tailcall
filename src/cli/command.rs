@@ -20,9 +20,9 @@ pub struct Cli {
 
 #[derive(Clone)]
 pub enum FormatOption {
-  YML,
-  GQL,
-  JSON,
+  Yml,
+  Gql,
+  Json,
 }
 
 impl std::str::FromStr for FormatOption {
@@ -30,9 +30,9 @@ impl std::str::FromStr for FormatOption {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s.to_lowercase().as_str() {
-      "json" => Ok(FormatOption::JSON),
-      "yml" | "yaml" => Ok(FormatOption::YML),
-      "graphql" | "gql" => Ok(FormatOption::GQL),
+      "json" => Ok(FormatOption::Json),
+      "yml" | "yaml" => Ok(FormatOption::Yml),
+      "graphql" | "gql" => Ok(FormatOption::Gql),
       _ => Err(format!("Invalid format: {}", s)),
     }
   }

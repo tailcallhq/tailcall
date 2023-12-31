@@ -58,9 +58,9 @@ pub fn run() -> Result<()> {
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
 
       Fmt::display(match format {
-        FormatOption::YML => config.to_yaml()?,
-        FormatOption::GQL => config.to_sdl(),
-        FormatOption::JSON => config.to_json(true)?,
+        FormatOption::Yml => config.to_yaml()?,
+        FormatOption::Gql => config.to_sdl(),
+        FormatOption::Json => config.to_json(true)?,
       });
 
       Ok(())
