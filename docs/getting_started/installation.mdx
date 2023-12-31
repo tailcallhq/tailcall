@@ -1,0 +1,100 @@
+---
+title: Installation
+sidebar_position: 1
+slug: /getting_started
+---
+
+import CodeBlock from "@theme/CodeBlock"
+import Version from "../../src/components/Version"
+import InstallCommand from "../../src/components/install"
+
+<>
+  You can install the latest version -{" "}
+  **<Version />**, by using<b> NPM</b>.
+</>
+## NPM
+
+1. If you don't already have **nodejs** installed, you can find the instructions [here](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs).
+2. Install Tailcall by running the following command in your terminal:
+   ```bash
+   npm i -g @tailcallhq/tailcall
+   ```
+3. Verify that Tailcall is installed correctly by running:
+
+   ```bash
+   tailcall
+   ```
+
+   :::note
+   Do not use the `--force` flag during npm installations, as it ignores installing platform-specific builds.
+   :::
+
+## Yarn
+
+1. Install Tailcall by running the following command in your terminal:
+   ```bash
+   yarn global add @tailcallhq/tailcall
+   ```
+2. Verify that Tailcall is installed correctly by running:
+
+   ```bash
+   tailcall
+   ```
+
+## Homebrew
+
+1. If you don't already have Homebrew installed, you can find the instructions [here](https://brew.sh/).
+
+2. Add the Tailcall repository to Homebrew by running the following command in your terminal:
+   ```bash
+   brew tap tailcallhq/tailcall
+   brew install tailcall
+   ```
+3. Verify that Tailcall is installed correctly by running:
+
+   ```bash
+   tailcall
+   ```
+
+4. Once installation is done, **upgrades** can be performed via:
+
+   ```bash
+   brew update
+   brew upgrade tailcall
+   ```
+
+## Curl
+
+Follow the steps below to manually install the cli on your system:
+
+<InstallCommand />
+
+This command fetches and executes the Tailcall installation script. The installed files are located in the `~/.tailcall` directory.
+
+Upon completion of the installation, extend your `PATH` environment variable to include the `~/.tailcall/bin` directory:
+
+```bash
+export PATH=$PATH:~/.tailcall/bin
+```
+
+## Docker
+
+If you want to install Tailcall with Docker, follow the steps below. Before starting, ensure Docker is installed on your system. If not, you can download it from [here](https://www.docker.com/products/docker-desktop).
+
+1. Pull the latest Tailcall Docker image using the following command:
+
+   <CodeBlock language="bash">
+     docker pull tailcall.docker.scarf.sh/tailcallhq/tailcall/tc-server:
+     <Version />
+   </CodeBlock>
+
+   This command fetches the latest version of the Tailcall Docker image from the Docker registry.
+
+2. Run the Tailcall Docker container with the following command:
+
+   <CodeBlock language="bash">
+     docker run -p 8080:8080 -p 8081:8081 tailcall.docker.scarf.sh/tailcallhq/tailcall/tc-server:
+     <Version />
+   </CodeBlock>
+
+   This command starts the Tailcall server in a Docker container. Similar to the homebrew installation, it exposes a the graphQL endpoint on port 8080.

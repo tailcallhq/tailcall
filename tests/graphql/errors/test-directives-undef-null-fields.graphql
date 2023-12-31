@@ -27,7 +27,7 @@ type Post {
   user: User @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
   nonNullableUser: User! @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
   userArg: User @http(path: "/users/{{args.id}}", baseURL: "http://localhost:8080")
-  userInvalidDirective: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
+  userInvalidDirective: User @http(path: "/users/{{Vale.userId}}", baseURL: "http://localhost:8080")
   userNonScalar: User @http(path: "/users/{{value.nonNullableUser}}", baseURL: "http://localhost:8080")
   userNullable: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
   nestedUserNullable: User
@@ -65,7 +65,7 @@ type Failure
   @error(message: "value 'nestedUser' is a nullable type", trace: ["Post", "nestedUserNullable", "@http", "path"])
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
 type Failure
-  @error(message: "unknown template directive 'valu'", trace: ["Post", "userInvalidDirective", "@http", "path"])
+  @error(message: "unknown template directive 'Vale'", trace: ["Post", "userInvalidDirective", "@http", "path"])
 type Failure
   @error(message: "value 'nonNullableUser' is not of a scalar type", trace: ["Post", "userNonScalar", "@http", "path"])
 type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "userNullValue", "@http", "path"])

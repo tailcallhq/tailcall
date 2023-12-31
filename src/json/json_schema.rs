@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use async_graphql::Name;
 use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
@@ -63,14 +62,13 @@ impl JsonSchema {
         let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
         match value {
           async_graphql::Value::Object(map) => Valid::from_iter(field_schema_list, |(name, schema)| {
-            let key = Name::new(name);
             if schema.is_required() {
-              if let Some(field_value) = map.get(&key) {
+              if let Some(field_value) = map.get::<str>(name.as_ref()) {
                 schema.validate(field_value).trace(name)
               } else {
                 Valid::fail("expected field to be non-nullable").trace(name)
               }
-            } else if let Some(field_value) = map.get(&key) {
+            } else if let Some(field_value) = map.get::<str>(name.as_ref()) {
               schema.validate(field_value).trace(name)
             } else {
               Valid::succeed(())

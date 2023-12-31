@@ -1,7 +1,8 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::time::Duration;
 
-use async_graphql::{Name, SelectionField, ServerError, Value};
+use async_graphql::{SelectionField, ServerError, Value};
 use derive_setters::Setters;
 use reqwest::header::HeaderMap;
 
@@ -48,10 +49,18 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     value.to_str().ok()
   }
 
+  pub fn env_var(&self, key: &str) -> Option<&str> {
+    self.req_ctx.env_vars.get(key).map(|v| v.as_str())
+  }
+
   pub fn var(&self, key: &str) -> Option<&str> {
     let vars = &self.req_ctx.server.vars;
 
     vars.get(key).map(|v| v.as_str())
+  }
+
+  pub fn vars(&self) -> &BTreeMap<String, String> {
+    &self.req_ctx.server.vars
   }
 
   pub fn add_error(&self, error: ServerError) {
@@ -113,12 +122,13 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
   Cow::Owned(format!("({})", args))
 }
 
+// TODO: this is the same code as src/json/json_like.rs::get_path
 pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
   let mut value = Some(input);
   for name in path {
     match value {
       Some(Value::Object(map)) => {
-        value = map.get(&Name::new(name));
+        value = map.get(name.as_ref());
       }
 
       Some(Value::List(list)) => {
