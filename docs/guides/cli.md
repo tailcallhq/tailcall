@@ -66,7 +66,7 @@ tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql
 
 ### --format
 
-This specifies the format of the desired composed file. It accepts `gql`,`yml`, `json` . Default is `json`.
+This specifies the format of the desired composed file. It accepts `gql` or `graphql`,`yml` or `yaml`, `json` . Default is `json`.
 
 ```bash
 tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql --format gql

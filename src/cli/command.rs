@@ -33,7 +33,7 @@ impl std::str::FromStr for FormatOption {
       "json" => Ok(FormatOption::Json),
       "yml" | "yaml" => Ok(FormatOption::Yml),
       "graphql" | "gql" => Ok(FormatOption::Gql),
-      _ => Err(format!("Invalid format: {}", s)),
+      _ => Err(format!("Unsupported format: {}", s)),
     }
   }
 }
@@ -61,7 +61,7 @@ pub enum Command {
     #[arg(short, long)]
     schema: bool,
 
-    /// Display the generated blueprint in the console
+    /// Display the generated blueprint on the console
     #[arg(short, long)]
     blueprint: bool,
   },
@@ -72,8 +72,8 @@ pub enum Command {
     #[arg(required = true)]
     file_path: Vec<String>,
 
-    /// Format of the result. Accepted values: JSON|YML|GQL. For blueprint option, only YML and JSON are allowed
-    #[clap(short, long, default_value = "json")]
+    /// Format of the result. Accepted values: JSON|YML|GQL.
+    #[clap(short, long, default_value = "gql")]
     format: FormatOption,
   },
 
