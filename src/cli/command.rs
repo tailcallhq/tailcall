@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+use crate::config::Source;
+
 const VERSION: &str = match option_env!("APP_VERSION") {
   Some(version) => version,
   _ => "0.1.0-dev",
@@ -16,26 +18,6 @@ const ABOUT: &str = r"
 pub struct Cli {
   #[command(subcommand)]
   pub command: Command,
-}
-
-#[derive(Clone)]
-pub enum FormatOption {
-  Yml,
-  Gql,
-  Json,
-}
-
-impl std::str::FromStr for FormatOption {
-  type Err = String;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s.to_lowercase().as_str() {
-      "json" => Ok(FormatOption::Json),
-      "yml" | "yaml" => Ok(FormatOption::Yml),
-      "graphql" | "gql" => Ok(FormatOption::Gql),
-      _ => Err(format!("Unsupported format: {}", s)),
-    }
-  }
 }
 
 #[derive(Subcommand)]
@@ -74,7 +56,7 @@ pub enum Command {
 
     /// Format of the result. Accepted values: JSON|YML|GQL.
     #[clap(short, long, default_value = "gql")]
-    format: FormatOption,
+    format: Source,
   },
 
   /// Initialize a new project

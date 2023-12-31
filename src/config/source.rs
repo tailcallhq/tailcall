@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+#[derive(Clone)]
 pub enum Source {
   Json,
   Yml,
@@ -14,6 +15,19 @@ const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 #[derive(Debug, Error)]
 #[error("Unsupported file extension: {0}")]
 pub struct UnsupportedFileFormat(String);
+
+impl std::str::FromStr for Source {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s.to_lowercase().as_str() {
+      "json" => Ok(Source::Json),
+      "yml" | "yaml" => Ok(Source::Yml),
+      "graphql" | "gql" => Ok(Source::GraphQL),
+      _ => Err(format!("Unsupported format: {}", s)),
+    }
+  }
+}
 
 impl Source {
   pub fn ext(&self) -> &'static str {

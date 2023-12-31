@@ -8,11 +8,11 @@ use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
-use super::command::{Cli, Command, FormatOption};
+use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
-use crate::config::Config;
+use crate::config::{Config, Source};
 use crate::http::Server;
 use crate::print_schema;
 
@@ -58,9 +58,9 @@ pub fn run() -> Result<()> {
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
 
       Fmt::display(match format {
-        FormatOption::Yml => config.to_yaml()?,
-        FormatOption::Gql => config.to_sdl(),
-        FormatOption::Json => config.to_json(true)?,
+        Source::Yml => config.to_yaml()?,
+        Source::GraphQL => config.to_sdl(),
+        Source::Json => config.to_json(true)?,
       });
 
       Ok(())
