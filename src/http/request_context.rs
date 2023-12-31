@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
@@ -33,6 +34,7 @@ pub struct RequestContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
+  pub env_vars: Arc<HashMap<String, String>>,
 }
 
 impl Default for RequestContext {
@@ -56,6 +58,7 @@ impl Default for RequestContext {
       grpc_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(HashMap::new()),
     }
   }
 }
@@ -133,6 +136,7 @@ impl From<&ServerContext> for RequestContext {
       grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
+      env_vars: server_ctx.env_vars.clone(),
     }
   }
 }

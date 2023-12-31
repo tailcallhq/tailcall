@@ -390,10 +390,8 @@ pub struct Http {
   pub group_by: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
-pub enum ExprNode {
-    #[default]
-    None,
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ExprBody {
     #[serde(rename = "http")]
     Http(Http),
     #[serde(rename = "grpc")]
@@ -404,15 +402,15 @@ pub enum ExprNode {
     Const(Const),
     #[serde(rename = "if")]
     If {
-        condition: Box<ExprNode>,
-        then: Box<ExprNode>,
+        condition: Box<ExprBody>,
+        then: Box<ExprBody>,
         #[serde(rename = "else")]
-        els: Box<ExprNode>
+        els: Box<ExprBody>
     },
     #[serde(rename = "gt")]
     GreaterThan {
-        left: Box<ExprNode>,
-        right: Box<ExprNode>,
+        left: Box<ExprBody>,
+        right: Box<ExprBody>,
     },
     #[serde(rename = "literal")]
     Literal(Value),
@@ -420,9 +418,9 @@ pub enum ExprNode {
     Variable(String)
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Expr {
-    pub body: ExprNode
+  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
