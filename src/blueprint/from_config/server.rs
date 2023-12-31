@@ -23,7 +23,7 @@ pub struct Server {
   pub port: u16,
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
-  #[serde(skip)]
+  #[serde(with = "http_serde::header_map")]
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
