@@ -136,5 +136,3 @@ pub async fn start_http_2(
     Ok(result?)
   }
 }
-
-
