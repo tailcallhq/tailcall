@@ -33,7 +33,7 @@ change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add
 version-resolver:
   major:
     labels:
-      - "breaking"
+      - "release: breaking"
   minor:
     labels:
       - "type: feature"
@@ -68,8 +68,8 @@ autolabeler:
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
     title:
-      - '/chore\/.+/'
-      - '/refactor\/.+/'
+      - "/chore/i"
+      - "/refactor/i"
 
   - label: "type: fix"
     branch:
@@ -105,3 +105,6 @@ autolabeler:
     branch:
       - '/doc\/.+/'
       - '/docs\/.+/'
+    title:
+      - "/doc/i"
+      - "/docs/i"
