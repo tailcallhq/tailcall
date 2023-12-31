@@ -2774,12 +2774,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "resource"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a7f6703c396037a02da99195e49138c37f3cc5146cb95f2f7d26debc0c5622"
-
-[[package]]
 name = "ring"
 version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3295,7 +3289,6 @@ dependencies = [
  "regex",
  "reqwest",
  "reqwest-middleware",
- "resource",
  "ring",
  "rustls",
  "rustls-pemfile",

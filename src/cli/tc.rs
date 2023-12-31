@@ -4,7 +4,6 @@ use anyhow::Result;
 use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
-use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
@@ -74,7 +73,7 @@ pub async fn init(file_path: &str) -> Result<()> {
     };
   }
 
-  let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
 
   let file_name = ".tailcallrc.graphql";
   let yml_file_name = ".graphqlrc.yml";
@@ -100,13 +99,15 @@ pub async fn init(file_path: &str) -> Result<()> {
       .prompt();
 
     match confirm {
-      Ok(true) => fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_ref().as_bytes())?,
+      Ok(true) => fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_bytes())?,
       Ok(false) => (),
       Err(e) => return Err(e.into()),
     };
   } else {
-    fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_ref().as_bytes())?;
+    fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_bytes())?;
   }
+
+  println!("tailcallrc: {}", tailcallrc);
 
   let graphqlrc_path = format!("{}/.graphqlrc.yml", file_path);
   let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
