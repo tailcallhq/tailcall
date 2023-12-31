@@ -1,9 +1,15 @@
 [
   {
-    "name": "breaking",
+    "name": "release: skip changelog",
+    "color": "d73a4a",
+    "description": "Skip this change from release notes.",
+    "aliases": ["skip"]
+  },
+  {
+    "name": "release: breaking",
     "color": "d73a4a",
     "description": "Introduces a breaking change.",
-    "aliases": ["breaking change", "breaking-change", "Type: Breaking Change", "type: breaking"]
+    "aliases": ["breaking change", "breaking-change", "Type: Breaking Change", "type: breaking", "breaking"]
   },
   {
     "name": "effort: 1",
