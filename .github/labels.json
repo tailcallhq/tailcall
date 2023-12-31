@@ -70,25 +70,25 @@
   },
   {
     "name": "state: approved",
-    "color": "28a745",
+    "color": "C3F7F7",
     "description": "Approved to proceed.",
     "aliases": ["approved"]
   },
   {
     "name": "state: blocked",
-    "color": "28a745",
+    "color": "C3F7F7",
     "description": "Something is blocking action.",
     "aliases": ["blocked", "Status: Blocked", "status: blocked", "blocker"]
   },
   {
     "name": "state: pending",
-    "color": "28a745",
+    "color": "C3F7F7",
     "description": "Action is underway but awaiting other tasks or data before completion.",
     "aliases": ["in progress", "on hold", "pending", "Status: In Progress", "Status: Review Needed", "watchlist"]
   },
   {
     "name": "state: inactive",
-    "color": "28a745",
+    "color": "C3F7F7",
     "description": "No current action needed/possible; issue fixed, out of scope, or superseded.",
     "aliases": [
       "duplicate",
@@ -145,7 +145,16 @@
     "name": "type: docs",
     "color": "80FCED",
     "description": "Related to documentation and information.",
-    "aliases": ["doc", "docs", "document", "documentation", "documents", "Type: Documentation", "type: documentation", "specification"]
+    "aliases": [
+      "doc",
+      "docs",
+      "document",
+      "documentation",
+      "documents",
+      "Type: Documentation",
+      "type: documentation",
+      "specification"
+    ]
   },
   {
     "name": "type: feature",
@@ -194,5 +203,17 @@
     "color": "91ca55",
     "description": "The situation is obvious, best practices used.",
     "aliases": ["obvious"]
+  },
+  {
+    "name": "ci: lint",
+    "color": "F9D0C4",
+    "description": "Automatically fix the linters issues and make a commit",
+    "aliases": ["ci:lint"]
+  },
+  {
+    "name": "ci: benchmark",
+    "color": "F9D0C4",
+    "description": "Runs macro benchmarks",
+    "aliases": ["ci:lint"]
   }
 ]
