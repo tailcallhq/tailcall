@@ -1,8 +1,19 @@
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, ExprNode, Field};
+use crate::config::{Config, ExprBody, Field};
+use crate::directive::DirectiveCodec;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
+
+fn setup_field(field: &Field, expr: &ExprBody) -> Field {
+    let copy = field.clone();
+    match expr {
+        ExprBody::Http(http) => copy.http(http.clone()),
+        ExprBody::Const(const_field) => copy.const_field(const_field.clone()),
+        ExprBody::Grpc(grpc) => copy.grpc(grpc.clone()),
+        ExprBody::GraphQL(graphql) => copy.graphql(graphql.clone()),
+    }
+}
 
 pub fn update_expr(
   operation_type: &config::GraphQLOperationType,
@@ -13,28 +24,13 @@ pub fn update_expr(
         return Valid::succeed(b_field);
       };
 
-      match &expr.body {
-        ExprNode::Http(http) => {
-          let field_with_http = (*field).clone().http(http.clone());
-          let http_field_def = update_http().try_fold(&(config, &field_with_http, ty, name), b_field);
-          http_field_def
-        }
-        ExprNode::Const(const_field) => {
-          let field_with_const = (*field).clone().const_field(const_field.clone());
-          let const_field_def = update_const_field().try_fold(&(config, &field_with_const, ty, name), b_field);
-          const_field_def
-        }
-        ExprNode::GraphQL(gql) => {
-          let field_with_gql = (*field).clone().graphql(gql.clone());
-          let gql_field_def = update_graphql(operation_type).try_fold(&(config, &field_with_gql, ty, name), b_field);
-          gql_field_def
-        }
-        ExprNode::Grpc(grpc) => {
-          let field_with_grpc = (*field).clone().grpc(grpc.clone());
-          let grpc_field_def = update_grpc(operation_type).try_fold(&(config, &field_with_grpc, ty, name), b_field);
-          grpc_field_def
-        }
-      }
-    },
+      let field_with_expr = setup_field(*field, &expr.body);
+      let field_with_resolver = update_http().trace(config::Http::trace_name().as_str())
+        .and(update_const_field().trace(config::Const::trace_name().as_str()))
+        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
+        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .try_fold(&(config, &field_with_expr, ty, name), b_field);
+      field_with_resolver
+    }
   )
 }
