@@ -78,7 +78,7 @@
     "name": "state: blocked",
     "color": "28a745",
     "description": "Something is blocking action.",
-    "aliases": ["blocked", "Status: Blocked", "status: blocked"]
+    "aliases": ["blocked", "Status: Blocked", "status: blocked", "blocker"]
   },
   {
     "name": "state: pending",
@@ -145,19 +145,19 @@
     "name": "type: docs",
     "color": "5c91d2",
     "description": "Related to documentation and information.",
-    "aliases": ["doc", "docs", "document", "documentation", "documents", "Type: Documentation", "type: documentation"]
+    "aliases": ["doc", "docs", "document", "documentation", "documents", "Type: Documentation", "type: documentation", "specification"]
   },
   {
     "name": "type: feature",
     "color": "5c91d2",
     "description": "Brand new functionality, features, pages, workflows, endpoints, etc.",
-    "aliases": ["addition", "enhancement", "feature", "type: enhancement", "Type: Feature"]
+    "aliases": ["addition", "enhancement", "feature", "type: enhancement", "Type: Feature", "performance"]
   },
   {
     "name": "type: fix",
     "color": "5c91d2",
     "description": "Iterations on existing features or infrastructure.",
-    "aliases": ["fix", "improvement", "optimization", "refactor", "Type: Fix", "Type: Refactoring"]
+    "aliases": ["fix", "improvement", "optimization", "refactor", "Type: Fix", "Type: Refactoring", "bug"]
   },
   {
     "name": "type: security",
