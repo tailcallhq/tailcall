@@ -44,26 +44,32 @@ Example:
 tailcall check --schema ./path/to/file1.graphql ./path/to/file2.graphql
 ```
 
-### --out
+### --blueprint
 
-This option writes the resulting schema of the composition spec to a file. The value of the option will become the name of the file.
-
-- Type: String
-
-```bash
-tailcall check <file1> <file2> ... <fileN> --out <outfile>
-```
-
-The schema can be written either in `json`, `graphql` or `yml` formats.
+This option prints the generated blueprint of the composed spec.
 
 Example:
 
 ```bash
-# Output .graphql file
-tailcall check ./path/to/file1.graphql ./path/to/file2.graphql --out ./path/to/outfile.graphql
+tailcall check /path/to/file1.graphql ./path/to/file2.graphql --blueprint
+```
 
-# Output .json file
-tailcall check ./path/to/file1.graphql ./path/to/file2.graphql --out ./path/to/outfile.json
+## compose
+
+The `compose` merges multiple configuration files into one. To use the `compose` command, follow this format:
+
+Example:
+
+```bash
+tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql
+```
+
+### --format
+
+This specifies the format of the desired composed file. It accepts `gql`,`yml`, `json` . Default is `json`.
+
+```bash
+tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql --format gql
 ```
 
 ## start
