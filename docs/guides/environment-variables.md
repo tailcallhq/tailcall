@@ -1,5 +1,5 @@
 ---
-title: CLI
+title: Environment Variables
 ---
 
 Environment variables are key-value pairs stored in our operating systems. Many come by default, and we can also create our own. They are used to store information utilized by our operating system or other programs. For example, the `PATH` variable stores a list of directories the operating system should search when we run a command in the terminal. The `HOME` variable stores the path to our home directory.
