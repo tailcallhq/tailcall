@@ -18,10 +18,9 @@ jobs:
         run: sudo npm install --global github-label-sync
 
       - name: Sync labels
-        env:
-          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           github-label-sync \
             --access-token ${{ secrets.GITHUB_TOKEN }} \
             --labels ".github/labels.json" \
+            --allow-added-labels \
             ${{ github.repository }}
