@@ -103,13 +103,13 @@
   },
   {
     "name": "type: bug",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Something isn't working.",
     "aliases": ["bug", "Type: Bug"]
   },
   {
     "name": "type: chore",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Routine tasks like conversions, reorganization, and maintenance work.",
     "aliases": [
       "chore",
@@ -125,7 +125,7 @@
   },
   {
     "name": "type: discussion",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Questions, proposals and info that requires discussion.",
     "aliases": [
       "discussion",
@@ -143,31 +143,31 @@
   },
   {
     "name": "type: docs",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Related to documentation and information.",
     "aliases": ["doc", "docs", "document", "documentation", "documents", "Type: Documentation", "type: documentation", "specification"]
   },
   {
     "name": "type: feature",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Brand new functionality, features, pages, workflows, endpoints, etc.",
     "aliases": ["addition", "enhancement", "feature", "type: enhancement", "Type: Feature", "performance"]
   },
   {
     "name": "type: fix",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Iterations on existing features or infrastructure.",
     "aliases": ["fix", "improvement", "optimization", "refactor", "Type: Fix", "Type: Refactoring", "bug"]
   },
   {
     "name": "type: security",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Something is vulnerable or not secure.",
     "aliases": ["security"]
   },
   {
     "name": "type: testing",
-    "color": "5c91d2",
+    "color": "80FCED",
     "description": "Related to testing.",
     "aliases": ["test", "testing"]
   },
