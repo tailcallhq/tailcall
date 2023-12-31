@@ -61,9 +61,9 @@ pub enum Command {
     #[arg(short, long)]
     schema: bool,
 
-    /// Path of the file to save final configuration in
-    #[arg(short, long("out"))]
-    out_file_path: Option<String>,
+    /// Display the generated blueprint in the console
+    #[arg(short, long)]
+    blueprint: bool,
   },
 
   /// Merge multiple configuration file into one

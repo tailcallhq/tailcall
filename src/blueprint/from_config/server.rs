@@ -4,11 +4,12 @@ use std::net::{AddrParseError, IpAddr};
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
+use serde::Serialize;
 
 use crate::config::{self, HttpVersion};
 use crate::valid::{Valid, ValidationError};
 
-#[derive(Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters, Serialize)]
 pub struct Server {
   pub enable_apollo_tracing: bool,
   pub enable_cache_control_header: bool,
@@ -22,12 +23,13 @@ pub struct Server {
   pub port: u16,
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
+  #[serde(skip)]
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Http {
   HTTP1,
   HTTP2 { cert: String, key: String },

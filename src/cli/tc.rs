@@ -34,21 +34,19 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema, out_file_path } => {
+    Command::Check { file_path, n_plus_one_queries, schema, blueprint } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
-      let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
-      match blueprint {
-        Ok(blueprint) => {
+      let generated_blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
+      match generated_blueprint {
+        Ok(generated_blueprint) => {
           display_config(&config, n_plus_one_queries);
           if schema {
-            display_schema(&blueprint);
+            display_schema(&generated_blueprint);
           }
-          if let Some(out_file) = out_file_path {
-            tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
-            Fmt::display(Fmt::success(
-              &format!("Schema has been written to {}", out_file).to_string(),
-            ));
+
+          if blueprint {
+            Fmt::display(generated_blueprint.to_json(true)?);
           }
           Ok(())
         }

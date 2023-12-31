@@ -26,7 +26,7 @@ use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Expression {
   Context(Context),
   Literal(Value), // TODO: this should async_graphql::Value
@@ -35,25 +35,29 @@ pub enum Expression {
   Input(Box<Expression>, Vec<String>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Context {
   Value,
   Path(Vec<String>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Unsafe {
   Http {
+    #[serde(skip)]
     req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
+    #[serde(skip)]
     dl_id: Option<DataLoaderId>,
   },
+  #[serde(skip)]
   GraphQLEndpoint {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,
   },
+  #[serde(skip)]
   Grpc {
     req_template: grpc::RequestTemplate,
     group_by: Option<GroupBy>,

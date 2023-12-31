@@ -2,10 +2,12 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
 
+use anyhow::Result;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
-use async_graphql::*;
+use async_graphql::ValidationMode;
 use derive_setters::Setters;
+use serde::Serialize;
 use serde_json::Value;
 
 use super::GlobalTimeout;
@@ -17,15 +19,19 @@ use crate::lambda::{Expression, Lambda};
 /// It can only be generated from a valid Config.
 /// It allows us to choose a different GraphQL Backend, without re-writing all orchestration logic.
 /// It's not optimized for REST APIs (yet).
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Default, Setters, Serialize)]
 pub struct Blueprint {
+  #[serde(default)]
   pub definitions: Vec<Definition>,
+  #[serde(default)]
   pub schema: SchemaDefinition,
+  #[serde(default)]
   pub server: Server,
+  #[serde(default)]
   pub upstream: Upstream,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Type {
   NamedType { name: String, non_null: bool },
   ListType { of_type: Box<Type>, non_null: bool },
@@ -53,7 +59,7 @@ impl Type {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Definition {
   InterfaceTypeDefinition(InterfaceTypeDefinition),
   ObjectTypeDefinition(ObjectTypeDefinition),
@@ -75,14 +81,14 @@ impl Definition {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InterfaceTypeDefinition {
   pub name: String,
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ObjectTypeDefinition {
   pub name: String,
   pub fields: Vec<FieldDefinition>,
@@ -90,14 +96,14 @@ pub struct ObjectTypeDefinition {
   pub implements: BTreeSet<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InputObjectTypeDefinition {
   pub name: String,
   pub fields: Vec<InputFieldDefinition>,
   pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumTypeDefinition {
   pub name: String,
   pub directives: Vec<Directive>,
@@ -105,21 +111,21 @@ pub struct EnumTypeDefinition {
   pub enum_values: Vec<EnumValueDefinition>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumValueDefinition {
   pub description: Option<String>,
   pub name: String,
   pub directives: Vec<Directive>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct SchemaDefinition {
   pub query: String,
   pub mutation: Option<String>,
   pub directives: Vec<Directive>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InputFieldDefinition {
   pub name: String,
   pub of_type: Type,
@@ -127,13 +133,14 @@ pub struct InputFieldDefinition {
   pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Cache {
   pub max_age: NonZeroU64,
+  #[serde(skip)]
   pub hasher: DefaultHasher,
 }
 
-#[derive(Clone, Debug, Setters, Default)]
+#[derive(Clone, Debug, Setters, Default, Serialize)]
 pub struct FieldDefinition {
   pub name: String,
   pub args: Vec<InputFieldDefinition>,
@@ -162,21 +169,21 @@ impl FieldDefinition {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Directive {
   pub name: String,
   pub arguments: HashMap<String, Value>,
   pub index: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ScalarTypeDefinition {
   pub name: String,
   pub directive: Vec<Directive>,
   pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UnionTypeDefinition {
   pub name: String,
   pub directives: Vec<Directive>,
@@ -218,5 +225,13 @@ impl Blueprint {
     // We should safely assume the blueprint is correct and,
     // generation of schema cannot fail.
     schema.finish().unwrap()
+  }
+
+  pub fn to_json(&self, pretty: bool) -> Result<String> {
+    if pretty {
+      Ok(serde_json::to_string_pretty(self)?)
+    } else {
+      Ok(serde_json::to_string(self)?)
+    }
   }
 }
