@@ -68,8 +68,8 @@ autolabeler:
       - '/refactor\/.+/'
       - '/maintenance\/.+/'
     title:
-      - "/chore/i"
-      - "/refactor/i"
+      - /chore/i
+      - /refactor/i
 
   - label: "type: fix"
     branch:
@@ -78,10 +78,10 @@ autolabeler:
       - '/bugfix\/.+/'
       - '/patch\/.+/'
     title:
-      - "/fix/i"
-      - "/hotfix/i"
-      - "/bugfix/i"
-      - "/patch/i"
+      - /fix/i
+      - /hotfix/i
+      - /bugfix/i
+      - /patch/i
 
   - label: "type: feature"
     branch:
@@ -90,10 +90,10 @@ autolabeler:
       - '/enhancement\/.+/'
       - '/new\/.+/'
     title:
-      - "/feat/i"
-      - "/feature/i"
-      - "/enhancement/i"
-      - "/new/i"
+      - /feat/i
+      - /feature/i
+      - /enhancement/i
+      - /new/i
 
   - label: "type: docs"
     files:
@@ -106,5 +106,5 @@ autolabeler:
       - '/doc\/.+/'
       - '/docs\/.+/'
     title:
-      - "/doc/i"
-      - "/docs/i"
+      - /doc/i
+      - /docs/i
