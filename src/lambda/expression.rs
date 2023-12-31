@@ -186,9 +186,39 @@ impl Expression {
             result
           }
         },
+
+        Expression::If { condition, then, els } => {
+            let cond = condition.eval(ctx).await?;
+            if is_truthy(cond) {
+                then.eval(ctx).await
+            } else {
+                els.eval(ctx).await
+            }
+        }
       }
     })
   }
+}
+
+/// Check if a value is truthy
+///
+/// Special cases:
+/// 1. An empty string is considered falsy
+/// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
+fn is_truthy(value: async_graphql::Value) -> bool {
+    use hyper::body::Bytes;
+    use async_graphql::{Value, Number};
+
+    match value {
+        Value::Null => false,
+        Value::Enum(_) => true,
+        Value::List(_) => true,
+        Value::Object(_) => true,
+        Value::String(s) => !s.is_empty(),
+        Value::Boolean(b) => b,
+        Value::Number(n) => n == Number::from(0),
+        Value::Binary(b) => b == Bytes::default(),
+    }
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
