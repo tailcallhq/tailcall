@@ -55,7 +55,6 @@ template: |
 
   $CHANGES
 autolabeler:
-  debug: true
   - label: "type: chore"
     files:
       - "*.yml"
