@@ -1,1 +1,2 @@
-comment: false
+comment:
+  require_changes: true
