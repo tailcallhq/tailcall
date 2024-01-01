@@ -1,10 +1,10 @@
 #> server-sdl
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }
 
 type Query {
-  foo: [User] @expr(body: {http: {path: "/users"}})
+  foo(id: Int!): User @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/users/{{args.id}}"}})
 }
 
 type User {
@@ -14,7 +14,7 @@ type User {
 
 #> client-sdl
 type Query {
-  foo: [User]
+  foo(id: Int!): User
 }
 
 type User {
