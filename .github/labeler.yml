@@ -1,4 +1,5 @@
- - label: "type: chore"
+rules:
+  - label: "type: chore"
     files:
       - "*.yml"
       - "*.conf"
