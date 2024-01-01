@@ -1,7 +1,6 @@
 name: Build
 
 on:
-- pull_request_target
   push:
     branches:
       - "**"
@@ -105,7 +104,8 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    on:
+    - pull_request_target
     runs-on: ubuntu-latest
     permissions:
       contents: write
