@@ -6,6 +6,7 @@ categories:
       - "feature"
       - "enhancement"
       - "feat"
+
   - title: "🔧 Improvements"
     labels:
       - "perf"
