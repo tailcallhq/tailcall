@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-#[cfg(feature = "default")]
-use tokio::{fs::File, io::AsyncReadExt};
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 use url::Url;
 
 use crate::config::{Config, Source};
@@ -18,13 +18,6 @@ impl ConfigReader {
     Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
   }
   pub async fn read(&self) -> anyhow::Result<Config> {
-    #[cfg(feature = "default")]
-    return self.read_cli().await;
-    #[cfg(not(feature = "default"))]
-    return self.read_wasm().await;
-  }
-  #[cfg(feature = "default")]
-  async fn read_cli(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
     for path in &self.file_paths {
       let conf = if let Ok(url) = Url::parse(path) {
@@ -37,22 +30,10 @@ impl ConfigReader {
     }
     Ok(config)
   }
-  #[cfg(not(feature = "default"))]
-  async fn read_wasm(&self) -> anyhow::Result<Config> {
-    let mut config = Config::default();
-    for path in &self.file_paths {
-      let url = Url::parse(path)?;
-      let conf = Self::from_url(url).await?;
-      config = config.clone().merge_right(&conf);
-    }
-    Ok(config)
-  }
-  #[cfg(feature = "default")]
   async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
     let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
     Config::from_source(source, &server_sdl)
   }
-  #[cfg(feature = "default")]
   async fn read_file(file_path: &str) -> anyhow::Result<(String, Source)> {
     let mut f = File::open(file_path).await?;
     let mut buffer = Vec::new();
@@ -109,7 +90,7 @@ mod reader_tests {
     });
 
     let mut json = String::new();
-    tokio::fs::File::open("../examples/jsonplaceholder.json")
+    tokio::fs::File::open("examples/jsonplaceholder.json")
       .await
       .unwrap()
       .read_to_string(&mut json)
@@ -123,7 +104,7 @@ mod reader_tests {
 
     let port = server.port();
     let files: Vec<String> = [
-      "../examples/jsonplaceholder.yml",                    // config from local file
+      "examples/jsonplaceholder.yml",                       // config from local file
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]
@@ -145,9 +126,9 @@ mod reader_tests {
   #[tokio::test]
   async fn test_local_files() {
     let files: Vec<String> = [
-      "../examples/jsonplaceholder.yml",
-      "../examples/jsonplaceholder.graphql",
-      "../examples/jsonplaceholder.json",
+      "examples/jsonplaceholder.yml",
+      "examples/jsonplaceholder.graphql",
+      "examples/jsonplaceholder.json",
     ]
     .iter()
     .map(|x| x.to_string())

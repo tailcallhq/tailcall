@@ -12,16 +12,24 @@ path = "tc_cli/src/main.rs"
 [dependencies]
 tc_cli = {path = "tc_cli"}
 tc_core = {path = "tc_core"}
-anyhow = "1.0.78"
-derive_setters = "0.1.6"
-thiserror = "1.0.53"
+
+# need these as we set bin path to tc_cli/src/main.rs
+exitcode = "1.1.2"
+anyhow = "1.0.77"
 mimalloc = { version = "0.1.39", default-features = false }
+
+
+[dev-dependencies]
+criterion = "0.5.1"
+pretty_assertions = "1.4.0"
+stripmargin = "0.1.1"
+derive_setters = "0.1.6"
+thiserror = "1.0.52"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
-sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = [
    "json",
@@ -37,7 +45,6 @@ async-graphql-value = "6.0.11"
 base64 = "0.21"
 indexmap = "2.1"
 once_cell = "1.19.0"
-mini-v8 = { version = "0.4.1", optional = true }
 clap = { version = "4.4.12", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
@@ -45,17 +52,15 @@ http-cache-reqwest = { version = "0.12.0", features = [
    "manager-moka"
 ], default-features = false }
 reqwest-middleware = "0.2.4"
-async-trait = "0.1.76"
+async-trait = "0.1.75"
 serde_path_to_error = "0.1.14"
 moka = { version = "0.12.2", default-features = false, features = ["future"] }
 cache_control = "0.2.0"
 nom = "7.1.3"
-exitcode = "1.1.2"
 resource = "0.5.0"
 inquire = "0.6.2"
 log = "0.4.20"
 env_logger = "0.10.1"
-stripmargin = "0.1.1"
 ring = "0.17.7"
 num_cpus = "1.16.0"
 hyper-rustls = "0.24.2"
@@ -68,17 +73,10 @@ futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 ttl_cache = "0.5.1"
-prettytable-rs = "^0.10"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 
-
-[dev-dependencies]
-criterion = "0.5.1"
-httpmock = "0.6"
-pretty_assertions = "1.4.0"
-stripmargin = "0.1.1"
 
 [profile.release]
 opt-level = 3
@@ -88,9 +86,6 @@ lto = 'thin'
 debug = false
 incremental = false
 overflow-checks = false
-
-[features]
-unsafe-js = ["dep:mini-v8"]
 
 [[bench]]
 name = "json_like_bench"
