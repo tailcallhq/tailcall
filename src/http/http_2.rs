@@ -74,7 +74,7 @@ pub async fn start_http_2(
       }
     });
 
-    let builder = Server::builder(incoming);
+    let builder = Server::builder(incoming).http2_only(true);
 
     log_launch_and_open_browser(sc.as_ref());
 
@@ -94,7 +94,6 @@ pub async fn start_http_2(
   } else {
     let cert_chain = load_cert(&cert).await?;
     let key = load_private_key(&key).await?;
-
     let acceptor = TlsAcceptor::builder()
       .with_single_cert(cert_chain, key)?
       .with_http2_alpn()
