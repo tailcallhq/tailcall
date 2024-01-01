@@ -74,3 +74,53 @@ type Query {
  when you run the query `paginatedPosts` it accepts a crucial argument, page, enabling the selection of specific pages of posts.Utilizing a Mustache template `/posts?page={{args.page}}`, the query dynamically generates a URL structure. When calling `paginatedPosts(page: 2)`, for instance, this template dynamically forms the URL `/posts?page=2`. This crafted URL then instructs the API to provide the posts located on the second page.
 
 #### Dynamic input
+
+Suppose you want to create a post with your input
+
+```graphql
+type Mutation {
+  createPost(input: PostInput!): Post
+    @http(
+      method: "POST",
+      path: "/posts",
+      body: "{{args.input}}",
+      headers: [{key: "Content-type", value: "application/json; charset=UTF-8"}]
+    )
+}
+
+input PostInput {
+  title: String!
+  body: String!
+  userId: Int!
+}
+```
+
+The createPost mutation needs specific details like title, body, and userId to make a new post.With Mustache's dynamic templating, the `{{args.input}}` tag inside the body parameter puts the entire input object into the request. This lets us adjust what data gets sent in the POST request.When we use the mutation with the right title, body, and userId, it makes a POST request, creating a new post with the details. Mustache's flexibility helps customize the data sent through the request.To ensure everything's understood, we set the Content-type header to application/json; charset=UTF-8, signaling that the request sends data in JSON format with UTF-8 encoding.
+
+To execute this in the playground
+
+```graphql
+mutation {
+  createPost(input: { title: "New Post", body: "This is a new post.", userId: 111 }) {
+    id
+    title
+    body
+    userId
+  }
+}
+```
+
+#### Consistency in Configuration
+
+Consider a case where you're utilizing the same base URL across multiple API endpoints.Mustache templates help us to do this in the simplified form below
+
+```graphql
+type Query {
+  users: [User] @http(path: "/users", baseURL: "{{headers.apiBaseUrl}}")
+  posts: [Post] @http(path: "/posts", baseURL: "{{headers.apiBaseUrl}}")
+}
+```
+
+The above query it involves two endpoints one for fetching `users` and another for `posts`. Both endpoints share the same base URL. Utilizing Mustache templates, the schema centralizes the base API URL `(apiBaseUrl)` for these endpoints. This means that any modifications made to the base URL apply universally across all API calls involving the users and posts queries. This approach ensures consistency in configurations, allowing easy management of changes in the base URL across multiple endpoints within the GraphQL schema.
+
+Using Mustache templates in Tailcall lets you create flexible and powerful API configurations. They are like tools that help developers build strong and adaptable systems by allowing dynamic adjustments in how APIs are set up. When used wisely and with smart thinking, Mustache templates make it easier to create strong and adaptable systems for your APIs.
