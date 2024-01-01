@@ -119,6 +119,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          commitish: main
           config-name: release-drafter.yml
 
       - name: Set Output for Later Jobs
