@@ -3,101 +3,108 @@ tag-template: "v$NEXT_PATCH_VERSION"
 categories:
   - title: "🚀 Features"
     labels:
-      - "feature"
-      - "enhancement"
-      - "feat"
-  - title: "🔧 Improvements"
+      - "type: feature"
+
+  - title: "📝 Documentation"
     labels:
-      - "perf"
-      - "performance"
-      - "refactor"
-  - title: "Tests"
-    labels:
-      - "tests"
-      - "testing"
+      - "type: docs"
+
   - title: "🐛 Bug Fixes"
     labels:
-      - "fix"
-      - "bugfix"
-      - "bug"
-      - "hotfix"
-      - "revert"
+      - "type: bug"
+      - "type: fix"
+
   - title: "🧰 Maintenance"
     labels:
-      - "docs"
-      - "chore"
-      - "maintenance"
-      - "style"
-      - "build"
-      - "chores"
-      - "ci"
+      - "type: chore"
+      - "type: testing"
+
   - title: "💥 Breaking Changes"
     labels:
-      - "breaking change"
-  - title: "🔧 Dependency Updates"
+      - "release: breaking"
+
+  - title: "🔒 Security"
     labels:
-      - "renovate"
+      - "type: security"
+
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+
 version-resolver:
   major:
     labels:
-      - "major"
-      - "breaking change"
+      - "release: breaking"
   minor:
     labels:
-      - "feature"
-      - "enhancement"
-      - "feat"
-      - "perf"
-      - "performance"
+      - "type: feature"
+
   patch:
     labels:
-      - "patch"
+      - "type: fix"
+      - "type: chore"
+      - "type: docs"
+      - "type: bug"
+      - "type: testing"
   default: patch
+
 exclude-labels:
-  - "skip-changelog"
+  - "release: skip changelog"
+
 template: |
   ## Changes
 
   $CHANGES
 autolabeler:
-  debug: true
-  on:
-    - push
-    - pull_request
-  - label: "maintenance"
+  - label: "type: chore"
     files:
       - "*.yml"
       - "*.conf"
       - "*.sbt"
+      - "*.json"
+      - "*.xml"
+      - "Dockerfile"
     branch:
-      - '/^chore\/.+/'
-      - '/^refactor\/.+/'
-      - '/^maintenance\/.+/'
-      - '!/^renovate\//'
+      - '/chore\/.+/'
+      - '/refactor\/.+/'
+      - '/maintenance\/.+/'
     title:
-      - '/^chore\/.+/'
-      - '/^refactor\/.+/'
-  - label: "renovate"
+      - /chore/i
+      - /refactor/i
+
+  - label: "type: fix"
     branch:
-      - '/^renovate\/.+/'
-  - label: "bug"
-    branch:
-      - '/^fix\/.+/'
-      - '!/^renovate\//'
+      - '/fix\/.+/'
+      - '/hotfix\/.+/'
+      - '/bugfix\/.+/'
+      - '/patch\/.+/'
     title:
-      - "/^fix/i"
-  - label: "enhancement"
+      - /fix/i
+      - /hotfix/i
+      - /bugfix/i
+      - /patch/i
+
+  - label: "type: feature"
     branch:
-      - '/^feat\/.+/'
-      - '/^refactor\/.+/'
+      - '/feat\/.+/'
+      - '/feature\/.+/'
+      - '/enhancement\/.+/'
+      - '/new\/.+/'
     title:
-      - "/^feat/i"
-  - label: "docs"
+      - /feat/i
+      - /feature/i
+      - /enhancement/i
+      - /new/i
+
+  - label: "type: docs"
     files:
       - "*.md"
       - "*.txt"
+      - "*.rst"
+      - "*.wiki"
+      - "*.html"
     branch:
-      - '/^doc\/.+/'
-      - '/^docs\/.+/'
+      - '/doc\/.+/'
+      - '/docs\/.+/'
+    title:
+      - /doc/i
+      - /docs/i
