@@ -1,19 +1,13 @@
-name: Deploy & Release
+name: Release Drafter
 
 on:
-  release:
-    types: [published]
+ pull_request_target:
+   types: [opened, synchronize, reopened]
 
 jobs:
-  deploy:
-    name: Deploy App
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deploy-job
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+ update_release_draft:
+   runs-on: ubuntu-latest
+   steps:
+     - uses: release-drafter/release-drafter@v5
+       env:
+         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
