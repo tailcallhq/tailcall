@@ -63,6 +63,9 @@ template: |
   $CHANGES
 autolabeler:
   debug: true
+  on:
+    - push
+    - pull_request
   - label: "maintenance"
     files:
       - "*.yml"
