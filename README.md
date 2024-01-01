@@ -13,7 +13,7 @@ By providing a solution for API composition, Tailcall is addressing a critical p
 
 ## Getting Started
 
-To use tailcall, you'll need to have Scala, SBT, and Java 11 or above installed on your machine. 
+To use tailcall, you'll need to have Scala, SBT, and Java 11 or above installed on your machine.
 
 ### Installation
 
@@ -23,6 +23,7 @@ To use tailcall, you'll need to have Scala, SBT, and Java 11 or above installed 
 4. To start the server, run the following command inside the SBT console: `~ tc-server`
 5. Open a browser and go to `http://localhost:8080/`
 6. To communicate with the server use the `tc` command from the SBT console.
+   
 
 ### Contributing
 
