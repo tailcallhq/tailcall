@@ -108,3 +108,4 @@ autolabeler:
     title:
       - /doc/i
       - /docs/i
+    debug: true
