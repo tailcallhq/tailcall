@@ -1,6 +1,6 @@
 name-template: "v$RESOLVED_VERSION"
 tag-template: "v$NEXT_PATCH_VERSION"
-categories: 
+categories:
   - title: "🚀 Features"
     labels:
       - "feature"
@@ -63,6 +63,9 @@ template: |
   $CHANGES
 autolabeler:
   debug: true
+  on:
+    - push
+    - pull_request
   - label: "maintenance"
     files:
       - "*.yml"
