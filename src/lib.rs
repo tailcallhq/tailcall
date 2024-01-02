@@ -14,7 +14,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-pub mod rate_limiter;
 #[cfg(feature = "unsafe-js")]
 pub mod javascript;
 pub mod json;
@@ -22,5 +21,6 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+pub mod rate_limiter;
 pub mod try_fold;
 pub mod valid;

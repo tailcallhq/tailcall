@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::request_context::NumRequestsFetched;
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition, RateLimit};
+use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -54,7 +53,6 @@ impl ServerContext {
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
-
           if let Some(ref rate_limit) = field.rate_limit {
             let fld = def.name.to_string();
             let sb_fld = field.name.to_string();
@@ -125,7 +123,6 @@ impl ServerContext {
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
     let rate_limiter = RateLimiter::new(rate_limit_configs);
-
 
     ServerContext {
       schema,

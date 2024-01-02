@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
-use std::time::SystemTime;
 
 use async_graphql::dynamic::{
   FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
@@ -10,7 +9,7 @@ use async_graphql_value::ConstValue;
 
 use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};
-use crate::http::{NumRequestsFetched, RequestContext};
+use crate::http::RequestContext;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
@@ -92,10 +91,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                ctx
-                  .req_ctx
-                  .rate_limiter
-                  .allow(def_name, field_name)?;
+                ctx.req_ctx.rate_limiter.allow(def_name, field_name)?;
 
                 let ttl_and_key =
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
@@ -118,18 +114,17 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                 let p = match const_value {
                   ConstValue::List(a) => {
-                    a
-                      .get(0)
-                      .map(|value| ctx.req_ctx.rate_limiter.allow_obj(output_name, &value))
+                    a.first()
+                      .map(|value| ctx.req_ctx.rate_limiter.allow_obj(output_name, value))
                       .transpose()?;
 
                     FieldValue::list(a)
-                  },
+                  }
                   a => {
                     ctx.req_ctx.rate_limiter.allow_obj(output_name, &a)?;
 
                     FieldValue::from(a)
-                  },
+                  }
                 };
                 Ok(Some(p))
               })

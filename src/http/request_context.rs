@@ -9,7 +9,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::{DefaultHttpClient, HttpClientOptions};
-use crate::blueprint::{Server, RateLimit};
+use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
@@ -67,7 +67,7 @@ impl Default for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: Arc::new(HashMap::new()),
-      rate_limiter: RateLimiter::new(HashMap::new())
+      rate_limiter: RateLimiter::new(HashMap::new()),
     }
   }
 }
