@@ -75,41 +75,27 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
         let cache = field.cache.clone();
-        let field_id = format!("{}.{}", def.name, field.name);
-        println!("{field_id}: {:?}, {:?}", field.rate_limit, &3);
+        let def_name = def.name.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-          let field_name = &field.name;
+          let field_name = field.name.clone();
+          let output_name = field.of_type.name().to_string();
           match &field.resolver {
             None => {
               let ctx = EvaluationContext::new(req_ctx, &ctx);
-              FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
+              FieldFuture::from_value(ctx.path_value(&[&field_name]).map(|a| a.to_owned()))
             }
             Some(expr) => {
               let expr = expr.to_owned();
               let cache = cache.clone();
-              let rate_limit = field.rate_limit.clone();
-              let field_id = field_id.clone();
+              let def_name = def_name.clone();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                if let Some(rate_limit) = rate_limit {
-                  let mut mtx_guard = ctx.req_ctx.num_requests_fetched.lock().unwrap();
-                  let nrf = mtx_guard
-                    .entry(field_id)
-                    .or_insert(NumRequestsFetched { last_fetched: SystemTime::now(), num_requests: 0 });
-
-                  let duration = nrf.last_fetched.elapsed().unwrap();
-                  if duration < rate_limit.duration && nrf.num_requests < rate_limit.requests.get() as usize {
-                    nrf.num_requests += 1;
-                    nrf.last_fetched = SystemTime::now();
-                  } else if duration >= rate_limit.duration {
-                    nrf.last_fetched = SystemTime::now();
-                    nrf.num_requests = 1;
-                  } else {
-                    Err(anyhow::anyhow!("RATE LIMIT REACHED"))?
-                  }
-                }
+                ctx
+                  .req_ctx
+                  .rate_limiter
+                  .allow(def_name, field_name)?;
 
                 let ttl_and_key =
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
@@ -131,8 +117,19 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 };
 
                 let p = match const_value {
-                  ConstValue::List(a) => FieldValue::list(a),
-                  a => FieldValue::from(a),
+                  ConstValue::List(a) => {
+                    a
+                      .get(0)
+                      .map(|value| ctx.req_ctx.rate_limiter.allow_obj(output_name, &value))
+                      .transpose()?;
+
+                    FieldValue::list(a)
+                  },
+                  a => {
+                    ctx.req_ctx.rate_limiter.allow_obj(output_name, &a)?;
+
+                    FieldValue::from(a)
+                  },
                 };
                 Ok(Some(p))
               })

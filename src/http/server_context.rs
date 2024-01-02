@@ -7,7 +7,7 @@ use async_graphql_value::ConstValue;
 use super::request_context::NumRequestsFetched;
 use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition};
+use crate::blueprint::{Blueprint, Definition, RateLimit};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -15,6 +15,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
+use crate::rate_limiter::rate_limiter::RateLimiter;
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
@@ -25,7 +26,7 @@ pub struct ServerContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>,
+  pub rate_limiter: RateLimiter,
   pub env_vars: Arc<HashMap<String, String>>,
 }
 
@@ -48,10 +49,23 @@ impl ServerContext {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
+    let mut rate_limit_configs = HashMap::new();
 
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
+
+          if let Some(ref rate_limit) = field.rate_limit {
+            let fld = def.name.to_string();
+            let sb_fld = field.name.to_string();
+
+            rate_limit_configs
+              .entry(fld)
+              .or_insert_with(HashMap::new)
+              .entry(sb_fld)
+              .or_insert(rate_limit.clone());
+          }
+
           if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
             match expr_unsafe {
               Unsafe::Http { req_template, group_by, .. } => {
@@ -110,8 +124,8 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
+    let rate_limiter = RateLimiter::new(rate_limit_configs);
 
-    // let (req_sender, req_receiver) = mpsc::channel(1000);
 
     ServerContext {
       schema,
@@ -122,7 +136,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
-      num_requests_fetched: Arc::new(Mutex::new(HashMap::new())),
+      rate_limiter,
       env_vars: Arc::new(env),
     }
   }
