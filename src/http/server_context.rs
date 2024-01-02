@@ -54,8 +54,8 @@ impl ServerContext {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
           if let Some(ref rate_limit) = field.rate_limit {
-            let fld = def.name.to_string();
-            let sb_fld = field.name.to_string();
+            let fld = def.name.to_lowercase();
+            let sb_fld = field.name.to_lowercase();
 
             rate_limit_configs
               .entry(fld)
