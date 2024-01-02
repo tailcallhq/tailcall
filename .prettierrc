@@ -12,7 +12,7 @@
         "inline-many.graphql",
         "inline-many-list.graphql",
         "test-grpc.graphql",
-        "test-expr-grpc.graphql"
+        "test-expr-success.graphql"
       ],
       "options": {
         "printWidth": 208
