@@ -107,8 +107,6 @@ pub async fn init(file_path: &str) -> Result<()> {
     fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_bytes())?;
   }
 
-  println!("tailcallrc: {}", tailcallrc);
-
   let graphqlrc_path = format!("{}/.graphqlrc.yml", file_path);
   let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
 
