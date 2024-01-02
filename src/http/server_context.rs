@@ -26,6 +26,7 @@ pub struct ServerContext {
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>,
+  pub env_vars: Arc<HashMap<String, String>>,
 }
 
 impl ServerContext {
@@ -108,6 +109,7 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
+    let env = std::env::vars().collect();
 
     // let (req_sender, req_receiver) = mpsc::channel(1000);
 
@@ -121,6 +123,7 @@ impl ServerContext {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       num_requests_fetched: Arc::new(Mutex::new(HashMap::new())),
+      env_vars: Arc::new(env),
     }
   }
 }

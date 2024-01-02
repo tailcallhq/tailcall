@@ -35,6 +35,7 @@ pub struct RequestContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
+  pub env_vars: Arc<HashMap<String, String>>,
   pub num_requests_fetched: Arc<Mutex<HashMap<String, NumRequestsFetched>>>,
 }
 
@@ -65,6 +66,7 @@ impl Default for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       num_requests_fetched: Arc::new(Mutex::new(HashMap::new())),
+      env_vars: Arc::new(HashMap::new()),
     }
   }
 }
@@ -143,6 +145,7 @@ impl From<&ServerContext> for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       num_requests_fetched: server_ctx.num_requests_fetched.clone(),
+      env_vars: server_ctx.env_vars.clone(),
     }
   }
 }
