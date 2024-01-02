@@ -5,6 +5,7 @@ on:
 
 jobs:
   title-check:
+    name: Check PR Title
     runs-on: ubuntu-latest
     steps:
       - uses: naveenk1223/action-pr-title@master
