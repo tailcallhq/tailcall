@@ -48,17 +48,22 @@ impl ServerContext {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
-    let mut rate_limit_configs = HashMap::new();
+    let mut field_rate_limits = HashMap::new();
+    let mut type_rate_limits = HashMap::new();
 
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
+        let fld = def.name.to_lowercase();
+        if let Some(ref rate_limit) = def.rate_limit {
+          type_rate_limits.insert(fld.clone(), rate_limit.clone());
+        }
+
         for field in &mut def.fields {
           if let Some(ref rate_limit) = field.rate_limit {
-            let fld = def.name.to_lowercase();
             let sb_fld = field.name.to_lowercase();
 
-            rate_limit_configs
-              .entry(fld)
+            field_rate_limits
+              .entry(fld.clone())
               .or_insert_with(HashMap::new)
               .entry(sb_fld)
               .or_insert(rate_limit.clone());
@@ -122,7 +127,7 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
-    let rate_limiter = RateLimiter::new(rate_limit_configs);
+    let rate_limiter = RateLimiter::new(type_rate_limits, field_rate_limits);
 
     ServerContext {
       schema,

@@ -233,6 +233,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
+      rate_limit: type_of.rate_limit.as_ref().map(RateLimit::from),
     })
   })
 }
@@ -241,6 +242,10 @@ fn update_args<'a>(
   hasher: DefaultHasher,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, name), _| {
+    if let Some(config::RateLimit { group_by: Some(_), .. }) = field.rate_limit {
+      return Valid::fail_with("groupBy cannot be applied at field level".to_string(), String::new());
+    }
+
     let mut hasher = hasher.clone();
     name.hash(&mut hasher);
     let cache = field
@@ -265,7 +270,7 @@ fn update_args<'a>(
       directives: Vec::new(),
       resolver: None,
       cache,
-      rate_limit: field.rate_limit.clone().map(RateLimit::from),
+      rate_limit: field.rate_limit.as_ref().map(RateLimit::from),
     })
   })
 }

@@ -152,8 +152,10 @@ pub struct Type {
   pub variants: Option<BTreeSet<String>>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub scalar: bool,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<RateLimit>,
 }
 
 impl Type {
@@ -198,7 +200,7 @@ pub enum RateLimitUnit {
 }
 
 impl RateLimitUnit {
-  pub fn into_secs(self) -> u64 {
+  pub fn into_secs(&self) -> u64 {
     match self {
       Self::Second => 1,
       Self::Minute => 60,
@@ -215,6 +217,7 @@ impl RateLimitUnit {
 pub struct RateLimit {
   pub unit: RateLimitUnit,
   pub requests_per_unit: NonZeroU64,
+  pub group_by: Option<String>,
 }
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {

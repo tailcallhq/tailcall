@@ -12,6 +12,7 @@ use crate::blueprint::{Blueprint, Cache, Definition, Type};
 use crate::http::RequestContext;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
+use crate::rate_limiter::rate_limiter::FoldRateLimitResults;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -91,7 +92,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                ctx.req_ctx.rate_limiter.allow(&def_name, &field_name)?;
+                ctx.req_ctx.rate_limiter.allow_field(&def_name, &field_name)?;
 
                 let ttl_and_key =
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
@@ -114,9 +115,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                 let p = match const_value {
                   ConstValue::List(a) => {
-                    a.first()
+                    a.iter()
                       .map(|value| ctx.req_ctx.rate_limiter.allow_obj(&output_name, value))
-                      .transpose()?;
+                      .fold_rate_limit_results()?;
 
                     FieldValue::list(a)
                   }

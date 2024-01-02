@@ -78,13 +78,16 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
     let directives = &type_definition.node.directives;
+
     Cache::from_directives(directives.iter())
-      .and_then(|cache| match type_definition.node.kind.clone() {
+      .zip(RateLimit::from_directives(directives.iter()))
+      .and_then(|(cache, rate_limit)| match type_definition.node.kind.clone() {
         TypeKind::Object(object_type) => to_object_type(
           &object_type,
           &type_definition.node.description,
           &type_definition.node.directives,
           cache,
+          rate_limit,
         )
         .some(),
         TypeKind::Interface(interface_type) => to_object_type(
@@ -92,6 +95,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
           &type_definition.node.description,
           &type_definition.node.directives,
           cache,
+          rate_limit,
         )
         .some(),
         TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
@@ -135,6 +139,7 @@ fn to_object_type<T>(
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
   cache: Option<Cache>,
+  rate_limit: Option<RateLimit>,
 ) -> Valid<config::Type, String>
 where
   T: ObjectLike,
@@ -143,11 +148,20 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
+  if let Some(RateLimit { group_by: Some(ref group_by), .. }) = rate_limit {
+    if fields.iter().all(|val| !val.node.name.node.eq(group_by)) {
+      return Valid::fail_with(
+        format!("Cannot groupBy field {group_by}"),
+        format!("No field named {group_by} found for this type"),
+      );
+    }
+  }
+
   to_fields(fields, cache).map(|fields| {
     let doc = description.as_ref().map(|pos| pos.node.clone());
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+    config::Type { fields, added_fields, doc, interface, implements, rate_limit, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {

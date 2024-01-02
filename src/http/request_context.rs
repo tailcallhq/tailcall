@@ -67,7 +67,7 @@ impl Default for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: Arc::new(HashMap::new()),
-      rate_limiter: RateLimiter::new(HashMap::new()),
+      rate_limiter: RateLimiter::new(HashMap::new(), HashMap::new()),
     }
   }
 }

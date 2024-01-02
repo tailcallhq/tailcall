@@ -89,6 +89,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
+  pub rate_limit: Option<RateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -138,12 +139,13 @@ pub struct Cache {
 pub struct RateLimit {
   pub duration: Duration,
   pub requests: NonZeroU64,
+  pub group_by: Option<String>,
 }
 
-impl From<config::RateLimit> for RateLimit {
-  fn from(config::RateLimit { unit, requests_per_unit }: config::RateLimit) -> Self {
+impl From<&config::RateLimit> for RateLimit {
+  fn from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> Self {
     let duration = Duration::from_secs(unit.into_secs());
-    RateLimit { duration, requests: requests_per_unit }
+    RateLimit { duration, requests: *requests_per_unit, group_by: group_by.clone() }
   }
 }
 
