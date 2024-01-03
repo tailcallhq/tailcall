@@ -251,6 +251,8 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]
+  pub call: Option<Call>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
@@ -385,6 +387,15 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub struct Call {
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub query: Option<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub mutation: Option<String>,
+  pub args: KeyValues,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

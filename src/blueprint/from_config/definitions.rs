@@ -345,6 +345,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
+      .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
       .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
@@ -383,6 +384,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
             cache: source_field.cache.clone(),
+            call: source_field.call.clone(),
           };
           to_field(&add_field.name, &new_field)
             .and_then(|field_definition| {
