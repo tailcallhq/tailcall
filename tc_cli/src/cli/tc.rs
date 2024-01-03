@@ -7,7 +7,6 @@ use inquire::Confirm;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tc_core::blueprint::Blueprint;
-use tc_core::print_schema;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
@@ -15,6 +14,7 @@ use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::server::Server;
+use crate::print_schema;
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();

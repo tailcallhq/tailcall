@@ -4,12 +4,12 @@ use tc_core::blueprint::compress::compress;
 use tc_core::blueprint::{Batch, Blueprint, Definition};
 use tc_core::json::JsonSchema;
 use tc_core::lambda::{Expression, Unsafe};
-use tc_core::try_fold::TryFold;
 use tc_core::valid::{Valid, ValidationError};
 
 use super::TypeLike;
 use crate::blueprint::*;
 use crate::config::{Arg, Config, Field};
+use crate::try_fold::TryFold;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
   let server = TryFoldConfig::<Blueprint>::new(|config, blueprint| {

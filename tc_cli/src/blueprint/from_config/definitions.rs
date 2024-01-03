@@ -9,14 +9,14 @@ use tc_core::blueprint::{
   InputFieldDefinition, InputObjectTypeDefinition, InterfaceTypeDefinition, ObjectTypeDefinition, ScalarTypeDefinition,
   Type, UnionTypeDefinition,
 };
-use tc_core::directive::DirectiveCodec;
 use tc_core::lambda::{Expression, Lambda};
-use tc_core::try_fold::TryFold;
 use tc_core::valid::Valid;
 
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, Union};
+use crate::directive::DirectiveCodec;
+use crate::try_fold::TryFold;
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
   Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {

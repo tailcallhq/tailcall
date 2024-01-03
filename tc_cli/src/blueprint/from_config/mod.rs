@@ -9,10 +9,10 @@ pub use from_config::*;
 pub use operators::*;
 pub use schema::*;
 use tc_core::blueprint::Type;
-use tc_core::try_fold::TryFold;
 pub use upstream::*;
 
 use crate::config::{Arg, Config, Field};
+use crate::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 

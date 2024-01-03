@@ -7,11 +7,11 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use tc_core::blueprint::Upstream;
-use tc_core::directive::DirectiveCodec;
 use tc_core::valid::Valid;
 
 use super::Cache;
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union};
+use crate::directive::DirectiveCodec;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
   &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };

@@ -1,12 +1,12 @@
 use async_graphql_value::ConstValue;
 use tc_core::blueprint::FieldDefinition;
 use tc_core::lambda::Expression::Literal;
-use tc_core::try_fold::TryFold;
 use tc_core::valid::Valid;
 
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
+use crate::try_fold::TryFold;
 
 pub fn update_const_field<'a>(
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {

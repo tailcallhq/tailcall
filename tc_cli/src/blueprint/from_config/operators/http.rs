@@ -4,13 +4,13 @@ use tc_core::endpoint::Endpoint;
 use tc_core::helpers;
 use tc_core::http::{Method, RequestTemplate};
 use tc_core::lambda::{Expression, Lambda, Unsafe};
-use tc_core::try_fold::TryFold;
 use tc_core::valid::{Valid, ValidationError};
 
 use crate::blueprint::from_config::to_type;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
+use crate::try_fold::TryFold;
 
 struct MustachePartsValidator<'a> {
   type_of: &'a config::Type,

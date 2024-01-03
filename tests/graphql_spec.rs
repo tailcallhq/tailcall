@@ -14,11 +14,11 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tc_cli::config::Config;
+use tc_cli::directive::DirectiveCodec;
+use tc_cli::print_schema;
 use tc_core::blueprint::Blueprint;
-use tc_core::directive::DirectiveCodec;
 use tc_core::http::server_context::ServerContext;
 use tc_core::http::RequestContext;
-use tc_core::print_schema;
 use tc_core::valid::{Cause, Valid};
 
 static INIT: Once = Once::new();

@@ -7,7 +7,6 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tc_core::blueprint::{is_default, KeyValues, Upstream};
-use tc_core::directive::DirectiveCodec;
 use tc_core::http::Method;
 use tc_core::json::JsonSchema;
 use tc_core::valid::Valid;
@@ -17,6 +16,7 @@ use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
+use crate::directive::DirectiveCodec;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -98,7 +98,7 @@ impl Config {
 
   pub fn to_sdl(&self) -> String {
     let doc = self.to_document();
-    tc_core::document::print(doc)
+    crate::document::print(doc)
   }
 
   pub fn query(mut self, query: &str) -> Self {

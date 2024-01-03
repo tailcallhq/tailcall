@@ -2,10 +2,10 @@ use tc_core::blueprint::{FieldDefinition, GraphQLOperationType};
 use tc_core::graphql::RequestTemplate;
 use tc_core::helpers;
 use tc_core::lambda::Lambda;
-use tc_core::try_fold::TryFold;
 use tc_core::valid::{Valid, ValidationError};
 
 use crate::config::{self, Config, Field};
+use crate::try_fold::TryFold;
 
 pub fn update_graphql<'a>(
   operation_type: &'a GraphQLOperationType,

@@ -9,12 +9,12 @@ use tc_core::helpers;
 use tc_core::json::JsonSchema;
 use tc_core::lambda::{Expression, Lambda, Unsafe};
 use tc_core::mustache::Mustache;
-use tc_core::try_fold::TryFold;
 use tc_core::valid::{Valid, ValidationError};
 
 use crate::blueprint::TypeLike;
 use crate::config;
 use crate::config::{Config, Field, Grpc};
+use crate::try_fold::TryFold;
 
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
   Valid::from_option(

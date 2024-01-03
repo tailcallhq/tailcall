@@ -36,7 +36,7 @@ prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 indexmap = "2.1"
 once_cell = "1.19.0"
-serde_path_to_error = "0.1.14"
+serde_path_to_error = "0.1.15"
 lru = { version = "0.12.1" }
 num_cpus = "1.16.0"
 async-std = { version = "1.12.0",features = ["unstable","wasm-bindgen-futures"] }

@@ -190,7 +190,7 @@ mod test {
   fn test_is_batching_enabled_default() {
     // create ctx with default batch
     // let config = config::Config::default();
-    // TODO: Requires review
+    // TODO: Requires review (failing)
     let upstream = Upstream::default();
     let server = Server::default();
 

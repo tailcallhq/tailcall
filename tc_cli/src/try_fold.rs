@@ -1,4 +1,4 @@
-use crate::valid::Valid;
+use tc_core::valid::Valid;
 
 /// Trait for types that support a "try fold" operation.
 ///
@@ -160,8 +160,9 @@ impl<'a, I, O: Clone, E> FromIterator<TryFold<'a, I, O, E>> for TryFold<'a, I, O
 
 #[cfg(test)]
 mod tests {
+  use tc_core::valid::{Valid, ValidationError};
+
   use super::TryFold;
-  use crate::valid::{Valid, ValidationError};
 
   #[test]
   fn test_and() {

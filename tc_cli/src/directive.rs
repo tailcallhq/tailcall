@@ -5,9 +5,8 @@ use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
-
-use crate::blueprint;
-use crate::valid::{Valid, ValidationError};
+use tc_core::blueprint;
+use tc_core::valid::{Valid, ValidationError};
 
 fn pos<A>(a: A) -> Positioned<A> {
   Positioned::new(a, Pos::default())
@@ -110,8 +109,8 @@ mod tests {
   use async_graphql::parser::types::ConstDirective;
   use async_graphql_value::Name;
   use pretty_assertions::assert_eq;
+  use tc_core::blueprint::Directive;
 
-  use crate::blueprint::Directive;
   use crate::directive::{pos, to_const_directive};
 
   #[test]

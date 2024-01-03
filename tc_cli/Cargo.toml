@@ -10,7 +10,7 @@ url = { version = "2", features = ["serde"] }
 serde_yaml = "0.9"
 num_cpus = "1.16.0"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
-
+serde_path_to_error = "0.1.15"
 
 async-graphql-value = "6.0.11"
 cache_control = "0.2.0"
