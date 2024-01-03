@@ -6,9 +6,9 @@ FILE_TYPES="{graphql,yml,json,md,ts,js}"
 run_cargo_fmt() {
     MODE=$1
     if [ "$MODE" == "check" ]; then
-        cargo +nightly fmt -- --check --workspace
+        cargo +nightly fmt -- --check
     else
-        cargo +nightly fmt -- --workspace
+        cargo +nightly fmt
     fi
     return $?
 }
