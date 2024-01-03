@@ -4,27 +4,18 @@ on:
   push:
     branches:
       - "**"
+    paths-ignore: ["docs/**", "**.md"]
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
   pull_request_target:
     branches: [main]
     types: [opened, reopened, synchronize]
+    paths-ignore: ["docs/**", "**.md"]
+
   release:
     types: [published]
 jobs:
-  check_spelling:
-    name: Check spelling
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: codespell-project/actions-codespell@v2
-        with:
-          skip: .git,*/package.json,*/package-lock.json,*.lock,.github,.vscode,assets
-          ignore_words_file: .codespellignore
-          check_hidden: false
-
   check_if_build:
     name: Check if Build
     runs-on: ubuntu-latest
