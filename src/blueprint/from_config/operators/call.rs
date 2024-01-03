@@ -23,11 +23,8 @@ pub fn update_call(
 
       Valid::from_option(call.query.clone(), "call must have query".to_string())
         .and_then(|field_name| {
-          Valid::from_option(
-            config.find_type("Query"),
-            format!("Query type not found on config"),
-          )
-          .zip(Valid::succeed(field_name))
+          Valid::from_option(config.find_type("Query"), "Query type not found on config".to_string())
+            .zip(Valid::succeed(field_name))
         })
         .and_then(|(query_type, field_name)| {
           Valid::from_option(
