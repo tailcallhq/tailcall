@@ -122,8 +122,8 @@ mod tests {
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
-  use crate::blueprint::GraphQLOperationType;
 
+  use crate::blueprint::GraphQLOperationType;
   use crate::graphql::RequestTemplate;
   use crate::has_headers::HasHeaders;
   use crate::json::JsonLike;

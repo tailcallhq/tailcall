@@ -104,7 +104,7 @@ mod reader_tests {
 
     let port = server.port();
     let files: Vec<String> = [
-      "../examples/jsonplaceholder.yml",                       // config from local file
+      "../examples/jsonplaceholder.yml",                    // config from local file
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]

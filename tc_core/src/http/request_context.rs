@@ -146,7 +146,7 @@ mod test {
 
   use cache_control::Cachability;
 
-  use crate::blueprint::{Batch, Server, Upstream};
+  use crate::blueprint::{Server, Upstream};
   use crate::http::RequestContext;
 
   #[test]
@@ -191,8 +191,7 @@ mod test {
     // create ctx with default batch
     // let config = config::Config::default();
     // TODO: Requires review
-    let mut upstream = Upstream::default();
-    upstream.batch = Some(Batch::default());
+    let upstream = Upstream::default();
     let server = Server::default();
 
     let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
