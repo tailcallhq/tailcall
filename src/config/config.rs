@@ -450,7 +450,7 @@ pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,

@@ -1,0 +1,59 @@
+#> server-sdl
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}, httpCache: true) {
+  query: Query
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type Post {
+  content: String @expr(body: {graphQL: {args: [{key: "id", value: "{{value.id}}"}], name: "postContent"}})
+  id: Int!
+}
+
+type Query {
+  greeting: String @expr(body: {const: {data: "hello from server"}})
+  newsByIdBatch(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService"}})
+  post(id: Int!): Post @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}})
+}
+
+#> client-sdl
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type Post {
+  content: String
+  id: Int!
+}
+
+type Query {
+  greeting: String
+  newsByIdBatch(news: NewsInput!): News!
+  post(id: Int!): Post
+}
+
+schema {
+  query: Query
+}
