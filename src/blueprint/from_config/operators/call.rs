@@ -21,23 +21,17 @@ pub fn update_call(
         ));
       }
 
-      let type_and_field = if let Some(query) = &call.query {
-        Valid::succeed(("Query", query.as_str()))
-      } else {
-        Valid::fail("call must have query".to_string())
-      };
-
-      type_and_field
-        .and_then(|(type_name, field_name)| {
+      Valid::from_option(call.query.clone(), "call must have query".to_string())
+        .and_then(|field_name| {
           Valid::from_option(
-            config.find_type(type_name),
-            format!("{} type not found on config", type_name),
+            config.find_type("Query"),
+            format!("Query type not found on config"),
           )
           .zip(Valid::succeed(field_name))
         })
         .and_then(|(query_type, field_name)| {
           Valid::from_option(
-            query_type.fields.get(field_name),
+            query_type.fields.get(&field_name),
             format!("{} field not found", field_name),
           )
           .and_then(|field| {
