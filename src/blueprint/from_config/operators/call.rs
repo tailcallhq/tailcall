@@ -41,15 +41,14 @@ pub fn update_call(
             format!("{} field not found", field_name),
           )
           .and_then(|field| {
-            if !field.has_resolver() {
-              return Valid::fail(format!("{} field has no resolver", field_name));
+            if field.has_resolver() {
+              Valid::succeed((field, field_name, call.args.iter()))
+            } else {
+              Valid::fail(format!("{} field has no resolver", field_name))
             }
-
-            Valid::succeed(field)
           })
         })
-        .zip(Valid::succeed(call.args.iter()))
-        .and_then(|(field, args)| {
+        .and_then(|(field, field_name, args)| {
           args.fold(Valid::succeed(field.clone()), |field, (key, value)| {
             field.and_then(|field| {
               let value = value.replace("{{", "").replace("}}", "");
@@ -59,10 +58,10 @@ pub fn update_call(
 
                 let field = Field { http: Some(http.clone()), ..field.clone() };
 
-                return Valid::succeed(field);
+                Valid::succeed(field)
+              } else {
+                Valid::fail(format!("{} field does not have an http resolver", field_name))
               }
-
-              Valid::succeed(field)
             })
           })
         })
