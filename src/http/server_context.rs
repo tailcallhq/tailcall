@@ -139,12 +139,7 @@ impl ServerContext {
       }
     } else if let Expression::Cache(cache) = &expr {
       let new_expr = self.check_resolver_of_field(field, cache.source());
-      let resolver = new_expr.map(|ne| Expression::Cache(Cache::new(
-          cache.hasher().clone(),
-          cache.max_age(),
-          Box::new(ne),
-        )));
-      resolver
+      new_expr.map(|ne| Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(ne))))
     } else {
       Some(expr.clone())
     }
