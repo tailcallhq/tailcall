@@ -110,8 +110,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let graphqlrc = fs::read_to_string(&yml_file_path)?;
 
-  if !graphqlrc.contains(FILE_NAME) {
-    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", FILE_NAME))
+  let file_path = file_path.to_str().unwrap();
+
+  if !graphqlrc.contains(file_path) {
+    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
       .with_default(false)
       .prompt()?;
 
