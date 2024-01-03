@@ -300,6 +300,20 @@ directive @cache(
   maxAge: Int!
 ) on FIELD_DEFINITION
 
+"""
+The @call operator is used to reference an `@http` operator.
+"""
+directive @call(
+  """
+  The name of the field that has the `@http` resolver to be called.
+  """
+  query: String!
+  """
+  The arguments to be replace the `@http` resolver args.
+  """
+  args: [KeyValue]
+)
+
 enum Method {
   GET
   POST
