@@ -16,6 +16,10 @@ use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
 
+const FILE_NAME: &str = ".tailcallrc.graphql";
+const YML_FILE_NAME: &str = ".graphqlrc.yml";
+const GRAPHQLRC_YML_FILE_NAME: &str = ".graphqlrc.yml";
+
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
@@ -74,13 +78,11 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
 
-  let file_name = ".tailcallrc.graphql";
-  let file_path = Path::new(folder_path).join(file_name);
-  let yml_file_name = ".graphqlrc.yml";
-  let yml_file_path = Path::new(folder_path).join(yml_file_name);
+  let file_path = Path::new(folder_path).join(FILE_NAME);
+  let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+  let graphqlrc_path = Path::new(folder_path).join(GRAPHQLRC_YML_FILE_NAME);
+  
   let yml_exists = fs::metadata(&yml_file_path).is_ok();
-
-  let graphqlrc_path = Path::new(folder_path).join(".graphqlrc.yml");
 
   if !yml_exists {
     fs::write(yml_file_path, "")?;
@@ -97,7 +99,7 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   if tailcall_exists {
     // confirm overwrite
-    let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", file_name))
+    let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", FILE_NAME))
       .with_default(false)
       .prompt()?;
 
@@ -110,8 +112,8 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
 
-  if !graphqlrc.contains(file_name) {
-    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_name))
+  if !graphqlrc.contains(FILE_NAME) {
+    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", FILE_NAME))
       .with_default(false)
       .prompt()?;
 
