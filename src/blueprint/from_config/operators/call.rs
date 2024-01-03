@@ -21,12 +21,10 @@ pub fn update_call(
         ));
       }
 
-      let type_and_field = if let Some(mutation) = &call.mutation {
-        Valid::succeed(("Mutation", mutation.as_str()))
-      } else if let Some(query) = &call.query {
+      let type_and_field = if let Some(query) = &call.query {
         Valid::succeed(("Query", query.as_str()))
       } else {
-        Valid::fail("call must have one of mutation or query".to_string())
+        Valid::fail("call must have query".to_string())
       };
 
       type_and_field
