@@ -21,9 +21,9 @@ pub fn to_headervec(headers: &KeyValues) -> Valid<Vec<(HeaderName, Mustache)>, S
 mod tests {
   use anyhow::Result;
   use hyper::header::HeaderName;
+  use crate::blueprint::KeyValues;
 
   use super::to_headervec;
-  use crate::config::KeyValues;
   use crate::mustache::Mustache;
 
   #[test]

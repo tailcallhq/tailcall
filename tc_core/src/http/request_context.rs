@@ -147,7 +147,6 @@ mod test {
   use cache_control::Cachability;
 
   use crate::blueprint::{Batch, Server, Upstream};
-  use crate::config::{self, Batch};
   use crate::http::RequestContext;
 
   #[test]

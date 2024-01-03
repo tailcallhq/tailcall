@@ -90,7 +90,7 @@ mod reader_tests {
     });
 
     let mut json = String::new();
-    tokio::fs::File::open("examples/jsonplaceholder.json")
+    tokio::fs::File::open("../examples/jsonplaceholder.json")
       .await
       .unwrap()
       .read_to_string(&mut json)
@@ -104,7 +104,7 @@ mod reader_tests {
 
     let port = server.port();
     let files: Vec<String> = [
-      "examples/jsonplaceholder.yml",                       // config from local file
+      "../examples/jsonplaceholder.yml",                       // config from local file
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]
@@ -126,9 +126,9 @@ mod reader_tests {
   #[tokio::test]
   async fn test_local_files() {
     let files: Vec<String> = [
-      "examples/jsonplaceholder.yml",
-      "examples/jsonplaceholder.graphql",
-      "examples/jsonplaceholder.json",
+      "../examples/jsonplaceholder.yml",
+      "../examples/jsonplaceholder.graphql",
+      "../examples/jsonplaceholder.json",
     ]
     .iter()
     .map(|x| x.to_string())
