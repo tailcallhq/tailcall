@@ -26,7 +26,7 @@ jobs:
           skip: .git,*/package.json,*/package-lock.json,*.lock,.github,.vscode,assets
           ignore_words_file: .codespellignore
           check_hidden: false
-          
+
   check_docs_grammar:
     name: Check Docs Grammar
     runs-on: ubuntu-latest
@@ -38,4 +38,4 @@ jobs:
       - name: Run grammar check
         uses: awreck/proofread-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          token: ${{ secrets.GITHUB_TOKEN }}
