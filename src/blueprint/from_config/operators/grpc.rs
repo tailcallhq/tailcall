@@ -101,6 +101,48 @@ fn validate_group_by(
     })
 }
 
+pub struct CompileGrpc<'a> {
+  pub config: &'a config::Config,
+  pub operation_type: &'a config::GraphQLOperationType,
+  pub field: &'a config::Field,
+  pub grpc: &'a config::Grpc,
+}
+
+pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
+  let config = inputs.config;
+  let operation_type = inputs.operation_type;
+  let field = inputs.field;
+  let grpc = inputs.grpc;
+
+  to_url(grpc, config)
+    .zip(to_operation(grpc))
+    .zip(helpers::headers::to_headervec(&grpc.headers))
+    .zip(helpers::body::to_body(grpc.body.as_deref()))
+    .and_then(|(((url, operation), headers), body)| {
+      let field_schema = json_schema_from_field(config, field);
+
+      let validation = if grpc.group_by.is_empty() {
+        validate_schema(field_schema, &operation, field.name()).unit()
+      } else {
+        validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+      };
+
+      validation.map(|_| {
+        let req_template = RequestTemplate { url, headers, operation, body, operation_type: operation_type.clone() };
+
+        if !grpc.group_by.is_empty() {
+          Expression::Unsafe(Unsafe::Grpc {
+            req_template,
+            group_by: Some(GroupBy::new(grpc.group_by.clone())),
+            dl_id: None,
+          })
+        } else {
+          Lambda::from_grpc_request_template(req_template).expression
+        }
+      })
+    })
+}
+
 pub fn update_grpc<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
@@ -110,34 +152,7 @@ pub fn update_grpc<'a>(
         return Valid::succeed(b_field);
       };
 
-      to_url(grpc, config)
-        .zip(to_operation(grpc))
-        .zip(helpers::headers::to_headervec(&grpc.headers))
-        .zip(helpers::body::to_body(grpc.body.as_deref()))
-        .and_then(|(((url, operation), headers), body)| {
-          let field_schema = json_schema_from_field(config, field);
-
-          let validation = if grpc.group_by.is_empty() {
-            validate_schema(field_schema, &operation, field.name()).unit()
-          } else {
-            validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
-          };
-
-          validation.and_then(|_| {
-            let req_template =
-              RequestTemplate { url, headers, operation, body, operation_type: operation_type.clone() };
-
-            if !grpc.group_by.is_empty() {
-              Valid::succeed(b_field.resolver(Some(Expression::Unsafe(Unsafe::Grpc {
-                req_template,
-                group_by: Some(GroupBy::new(grpc.group_by.clone())),
-                dl_id: None,
-              }))))
-            } else {
-              Valid::succeed(b_field.resolver(Some(Lambda::from_grpc_request_template(req_template).expression)))
-            }
-          })
-        })
+      compile_grpc(CompileGrpc { config, operation_type, field, grpc }).map(|resolver| b_field.resolver(Some(resolver)))
     },
   )
 }
