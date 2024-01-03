@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
-use std::hash::Hash;
 
 use regex::Regex;
 
@@ -237,13 +235,8 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
   })
 }
 
-fn update_args<'a>(
-  hasher: DefaultHasher,
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+fn update_args<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(move |(_, field, _, name), _| {
-    let mut hasher = hasher.clone();
-    name.hash(&mut hasher);
-
     // TODO! assert type name
     Valid::from_iter(field.args.iter(), |(name, arg)| {
       Valid::succeed(InputFieldDefinition {
@@ -330,10 +323,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
-    let mut hasher = DefaultHasher::new();
-    object_name.hash(&mut hasher);
-
-    update_args(hasher)
+    update_args()
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
@@ -341,7 +331,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_nested_resolvers())
-      .and(update_cache())
+      .and(update_cache(object_name))
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
