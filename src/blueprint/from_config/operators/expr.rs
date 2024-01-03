@@ -17,10 +17,23 @@ fn compile_effect(context: &CompilationContext, expr: ExprEffect) -> Valid<Expre
   let config_field = context.config_field;
 
   match expr {
-    ExprEffect::Http(http) => compile_http(config, config_field, &http),
-    ExprEffect::Const(const_field) => compile_const(config, config_field, &const_field),
-    ExprEffect::GraphQL(graphql) => compile_graphql(config, operation_type, &graphql),
-    ExprEffect::Grpc(grpc) => compile_grpc(CompileGrpc { config, operation_type, field: config_field, grpc: &grpc }),
+    ExprEffect::Http(http) => compile_http(config, config_field, &http).trace("http"),
+    ExprEffect::Const(const_field) => compile_const(CompileConst {
+      config,
+      field: config_field,
+      const_field: &const_field,
+      validate_with_schema: false,
+    })
+    .trace("const"),
+    ExprEffect::GraphQL(graphql) => compile_graphql(config, operation_type, &graphql).trace("graphql"),
+    ExprEffect::Grpc(grpc) => compile_grpc(CompileGrpc {
+      config,
+      operation_type,
+      field: config_field,
+      grpc: &grpc,
+      validate_with_schema: false,
+    })
+    .trace("grpc"),
   }
 }
 
@@ -38,15 +51,16 @@ fn compile_if(input: CompileIf) -> Valid<Expression, String> {
   let els = input.els;
 
   compile(context, *condition)
+    .trace("condition")
     .map(Box::new)
-    .zip(compile(context, *then).map(Box::new))
-    .zip(compile(context, *els).map(Box::new))
+    .zip(compile(context, *then).trace("then").map(Box::new))
+    .zip(compile(context, *els).trace("else").map(Box::new))
     .map(|((condition, then), els)| Expression::If { condition, then, els })
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
   match expr {
-    ExprBody::If { condition, then, els } => compile_if(CompileIf { context, condition, then, els }),
+    ExprBody::If { condition, then, els } => compile_if(CompileIf { context, condition, then, els }).trace("if"),
     ExprBody::Effect(effect) => compile_effect(context, effect),
   }
 }

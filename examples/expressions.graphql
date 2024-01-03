@@ -8,12 +8,12 @@ type Query {
   posts: [Post] @expr(body: {effect: {http: {path: "/posts"}}})
   user(id: Int!): User @expr(body: {effect: {http: {path: "/users/{{args.id}}"}}})
 
-  getUserIdZero: User
+  getUserIdTwo: User
     @expr(
       body: {
         if: {
           condition: {effect: {const: {data: true}}}
-          then: {effect: {http: {path: "/users/0"}}}
+          then: {effect: {http: {path: "/users/2"}}}
           else: {effect: {http: {path: "/users/1"}}}
         }
       }
@@ -24,7 +24,7 @@ type Query {
       body: {
         if: {
           condition: {effect: {const: {data: false}}}
-          then: {effect: {http: {path: "/users/0"}}}
+          then: {effect: {http: {path: "/users/2"}}}
           else: {effect: {http: {path: "/users/1"}}}
         }
       }
