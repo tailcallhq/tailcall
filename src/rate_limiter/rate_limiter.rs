@@ -1,6 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
 use std::hash::Hasher;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -31,25 +30,19 @@ pub enum RateLimitError {
   InternalServerError,
 }
 
-impl RateLimitError {
-  fn to_value(&self) -> serde_json::Value {
-    serde_json::to_value(self.clone()).unwrap()
+impl From<RateLimitError> for async_graphql::Error {
+  fn from(value: RateLimitError) -> Self {
+    let message = serde_json::to_vec(&value).unwrap();
+    let len = message.len();
+    let message: String = message
+      .into_iter()
+      .skip(1)
+      .take(len - 2)
+      .map(|byte| byte as char)
+      .collect();
+    async_graphql::Error::new(message)
   }
 }
-
-impl Debug for RateLimitError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.to_value())
-  }
-}
-
-impl Display for RateLimitError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.to_value())
-  }
-}
-
-impl std::error::Error for RateLimitError {}
 
 impl RateLimiter {
   pub fn new(

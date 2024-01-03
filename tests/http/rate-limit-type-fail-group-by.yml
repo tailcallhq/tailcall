@@ -20,7 +20,7 @@ assert:
     response:
       body:
         errors:
-          - message: '"RATE_LIMIT_EXCEEDED"'
+          - message: RATE_LIMIT_EXCEEDED
             locations:
               - column: 9
                 line: 1
