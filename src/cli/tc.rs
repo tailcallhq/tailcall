@@ -18,7 +18,6 @@ use crate::print_schema;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
-const GRAPHQLRC_YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
@@ -80,20 +79,6 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let file_path = Path::new(folder_path).join(FILE_NAME);
   let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
-  let graphqlrc_path = Path::new(folder_path).join(GRAPHQLRC_YML_FILE_NAME);
-  
-  let yml_exists = fs::metadata(&yml_file_path).is_ok();
-
-  if !yml_exists {
-    fs::write(yml_file_path, "")?;
-
-    let graphqlrc = r#"|schema:
-         |- './.tailcallrc.graphql'
-    "#
-    .strip_margin();
-
-    fs::write(&graphqlrc_path, graphqlrc)?;
-  }
 
   let tailcall_exists = fs::metadata(&file_path).is_ok();
 
@@ -109,8 +94,21 @@ pub async fn init(folder_path: &str) -> Result<()> {
   } else {
     fs::write(&file_path, tailcallrc.as_bytes())?;
   }
+  
+  let yml_exists = fs::metadata(&yml_file_path).is_ok();
 
-  let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
+  if !yml_exists {
+    fs::write(&yml_file_path, "")?;
+
+    let graphqlrc = r#"|schema:
+         |- './.tailcallrc.graphql'
+    "#
+    .strip_margin();
+
+    fs::write(&yml_file_path, graphqlrc)?;
+  }
+
+  let graphqlrc = fs::read_to_string(&yml_file_path)?;
 
   if !graphqlrc.contains(FILE_NAME) {
     let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", FILE_NAME))
@@ -128,7 +126,7 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
       let updated = graphqlrc.replace("schema:", &schema_line);
 
-      fs::write(graphqlrc_path, updated)?;
+      fs::write(yml_file_path, updated)?;
     }
   }
 
