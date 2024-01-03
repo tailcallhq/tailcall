@@ -67,7 +67,7 @@ impl ServerContext {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
           if let Some(expr) = &field.resolver {
-            field.resolver = ctx.check_resolver_of_field(field, &expr);
+            field.resolver = ctx.check_resolver_of_field(field, expr);
           }
         }
       }
@@ -139,15 +139,11 @@ impl ServerContext {
       }
     } else if let Expression::Cache(cache) = &expr {
       let new_expr = self.check_resolver_of_field(field, cache.source());
-      let resolver = if let Some(ne) = new_expr {
-        Some(Expression::Cache(Cache::new(
+      let resolver = new_expr.map(|ne| Expression::Cache(Cache::new(
           cache.hasher().clone(),
           cache.max_age(),
           Box::new(ne),
-        )))
-      } else {
-        None
-      };
+        )));
       resolver
     } else {
       Some(expr.clone())
