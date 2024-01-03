@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{env, fs};
 
 use anyhow::Result;
@@ -76,21 +77,25 @@ pub async fn init(folder_path: &str) -> Result<()> {
   let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
 
   let file_name = ".tailcallrc.graphql";
+  let file_path = Path::new(folder_path).join(file_name);
   let yml_file_name = ".graphqlrc.yml";
-  let yml_exists = fs::metadata(format!("{}/{}", folder_path, yml_file_name)).is_ok();
+  let yml_file_path = Path::new(folder_path).join(yml_file_name);
+  let yml_exists = fs::metadata(&yml_file_path).is_ok();
+
+  let graphqlrc_path = Path::new(folder_path).join(".graphqlrc.yml");
 
   if !yml_exists {
-    fs::write(format!("{}/{}", folder_path, yml_file_name), "")?;
+    fs::write(yml_file_path, "")?;
 
     let graphqlrc = r#"|schema:
          |- './.tailcallrc.graphql'
     "#
     .strip_margin();
 
-    fs::write(format!("{}/.graphqlrc.yml", folder_path), graphqlrc)?;
+    fs::write(&graphqlrc_path, graphqlrc)?;
   }
 
-  let tailcall_exists = fs::metadata(format!("{}/{}", folder_path, file_name)).is_ok();
+  let tailcall_exists = fs::metadata(&file_path).is_ok();
 
   if tailcall_exists {
     // confirm overwrite
@@ -99,15 +104,14 @@ pub async fn init(folder_path: &str) -> Result<()> {
       .prompt();
 
     match confirm {
-      Ok(true) => fs::write(format!("{}/{}", folder_path, file_name), tailcallrc.as_bytes())?,
+      Ok(true) => fs::write(&file_path, tailcallrc.as_bytes())?,
       Ok(false) => (),
       Err(e) => return Err(e.into()),
     };
   } else {
-    fs::write(format!("{}/{}", folder_path, file_name), tailcallrc.as_bytes())?;
+    fs::write(&file_path, tailcallrc.as_bytes())?;
   }
 
-  let graphqlrc_path = format!("{}/.graphqlrc.yml", folder_path);
   let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
 
   if !graphqlrc.contains(file_name) {
