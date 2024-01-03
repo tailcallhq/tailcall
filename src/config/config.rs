@@ -17,6 +17,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
+use crate::config::resolver::Link;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -31,6 +32,8 @@ pub struct Config {
   pub types: BTreeMap<String, Type>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub links: Vec<Link>,
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -125,8 +128,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
+    let links = merge_links(self.links, other.links.clone());
 
-    Self { server, upstream, types, schema, unions }
+    Self { server, upstream, types, schema, unions, links }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
@@ -200,6 +204,24 @@ fn merge_unions(
   }
   self_unions
 }
+
+pub fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+
+    let links: Vec<_> = other_links
+        .into_iter()
+        .map(|mut link| {
+            runtime.block_on(async {
+                let _ = Link::read_link_type(&mut link).await;
+                link
+            })
+        })
+        .collect();
+
+    self_links.extend(links);
+    self_links
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]

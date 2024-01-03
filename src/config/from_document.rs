@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream, Link};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -29,8 +29,8 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema))
-    .map(|((((server, upstream), types), unions), schema)| Config { server, upstream, types, unions, schema })
+    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema).zip(links(sd)))
+    .map(|(((((server, upstream), types), unions), schema), links)| Config { server, upstream, types, unions, schema, links })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -62,6 +62,9 @@ fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
+}
+fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
+  process_schema_directives(schema_definition, config::Link::directive_name().as_str())
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
