@@ -1,4 +1,4 @@
-config: !file tests/http/config/rate-limit-type-fail.graphql
+config: !file tests/http/config/rate-limit-type-pass-group-by.graphql
 name: Rate Limit Field
 mock:
   - request:
@@ -19,9 +19,11 @@ assert:
         query: query { bars { id } }
     response:
       body:
-        errors:
-          - message: '"RATE_LIMIT_EXCEEDED"'
-            locations:
-              - column: 9
-                line: 1
-        data: null
+        data:
+          bars:
+            - id: 1
+            - id: 1
+            - id: 2
+            - id: 1
+            - id: 2
+            - id: 2

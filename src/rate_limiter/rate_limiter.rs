@@ -109,7 +109,8 @@ impl RateLimiter {
 
   pub fn allow_obj(&self, type_name: &str, const_value: &ConstValue) -> Result<NumRequestsRemaining, RateLimitError> {
     let type_name = type_name.to_lowercase();
-    if let Some(rate_limit @ RateLimit { group_by: Some(group_by), .. }) = self.type_rate_limits.get(&type_name) {
+    if let Some(rate_limit @ RateLimit { group_by, .. }) = self.type_rate_limits.get(&type_name) {
+      let group_by = group_by.as_ref().map(String::as_str).unwrap_or("");
       let mut hasher = DefaultHasher::new();
       if let Some(val) = const_value.get_key(group_by) {
         hash_const_value(val, &mut hasher);

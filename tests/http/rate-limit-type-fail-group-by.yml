@@ -1,4 +1,4 @@
-config: !file tests/http/config/rate-limit-type-fail.graphql
+config: !file tests/http/config/rate-limit-type-fail-group-by.graphql
 name: Rate Limit Field
 mock:
   - request:
@@ -10,7 +10,7 @@ mock:
         - id: 2
         - id: 1
         - id: 2
-        - id: 2
+        - id: 1
 assert:
   - request:
       method: POST
