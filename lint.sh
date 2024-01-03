@@ -8,14 +8,14 @@ run_cargo_fmt() {
     if [ "$MODE" == "check" ]; then
         cargo +nightly fmt -- --check --workspace
     else
-        cargo +nightly fmt --workspace
+        cargo +nightly fmt -- --workspace
     fi
     return $?
 }
 
 run_cargo_clippy() {
     MODE=$1
-    CMD="cargo +nightly clippy --all-targets --all-features --workspace"
+    CMD="cargo +nightly clippy --all-targets --all-features"
     if [ "$MODE" == "fix" ]; then
         # if mode is fix first run clippy with --fix flag as usual
         $CMD --fix --allow-staged --allow-dirty
