@@ -20,6 +20,19 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v5
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+
+      - id: create_release
+        uses: release-drafter/release-drafter@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Output for Later Jobs
+        id: set_output
+        run: |
+          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
+          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
+    outputs:
+      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
+      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
