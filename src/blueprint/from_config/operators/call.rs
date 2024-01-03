@@ -14,6 +14,13 @@ pub fn update_call(
         return Valid::succeed(b_field);
       };
 
+      if validate_field_has_resolver(name, field, &config.types).is_succeed() {
+        return Valid::fail(format!(
+          "@call directive is not allowed on field {} because it already has a resolver",
+          name
+        ));
+      }
+
       let type_and_field = if let Some(mutation) = &call.mutation {
         Valid::succeed(("Mutation", mutation.as_str()))
       } else if let Some(query) = &call.query {
@@ -43,16 +50,32 @@ pub fn update_call(
             Valid::succeed(field)
           })
         })
-        .and_then(|field| {
-          // TO-DO: parse call.args into a way that `update_http`, `update_grpc` and `update_graphql` can use
+        .zip(Valid::succeed(call.args.iter()))
+        .and_then(|(field, args)| {
+          args.fold(Valid::succeed(field.clone()), |field, (key, value)| {
+            field.and_then(|field| {
+              let value = value.replace("{{", "").replace("}}", "");
 
+              if let Some(http) = field.clone().http.as_mut() {
+                http.path = http.path.replace(format!("args.{}", key).as_str(), value.as_str());
+
+                let field = Field { http: Some(http.clone()), ..field.clone() };
+
+                return Valid::succeed(field);
+              }
+
+              Valid::succeed(field)
+            })
+          })
+        })
+        .and_then(|_field| {
           TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|_, b_field| {
             Valid::succeed(b_field)
           })
           .and(update_http().trace(config::Http::trace_name().as_str()))
           .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
           .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
-          .try_fold(&(config, field, type_of, name), b_field)
+          .try_fold(&(config, &_field, type_of, name), b_field)
         })
     },
   )
