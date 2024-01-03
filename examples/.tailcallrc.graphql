@@ -314,7 +314,6 @@ directive @call(
   args: [KeyValue]
 ) on FIELD_DEFINITION
 
-
 enum Method {
   GET
   POST
