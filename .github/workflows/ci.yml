@@ -92,37 +92,9 @@ jobs:
       - name: Run Lint Script
         run: ./lint.sh --mode=check
 
-  draft_release:
-    name: Draft Release
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
-
-      - id: create_release
-        uses: release-drafter/release-drafter@v5
-        if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-name: release-drafter.yml
-
-      - name: Set Output for Later Jobs
-        id: set_output
-        run: |
-          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
-          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
-    outputs:
-      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
-      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
-
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build]
+    needs: [test, format, check_if_build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
@@ -287,7 +259,7 @@ jobs:
           overwrite: true
   publish_npm_root:
     name: Publish NPM main package
-    needs: [draft_release, release]
+    needs: release
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
