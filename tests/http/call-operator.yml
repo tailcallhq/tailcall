@@ -1,0 +1,30 @@
+---
+name: With call operator
+config: !file tests/http/config/call.graphql
+
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts
+    response:
+      body:
+        - id: 1
+          userId: 1
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { user { name } } }"
+    response:
+      body:
+        data:
+          posts:
+            - user:
+                name: foo
