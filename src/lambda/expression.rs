@@ -69,13 +69,18 @@ pub enum Unsafe {
 
 #[derive(Clone, Debug)]
 pub struct Cache {
+  hasher: DefaultHasher,
   max_age: NonZeroU64,
   source: Box<Expression>,
 }
 
 impl Cache {
-  pub fn new(max_age: NonZeroU64, source: Box<Expression>) -> Self {
-    Self { max_age, source }
+  pub fn new(hasher: DefaultHasher, max_age: NonZeroU64, source: Box<Expression>) -> Self {
+    Self {hasher, max_age, source }
+  }
+
+  pub fn hasher(&self) -> &DefaultHasher {
+    &self.hasher
   }
 
   pub fn max_age(&self) -> NonZeroU64 {
@@ -207,7 +212,7 @@ impl Expression {
           }
         },
         Expression::Cache(cache) => {
-          if let Some(key) = get_cache_key(ctx, DefaultHasher::new()) {
+          if let Some(key) = get_cache_key(ctx, cache.hasher.clone()) {
             if let Some(cache_value) = ctx.req_ctx.cache_get(&key) {
               Ok(cache_value.to_owned())
             } else {

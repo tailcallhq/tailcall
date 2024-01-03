@@ -1,3 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hash;
+
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};
@@ -11,7 +14,9 @@ pub fn update_cache<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Typ
     match updated_b_field.resolver.as_ref() {
       Some(source) => {
         if let Some(cache) = &field.cache {
-          let cache = Expression::Cache(Cache::new(cache.max_age, Box::new(source.clone())));
+          let mut hasher = DefaultHasher::new();
+          field.name().hash(&mut hasher);
+          let cache = Expression::Cache(Cache::new(hasher, cache.max_age, Box::new(source.clone())));
           updated_b_field.resolver = Some(cache);
         }
         Valid::succeed(updated_b_field)
