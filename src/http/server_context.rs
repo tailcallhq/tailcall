@@ -8,7 +8,6 @@ use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions}
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{self, Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
-use crate::config::server::Batch;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -40,37 +39,19 @@ impl ServerContext {
   }
 
   pub fn with_http_clients(
-    mut blueprint: Blueprint,
+    blueprint: Blueprint,
     universal_http_client: Arc<dyn HttpClient>,
     http2_only_client: Arc<dyn HttpClient>,
   ) -> Self {
-    let mut http_data_loaders = vec![];
-    let mut gql_data_loaders = vec![];
-    let mut grpc_data_loaders = vec![];
-
-    for def in blueprint.definitions.iter_mut() {
-      if let Definition::ObjectTypeDefinition(def) = def {
-        for field in &mut def.fields {
-          if let Some(expr) = field.resolver.clone() {
-            Self::check_resolver(
-              field,
-              &expr,
-              blueprint.upstream.batch.clone().unwrap_or_default(),
-              universal_http_client.clone(),
-              http2_only_client.clone(),
-              &mut http_data_loaders,
-              &mut gql_data_loaders,
-              &mut grpc_data_loaders,
-            );
-          }
-        }
-      }
-    }
+    let http_data_loaders = vec![];
+    let gql_data_loaders = vec![];
+    let grpc_data_loaders = vec![];
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
+    let mut bp = blueprint.clone();
 
-    ServerContext {
+    let mut ctx = ServerContext {
       schema,
       universal_http_client,
       http2_only_client,
@@ -80,20 +61,26 @@ impl ServerContext {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: Arc::new(env),
+    };
+
+    for def in bp.definitions.iter_mut() {
+      if let Definition::ObjectTypeDefinition(def) = def {
+        for field in &mut def.fields {
+          if let Some(expr) = &field.resolver {
+            field.resolver = ctx.check_resolver_of_field(field, &expr);
+          }
+        }
+      }
     }
+    ctx.schema = bp.to_schema();
+    ctx.blueprint = bp;
+    ctx
   }
 
-  #[allow(clippy::too_many_arguments)]
-  fn check_resolver(
-    field: &mut blueprint::FieldDefinition,
-    expr: &Expression,
-    bt: Batch,
-    universal_http_client: Arc<dyn HttpClient>,
-    http2_only_client: Arc<dyn HttpClient>,
-    http_data_loaders: &mut Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>,
-    gql_data_loaders: &mut Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>,
-    grpc_data_loaders: &mut Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>,
-  ) -> Expression {
+  fn check_resolver_of_field(&mut self, field: &blueprint::FieldDefinition, expr: &Expression) -> Option<Expression> {
+    let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
+    let universal_http_client = self.universal_http_client.clone();
+    let http2_only_client = self.http2_only_client.clone();
     if let Expression::Unsafe(expr_unsafe) = &expr {
       match expr_unsafe {
         Unsafe::Http { req_template, group_by, .. } => {
@@ -104,26 +91,30 @@ impl ServerContext {
           )
           .to_data_loader(bt);
 
-          field.resolver = Some(Expression::Unsafe(Unsafe::Http {
+          let resolver = Some(Expression::Unsafe(Unsafe::Http {
             req_template: req_template.clone(),
             group_by: group_by.clone(),
-            dl_id: Some(DataLoaderId(http_data_loaders.len())),
+            dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
           }));
 
+          let http_data_loaders = Arc::get_mut(&mut self.http_data_loaders).unwrap();
           http_data_loaders.push(data_loader);
+          resolver
         }
 
         Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
           let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch).to_data_loader(bt);
 
-          field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+          let resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
             req_template: req_template.clone(),
             field_name: field_name.clone(),
             batch: *batch,
-            dl_id: Some(DataLoaderId(gql_data_loaders.len())),
+            dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
           }));
 
+          let gql_data_loaders = Arc::get_mut(&mut self.gql_data_loaders).unwrap();
           gql_data_loaders.push(graphql_data_loader);
+          resolver
         }
 
         Unsafe::Grpc { req_template, group_by, .. } => {
@@ -134,36 +125,32 @@ impl ServerContext {
           };
           let data_loader = data_loader.to_data_loader(bt);
 
-          field.resolver = Some(Expression::Unsafe(Unsafe::Grpc {
+          let resolver = Some(Expression::Unsafe(Unsafe::Grpc {
             req_template: req_template.clone(),
             group_by: group_by.clone(),
-            dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+            dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
           }));
 
+          let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
           grpc_data_loaders.push(data_loader);
+          resolver
         }
-        _ => {}
+        _ => None,
       }
-      field.resolver.clone().unwrap()
     } else if let Expression::Cache(cache) = &expr {
-      let new_expr = Self::check_resolver(
-        field,
-        cache.source(),
-        bt,
-        universal_http_client,
-        http2_only_client,
-        http_data_loaders,
-        gql_data_loaders,
-        grpc_data_loaders,
-      );
-      field.resolver = Some(Expression::Cache(Cache::new(
-        cache.hasher().clone(),
-        cache.max_age(),
-        Box::new(new_expr),
-      )));
-      field.resolver.clone().unwrap()
+      let new_expr = self.check_resolver_of_field(field, cache.source());
+      let resolver = if let Some(ne) = new_expr {
+        Some(Expression::Cache(Cache::new(
+          cache.hasher().clone(),
+          cache.max_age(),
+          Box::new(ne),
+        )))
+      } else {
+        None
+      };
+      resolver
     } else {
-      (*expr).clone()
+      Some(expr.clone())
     }
   }
 }
