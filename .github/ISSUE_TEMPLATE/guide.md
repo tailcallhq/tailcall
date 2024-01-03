@@ -2,7 +2,7 @@
 name: Guide
 about: Write a guide for using Tailcall
 title: "Guide:"
-labels: "type: doc"
+labels: "type: docs"
 ---
 
 <!-- Introduction -->
