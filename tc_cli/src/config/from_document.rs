@@ -9,8 +9,8 @@ use async_graphql::Name;
 
 use super::Cache;
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
-use crate::directive::DirectiveCodec;
-use crate::valid::Valid;
+use tc_core::directive::DirectiveCodec;
+use tc_core::valid::Valid;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
   &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };

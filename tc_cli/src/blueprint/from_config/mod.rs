@@ -2,23 +2,21 @@ mod definitions;
 mod from_config;
 mod operators;
 mod schema;
-mod server;
 mod upstream;
 
 pub use definitions::*;
 pub use from_config::*;
 pub use operators::*;
 pub use schema::*;
-pub use server::*;
+use tc_core::blueprint::Type;
+use tc_core::try_fold::TryFold;
 pub use upstream::*;
 
-use super::Type;
 use crate::config::{Arg, Config, Field};
-use crate::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 
-pub(crate) trait TypeLike {
+pub trait TypeLike {
   fn name(&self) -> &str;
   fn list(&self) -> bool;
   fn non_null(&self) -> bool;
@@ -61,7 +59,7 @@ impl TypeLike for Arg {
   }
 }
 
-pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
+pub fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
 where
   T: TypeLike,
 {

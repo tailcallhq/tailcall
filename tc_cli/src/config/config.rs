@@ -14,10 +14,10 @@ use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
-use crate::directive::DirectiveCodec;
-use crate::http::Method;
-use crate::json::JsonSchema;
-use crate::valid::Valid;
+use tc_core::directive::DirectiveCodec;
+use tc_core::http::Method;
+use tc_core::json::JsonSchema;
+use tc_core::valid::Valid;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
