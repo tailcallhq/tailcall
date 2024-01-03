@@ -393,8 +393,6 @@ pub struct Http {
 pub struct Call {
   #[serde(default, skip_serializing_if = "is_default")]
   pub query: Option<String>,
-  #[serde(default, skip_serializing_if = "is_default")]
-  pub mutation: Option<String>,
   pub args: KeyValues,
 }
 

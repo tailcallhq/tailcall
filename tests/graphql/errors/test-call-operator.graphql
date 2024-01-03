@@ -29,5 +29,5 @@ type Failure
     message: "@call directive is not allowed on field multipleResolvers because it already has a resolver"
     trace: ["Post", "multipleResolvers", "@call"]
   )
-type Failure @error(message: "call must have one of mutation or query", trace: ["Post", "withoutOperator", "@call"])
+type Failure @error(message: "call must have query", trace: ["Post", "withoutOperator", "@call"])
 type Failure @error(message: "userWithoutResolver field has no resolver", trace: ["Post", "withoutResolver", "@call"])
