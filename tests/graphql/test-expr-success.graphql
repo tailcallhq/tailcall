@@ -18,14 +18,15 @@ type News {
 }
 
 type Post {
-  content: String @expr(body: {graphQL: {args: [{key: "id", value: "{{value.id}}"}], name: "postContent"}})
+  content: String @expr(body: {effect: {graphQL: {args: [{key: "id", value: "{{value.id}}"}], name: "postContent"}}})
   id: Int!
 }
 
 type Query {
-  greeting: String @expr(body: {const: {data: "hello from server"}})
-  newsByIdBatch(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService"}})
-  post(id: Int!): Post @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}})
+  greeting: String @expr(body: {effect: {const: {data: "hello from server"}}})
+  newsByIdBatch(news: NewsInput!): News!
+    @expr(body: {effect: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService"}}})
+  post(id: Int!): Post @expr(body: {effect: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}}})
 }
 
 #> client-sdl

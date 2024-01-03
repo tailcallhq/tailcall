@@ -5,25 +5,31 @@ schema
 }
 
 type Query {
-  posts: [Post] @expr(body: {effect: { http: { path: "/posts" } }})
-  user(id: Int!): User @expr(body: {effect: { http: { path: "/users/{{args.id}}" } }})
+  posts: [Post] @expr(body: {effect: {http: {path: "/posts"}}})
+  user(id: Int!): User @expr(body: {effect: {http: {path: "/users/{{args.id}}"}}})
 
-  getUserIdZero: User @expr(body: {
-    if: {
-      condition: {effect: {const: {data: true}}},
-      then: {effect: {http: {path: "/users/0"}}},
-      else: {effect: {http: {path: "/users/1"}}}
-    }
-  })
+  getUserIdZero: User
+    @expr(
+      body: {
+        if: {
+          condition: {effect: {const: {data: true}}}
+          then: {effect: {http: {path: "/users/0"}}}
+          else: {effect: {http: {path: "/users/1"}}}
+        }
+      }
+    )
 
-  getUserIdOne: User @expr(body: {
-    if: {
-      condition: {effect: {const: {data: false}}},
-      then: {effect: {http: {path: "/users/0"}}},
-      else: {effect: {http: {path: "/users/1"}}}
-    }
-  })
-  
+  getUserIdOne: User
+    @expr(
+      body: {
+        if: {
+          condition: {effect: {const: {data: false}}}
+          then: {effect: {http: {path: "/users/0"}}}
+          else: {effect: {http: {path: "/users/1"}}}
+        }
+      }
+    )
+
   # isMoreThanFive(input: Int!): [Post] @expr(body: {
   #   if: {
   #     condition: {

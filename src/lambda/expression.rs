@@ -34,10 +34,10 @@ pub enum Expression {
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
   If {
-      condition: Box<Expression>,
-      then: Box<Expression>,
-      els: Box<Expression>
-  }
+    condition: Box<Expression>,
+    then: Box<Expression>,
+    els: Box<Expression>,
+  },
 }
 
 #[derive(Clone, Debug)]
@@ -188,12 +188,12 @@ impl Expression {
         },
 
         Expression::If { condition, then, els } => {
-            let cond = condition.eval(ctx).await?;
-            if is_truthy(cond) {
-                then.eval(ctx).await
-            } else {
-                els.eval(ctx).await
-            }
+          let cond = condition.eval(ctx).await?;
+          if is_truthy(cond) {
+            then.eval(ctx).await
+          } else {
+            els.eval(ctx).await
+          }
         }
       }
     })
@@ -206,19 +206,19 @@ impl Expression {
 /// 1. An empty string is considered falsy
 /// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
 fn is_truthy(value: async_graphql::Value) -> bool {
-    use hyper::body::Bytes;
-    use async_graphql::{Value, Number};
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
 
-    match value {
-        Value::Null => false,
-        Value::Enum(_) => true,
-        Value::List(_) => true,
-        Value::Object(_) => true,
-        Value::String(s) => !s.is_empty(),
-        Value::Boolean(b) => b,
-        Value::Number(n) => n == Number::from(0),
-        Value::Binary(b) => b == Bytes::default(),
-    }
+  match value {
+    Value::Null => false,
+    Value::Enum(_) => true,
+    Value::List(_) => true,
+    Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    Value::Boolean(b) => b,
+    Value::Number(n) => n == Number::from(0),
+    Value::Binary(b) => b == Bytes::default(),
+  }
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
