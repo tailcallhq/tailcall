@@ -46,5 +46,5 @@ pub enum Command {
     out_file_path: Option<String>,
   },
   /// Initialize a new project
-  Init { file_path: String },
+  Init { folder_path: String },
 }

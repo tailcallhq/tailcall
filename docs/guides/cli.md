@@ -89,7 +89,7 @@ tailcall start ./path/to/file1.graphql ./path/to/file2.graphql http://example.co
 The `init` command bootstraps a new TailCall project. It creates the necessary GraphQL schema files in the provided file path.
 
 ```bash
-tailcall init <file_path>
+tailcall init <folder_path>
 ```
 
 This command prompts for additional file creation and configuration, creating a `.tailcallrc.graphql` file by default.

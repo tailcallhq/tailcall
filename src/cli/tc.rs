@@ -54,20 +54,20 @@ pub fn run() -> Result<()> {
         Err(e) => Err(e.into()),
       }
     }
-    Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
+    Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
   }
 }
 
-pub async fn init(file_path: &str) -> Result<()> {
-  let folder_exists = fs::metadata(file_path).is_ok();
+pub async fn init(folder_path: &str) -> Result<()> {
+  let folder_exists = fs::metadata(folder_path).is_ok();
 
   if !folder_exists {
-    let confirm = Confirm::new(&format!("Do you want to create the folder {}?", file_path))
+    let confirm = Confirm::new(&format!("Do you want to create the folder {}?", folder_path))
       .with_default(false)
       .prompt();
 
     match confirm {
-      Ok(true) => fs::create_dir_all(file_path)?,
+      Ok(true) => fs::create_dir_all(folder_path)?,
       Ok(false) => (),
       Err(e) => return Err(e.into()),
     };
@@ -77,20 +77,20 @@ pub async fn init(file_path: &str) -> Result<()> {
 
   let file_name = ".tailcallrc.graphql";
   let yml_file_name = ".graphqlrc.yml";
-  let yml_exists = fs::metadata(format!("{}/{}", file_path, yml_file_name)).is_ok();
+  let yml_exists = fs::metadata(format!("{}/{}", folder_path, yml_file_name)).is_ok();
 
   if !yml_exists {
-    fs::write(format!("{}/{}", file_path, yml_file_name), "")?;
+    fs::write(format!("{}/{}", folder_path, yml_file_name), "")?;
 
     let graphqlrc = r#"|schema:
          |- './.tailcallrc.graphql'
     "#
     .strip_margin();
 
-    fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
+    fs::write(format!("{}/.graphqlrc.yml", folder_path), graphqlrc)?;
   }
 
-  let tailcall_exists = fs::metadata(format!("{}/{}", file_path, file_name)).is_ok();
+  let tailcall_exists = fs::metadata(format!("{}/{}", folder_path, file_name)).is_ok();
 
   if tailcall_exists {
     // confirm overwrite
@@ -99,15 +99,15 @@ pub async fn init(file_path: &str) -> Result<()> {
       .prompt();
 
     match confirm {
-      Ok(true) => fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_bytes())?,
+      Ok(true) => fs::write(format!("{}/{}", folder_path, file_name), tailcallrc.as_bytes())?,
       Ok(false) => (),
       Err(e) => return Err(e.into()),
     };
   } else {
-    fs::write(format!("{}/{}", file_path, file_name), tailcallrc.as_bytes())?;
+    fs::write(format!("{}/{}", folder_path, file_name), tailcallrc.as_bytes())?;
   }
 
-  let graphqlrc_path = format!("{}/.graphqlrc.yml", file_path);
+  let graphqlrc_path = format!("{}/.graphqlrc.yml", folder_path);
   let graphqlrc = fs::read_to_string(&graphqlrc_path)?;
 
   if !graphqlrc.contains(file_name) {
