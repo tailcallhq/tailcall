@@ -1,0 +1,25 @@
+config: !file tests/http/config/rate-limit-field-fail.graphql
+name: Rate Limit Field
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
+      body:
+        - id: 1
+        - id: 3
+        - id: 5
+        - id: 7
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { id } }
+    response:
+      body:
+        errors:
+          - message: "\"RATE_LIMIT_EXCEEDED\""
+            locations:
+              - column: 9
+                line: 1
+        data: null

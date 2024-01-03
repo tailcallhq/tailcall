@@ -1,0 +1,30 @@
+config: !file tests/http/config/rate-limit-type-pass.graphql
+name: Rate Limit Field
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
+      body:
+        - id: 1
+        - id: 1
+        - id: 2
+        - id: 1
+        - id: 2
+        - id: 2
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { id } }
+    response:
+      body:
+        data:
+          bars:
+            - id: 1
+            - id: 1
+            - id: 2
+            - id: 1
+            - id: 2
+            - id: 2
+
