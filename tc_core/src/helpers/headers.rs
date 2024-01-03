@@ -1,6 +1,6 @@
 use hyper::header::HeaderName;
 
-use crate::config::KeyValues;
+use crate::blueprint::KeyValues;
 use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError};
 

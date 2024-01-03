@@ -11,8 +11,8 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
-use crate::config::group_by::GroupBy;
-use crate::config::GraphQLOperationType;
+use crate::blueprint::group_by::GroupBy;
+use crate::blueprint::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc;

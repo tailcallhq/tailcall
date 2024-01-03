@@ -6,7 +6,7 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 
-use crate::config::Batch;
+use crate::blueprint::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 

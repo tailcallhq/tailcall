@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::is_default;
+use crate::blueprint::is_default;
 #[derive(Clone, Debug, Eq, Serialize, Deserialize, PartialEq)]
 pub struct GroupBy {
   #[serde(default, skip_serializing_if = "is_default")]

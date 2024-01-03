@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
-use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
@@ -7,17 +6,17 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use super::{Server, Upstream};
-use crate::config::from_document::from_document;
-use crate::config::reader::ConfigReader;
-use crate::config::source::Source;
-use crate::config::writer::ConfigWriter;
-use crate::config::{is_default, KeyValues};
+use tc_core::blueprint::{is_default, KeyValues, Upstream};
 use tc_core::directive::DirectiveCodec;
 use tc_core::http::Method;
 use tc_core::json::JsonSchema;
 use tc_core::valid::Valid;
+
+use super::Server;
+use crate::config::from_document::from_document;
+use crate::config::reader::ConfigReader;
+use crate::config::source::Source;
+use crate::config::writer::ConfigWriter;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -99,7 +98,7 @@ impl Config {
 
   pub fn to_sdl(&self) -> String {
     let doc = self.to_document();
-    crate::document::print(doc)
+    tc_core::document::print(doc)
   }
 
   pub fn query(mut self, query: &str) -> Self {
@@ -414,23 +413,6 @@ pub struct GraphQL {
   pub headers: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: bool,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum GraphQLOperationType {
-  #[default]
-  Query,
-  Mutation,
-}
-
-impl Display for GraphQLOperationType {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    f.write_str(match self {
-      Self::Query => "query",
-      Self::Mutation => "mutation",
-    })
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

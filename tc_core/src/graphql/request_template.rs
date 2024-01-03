@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
-use crate::config::{GraphQLOperationType, KeyValues};
+use crate::blueprint::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;

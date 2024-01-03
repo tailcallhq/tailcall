@@ -3,7 +3,6 @@ pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
 pub mod chrono_cache;
-pub mod config;
 pub mod data_loader;
 pub mod directive;
 pub mod document;

@@ -1,7 +1,9 @@
+use tc_core::blueprint::Upstream;
+use tc_core::try_fold::TryFold;
+use tc_core::valid::{Valid, ValidationError};
+
 use super::TryFoldConfig;
-use crate::config::{Config, Upstream};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::config::Config;
 
 pub fn to_upstream<'a>() -> TryFold<'a, Config, Upstream, String> {
   TryFoldConfig::<Upstream>::new(|config, up| {

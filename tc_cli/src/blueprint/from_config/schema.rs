@@ -1,11 +1,12 @@
 use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
+use tc_core::blueprint::{Directive, SchemaDefinition};
+use tc_core::directive::DirectiveCodec;
+use tc_core::valid::{Valid, ValidationError};
 
 use crate::blueprint::*;
 use crate::config::{Config, Field, Type};
-use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, ValidationError};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
   Valid::from_option(config.schema.query.clone(), "Query root is missing".to_owned())

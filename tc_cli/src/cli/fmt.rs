@@ -1,5 +1,6 @@
 use colored::*;
-use tc_core::config::Config;
+
+use crate::config::Config;
 
 pub struct Fmt {}
 

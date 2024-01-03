@@ -1,8 +1,8 @@
-mod definitions;
-mod from_config;
-mod operators;
-mod schema;
-mod upstream;
+pub mod definitions;
+pub mod from_config;
+pub mod operators;
+pub mod schema;
+pub mod upstream;
 
 pub use definitions::*;
 pub use from_config::*;

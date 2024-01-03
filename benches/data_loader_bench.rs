@@ -5,7 +5,7 @@ use std::sync::Arc;
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
-use tc_core::config::Batch;
+use tc_core::blueprint::Batch;
 use tc_core::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 
 #[derive(Clone)]

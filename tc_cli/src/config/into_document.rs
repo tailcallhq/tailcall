@@ -1,10 +1,10 @@
 use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
+use tc_core::directive::DirectiveCodec;
 
 use super::Config;
-use tc_core::blueprint::TypeLike;
-use tc_core::directive::DirectiveCodec;
+use crate::blueprint::TypeLike;
 
 fn pos<A>(a: A) -> Positioned<A> {
   Positioned::new(a, Pos::default())

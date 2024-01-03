@@ -6,7 +6,7 @@ use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
-use crate::config::GraphQLOperationType;
+use crate::blueprint::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
@@ -108,7 +108,7 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   use super::RequestTemplate;
-  use crate::config::GraphQLOperationType;
+  use crate::blueprint::GraphQLOperationType;
   use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
   use crate::mustache::Mustache;
 

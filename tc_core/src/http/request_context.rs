@@ -8,9 +8,8 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use super::server_context::ServerContext;
-use crate::blueprint::Server;
+use crate::blueprint::{Server, Upstream};
 use crate::chrono_cache::ChronoCache;
-use crate::config::{self, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -39,10 +38,11 @@ pub struct RequestContext {
 
 impl Default for RequestContext {
   fn default() -> Self {
-    let config::Config { server, upstream, .. } = config::Config::default();
+    // let config::Config { server, upstream, .. } = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(server).unwrap();
-
+    // TODO: Requires review
+    let server = Server::default();
+    let upstream = Upstream::default();
     Self {
       req_headers: HeaderMap::new(),
       universal_http_client: Arc::new(DefaultHttpClient::new(&upstream)),
@@ -146,7 +146,7 @@ mod test {
 
   use cache_control::Cachability;
 
-  use crate::blueprint::Server;
+  use crate::blueprint::{Batch, Server, Upstream};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
 
@@ -190,10 +190,11 @@ mod test {
   #[test]
   fn test_is_batching_enabled_default() {
     // create ctx with default batch
-    let config = config::Config::default();
-    let mut upstream = config.upstream.clone();
+    // let config = config::Config::default();
+    // TODO: Requires review
+    let mut upstream = Upstream::default();
     upstream.batch = Some(Batch::default());
-    let server = Server::try_from(config.server.clone()).unwrap();
+    let server = Server::default();
 
     let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 

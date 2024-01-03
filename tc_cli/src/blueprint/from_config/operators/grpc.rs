@@ -1,18 +1,20 @@
 use std::path::Path;
 
 use prost_reflect::FieldDescriptor;
+use tc_core::blueprint::group_by::GroupBy;
+use tc_core::blueprint::{FieldDefinition, GraphQLOperationType};
+use tc_core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use tc_core::grpc::request_template::RequestTemplate;
+use tc_core::helpers;
+use tc_core::json::JsonSchema;
+use tc_core::lambda::{Expression, Lambda, Unsafe};
+use tc_core::mustache::Mustache;
+use tc_core::try_fold::TryFold;
+use tc_core::valid::{Valid, ValidationError};
 
-use crate::blueprint::{FieldDefinition, TypeLike};
-use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field, GraphQLOperationType, Grpc};
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-use crate::grpc::request_template::RequestTemplate;
-use crate::json::JsonSchema;
-use crate::lambda::{Expression, Lambda, Unsafe};
-use crate::mustache::Mustache;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
-use crate::{config, helpers};
+use crate::blueprint::TypeLike;
+use crate::config;
+use crate::config::{Config, Field, Grpc};
 
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
   Valid::from_option(

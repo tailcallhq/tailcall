@@ -3342,6 +3342,7 @@ dependencies = [
  "mini-v8",
  "num_cpus",
  "pretty_assertions",
+ "prost-reflect",
  "regex",
  "reqwest",
  "resource",

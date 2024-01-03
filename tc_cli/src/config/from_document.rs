@@ -6,11 +6,12 @@ use async_graphql::parser::types::{
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
-
-use super::Cache;
-use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
+use tc_core::blueprint::Upstream;
 use tc_core::directive::DirectiveCodec;
 use tc_core::valid::Valid;
+
+use super::Cache;
+use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
   &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };
@@ -62,7 +63,7 @@ fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
   process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
-  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
+  process_schema_directives(schema_definition, Upstream::directive_name().as_str())
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);

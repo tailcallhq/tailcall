@@ -1,17 +1,19 @@
 use std::collections::{BTreeMap, HashMap};
 
-use super::{Server, TypeLike};
-use crate::blueprint::compress::compress;
+use tc_core::blueprint::compress::compress;
+use tc_core::blueprint::{Batch, Blueprint, Definition};
+use tc_core::json::JsonSchema;
+use tc_core::lambda::{Expression, Unsafe};
+use tc_core::try_fold::TryFold;
+use tc_core::valid::{Valid, ValidationError};
+
+use super::TypeLike;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, Field};
-use crate::json::JsonSchema;
-use crate::lambda::{Expression, Unsafe};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::config::{Arg, Config, Field};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
   let server = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
-    Valid::from(Server::try_from(config.server.clone())).map(|server| blueprint.server(server))
+    Valid::from(config.server.clone().try_into()).map(|server| blueprint.server(server))
   });
 
   let schema = to_schema().transform::<Blueprint>(

@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::client::HttpClient;
-use crate::config::{self, Upstream};
+use crate::blueprint::Upstream;
 use crate::http::Response;
 
 #[async_trait::async_trait]
@@ -29,7 +29,7 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    let upstream = config::Upstream::default();
+    let upstream = Upstream::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     DefaultHttpClient::new(&upstream)
   }
