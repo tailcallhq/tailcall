@@ -12,14 +12,14 @@ use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, HttpClient, Response};
 use crate::json::JsonLike;
 
-fn get_body_value_single(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   body_value
     .get(id)
     .and_then(|a| a.first().cloned().cloned())
     .unwrap_or(ConstValue::Null)
 }
 
-fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   ConstValue::List(
     body_value
       .get(id)
@@ -34,7 +34,7 @@ fn get_body_value_list(body_value: HashMap<String, Vec<&ConstValue>>, id: &str) 
 pub struct HttpDataLoader {
   pub client: Arc<dyn HttpClient>,
   pub group_by: Option<GroupBy>,
-  pub body: fn(HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+  pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
   pub fn new(client: Arc<dyn HttpClient>, group_by: Option<GroupBy>, is_list: bool) -> Self {
@@ -50,7 +50,7 @@ impl HttpDataLoader {
   }
 
   pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader> {
-    DataLoader::new(self, tokio::spawn)
+    DataLoader::new(self)
       .delay(Duration::from_millis(batch.delay as u64))
       .max_batch_size(batch.max_size)
   }
@@ -90,7 +90,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         let id = query_set
           .get(group_by.key())
           .ok_or(anyhow::anyhow!("Unable to find key {} in query params", group_by.key()))?;
-        hashmap.insert(key.clone(), res.clone().body((self.body)(body_value.clone(), id)));
+        hashmap.insert(key.clone(), res.clone().body((self.body)(&body_value, id)));
       }
       Ok(hashmap)
     } else {

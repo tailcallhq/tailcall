@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - "**"
+    paths-ignore: ["docs/**", "**.md"]
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
+    paths-ignore: ["docs/**", "**.md"]
   release:
     types: [published]
 jobs:

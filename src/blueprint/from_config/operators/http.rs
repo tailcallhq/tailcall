@@ -94,8 +94,8 @@ impl<'a> MustachePartsValidator<'a> {
           return Valid::fail(format!("var '{tail}' is not set in the server config"));
         }
       }
-      "headers" => {
-        // "headers" refers to the header values known at runtime, which we can't
+      "headers" | "env" => {
+        // "headers" and "env" refers to values known at runtime, which we can't
         // validate here
       }
       _ => {
@@ -143,12 +143,17 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
 
       Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .and(
+          Valid::<(), String>::fail("GroupBy can only be applied if batching is enabled".to_string()).when(|| {
+            (config.upstream.get_delay() < 1 || config.upstream.get_max_size() < 1) && !http.group_by.is_empty()
+          }),
+        )
         .and(Valid::from_option(
           http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
           "No base URL defined".to_string(),
         ))
-        .zip(helpers::headers::to_headermap(&http.headers))
-        .and_then(|(base_url, header_map)| {
+        .zip(helpers::headers::to_headervec(&http.headers))
+        .and_then(|(base_url, headers)| {
           let mut base_url = base_url.trim_end_matches('/').to_owned();
           base_url.push_str(http.path.clone().as_str());
 
@@ -162,9 +167,9 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               .query(query)
               .output(output_schema)
               .input(input_schema)
-              .body(http.body.clone())
-              .headers(header_map),
+              .body(http.body.clone()),
           )
+          .map(|req_tmpl| req_tmpl.headers(headers))
           .map_err(|e| ValidationError::new(e.to_string()))
           .into()
         })

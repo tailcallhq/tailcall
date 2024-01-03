@@ -2,11 +2,12 @@ use std::borrow::Cow;
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::header::HeaderValue;
 use url::Url;
 
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
+use crate::helpers::headers::MustacheHeaders;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -19,7 +20,7 @@ pub struct RequestTemplate {
   pub root_url: Mustache,
   pub query: Vec<(String, Mustache)>,
   pub method: reqwest::Method,
-  pub headers: Vec<(String, Mustache)>,
+  pub headers: MustacheHeaders,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
 }
@@ -79,10 +80,8 @@ impl RequestTemplate {
     let mut header_map = HeaderMap::new();
 
     for (k, v) in &self.headers {
-      if let Ok(header_name) = HeaderName::from_bytes(k.as_bytes()) {
-        if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-          header_map.insert(header_name, header_value);
-        }
+      if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+        header_map.insert(k, header_value);
       }
     }
 
@@ -150,7 +149,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     let headers = endpoint
       .headers
       .iter()
-      .map(|(k, v)| Ok((k.as_str().into(), Mustache::parse(v.to_str()?)?)))
+      .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
       .collect::<anyhow::Result<Vec<_>>>()?;
 
     let body = if let Some(body) = &endpoint.body {
@@ -168,11 +167,12 @@ mod tests {
   use std::borrow::Cow;
 
   use derive_setters::Setters;
+  use hyper::header::HeaderName;
   use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
   use serde_json::json;
 
-  use crate::http::RequestTemplate;
+  use super::RequestTemplate;
   use crate::mustache::Mustache;
 
   #[derive(Setters)]
@@ -271,9 +271,9 @@ mod tests {
   #[test]
   fn test_headers() {
     let headers = vec![
-      ("foo".to_string(), Mustache::parse("foo").unwrap()),
-      ("bar".to_string(), Mustache::parse("bar").unwrap()),
-      ("baz".to_string(), Mustache::parse("baz").unwrap()),
+      (HeaderName::from_static("foo"), Mustache::parse("foo").unwrap()),
+      (HeaderName::from_static("bar"), Mustache::parse("bar").unwrap()),
+      (HeaderName::from_static("baz"), Mustache::parse("baz").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = Context::default();
@@ -285,9 +285,9 @@ mod tests {
   #[test]
   fn test_header_template() {
     let headers = vec![
-      ("foo".to_string(), Mustache::parse("0").unwrap()),
-      ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-      ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
+      (HeaderName::from_static("foo"), Mustache::parse("0").unwrap()),
+      (HeaderName::from_static("bar"), Mustache::parse("{{bar.id}}").unwrap()),
+      (HeaderName::from_static("baz"), Mustache::parse("{{baz.id}}").unwrap()),
     ];
     let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().headers(headers);
     let ctx = Context::default().value(json!({

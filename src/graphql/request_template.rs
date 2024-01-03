@@ -2,10 +2,11 @@
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::header::HeaderValue;
 
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
+use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
 use crate::lambda::GraphQLOperationContext;
 use crate::mustache::Mustache;
@@ -15,11 +16,12 @@ use crate::path::PathGraphql;
 /// TODO: add benchmarks for this
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
+  // TODO: should be Mustache as for other templates
   pub url: String,
   pub operation_type: GraphQLOperationType,
   pub operation_name: String,
   pub operation_arguments: Option<Vec<(String, Mustache)>>,
-  pub headers: Vec<(HeaderName, Mustache)>,
+  pub headers: MustacheHeaders,
 }
 
 impl RequestTemplate {
@@ -91,7 +93,7 @@ impl RequestTemplate {
     operation_type: &GraphQLOperationType,
     operation_name: &str,
     args: Option<&KeyValues>,
-    headers: HeaderMap<HeaderValue>,
+    headers: MustacheHeaders,
   ) -> anyhow::Result<Self> {
     let mut operation_arguments = None;
 
@@ -103,11 +105,6 @@ impl RequestTemplate {
           .collect::<anyhow::Result<Vec<_>>>()?,
       );
     }
-
-    let headers = headers
-      .iter()
-      .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
-      .collect::<anyhow::Result<Vec<_>>>()?;
 
     Ok(Self {
       url,
@@ -163,7 +160,7 @@ mod tests {
       &GraphQLOperationType::Query,
       "myQuery",
       None,
-      HeaderMap::new(),
+      vec![],
     )
     .unwrap();
     let ctx = Context {
@@ -197,7 +194,7 @@ mod tests {
           .unwrap(),
       )
       .as_ref(),
-      HeaderMap::new(),
+      vec![],
     )
     .unwrap();
     let ctx = Context {

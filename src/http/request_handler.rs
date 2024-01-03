@@ -51,6 +51,7 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
       .extend(server_ctx.blueprint.server.response_headers.clone());
   }
 }
+
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   server_ctx: &ServerContext,
