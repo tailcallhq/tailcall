@@ -65,12 +65,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
   if !folder_exists {
     let confirm = Confirm::new(&format!("Do you want to create the folder {}?", folder_path))
       .with_default(false)
-      .prompt();
+      .prompt()?;
 
-    match confirm {
-      Ok(true) => fs::create_dir_all(folder_path)?,
-      Ok(false) => (),
-      Err(e) => return Err(e.into()),
+    if confirm {
+      fs::create_dir_all(folder_path)?;
     };
   }
 
@@ -101,13 +99,11 @@ pub async fn init(folder_path: &str) -> Result<()> {
     // confirm overwrite
     let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", file_name))
       .with_default(false)
-      .prompt();
+      .prompt()?;
 
-    match confirm {
-      Ok(true) => fs::write(&file_path, tailcallrc.as_bytes())?,
-      Ok(false) => (),
-      Err(e) => return Err(e.into()),
-    };
+    if confirm {
+      fs::write(&file_path, tailcallrc.as_bytes())?;
+    }
   } else {
     fs::write(&file_path, tailcallrc.as_bytes())?;
   }
@@ -117,24 +113,20 @@ pub async fn init(folder_path: &str) -> Result<()> {
   if !graphqlrc.contains(file_name) {
     let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_name))
       .with_default(false)
-      .prompt();
+      .prompt()?;
 
-    match confirm {
-      Ok(true) => {
-        let mut schema_line = graphqlrc
-          .lines()
-          .find(|line| line.contains("schema:"))
-          .unwrap()
-          .to_string();
+    if confirm {
+      let mut schema_line = graphqlrc
+        .lines()
+        .find(|line| line.contains("schema:"))
+        .unwrap()
+        .to_string();
 
-        schema_line.push_str("\n  - './.tailcallrc.graphql'");
+      schema_line.push_str("\n  - './.tailcallrc.graphql'");
 
-        let updated = graphqlrc.replace("schema:", &schema_line);
+      let updated = graphqlrc.replace("schema:", &schema_line);
 
-        fs::write(graphqlrc_path, updated)?;
-      }
-      Ok(false) => (),
-      Err(e) => return Err(e.into()),
+      fs::write(graphqlrc_path, updated)?;
     }
   }
 
