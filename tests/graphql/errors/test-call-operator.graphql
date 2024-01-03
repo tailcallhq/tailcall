@@ -27,7 +27,11 @@ type Post {
 
 #> client-sdl
 type Failure @error(message: "No resolver has been found in the schema", trace: ["Query", "userWithoutResolver"])
-type Failure @error(message: "userWithGraphQLResolver field does not have an http resolver", trace: ["Post", "invalidResolver", "@call"])
+type Failure
+  @error(
+    message: "userWithGraphQLResolver field does not have an http resolver"
+    trace: ["Post", "invalidResolver", "@call"]
+  )
 type Failure
   @error(
     message: "@call directive is not allowed on field multipleResolvers because it already has a resolver"
