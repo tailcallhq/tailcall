@@ -57,11 +57,7 @@ pub fn run() -> Result<()> {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
 
-      Fmt::display(match format {
-        Source::Yml => config.to_yaml()?,
-        Source::GraphQL => config.to_sdl(),
-        Source::Json => config.to_json(true)?,
-      });
+      Fmt::display(format.encode(config)?);
 
       Ok(())
     }

@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use super::Config;
+
 #[derive(Clone)]
 pub enum Source {
   Json,
@@ -54,5 +56,13 @@ impl Source {
       .into_iter()
       .find(|format| format.ext().eq(content_type))
       .ok_or(UnsupportedFileFormat(content_type.to_string()))
+  }
+
+  pub fn encode(&self, config: Config) -> Result<String, anyhow::Error> {
+    match self {
+      Source::Yml => Ok(config.to_yaml()?),
+      Source::GraphQL => Ok(config.to_sdl()),
+      Source::Json => Ok(config.to_json(true)?),
+    }
   }
 }
