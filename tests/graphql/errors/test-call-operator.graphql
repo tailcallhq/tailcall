@@ -17,9 +17,11 @@ type Post {
   userId: Int!
   withoutResolver: User @call(query: "userWithoutResolver", args: [{key: "id", value: "{{value.userId}}"}])
   multipleResolvers: User @http(path: "/users/{{value.userId}}") @call(query: "user", args: [{key: "id", value: "{{value.userId}}"}])
+  withoutOperator: User @call(args: [{key: "id", value: "{{value.userId}}"}])
 }
 
 #> client-sdl
 type Failure @error(message: "No resolver has been found in the schema", trace: ["Query", "userWithoutResolver"])
 type Failure @error(message: "@call directive is not allowed on field multipleResolvers because it already has a resolver", trace: ["Post", "multipleResolvers", "@call"])
+type Failure @error(message: "call must have one of mutation or query", trace: ["Post", "withoutOperator", "@call",])
 type Failure @error(message: "userWithoutResolver field has no resolver", trace: ["Post", "withoutResolver", "@call"])
