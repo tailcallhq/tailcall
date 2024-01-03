@@ -6,15 +6,19 @@ mock:
     response:
       body:
         - id: 1
+          name: abc
         - id: 3
+          name: cde
         - id: 5
+          name: efg
         - id: 7
+          name: ghi
 assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: query { bars { id } }
+        query: query { bars { id name } }
     response:
       body:
         errors:

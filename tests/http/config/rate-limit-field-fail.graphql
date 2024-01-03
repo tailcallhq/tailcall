@@ -8,4 +8,5 @@ type Query {
 
 type Bar {
   id: Int @rateLimit(requestsPerUnit: 3, unit: "minute")
+  name: String @rateLimit(requestsPerUnit: 100, unit: "second")
 }

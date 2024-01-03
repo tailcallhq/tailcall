@@ -7,5 +7,5 @@ type Query {
 }
 
 type Bar {
-  id: Int @rateLimit(requestsPerUnit: 3, unit: "minute")
+  id: Int @rateLimit(requestsPerUnit: 3, unit: "month")
 }
