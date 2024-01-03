@@ -78,70 +78,74 @@ impl ServerContext {
   }
 
   fn check_resolver_of_field(&mut self, field: &blueprint::FieldDefinition, expr: &Expression) -> Option<Expression> {
-    let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
-    let universal_http_client = self.universal_http_client.clone();
-    let http2_only_client = self.http2_only_client.clone();
     if let Expression::Unsafe(expr_unsafe) = &expr {
-      match expr_unsafe {
-        Unsafe::Http { req_template, group_by, .. } => {
-          let data_loader = HttpDataLoader::new(
-            universal_http_client.clone(),
-            group_by.clone(),
-            matches!(&field.of_type, ListType { .. }),
-          )
-          .to_data_loader(bt);
-
-          let resolver = Some(Expression::Unsafe(Unsafe::Http {
-            req_template: req_template.clone(),
-            group_by: group_by.clone(),
-            dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
-          }));
-
-          let http_data_loaders = Arc::get_mut(&mut self.http_data_loaders).unwrap();
-          http_data_loaders.push(data_loader);
-          resolver
-        }
-
-        Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-          let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch).to_data_loader(bt);
-
-          let resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
-            req_template: req_template.clone(),
-            field_name: field_name.clone(),
-            batch: *batch,
-            dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
-          }));
-
-          let gql_data_loaders = Arc::get_mut(&mut self.gql_data_loaders).unwrap();
-          gql_data_loaders.push(graphql_data_loader);
-          resolver
-        }
-
-        Unsafe::Grpc { req_template, group_by, .. } => {
-          let data_loader = GrpcDataLoader {
-            client: http2_only_client.clone(),
-            operation: req_template.operation.clone(),
-            group_by: group_by.clone(),
-          };
-          let data_loader = data_loader.to_data_loader(bt);
-
-          let resolver = Some(Expression::Unsafe(Unsafe::Grpc {
-            req_template: req_template.clone(),
-            group_by: group_by.clone(),
-            dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
-          }));
-
-          let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
-          grpc_data_loaders.push(data_loader);
-          resolver
-        }
-        _ => None,
-      }
+      self.check_unsafe_expr(expr_unsafe, field)
     } else if let Expression::Cache(cache) = &expr {
       let new_expr = self.check_resolver_of_field(field, cache.source());
       new_expr.map(|ne| Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(ne))))
     } else {
       Some(expr.clone())
+    }
+  }
+
+  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &blueprint::FieldDefinition) -> Option<Expression> {
+    let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
+    let universal_http_client = self.universal_http_client.clone();
+    let http2_only_client = self.http2_only_client.clone();
+    match expr_unsafe {
+      Unsafe::Http { req_template, group_by, .. } => {
+        let data_loader = HttpDataLoader::new(
+          universal_http_client.clone(),
+          group_by.clone(),
+          matches!(&field.of_type, ListType { .. }),
+        )
+        .to_data_loader(bt);
+
+        let resolver = Some(Expression::Unsafe(Unsafe::Http {
+          req_template: req_template.clone(),
+          group_by: group_by.clone(),
+          dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
+        }));
+
+        let http_data_loaders = Arc::get_mut(&mut self.http_data_loaders).unwrap();
+        http_data_loaders.push(data_loader);
+        resolver
+      }
+
+      Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+        let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch).to_data_loader(bt);
+
+        let resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+          req_template: req_template.clone(),
+          field_name: field_name.clone(),
+          batch: *batch,
+          dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
+        }));
+
+        let gql_data_loaders = Arc::get_mut(&mut self.gql_data_loaders).unwrap();
+        gql_data_loaders.push(graphql_data_loader);
+        resolver
+      }
+
+      Unsafe::Grpc { req_template, group_by, .. } => {
+        let data_loader = GrpcDataLoader {
+          client: http2_only_client.clone(),
+          operation: req_template.operation.clone(),
+          group_by: group_by.clone(),
+        };
+        let data_loader = data_loader.to_data_loader(bt);
+
+        let resolver = Some(Expression::Unsafe(Unsafe::Grpc {
+          req_template: req_template.clone(),
+          group_by: group_by.clone(),
+          dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
+        }));
+
+        let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
+        grpc_data_loaders.push(data_loader);
+        resolver
+      }
+      _ => None,
     }
   }
 }
