@@ -156,7 +156,11 @@ impl ServerContext {
         gql_data_loaders,
         grpc_data_loaders,
       );
-      field.resolver = Some(Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(new_expr))));
+      field.resolver = Some(Expression::Cache(Cache::new(
+        cache.hasher().clone(),
+        cache.max_age(),
+        Box::new(new_expr),
+      )));
       field.resolver.clone().unwrap()
     } else {
       (*expr).clone()

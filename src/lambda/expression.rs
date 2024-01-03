@@ -76,7 +76,7 @@ pub struct Cache {
 
 impl Cache {
   pub fn new(hasher: DefaultHasher, max_age: NonZeroU64, source: Box<Expression>) -> Self {
-    Self {hasher, max_age, source }
+    Self { hasher, max_age, source }
   }
 
   pub fn hasher(&self) -> &DefaultHasher {
