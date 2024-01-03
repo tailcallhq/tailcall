@@ -67,7 +67,7 @@ pub async fn init(file_path: &str) -> Result<()> {
       .prompt();
 
     match confirm {
-      Ok(true) => fs::create_dir(file_path)?,
+      Ok(true) => fs::create_dir_all(file_path)?,
       Ok(false) => (),
       Err(e) => return Err(e.into()),
     };
