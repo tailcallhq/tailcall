@@ -1,7 +1,7 @@
 ---
 name: Guide
 about: Write a guide for using Tailcall
-title: "Doc:"
+title: "Guide:"
 labels: "type: doc"
 ---
 
