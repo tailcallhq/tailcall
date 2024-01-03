@@ -2,22 +2,24 @@ name: Release Drafter
 
 on:
   schedule:
-    - cron: "*/1 * * * *"
+    - cron: "*/5 * * * *"
+  pull_request_target:
+    branches:
+      - "**"
+    paths-ignore: ["docs/**", "**.md"]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
-  release_drafter:
-    name: Draft Release
-    runs-on: ubuntu-latest
+  update_release_draft:
     permissions:
       contents: write
       pull-requests: write
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
-
-      - id: create_release
-        uses: release-drafter/release-drafter@v5
+      - uses: release-drafter/release-drafter@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-name: release-drafter.yml
