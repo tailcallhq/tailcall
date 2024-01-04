@@ -1,8 +1,3 @@
-#[cfg(feature = "default")]
-pub use super::reader_cli::*;
-#[cfg(not(feature = "default"))]
-pub use super::reader_wasm::*;
-
 pub struct ConfigReader {
   pub file_paths: Vec<String>,
 }
