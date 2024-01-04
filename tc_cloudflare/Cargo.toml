@@ -1,0 +1,22 @@
+[package]
+name = "tc_cloudflare"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+hyper = { version = "0.14", default-features = false }
+worker = "0.0.18"
+tailcall = {path = "..", default-features = false}
+lazy_static = { version = "1.4.0", features = [] }
+tokio = {features = ["rt"], version = "1.35.1"}
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+opt-level = 'z'

@@ -7,3 +7,8 @@ pub mod request_template;
 pub use data_loader_request::DataLoaderRequest;
 pub use request::execute_grpc_request;
 pub use request_template::RequestTemplate;
+
+#[cfg(feature = "default")]
+fn set_req_version(req: &mut reqwest::Request) {
+  *req.version_mut() = reqwest::Version::HTTP_2;
+}

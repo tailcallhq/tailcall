@@ -4,26 +4,18 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
-use super::Response;
-use crate::config::{self, Upstream};
-
-#[async_trait::async_trait]
-pub trait HttpClient: Sync + Send {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response>;
-}
+use crate::config;
+use crate::config::Upstream;
+use crate::grpc::protobuf::ProtobufOperation;
+use crate::http::{HttpClient, Response};
 
 #[async_trait::async_trait]
 impl HttpClient for DefaultHttpClient {
-  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
-    let response = self.execute_raw(request).await?;
-    let response = Response::from_response(response).await?;
+  async fn execute(&self, req: reqwest::Request, operation: Option<ProtobufOperation>) -> anyhow::Result<Response> {
+    log::info!("{} {} {:?}", req.method(), req.url(), req.version());
+    let response = self.client.execute(req).await?.error_for_status()?;
+    let response = Response::from_response(response, operation).await?;
     Ok(response)
-  }
-
-  async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<reqwest::Response> {
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    Ok(self.client.execute(request).await?.error_for_status()?)
   }
 }
 
@@ -34,7 +26,7 @@ pub struct DefaultHttpClient {
 
 impl Default for DefaultHttpClient {
   fn default() -> Self {
-    let upstream = config::Upstream::default();
+    let upstream = Upstream::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     DefaultHttpClient::new(&upstream)
   }
