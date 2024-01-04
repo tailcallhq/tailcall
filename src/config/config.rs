@@ -399,7 +399,7 @@ pub enum ExprBody {
   #[serde(rename = "graphQL")]
   GraphQL(GraphQL),
   #[serde(rename = "const")]
-  Const(Const),
+  Const(Value),
   #[serde(rename = "if")]
   If {
     cond: Box<ExprBody>,

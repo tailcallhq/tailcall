@@ -22,17 +22,17 @@ fn validate_data_with_schema(
 pub struct CompileConst<'a> {
   pub config: &'a config::Config,
   pub field: &'a config::Field,
-  pub const_field: &'a config::Const,
+  pub value: &'a serde_json::Value,
   pub validate_with_schema: bool,
 }
 
 pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
   let config = inputs.config;
   let field = inputs.field;
-  let const_field = inputs.const_field;
+  let value = inputs.value;
   let validate_with_schema = inputs.validate_with_schema;
 
-  let data = const_field.data.to_owned();
+  let data = value.to_owned();
   match ConstValue::from_json(data.to_owned()) {
     Ok(gql) => {
       let validation = if validate_with_schema {
@@ -53,7 +53,7 @@ pub fn update_const_field<'a>(
       return Valid::succeed(b_field);
     };
 
-    compile_const(CompileConst { config, field, const_field, validate_with_schema: true })
+    compile_const(CompileConst { config, field, value: &const_field.data, validate_with_schema: true })
       .map(|resolver| b_field.resolver(Some(resolver)))
   })
 }

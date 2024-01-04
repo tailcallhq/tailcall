@@ -25,13 +25,10 @@ fn compile_effect(context: &CompilationContext, expr: ExprBody) -> Valid<Express
 
   match expr {
     ExprBody::Http(http) => compile_http(config, config_field, &http).trace("http"),
-    ExprBody::Const(const_field) => compile_const(CompileConst {
-      config,
-      field: config_field,
-      const_field: &const_field,
-      validate_with_schema: false,
-    })
-    .trace("const"),
+    ExprBody::Const(const_field) => {
+      compile_const(CompileConst { config, field: config_field, value: &const_field, validate_with_schema: false })
+        .trace("const")
+    }
     ExprBody::GraphQL(graphql) => compile_graphql(config, operation_type, &graphql).trace("graphql"),
     ExprBody::Grpc(grpc) => compile_grpc(CompileGrpc {
       config,

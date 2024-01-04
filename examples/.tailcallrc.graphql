@@ -306,7 +306,7 @@ input ExprBody {
   if: ExprIf
   http: ExprHttp
   grpc: ExprGrpc
-  const: ExprConst
+  const: JSON
   graphQL: ExprGraphQL
 }
 
@@ -333,10 +333,6 @@ input ExprGrpc {
   headers: [KeyValue]
   protoPath: String
   groupBy: [String!]
-}
-
-input ExprConst {
-  data: JSON
 }
 
 input ExprGraphQL {
