@@ -1,11 +1,8 @@
+use crate::config::reader::ConfigReader;
 use anyhow::anyhow;
 use url::Url;
 
 use crate::config::{Config, Source};
-
-pub struct ConfigReader {
-  pub file_paths: Vec<String>,
-}
 
 impl ConfigReader {
   pub async fn read(&self) -> anyhow::Result<Config> {

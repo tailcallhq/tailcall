@@ -14,7 +14,7 @@ impl ConfigWriter {
   }
 
   pub async fn write(&self, filename: &String) -> Result<()> {
-    let contents = match Source::detect(filename)? {
+    let _contents = match Source::detect(filename)? {
       Source::GraphQL => self.config.to_sdl(),
       Source::Json => self.config.to_json(true)?,
       Source::Yml => self.config.to_yaml()?,
@@ -22,7 +22,7 @@ impl ConfigWriter {
     #[cfg(feature = "default")]
     let mut file = File::create(filename).await?;
     #[cfg(feature = "default")]
-    file.write_all(contents.as_bytes()).await?;
+    file.write_all(_contents.as_bytes()).await?;
 
     Ok(())
   }
