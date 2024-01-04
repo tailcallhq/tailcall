@@ -33,4 +33,14 @@ Equivalent to [@graphQL](#graphQL)
 
 ### if
 
-Allows branching based on conditions
+Allows branching in expressions. `cond` can be any expression.
+
+```graphql
+@expr(body: {
+  if: {
+    cond: {http: {path: "/is-admin"}}
+    then: {const: "ADMIN"}
+    else: {const: "NOT_ADMIN"}
+  }
+})
+```
