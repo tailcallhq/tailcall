@@ -12,7 +12,7 @@ The `check` command validates a composition spec. Notably, this command can dete
 tailcall check [options] <file>...
 ```
 
-The `check` command offers various options that control different settings, such as the display of the blueprint, endpoints, and schema of the composition spec.
+The `check` command offer various option that control different settings, such as the display of the blueprint, endpoints, and schema of the composition spec.
 
 ### --n-plus-one-queries
 
