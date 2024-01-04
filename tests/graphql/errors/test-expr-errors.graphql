@@ -11,4 +11,7 @@ type Query {
 #> client-sdl
 type Failure
   @error(message: "Parsing failed because of missing field `body`", trace: ["@expr"])
-  @error(message: "Parsing failed because of unknown variant `unsupported`, expected one of `http`, `grpc`, `graphQL`, `const`, `if`", trace: ["@expr", "body"])
+  @error(
+    message: "Parsing failed because of unknown variant `unsupported`, expected one of `http`, `grpc`, `graphQL`, `const`, `if`"
+    trace: ["@expr", "body"]
+  )

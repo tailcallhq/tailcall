@@ -33,17 +33,22 @@ fn compile_if(input: CompileIf) -> Valid<Expression, String> {
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-    let config = context.config;
-    let field = context.config_field;
-    let operation_type = context.operation_type;
+  let config = context.config;
+  let field = context.config_field;
+  let operation_type = context.operation_type;
 
-    match expr {
-        ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }).trace("if"),
-        ExprBody::Http(http) => compile_http(config, field, &http).trace("http"),
-        ExprBody::Grpc(grpc) => compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false }).trace("grpc"),
-        ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql).trace("graphQL"),
-        ExprBody::Const(value) => compile_const(CompileConst {config, field, value: &value, validate_with_schema: false}).trace("const"),
+  match expr {
+    ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }).trace("if"),
+    ExprBody::Http(http) => compile_http(config, field, &http).trace("http"),
+    ExprBody::Grpc(grpc) => {
+      compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false })
+        .trace("grpc")
     }
+    ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql).trace("graphQL"),
+    ExprBody::Const(value) => {
+      compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }).trace("const")
+    }
+  }
 }
 
 pub fn update_expr(
