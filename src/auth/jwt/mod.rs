@@ -15,6 +15,7 @@ use url::Url;
 
 use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProvider};
+use crate::config::is_default;
 use crate::helpers::config_path::config_path;
 use crate::http::RequestContext;
 use crate::valid::{Valid, ValidationError};
@@ -29,7 +30,7 @@ mod remote {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub enum JwtProviderJwksOptions {
+pub enum JwksOptions {
   File(PathBuf),
   #[serde(rename_all = "camelCase")]
   Remote {
@@ -41,10 +42,11 @@ pub enum JwtProviderJwksOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct JwtProviderOptions {
+  #[serde(skip_serializing_if = "is_default")]
   pub issuer: Option<String>,
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "is_default")]
   pub audiences: HashSet<String>,
-  pub jwks: JwtProviderJwksOptions,
+  pub jwks: JwksOptions,
 }
 
 // only used in tests and uses mocked implementation
@@ -58,7 +60,7 @@ impl Default for JwtProviderOptions {
     test_file.push("tests");
     test_file.push("jwks.json");
 
-    let jwks = JwtProviderJwksOptions::File(test_file);
+    let jwks = JwksOptions::File(test_file);
 
     Self { issuer: Default::default(), audiences: Default::default(), jwks }
   }
@@ -70,9 +72,9 @@ enum JwksVerifier {
 }
 
 impl JwksVerifier {
-  pub fn parse(value: &JwtProviderJwksOptions) -> Valid<Self, String> {
+  pub fn parse(value: &JwksOptions) -> Valid<Self, String> {
     match value {
-      JwtProviderJwksOptions::File(path) => Valid::from(
+      JwksOptions::File(path) => Valid::from(
         config_path(path)
           .and_then(fs::read_to_string)
           .map_err(|e| ValidationError::new(e.to_string())),
@@ -85,7 +87,7 @@ impl JwksVerifier {
       .trace(&format!("{}", path.display()))
       .trace("file")
       .map(|jwks: JwkSet| Self::Local(jwks.verifier())),
-      JwtProviderJwksOptions::Remote { url, max_age } => {
+      JwksOptions::Remote { url, max_age } => {
         Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).map_to(Self::Remote(
           RemoteJwksVerifier::new(
             url.to_owned(),
@@ -179,7 +181,7 @@ mod tests {
       }
     }))?;
 
-    assert!(matches!(options.jwks, JwtProviderJwksOptions::File(_)));
+    assert!(matches!(options.jwks, JwksOptions::File(_)));
 
     let options: JwtProviderOptions = serde_json::from_value(json!({
       "jwks": {
@@ -189,7 +191,7 @@ mod tests {
       }
     }))?;
 
-    assert!(matches!(options.jwks, JwtProviderJwksOptions::Remote { .. }));
+    assert!(matches!(options.jwks, JwksOptions::Remote { .. }));
 
     Ok(())
   }

@@ -329,20 +329,20 @@ input Batch {
   headers: [String]
 }
 
-input AuthJwtJwksRemote {
+input AuthJwksRemote {
   url: String!
   maxAge: Int
 }
 
-input AuthJWTJwks {
+input AuthJwks {
   file: String
-  remote: AuthJwtJwksRemote
+  remote: AuthJwksRemote
 }
 
 input AuthJWT {
   issuer: String
   audiences: [String!]
-  jwks: AuthJWTJwks!
+  jwks: AuthJwks!
 }
 
 scalar JSON

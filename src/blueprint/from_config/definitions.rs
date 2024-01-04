@@ -265,7 +265,6 @@ fn update_args<'a>(
       directives: Vec::new(),
       resolver: None,
       cache,
-      protected: field.protected,
     })
   })
 }

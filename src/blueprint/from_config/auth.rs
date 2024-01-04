@@ -1,6 +1,7 @@
 use super::TryFoldConfig;
 use crate::auth::jwt::JwtProvider;
 use crate::config::{Auth, Config};
+use crate::directive::DirectiveCodec;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -17,6 +18,6 @@ pub fn to_auth<'a>() -> TryFold<'a, Config, Auth, String> {
         }
       })
       .map_to(auth.clone())
-      .trace("@auth")
+      .trace(Auth::trace_name().as_str())
   })
 }

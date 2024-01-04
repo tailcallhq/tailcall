@@ -3,18 +3,18 @@ schema @server(port: 8000, graphiql: true) @auth(JWT: {jwks: {file: "tests/serve
 }
 
 type Query {
-  public_scalar: String! @const(data: "data from public scalar")
-  private_scalar: String! @protected @const(data: "data from private scalar")
-  private_nested_field: PrivateNested!
-  private_type: PrivateType
+  scalar: String! @const(data: "data from public scalar")
+  protectedScalar: String! @protected @const(data: "data from protected scalar")
+  nested: Nested!
+  protectedType: ProtectedType
 }
 
-type PrivateNested {
-  name: String! @const(data: "private nested name")
-  nested: String! @protected @const(data: "private nested")
+type Nested {
+  name: String! @const(data: "protected nested name")
+  protected: String! @protected @const(data: "protected nested")
 }
 
-type PrivateType @protected {
-  name: String! @const(data: "private type name")
-  nested: String! @const(data: "private type nested")
+type ProtectedType @protected {
+  name: String! @const(data: "protected type name")
+  nested: String! @const(data: "protected type nested")
 }

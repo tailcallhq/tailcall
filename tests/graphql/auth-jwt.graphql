@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server @upstream @auth(JWT: {audiences: [], issuer: null, jwks: {file: "tests/server/config/jwks.json"}}) {
+schema @server @upstream @auth(JWT: {jwks: {file: "tests/server/config/jwks.json"}}) {
   query: Query
 }
 

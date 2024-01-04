@@ -7,17 +7,17 @@ assert:
       body:
         query: |
           query {
-            public_scalar
-            private_nested_field {
+            scalar
+            nested {
               name
             }
           }
     response:
       body:
         data:
-          public_scalar: data from public scalar
-          private_nested_field:
-            name: private nested name
+          scalar: data from public scalar
+          nested:
+            name: protected nested name
 
   - request:
       method: POST
@@ -25,7 +25,7 @@ assert:
       body:
         query: |
           query {
-            private_scalar
+            protectedScalar
           }
     response:
       body:
@@ -47,12 +47,12 @@ assert:
       body:
         query: |
           query {
-            private_scalar
-            private_nested_field {
+            protectedScalar
+            nested {
               name
-              nested
+              protected
             }
-            private_type {
+            protectedType {
               name
               nested
             }
@@ -60,10 +60,10 @@ assert:
     response:
       body:
         data:
-          private_scalar: data from private scalar
-          private_nested_field:
-            name: private nested name
-            nested: private nested
-          private_type:
-            name: private type name
-            nested: private type nested
+          protectedScalar: data from protected scalar
+          nested:
+            name: protected nested name
+            protected: protected nested
+          protectedType:
+            name: protected type name
+            nested: protected type nested
