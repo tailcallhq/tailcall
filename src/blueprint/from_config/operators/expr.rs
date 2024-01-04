@@ -77,8 +77,11 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
       ExprBody::If { cond: condition, then, els } => {
         compile_if(CompileIf { context, condition, then, els }).trace("if")
       }
-      _ => Valid::fail("unsupported expression".to_string()), // unreachable if is_effect is
-                                                              // correct
+
+      _ => {
+        // unreachable if is_effect handled above
+        unreachable!("unsupported expression")
+      }
     }
   }
 }
