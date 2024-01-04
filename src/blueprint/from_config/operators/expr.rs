@@ -62,11 +62,11 @@ fn compile_if(input: CompileIf) -> Valid<Expression, String> {
   let els = input.els;
 
   compile(context, *condition)
-    .trace("condition")
+    .trace("cond")
     .map(Box::new)
     .zip(compile(context, *then).trace("then").map(Box::new))
     .zip(compile(context, *els).trace("else").map(Box::new))
-    .map(|((condition, then), els)| Expression::If { condition, then, els })
+    .map(|((condition, then), els)| Expression::If { cond: condition, then, els })
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {

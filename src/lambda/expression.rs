@@ -34,7 +34,7 @@ pub enum Expression {
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
   If {
-    condition: Box<Expression>,
+    cond: Box<Expression>,
     then: Box<Expression>,
     els: Box<Expression>,
   },
@@ -187,7 +187,7 @@ impl Expression {
           }
         },
 
-        Expression::If { condition, then, els } => {
+        Expression::If { cond: condition, then, els } => {
           let cond = condition.eval(ctx).await?;
           if is_truthy(cond) {
             then.eval(ctx).await
