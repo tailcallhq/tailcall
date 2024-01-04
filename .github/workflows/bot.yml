@@ -2,9 +2,11 @@ name: Benchmark
 
 on:
   push:
+    paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
   pull_request:
+    paths-ignore: ["docs/**", "**.md"]
     types: [opened, synchronize, labeled]
     branches:
       - main
@@ -19,7 +21,7 @@ on:
 jobs:
   benchmark:
     name: Macro Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark') || github.event_name == 'push'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
@@ -102,7 +104,7 @@ jobs:
 
   lint:
     name: CI:Lint
-    if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: lint')"
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -167,27 +169,20 @@ jobs:
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
-    if: github.ref != 'refs/heads/main'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
       contents: write
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
-
-      - name: Restore file
-        uses: actions/cache@v3
-        with:
-          path: benches/main_benchmarks.json
-          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
-          fail-on-cache-miss: true
 
       - name: Run Criterion Benchmarks
         run: |
@@ -197,6 +192,13 @@ jobs:
 
       - name: Print Criterion Benchmarks
         run: cat benches/change_benchmarks.md
+
+      - name: Restore file
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
 
       - name: Print Benchmark Comparision
         run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table
