@@ -1,4 +1,4 @@
-mod client;
+pub mod client;
 mod data_loader;
 
 mod data_loader_request;
