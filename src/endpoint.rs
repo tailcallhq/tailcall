@@ -1,6 +1,7 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
+use crate::config::Encoding;
 use crate::http::Method;
 use crate::json::JsonSchema;
 
@@ -14,6 +15,7 @@ pub struct Endpoint {
   pub headers: HeaderMap,
   pub body: Option<String>,
   pub description: Option<String>,
+  pub encoding: Encoding
 }
 
 impl Endpoint {
@@ -27,6 +29,7 @@ impl Endpoint {
       headers: Default::default(),
       body: Default::default(),
       description: Default::default(),
+      encoding: Default::default()
     }
   }
 }

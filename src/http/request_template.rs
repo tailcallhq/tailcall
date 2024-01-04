@@ -5,6 +5,7 @@ use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
+use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
@@ -23,6 +24,7 @@ pub struct RequestTemplate {
   pub headers: MustacheHeaders,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
+  pub encoding: Encoding
 }
 
 impl RequestTemplate {
@@ -103,8 +105,18 @@ impl RequestTemplate {
   /// Sets the body for the request
   fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     if let Some(body) = &self.body {
-      req.body_mut().replace(body.render(ctx).into());
-    }
+        match &self.encoding {
+          Encoding::APPLICATION_JSON => {
+            req.body_mut().replace(body.render(ctx).into());
+          }
+          Encoding::APPLICATION_X_WWW_FORM_URLENCODED => {
+            let json_data: String = body.render(ctx);
+            let deserialized_data: serde_json::Value = serde_json::from_str(&json_data).unwrap();
+            let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
+            req.body_mut().replace(form_data.into());
+          }
+        }
+        }
     req
   }
 
@@ -116,10 +128,15 @@ impl RequestTemplate {
     }
 
     let headers = req.headers_mut();
+    // We want to set the header value based on encoding
     headers.insert(
       reqwest::header::CONTENT_TYPE,
-      HeaderValue::from_static("application/json"),
+      match self.encoding {
+        Encoding::APPLICATION_JSON => HeaderValue::from_static("application/json"),
+        Encoding::APPLICATION_X_WWW_FORM_URLENCODED => HeaderValue::from_static("application/x-www-form-urlencoded"),
+      },
     );
+
     headers.extend(ctx.headers().to_owned());
     req
   }
@@ -132,6 +149,7 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
+      encoding: Default::default()
     })
   }
 }
@@ -157,8 +175,9 @@ impl TryFrom<Endpoint> for RequestTemplate {
     } else {
       None
     };
+    let encoding = endpoint.encoding.clone();
 
-    Ok(Self { root_url: path, query, method, headers, body, endpoint })
+    Ok(Self { root_url: path, query, method, headers, body, endpoint, encoding })
   }
 }
 
@@ -302,6 +321,20 @@ mod tests {
     assert_eq!(req.headers().get("foo").unwrap(), "0");
     assert_eq!(req.headers().get("bar").unwrap(), "1");
     assert_eq!(req.headers().get("baz").unwrap(), "2");
+  }
+  #[test]
+  fn test_encoding_application_json() {
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::APPLICATION_JSON);
+    let ctx = Context::default();
+    let req = tmpl.to_request(&ctx).unwrap();
+    assert_eq!(req.headers().get("Content-Type").unwrap(), "application/json");
+  }
+  #[test]
+  fn test_encoding_application_x_www_form_urlencoded() {
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::APPLICATION_X_WWW_FORM_URLENCODED);
+    let ctx = Context::default();
+    let req = tmpl.to_request(&ctx).unwrap();
+    assert_eq!(req.headers().get("Content-Type").unwrap(), "application/x-www-form-urlencoded");
   }
   #[test]
   fn test_method() {

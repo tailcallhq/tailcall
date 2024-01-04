@@ -385,6 +385,8 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub encoding: Encoding,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -482,6 +484,13 @@ impl Config {
 
     config_reader.read().await
   }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub enum Encoding {
+  #[default]
+  APPLICATION_JSON,
+  APPLICATION_X_WWW_FORM_URLENCODED,
 }
 
 #[cfg(test)]

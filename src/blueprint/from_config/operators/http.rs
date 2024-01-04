@@ -167,7 +167,8 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               .query(query)
               .output(output_schema)
               .input(input_schema)
-              .body(http.body.clone()),
+              .body(http.body.clone())
+              .encoding(http.encoding.clone())
           )
           .map(|req_tmpl| req_tmpl.headers(headers))
           .map_err(|e| ValidationError::new(e.to_string()))
