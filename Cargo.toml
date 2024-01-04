@@ -34,7 +34,7 @@ base64 = "0.21"
 indexmap = "2.1"
 once_cell = "1.19.0"
 mini-v8 = { version = "0.4.1", optional = true }
-clap = { version = "4.4.12", features = ["derive"] }
+clap = { version = "4.4.13", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 http-cache-reqwest = { version = "0.12.0", features = [
