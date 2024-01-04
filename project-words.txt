@@ -1,0 +1,4 @@
+tailcall
+tailcallrc
+entr
+jsonplaceholder
