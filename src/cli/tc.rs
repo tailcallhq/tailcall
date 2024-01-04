@@ -12,7 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
-use crate::config::{Config, Source};
+use crate::config::{Config};
 use crate::http::Server;
 use crate::print_schema;
 
