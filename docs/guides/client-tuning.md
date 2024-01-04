@@ -52,10 +52,6 @@ You can learn more about QUIC in detail [here](https://blog.cloudflare.com/the-r
 
 Connection pooling helps mitigate the above issues by reusing existing connections for multiple requests. This reduces the frequency of connection establishments (and thus the handshake overhead) and also conserves client-side ports. This approach enhances application performance by minimizing the resources and time spent on managing connections.
 
-:::tip
-Run thorough benchmarks and tests on a real usecase and try out different client tunings to find what works best for you.
-:::
-
 ## Tuning HTTP Client
 
 Tailcall by default uses connection pooling to manage connections and is setup with a default tuning which works well for most of the use cases. However, there are some cases where you might want to tune the HTTP client further to improve the performance of your application. Tailcall DSL provides an operator named [@upstream] which can help you to tune the HTTP client.
@@ -86,10 +82,6 @@ schema
 Keeping too many idle connections can unnecessarily tie up memory and ports, while too few might lead to delays as new connections have to be established frequently. By limiting the number of idle connections, `poolMaxIdlePerHost` ensures that the system uses network and memory resources judiciously, avoiding wastage on connections that are rarely used.
 
 If you have an application which connects to many hosts you should set this value to a lower number that way you will have connections available to connect to other hosts. On the other hand if you a few hosts and all requests have to be resolved by those hosts, you should keep a higher value for this setting.
-
-:::tip
-To get maximum performance, make sure to set it to a number that is greater than the number of concurrent requests you expect to make to a single host.
-:::
 
 ### tcpKeepAlive
 
@@ -125,3 +117,5 @@ schema
   query: Query
 }
 ```
+
+In summary, the key to maximizing HTTP client performance lies in understanding the underlying protocols and thoughtful configuration of client settings through test. By doing so, developers can ensure efficient, robust, and high-performing client-server communication, essential for the smooth operation of modern web applications.
