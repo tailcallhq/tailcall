@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
-use async_graphql::{Response, *};
+use async_graphql::Response;
 use derive_setters::Setters;
 use serde_json::Value;
 
@@ -230,6 +230,10 @@ impl Blueprint {
       .disable_introspection()
       .finish()
       .unwrap()
+  }
+
+  pub async fn validate_operation(schema: &Schema, query: &str) -> Valid<(), String> {
+    todo!()
   }
 
   pub async fn validate_operations(&self, operations: Vec<String>) -> Valid<(), String> {
