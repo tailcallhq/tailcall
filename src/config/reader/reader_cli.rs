@@ -3,8 +3,8 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use url::Url;
 
-use crate::config::{Config, Source};
 use crate::config::reader::ConfigReader;
+use crate::config::{Config, Source};
 
 impl ConfigReader {
   pub async fn read(&self) -> anyhow::Result<Config> {
