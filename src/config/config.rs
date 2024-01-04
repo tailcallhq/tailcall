@@ -402,7 +402,7 @@ pub enum ExprBody {
   Const(Const),
   #[serde(rename = "if")]
   If {
-    condition: Box<ExprBody>,
+    cond: Box<ExprBody>,
     then: Box<ExprBody>,
     #[serde(rename = "else")]
     els: Box<ExprBody>,

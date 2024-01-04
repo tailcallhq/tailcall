@@ -70,15 +70,17 @@ fn compile_if(input: CompileIf) -> Valid<Expression, String> {
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-    if is_effect(&expr) {
-        compile_effect(context, expr)
-    } else {
-        match expr {
-            ExprBody::If { condition, then, els } => compile_if(CompileIf { context, condition, then, els }).trace("if"),
-                _ => Valid::fail(format!("unsupported expression")) // unreachable if is_effect is
-                                                                    // correct
-        }
+  if is_effect(&expr) {
+    compile_effect(context, expr)
+  } else {
+    match expr {
+      ExprBody::If { cond: condition, then, els } => {
+        compile_if(CompileIf { context, condition, then, els }).trace("if")
+      }
+      _ => Valid::fail("unsupported expression".to_string()), // unreachable if is_effect is
+                                                              // correct
     }
+  }
 }
 
 pub fn update_expr(

@@ -7,9 +7,7 @@ The **@expr** operator allows composing operators with simple expressions. For e
 ```graphql showLineNumbers
 type Query {
   getUser(id: Int!): User
-    @expr(
-      body: {if: {condition: {const: {data: true}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}}
-    )
+    @expr(body: {if: {cond: {const: {data: true}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}})
 }
 ```
 

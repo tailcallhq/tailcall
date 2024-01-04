@@ -9,19 +9,11 @@ type Query {
   user(id: Int!): User @expr(body: {http: {path: "/users/{{args.id}}"}})
 
   getUserIdTwo: User
-    @expr(
-      body: {if: {condition: {const: {data: true}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}}
-    )
+    @expr(body: {if: {cond: {const: {data: true}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}})
 
   getUserIdOne: User
     @expr(
-      body: {
-        if: {
-          condition: {const: {data: false}}
-          then: {http: {path: "/users/2"}}
-          else: {http: {path: "/users/1"}}
-        }
-      }
+      body: {if: {cond: {const: {data: false}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}}
     )
 }
 

@@ -23,7 +23,7 @@ type Post {
 }
 
 type Query {
-  conditional: Post @expr(body: {if: {condition: {const: {data: true}}, else: {http: {path: "/posts/1"}}, then: {http: {path: "/posts/2"}}}})
+  conditional: Post @expr(body: {if: {cond: {const: {data: true}}, else: {http: {path: "/posts/1"}}, then: {http: {path: "/posts/2"}}}})
   greeting: String @expr(body: {const: {data: "hello from server"}})
   newsByIdBatch(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService"}})
   post(id: Int!): Post @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}})
