@@ -178,26 +178,18 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Run Criterion Benchmarks
-        run: |
-          cargo install cargo-criterion rust-script
-          cargo criterion --message-format=json > benches/benchmarks.json
-          ./scripts/json_to_md.rs benches/benchmarks.json > benches/change_benchmarks.md
-
-      - name: Print Criterion Benchmarks
-        run: cat benches/change_benchmarks.md
-
       - name: Restore file
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
+
+      - name: Restore file
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_e67f16a89dce8897a2692915ca00134e5656932f
           fail-on-cache-miss: true
 
       - name: Print Benchmark Comparision
