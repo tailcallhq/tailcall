@@ -169,7 +169,7 @@ jobs:
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
-    if: github.ref != 'refs/heads/main'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
