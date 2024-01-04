@@ -1,7 +1,7 @@
-use crate::config::reader::ConfigReader;
 use anyhow::anyhow;
 use url::Url;
 
+use crate::config::reader::ConfigReader;
 use crate::config::{Config, Source};
 
 impl ConfigReader {
