@@ -6,12 +6,39 @@ The **@expr** operator allows composing operators with simple expressions. For e
 
 ```graphql showLineNumbers
 type Query {
-  user(id: Int!): [User] @expr(body: {http: {path: "/users/{{args.id}}"}})
+  getUser(id: Int!): User
+      @expr(
+        body: {
+          if: {
+            condition: {const: {data: true}}
+            then: {http: {path: "/users/2"}}
+            else: {http: {path: "/users/1"}}
+          }
+        }
+      )
 }
 ```
 
 ## body
 
-Can be any existing resolver: [@http](#http), [@grpc](#grpc), [@graphQL](#graphql) or [@const](#const).
+The `body` holds your expression in the form of a tree with nodes representing operations to be performed. The following nodes are supported.
 
-The `body` object can only have one field.
+### http
+
+Equivalent to [@http](#http)
+
+### const
+
+Equivalent to [@const](#const)
+
+### grpc
+
+Equivalent to [@grpc](#grpc)
+
+### graphQL
+
+Equivalent to [@graphQL](#graphQL)
+
+### if
+
+Allows branching based on conditions
