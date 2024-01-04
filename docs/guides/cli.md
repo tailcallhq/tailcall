@@ -12,7 +12,7 @@ The `check` command validates a composition spec. Notably, this command can dete
 tailcall check [options] <file>...
 ```
 
-The `check` command offers various options that control different settings, such as the display of the blueprint, endpoints, and schema of the composition spec.
+The `check` command offers various options that control different settings, such as the display of the generated schema, n + 1 issues etc.
 
 ### --n-plus-one-queries
 
@@ -42,16 +42,6 @@ Example:
 
 ```bash
 tailcall check --schema ./path/to/file1.graphql ./path/to/file2.graphql
-```
-
-### --blueprint
-
-This option prints the generated blueprint of the composed spec.
-
-Example:
-
-```bash
-tailcall check /path/to/file1.graphql ./path/to/file2.graphql --blueprint
 ```
 
 ## compose

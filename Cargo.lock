@@ -3274,7 +3274,6 @@ dependencies = [
  "futures-timer",
  "futures-util",
  "http-cache-reqwest",
- "http-serde",
  "httpmock",
  "hyper",
  "hyper-rustls",

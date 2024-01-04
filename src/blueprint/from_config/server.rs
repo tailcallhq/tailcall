@@ -9,7 +9,7 @@ use serde::Serialize;
 use crate::config::{self, HttpVersion};
 use crate::valid::{Valid, ValidationError};
 
-#[derive(Clone, Debug, Setters, Serialize)]
+#[derive(Clone, Debug, Setters)]
 pub struct Server {
   pub enable_apollo_tracing: bool,
   pub enable_cache_control_header: bool,
@@ -23,7 +23,6 @@ pub struct Server {
   pub port: u16,
   pub hostname: IpAddr,
   pub vars: BTreeMap<String, String>,
-  #[serde(with = "http_serde::header_map")]
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,

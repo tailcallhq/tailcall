@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use reqwest::Request;
-use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -26,7 +25,7 @@ use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum Expression {
   Context(Context),
   Literal(Value), // TODO: this should async_graphql::Value
@@ -35,29 +34,25 @@ pub enum Expression {
   Input(Box<Expression>, Vec<String>),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum Context {
   Value,
   Path(Vec<String>),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum Unsafe {
   Http {
-    #[serde(skip)]
     req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
-    #[serde(skip)]
     dl_id: Option<DataLoaderId>,
   },
-  #[serde(skip)]
   GraphQLEndpoint {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,
   },
-  #[serde(skip)]
   Grpc {
     req_template: grpc::RequestTemplate,
     group_by: Option<GroupBy>,
@@ -69,7 +64,7 @@ pub enum Unsafe {
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(pub usize);
 
-#[derive(Debug, Error, Serialize)]
+#[derive(Debug, Error)]
 pub enum EvaluationError {
   #[error("IOException: {0}")]
   IOException(String),

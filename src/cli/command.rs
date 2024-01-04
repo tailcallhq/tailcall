@@ -42,10 +42,6 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
-
-    /// Display the generated blueprint on the console
-    #[arg(short, long)]
-    blueprint: bool,
   },
 
   /// Merge multiple configuration file into one
