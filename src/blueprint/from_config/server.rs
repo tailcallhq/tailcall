@@ -4,7 +4,6 @@ use std::net::{AddrParseError, IpAddr};
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
-use serde::Serialize;
 
 use crate::config::{self, HttpVersion};
 use crate::valid::{Valid, ValidationError};
@@ -28,7 +27,7 @@ pub struct Server {
   pub pipeline_flush: bool,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum Http {
   HTTP1,
   HTTP2 { cert: String, key: String },

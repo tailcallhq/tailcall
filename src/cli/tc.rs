@@ -39,10 +39,10 @@ pub fn run() -> Result<()> {
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
-        Ok(generated_blueprint) => {
+        Ok(blueprint) => {
           display_config(&config, n_plus_one_queries);
           if schema {
-            display_schema(&generated_blueprint);
+            display_schema(&blueprint);
           }
 
           Ok(())
