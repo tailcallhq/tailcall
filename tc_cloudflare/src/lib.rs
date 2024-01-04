@@ -5,7 +5,7 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
-use tailcall::http::{handle_request, DefaultHttpClient, ServerContext};
+use tailcall::http::{handle_request, ServerContext};
 use worker::*;
 
 lazy_static! {

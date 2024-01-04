@@ -4,7 +4,6 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
-use crate::config;
 use crate::config::Upstream;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::http::{HttpClient, Response};
