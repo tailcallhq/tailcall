@@ -56,27 +56,11 @@ template: |
   $CHANGES
 autolabeler:
   - label: "type: chore"
-    files:
-      - "*.yml"
-      - "*.conf"
-      - "*.sbt"
-      - "*.json"
-      - "*.xml"
-      - "Dockerfile"
-    branch:
-      - '/chore\/.+/'
-      - '/refactor\/.+/'
-      - '/maintenance\/.+/'
     title:
       - /chore/i
       - /refactor/i
 
   - label: "type: fix"
-    branch:
-      - '/fix\/.+/'
-      - '/hotfix\/.+/'
-      - '/bugfix\/.+/'
-      - '/patch\/.+/'
     title:
       - /fix/i
       - /hotfix/i
@@ -84,11 +68,6 @@ autolabeler:
       - /patch/i
 
   - label: "type: feature"
-    branch:
-      - '/feat\/.+/'
-      - '/feature\/.+/'
-      - '/enhancement\/.+/'
-      - '/new\/.+/'
     title:
       - /feat/i
       - /feature/i
@@ -96,15 +75,6 @@ autolabeler:
       - /new/i
 
   - label: "type: docs"
-    files:
-      - "*.md"
-      - "*.txt"
-      - "*.rst"
-      - "*.wiki"
-      - "*.html"
-    branch:
-      - '/doc\/.+/'
-      - '/docs\/.+/'
     title:
       - /doc/i
       - /docs/i
