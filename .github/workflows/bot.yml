@@ -170,7 +170,7 @@ jobs:
   Criterion_Compare:
     name: Comparing Micro Benchmarks
     if: github.ref != 'refs/heads/main'
-    runs-on: benchmarking-runner
+    runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write
@@ -189,7 +189,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_e67f16a89dce8897a2692915ca00134e5656932f
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }} 
           fail-on-cache-miss: true
 
       - name: Print Benchmark Comparision
