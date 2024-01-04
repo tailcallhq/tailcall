@@ -4,8 +4,11 @@ schema @server {
 }
 
 type Query {
-  foo: String @expr(data: {effect: {const: {data: "John"}}})
+  foo: String @expr(data: {const: "John"})
+  bar: String @expr(body: {unsupported: true})
 }
 
 #> client-sdl
-type Failure @error(message: "Parsing failed because of missing field `body`", trace: ["Query", "foo", "@expr"])
+type Failure
+  @error(message: "Parsing failed because of missing field `body`", trace: ["@expr"])
+  @error(message: "Parsing failed because of unknown variant `unsupported`, expected one of `http`, `grpc`, `graphQL`, `const`, `if`", trace: ["@expr", "body"])
