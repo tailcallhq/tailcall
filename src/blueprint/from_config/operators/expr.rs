@@ -11,76 +11,39 @@ struct CompilationContext<'a> {
   config: &'a config::Config,
 }
 
-fn is_effect(expr: &ExprBody) -> bool {
-  match expr {
-    ExprBody::Http(_) | ExprBody::Grpc(_) | ExprBody::Const(_) | ExprBody::GraphQL(_) => true,
-    ExprBody::If { .. } => false,
-  }
-}
-
-fn compile_effect(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-  let operation_type = context.operation_type;
-  let config = context.config;
-  let config_field = context.config_field;
-
-  match expr {
-    ExprBody::Http(http) => compile_http(config, config_field, &http).trace("http"),
-    ExprBody::Const(const_field) => {
-      compile_const(CompileConst { config, field: config_field, value: &const_field, validate_with_schema: false })
-        .trace("const")
-    }
-    ExprBody::GraphQL(graphql) => compile_graphql(config, operation_type, &graphql).trace("graphql"),
-    ExprBody::Grpc(grpc) => compile_grpc(CompileGrpc {
-      config,
-      operation_type,
-      field: config_field,
-      grpc: &grpc,
-      validate_with_schema: false,
-    })
-    .trace("grpc"),
-    _ => Valid::fail(format!(
-      "expected one of http, const, grpc or graphql. Found {:?}",
-      expr
-    )),
-  }
-}
-
 struct CompileIf<'a> {
   context: &'a CompilationContext<'a>,
-  condition: Box<ExprBody>,
+  cond: Box<ExprBody>,
   then: Box<ExprBody>,
   els: Box<ExprBody>,
 }
 
 fn compile_if(input: CompileIf) -> Valid<Expression, String> {
   let context = input.context;
-  let condition = input.condition;
+  let cond = input.cond;
   let then = input.then;
   let els = input.els;
 
-  compile(context, *condition)
+  compile(context, *cond)
     .trace("cond")
     .map(Box::new)
     .zip(compile(context, *then).trace("then").map(Box::new))
     .zip(compile(context, *els).trace("else").map(Box::new))
-    .map(|((condition, then), els)| Expression::If { cond: condition, then, els })
+    .map(|((cond, then), els)| Expression::If { cond, then, els })
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-  if is_effect(&expr) {
-    compile_effect(context, expr)
-  } else {
-    match expr {
-      ExprBody::If { cond: condition, then, els } => {
-        compile_if(CompileIf { context, condition, then, els }).trace("if")
-      }
+    let config = context.config;
+    let field = context.config_field;
+    let operation_type = context.operation_type;
 
-      _ => {
-        // unreachable if is_effect handled above
-        unreachable!("unsupported expression")
-      }
+    match expr {
+        ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }).trace("if"),
+        ExprBody::Http(http) => compile_http(config, field, &http).trace("http"),
+        ExprBody::Grpc(grpc) => compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false }).trace("grpc"),
+        ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql).trace("graphQL"),
+        ExprBody::Const(value) => compile_const(CompileConst {config, field, value: &value, validate_with_schema: false}).trace("const"),
     }
-  }
 }
 
 pub fn update_expr(

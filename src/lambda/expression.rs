@@ -186,8 +186,8 @@ impl Expression {
           }
         },
 
-        Expression::If { cond: condition, then, els } => {
-          let cond = condition.eval(ctx).await?;
+        Expression::If { cond, then, els } => {
+          let cond = cond.eval(ctx).await?;
           if is_truthy(cond) {
             then.eval(ctx).await
           } else {
