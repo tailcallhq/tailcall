@@ -49,6 +49,9 @@ impl OperationSpec {
       if component.contains(SPEC_FAIL) {
         spec = spec.annotation(Some(Annotation::Fail));
       }
+      if component.contains(SERVER_SDL) {
+        spec = spec.server_sdl(component.replace(SERVER_SDL, "").trim().to_string());
+      }
       if component.contains(CLIENT_QUERY) {
         let regex = Regex::new(r"@diagnostic.*\) ").unwrap();
         let query_string = component.replace(CLIENT_QUERY, "");
