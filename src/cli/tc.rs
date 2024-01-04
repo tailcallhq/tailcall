@@ -34,7 +34,7 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema, out_file_path } => {
+    Command::Check { file_path, n_plus_one_queries, schema } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
@@ -44,16 +44,19 @@ pub fn run() -> Result<()> {
           if schema {
             display_schema(&blueprint);
           }
-          if let Some(out_file) = out_file_path {
-            tokio::runtime::Runtime::new()?.block_on(async { config.write_file(&out_file).await })?;
-            Fmt::display(Fmt::success(
-              &format!("Schema has been written to {}", out_file).to_string(),
-            ));
-          }
+
           Ok(())
         }
         Err(e) => Err(e.into()),
       }
+    }
+    Command::Compose { file_path, format } => {
+      let config =
+        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
+
+      Fmt::display(format.encode(config)?);
+
+      Ok(())
     }
     Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
