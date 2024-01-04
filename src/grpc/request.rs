@@ -6,9 +6,10 @@ use url::Url;
 use super::protobuf::ProtobufOperation;
 use crate::http::{HttpClient, Response};
 
-pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> reqwest::Request {
-  let mut req = reqwest::Request::new(Method::POST, url);
-  *req.version_mut() = reqwest::Version::HTTP_2;
+pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
+  let mut req = Request::new(Method::POST, url);
+  #[cfg(feature = "default")]
+  super::set_req_version(&mut req);
   req.headers_mut().extend(headers.clone());
   req.body_mut().replace(body.into());
 
@@ -20,15 +21,10 @@ pub async fn execute_grpc_request(
   operation: &ProtobufOperation,
   request: Request,
 ) -> Result<Response> {
-  let response = client.execute_raw(request).await?;
-  let status = response.status();
-  let headers = response.headers().to_owned();
+  let response = client.execute(request, Some(operation.clone())).await?;
 
-  if status.is_success() {
-    let bytes = response.bytes().await?;
-    let body = operation.convert_output(&bytes)?;
-
-    return Ok(Response { status, headers, body });
+  if response.status.is_success() {
+    return Ok(response);
   }
 
   bail!("Failed to execute request")

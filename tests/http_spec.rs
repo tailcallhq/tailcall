@@ -19,6 +19,7 @@ use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
+use tailcall::grpc::protobuf::ProtobufOperation;
 use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
 use url::Url;
 
@@ -219,7 +220,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, req: reqwest::Request, operation: Option<ProtobufOperation>) -> anyhow::Result<Response> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 

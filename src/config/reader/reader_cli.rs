@@ -6,17 +6,10 @@ use url::Url;
 use crate::config::{Config, Source};
 
 pub struct ConfigReader {
-  file_paths: Vec<String>,
+  pub file_paths: Vec<String>,
 }
 
 impl ConfigReader {
-  pub fn init<Iter>(file_paths: Iter) -> Self
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
-  }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
     for path in &self.file_paths {

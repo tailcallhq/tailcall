@@ -6,6 +6,7 @@ use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
 use tailcall::config::Batch;
+use tailcall::grpc::protobuf::ProtobufOperation;
 use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 
 #[derive(Clone)]
@@ -16,7 +17,7 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, req: reqwest::Request, operation: Option<ProtobufOperation>) -> anyhow::Result<Response> {
     self.request_count.fetch_add(1, Ordering::SeqCst);
     // You can mock the actual response as per your need
     Ok(Response::default())
