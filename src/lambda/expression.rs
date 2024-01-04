@@ -220,31 +220,6 @@ fn is_truthy(value: async_graphql::Value) -> bool {
   }
 }
 
-#[cfg(test)]
-mod tests {
-    use async_graphql::{Number, Value, Name};
-    use indexmap::IndexMap;
-    use hyper::body::Bytes;
-    use super::is_truthy;
-
-    #[test]
-    fn test_is_truthy() {
-        assert!(is_truthy(Value::Enum(Name::new("EXAMPLE"))));
-        assert!(is_truthy(Value::List(vec![])));
-        assert!(is_truthy(Value::Object(IndexMap::default())));
-        assert!(is_truthy(Value::String("Hello".to_string())));
-        assert!(is_truthy(Value::Boolean(true)));
-        assert!(is_truthy(Value::Number(Number::from(1))));
-        assert!(is_truthy(Value::Binary(Bytes::from_static(&[0, 1, 2]))));
-
-        assert!(!is_truthy(Value::Null));
-        assert!(!is_truthy(Value::String("".to_string())));
-        assert!(!is_truthy(Value::Boolean(false)));
-        assert!(!is_truthy(Value::Number(Number::from(0))));
-        assert!(!is_truthy(Value::Binary(Bytes::default())));
-    }
-}
-
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
   if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
     if let Some(policy) = cache_policy(res) {
@@ -347,4 +322,30 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   }
 
   Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default())
+}
+
+#[cfg(test)]
+mod tests {
+  use async_graphql::{Name, Number, Value};
+  use hyper::body::Bytes;
+  use indexmap::IndexMap;
+
+  use super::is_truthy;
+
+  #[test]
+  fn test_is_truthy() {
+    assert!(is_truthy(Value::Enum(Name::new("EXAMPLE"))));
+    assert!(is_truthy(Value::List(vec![])));
+    assert!(is_truthy(Value::Object(IndexMap::default())));
+    assert!(is_truthy(Value::String("Hello".to_string())));
+    assert!(is_truthy(Value::Boolean(true)));
+    assert!(is_truthy(Value::Number(Number::from(1))));
+    assert!(is_truthy(Value::Binary(Bytes::from_static(&[0, 1, 2]))));
+
+    assert!(!is_truthy(Value::Null));
+    assert!(!is_truthy(Value::String("".to_string())));
+    assert!(!is_truthy(Value::Boolean(false)));
+    assert!(!is_truthy(Value::Number(Number::from(0))));
+    assert!(!is_truthy(Value::Binary(Bytes::default())));
+  }
 }
