@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use reqwest::Request;
-use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -70,7 +69,7 @@ pub enum Unsafe {
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(pub usize);
 
-#[derive(Debug, Error, Serialize)]
+#[derive(Debug, Error)]
 pub enum EvaluationError {
   #[error("IOException: {0}")]
   IOException(String),

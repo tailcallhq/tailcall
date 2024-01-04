@@ -5,7 +5,7 @@ on:
     paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
-  pull_request:
+  pull_request_target:
     paths-ignore: ["docs/**", "**.md"]
     types: [opened, synchronize, labeled]
     branches:
@@ -169,7 +169,7 @@ jobs:
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
-    if: github.ref != 'refs/heads/main'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write

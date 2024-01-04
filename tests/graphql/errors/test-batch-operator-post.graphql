@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server @upstream(baseURL: "http://localhost:3000") {
+schema @server @upstream(baseURL: "http://localhost:3000", batch: {delay: 1}) {
   query: Query
 }
 
