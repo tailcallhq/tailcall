@@ -1,6 +1,5 @@
 use async_graphql_value::ConstValue;
 
-
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field};

@@ -1,0 +1,12 @@
+#> server-sdl
+schema @server {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  foo: String @expr(data: {effect: {const: {data: "John"}}})
+}
+
+#> client-sdl
+type Failure @error(message: "Parsing failed because of missing field `body`", trace: ["Query", "foo"])

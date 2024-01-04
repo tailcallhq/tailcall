@@ -413,15 +413,6 @@ pub enum ExprBody {
     #[serde(rename = "else")]
     els: Box<ExprBody>,
   },
-  // #[serde(rename = "gt")]
-  // GreaterThan {
-  //     left: Box<ExprBody>,
-  //     right: Box<ExprBody>,
-  // },
-  // #[serde(rename = "literal")]
-  // Literal(Value),
-  // #[serde(rename = "var")]
-  // Variable(String)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

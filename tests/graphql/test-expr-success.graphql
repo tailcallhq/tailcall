@@ -23,6 +23,7 @@ type Post {
 }
 
 type Query {
+  conditional: Post @expr(body: {if: {condition: {effect: {const: {data: true}}}, else: {effect: {http: {path: "/posts/1"}}}, then: {effect: {http: {path: "/posts/2"}}}}})
   greeting: String @expr(body: {effect: {const: {data: "hello from server"}}})
   newsByIdBatch(news: NewsInput!): News! @expr(body: {effect: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService"}}})
   post(id: Int!): Post @expr(body: {effect: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}}})
@@ -49,6 +50,7 @@ type Post {
 }
 
 type Query {
+  conditional: Post
   greeting: String
   newsByIdBatch(news: NewsInput!): News!
   post(id: Int!): Post
