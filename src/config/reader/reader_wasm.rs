@@ -1,8 +1,7 @@
-use anyhow::anyhow;
 use url::Url;
 
 use crate::config::reader::ConfigReader;
-use crate::config::{Config, Source};
+use crate::config::Config;
 
 impl ConfigReader {
   pub async fn read(&self) -> anyhow::Result<Config> {
