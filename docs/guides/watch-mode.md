@@ -125,6 +125,6 @@ To make the most of running a server in watch mode with `entr`, consider the fol
 
 4. **Version Control**: Ensure that your project is under version control (e.g., Git) to track changes and easily revert if necessary.
 
-5. **Update `entr`**: Kepp `entr` up to date with the latest version to benefit from bug fixes and improvements.
+5. **Update `entr`**: Keep `entr` up to date with the latest version to benefit from bug fixes and improvements.
 
 By following these best practices and using `entr` effectively, you can significantly improve your development workflow. Experiment with `entr`, adapt it to your project's specific requirements, and enjoy a smoother and more efficient development process. Happy coding!
