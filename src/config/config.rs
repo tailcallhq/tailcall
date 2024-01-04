@@ -129,7 +129,7 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let links = merge_links(self.links, other.links.clone());
+    let links = merge_links(self.links, other.links.clone()).unwrap();
 
     Self { server, upstream, types, schema, unions, links }
   }
@@ -214,21 +214,13 @@ fn merge_unions(
   self_unions
 }
 
-pub fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    let runtime = tokio::runtime::Runtime::new().unwrap();
-
-    let links: Vec<_> = other_links
-        .into_iter()
-        .map(|mut link| {
-            runtime.block_on(async {
-                let _ = Link::read_link_type(&mut link).await;
-                link
-            })
-        })
-        .collect();
-
-    self_links.extend(links);
-    self_links
+pub fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> anyhow::Result<Vec<Link>> {
+  let runtime = tokio::runtime::Runtime::new()?;
+  for link in other_links {
+    let link = runtime.block_on(async { Link::resolve_recurse(link).await })?;
+    self_links.push(link);
+  }
+  Ok(self_links)
 }
 
 

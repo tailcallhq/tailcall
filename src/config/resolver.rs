@@ -28,21 +28,22 @@ pub struct Link {
 
 impl Link {
 
-  pub async fn read_link_type(&mut self) -> Result<(), anyhow::Error> {
+  pub async fn resolve_recurse(self) -> anyhow::Result<Link> {
+    let mut link = self.clone();
     if let Ok(url) = Url::parse(&self.src) {
       let resp = reqwest::get(url).await?;
       if !resp.status().is_success() {
         return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
       }
-      self.content = Some(resp.text().await?);
+      link.content = Some(resp.text().await?);
     } else {
       let path = &self.src.trim_end_matches('/');
       let mut f = File::open(path).await?;
       let mut buffer = Vec::new();
       f.read_to_end(&mut buffer).await?;
-      self.content = Some(String::from_utf8(buffer)?);
+      link.content = Some(String::from_utf8(buffer)?);
     };
-    
-    Ok(())
+    Ok(link)
   }
+
 }

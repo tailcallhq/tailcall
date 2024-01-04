@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use super::Cache;
-use crate::config::{self, Config, GraphQL, RootSchema, Server, Union, Upstream, Link};
+use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream, Link};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
