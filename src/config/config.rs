@@ -391,7 +391,7 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum ExprEffect {
+pub enum ExprBody {
   #[serde(rename = "http")]
   Http(Http),
   #[serde(rename = "grpc")]
@@ -400,12 +400,6 @@ pub enum ExprEffect {
   GraphQL(GraphQL),
   #[serde(rename = "const")]
   Const(Const),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum ExprBody {
-  #[serde(rename = "effect")]
-  Effect(ExprEffect),
   #[serde(rename = "if")]
   If {
     condition: Box<ExprBody>,
