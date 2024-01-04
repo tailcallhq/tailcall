@@ -15,7 +15,7 @@
         "test-expr-success.graphql"
       ],
       "options": {
-        "printWidth": 216
+        "printWidth": 200
       }
     }
   ]
