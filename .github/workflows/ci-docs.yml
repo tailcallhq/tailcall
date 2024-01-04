@@ -38,5 +38,6 @@ jobs:
 
       - name: Run grammar check
         uses: awreck/proofread-action@v1
+        id: proofread
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
