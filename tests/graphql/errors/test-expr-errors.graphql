@@ -1,7 +1,6 @@
 #> server-sdl
 schema @server {
   query: Query
-  mutation: Mutation
 }
 
 type Query {
@@ -9,4 +8,4 @@ type Query {
 }
 
 #> client-sdl
-type Failure @error(message: "Parsing failed because of missing field `body`", trace: ["Query", "foo"])
+type Failure @error(message: "Parsing failed because of missing field `body`", trace: ["Query", "foo", "@expr"])
