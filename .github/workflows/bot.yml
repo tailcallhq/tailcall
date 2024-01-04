@@ -182,7 +182,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
-          key: criterion_benchmarks_main-
+          key: criterion_benchmarks_${{ github.event.pull_request.base_ref }} 
           fail-on-cache-miss: true
 
       - name: Restore file
