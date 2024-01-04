@@ -40,4 +40,7 @@ impl OperationSpec {
 }
 
 #[test]
-fn test_schema_operations() {}
+fn test_schema_operations() {
+  let _specs = OperationSpec::cargo_read("tests/graphql/operations");
+  println!("{:?}", _specs)
+}
