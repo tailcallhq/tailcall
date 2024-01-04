@@ -16,6 +16,7 @@ on:
 
 jobs:
   check_spelling:
+    permissions: write-all
     name: Check spelling
     runs-on: ubuntu-latest
 
