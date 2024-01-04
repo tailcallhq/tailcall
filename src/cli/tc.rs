@@ -1,9 +1,9 @@
-use std::fs;
+use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
+use env_logger::Env;
 use inquire::Confirm;
-use log::Level;
 use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
@@ -19,11 +19,10 @@ use crate::print_schema;
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
+  logger_init();
+
   match cli.command {
-    Command::Start { file_paths, log_level } => {
-      env_logger::Builder::new()
-        .filter_level(log_level.unwrap_or(Level::Info).to_level_filter())
-        .init();
+    Command::Start { file_paths } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
@@ -63,11 +62,11 @@ pub fn run() -> Result<()> {
 pub async fn init(file_path: &str) -> Result<()> {
   let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
 
-  let ans = Confirm::new("Do you want to add a file to the project?")
+  let answer = Confirm::new("Do you want to add a file to the project?")
     .with_default(false)
     .prompt();
 
-  match ans {
+  match answer {
     Ok(true) => {
       let file_name = inquire::Text::new("Enter the file name:")
         .with_default(".graphql")
@@ -119,4 +118,21 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
+}
+
+// initialize logger
+fn logger_init() {
+  // set the log level
+  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
+  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
+
+  // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
+  let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
+    .map(|_| LONG_ENV_FILTER_VAR_NAME)
+    .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
+
+  // use the log level from the env if there is one, otherwise use the default.
+  let env = Env::new().filter_or(filter_env_name, "info");
+
+  env_logger::Builder::from_env(env).init();
 }

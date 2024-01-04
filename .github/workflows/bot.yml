@@ -2,9 +2,11 @@ name: Benchmark
 
 on:
   push:
+    paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
   pull_request:
+    paths-ignore: ["docs/**", "**.md"]
     types: [opened, synchronize, labeled]
     branches:
       - main
@@ -19,7 +21,7 @@ on:
 jobs:
   benchmark:
     name: Macro Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark') || github.event_name == 'push'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
@@ -51,7 +53,7 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          ./target/release/tailcall start ci-benchmark/benchmark.graphql --log-level error &
+          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/benchmark.graphql &
 
       - name: Install Wrk
         run: |
@@ -102,7 +104,7 @@ jobs:
 
   lint:
     name: CI:Lint
-    if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: lint')"
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -141,7 +143,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -156,10 +158,50 @@ jobs:
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
-          rust-script benches/parse_json_benchmark benches/main_benchmarks.json
+          ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
+          cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
         uses: actions/cache@v3
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
+
+  Criterion_Compare:
+    name: Comparing Micro Benchmarks
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Run Criterion Benchmarks
+        run: |
+          cargo install cargo-criterion rust-script
+          cargo criterion --message-format=json > benches/benchmarks.json
+          ./scripts/json_to_md.rs benches/benchmarks.json > benches/change_benchmarks.md
+
+      - name: Print Criterion Benchmarks
+        run: cat benches/change_benchmarks.md
+
+      - name: Restore file
+        uses: actions/cache@v3
+        with:
+          path: benches/main_benchmarks.json
+          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          fail-on-cache-miss: true
+
+      - name: Print Benchmark Comparision
+        run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table
+
+      - name: Check Degradation
+        run: ./scripts/criterion_compare.rs  benches/main_benchmarks.json benches/benchmarks.json check
