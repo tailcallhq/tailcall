@@ -35,21 +35,21 @@ pub use server_context::ServerContext;
 #[cfg(feature = "default")]
 use self::server_config::ServerConfig;
 
-pub fn cache_policy(res: &Response) -> Option<CacheControl> {
+pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;
   let value = header.to_str().ok()?;
 
   CacheControl::from_value(value)
 }
 
-pub fn max_age(res: &Response) -> Option<Duration> {
+pub fn max_age(res: &Response<async_graphql::Value>) -> Option<Duration> {
   match cache_policy(res) {
     Some(value) => value.max_age,
     None => None,
   }
 }
 
-pub fn cache_visibility(res: &Response) -> String {
+pub fn cache_visibility(res: &Response<async_graphql::Value>) -> String {
   let cachability = cache_policy(res).and_then(|value| value.cachability);
 
   match cachability {
@@ -61,7 +61,7 @@ pub fn cache_visibility(res: &Response) -> String {
 }
 
 /// Returns the minimum TTL of the given responses.
-pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
+pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response<async_graphql::Value>>) -> i32 {
   let mut min = -1;
 
   for res in res_vec {

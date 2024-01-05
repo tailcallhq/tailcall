@@ -58,7 +58,7 @@ impl HttpDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
-  type Value = Response;
+  type Value = Response<async_graphql::Value>;
   type Error = Arc<anyhow::Error>;
 
   async fn load(

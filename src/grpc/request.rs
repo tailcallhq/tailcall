@@ -20,11 +20,11 @@ pub async fn execute_grpc_request(
   client: &dyn HttpClient,
   operation: &ProtobufOperation,
   request: Request,
-) -> Result<Response> {
-  let response = client.execute(request, Some(operation.clone())).await?;
+) -> Result<Response<async_graphql::Value>> {
+  let response = client.execute::<Vec<u8>>(request).await?;
 
   if response.status.is_success() {
-    return Ok(response);
+    return Ok(response.to_value(Some(operation))?);
   }
 
   bail!("Failed to execute request")

@@ -1,24 +1,41 @@
 use anyhow::Result;
 use derive_setters::Setters;
-
 use crate::grpc::protobuf::ProtobufOperation;
 
 #[derive(Clone, Debug, Default, Setters)]
-pub struct Response {
+pub struct Response<Body: Default + Clone> {
   pub status: reqwest::StatusCode,
   pub headers: reqwest::header::HeaderMap,
-  pub body: async_graphql::Value,
+  pub body: Body,
 }
 
-impl Response {
-  pub async fn from_response(resp: reqwest::Response, operation: Option<ProtobufOperation>) -> Result<Self> {
+impl Response<async_graphql::Value> {
+  pub async fn from_response(resp: reqwest::Response) -> Result<Response<async_graphql::Value>> {
     let status = resp.status();
     let headers = resp.headers().to_owned();
-    let body = resp.bytes().await?;
-    let body = match operation {
-      None => serde_json::from_slice(&body)?,
-      Some(operation) => operation.convert_output(&body)?,
-    };
+    let body = resp.bytes().await?.to_vec();
+    let body = serde_json::from_slice(&body)?;
     Ok(Response { status, headers, body })
+  }
+}
+
+impl Response<Vec<u8>> {
+  pub async fn from_response(resp: reqwest::Response) -> Result<Response<Vec<u8>>> {
+    let status = resp.status();
+    let headers = resp.headers().to_owned();
+    let body = resp.bytes().await?.to_vec();
+    Ok(Response { status, headers, body })
+  }
+
+  pub fn to_value(self, operation: Option<&ProtobufOperation>) -> Result<Response<async_graphql::Value>> {
+    let mut resp = Response::default();
+    let body = match operation {
+      None => serde_json::from_slice::<async_graphql::Value>(&self.body)?,
+      Some(operation) => operation.convert_output(&self.body)?,
+    };
+    resp.body = body;
+    resp.status = self.status;
+    resp.headers = self.headers;
+    Ok(resp)
   }
 }

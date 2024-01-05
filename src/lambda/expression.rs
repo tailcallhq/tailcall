@@ -185,7 +185,7 @@ impl Expression {
   }
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response) {
+fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response<async_graphql::Value>) {
   if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
     if let Some(policy) = cache_policy(res) {
       ctx.req_ctx.set_cache_control(policy);
@@ -196,12 +196,12 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationConte
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
-) -> Result<Response> {
+) -> Result<Response<async_graphql::Value>> {
   Ok(
     ctx
       .req_ctx
       .universal_http_client
-      .execute(req, None)
+      .execute(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )
@@ -211,7 +211,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
   operation: &ProtobufOperation,
-) -> Result<Response> {
+) -> Result<Response<async_graphql::Value>> {
   Ok(
     execute_grpc_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
       .await
@@ -222,12 +222,12 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_grpc_request_with_dl<
   'ctx,
   Ctx: ResolverContextLike<'ctx>,
-  Dl: Loader<grpc::DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+  Dl: Loader<grpc::DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   rendered: RenderedRequestTemplate,
   data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
-) -> Result<Response> {
+) -> Result<Response<async_graphql::Value>> {
   let headers = ctx
     .req_ctx
     .upstream
@@ -250,12 +250,12 @@ async fn execute_grpc_request_with_dl<
 async fn execute_request_with_dl<
   'ctx,
   Ctx: ResolverContextLike<'ctx>,
-  Dl: Loader<DataLoaderRequest, Value = Response, Error = Arc<anyhow::Error>>,
+  Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
   data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
-) -> Result<Response> {
+) -> Result<Response<async_graphql::Value>> {
   let headers = ctx
     .req_ctx
     .upstream
@@ -277,7 +277,7 @@ async fn execute_request_with_dl<
 
 fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
-  res: Response,
+  res: Response<async_graphql::Value>,
   field_name: &str,
 ) -> Result<async_graphql::Value> {
   let res: async_graphql::Response = serde_json::from_value(res.body.into_json()?)?;
