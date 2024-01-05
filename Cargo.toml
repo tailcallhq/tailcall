@@ -90,7 +90,7 @@ default = ["tokio/fs", "tokio/rt-multi-thread", "mimalloc", "http-cache-reqwest"
 [workspace]
 members = [
    ".",
-   "tc_cloudflare"
+   "cloudflare"
 ]
 
 [[bench]]

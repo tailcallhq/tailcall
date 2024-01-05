@@ -778,6 +778,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
+name = "cloudflare"
+version = "0.1.0"
+dependencies = [
+ "hyper",
+ "lazy_static",
+ "tailcall",
+ "tokio",
+ "worker",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3379,17 +3390,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba323866e5d033818e3240feeb9f7db2c4296674e4d9e16b97b7bf8f490434e8"
 dependencies = [
  "pin-utils",
-]
-
-[[package]]
-name = "tc_cloudflare"
-version = "0.1.0"
-dependencies = [
- "hyper",
- "lazy_static",
- "tailcall",
- "tokio",
- "worker",
 ]
 
 [[package]]
