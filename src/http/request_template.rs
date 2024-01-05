@@ -24,7 +24,7 @@ pub struct RequestTemplate {
   pub headers: MustacheHeaders,
   pub body: Option<Mustache>,
   pub endpoint: Endpoint,
-  pub encoding: Encoding
+  pub encoding: Encoding,
 }
 
 impl RequestTemplate {
@@ -105,23 +105,23 @@ impl RequestTemplate {
   /// Sets the body for the request
   fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     if let Some(body) = &self.body {
-        match &self.encoding {
-          Encoding::ApplicationJson => {
-            req.body_mut().replace(body.render(ctx).into());
-          }
-          Encoding::ApplicationXWwwFormUrlencoded => {
-            let raw_data: String = body.render(ctx);
-            // The raw_data can be both JSON or plain string. If it is 
-            // JSON, we need to parse it, or, we can directly use it.
-            if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
-              let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
-              req.body_mut().replace(form_data.into());
-            } else {
-              req.body_mut().replace(raw_data.into());
-            } 
+      match &self.encoding {
+        Encoding::ApplicationJson => {
+          req.body_mut().replace(body.render(ctx).into());
+        }
+        Encoding::ApplicationXWwwFormUrlencoded => {
+          let raw_data: String = body.render(ctx);
+          // The raw_data can be both JSON or plain string. If it is
+          // JSON, we need to parse it, or, we can directly use it.
+          if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
+            let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
+            req.body_mut().replace(form_data.into());
+          } else {
+            req.body_mut().replace(raw_data.into());
           }
         }
-        }
+      }
+    }
     req
   }
 
@@ -155,7 +155,7 @@ impl RequestTemplate {
       headers: Default::default(),
       body: Default::default(),
       endpoint: Endpoint::new(root_url.to_string()),
-      encoding: Default::default()
+      encoding: Default::default(),
     })
   }
 }
@@ -330,17 +330,24 @@ mod tests {
   }
   #[test]
   fn test_header_encoding_application_json() {
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::ApplicationJson);
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationJson);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.headers().get("Content-Type").unwrap(), "application/json");
   }
   #[test]
   fn test_header_encoding_application_x_www_form_urlencoded() {
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.headers().get("Content-Type").unwrap(), "application/x-www-form-urlencoded");
+    assert_eq!(
+      req.headers().get("Content-Type").unwrap(),
+      "application/x-www-form-urlencoded"
+    );
   }
   #[test]
   fn test_method() {
