@@ -221,10 +221,6 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    /*if let Some(operation) = operation {
-      let raw = self.execute_raw(req).await?;
-      return Response::from_response(raw, Some(operation)).await;
-    }*/
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 
