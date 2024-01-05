@@ -207,7 +207,7 @@ directive @http(
   """
   The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
-  encoding: Encoding = ApplicationJson
+  encoding: Encoding
 ) on FIELD_DEFINITION
 
 """
