@@ -1,10 +1,7 @@
 mod remote_jwks;
 mod validation;
 
-use std::collections::HashSet;
 use std::fs;
-use std::num::NonZeroU64;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -12,61 +9,22 @@ use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
 use jwtk::jwk::{JwkSet, JwkSetVerifier};
 use jwtk::HeaderAndClaims;
-use serde::{Deserialize, Serialize};
 use url::Url;
 
 use self::remote_jwks::RemoteJwksVerifier;
 use self::validation::{validate_aud, validate_iss};
-use super::base::{AuthError, AuthProvider};
-use crate::config::is_default;
+use super::base::{AuthError, AuthProviderTrait};
+use crate::config::{JwksOptions, JwksVerifierOptions, JwtProviderOptions};
 use crate::helpers::config_path::config_path;
 use crate::http::{HttpClient, RequestContext};
 use crate::valid::{Valid, ValidationError};
-
-mod remote {
-  use std::num::NonZeroU64;
-
-  pub fn default_max_age() -> NonZeroU64 {
-    NonZeroU64::new(5 * 60 * 1000).unwrap()
-  }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum JwksVerifierOptions {
-  File(PathBuf),
-  #[serde(rename_all = "camelCase")]
-  Remote {
-    // TODO: could be Url, but parsing error in that case is misleading
-    // `Parsing failed because of invalid value: string \"__unknown.json\", expected relative URL without a base`
-    url: String,
-    #[serde(default = "remote::default_max_age")]
-    max_age: NonZeroU64,
-  },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct JwksOptions {
-  #[serde(default, skip_serializing_if = "is_default")]
-  optional_kid: bool,
-  #[serde(flatten)]
-  verifier: JwksVerifierOptions,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct JwtProviderOptions {
-  #[serde(skip_serializing_if = "is_default")]
-  pub issuer: Option<String>,
-  #[serde(default, skip_serializing_if = "is_default")]
-  pub audiences: HashSet<String>,
-  pub jwks: JwksOptions,
-}
 
 // only used in tests and uses mocked implementation
 #[cfg(test)]
 impl Default for JwtProviderOptions {
   fn default() -> Self {
+    use std::path::PathBuf;
+
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = root_dir.join(file!());
 
@@ -162,8 +120,7 @@ impl JwtProvider {
   }
 }
 
-#[async_trait::async_trait]
-impl AuthProvider for JwtProvider {
+impl AuthProviderTrait for JwtProvider {
   async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
     let token = self.resolve_token(request);
 
@@ -177,6 +134,8 @@ impl AuthProvider for JwtProvider {
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashSet;
+
   use anyhow::Result;
   use serde_json::json;
 

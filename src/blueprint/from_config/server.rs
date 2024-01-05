@@ -5,7 +5,8 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config::{self, HttpVersion};
+use super::to_auth;
+use crate::config::{self, Auth, HttpVersion};
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
@@ -25,6 +26,7 @@ pub struct Server {
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
+  pub auth: Auth,
 }
 
 #[derive(Clone, Debug)]
@@ -57,7 +59,7 @@ impl Server {
   }
 }
 
-impl TryFrom<crate::config::Server> for Server {
+impl TryFrom<config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
@@ -77,7 +79,8 @@ impl TryFrom<crate::config::Server> for Server {
     validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .map(|((hostname, http), response_headers)| Server {
+      .zip(to_auth(&config_server.auth))
+      .map(|(((hostname, http), response_headers), auth)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
         enable_graphiql: (config_server).enable_graphiql(),
@@ -93,6 +96,7 @@ impl TryFrom<crate::config::Server> for Server {
         vars: (config_server).get_vars(),
         pipeline_flush: (config_server).get_pipeline_flush(),
         response_headers,
+        auth,
       })
       .to_result()
   }

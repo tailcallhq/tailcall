@@ -16,6 +16,6 @@ pub use key_values::*;
 pub use server::*;
 pub use source::*;
 
-pub fn is_default<T: Default + Eq>(val: &T) -> bool {
+fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
 }

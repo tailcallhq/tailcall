@@ -1,15 +1,15 @@
 use std::sync::{Arc, Mutex};
 
-use super::base::{AuthError, AuthProvider};
-use super::jwt::JwtProvider;
-use crate::blueprint::Blueprint;
+use futures_util::future::join_all;
+
+use super::base::{AuthError, AuthProvider, AuthProviderTrait};
+use crate::config::Auth;
 use crate::http::{HttpClient, RequestContext};
 use crate::valid::Valid;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
-  // TODO: remove pub and create it from directive
-  pub jwt_provider: Option<JwtProvider>,
+  providers: Vec<AuthProvider>,
 }
 
 #[derive(Default)]
@@ -21,24 +21,24 @@ pub struct AuthContext {
 
 impl GlobalAuthContext {
   async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
-    if let Some(jwt_provider) = &self.jwt_provider {
-      return jwt_provider.validate(request).await;
-    }
+    let validations = join_all(
+      self
+        .providers
+        .iter()
+        .map(|provider| provider.validate(request)),
+    )
+    .await;
 
-    Valid::succeed(())
+    Valid::from_iter(validations.into_iter(), |validation| validation).unit()
   }
 }
 
 impl GlobalAuthContext {
-  pub fn new(blueprint: &Blueprint, client: Arc<dyn HttpClient>) -> Self {
-    let auth = &blueprint.auth;
-    let jwt_provider = auth
-      .jwt
-      .as_ref()
-      // the actual validation happens here src/blueprint/from_config/auth.rs, so just .ok() to resolve options
-      .and_then(|jwt| JwtProvider::new(jwt.clone(), client).to_result().ok());
-
-    Self { jwt_provider }
+  pub fn new(auth: &Auth, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
+    Valid::from_iter(&auth.0, |provider| {
+      AuthProvider::from_config(provider.provider.clone(), client.clone())
+    })
+    .map(|providers| Self { providers })
   }
 }
 

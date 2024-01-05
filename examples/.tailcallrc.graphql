@@ -83,6 +83,11 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
+
+  """
+  `auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)
+  """
+  auth: [AuthProvider!]
 ) on SCHEMA
 
 enum HttpVersion {
@@ -157,8 +162,6 @@ directive @upstream(
   """
   batch: Batch
 ) on SCHEMA
-
-directive @auth(JWT: AuthJWT) on SCHEMA
 
 """
 @http
@@ -343,6 +346,17 @@ input AuthJWT {
   issuer: String
   audiences: [String!]
   jwks: AuthJwks!
+}
+
+input AuthProvider {
+  """
+  Unique id for the auth provider. For future use
+  """
+  id: String!
+  """
+  Settings for JWT auth provider
+  """
+  JWT: AuthJWT
 }
 
 scalar JSON

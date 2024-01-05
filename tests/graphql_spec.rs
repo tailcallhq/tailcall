@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
 
+use anyhow::Context;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
@@ -257,24 +258,30 @@ fn test_config_identity() -> std::io::Result<()> {
 
 // Check server SDL matches expected client SDL
 #[test]
-fn test_server_to_client_sdl() -> std::io::Result<()> {
+fn test_server_to_client_sdl() -> anyhow::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
+    let display_path = spec.path.display();
     let expected = spec.find_source(Tag::ClientSDL);
     let expected = expected.as_str();
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
-    let config = Config::from_sdl(content).to_result().unwrap();
-    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
+    let config = Config::from_sdl(content)
+      .to_result()
+      .with_context(|| format!("config creation failed for file {}", display_path))?;
+    let actual = print_schema::print_schema(
+      (Blueprint::try_from(&config).with_context(|| format!("blueprint creation failed for file {}", display_path))?)
+        .to_schema(),
+    );
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-      assert_ne!(actual, expected, "ClientSDL: {}", spec.path.display());
+      assert_ne!(actual, expected, "ClientSDL: {}", display_path);
     } else {
-      assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
+      assert_eq!(actual, expected, "ClientSDL: {}", display_path);
     }
 
-    log::info!("ClientSDL: {} ... ok", spec.path.display());
+    log::info!("ClientSDL: {} ... ok", display_path);
   }
 
   Ok(())

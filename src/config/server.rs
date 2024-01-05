@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use super::Auth;
 use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -42,6 +43,8 @@ pub struct Server {
   pub key: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub pipeline_flush: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub auth: Auth,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
@@ -140,6 +143,7 @@ impl Server {
     self.cert = other.cert.or(self.cert);
     self.key = other.key.or(self.key);
     self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
+    self.auth = self.auth.merge_right(other.auth);
     self
   }
 }

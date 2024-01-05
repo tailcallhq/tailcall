@@ -110,7 +110,11 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
-    let auth_ctx = GlobalAuthContext::new(&blueprint, universal_http_client.clone());
+    let auth_ctx = GlobalAuthContext::new(&blueprint.server.auth, universal_http_client.clone())
+      .to_result()
+      // actual validation happens inside src/blueprint/from_config/auth.rs
+      // so here just unwrap for now
+      .unwrap();
 
     ServerContext {
       schema,

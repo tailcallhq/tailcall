@@ -1,7 +1,6 @@
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
-  @auth(JWT: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}) {
+  @server(port: 8000, graphiql: true, auth: [{id: "jwt-1", JWT: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}}])
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 

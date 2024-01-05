@@ -11,11 +11,7 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
-  let mut directives = vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())];
-
-  if config.auth.is_some() {
-    directives.push(pos(config.auth.to_directive()));
-  }
+  let directives = vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())];
 
   let schema_definition = SchemaDefinition {
     extend: false,
