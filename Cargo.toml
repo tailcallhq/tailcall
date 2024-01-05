@@ -22,8 +22,8 @@ inquire = {version = "0.6.2",optional = true}
 # dependencies safe for wasm:
 
 hyper = { version = "0.14", features = ["server"], default-features = false    }
-tokio = { version = "1.35.0", features = ["rt","time"] }
-anyhow = "1.0.76"
+tokio = { version = "1.35.1", features = ["rt","time"] }
+anyhow = "1.0.79"
 derive_setters = "0.1.6"
 thiserror = "1.0.50"
 serde_json = "1.0"
@@ -40,12 +40,12 @@ async-graphql-value = "6.0.11"
 indexmap = "2.1"
 once_cell = "1.19.0"
 mini-v8 = { version = "0.4.1", optional = true }
-clap = { version = "4.4.11", features = ["derive"] }
+clap = { version = "4.4.13", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 reqwest-middleware = "0.2.4"
-async-trait = "0.1.75"
-serde_path_to_error = "0.1.14"
+async-trait = "0.1.77"
+serde_path_to_error = "0.1.15"
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
@@ -55,9 +55,9 @@ env_logger = "0.10.1"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
-futures-channel = { version = "0.3.29" }
+futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.2" }
-futures-util = { version = "0.3.29" }
+futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 async-std = {version = "1.12.0",features = ["wasm-bindgen-futures", "unstable"]}
@@ -73,15 +73,6 @@ httpmock = "0.6"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 
-[profile.release]
-opt-level = 3
-codegen-units = 1
-panic = 'abort'
-lto = 'thin'
-debug = false
-incremental = false
-overflow-checks = false
-
 [features]
 unsafe-js = ["dep:mini-v8"]
 default = ["tokio/fs", "tokio/rt-multi-thread", "mimalloc", "http-cache-reqwest","moka", "hyper-rustls", "rustls", "rustls-pemfile","inquire"]
@@ -92,6 +83,15 @@ members = [
    ".",
    "tc_cloudflare"
 ]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+panic = 'abort'
+lto = 'thin'
+debug = false
+incremental = false
+overflow-checks = false
 
 [[bench]]
 name = "json_like_bench"
