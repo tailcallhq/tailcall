@@ -6,7 +6,6 @@ use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
 use tailcall::config::Batch;
-
 use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
 
 #[derive(Clone)]

@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 #[cfg(feature = "default")]
-use tokio::{fs::File,io::AsyncReadExt};
+use tokio::{fs::File, io::AsyncReadExt};
 use url::Url;
 
 use crate::config::{Config, Source};
@@ -11,9 +11,9 @@ pub struct ConfigReader {
 
 impl ConfigReader {
   pub fn init<Iter>(file_paths: Iter) -> Self
-    where
-        Iter: Iterator,
-        Iter::Item: AsRef<str>,
+  where
+    Iter: Iterator,
+    Iter::Item: AsRef<str>,
   {
     Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
   }
@@ -35,10 +35,12 @@ impl ConfigReader {
     }
     Ok(config)
   }
+  #[cfg(feature = "default")]
   async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
     let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
     Config::from_source(source, &server_sdl)
   }
+  #[cfg(feature = "default")]
   async fn read_file(file_path: &str) -> anyhow::Result<(String, Source)> {
     let mut f = File::open(file_path).await?;
     let mut buffer = Vec::new();
@@ -89,18 +91,18 @@ mod reader_tests {
     let header_serv = server.mock(|when, then| {
       when.method(httpmock::Method::GET).path("/");
       then
-          .status(200)
-          .header("content-type", "application/graphql")
-          .body(cfg.to_sdl());
+        .status(200)
+        .header("content-type", "application/graphql")
+        .body(cfg.to_sdl());
     });
 
     let mut json = String::new();
     tokio::fs::File::open("examples/jsonplaceholder.json")
-        .await
-        .unwrap()
-        .read_to_string(&mut json)
-        .await
-        .unwrap();
+      .await
+      .unwrap()
+      .read_to_string(&mut json)
+      .await
+      .unwrap();
 
     let foo_json_serv = server.mock(|when, then| {
       when.method(httpmock::Method::GET).path("/foo.json");
@@ -113,16 +115,16 @@ mod reader_tests {
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+    .iter()
+    .map(|x| x.to_string())
+    .collect();
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
-          .iter()
-          .map(|i| i.to_string())
-          .collect::<Vec<String>>(),
+        .iter()
+        .map(|i| i.to_string())
+        .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
     foo_json_serv.assert(); // checks if the request was actually made
@@ -135,16 +137,16 @@ mod reader_tests {
       "examples/jsonplaceholder.graphql",
       "examples/jsonplaceholder.json",
     ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+    .iter()
+    .map(|x| x.to_string())
+    .collect();
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
-          .iter()
-          .map(|i| i.to_string())
-          .collect::<Vec<String>>(),
+        .iter()
+        .map(|i| i.to_string())
+        .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
   }
