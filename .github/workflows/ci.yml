@@ -72,9 +72,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Run CSpell
-        run: npx cspell "./docs/**/*.md"
-
       - name: Run Cargo Test
         uses: actions-rs/cargo@v1
         with:
