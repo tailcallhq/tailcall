@@ -21,13 +21,7 @@ pub struct AuthContext {
 
 impl GlobalAuthContext {
   async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
-    let validations = join_all(
-      self
-        .providers
-        .iter()
-        .map(|provider| provider.validate(request)),
-    )
-    .await;
+    let validations = join_all(self.providers.iter().map(|provider| provider.validate(request))).await;
 
     Valid::from_iter(validations.into_iter(), |validation| validation).unit()
   }
