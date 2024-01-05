@@ -489,8 +489,8 @@ impl Config {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum Encoding {
   #[default]
-  APPLICATION_JSON,
-  APPLICATION_X_WWW_FORM_URLENCODED,
+  ApplicationJson,
+  ApplicationXWwwFormUrlencoded,
 }
 
 #[cfg(test)]

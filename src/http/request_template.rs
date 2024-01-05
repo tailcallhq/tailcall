@@ -106,14 +106,19 @@ impl RequestTemplate {
   fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     if let Some(body) = &self.body {
         match &self.encoding {
-          Encoding::APPLICATION_JSON => {
+          Encoding::ApplicationJson => {
             req.body_mut().replace(body.render(ctx).into());
           }
-          Encoding::APPLICATION_X_WWW_FORM_URLENCODED => {
-            let json_data: String = body.render(ctx);
-            let deserialized_data: serde_json::Value = serde_json::from_str(&json_data).unwrap();
-            let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
-            req.body_mut().replace(form_data.into());
+          Encoding::ApplicationXWwwFormUrlencoded => {
+            let raw_data: String = body.render(ctx);
+            // The raw_data can be both JSON or plain string. If it is 
+            // JSON, we need to parse it, or, we can directly use it.
+            if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
+              let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
+              req.body_mut().replace(form_data.into());
+            } else {
+              req.body_mut().replace(raw_data.into());
+            } 
           }
         }
         }
@@ -132,8 +137,8 @@ impl RequestTemplate {
     headers.insert(
       reqwest::header::CONTENT_TYPE,
       match self.encoding {
-        Encoding::APPLICATION_JSON => HeaderValue::from_static("application/json"),
-        Encoding::APPLICATION_X_WWW_FORM_URLENCODED => HeaderValue::from_static("application/x-www-form-urlencoded"),
+        Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
+        Encoding::ApplicationXWwwFormUrlencoded => HeaderValue::from_static("application/x-www-form-urlencoded"),
       },
     );
 
@@ -323,15 +328,15 @@ mod tests {
     assert_eq!(req.headers().get("baz").unwrap(), "2");
   }
   #[test]
-  fn test_encoding_application_json() {
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::APPLICATION_JSON);
+  fn test_header_encoding_application_json() {
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::ApplicationJson);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.headers().get("Content-Type").unwrap(), "application/json");
   }
   #[test]
-  fn test_encoding_application_x_www_form_urlencoded() {
-    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::APPLICATION_X_WWW_FORM_URLENCODED);
+  fn test_header_encoding_application_x_www_form_urlencoded() {
+    let tmpl = RequestTemplate::new("http://localhost:3000").unwrap().encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
     assert_eq!(req.headers().get("Content-Type").unwrap(), "application/x-www-form-urlencoded");
@@ -365,6 +370,48 @@ mod tests {
   fn test_body_template() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
+      .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+    let ctx = Context::default().value(json!({
+      "foo": {
+        "bar": "baz"
+      }
+    }));
+    let body = tmpl
+      .to_request(&ctx)
+      .unwrap()
+      .body()
+      .unwrap()
+      .as_bytes()
+      .unwrap()
+      .to_owned();
+    assert_eq!(body, "baz".as_bytes());
+  }
+  #[test]
+  fn test_body_encoding_application_json() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationJson)
+      .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+    let ctx = Context::default().value(json!({
+      "foo": {
+        "bar": "baz"
+      }
+    }));
+    let body = tmpl
+      .to_request(&ctx)
+      .unwrap()
+      .body()
+      .unwrap()
+      .as_bytes()
+      .unwrap()
+      .to_owned();
+    assert_eq!(body, "baz".as_bytes());
+  }
+  #[test]
+  fn test_body_encoding_application_x_www_form_urlencoded() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
       .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
     let ctx = Context::default().value(json!({
       "foo": {

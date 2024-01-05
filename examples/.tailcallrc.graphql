@@ -205,9 +205,9 @@ directive @http(
   groupBy: [String!]
 
   """
-  The `encoding` parameter specifies the encoding of the request body. It can be `APPLICATION_JSON` or `APPLICATION_X_WWW_FORM_URLENCODED`. @default `APPLICATION_JSON`.
+  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
-  encoding: Encoding = APPLICATION_JSON
+  encoding: Encoding = ApplicationJson
 ) on FIELD_DEFINITION
 
 """
@@ -316,8 +316,8 @@ enum Method {
 }
 
 enum Encoding {
-  APPLICATION_JSON
-  APPLICATION_X_WWW_FORM_URLENCODED
+  ApplicationJson
+  ApplicationXWwwFormUrlEncoded
 }
 
 input Proxy {
