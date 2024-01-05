@@ -31,8 +31,13 @@ pub struct Link {
 
 impl Link {
   pub async fn resolve_recurse(self) -> anyhow::Result<Vec<Link>> {
-    let mut link_queue: VecDeque<Link> = VecDeque::new();
     let mut result: Vec<Link> = Vec::new();
+    if self.type_of == LinkType::Protobuf || self.type_of == LinkType::Data {
+      let link: Link = Self::get_raw_content(&self).await?;
+      result.push(link);
+      return Ok(result);
+    }
+    let mut link_queue: VecDeque<Link> = VecDeque::new();
     link_queue.push_back(self);
     while let Some(mut curr) = link_queue.pop_front() {
       let (txt, source) = if let Ok(url) = Url::parse(&curr.src) {
@@ -69,5 +74,23 @@ impl Link {
       result.push(curr);
     }
     Ok(result)
+  }
+
+  async fn get_raw_content(link: &Link) -> anyhow::Result<Link> {
+    let mut res_link: Link = link.clone();
+    if let Ok(url) = Url::parse(&link.src) {
+      let resp = reqwest::get(url).await?;
+      if !resp.status().is_success() {
+        return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
+      }
+      res_link.content = Some(resp.text().await?);
+    } else {
+      let path = &link.src.trim_end_matches('/');
+      let mut f = File::open(path).await?;
+      let mut buffer: Vec<u8> = Vec::new();
+      f.read_to_end(&mut buffer).await?;
+      res_link.content = Some(String::from_utf8(buffer)?);
+    };
+    Ok(res_link)
   }
 }
