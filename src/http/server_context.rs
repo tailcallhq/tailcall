@@ -66,8 +66,8 @@ impl ServerContext {
     for def in bp.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
-          if let Some(expr) = &field.resolver {
-            field.resolver = ctx.check_resolver_of_field(field, expr);
+          if let Some(expr) = field.resolver.clone() {
+            ctx.check_resolver_of_field(field, &expr);
           }
         }
       }
@@ -77,18 +77,24 @@ impl ServerContext {
     ctx
   }
 
-  fn check_resolver_of_field(&mut self, field: &blueprint::FieldDefinition, expr: &Expression) -> Option<Expression> {
+  fn check_resolver_of_field(&mut self, field: &mut blueprint::FieldDefinition, expr: &Expression) {
     match expr {
       Expression::Unsafe(expr_unsafe) => self.check_unsafe_expr(expr_unsafe, field),
       Expression::Cache(cache) => {
-        let new_expr = self.check_resolver_of_field(field, cache.source());
-        new_expr.map(|ne| Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(ne))))
+        self.check_resolver_of_field(field, cache.source());
+        field.resolver = field.resolver.as_ref().map(|ne| {
+          Expression::Cache(Cache::new(
+            cache.hasher().clone(),
+            cache.max_age(),
+            Box::new(ne.clone()),
+          ))
+        });
       }
-      _ => Some(expr.clone()),
+      _ => (),
     }
   }
 
-  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &blueprint::FieldDefinition) -> Option<Expression> {
+  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &mut blueprint::FieldDefinition) {
     let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
     let universal_http_client = self.universal_http_client.clone();
     let http2_only_client = self.http2_only_client.clone();
@@ -101,7 +107,7 @@ impl ServerContext {
         )
         .to_data_loader(bt);
 
-        let resolver = Some(Expression::Unsafe(Unsafe::Http {
+        field.resolver = Some(Expression::Unsafe(Unsafe::Http {
           req_template: req_template.clone(),
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
@@ -109,13 +115,12 @@ impl ServerContext {
 
         let http_data_loaders = Arc::get_mut(&mut self.http_data_loaders).unwrap();
         http_data_loaders.push(data_loader);
-        resolver
       }
 
       Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
         let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch).to_data_loader(bt);
 
-        let resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+        field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
           req_template: req_template.clone(),
           field_name: field_name.clone(),
           batch: *batch,
@@ -124,7 +129,6 @@ impl ServerContext {
 
         let gql_data_loaders = Arc::get_mut(&mut self.gql_data_loaders).unwrap();
         gql_data_loaders.push(graphql_data_loader);
-        resolver
       }
 
       Unsafe::Grpc { req_template, group_by, .. } => {
@@ -135,7 +139,7 @@ impl ServerContext {
         };
         let data_loader = data_loader.to_data_loader(bt);
 
-        let resolver = Some(Expression::Unsafe(Unsafe::Grpc {
+        field.resolver = Some(Expression::Unsafe(Unsafe::Grpc {
           req_template: req_template.clone(),
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
@@ -143,9 +147,8 @@ impl ServerContext {
 
         let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
         grpc_data_loaders.push(data_loader);
-        resolver
       }
-      _ => None,
+      _ => (),
     }
   }
 }
