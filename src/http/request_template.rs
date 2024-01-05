@@ -134,6 +134,7 @@ impl RequestTemplate {
 
     let headers = req.headers_mut();
     // We want to set the header value based on encoding
+    // We want to set the header value based on encoding
     headers.insert(
       reqwest::header::CONTENT_TYPE,
       match self.encoding {

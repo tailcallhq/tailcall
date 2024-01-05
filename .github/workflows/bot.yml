@@ -2,9 +2,11 @@ name: Benchmark
 
 on:
   push:
+    paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
-  pull_request:
+  pull_request_target:
+    paths-ignore: ["docs/**", "**.md"]
     types: [opened, synchronize, labeled]
     branches:
       - main
@@ -19,7 +21,7 @@ on:
 jobs:
   benchmark:
     name: Macro Benchmarks
-    if: contains(github.event.pull_request.labels.*.name, 'ci:benchmark') || github.event_name == 'push'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
@@ -102,7 +104,7 @@ jobs:
 
   lint:
     name: CI:Lint
-    if: contains(github.event.pull_request.labels.*.name, 'ci:lint')
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: lint')"
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -128,6 +130,9 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Run lint script
         run: ./lint.sh --mode=fix
       - name: Commit and push if changed
@@ -145,6 +150,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -167,7 +174,7 @@ jobs:
 
   Criterion_Compare:
     name: Comparing Micro Benchmarks
-    if: github.ref != 'refs/heads/main'
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
@@ -175,6 +182,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
