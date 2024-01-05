@@ -78,13 +78,13 @@ impl ServerContext {
   }
 
   fn check_resolver_of_field(&mut self, field: &blueprint::FieldDefinition, expr: &Expression) -> Option<Expression> {
-    if let Expression::Unsafe(expr_unsafe) = &expr {
-      self.check_unsafe_expr(expr_unsafe, field)
-    } else if let Expression::Cache(cache) = &expr {
-      let new_expr = self.check_resolver_of_field(field, cache.source());
-      new_expr.map(|ne| Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(ne))))
-    } else {
-      Some(expr.clone())
+    match expr {
+      Expression::Unsafe(expr_unsafe) => self.check_unsafe_expr(expr_unsafe, field),
+      Expression::Cache(cache) => {
+        let new_expr = self.check_resolver_of_field(field, cache.source());
+        new_expr.map(|ne| Expression::Cache(Cache::new(cache.hasher().clone(), cache.max_age(), Box::new(ne))))
+      }
+      _ => Some(expr.clone()),
     }
   }
 
