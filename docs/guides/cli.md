@@ -12,7 +12,7 @@ The `check` command validates a composition spec. Notably, this command can dete
 tailcall check [options] <file>...
 ```
 
-The `check` command offers various options that control different settings, such as the display of the blueprint, endpoints, and schema of the composition spec.
+The `check` command offers various options that control different settings, such as the display of the generated schema, n + 1 issues etc.
 
 ### --n-plus-one-queries
 
@@ -44,26 +44,22 @@ Example:
 tailcall check --schema ./path/to/file1.graphql ./path/to/file2.graphql
 ```
 
-### --out
+## compose
 
-This option writes the resulting schema of the composition spec to a file. The value of the option will become the name of the file.
-
-- Type: String
-
-```bash
-tailcall check <file1> <file2> ... <fileN> --out <outfile>
-```
-
-The schema can be written either in `json`, `graphql` or `yml` formats.
+The `compose` merges multiple configuration files into one. To use the `compose` command, follow this format:
 
 Example:
 
 ```bash
-# Output .graphql file
-tailcall check ./path/to/file1.graphql ./path/to/file2.graphql --out ./path/to/outfile.graphql
+tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql
+```
 
-# Output .json file
-tailcall check ./path/to/file1.graphql ./path/to/file2.graphql --out ./path/to/outfile.json
+### --format
+
+This specifies the format of the desired composed file. It accepts `gql` or `graphql`,`yml` or `yaml`, `json` . Default is `json`.
+
+```bash
+tailcall compose ./path/to/file1.graphql ./path/to/file2.graphql --format gql
 ```
 
 ## start
