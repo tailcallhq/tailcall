@@ -1,5 +1,6 @@
 use anyhow::Result;
 use derive_setters::Setters;
+
 use crate::grpc::protobuf::ProtobufOperation;
 
 #[derive(Clone, Debug, Default, Setters)]
@@ -10,7 +11,7 @@ pub struct Response<Body: Default + Clone> {
 }
 
 impl Response<async_graphql::Value> {
-  pub async fn from_response(resp: reqwest::Response) -> Result<Response<async_graphql::Value>> {
+  pub async fn from_response_to_val(resp: reqwest::Response) -> Result<Response<async_graphql::Value>> {
     let status = resp.status();
     let headers = resp.headers().to_owned();
     let body = resp.bytes().await?.to_vec();
@@ -20,7 +21,7 @@ impl Response<async_graphql::Value> {
 }
 
 impl Response<Vec<u8>> {
-  pub async fn from_response(resp: reqwest::Response) -> Result<Response<Vec<u8>>> {
+  pub async fn from_response_to_vec(resp: reqwest::Response) -> Result<Response<Vec<u8>>> {
     let status = resp.status();
     let headers = resp.headers().to_owned();
     let body = resp.bytes().await?.to_vec();

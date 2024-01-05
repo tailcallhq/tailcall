@@ -32,7 +32,10 @@ impl GrpcDataLoader {
       .max_batch_size(batch.max_size)
   }
 
-   async fn load_dedupe_only(&self, keys: &[DataLoaderRequest]) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+  async fn load_dedupe_only(
+    &self,
+    keys: &[DataLoaderRequest],
+  ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
     let results = keys.iter().map(|key| async {
       let result = match key.to_request() {
         Ok(req) => execute_grpc_request(self.client.deref(), &self.operation, req).await,

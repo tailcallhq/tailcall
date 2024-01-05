@@ -185,7 +185,10 @@ impl Expression {
   }
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(ctx: &EvaluationContext<'ctx, Ctx>, res: &Response<async_graphql::Value>) {
+fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
+  ctx: &EvaluationContext<'ctx, Ctx>,
+  res: &Response<async_graphql::Value>,
+) {
   if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
     if let Some(policy) = cache_policy(res) {
       ctx.req_ctx.set_cache_control(policy);

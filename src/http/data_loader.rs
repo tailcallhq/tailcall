@@ -78,9 +78,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         first_url.query_pairs_mut().extend_pairs(url.query_pairs());
       }
 
-      let res = self.client.execute(request, None).await?;
+      let res = self.client.execute(request).await?;
       #[allow(clippy::mutable_key_type)]
-      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
+      let mut hashmap: HashMap<DataLoaderRequest, Response<async_graphql::Value>> = HashMap::with_capacity(keys.len());
       let path = &group_by.path();
       let body_value = res.body.group_by(path);
 
@@ -95,7 +95,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
       Ok(hashmap)
     } else {
       let results = keys.iter().map(|key| async {
-        let result = self.client.execute(key.to_request(), None).await;
+        let result = self.client.execute(key.to_request()).await;
         (key.clone(), result)
       });
 

@@ -19,8 +19,8 @@ use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
-use tailcall::grpc::protobuf::ProtobufOperation;
 use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tailcall::json::JsonLike;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -220,11 +220,11 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request, operation: Option<ProtobufOperation>) -> anyhow::Result<Response> {
-    if let Some(operation) = operation {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
+    /*if let Some(operation) = operation {
       let raw = self.execute_raw(req).await?;
       return Response::from_response(raw, Some(operation)).await;
-    }
+    }*/
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 
@@ -282,10 +282,7 @@ impl HttpClient for MockHttpClient {
 
     Ok(response)
   }
-}
-
-impl MockHttpClient {
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.
@@ -328,19 +325,23 @@ impl MockHttpClient {
       return Err(anyhow::format_err!("Status code error"));
     }
 
-    let mut response = hyper::Response::builder().status(status_code);
-    let headers = response.headers_mut().ok_or(anyhow!("Invalid headers"))?;
+    let mut response = Response { status: status_code, ..Default::default() };
+
     // Insert headers from the mock into the response.
     for (key, value) in mock_response.0.headers {
       let header_name = HeaderName::from_str(&key)?;
       let header_value = HeaderValue::from_str(&value)?;
-      headers.insert(header_name, header_value);
+      response.headers.insert(header_name, header_value);
     }
 
     let body = mock_response.0.body.as_str().unwrap_or_default();
-    let res = response.body(Body::from(string_to_bytes(body)))?;
-
-    Ok(reqwest::Response::from(res))
+    let body = serde_json::from_slice::<async_graphql::Value>(&string_to_bytes(body))?
+      .as_str_ok()
+      .map_err(|e| anyhow!(e.to_string()))?
+      .as_bytes()
+      .to_vec();
+    response.body = body;
+    Ok(response)
   }
 }
 
