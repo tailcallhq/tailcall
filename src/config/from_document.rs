@@ -1,15 +1,15 @@
 use std::collections::BTreeMap;
 
+use super::Cache;
+use crate::config::{self, Config, GraphQL, Grpc, Link, RootSchema, Server, Union, Upstream};
+use crate::directive::DirectiveCodec;
+use crate::valid::Valid;
 use async_graphql::parser::types::{
   BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType,
   ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
-use super::Cache;
-use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream, Link};
-use crate::directive::DirectiveCodec;
-use crate::valid::Valid;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
   &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };
@@ -29,8 +29,22 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema).zip(links(sd)))
-    .map(|(((((server, upstream), types), unions), schema), links)| Config { server, upstream, types, unions, schema, links })
+    .and_then(|sd| {
+      server(sd)
+        .zip(upstream(sd))
+        .zip(types)
+        .zip(unions)
+        .zip(schema)
+        .zip(links(sd))
+    })
+    .map(|(((((server, upstream), types), unions), schema), links)| Config {
+      server,
+      upstream,
+      types,
+      unions,
+      schema,
+      links,
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {

@@ -11,6 +11,7 @@ use serde_json::Value;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
+use crate::config::resolver::Link;
 use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
@@ -18,7 +19,6 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
-use crate::config::resolver::Link;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -217,12 +217,13 @@ fn merge_unions(
 pub fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> anyhow::Result<Vec<Link>> {
   let runtime = tokio::runtime::Runtime::new()?;
   for link in other_links {
-    let link = runtime.block_on(async { Link::resolve_recurse(link).await })?;
-    self_links.push(link);
+    let recurse_links = runtime.block_on(async { Link::resolve_recurse(link).await })?;
+    for rl in recurse_links {
+      self_links.push(rl);
+    }
   }
   Ok(self_links)
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
