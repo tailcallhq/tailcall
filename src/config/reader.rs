@@ -1,20 +1,36 @@
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use anyhow::anyhow;
+#[cfg(feature = "default")]
+use tokio::{fs::File,io::AsyncReadExt};
 use url::Url;
 
-use crate::config::reader::ConfigReader;
 use crate::config::{Config, Source};
 
+pub struct ConfigReader {
+  file_paths: Vec<String>,
+}
+
 impl ConfigReader {
+  pub fn init<Iter>(file_paths: Iter) -> Self
+    where
+        Iter: Iterator,
+        Iter::Item: AsRef<str>,
+  {
+    Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
+  }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
     for path in &self.file_paths {
+      #[cfg(feature = "default")]
       let conf = if let Ok(url) = Url::parse(path) {
         Self::from_url(url).await?
       } else {
         let path = path.trim_end_matches('/');
         Self::from_file_path(path).await?
       };
+      #[cfg(not(feature = "default"))]
+      let url = Url::parse(path)?;
+      #[cfg(not(feature = "default"))]
+      let conf = Self::from_url(url).await?;
       config = config.clone().merge_right(&conf);
     }
     Ok(config)
@@ -28,6 +44,28 @@ impl ConfigReader {
     let mut buffer = Vec::new();
     f.read_to_end(&mut buffer).await?;
     Ok((String::from_utf8(buffer)?, Source::detect(file_path)?))
+  }
+  async fn read_over_url(url: Url) -> anyhow::Result<(String, Source)> {
+    let path = url.path().to_string();
+    let resp = reqwest::get(url).await?;
+    if !resp.status().is_success() {
+      return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
+    }
+    let source = if let Some(v) = resp.headers().get("content-type") {
+      if let Ok(s) = Source::detect_content_type(v.to_str()?) {
+        s
+      } else {
+        Source::detect(path.trim_end_matches('/'))?
+      }
+    } else {
+      Source::detect(path.trim_end_matches('/'))?
+    };
+    let txt = resp.text().await?;
+    Ok((txt, source))
+  }
+  async fn from_url(url: Url) -> anyhow::Result<Config> {
+    let (st, source) = Self::read_over_url(url).await?;
+    Config::from_source(source, &st)
   }
 }
 #[cfg(test)]
@@ -51,18 +89,18 @@ mod reader_tests {
     let header_serv = server.mock(|when, then| {
       when.method(httpmock::Method::GET).path("/");
       then
-        .status(200)
-        .header("content-type", "application/graphql")
-        .body(cfg.to_sdl());
+          .status(200)
+          .header("content-type", "application/graphql")
+          .body(cfg.to_sdl());
     });
 
     let mut json = String::new();
     tokio::fs::File::open("examples/jsonplaceholder.json")
-      .await
-      .unwrap()
-      .read_to_string(&mut json)
-      .await
-      .unwrap();
+        .await
+        .unwrap()
+        .read_to_string(&mut json)
+        .await
+        .unwrap();
 
     let foo_json_serv = server.mock(|when, then| {
       when.method(httpmock::Method::GET).path("/foo.json");
@@ -75,16 +113,16 @@ mod reader_tests {
       format!("http://localhost:{port}/").as_str(),         // with content-type header
       format!("http://localhost:{port}/foo.json").as_str(), // with url extension
     ]
-    .iter()
-    .map(|x| x.to_string())
-    .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
-        .iter()
-        .map(|i| i.to_string())
-        .collect::<Vec<String>>(),
+          .iter()
+          .map(|i| i.to_string())
+          .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
     foo_json_serv.assert(); // checks if the request was actually made
@@ -97,16 +135,16 @@ mod reader_tests {
       "examples/jsonplaceholder.graphql",
       "examples/jsonplaceholder.json",
     ]
-    .iter()
-    .map(|x| x.to_string())
-    .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
     let cr = ConfigReader::init(files.iter());
     let c = cr.read().await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
-        .iter()
-        .map(|i| i.to_string())
-        .collect::<Vec<String>>(),
+          .iter()
+          .map(|i| i.to_string())
+          .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
   }
