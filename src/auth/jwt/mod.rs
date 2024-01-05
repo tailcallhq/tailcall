@@ -1,23 +1,26 @@
+mod remote_jwks;
 mod validation;
 
 use std::collections::HashSet;
 use std::fs;
 use std::num::NonZeroU64;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
-use jwtk::jwk::{JwkSet, JwkSetVerifier, RemoteJwksVerifier};
+use jwtk::jwk::{JwkSet, JwkSetVerifier};
 use jwtk::HeaderAndClaims;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use self::remote_jwks::RemoteJwksVerifier;
 use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProvider};
 use crate::config::is_default;
 use crate::helpers::config_path::config_path;
-use crate::http::RequestContext;
+use crate::http::{HttpClient, RequestContext};
 use crate::valid::{Valid, ValidationError};
 
 mod remote {
@@ -30,14 +33,25 @@ mod remote {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub enum JwksOptions {
+pub enum JwksVerifierOptions {
   File(PathBuf),
   #[serde(rename_all = "camelCase")]
   Remote {
+    // TODO: could be Url, but parsing error in that case is misleading
+    // `Parsing failed because of invalid value: string \"__unknown.json\", expected relative URL without a base`
     url: String,
     #[serde(default = "remote::default_max_age")]
     max_age: NonZeroU64,
   },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct JwksOptions {
+  #[serde(default, skip_serializing_if = "is_default")]
+  optional_kid: bool,
+  #[serde(flatten)]
+  verifier: JwksVerifierOptions,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -60,7 +74,7 @@ impl Default for JwtProviderOptions {
     test_file.push("tests");
     test_file.push("jwks.json");
 
-    let jwks = JwksOptions::File(test_file);
+    let jwks = JwksOptions { optional_kid: false, verifier: JwksVerifierOptions::File(test_file) };
 
     Self { issuer: Default::default(), audiences: Default::default(), jwks }
   }
@@ -72,9 +86,9 @@ enum JwksVerifier {
 }
 
 impl JwksVerifier {
-  pub fn parse(value: &JwksOptions) -> Valid<Self, String> {
-    match value {
-      JwksOptions::File(path) => Valid::from(
+  pub fn new(options: &JwksOptions, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
+    match &options.verifier {
+      JwksVerifierOptions::File(path) => Valid::from(
         config_path(path)
           .and_then(fs::read_to_string)
           .map_err(|e| ValidationError::new(e.to_string())),
@@ -86,26 +100,29 @@ impl JwksVerifier {
       })
       .trace(&format!("{}", path.display()))
       .trace("file")
-      .map(|jwks: JwkSet| Self::Local(jwks.verifier())),
-      JwksOptions::Remote { url, max_age } => {
-        Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).map_to(Self::Remote(
-          RemoteJwksVerifier::new(
-            url.to_owned(),
-            // TODO: set client?
-            None,
-            Duration::from_millis(max_age.get()),
-          ),
-        ))
+      .map(|jwks: JwkSet| {
+        let mut verifier = jwks.verifier();
+
+        verifier.set_require_kid(!options.optional_kid);
+
+        Self::Local(verifier)
+      }),
+      JwksVerifierOptions::Remote { url, max_age } => {
+        Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).map(|url| {
+          let mut verifier = RemoteJwksVerifier::new(url, client, Duration::from_millis(max_age.get()));
+
+          verifier.set_require_kid(!options.optional_kid);
+
+          Self::Remote(verifier)
+        })
       }
     }
     .trace("jwks")
   }
-}
 
-impl JwksVerifier {
-  async fn verify(&self, token: &str) -> jwtk::Result<HeaderAndClaims<()>> {
+  async fn verify(&self, token: &str) -> Result<HeaderAndClaims<()>, AuthError> {
     match self {
-      JwksVerifier::Local(verifier) => verifier.verify(token),
+      JwksVerifier::Local(verifier) => verifier.verify(token).map_err(|_| AuthError::ValidationFailed),
       JwksVerifier::Remote(verifier) => verifier.verify(token).await,
     }
   }
@@ -117,25 +134,10 @@ pub struct JwtProvider {
 }
 
 impl JwtProvider {
-  pub fn parse(options: JwtProviderOptions) -> Valid<Self, String> {
-    JwksVerifier::parse(&options.jwks).map(|verifier| Self { options, verifier })
+  pub fn new(options: JwtProviderOptions, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
+    JwksVerifier::new(&options.jwks, client).map(|verifier| Self { options, verifier })
   }
-}
 
-#[async_trait::async_trait]
-impl AuthProvider for JwtProvider {
-  async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
-    let token = self.resolve_token(request);
-
-    let Some(token) = token else {
-      return Valid::fail(AuthError::Missing);
-    };
-
-    self.validate_token(&token).await
-  }
-}
-
-impl JwtProvider {
   fn resolve_token(&self, request: &RequestContext) -> Option<String> {
     let value = request.req_headers.typed_get::<Authorization<Bearer>>();
 
@@ -160,6 +162,19 @@ impl JwtProvider {
   }
 }
 
+#[async_trait::async_trait]
+impl AuthProvider for JwtProvider {
+  async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
+    let token = self.resolve_token(request);
+
+    let Some(token) = token else {
+      return Valid::fail(AuthError::Missing);
+    };
+
+    self.validate_token(&token).await
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
@@ -167,6 +182,19 @@ mod tests {
 
   use super::*;
   use crate::valid::ValidationError;
+
+  struct MockHttpClient;
+
+  #[async_trait::async_trait]
+  impl HttpClient for MockHttpClient {
+    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<crate::http::Response> {
+      todo!()
+    }
+
+    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+      todo!()
+    }
+  }
 
   // token with issuer = "me" and audience = ["them"]
   // token is valid for 10 years. It it expired, update it =)
@@ -181,17 +209,24 @@ mod tests {
       }
     }))?;
 
-    assert!(matches!(options.jwks, JwksOptions::File(_)));
+    assert!(matches!(
+      options.jwks,
+      JwksOptions { optional_kid: false, verifier: JwksVerifierOptions::File(_) }
+    ));
 
     let options: JwtProviderOptions = serde_json::from_value(json!({
       "jwks": {
+        "optionalKid": true,
         "remote": {
           "url": "http://localhost:3000"
         }
       }
     }))?;
 
-    assert!(matches!(options.jwks, JwksOptions::Remote { .. }));
+    assert!(matches!(
+      options.jwks,
+      JwksOptions { optional_kid: true, verifier: JwksVerifierOptions::Remote { .. } }
+    ));
 
     Ok(())
   }
@@ -199,21 +234,21 @@ mod tests {
   #[tokio::test]
   async fn validate_token_iss() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
     let jwt_options = JwtProviderOptions { issuer: Some("me".to_owned()), ..Default::default() };
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
     let jwt_options = JwtProviderOptions { issuer: Some("another".to_owned()), ..Default::default() };
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 
@@ -225,14 +260,14 @@ mod tests {
   #[tokio::test]
   async fn validate_token_aud() -> Result<()> {
     let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
     let jwt_options = JwtProviderOptions { audiences: HashSet::from_iter(["them".to_string()]), ..Default::default() };
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
@@ -240,7 +275,7 @@ mod tests {
 
     let jwt_options =
       JwtProviderOptions { audiences: HashSet::from_iter(["anothem".to_string()]), ..Default::default() };
-    let jwt_provider = JwtProvider::parse(jwt_options).to_result()?;
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 

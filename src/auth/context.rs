@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use super::base::{AuthError, AuthProvider};
 use super::jwt::JwtProvider;
 use crate::blueprint::Blueprint;
-use crate::http::RequestContext;
+use crate::http::{HttpClient, RequestContext};
 use crate::valid::Valid;
 
 #[derive(Default)]
@@ -29,14 +29,14 @@ impl GlobalAuthContext {
   }
 }
 
-impl From<&Blueprint> for GlobalAuthContext {
-  fn from(blueprint: &Blueprint) -> Self {
+impl GlobalAuthContext {
+  pub fn new(blueprint: &Blueprint, client: Arc<dyn HttpClient>) -> Self {
     let auth = &blueprint.auth;
     let jwt_provider = auth
       .jwt
       .as_ref()
       // the actual validation happens here src/blueprint/from_config/auth.rs, so just .ok() to resolve options
-      .and_then(|jwt| JwtProvider::parse(jwt.clone()).to_result().ok());
+      .and_then(|jwt| JwtProvider::new(jwt.clone(), client).to_result().ok());
 
     Self { jwt_provider }
   }

@@ -15,11 +15,7 @@ async fn test_server(configs: &[&str], url: &str) {
   server_up_receiver.await.expect("Server did not start up correctly");
 
   // required since our cert is self signed
-  let client = Client::builder()
-    .danger_accept_invalid_certs(true)
-    .use_rustls_tls()
-    .build()
-    .unwrap();
+  let client = Client::builder().danger_accept_invalid_certs(true).build().unwrap();
   let query = json!({
       "query": "{ greet }"
   });

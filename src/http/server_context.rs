@@ -110,7 +110,7 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
-    let auth_ctx = GlobalAuthContext::from(&blueprint);
+    let auth_ctx = GlobalAuthContext::new(&blueprint, universal_http_client.clone());
 
     ServerContext {
       schema,
