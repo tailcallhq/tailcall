@@ -20,7 +20,6 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Source};
 use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
-use tailcall::json::JsonLike;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -331,12 +330,7 @@ impl HttpClient for MockHttpClient {
     }
 
     let body = mock_response.0.body.as_str().unwrap_or_default();
-    let body = serde_json::from_slice::<async_graphql::Value>(&string_to_bytes(body))?
-      .as_str_ok()
-      .map_err(|e| anyhow!(e.to_string()))?
-      .as_bytes()
-      .to_vec();
-    response.body = body;
+    response.body = string_to_bytes(body);
     Ok(response)
   }
 }
