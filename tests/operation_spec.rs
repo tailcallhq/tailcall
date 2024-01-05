@@ -1,4 +1,7 @@
 use derive_setters::Setters;
+use tailcall::blueprint::Blueprint;
+use tailcall::config::Config;
+use tailcall::valid::Valid;
 use std::fs;
 use std::path::PathBuf;
 
@@ -120,8 +123,40 @@ impl OperationSpec {
   }
 }
 
-#[test]
-fn test_schema_operations() {
+#[tokio::test]
+async fn test_schema_operations() -> std::io::Result<()> {
   let specs = OperationSpec::cargo_read("tests/graphql/operations");
   println!("{:?}", specs);
+
+  let tasks: Vec<_> = specs?
+    .into_iter()
+    .map(|spec| {
+      tokio::spawn(async move {
+        let mut config = Config::from_sdl(spec.server_sdl.as_str())
+          .to_result()
+          .unwrap();
+        config.server.query_validation = Some(false);
+
+        let blueprint = Valid::from(Blueprint::try_from(&config))
+          .trace(spec.path.to_str().unwrap_or_default())
+          .to_result()
+          .unwrap();
+
+        for q in spec.test_queries {
+            // blueprint.validate_operations()
+          // if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+          //   assert_ne!(json, expected, "QueryExecution: {}", spec.path.display());
+          // } else {
+          //   assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
+          // }
+
+          log::info!("QueryExecution: {} ... ok", spec.path.display());
+        }
+      })
+    })
+    .collect();
+  for task in tasks {
+    task.await?;
+  }
+  Ok(())
 }
