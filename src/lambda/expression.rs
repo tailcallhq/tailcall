@@ -10,7 +10,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
-use serde::Serialize;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -95,7 +94,7 @@ impl Cache {
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(pub usize);
 
-#[derive(Debug, Error, Serialize)]
+#[derive(Debug, Error)]
 pub enum EvaluationError {
   #[error("IOException: {0}")]
   IOException(String),
