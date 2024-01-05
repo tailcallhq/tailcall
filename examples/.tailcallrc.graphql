@@ -338,13 +338,30 @@ input AuthJwksRemote {
 }
 
 input AuthJwks {
+  """
+  JWKS data loaded from file
+  """
   file: String
+  """
+  JWKS data loaded from the remote server
+  """
   remote: AuthJwksRemote
+  """
+  JWKS data as a string
+  """
+  const: JSON
 }
 
 input AuthJWT {
   issuer: String
   audiences: [String!]
+  """
+  Specifies if the kid value inside request's JWT token is required to get validated with the JWKS
+  """
+  optionalKid: Boolean
+  """
+  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
+  """
   jwks: AuthJwks!
 }
 

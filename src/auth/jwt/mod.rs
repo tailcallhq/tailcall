@@ -46,6 +46,17 @@ enum JwksVerifier {
 impl JwksVerifier {
   pub fn new(options: &JwksOptions, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
     match &options.verifier {
+      JwksVerifierOptions::Const(data) => {
+        Valid::from(serde_json::from_value(data.clone()).map_err(|e| ValidationError::new(e.to_string())))
+          .trace("const")
+          .map(|jwks: JwkSet| {
+            let mut verifier = jwks.verifier();
+
+            verifier.set_require_kid(!options.optional_kid);
+
+            Self::Local(verifier)
+          })
+      }
       JwksVerifierOptions::File(path) => Valid::from(
         config_path(path)
           .and_then(fs::read_to_string)

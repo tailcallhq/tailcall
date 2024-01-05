@@ -3,6 +3,7 @@ use std::num::NonZeroU64;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::is_default;
 
@@ -17,6 +18,7 @@ mod remote {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum JwksVerifierOptions {
+  Const(Value),
   File(PathBuf),
   #[serde(rename_all = "camelCase")]
   Remote {
