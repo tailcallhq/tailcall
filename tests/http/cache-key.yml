@@ -1,0 +1,33 @@
+config: !file tests/http/config/cache-key.graphql
+name: Caching Graphql args
+mock:
+  - request:
+      url: http://example.com/foo
+    response:
+      body:
+        id: 0
+  - request:
+      url: http://example.com/bar1
+    response:
+      body:
+        id: 1
+  - request:
+      url: http://example.com/bar2
+    response:
+      body:
+        id: 2
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { foo { id bar1 { id } bar2 { id } } }"
+    response:
+      body:
+        data:
+          foo:
+            id: 0
+            bar1:
+              id: 1
+            bar2:
+              id: 2
