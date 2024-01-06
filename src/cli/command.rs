@@ -59,6 +59,6 @@ pub enum Command {
   Init {
     // default is current directory
     #[arg(default_value = ".")]
-    folder_path: String
+    folder_path: String,
   },
 }
