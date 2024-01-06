@@ -94,15 +94,15 @@ pub async fn init(folder_path: &str) -> Result<()> {
   } else {
     fs::write(&file_path, tailcallrc.as_bytes())?;
   }
-  
+
   let yml_exists = fs::metadata(&yml_file_path).is_ok();
 
   if !yml_exists {
     fs::write(&yml_file_path, "")?;
 
-    let graphqlrc = r#"|schema:
+    let graphqlrc = r"|schema:
          |- './.tailcallrc.graphql'
-    "#
+    "
     .strip_margin();
 
     fs::write(&yml_file_path, graphqlrc)?;
@@ -112,23 +112,22 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let file_path = file_path.to_str().unwrap();
 
-  if !graphqlrc.contains(file_path) {
-    let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
-      .with_default(false)
-      .prompt()?;
+  let mut yaml: serde_yaml::Value = serde_yaml::from_str(&graphqlrc)?;
 
-    if confirm {
-      let mut schema_line = graphqlrc
-        .lines()
-        .find(|line| line.contains("schema:"))
-        .unwrap()
-        .to_string();
+  if let Some(schema) = yaml.get_mut("schema").and_then(|v| v.as_sequence_mut()) {
+    if !schema
+      .iter()
+      .any(|v| v == &serde_yaml::Value::from("./.tailcallrc.graphql"))
+    {
+      let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
+        .with_default(false)
+        .prompt()?;
 
-      schema_line.push_str("\n  - './.tailcallrc.graphql'");
-
-      let updated = graphqlrc.replace("schema:", &schema_line);
-
-      fs::write(yml_file_path, updated)?;
+      if confirm {
+        schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
+        let updated = serde_yaml::to_string(&yaml)?;
+        fs::write(yml_file_path, updated)?;
+      }
     }
   }
 
