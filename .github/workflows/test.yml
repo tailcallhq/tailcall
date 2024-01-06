@@ -7,6 +7,5 @@ on:
 jobs:
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     uses: ./.github/workflows/job1.yml
     secrets: inherit
