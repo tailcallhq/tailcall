@@ -10,7 +10,7 @@ on:
 
 jobs:
  call-workflow:
-   uses: alankritdabral/tailcall/.github/workflows/job1.yml@v1
+   uses: alankritdabral/tailcall/.github/workflows/job1.yml@main
 
  call-workflow-passing-data:
    permissions:
