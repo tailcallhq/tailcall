@@ -1,8 +1,8 @@
 use jwtk::Claims;
 
-use super::JwtProviderOptions;
+use crate::blueprint;
 
-pub fn validate_iss(options: &JwtProviderOptions, claims: &Claims<()>) -> bool {
+pub fn validate_iss(options: &blueprint::JwtProvider, claims: &Claims<()>) -> bool {
   options
     .issuer
     .as_ref()
@@ -10,7 +10,7 @@ pub fn validate_iss(options: &JwtProviderOptions, claims: &Claims<()>) -> bool {
     .unwrap_or(true)
 }
 
-pub fn validate_aud(options: &JwtProviderOptions, claims: &Claims<()>) -> bool {
+pub fn validate_aud(options: &blueprint::JwtProvider, claims: &Claims<()>) -> bool {
   let audiences = &options.audiences;
 
   if audiences.is_empty() {
@@ -29,14 +29,14 @@ mod tests {
   use jwtk::Claims;
 
   use super::*;
-  use crate::auth::jwt::JwtProviderOptions;
 
   mod iss {
     use super::*;
+    use crate::blueprint::JwtProvider;
 
     #[test]
     fn validate_iss_not_defined() {
-      let options = JwtProviderOptions::default();
+      let options = JwtProvider::test_value();
       let mut claims = Claims::<()>::default();
 
       assert!(validate_iss(&options, &claims));
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn validate_iss_defined() {
-      let options = JwtProviderOptions { issuer: Some("iss".to_owned()), ..Default::default() };
+      let options = JwtProvider { issuer: Some("iss".to_owned()), ..JwtProvider::test_value() };
       let mut claims = Claims::<()>::default();
 
       assert!(!validate_iss(&options, &claims));
@@ -69,10 +69,11 @@ mod tests {
     use jwtk::OneOrMany;
 
     use super::*;
+    use crate::blueprint::JwtProvider;
 
     #[test]
     fn validate_aud_not_defined() {
-      let options = JwtProviderOptions::default();
+      let options = JwtProvider::test_value();
       let mut claims = Claims::<()>::default();
 
       assert!(validate_aud(&options, &claims));
@@ -88,9 +89,9 @@ mod tests {
 
     #[test]
     fn validate_aud_defined() {
-      let options = JwtProviderOptions {
+      let options = JwtProvider {
         audiences: HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]),
-        ..Default::default()
+        ..JwtProvider::test_value()
       };
       let mut claims = Claims::<()>::default();
 

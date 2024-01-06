@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use futures_util::future::join_all;
 
 use super::base::{AuthError, AuthProvider, AuthProviderTrait};
-use crate::config::Auth;
+use crate::blueprint::Auth;
 use crate::http::{HttpClient, RequestContext};
 use crate::valid::Valid;
 
@@ -28,11 +28,14 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-  pub fn new(auth: &Auth, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
-    Valid::from_iter(&auth.0, |provider| {
-      AuthProvider::from_config(provider.provider.clone(), client.clone())
-    })
-    .map(|providers| Self { providers })
+  pub fn new(auth: Auth, client: Arc<dyn HttpClient>) -> Self {
+    let providers = auth
+      .0
+      .into_iter()
+      .map(|provider| AuthProvider::from_config(provider.provider, client.clone()))
+      .collect();
+
+    Self { providers }
   }
 }
 

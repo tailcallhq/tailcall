@@ -1,29 +1,28 @@
 mod remote_jwks;
 mod validation;
 
-use std::fs;
 use std::sync::Arc;
-use std::time::Duration;
 
 use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
-use jwtk::jwk::{JwkSet, JwkSetVerifier};
+use jwtk::jwk::JwkSetVerifier;
 use jwtk::HeaderAndClaims;
-use url::Url;
 
 use self::remote_jwks::RemoteJwksVerifier;
 use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProviderTrait};
-use crate::config::{JwksOptions, JwksVerifierOptions, JwtProviderOptions};
-use crate::helpers::config_path::config_path;
+use crate::blueprint;
 use crate::http::{HttpClient, RequestContext};
 use crate::valid::{Valid, ValidationError};
 
 // only used in tests and uses mocked implementation
 #[cfg(test)]
-impl Default for JwtProviderOptions {
-  fn default() -> Self {
+impl blueprint::JwtProvider {
+  fn test_value() -> Self {
+    use std::fs;
     use std::path::PathBuf;
+
+    use jwtk::jwk::JwkSet;
 
     let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = root_dir.join(file!());
@@ -32,9 +31,11 @@ impl Default for JwtProviderOptions {
     test_file.push("tests");
     test_file.push("jwks.json");
 
-    let jwks = JwksOptions { optional_kid: false, verifier: JwksVerifierOptions::File(test_file) };
+    let jwks = fs::read_to_string(test_file).unwrap();
+    let jwks: JwkSet = serde_json::from_str(&jwks).unwrap();
+    let jwks = blueprint::Jwks::Local(jwks);
 
-    Self { issuer: Default::default(), audiences: Default::default(), jwks }
+    Self { issuer: Default::default(), audiences: Default::default(), optional_kid: false, jwks }
   }
 }
 
@@ -44,49 +45,23 @@ enum JwksVerifier {
 }
 
 impl JwksVerifier {
-  pub fn new(options: &JwksOptions, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
-    match &options.verifier {
-      JwksVerifierOptions::Const(data) => {
-        Valid::from(serde_json::from_value(data.clone()).map_err(|e| ValidationError::new(e.to_string())))
-          .trace("const")
-          .map(|jwks: JwkSet| {
-            let mut verifier = jwks.verifier();
-
-            verifier.set_require_kid(!options.optional_kid);
-
-            Self::Local(verifier)
-          })
-      }
-      JwksVerifierOptions::File(path) => Valid::from(
-        config_path(path)
-          .and_then(fs::read_to_string)
-          .map_err(|e| ValidationError::new(e.to_string())),
-      )
-      .and_then(|file| {
-        let de = &mut serde_json::Deserializer::from_str(&file);
-
-        Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
-      })
-      .trace(&format!("{}", path.display()))
-      .trace("file")
-      .map(|jwks: JwkSet| {
+  pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpClient>) -> Self {
+    match &options.jwks {
+      blueprint::Jwks::Local(jwks) => {
         let mut verifier = jwks.verifier();
 
         verifier.set_require_kid(!options.optional_kid);
 
         Self::Local(verifier)
-      }),
-      JwksVerifierOptions::Remote { url, max_age } => {
-        Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).map(|url| {
-          let mut verifier = RemoteJwksVerifier::new(url, client, Duration::from_millis(max_age.get()));
+      }
+      blueprint::Jwks::Remote { url, max_age } => {
+        let mut verifier = RemoteJwksVerifier::new(url.clone(), client, *max_age);
 
-          verifier.set_require_kid(!options.optional_kid);
+        verifier.set_require_kid(!options.optional_kid);
 
-          Self::Remote(verifier)
-        })
+        Self::Remote(verifier)
       }
     }
-    .trace("jwks")
   }
 
   async fn verify(&self, token: &str) -> Result<HeaderAndClaims<()>, AuthError> {
@@ -98,13 +73,13 @@ impl JwksVerifier {
 }
 
 pub struct JwtProvider {
-  options: JwtProviderOptions,
+  options: blueprint::JwtProvider,
   verifier: JwksVerifier,
 }
 
 impl JwtProvider {
-  pub fn new(options: JwtProviderOptions, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
-    JwksVerifier::new(&options.jwks, client).map(|verifier| Self { options, verifier })
+  pub fn new(options: blueprint::JwtProvider, client: Arc<dyn HttpClient>) -> Self {
+    Self { verifier: JwksVerifier::new(&options, client), options }
   }
 
   fn resolve_token(&self, request: &RequestContext) -> Option<String> {
@@ -147,10 +122,8 @@ impl AuthProviderTrait for JwtProvider {
 mod tests {
   use std::collections::HashSet;
 
-  use anyhow::Result;
-  use serde_json::json;
-
   use super::*;
+  use crate::http::HttpClient;
   use crate::valid::ValidationError;
 
   struct MockHttpClient;
@@ -171,85 +144,58 @@ mod tests {
   // to parse the token and see its content use https://jwt.io
   const TEST_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw";
 
-  #[test]
-  fn jwt_options_parse() -> Result<()> {
-    let options: JwtProviderOptions = serde_json::from_value(json!({
-      "jwks": {
-        "file": "tests/server/config/jwks.json"
-      }
-    }))?;
-
-    assert!(matches!(
-      options.jwks,
-      JwksOptions { optional_kid: false, verifier: JwksVerifierOptions::File(_) }
-    ));
-
-    let options: JwtProviderOptions = serde_json::from_value(json!({
-      "jwks": {
-        "optionalKid": true,
-        "remote": {
-          "url": "http://localhost:3000"
-        }
-      }
-    }))?;
-
-    assert!(matches!(
-      options.jwks,
-      JwksOptions { optional_kid: true, verifier: JwksVerifierOptions::Remote { .. } }
-    ));
-
-    Ok(())
-  }
-
   #[tokio::test]
-  async fn validate_token_iss() -> Result<()> {
-    let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
+  async fn validate_token_iss() {
+    let jwt_options = blueprint::JwtProvider::test_value();
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
-    let jwt_options = JwtProviderOptions { issuer: Some("me".to_owned()), ..Default::default() };
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
-
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
-
-    assert!(valid.is_succeed());
-
-    let jwt_options = JwtProviderOptions { issuer: Some("another".to_owned()), ..Default::default() };
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
-
-    let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
-
-    assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
-
-    Ok(())
-  }
-
-  #[tokio::test]
-  async fn validate_token_aud() -> Result<()> {
-    let jwt_options = JwtProviderOptions::default();
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
-
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
-
-    assert!(valid.is_succeed());
-
-    let jwt_options = JwtProviderOptions { audiences: HashSet::from_iter(["them".to_string()]), ..Default::default() };
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
+    let jwt_options = blueprint::JwtProvider { issuer: Some("me".to_owned()), ..blueprint::JwtProvider::test_value() };
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider.validate_token(TEST_TOKEN).await;
 
     assert!(valid.is_succeed());
 
     let jwt_options =
-      JwtProviderOptions { audiences: HashSet::from_iter(["anothem".to_string()]), ..Default::default() };
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient)).to_result()?;
+      blueprint::JwtProvider { issuer: Some("another".to_owned()), ..blueprint::JwtProvider::test_value() };
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
     let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
 
     assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
-    Ok(())
+  }
+
+  #[tokio::test]
+  async fn validate_token_aud() {
+    let jwt_options = blueprint::JwtProvider::test_value();
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
+
+    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+
+    assert!(valid.is_succeed());
+
+    let jwt_options = blueprint::JwtProvider {
+      audiences: HashSet::from_iter(["them".to_string()]),
+      ..blueprint::JwtProvider::test_value()
+    };
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
+
+    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+
+    assert!(valid.is_succeed());
+
+    let jwt_options = blueprint::JwtProvider {
+      audiences: HashSet::from_iter(["anothem".to_string()]),
+      ..blueprint::JwtProvider::test_value()
+    };
+    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
+
+    let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
+
+    assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
   }
 }

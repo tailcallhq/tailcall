@@ -347,9 +347,9 @@ input AuthJwks {
   """
   remote: AuthJwksRemote
   """
-  JWKS data as a string
+  JWKS data as a string or a template
   """
-  const: JSON
+  const: String
 }
 
 input AuthJWT {

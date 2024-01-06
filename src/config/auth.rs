@@ -1,9 +1,7 @@
 use std::collections::HashSet;
 use std::num::NonZeroU64;
-use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use super::is_default;
 
@@ -17,13 +15,11 @@ mod remote {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub enum JwksVerifierOptions {
-  Const(Value),
-  File(PathBuf),
+pub enum Jwks {
+  Const(String),
+  File(String),
   #[serde(rename_all = "camelCase")]
   Remote {
-    // TODO: could be Url, but parsing error in that case is misleading
-    // `Parsing failed because of invalid value: string \"__unknown.json\", expected relative URL without a base`
     url: String,
     #[serde(default = "remote::default_max_age")]
     max_age: NonZeroU64,
@@ -32,36 +28,30 @@ pub enum JwksVerifierOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct JwksOptions {
-  #[serde(default, skip_serializing_if = "is_default")]
-  pub optional_kid: bool,
-  #[serde(flatten)]
-  pub verifier: JwksVerifierOptions,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct JwtProviderOptions {
+pub struct JwtProvider {
   #[serde(skip_serializing_if = "is_default")]
   pub issuer: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub audiences: HashSet<String>,
-  pub jwks: JwksOptions,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub optional_kid: bool,
+  pub jwks: Jwks,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum AuthProviderConfig {
-  JWT(JwtProviderOptions),
+pub enum AuthProvider {
+  JWT(JwtProvider),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct AuthConfig {
+pub struct AuthEntry {
   pub id: String,
   #[serde(flatten)]
-  pub provider: AuthProviderConfig,
+  pub provider: AuthProvider,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
-pub struct Auth(pub Vec<AuthConfig>);
+pub struct Auth(pub Vec<AuthEntry>);
 
 impl Auth {
   pub fn merge_right(self, other: Auth) -> Self {
@@ -74,5 +64,44 @@ impl Auth {
 
   pub fn is_some(&self) -> bool {
     !self.0.is_empty()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+
+  use anyhow::Result;
+  use serde_json::json;
+
+  use super::*;
+
+  #[test]
+  fn jwt_options_parse() -> Result<()> {
+    let config: JwtProvider = serde_json::from_value(json!({
+      "jwks": {
+        "file": "tests/server/config/jwks.json"
+      }
+    }))?;
+
+    assert!(matches!(
+      config,
+      JwtProvider { optional_kid: false, jwks: Jwks::File(_), .. }
+    ));
+
+    let config: JwtProvider = serde_json::from_value(json!({
+      "optionalKid": true,
+      "jwks": {
+        "remote": {
+          "url": "http://localhost:3000"
+        }
+      }
+    }))?;
+
+    assert!(matches!(
+      config,
+      JwtProvider { optional_kid: true, jwks: Jwks::Remote { .. }, .. }
+    ));
+
+    Ok(())
   }
 }

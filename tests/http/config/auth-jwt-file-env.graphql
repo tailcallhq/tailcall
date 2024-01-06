@@ -1,0 +1,20 @@
+schema @server(port: 8000, graphiql: true, auth: [{JWT: {jwks: {file: "{{env.JWKS_FILE}}"}}, id: "jwt"}]) {
+  query: Query
+}
+
+type Query {
+  scalar: String! @const(data: "data from public scalar")
+  protectedScalar: String! @protected @const(data: "data from protected scalar")
+  nested: Nested!
+  protectedType: ProtectedType
+}
+
+type Nested {
+  name: String! @const(data: "protected nested name")
+  protected: String! @protected @const(data: "protected nested")
+}
+
+type ProtectedType @protected {
+  name: String! @const(data: "protected type name")
+  nested: String! @const(data: "protected type nested")
+}

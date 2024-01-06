@@ -9,4 +9,7 @@ type Query {
 
 #> client-sdl
 type Failure
-  @error(message: "No such file or directory (os error 2)", trace: ["@auth", "JWT", "jwks", "file", "__unknown.json"])
+  @error(
+    message: "No such file or directory (os error 2)"
+    trace: ["schema", "@server", "auth", "JWT", "jwks", "file", "__unknown.json"]
+  )

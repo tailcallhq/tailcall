@@ -1,6 +1,7 @@
 mod auth;
 mod definitions;
 mod from_config;
+mod init_context;
 mod operators;
 mod schema;
 mod server;

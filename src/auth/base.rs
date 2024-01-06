@@ -3,7 +3,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use super::jwt::JwtProvider;
-use crate::config::AuthProviderConfig;
+use crate::blueprint;
 use crate::http::{HttpClient, RequestContext};
 use crate::valid::Valid;
 
@@ -26,11 +26,9 @@ pub enum AuthProvider {
 }
 
 impl AuthProvider {
-  pub fn from_config(config: AuthProviderConfig, client: Arc<dyn HttpClient>) -> Valid<Self, String> {
+  pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpClient>) -> Self {
     match config {
-      AuthProviderConfig::JWT(options) => JwtProvider::new(options, client.clone())
-        .map(AuthProvider::JWT)
-        .trace("JWT"),
+      blueprint::AuthProvider::JWT(options) => AuthProvider::JWT(JwtProvider::new(options, client)),
     }
   }
 }
