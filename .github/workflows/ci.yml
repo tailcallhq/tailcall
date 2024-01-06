@@ -92,12 +92,6 @@ jobs:
       - name: Run Lint Script
         run: ./lint.sh --mode=check
 
-  draft_release:
-    name: Draft Release
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
-    uses: ./.github/workflows/draft_release.yml
-    secrets: inherit
-
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build]
