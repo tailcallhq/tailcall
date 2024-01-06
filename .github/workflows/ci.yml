@@ -7,8 +7,6 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
-  pull_request_target:
-    types: [opened, reopened, synchronize]
   release:
     types: [published]
 permissions:
@@ -96,8 +94,8 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
-    uses: ./.github/workflows/job1.yml
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    uses: ./.github/workflows/draft_release.yml
     secrets: inherit
 
   release:
