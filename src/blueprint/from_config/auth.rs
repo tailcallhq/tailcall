@@ -106,9 +106,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
 pub fn to_auth(init_context: &InitContext, auth: &config::Auth) -> Valid<Auth, String> {
   Valid::from_iter(&auth.0, |input| {
     let provider = match &input.provider {
-      config::AuthProvider::JWT(jwt) => to_jwt(init_context, jwt.clone())
-        .map(AuthProvider::JWT)
-        .trace("JWT"),
+      config::AuthProvider::JWT(jwt) => to_jwt(init_context, jwt.clone()).map(AuthProvider::JWT).trace("JWT"),
     };
 
     provider.map(|provider| AuthEntry { id: input.id.clone(), provider })
