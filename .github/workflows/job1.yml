@@ -11,6 +11,9 @@ on:
         description: "The second output string"
         value: ${{ jobs.example_job.outputs.output2 }}
 
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
 jobs:
   example_job:
     name: Generate output
