@@ -1,23 +1,14 @@
-name: Call a reusable workflow
+name: Call a reusable workflow and use its outputs
 
 on:
-  push:
-    branches:
-      - "**"
-  pull_request:
-    branches: [main]
-    types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 jobs:
- call-workflow:
-   uses: alankritdabral/tailcall/.github/workflows/job1.yml
+  job1:
+    uses: octo-org/example-repo/.github/workflows/called-workflow.yml@v1
 
- call-workflow-passing-data:
-   permissions:
-     contents: read
-     pull-requests: write
-   uses: alankritdabral/tailcall/.github/workflows/job2.yml
-   with:
-     config-path: .github/labeler.yml
-   secrets:
-     token: ${{ secrets.GITHUB_TOKEN }}
+  job2:
+    runs-on: ubuntu-latest
+    needs: job1
+    steps:
+      - run: echo ${{ needs.job1.outputs.firstword }} ${{ needs.job1.outputs.secondword }}
