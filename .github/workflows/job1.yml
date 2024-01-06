@@ -1,20 +1,28 @@
-name: Reusable workflow example
+name: Node.js CI
 
 on:
- workflow_call:
-   inputs:
-     config-path:
-       required: true
-       type: string
-   secrets:
-     token:
-       required: true
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
- triage:
-   runs-on: ubuntu-latest
-   steps:
-   - uses: actions/labeler@v4
-     with:
-       repo-token: ${{ secrets.token }}
-       configuration-path: ${{ inputs.config-path }}
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test

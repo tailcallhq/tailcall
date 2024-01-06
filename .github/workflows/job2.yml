@@ -1,9 +1,12 @@
 name: Call a reusable workflow
 
 on:
- pull_request:
-   branches:
-     - main
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 jobs:
  call-workflow:
