@@ -111,7 +111,7 @@ impl RequestTemplate {
         }
         Encoding::ApplicationXWwwFormUrlencoded => {
           let raw_data: String = body.render(ctx);
-          // The raw_data can be both JSON or plain string. If it is
+          // The raw_data can be both JSON or plain string. If it is 
           // JSON, we need to parse it, or, we can directly use it.
           if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
             let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
@@ -119,7 +119,7 @@ impl RequestTemplate {
           } else {
             req.body_mut().replace(raw_data.into());
           }
-        }
+        } 
       }
     }
     req
@@ -133,7 +133,6 @@ impl RequestTemplate {
     }
 
     let headers = req.headers_mut();
-    // We want to set the header value based on encoding
     // We want to set the header value based on encoding
     headers.insert(
       reqwest::header::CONTENT_TYPE,
@@ -416,7 +415,7 @@ mod tests {
     assert_eq!(body, "baz".as_bytes());
   }
   #[test]
-  fn test_body_encoding_application_x_www_form_urlencoded() {
+  fn test_body_encoding_application_x_www_form_urlencoded_with_string() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
@@ -436,6 +435,27 @@ mod tests {
       .to_owned();
     assert_eq!(body, "baz".as_bytes());
   }
+  // #[test]
+  // fn test_body_encoding_application_x_www_form_urlencoded_with_json() {
+  //   let tmpl = RequestTemplate::new("http://localhost:3000")
+  //     .unwrap()
+  //     .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
+  //     .body(Some(Mustache::parse("{{foo}}").unwrap()));
+  //   let ctx = Context::default().value(json!({
+  //     "foo": {
+  //       "bar": "baz"
+  //     }
+  //   }));
+  //   let body = tmpl
+  //     .to_request(&ctx)
+  //     .unwrap()
+  //     .body()
+  //     .unwrap()
+  //     .as_bytes()
+  //     .unwrap()
+  //     .to_owned();
+  //   assert_eq!(body, "foo%5Bbar%5D=baz".as_bytes());
+  // }
   #[test]
   fn test_from_endpoint() {
     let mut headers = HeaderMap::new();
