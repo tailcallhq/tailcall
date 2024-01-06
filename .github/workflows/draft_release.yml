@@ -1,8 +1,6 @@
 name: Draft Release 
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
   workflow_call:
     inputs:
       draft:
@@ -19,7 +17,6 @@ on:
 jobs:
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     permissions:
       contents: write

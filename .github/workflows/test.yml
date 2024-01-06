@@ -1,0 +1,11 @@
+name: check_kar
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+jobs:
+  draft_release:
+    name: Draft Release
+    uses: ./.github/workflows/job1.yml
+    secrets: inherit
