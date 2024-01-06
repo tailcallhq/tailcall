@@ -1,0 +1,20 @@
+name: Call a reusable workflow
+
+on:
+ pull_request:
+   branches:
+     - main
+
+jobs:
+ call-workflow:
+   uses: alankritdabral/tailcall/.github/workflows/job1.yml@v1
+
+ call-workflow-passing-data:
+   permissions:
+     contents: read
+     pull-requests: write
+   uses: alankritdabral/tailcall/.github/workflows/job2.yml@main
+   with:
+     config-path: .github/labeler.yml
+   secrets:
+     token: ${{ secrets.GITHUB_TOKEN }}
