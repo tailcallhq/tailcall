@@ -7,8 +7,6 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
-  pull_request_target:
-    types: [opened, reopened, synchronize]
   release:
     types: [published]
 permissions:
@@ -96,31 +94,9 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
-
-      - id: create_release
-        uses: release-drafter/release-drafter@v5
-        if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-name: release-drafter.yml
-
-      - name: Set Output for Later Jobs
-        id: set_output
-        run: |
-          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
-          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
-    outputs:
-      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
-      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    uses: ./.github/workflows/draft_release.yml
+    secrets: inherit
 
   release:
     name: Release
