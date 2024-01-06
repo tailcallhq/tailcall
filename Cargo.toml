@@ -72,7 +72,7 @@ prost = "0.12.3"
 
 [dev-dependencies]
 criterion = "0.5.1"
-httpmock = "0.6"
+httpmock = "0.7"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 
