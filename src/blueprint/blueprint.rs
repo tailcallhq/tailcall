@@ -4,8 +4,8 @@ use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
-use async_graphql::ValidationMode;
 use async_graphql::Response;
+use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
@@ -232,41 +232,43 @@ impl Blueprint {
       .unwrap()
   }
 
-  pub async fn validate_operation(schema: &Schema, query: &str) -> Valid<(), String> {
-    todo!()
+  pub async fn validate_operation(schema: &Schema, query: &str) -> Vec<Cause<String>> {
+    schema
+      .execute(query)
+      .await
+      .errors
+      .iter()
+      .map(|err| {
+        Cause::new(err.message.clone()).trace(VecDeque::from_iter(
+          err
+            .locations
+            .iter()
+            .map(|loc| format!("line {} column {}", loc.line, loc.column)),
+        ))
+      })
+      .collect()
   }
 
   pub async fn validate_operations(&self, operations: Vec<String>) -> Valid<(), String> {
     let schema = self.to_validation_schema();
-    let mut diagnostics = vec![];
+    let mut execution = vec![];
 
     for op in operations.iter() {
       match tokio::fs::read_to_string(op).await {
         Ok(operation) => {
-          let Response { errors, .. } = schema.execute(&operation).await;
-          for err in errors.iter() {
-            let trace = if err.locations.is_empty() {
-              op.to_string()
-            } else {
-              let locs = err
-                .locations
-                .iter()
-                .map(|loc| loc.to_string())
-                .collect::<Vec<String>>()
-                .join(",");
-              format!("{}({})", op, locs)
-            };
-            diagnostics.push(Cause::new(err.message.clone()).trace(VecDeque::from([trace])));
-          }
+          let causes = Blueprint::validate_operation(&schema, &operation).await;
+          execution.push((op.to_string(), causes));
         }
-        Err(_) => diagnostics.push(Cause::new("Cannot read operation".into()).trace(VecDeque::from([op.to_string()]))),
+        Err(_) => execution.push((
+          op.to_string(),
+          vec![Cause::new(format!("Cannot read file operation file {}", op))],
+        )),
       }
     }
 
-    if diagnostics.is_empty() {
-      Valid::succeed(())
-    } else {
-      Valid::from_vec_cause(diagnostics).map(|_: Vec<()>| ())
-    }
+    Valid::from_iter(execution.iter(), |(op, causes)| {
+      Valid::<(), String>::from_vec_cause(causes.to_vec()).trace(op)
+    })
+    .map(|_: Vec<_>| ())
   }
 }
