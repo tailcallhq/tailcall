@@ -1,5 +1,10 @@
 schema
-  @server(port: 8000, graphiql: true, auth: [{id: "jwt-1", jwt: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}}])
+  @server(
+    port: 8000
+    graphiql: true
+    auth: [{id: "basic-1", basic: {file: "{{vars.BASIC_AUTH}}"}}]
+    vars: [{key: "BASIC_AUTH", value: "examples/auth-basic/htpasswd.txt"}]
+  )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }

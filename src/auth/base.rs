@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
+use super::basic::BasicProvider;
 use super::jwt::JwtProvider;
 use crate::blueprint;
 use crate::http::{HttpClient, RequestContext};
@@ -22,13 +23,15 @@ pub(crate) trait AuthProviderTrait {
 }
 
 pub enum AuthProvider {
-  JWT(JwtProvider),
+  Basic(BasicProvider),
+  Jwt(JwtProvider),
 }
 
 impl AuthProvider {
   pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpClient>) -> Self {
     match config {
-      blueprint::AuthProvider::JWT(options) => AuthProvider::JWT(JwtProvider::new(options, client)),
+      blueprint::AuthProvider::Basic(options) => AuthProvider::Basic(BasicProvider::new(options)),
+      blueprint::AuthProvider::Jwt(options) => AuthProvider::Jwt(JwtProvider::new(options, client)),
     }
   }
 }
@@ -36,7 +39,8 @@ impl AuthProvider {
 impl AuthProviderTrait for AuthProvider {
   async fn validate(&self, req_ctx: &RequestContext) -> Valid<(), AuthError> {
     match self {
-      AuthProvider::JWT(jwt) => jwt.validate(req_ctx).await,
+      AuthProvider::Basic(basic) => basic.validate(req_ctx).await,
+      AuthProvider::Jwt(jwt) => jwt.validate(req_ctx).await,
     }
   }
 }

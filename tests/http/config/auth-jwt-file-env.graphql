@@ -1,4 +1,4 @@
-schema @server(port: 8000, graphiql: true, auth: [{JWT: {jwks: {file: "{{env.JWKS_FILE}}"}}, id: "jwt"}]) {
+schema @server(port: 8000, graphiql: true, auth: [{jwt: {jwks: {file: "{{env.JWKS_FILE}}"}}, id: "jwt"}]) {
   query: Query
 }
 

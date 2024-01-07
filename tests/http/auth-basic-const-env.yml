@@ -1,0 +1,76 @@
+config: !file tests/http/config/auth-basic-const-env.graphql
+name: Auth with BasicAuth loaded from const env
+
+env:
+  HTPASSWD_CONTENT: |
+    testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
+    testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
+    testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: |
+          query {
+            scalar
+            nested {
+              name
+            }
+          }
+    response:
+      body:
+        data:
+          scalar: data from public scalar
+          nested:
+            name: protected nested name
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: |
+          query {
+            protectedScalar
+          }
+    response:
+      body:
+        data: null
+        errors:
+          - message: |
+              Validation Error
+              • Haven't found auth parameters []
+
+            locations:
+              - column: 3
+                line: 2
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers:
+        Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
+      body:
+        query: |
+          query {
+            protectedScalar
+            nested {
+              name
+              protected
+            }
+            protectedType {
+              name
+              nested
+            }
+          }
+    response:
+      body:
+        data:
+          protectedScalar: data from protected scalar
+          nested:
+            name: protected nested name
+            protected: protected nested
+          protectedType:
+            name: protected type name
+            nested: protected type nested

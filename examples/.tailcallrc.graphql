@@ -332,6 +332,11 @@ input Batch {
   headers: [String]
 }
 
+input AuthBasic {
+  file: String
+  const: String
+}
+
 input AuthJwksRemote {
   url: String!
   maxAge: Int
@@ -373,7 +378,11 @@ input AuthProvider {
   """
   Settings for JWT auth provider
   """
-  JWT: AuthJWT
+  jwt: AuthJWT
+  """
+  Settings for Basic auth provider
+  """
+  basic: AuthBasic
 }
 
 scalar JSON

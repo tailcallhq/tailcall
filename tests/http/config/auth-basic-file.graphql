@@ -1,4 +1,4 @@
-schema @server(port: 8000, graphiql: true, auth: [{jwt: {jwks: {const: "{{env.JWKS}}"}}, id: "jwt"}]) {
+schema @server(port: 8000, graphiql: true, auth: [{id: "basic", basic: {file: "tests/server/config/htpasswd.txt"}}]) {
   query: Query
 }
 

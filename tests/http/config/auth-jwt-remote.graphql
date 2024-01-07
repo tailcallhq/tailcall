@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000, graphiql: true, auth: [{id: "jwt", JWT: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}}]) {
+  @server(port: 8000, graphiql: true, auth: [{id: "jwt", jwt: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}}]) {
   query: Query
 }
 

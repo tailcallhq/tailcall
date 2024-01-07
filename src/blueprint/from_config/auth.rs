@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use std::fs;
-use std::path::Path;
 use std::time::Duration;
 
 use jwtk::jwk::JwkSet;
@@ -11,6 +10,11 @@ use crate::config;
 use crate::helpers::config_path::config_path;
 use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError};
+
+#[derive(Debug, Clone)]
+pub struct BasicProvider {
+  pub htpasswd: String,
+}
 
 #[derive(Debug)]
 pub enum Jwks {
@@ -41,7 +45,8 @@ pub struct JwtProvider {
 
 #[derive(Clone, Debug)]
 pub enum AuthProvider {
-  JWT(JwtProvider),
+  Basic(BasicProvider),
+  Jwt(JwtProvider),
 }
 
 #[derive(Clone, Debug)]
@@ -52,6 +57,35 @@ pub struct AuthEntry {
 
 #[derive(Clone, Default, Debug)]
 pub struct Auth(pub Vec<AuthEntry>);
+
+fn to_basic(init_context: &InitContext, options: config::BasicProvider) -> Valid<BasicProvider, String> {
+  match options {
+    config::BasicProvider::Const(data) => {
+      Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string())))
+        .map(|tmpl| {
+          let htpasswd = tmpl.render(init_context);
+
+          BasicProvider { htpasswd }
+        })
+        .trace("const")
+    }
+    config::BasicProvider::File(file) => {
+      Valid::from(Mustache::parse(&file).map_err(|e| ValidationError::new(e.to_string())))
+        .and_then(|tmpl| {
+          let file = tmpl.render(init_context);
+
+          Valid::from(
+            config_path(file.as_ref())
+              .and_then(fs::read_to_string)
+              .map_err(|e| ValidationError::new(e.to_string())),
+          )
+          .trace(&file)
+        })
+        .map(|htpasswd| BasicProvider { htpasswd })
+        .trace("file")
+    }
+  }
+}
 
 fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<JwtProvider, String> {
   let jwks = &options.jwks;
@@ -69,9 +103,8 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
     config::Jwks::File(path) => Valid::from(Mustache::parse(path).map_err(|e| ValidationError::new(e.to_string())))
       .and_then(|path| {
         let path = path.render(init_context);
-        let path = Path::new(&path);
         Valid::from(
-          config_path(path)
+          config_path(path.as_ref())
             .and_then(fs::read_to_string)
             .map_err(|e| ValidationError::new(e.to_string())),
         )
@@ -80,7 +113,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
 
           Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
         })
-        .trace(&format!("{}", path.display()))
+        .trace(&path)
         .trace("file")
         .map(|jwks: JwkSet| Jwks::Local(jwks))
       }),
@@ -106,7 +139,10 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
 pub fn to_auth(init_context: &InitContext, auth: &config::Auth) -> Valid<Auth, String> {
   Valid::from_iter(&auth.0, |input| {
     let provider = match &input.provider {
-      config::AuthProvider::JWT(jwt) => to_jwt(init_context, jwt.clone()).map(AuthProvider::JWT).trace("JWT"),
+      config::AuthProvider::Basic(basic) => to_basic(init_context, basic.clone())
+        .map(AuthProvider::Basic)
+        .trace("basic"),
+      config::AuthProvider::Jwt(jwt) => to_jwt(init_context, jwt.clone()).map(AuthProvider::Jwt).trace("jwt"),
     };
 
     provider.map(|provider| AuthEntry { id: input.id.clone(), provider })

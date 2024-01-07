@@ -5,12 +5,23 @@ use serde::{Deserialize, Serialize};
 
 use super::is_default;
 
-mod remote {
-  use std::num::NonZeroU64;
+mod default {
+  pub mod jwt {
+    pub mod remote {
+      use std::num::NonZeroU64;
 
-  pub fn default_max_age() -> NonZeroU64 {
-    NonZeroU64::new(5 * 60 * 1000).unwrap()
+      pub fn max_age() -> NonZeroU64 {
+        NonZeroU64::new(5 * 60 * 1000).unwrap()
+      }
+    }
   }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum BasicProvider {
+  Const(String),
+  File(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -21,7 +32,7 @@ pub enum Jwks {
   #[serde(rename_all = "camelCase")]
   Remote {
     url: String,
-    #[serde(default = "remote::default_max_age")]
+    #[serde(default = "default::jwt::remote::max_age")]
     max_age: NonZeroU64,
   },
 }
@@ -39,8 +50,10 @@ pub struct JwtProvider {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub enum AuthProvider {
-  JWT(JwtProvider),
+  Jwt(JwtProvider),
+  Basic(BasicProvider),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
