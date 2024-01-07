@@ -1,11 +1,13 @@
 use derive_setters::Setters;
+use regex::Regex;
+use std::fs;
+use std::path::PathBuf;
+use std::sync::Once;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::valid::Valid;
-use std::fs;
-use std::path::PathBuf;
 
-use regex::Regex;
+static INIT: Once = Once::new();
 
 const SERVER_SDL: &str = "server-sdl";
 const CLIENT_QUERY: &str = "client-query";
@@ -41,6 +43,12 @@ impl OperationSpec {
   }
 
   fn new(path: PathBuf, content: &str) -> OperationSpec {
+    INIT.call_once(|| {
+      env_logger::builder()
+        .filter(Some("operation_spec"), log::LevelFilter::Info)
+        .init();
+    });
+
     let mut spec = OperationSpec::default().path(path);
     for component in content.split("#>") {
       if component.contains(SPEC_ONLY) {
@@ -124,37 +132,51 @@ impl OperationSpec {
 }
 
 #[tokio::test]
-async fn test_schema_operations() -> std::io::Result<()> {
+async fn test_operations() -> std::io::Result<()> {
   let specs = OperationSpec::cargo_read("tests/graphql/operations");
-  println!("{:?}", specs);
 
   let tasks: Vec<_> = specs?
     .into_iter()
     .map(|spec| {
       tokio::spawn(async move {
-        let mut config = Config::from_sdl(spec.server_sdl.as_str())
-          .to_result()
-          .unwrap();
+        let mut config = Config::from_sdl(spec.server_sdl.as_str()).to_result().unwrap();
         config.server.query_validation = Some(false);
 
-        let blueprint = Valid::from(Blueprint::try_from(&config))
+        let schema = Valid::from(Blueprint::try_from(&config))
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
-          .unwrap();
+          .unwrap()
+          .to_validation_schema();
 
-        for q in spec.test_queries {
-            // blueprint.validate_operations()
-          // if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-          //   assert_ne!(json, expected, "QueryExecution: {}", spec.path.display());
-          // } else {
-          //   assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
-          // }
+        for query_spec in spec.test_queries {
+          let count = Blueprint::validate_operation(&schema, query_spec.query.as_str())
+            .await
+            .len() as u32;
 
+          if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
+            assert_ne!(
+              count,
+              query_spec.diagnostic_count,
+              "QueryExecution: {} (diagnostics should mismatch (got {})",
+              spec.path.display(),
+              query_spec.diagnostic_count
+            );
+          } else {
+            assert_eq!(
+              count,
+              query_spec.diagnostic_count,
+              "QueryExecution: {} (diagnostics count mismatch ({} expected but got {}))",
+              spec.path.display(),
+              query_spec.diagnostic_count,
+              count
+            );
+          }
           log::info!("QueryExecution: {} ... ok", spec.path.display());
         }
       })
     })
     .collect();
+
   for task in tasks {
     task.await?;
   }
