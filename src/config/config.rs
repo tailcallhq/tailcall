@@ -123,15 +123,15 @@ impl Config {
     self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
-  pub fn merge_right(self, other: &Self) -> Self {
+  pub async fn merge_right(self, other: &Self) -> anyhow::Result<Self> {
     let server = self.server.merge_right(other.server.clone());
     let types = merge_types(self.types, other.types.clone());
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let links = merge_links(self.links, other.links.clone()).unwrap();
+    let links = merge_links(self.links, other.links.clone()).await?;
 
-    Self { server, upstream, types, schema, unions, links }
+    Ok(Self { server, upstream, types, schema, unions, links })
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
@@ -214,10 +214,11 @@ fn merge_unions(
   self_unions
 }
 
-pub fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> anyhow::Result<Vec<Link>> {
-  let runtime = tokio::runtime::Runtime::new()?;
+pub async fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> anyhow::Result<Vec<Link>> {
+  // let runtime = tokio::runtime::Runtime::new()?;
   for link in other_links {
-    let recurse_links = runtime.block_on(async { Link::resolve_recurse(link).await })?;
+    // let recurse_links = runtime.block_on(async { Link::resolve_recurse(link).await })?;
+    let recurse_links = Link::resolve_recurse(link).await?;
     for rl in recurse_links {
       self_links.push(rl);
     }

@@ -362,8 +362,8 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
   Ok(())
 }
 
-#[test]
-fn test_merge_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_merge_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {
@@ -373,7 +373,11 @@ fn test_merge_sdl() -> std::io::Result<()> {
       .get_sources(Tag::ServerSDL)
       .map(|s| Config::from_sdl(s).to_result().unwrap())
       .collect::<Vec<_>>();
-    let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
+    // let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
+    let mut config = Config::default();
+    for c in content {
+      config = config.merge_right(&c).await.unwrap();
+    }
     let actual = config.to_sdl();
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {

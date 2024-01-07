@@ -327,7 +327,10 @@ input Batch {
 
 scalar JSON
 
-directive @link(type: LinkType!, src: URL!) repeatable on SCHEMA
+directive @link(
+  type: LinkType!
+  src: URL!
+) repeatable on SCHEMA
 
 enum LinkType {
   Config 
