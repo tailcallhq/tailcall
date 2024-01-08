@@ -9,14 +9,14 @@ pub struct ValidationError<E>(Vec<Cause<E>>);
 
 impl<E: Display> Display for ValidationError<E> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    for _error in self.as_vec() {
-      f.write_str("Validation Error\n")?;
-      let errors = self.as_vec();
-      for error in errors {
-        f.write_str(format!("{} {}", '\u{2022}', error.message).as_str())?;
+    f.write_str("Validation Error\n")?;
+    let errors = self.as_vec();
+    for error in errors {
+      f.write_str(format!("{} {}", '\u{2022}', error.message).as_str())?;
+      if !error.trace.is_empty() {
         f.write_str(&(format!(" [{}]", error.trace.iter().cloned().collect::<Vec<String>>().join(", "))))?;
-        f.write_str("\n")?;
       }
+      f.write_str("\n")?;
     }
 
     Ok(())
@@ -108,19 +108,37 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
       .replace(format!("Parsing failed because of {}", error.inner()).as_str(), "")
       .into_owned();
 
-    ValidationError(vec![Cause::new(message).trace(trace.into())])
+    ValidationError(vec![Cause::new(message).trace(trace)])
   }
 }
 
 #[cfg(test)]
 mod tests {
   use pretty_assertions::assert_eq;
+  use stripmargin::StripMargin;
 
-  use crate::valid::ValidationError;
+  use crate::valid::{Cause, ValidationError};
 
   #[derive(Debug, PartialEq, serde::Deserialize)]
   struct Foo {
     a: i32,
+  }
+
+  #[test]
+  fn test_error_display_formatting() {
+    let error = ValidationError::from(vec![
+      Cause::new("1").trace(vec!["a", "b"]),
+      Cause::new("2"),
+      Cause::new("3"),
+    ]);
+    let expected_output = "\
+        |Validation Error
+        |• 1 [a, b]
+        |• 2
+        |• 3
+        |"
+    .strip_margin();
+    assert_eq!(format!("{}", error), expected_output);
   }
 
   #[test]
