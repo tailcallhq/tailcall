@@ -141,7 +141,7 @@ jobs:
 
   Cache_Benchmarks:
     name: Micro Benchmarks
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !contains(github.event_path, 'docs/') && !endswith(github.event_path, '.md')
     permissions:
       pull-requests: write
       contents: write
