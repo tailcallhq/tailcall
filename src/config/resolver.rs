@@ -28,51 +28,81 @@ pub struct Link {
   content: Option<String>, // Stores raw content
 }
 
-impl Link {
-  pub async fn resolve_recurse(self) -> anyhow::Result<Vec<Link>> {
-    let mut result: Vec<Link> = Vec::new();
-    if self.type_of == LinkType::Protobuf || self.type_of == LinkType::Data {
-      let link: Link = Self::get_raw_content(&self).await?;
-      result.push(link);
-      return Ok(result);
-    }
-    let mut link_queue: VecDeque<Link> = VecDeque::new();
-    link_queue.push_back(self);
-    while let Some(mut curr) = link_queue.pop_front() {
-      let (txt, source) = if let Ok(url) = Url::parse(&curr.src) {
-        let resp = reqwest::get(url).await?;
-        let path = curr.src.clone();
-        if !resp.status().is_success() {
-          return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
-        }
-        let source = if let Some(v) = resp.headers().get("content-type") {
-          if let Ok(s) = Source::detect_content_type(v.to_str()?) {
-            s
-          } else {
-            Source::detect(path.trim_end_matches('/'))?
-          }
-        } else {
-          Source::detect(path.trim_end_matches('/'))?
-        };
-        (resp.text().await?, source)
-      } else {
-        let path = &curr.src.trim_end_matches('/');
-        let mut f = File::open(path).await?;
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).await?;
-        (String::from_utf8(buffer)?, Source::detect(path)?)
-      };
+#[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+pub struct Links(Vec<Link>);
 
-      curr.content = Some(txt.clone());
-      let config = Config::from_source(source, &txt)?;
-
-      for link in config.links {
-        // link_queue.push_back(link);
+impl Links {
+  pub fn merge_right(&self, other: Self) -> Self {
+    let mut links = self.0.clone();
+    let other_links = other.clone();
+    for link in other_links.0 {
+      if !links.contains(&link) {
+        links.push(link);
       }
-
-      result.push(curr);
     }
-    Ok(result)
+
+    Self(links)
+  }
+}
+
+impl From<Vec<Link>> for Links {
+  fn from(links: Vec<Link>) -> Self {
+    Self(links)
+  }
+}
+
+impl From<Links> for Vec<Link> {
+  fn from(links: Links) -> Self {
+    links.0
+  }
+}
+
+impl Link {
+  pub async fn resolve_recurse(self) -> anyhow::Result<Links> {
+    todo!()
+    // let mut result: Links = Vec::new().into();
+    // if self.type_of == LinkType::Protobuf || self.type_of == LinkType::Data {
+    //   let link: Link = Self::get_raw_content(&self).await?;
+    //   result.push(link);
+    //   return Ok(result);
+    // }
+    // let mut link_queue: VecDeque<Link> = VecDeque::new();
+    // link_queue.push_back(self);
+    // while let Some(mut curr) = link_queue.pop_front() {
+    //   let (txt, source) = if let Ok(url) = Url::parse(&curr.src) {
+    //     let resp = reqwest::get(url).await?;
+    //     let path = curr.src.clone();
+    //     if !resp.status().is_success() {
+    //       return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
+    //     }
+    //     let source = if let Some(v) = resp.headers().get("content-type") {
+    //       if let Ok(s) = Source::detect_content_type(v.to_str()?) {
+    //         s
+    //       } else {
+    //         Source::detect(path.trim_end_matches('/'))?
+    //       }
+    //     } else {
+    //       Source::detect(path.trim_end_matches('/'))?
+    //     };
+    //     (resp.text().await?, source)
+    //   } else {
+    //     let path = &curr.src.trim_end_matches('/');
+    //     let mut f = File::open(path).await?;
+    //     let mut buffer = Vec::new();
+    //     f.read_to_end(&mut buffer).await?;
+    //     (String::from_utf8(buffer)?, Source::detect(path)?)
+    //   };
+
+    //   curr.content = Some(txt.clone());
+    //   let config = Config::from_source(source, &txt)?;
+
+    //   // for link in config.links {
+    //   //   link_queue.push_back(link);
+    //   // }
+
+    //   result.push(curr);
+    // }
+    // Ok(result)
   }
 
   async fn get_raw_content(link: &Link) -> anyhow::Result<Link> {

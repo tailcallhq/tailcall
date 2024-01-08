@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::Cache;
+use super::{Cache, Links};
 use crate::config::{self, Config, GraphQL, Grpc, Link, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -72,17 +72,21 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 }
 
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
-  process_schema_directives(schema_definition, config::Server::directive_name().as_str())
-}
-fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
-  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
-}
-fn links(schema_definition: &SchemaDefinition) -> Valid<BTreeMap<(), ()>, String> {
-  let data = process_schema_directives(schema_definition, config::Link::directive_name().as_str());
+  let data = process_schema_directives(schema_definition, config::Server::directive_name().as_str());
 
   println!("data: {:?}", data);
 
   data
+}
+fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
+  process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
+}
+fn links(schema_definition: &SchemaDefinition) -> Valid<Links, String> {
+  let data: Valid<Link, String> = process_schema_directives(schema_definition, config::Link::directive_name().as_str());
+
+  println!("data: {:?}", data);
+
+  data.map(|l| vec![l].into())
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);

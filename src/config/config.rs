@@ -8,10 +8,9 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream};
+use super::{Server, Upstream, Links};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
-use crate::config::resolver::Link;
 use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
@@ -34,7 +33,7 @@ pub struct Config {
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub links: BTreeMap<(), ()>,
+  pub links: Links,
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -123,15 +122,15 @@ impl Config {
     self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
-  pub async fn merge_right(self, other: &Self) -> anyhow::Result<Self> {
+  pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
     let types = merge_types(self.types, other.types.clone());
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    // let links = merge_links(self.links, other.links.clone()).await?;
+    let links = self.links.merge_right(other.links.clone());
 
-    Ok(Self { server, upstream, types, schema, unions, links: self.links })
+    Self { server, upstream, types, schema, unions, links }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
@@ -212,18 +211,6 @@ fn merge_unions(
     self_unions.insert(name, other_union);
   }
   self_unions
-}
-
-pub async fn merge_links(mut self_links: Vec<Link>, other_links: Vec<Link>) -> anyhow::Result<Vec<Link>> {
-  // let runtime = tokio::runtime::Runtime::new()?;
-  for link in other_links {
-    // let recurse_links = runtime.block_on(async { Link::resolve_recurse(link).await })?;
-    let recurse_links = Link::resolve_recurse(link).await?;
-    for rl in recurse_links {
-      self_links.push(rl);
-    }
-  }
-  Ok(self_links)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
