@@ -23,3 +23,4 @@ pub mod path;
 pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
+pub mod io;
