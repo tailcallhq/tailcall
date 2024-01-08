@@ -9,14 +9,12 @@ pub struct ValidationError<E>(Vec<Cause<E>>);
 
 impl<E: Display> Display for ValidationError<E> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    for _error in self.as_vec() {
-      f.write_str("Validation Error\n")?;
-      let errors = self.as_vec();
-      for error in errors {
-        f.write_str(format!("{} {}", '\u{2022}', error.message).as_str())?;
-        f.write_str(&(format!(" [{}]", error.trace.iter().cloned().collect::<Vec<String>>().join(", "))))?;
-        f.write_str("\n")?;
-      }
+    f.write_str("Validation Error\n")?;
+    let errors = self.as_vec();
+    for error in errors {
+      f.write_str(format!("{} {}", '\u{2022}', error.message).as_str())?;
+      f.write_str(&(format!(" [{}]", error.trace.iter().cloned().collect::<Vec<String>>().join(", "))))?;
+      f.write_str("\n")?;
     }
 
     Ok(())
