@@ -21,24 +21,24 @@ sha2 = { version = "0.10", features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = [
    "json",
-   "rustls-tls"
+   "rustls-tls",
 ], default-features = false }
 hyper = { version = "0.14", features = ["full"], default-features = false }
 async-graphql = { version = "6.0.11", features = [
    "dynamic-schema",
    "dataloader",
-   "apollo_tracing"
+   "apollo_tracing",
 ] }
 async-graphql-value = "6.0.11"
 base64 = "0.21"
 indexmap = "2.1"
 once_cell = "1.19.0"
 mini-v8 = { version = "0.4.1", optional = true }
-clap = { version = "4.4.12", features = ["derive"] }
+clap = { version = "4.4.13", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 http-cache-reqwest = { version = "0.12.0", features = [
-   "manager-moka"
+   "manager-moka",
 ], default-features = false }
 reqwest-middleware = "0.2.4"
 async-trait = "0.1.77"
@@ -47,7 +47,6 @@ moka = { version = "0.12.2", default-features = false, features = ["future"] }
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
-resource = "0.5.0"
 inquire = "0.6.2"
 log = "0.4.20"
 env_logger = "0.10.1"
@@ -72,7 +71,7 @@ prost = "0.12.3"
 
 [dev-dependencies]
 criterion = "0.5.1"
-httpmock = "0.6"
+httpmock = "0.7"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 

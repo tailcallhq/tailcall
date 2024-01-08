@@ -4,7 +4,7 @@ use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
-use async_graphql::*;
+use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
