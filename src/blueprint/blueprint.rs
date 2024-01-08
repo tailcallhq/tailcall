@@ -268,6 +268,6 @@ impl Blueprint {
     Valid::from_iter(execution.iter(), |(op, causes)| {
       Valid::<(), String>::from_vec_cause(causes.to_vec()).trace(op)
     })
-    .map(|_: Vec<_>| ())
+    .map(|_| ())
   }
 }
