@@ -2,6 +2,8 @@
 name: Sending requests to be batched by the upstream server
 config: !inline
   upstream:
+    batch:
+      delay: 1
   schema:
     query: Query
   types:
