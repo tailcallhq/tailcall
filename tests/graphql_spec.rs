@@ -376,7 +376,7 @@ async fn test_merge_sdl() -> std::io::Result<()> {
     // let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
     let mut config = Config::default();
     for c in content {
-      config = config.merge_right(&c).await.unwrap();
+      config = config.merge_right(&c).unwrap();
     }
     let actual = config.to_sdl();
 

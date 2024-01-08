@@ -26,7 +26,7 @@ impl ConfigReader {
         let path = path.trim_end_matches('/');
         Self::from_file_path(path).await?
       };
-      config = config.clone().merge_right(&conf);
+      config = config.clone().merge_right(&conf)?;
     }
     Ok(config)
   }

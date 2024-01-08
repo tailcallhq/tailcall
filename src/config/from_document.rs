@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::{Cache, Links};
+use super::Cache;
 use crate::config::{self, Config, GraphQL, Grpc, Link, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -71,23 +71,45 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
   res
 }
 
-fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
-  let data = process_schema_directives(schema_definition, config::Server::directive_name().as_str());
+fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
+  schema_definition: &SchemaDefinition,
+  directive_name: &str,
+) -> Valid<Vec<T>, String> {
+  let directives: Vec<Valid<T, String>> = schema_definition.directives.iter()
+    .map(|directive| {
+      if directive.node.name.node.as_ref() == directive_name {
+        Some(T::from_directive(&directive.node))
+      } else {
+        None
+      }
+    })
+    .filter_map(|x| x)
+    .collect();
+  
+  let mut res = Valid::succeed(Vec::new());
 
-  println!("data: {:?}", data);
+  for directive in directives {
+    res = res.zip(directive).map(|(mut vec, item)| {
+      vec.push(item);
+      vec
+    });
+  }
 
-  data
+  res  
 }
+
+fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
+  process_schema_directives(schema_definition, config::Server::directive_name().as_str())
+}
+
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
-fn links(schema_definition: &SchemaDefinition) -> Valid<Links, String> {
-  let data: Valid<Link, String> = process_schema_directives(schema_definition, config::Link::directive_name().as_str());
 
-  println!("data: {:?}", data);
-
-  data.map(|l| vec![l].into())
+fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
+  process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
+
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
   let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);

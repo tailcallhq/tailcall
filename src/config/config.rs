@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream, Links};
+use super::{Server, Upstream, Link};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
@@ -33,7 +33,7 @@ pub struct Config {
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub links: Links,
+  pub links: Vec<Link>,
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -122,15 +122,15 @@ impl Config {
     self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
-  pub fn merge_right(self, other: &Self) -> Self {
+  pub fn merge_right(self, other: &Self) -> anyhow::Result<Self> {
     let server = self.server.merge_right(other.server.clone());
     let types = merge_types(self.types, other.types.clone());
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let links = self.links.merge_right(other.links.clone());
+    let links = merge_links(self.links, other.links.clone());
 
-    Self { server, upstream, types, schema, unions, links }
+    Ok(Self { server, upstream, types, schema, unions, links })
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
@@ -138,6 +138,17 @@ impl Config {
 
     config_writer.write(filename).await
   }
+}
+
+fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
+  let mut links = self_links.clone();
+  let other_links = other_links.clone();
+  for link in other_links {
+    if !links.contains(&link) {
+      links.push(link);
+    }
+  }
+  links
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
