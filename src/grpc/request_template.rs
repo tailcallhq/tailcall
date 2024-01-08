@@ -10,6 +10,7 @@ use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
+use crate::io::http::set_req_version;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -85,8 +86,7 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-    #[cfg(feature = "default")]
-    super::set_req_version(&mut req);
+    set_req_version(&mut req);
     req.headers_mut().extend(self.headers.clone());
 
     Ok(create_grpc_request(

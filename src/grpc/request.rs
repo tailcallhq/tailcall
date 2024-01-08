@@ -5,11 +5,11 @@ use url::Url;
 
 use super::protobuf::ProtobufOperation;
 use crate::http::{HttpClient, Response};
+use crate::io::http::set_req_version;
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
   let mut req = Request::new(Method::POST, url);
-  #[cfg(feature = "default")]
-  super::set_req_version(&mut req);
+  set_req_version(&mut req);
   req.headers_mut().extend(headers.clone());
   req.body_mut().replace(body.into());
 

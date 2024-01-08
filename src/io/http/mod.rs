@@ -10,6 +10,16 @@ pub use wasm::*;
 
 use crate::http::Response;
 
+// TODO: there is no method to change the version in reqwest::wasm
+
+#[cfg(feature = "default")]
+pub fn set_req_version(req: &mut reqwest::Request) {
+  *req.version_mut() = reqwest::Version::HTTP_2;
+}
+
+#[cfg(not(feature = "default"))]
+pub fn set_req_version(_: &mut reqwest::Request) {}
+
 pub(super) async fn to_resp_raw(response: reqwest::Response) -> anyhow::Result<Response<Vec<u8>>> {
   let resp = Response::from_response_to_vec(response).await?;
   Ok(resp)
