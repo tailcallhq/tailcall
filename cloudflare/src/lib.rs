@@ -26,7 +26,13 @@ async fn make_req() -> Result<Config> {
 async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
-    let cfg = make_req().await.map_err(conv_err)?;
+    let cfg = make_req().await.map_err(conv_err);
+    let cfg = match cfg {
+      Ok(cfg) => cfg,
+      Err(e) => {
+        return Response::ok(format!("cfg err: {}",e.to_string()));
+      }
+    };
     let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
     let serv_ctx = Arc::new(ServerContext::new(blueprint));
     *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
