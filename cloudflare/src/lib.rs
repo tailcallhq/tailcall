@@ -30,7 +30,7 @@ async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
     let cfg = match cfg {
       Ok(cfg) => cfg,
       Err(e) => {
-        return Response::ok(format!("cfg err: {}",e.to_string()));
+        return Response::ok(format!("cfg err: {}", e.to_string()));
       }
     };
     let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;

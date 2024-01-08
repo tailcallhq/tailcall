@@ -17,7 +17,6 @@ impl Response<String> {
     let body = resp.text().await?;
     Ok(Response { status, headers, body })
   }
-
 }
 
 impl Response<async_graphql::Value> {
@@ -51,10 +50,6 @@ impl Response<Vec<u8>> {
   }
 
   pub fn to_resp_string(self) -> Result<Response<String>> {
-    let mut resp = Response::default();
-    resp.body = String::from_utf8(self.body)?;
-    resp.status = self.status;
-    resp.headers = self.headers;
-    Ok(resp)
+    Ok(Response::<String> { body: String::from_utf8(self.body)?, status: self.status, headers: self.headers })
   }
 }

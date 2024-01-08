@@ -15,6 +15,7 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
+pub mod io;
 #[cfg(feature = "unsafe-js")]
 pub mod javascript;
 pub mod json;
@@ -24,4 +25,3 @@ pub mod path;
 pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
-pub mod io;
