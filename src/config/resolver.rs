@@ -24,7 +24,7 @@ pub struct Link {
   #[serde(default, skip_serializing_if = "is_default")]
   src: String, // Source URL for linked files
   #[serde(default, skip_serializing_if = "is_default")]
-  id: Option<String>, // Id is used to refer at different places in the config
+  pub id: Option<String>, // Id is used to refer at different places in the config
   content: Option<String>, // Stores raw content
 }
 
