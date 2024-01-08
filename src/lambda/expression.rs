@@ -103,7 +103,7 @@ impl Expression {
           left.eval(ctx).await? == right.eval(ctx).await?,
         )),
         Expression::Protected(expr) => {
-          ctx.req_ctx.auth_ctx.validate(ctx.req_ctx).await.to_result()?;
+          ctx.req_ctx.auth_ctx.validate(ctx.req_ctx).await?;
           expr.eval(ctx).await
         }
         Expression::Unsafe(operation) => match operation {

@@ -47,10 +47,7 @@ assert:
       body:
         data: null
         errors:
-          - message: |
-              Validation Error
-              • Haven't found auth parameters []
-
+          - message: Haven't found auth parameters
             locations:
               - column: 3
                 line: 2

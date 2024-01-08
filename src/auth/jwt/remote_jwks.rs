@@ -46,7 +46,7 @@ impl RemoteJwksVerifier {
 
       if let Some(c) = cache.as_ref() {
         if c.expiration > Instant::now() {
-          return c.jwks.verify(token).map_err(|_| AuthError::ValidationFailed);
+          return c.jwks.verify(token).map_err(|_| AuthError::Invalid);
         }
       }
     }
@@ -54,12 +54,12 @@ impl RemoteJwksVerifier {
     let jwks = self
       .request_jwks()
       .await
-      .map_err(|_| AuthError::ValidationNotAccessible)?;
+      .map_err(|_| AuthError::ValidationCheckFailed)?;
 
     let mut cache = self.cache.write().unwrap();
     if let Some(c) = cache.as_ref() {
       if c.expiration > Instant::now() {
-        return c.jwks.verify(token).map_err(|_| AuthError::ValidationFailed);
+        return c.jwks.verify(token).map_err(|_| AuthError::Invalid);
       }
     }
 
@@ -77,7 +77,7 @@ impl RemoteJwksVerifier {
       .unwrap()
       .jwks
       .verify(token)
-      .map_err(|_| AuthError::ValidationFailed)
+      .map_err(|_| AuthError::Invalid)
   }
 
   async fn request_jwks(&self) -> anyhow::Result<JwkSet> {

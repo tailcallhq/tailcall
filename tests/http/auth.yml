@@ -1,5 +1,5 @@
-config: !file tests/http/config/auth-jwt-file.graphql
-name: Auth with JWT loaded from file
+config: !file tests/http/config/auth.graphql
+name: Auth with multiple auth providers
 assert:
   - request:
       method: POST
@@ -32,10 +32,57 @@ assert:
         data: null
         errors:
           - message: Haven't found auth parameters
-
             locations:
               - column: 3
                 line: 2
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers:
+        Authorization: Basic dGVzdHVzZXIxOnJhbmRvbV9wYXNzd29yZA== # wrong password
+      body:
+        query: |
+          query {
+            protectedScalar
+          }
+    response:
+      body:
+        data: null
+        errors:
+          - message: Auth validation failed
+            locations:
+              - column: 3
+                line: 2
+
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers:
+        Authorization: Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ=
+      body:
+        query: |
+          query {
+            protectedScalar
+            nested {
+              name
+              protected
+            }
+            protectedType {
+              name
+              nested
+            }
+          }
+    response:
+      body:
+        data:
+          protectedScalar: data from protected scalar
+          nested:
+            name: protected nested name
+            protected: protected nested
+          protectedType:
+            name: protected type name
+            nested: protected type nested
 
   - request:
       method: POST

@@ -13,12 +13,11 @@ use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProviderTrait};
 use crate::blueprint;
 use crate::http::{HttpClient, RequestContext};
-use crate::valid::{Valid, ValidationError};
 
 // only used in tests and uses mocked implementation
 #[cfg(test)]
 impl blueprint::JwtProvider {
-  fn test_value() -> Self {
+  pub fn test_value() -> Self {
     use std::fs;
     use std::path::PathBuf;
 
@@ -66,7 +65,7 @@ impl JwksVerifier {
 
   async fn verify(&self, token: &str) -> Result<HeaderAndClaims<()>, AuthError> {
     match self {
-      JwksVerifier::Local(verifier) => verifier.verify(token).map_err(|_| AuthError::ValidationFailed),
+      JwksVerifier::Local(verifier) => verifier.verify(token).map_err(|_| AuthError::Invalid),
       JwksVerifier::Remote(verifier) => verifier.verify(token).await,
     }
   }
@@ -88,30 +87,33 @@ impl JwtProvider {
     value.map(|token| token.token().to_owned())
   }
 
-  async fn validate_token(&self, token: &str) -> Valid<(), AuthError> {
-    let verification = self.verifier.verify(token).await;
+  async fn validate_token(&self, token: &str) -> Result<(), AuthError> {
+    let verification = self
+      .verifier
+      .verify(token)
+      .await
+      .map_err(|_| AuthError::ValidationCheckFailed)?;
 
-    Valid::from(verification.map_err(|_| ValidationError::new(AuthError::ValidationNotAccessible)))
-      .and_then(|v| self.validate_claims(&v))
+    self.validate_claims(&verification)
   }
 
-  fn validate_claims(&self, parsed: &HeaderAndClaims<()>) -> Valid<(), AuthError> {
+  fn validate_claims(&self, parsed: &HeaderAndClaims<()>) -> Result<(), AuthError> {
     let claims = parsed.claims();
 
     if !validate_iss(&self.options, claims) || !validate_aud(&self.options, claims) {
-      return Valid::fail(AuthError::ValidationFailed);
+      return Err(AuthError::Invalid);
     }
 
-    Valid::succeed(())
+    Ok(())
   }
 }
 
 impl AuthProviderTrait for JwtProvider {
-  async fn validate(&self, request: &RequestContext) -> Valid<(), AuthError> {
+  async fn validate(&self, request: &RequestContext) -> Result<(), AuthError> {
     let token = self.resolve_token(request);
 
     let Some(token) = token else {
-      return Valid::fail(AuthError::Missing);
+      return Err(AuthError::Missing);
     };
 
     self.validate_token(&token).await
@@ -119,12 +121,11 @@ impl AuthProviderTrait for JwtProvider {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
   use std::collections::HashSet;
 
   use super::*;
   use crate::http::HttpClient;
-  use crate::valid::ValidationError;
 
   struct MockHttpClient;
 
@@ -142,31 +143,44 @@ mod tests {
   // token with issuer = "me" and audience = ["them"]
   // token is valid for 10 years. It it expired, update it =)
   // to parse the token and see its content use https://jwt.io
-  const TEST_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw";
+  pub const JWT_VALID_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw";
+
+  pub fn create_jwt_auth_request(token: &str) -> RequestContext {
+    let mut req_context = RequestContext::default();
+
+    req_context
+      .req_headers
+      .typed_insert(Authorization::bearer(token).unwrap());
+
+    req_context
+  }
 
   #[tokio::test]
   async fn validate_token_iss() {
     let jwt_options = blueprint::JwtProvider::test_value();
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+    let valid = jwt_provider.validate(&create_jwt_auth_request(JWT_VALID_TOKEN)).await;
 
-    assert!(valid.is_succeed());
+    assert!(valid.is_ok());
 
     let jwt_options = blueprint::JwtProvider { issuer: Some("me".to_owned()), ..blueprint::JwtProvider::test_value() };
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+    let valid = jwt_provider.validate(&create_jwt_auth_request(JWT_VALID_TOKEN)).await;
 
-    assert!(valid.is_succeed());
+    assert!(valid.is_ok());
 
     let jwt_options =
       blueprint::JwtProvider { issuer: Some("another".to_owned()), ..blueprint::JwtProvider::test_value() };
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
+    let error = jwt_provider
+      .validate(&create_jwt_auth_request(JWT_VALID_TOKEN))
+      .await
+      .err();
 
-    assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
+    assert_eq!(error, Some(AuthError::Invalid));
   }
 
   #[tokio::test]
@@ -174,9 +188,9 @@ mod tests {
     let jwt_options = blueprint::JwtProvider::test_value();
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+    let valid = jwt_provider.validate(&create_jwt_auth_request(JWT_VALID_TOKEN)).await;
 
-    assert!(valid.is_succeed());
+    assert!(valid.is_ok());
 
     let jwt_options = blueprint::JwtProvider {
       audiences: HashSet::from_iter(["them".to_string()]),
@@ -184,9 +198,9 @@ mod tests {
     };
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let valid = jwt_provider.validate_token(TEST_TOKEN).await;
+    let valid = jwt_provider.validate(&create_jwt_auth_request(JWT_VALID_TOKEN)).await;
 
-    assert!(valid.is_succeed());
+    assert!(valid.is_ok());
 
     let jwt_options = blueprint::JwtProvider {
       audiences: HashSet::from_iter(["anothem".to_string()]),
@@ -194,8 +208,11 @@ mod tests {
     };
     let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
 
-    let error = jwt_provider.validate_token(TEST_TOKEN).await.to_result().err();
+    let error = jwt_provider
+      .validate(&create_jwt_auth_request(JWT_VALID_TOKEN))
+      .await
+      .err();
 
-    assert_eq!(error, Some(ValidationError::new(AuthError::ValidationFailed)));
+    assert_eq!(error, Some(AuthError::Invalid));
   }
 }
