@@ -114,8 +114,12 @@ impl RequestTemplate {
           // The raw_data can be both JSON or plain string. If it is 
           // JSON, we need to parse it, or, we can directly use it.
           if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
-            let form_data = serde_urlencoded::to_string(deserialized_data).unwrap();
-            req.body_mut().replace(form_data.into());
+            let form_data = serde_urlencoded::to_string(deserialized_data);
+            if let Ok(form_data) = form_data {
+              req.body_mut().replace(form_data.into());
+            } else {
+              req.body_mut().replace(raw_data.into());
+            }
           } else {
             req.body_mut().replace(raw_data.into());
           }
@@ -435,27 +439,45 @@ mod tests {
       .to_owned();
     assert_eq!(body, "baz".as_bytes());
   }
-  // #[test]
-  // fn test_body_encoding_application_x_www_form_urlencoded_with_json() {
-  //   let tmpl = RequestTemplate::new("http://localhost:3000")
-  //     .unwrap()
-  //     .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
-  //     .body(Some(Mustache::parse("{{foo}}").unwrap()));
-  //   let ctx = Context::default().value(json!({
-  //     "foo": {
-  //       "bar": "baz"
-  //     }
-  //   }));
-  //   let body = tmpl
-  //     .to_request(&ctx)
-  //     .unwrap()
-  //     .body()
-  //     .unwrap()
-  //     .as_bytes()
-  //     .unwrap()
-  //     .to_owned();
-  //   assert_eq!(body, "foo%5Bbar%5D=baz".as_bytes());
-  // }
+  #[test]
+  fn test_body_encoding_application_x_www_form_urlencoded_with_json() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
+      .body(Some(Mustache::parse("{\"foo\": \"{{baz}}\"}").unwrap()));
+    let ctx = Context::default().value(json!({
+      "baz": "baz"
+    }));
+    let body = tmpl
+      .to_request(&ctx)
+      .unwrap()
+      .body()
+      .unwrap()
+      .as_bytes()
+      .unwrap()
+      .to_owned();
+    let body = std::str::from_utf8(&body).unwrap();
+    assert_eq!(body, "foo=%7B%7Bbaz%7D%7D");
+  }
+  #[test]
+  fn test_body_encoding_application_x_www_form_urlencoded_with_invalid_json() {
+    let tmpl = RequestTemplate::new("http://localhost:3000")
+      .unwrap()
+      .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
+      .body(Some(Mustache::parse("{\"foo\": \"bar\"}}").unwrap()));
+    let ctx = Context::default().value(json!({}));
+    let body = tmpl
+      .to_request(&ctx)
+      .unwrap()
+      .body()
+      .unwrap()
+      .as_bytes()
+      .unwrap()
+      .to_owned();
+    let body = std::str::from_utf8(&body).unwrap();
+    println!("{:?}", body);
+    assert_eq!(body, "{\"foo\": \"bar\"}}");
+  }
   #[test]
   fn test_from_endpoint() {
     let mut headers = HeaderMap::new();
