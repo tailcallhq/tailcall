@@ -107,7 +107,11 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
-    let env = std::env::vars().collect();
+
+    #[cfg(feature = "default")]
+    let env_vars = Arc::new(std::env::vars().collect());
+    #[cfg(not(feature = "default"))]
+    let env_vars = Arc::new(HashMap::new());
 
     ServerContext {
       schema,
@@ -118,7 +122,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
-      env_vars: Arc::new(env),
+      env_vars,
     }
   }
 }
