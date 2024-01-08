@@ -29,4 +29,4 @@ type Post {
 }
 
 #> client-sdl
-type Failure @error(message: "Duplicated id: data1", trace: [])
+type Failure @error(message: "Duplicated id: data1", trace: ["link"])

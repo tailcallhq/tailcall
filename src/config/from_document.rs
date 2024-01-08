@@ -117,7 +117,7 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     for link in &links {
       if let Some(id) = &link.id {
         if ids.contains(id) {
-          return Valid::fail(format!("Duplicated id: {}", id));
+          return Valid::fail(format!("Duplicated id: {}", id)).trace(config::Link::directive_name().as_str());
         }
         ids.push(id.to_string());
       }
