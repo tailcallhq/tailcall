@@ -81,5 +81,3 @@ Your contributions are invaluable! Kindly go through our [contribution guideline
 This initiative is protected under the Apache 2.0 License.
 
 <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=82cc2ee2-ff41-4844-9ae6-c9face103e81" />
-
-testing cache benchmraks.
