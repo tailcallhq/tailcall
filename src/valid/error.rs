@@ -114,11 +114,25 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
 mod tests {
   use pretty_assertions::assert_eq;
 
-  use crate::valid::ValidationError;
+  use crate::valid::{ValidationError, Cause};
 
   #[derive(Debug, PartialEq, serde::Deserialize)]
   struct Foo {
     a: i32,
+  }
+
+  #[test]
+  fn test_error_display_formatting() {
+    let error = ValidationError::from((1..=5).map(|i| Cause::new(i)).collect::<Vec<Cause<usize>>>());
+    let expected_output = "\
+Validation Error
+• 1 []
+• 2 []
+• 3 []
+• 4 []
+• 5 []
+";
+    assert_eq!(format!("{}", error), expected_output);
   }
 
   #[test]
