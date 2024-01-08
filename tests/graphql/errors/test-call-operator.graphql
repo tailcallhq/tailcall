@@ -17,12 +17,12 @@ type User {
 
 type Post {
   userId: Int!
-  withoutResolver: User @call(query: "userWithoutResolver", args: [{key: "id", value: "{{value.userId}}"}])
+  withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
   multipleResolvers: User
     @http(path: "/users/{{value.userId}}")
-    @call(query: "user", args: [{key: "id", value: "{{value.userId}}"}])
-  withoutOperator: User @call(args: [{key: "id", value: "{{value.userId}}"}])
-  invalidResolver: User @call(query: "userWithGraphQLResolver", args: [{key: "id", value: "{{value.userId}}"}])
+    @call(query: "user", args: {id: "{{value.userId}}"})
+  withoutOperator: User @call(args: {id: "{{value.userId}}"})
+  invalidResolver: User @call(query: "userWithGraphQLResolver", args: {id: "{{value.userId}}"})
 }
 
 #> client-sdl

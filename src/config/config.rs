@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -393,7 +393,7 @@ pub struct Http {
 pub struct Call {
   #[serde(default, skip_serializing_if = "is_default")]
   pub query: Option<String>,
-  pub args: KeyValues,
+  pub args: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

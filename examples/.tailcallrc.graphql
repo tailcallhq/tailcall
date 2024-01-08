@@ -311,7 +311,7 @@ directive @call(
   """
   The arguments to be replace the `@http` resolver args.
   """
-  args: [KeyValue]
+  args: JSON
 ) on FIELD_DEFINITION
 
 enum Method {
