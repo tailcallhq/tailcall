@@ -25,7 +25,6 @@ pub struct Link {
   src: String, // Source URL for linked files
   #[serde(default, skip_serializing_if = "is_default")]
   id: Option<String>, // Id is used to refer at different places in the config
-  #[serde(default, skip_serializing_if = "is_default")]
   content: Option<String>, // Stores raw content
 }
 
@@ -68,7 +67,7 @@ impl Link {
       let config = Config::from_source(source, &txt)?;
 
       for link in config.links {
-        link_queue.push_back(link);
+        // link_queue.push_back(link);
       }
 
       result.push(curr);

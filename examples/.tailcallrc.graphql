@@ -329,7 +329,7 @@ scalar JSON
 
 directive @link(
   type: LinkType!
-  src: URL!
+  src: String!
 ) repeatable on SCHEMA
 
 enum LinkType {

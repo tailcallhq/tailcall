@@ -34,7 +34,7 @@ pub struct Config {
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub links: Vec<Link>,
+  pub links: BTreeMap<(), ()>,
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -129,9 +129,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let links = merge_links(self.links, other.links.clone()).await?;
+    // let links = merge_links(self.links, other.links.clone()).await?;
 
-    Ok(Self { server, upstream, types, schema, unions, links })
+    Ok(Self { server, upstream, types, schema, unions, links: self.links })
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {

@@ -65,6 +65,7 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
   }
 
   fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
+    println!("from_directive: {:?}", directive);
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
       Valid::from(
         serde_json::to_value(&v.node)
