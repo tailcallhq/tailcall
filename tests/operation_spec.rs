@@ -1,8 +1,9 @@
-use derive_setters::Setters;
-use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Once;
+
+use derive_setters::Setters;
+use regex::Regex;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::valid::Valid;
