@@ -143,11 +143,9 @@ impl Config {
 fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
   let mut links = self_links.clone();
   let other_links = other_links.clone();
-  for link in other_links {
-    if !links.contains(&link) {
-      links.push(link);
-    }
-  }
+
+  links.extend(other_links);
+
   links
 }
 
