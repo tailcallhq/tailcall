@@ -7,6 +7,8 @@ mod n_plus_one;
 pub mod reader;
 mod server;
 mod source;
+
+// TODO: write is not used anywhere
 mod writer;
 
 pub use config::*;
