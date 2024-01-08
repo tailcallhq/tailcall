@@ -1,0 +1,32 @@
+#> server-sdl
+schema
+  @link(type: Data, src: "examples/Data.txt", id: "data")
+  @link(type: Data, src: "examples/Data.txt", id: "data1")
+  @link(type: Data, src: "examples/Data.txt", id: "data1") {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}
+
+#> client-sdl
+type Failure @error(message: "Duplicated id: data1", trace: [])
