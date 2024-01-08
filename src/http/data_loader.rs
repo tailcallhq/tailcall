@@ -58,7 +58,7 @@ impl HttpDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
-  type Value = Response;
+  type Value = Response<async_graphql::Value>;
   type Error = Arc<anyhow::Error>;
 
   async fn load(
@@ -80,7 +80,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
 
       let res = self.client.execute(request).await?;
       #[allow(clippy::mutable_key_type)]
-      let mut hashmap: HashMap<DataLoaderRequest, Response> = HashMap::with_capacity(keys.len());
+      let mut hashmap: HashMap<DataLoaderRequest, Response<async_graphql::Value>> = HashMap::with_capacity(keys.len());
       let path = &group_by.path();
       let body_value = res.body.group_by(path);
 

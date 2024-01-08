@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - "**"
-    paths-ignore: ["docs/**", "**.md"]
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
-    paths-ignore: ["docs/**", "**.md"]
+  pull_request_target:
+    types: [opened, reopened, synchronize]
   release:
     types: [published]
+permissions:
+  contents: read
 jobs:
   check_if_build:
     name: Check if Build
@@ -26,6 +28,25 @@ jobs:
           .github/scripts/check_if_build.sh
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
+
+  compile_wasm:
+    name: Compile WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build WASM
+        run: cargo build --lib --release --target wasm32-unknown-unknown
+        working-directory: ./cloudflare
 
   test:
     name: Run Tests
@@ -99,7 +120,7 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -110,7 +131,7 @@ jobs:
 
       - id: create_release
         uses: release-drafter/release-drafter@v5
-        if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -127,7 +148,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build]
+    needs: [test, format, draft_release, check_if_build, compile_wasm]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:

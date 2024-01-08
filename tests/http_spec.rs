@@ -219,7 +219,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 #[async_trait::async_trait]
 impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 
@@ -277,8 +277,7 @@ impl HttpClient for MockHttpClient {
 
     Ok(response)
   }
-
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.
@@ -321,19 +320,18 @@ impl HttpClient for MockHttpClient {
       return Err(anyhow::format_err!("Status code error"));
     }
 
-    let mut response = hyper::Response::builder().status(status_code);
-    let headers = response.headers_mut().ok_or(anyhow!("Invalid headers"))?;
+    let mut response = Response { status: status_code, ..Default::default() };
+
     // Insert headers from the mock into the response.
     for (key, value) in mock_response.0.headers {
       let header_name = HeaderName::from_str(&key)?;
       let header_value = HeaderValue::from_str(&value)?;
-      headers.insert(header_name, header_value);
+      response.headers.insert(header_name, header_value);
     }
 
     let body = mock_response.0.body.as_str().unwrap_or_default();
-    let res = response.body(Body::from(string_to_bytes(body)))?;
-
-    Ok(reqwest::Response::from(res))
+    response.body = string_to_bytes(body);
+    Ok(response)
   }
 }
 
