@@ -17,13 +17,13 @@ impl ConfigReader {
     let mut config = Config::default();
     for (content, path) in &self.file_io.read_files().await? {
       let source = Self::detect_source(path)?;
-      let conf = Config::from_source(source, &content)?;
+      let conf = Config::from_source(source, content)?;
       config = config.clone().merge_right(&conf);
     }
     Ok(config)
   }
 
-  fn detect_source(source: &String) -> anyhow::Result<Source> {
+  fn detect_source(source: &str) -> anyhow::Result<Source> {
     let source = if let Ok(s) = Source::detect_content_type(source) {
       s
     } else {
