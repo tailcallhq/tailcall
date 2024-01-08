@@ -327,14 +327,11 @@ input Batch {
 
 scalar JSON
 
-directive @link(
-  type: LinkType!
-  src: String!
-) repeatable on SCHEMA
+directive @link(type: LinkType!, src: String!) repeatable on SCHEMA
 
 enum LinkType {
-  Config 
-  GraphQL 
-  Protobuf 
+  Config
+  GraphQL
+  Protobuf
   Data
 }

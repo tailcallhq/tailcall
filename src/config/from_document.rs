@@ -1,15 +1,16 @@
 use std::collections::BTreeMap;
 
-use super::Cache;
-use crate::config::{self, Config, GraphQL, Grpc, Link, RootSchema, Server, Union, Upstream};
-use crate::directive::DirectiveCodec;
-use crate::valid::Valid;
 use async_graphql::parser::types::{
   BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType,
   ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
+
+use super::Cache;
+use crate::config::{self, Config, GraphQL, Grpc, Link, RootSchema, Server, Union, Upstream};
+use crate::directive::DirectiveCodec;
+use crate::valid::Valid;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
   &SchemaDefinition { extend: false, directives: Vec::new(), query: None, mutation: None, subscription: None };
@@ -75,17 +76,18 @@ fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
   schema_definition: &SchemaDefinition,
   directive_name: &str,
 ) -> Valid<Vec<T>, String> {
-  let directives: Vec<Valid<T, String>> = schema_definition.directives.iter()
-    .map(|directive| {
+  let directives: Vec<Valid<T, String>> = schema_definition
+    .directives
+    .iter()
+    .filter_map(|directive| {
       if directive.node.name.node.as_ref() == directive_name {
         Some(T::from_directive(&directive.node))
       } else {
         None
       }
     })
-    .filter_map(|x| x)
     .collect();
-  
+
   let mut res = Valid::succeed(Vec::new());
 
   for directive in directives {
@@ -95,7 +97,7 @@ fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
     });
   }
 
-  res  
+  res
 }
 
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
@@ -107,7 +109,8 @@ fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
 }
 
 fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
-  let links: Valid<Vec<Link>, String> = process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str());
+  let links: Valid<Vec<Link>, String> =
+    process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str());
 
   links.and_then(|links| {
     let mut ids: Vec<String> = Vec::new();

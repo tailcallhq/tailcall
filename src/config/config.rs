@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream, Link};
+use super::{Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
 use crate::config::source::Source;

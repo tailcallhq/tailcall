@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 
-use crate::config::is_default;
-use crate::config::{Config, Source};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use url::Url;
+
+use crate::config::{is_default, Config, Source};
 
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 enum LinkType {
@@ -30,7 +30,7 @@ pub struct Link {
 
 impl Link {
   pub async fn resolve_recurse(self) -> anyhow::Result<Vec<Link>> {
-    let mut result: Vec<Link> = Vec::new().into();
+    let mut result: Vec<Link> = Vec::new();
     if self.type_of == LinkType::Protobuf || self.type_of == LinkType::Data {
       let link: Link = Self::get_raw_content(&self).await?;
       result.push(link);
