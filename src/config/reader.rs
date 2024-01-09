@@ -1,9 +1,6 @@
-use derive_setters::Setters;
-
 use crate::config::{Config, Source};
 use crate::io::file::FileIO;
 
-#[derive(Setters)]
 pub struct ConfigReader<File> {
   file: File,
 }
@@ -80,8 +77,8 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(files.iter());
-    let c = cr.read().await.unwrap();
+    let cr = ConfigReader::init(crate::io::file::init_native());
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
         .iter()
@@ -102,8 +99,8 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(files.iter());
-    let c = cr.read().await.unwrap();
+    let cr = ConfigReader::init(crate::io::file::init_native());
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()
