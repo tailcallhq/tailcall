@@ -12,7 +12,7 @@ pub trait FileIO {
 }
 
 #[cfg(not(feature = "default"))]
-pub fn init_wasm() -> impl FileIO {
+pub fn init_cloudflare() -> impl FileIO {
   wasm::WasmFileIO::init()
 }
 
