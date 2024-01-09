@@ -127,7 +127,6 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
-    let env = std::env::vars().collect();
     let local_rate_limiter = LocalRateLimiter::new(type_rate_limits, field_rate_limits);
     let global_rate_limiter = GlobalRateLimiter::new();
 
