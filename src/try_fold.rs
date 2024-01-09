@@ -4,7 +4,7 @@ use crate::valid::Valid;
 ///
 /// `TryFolding` describes a composable folding operation that can potentially fail.
 /// It can optionally consume an input to transform the provided value.
-type TryFoldFn<'a, I, O, E> = Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>;
+type TryFoldFn<'a, I, O, E> = Box<dyn FnOnce(&I, O) -> Valid<O, E> + 'a>;
 
 pub struct TryFold<'a, I: 'a, O: 'a, E: 'a>(TryFoldFn<'a, I, O, E>);
 
@@ -18,7 +18,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// # Returns
   /// Returns a `Valid` value, which can be either a success with the folded value
   /// or an error.
-  pub fn try_fold(&self, input: &I, state: O) -> Valid<O, E> {
+  pub fn try_fold(self, input: &I, state: O) -> Valid<O, E> {
     (self.0)(input, state)
   }
 
@@ -34,21 +34,14 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   /// Returns a combined `And` structure that represents the sequential folding operation.
   pub fn and(self, other: TryFold<'a, I, O, E>) -> Self {
     TryFold(Box::new(move |input, state| {
-      self
-        .try_fold(input, state.clone())
-        .fold(|state| other.try_fold(input, state), other.try_fold(input, state))
+      let r = self.try_fold(input, state.clone()).to_result();
+
+      match r {
+        Ok(state) => other.try_fold(input, state),
+        Err(error) => Valid::<O, E>::from_validation_err(error).and(other.try_fold(input, state)),
+      }
     }))
   }
-  // pub fn and(self, other: TryFold<'a, I, O, E>) -> Self {
-  //   TryFold(Box::new(move |input, state| {
-  //     let r1 = self.try_fold(input, state.clone()).to_result();
-
-  //     match r1 {
-  //       Ok(state) => other.try_fold(input, state),
-  //       Err(error) => Valid::<O, E>::from_validation_err(error).and(other.try_fold(input, state)),
-  //     }
-  //   }))
-  // }
 
   /// Create a new `TryFold` with a specified folding function.
   ///
@@ -57,7 +50,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   ///
   /// # Returns
   /// Returns a new `TryFold` instance.
-  pub fn new(f: impl Fn(&I, O) -> Valid<O, E> + 'a) -> Self {
+  pub fn new(f: impl FnOnce(&I, O) -> Valid<O, E> + 'a) -> Self {
     TryFold(Box::new(f))
   }
 
@@ -73,8 +66,8 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   ///
   pub fn transform<O1: Clone>(
     self,
-    up: impl Fn(O, O1) -> O1 + 'a,
-    down: impl Fn(O1) -> O + 'a,
+    up: impl FnOnce(O, O1) -> O1 + 'a,
+    down: impl FnOnce(O1) -> O + 'a,
   ) -> TryFold<'a, I, O1, E> {
     self.transform_valid(
       move |o, o1| Valid::succeed(up(o, o1)),
@@ -94,8 +87,8 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   ///
   pub fn transform_valid<O1: Clone>(
     self,
-    up: impl Fn(O, O1) -> Valid<O1, E> + 'a,
-    down: impl Fn(O1) -> Valid<O, E> + 'a,
+    up: impl FnOnce(O, O1) -> Valid<O1, E> + 'a,
+    down: impl FnOnce(O1) -> Valid<O, E> + 'a,
   ) -> TryFold<'a, I, O1, E> {
     TryFold(Box::new(move |i, o1| {
       down(o1.clone())
@@ -104,7 +97,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     }))
   }
 
-  pub fn update(self, f: impl Fn(O) -> O + 'a) -> TryFold<'a, I, O, E> {
+  pub fn update(self, f: impl FnOnce(O) -> O + 'a) -> TryFold<'a, I, O, E> {
     self.transform(move |o, _| f(o), |o| o)
   }
 
@@ -115,7 +108,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
   ///
   /// # Returns
   /// Returns a `TryFold` that always succeeds with the provided state.
-  pub fn succeed(f: impl Fn(&I, O) -> O + 'a) -> Self {
+  pub fn succeed(f: impl FnOnce(&I, O) -> O + 'a) -> Self {
     TryFold(Box::new(move |i, o| Valid::succeed(f(i, o))))
   }
 
