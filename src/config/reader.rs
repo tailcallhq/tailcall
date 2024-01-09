@@ -1,5 +1,5 @@
 use crate::config::{Config, Source};
-use crate::io::file::FileIO;
+use crate::io::file::{FileIO, FileOperations};
 
 pub struct ConfigReader {
   file: FileIO,

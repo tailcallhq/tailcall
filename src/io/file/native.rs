@@ -2,16 +2,18 @@ use anyhow::{anyhow, Result};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use url::Url;
 
+use super::FileOperations;
 use crate::io::file::FileIO;
 
-impl FileIO {
-  pub async fn write(file: &str, content: &[u8]) -> Result<()> {
+#[async_trait::async_trait]
+impl FileOperations for FileIO {
+  async fn write<'a>(file: &'a str, content: &'a [u8]) -> Result<()> {
     let mut file = tokio::fs::File::create(file).await?;
     file.write_all(content).await?;
     Ok(())
   }
 
-  pub async fn read_file(file_path: &str) -> Result<(String, String)> {
+  async fn read_file(file_path: &str) -> Result<(String, String)> {
     if let Ok(url) = Url::parse(file_path) {
       let response = crate::io::http::get_string(url).await?;
       let sdl = response.headers.get("content-type");
@@ -27,9 +29,9 @@ impl FileIO {
     Ok((String::from_utf8(buffer)?, file_path.to_string()))
   }
 
-  pub async fn read_files(&self, src_files: &Vec<String>) -> Result<Vec<(String, String)>> {
+  async fn read_files<'a>(&'a self, file_paths: &'a [String]) -> Result<Vec<(String, String)>> {
     let mut files = vec![];
-    for file in src_files {
+    for file in file_paths {
       let content = Self::read_file(file).await?;
       files.push(content);
     }
