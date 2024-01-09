@@ -4,6 +4,7 @@ use tokio::{fs::File, io::AsyncReadExt};
 use url::Url;
 
 use crate::config::{Config, Source};
+use crate::config::Link;
 
 pub struct ConfigReader {
   file_paths: Vec<String>,
@@ -33,6 +34,7 @@ impl ConfigReader {
       let conf = Self::from_url(url).await?;
       config = config.clone().merge_right(&conf)?;
     }
+    Link::resolve_recurse(&mut config.links).await?;
     Ok(config)
   }
   #[cfg(feature = "default")]
