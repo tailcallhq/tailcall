@@ -9,7 +9,7 @@ use url::Url;
 use crate::config::{is_default, Config, Source};
 
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
-enum LinkType {
+pub enum LinkType {
   #[default]
   Config,
   GraphQL,
@@ -19,35 +19,39 @@ enum LinkType {
 
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Link {
-  #[serde(default, skip_serializing_if = "is_default", rename="type")]
-  type_of: LinkType, // Type of the link
+  #[serde(default, skip_serializing_if = "is_default", rename = "type")]
+  pub type_of: LinkType, // Type of the link
   #[serde(default, skip_serializing_if = "is_default")]
-  src: String, // Source URL for linked files
+  pub src: String, // Source URL for linked files
   #[serde(default, skip_serializing_if = "is_default")]
   pub id: Option<String>, // Id is used to refer at different places in the config
   content: Option<String>, // Stores raw content
 }
 
 impl Link {
+  fn merge_configs(config: Option<Config>, config_right: Option<Config>) -> anyhow::Result<Option<Config>> {
+    match (config, config_right) {
+      (Some(c), Some(cc)) => Ok(Some(c.merge_right(&cc)?)),
+      (Some(c), None) => Ok(Some(c)),
+      (None, Some(cc)) => Ok(Some(cc)),
+      (None, None) => Ok(None),
+    }
+  }
+
   pub async fn resolve_recurse(config_links: &mut Vec<Link>) -> anyhow::Result<Option<Config>> {
     let mut extend_config_links: Vec<Link> = Vec::new();
     let mut link_queue: VecDeque<Link> = VecDeque::new();
-    let mut config: Option<Config> = None;
+    let mut config = None;
 
-    for config_link in config_links.into_iter() {
-      config = Self::resolve_current_link(config_link, &mut link_queue).await?;
+    for config_link in config_links.iter_mut().filter(|link| !link.src.is_empty()) {
+      config = Self::merge_configs(config, Self::resolve_current_link(config_link, &mut link_queue).await?)?;
     }
 
     while let Some(mut curr_link) = link_queue.pop_front() {
       let current_config = Self::resolve_current_link(&mut curr_link, &mut link_queue).await?;
       extend_config_links.push(curr_link);
 
-      match (config.clone(), current_config) {
-        (Some(c), Some(cc)) => config = Some(c.merge_right(&cc)?),
-        (Some(c), None) => config = Some(c),
-        (None, Some(cc)) => config = Some(cc),
-        (None, None) => (),
-      }
+      config = Self::merge_configs(config, current_config)?;
     }
 
     config_links.extend(extend_config_links);
