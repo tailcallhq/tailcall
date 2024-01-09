@@ -10,7 +10,6 @@ use serde_json::Value;
 
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
 use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
@@ -473,7 +472,7 @@ impl Config {
     super::n_plus_one::n_plus_one(self)
   }
 
-  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
+  /*  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
   where
     Iter: Iterator,
     Iter::Item: AsRef<str>,
@@ -486,7 +485,7 @@ impl Config {
     config_reader
       .read(&file_paths.map(|path| path.as_ref().to_owned()).collect::<Vec<String>>())
       .await
-  }
+  }*/
 }
 
 #[cfg(test)]

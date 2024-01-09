@@ -77,7 +77,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(crate::io::file::init());
+    let cr = ConfigReader::init(crate::io::file::init_native());
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
@@ -99,7 +99,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(crate::io::file::init());
+    let cr = ConfigReader::init(crate::io::file::init_native());
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]

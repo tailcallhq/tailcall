@@ -6,14 +6,15 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, ServerContext};
+use tailcall::io::file::FileIO;
 use worker::*;
 
 lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<ServerContext>>> = RwLock::new(None);
 }
 
-async fn make_req() -> Result<Config> {
-  let reader = ConfigReader::init(tailcall::io::file::init_wasm());
+async fn make_req(file: impl FileIO) -> Result<Config> {
+  let reader = ConfigReader::init(file);
   reader
     .read(&[
       "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
@@ -26,7 +27,7 @@ async fn make_req() -> Result<Config> {
 async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
-    let cfg = make_req().await.map_err(conv_err);
+    let cfg = make_req(tailcall::io::file::init_wasm()).await.map_err(conv_err);
     let cfg = match cfg {
       Ok(cfg) => cfg,
       Err(e) => {
