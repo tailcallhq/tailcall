@@ -1,0 +1,19 @@
+#> server-sdl
+schema @server @upstream @link(src: "tests/graphql/test-const.graphql", type: Config) @link(src: "tests/graphql/test-enum.graphql", type: Config) {
+  query: Query
+}
+
+#> client-sdl
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+  hello: String
+}
+
+schema {
+  query: Query
+}

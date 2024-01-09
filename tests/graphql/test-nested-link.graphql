@@ -2,6 +2,7 @@
 schema @server @upstream @link(src: "tests/graphql/test-graphql-with-link.graphql", type: Config) {
   query: Query
 }
+
 #> client-sdl
 enum Foo {
   BAR
