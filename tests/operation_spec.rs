@@ -143,11 +143,15 @@ async fn test_operations() -> std::io::Result<()> {
         let mut config = Config::from_sdl(spec.server_sdl.as_str()).to_result().unwrap();
         config.server.query_validation = Some(false);
 
-        let schema = Valid::from(Blueprint::try_from(&config))
+        let blueprint = Valid::from(Blueprint::try_from(&config))
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
-          .unwrap()
-          .to_validation_schema();
+          .unwrap();
+
+        let schema = Valid::from(blueprint.to_validation_schema())
+          .trace(spec.path.to_str().unwrap_or_default())
+          .to_result()
+          .unwrap();
 
         for query_spec in spec.test_queries {
           let count = Blueprint::validate_operation(&schema, query_spec.query.as_str())

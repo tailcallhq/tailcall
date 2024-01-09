@@ -2,7 +2,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
 
-use async_graphql::dynamic::{Schema, SchemaBuilder, SchemaError};
+use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
@@ -13,7 +13,7 @@ use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
-use crate::valid::{Cause, Valid};
+use crate::valid::{Cause, Valid, ValidationError};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -223,11 +223,15 @@ impl Blueprint {
   }
 
   /// Generate a dumb schema useful for validation.
-  pub fn to_validation_schema(&self) -> Result<Schema, SchemaError> {
-    create(self, Some(SchemaModifiers { no_resolver: true }))
+  pub fn to_validation_schema(&self) -> Result<Schema, ValidationError<String>> {
+    match create(self, Some(SchemaModifiers { no_resolver: true }))
       .validation_mode(ValidationMode::Strict)
       .disable_introspection()
       .finish()
+    {
+      Ok(schema) => Ok(schema),
+      Err(e) => Err(ValidationError::new(e.to_string())),
+    }
   }
 
   pub async fn validate_operation(schema: &Schema, query: &str) -> Vec<Cause<String>> {
