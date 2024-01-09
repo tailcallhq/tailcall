@@ -1,8 +1,9 @@
 use crate::config::{Config, Source};
-use crate::io::file::FileIO;
+use crate::io::file::{FileIO, FileOperations};
 
 pub struct ConfigReader {
-  file_io: FileIO,
+  file: FileIO,
+  files: Vec<String>,
 }
 
 impl ConfigReader {
@@ -11,11 +12,11 @@ impl ConfigReader {
     Iter: Iterator,
     Iter::Item: AsRef<str>,
   {
-    Self { file_io: FileIO::init(file_paths) }
+    Self { file: FileIO::init(), files: file_paths.map(|x| x.as_ref().to_string()).collect() }
   }
   pub async fn read(&self) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    for (content, path) in &self.file_io.read_files().await? {
+    for (content, path) in &self.file.read_files(&self.files).await? {
       let source = Self::detect_source(path)?;
       let conf = Config::from_source(source, content)?;
       config = config.clone().merge_right(&conf);

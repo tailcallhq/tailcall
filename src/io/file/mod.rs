@@ -1,24 +1,20 @@
 #[cfg(feature = "default")]
-pub mod cli;
+pub mod native;
+
 #[cfg(not(feature = "default"))]
 pub mod wasm;
 
-#[cfg(feature = "default")]
-pub use cli::*;
-#[cfg(not(feature = "default"))]
-pub use wasm::*;
-
-#[derive(Default)]
-pub struct FileIO {
-  files: Vec<String>,
+#[async_trait::async_trait]
+pub trait FileOperations {
+  async fn write<'a>(file: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
+  async fn read_file(file_path: &str) -> anyhow::Result<(String, String)>;
+  async fn read_files<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>>;
 }
 
+pub struct FileIO {}
+
 impl FileIO {
-  pub fn init<Iter>(file_paths: Iter) -> Self
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    Self { files: file_paths.map(|path| path.as_ref().to_owned()).collect() }
+  pub fn init() -> Self {
+    FileIO {}
   }
 }
