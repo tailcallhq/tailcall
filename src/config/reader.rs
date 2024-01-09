@@ -33,8 +33,14 @@ impl ConfigReader {
       #[cfg(not(feature = "default"))]
       let conf = Self::from_url(url).await?;
       config = config.clone().merge_right(&conf)?;
+
+      let config_from_link = Link::resolve_recurse(&mut config.links).await?;
+      
+      if let Some(conf) = config_from_link {
+        config = config.clone().merge_right(&conf)?;
+      }
     }
-    Link::resolve_recurse(&mut config.links).await?;
+
     Ok(config)
   }
   #[cfg(feature = "default")]

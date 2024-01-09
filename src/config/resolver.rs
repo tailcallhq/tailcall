@@ -29,34 +29,44 @@ pub struct Link {
 }
 
 impl Link {
-  pub async fn resolve_recurse(config_links: &mut Vec<Link>) -> anyhow::Result<()> {
+  pub async fn resolve_recurse(config_links: &mut Vec<Link>) -> anyhow::Result<Option<Config>> {
     let mut extend_config_links: Vec<Link> = Vec::new();
     let mut link_queue: VecDeque<Link> = VecDeque::new();
+    let mut config: Option<Config> = None;
 
     for config_link in config_links.into_iter() {
-      Self::resolve_current_link(config_link, &mut link_queue).await?;
+      config = Self::resolve_current_link(config_link, &mut link_queue).await?;
     }
 
     while let Some(mut curr_link) = link_queue.pop_front() {
-      Self::resolve_current_link(&mut curr_link, &mut link_queue).await?;
+      let current_config = Self::resolve_current_link(&mut curr_link, &mut link_queue).await?;
       extend_config_links.push(curr_link);
+
+      match (config.clone(), current_config) {
+        (Some(c), Some(cc)) => config = Some(c.merge_right(&cc)?),
+        (Some(c), None) => config = Some(c),
+        (None, Some(cc)) => config = Some(cc),
+        (None, None) => (),
+      }
     }
 
     config_links.extend(extend_config_links);
 
-    Ok(())
+    Ok(config)
   }
 
-  async fn resolve_current_link(link: &mut Link, link_queue: &mut VecDeque<Link>) -> anyhow::Result<()> {
+  async fn resolve_current_link(link: &mut Link, link_queue: &mut VecDeque<Link>) -> anyhow::Result<Option<Config>> {
     let source = Self::get_content(link).await?;
     if link.type_of == LinkType::Config {
       let link_clone = link.clone();
       let config = Config::from_source(source.unwrap(), &link_clone.content.unwrap())?;
-      for extended_link in config.links {
+      for extended_link in config.links.clone() {
         link_queue.push_back(extended_link);
       }
+
+      return Ok(Some(config));
     }
-    Ok(())
+    Ok(None)
   }
 
   async fn get_content(link: &mut Link) -> anyhow::Result<Option<Source>> {
