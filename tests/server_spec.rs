@@ -1,10 +1,11 @@
 use reqwest::Client;
 use serde_json::json;
-use tailcall::config::Config;
+use tailcall::config::reader::ConfigReader;
 use tailcall::http::Server;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let config = Config::read_from_files(configs.iter()).await.unwrap();
+  let config_reader = ConfigReader::init(tailcall::io::file::init_native());
+  let config = config_reader.read(configs).await.unwrap();
   let mut server = Server::new(config);
   let server_up_receiver = server.server_up_receiver();
 

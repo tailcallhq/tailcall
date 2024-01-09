@@ -10,9 +10,13 @@ impl<File: FileIO> ConfigReader<File> {
     Self { file }
   }
 
-  pub async fn read(&self, files: &[String]) -> anyhow::Result<Config> {
+  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    for (content, path) in &self.file.read_files(files).await? {
+    for (content, path) in &self
+      .file
+      .read_files(&files.iter().map(|x| x.to_string()).collect::<Vec<String>>())
+      .await?
+    {
       let source = Self::detect_source(path)?;
       let conf = Config::from_source(source, content)?;
       config = config.clone().merge_right(&conf);
