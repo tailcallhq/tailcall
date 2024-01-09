@@ -14,7 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::config::Config;
+use tailcall::config::{Config, Link};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{RequestContext, ServerContext};
 use tailcall::print_schema;
@@ -255,9 +255,17 @@ fn test_config_identity() -> std::io::Result<()> {
   Ok(())
 }
 
+async fn resolve_config_links(mut config: Config) -> anyhow::Result<Config> {
+  let config_from_link = Link::resolve_recurse(&mut config.links).await?;
+  if let Some(conf) = config_from_link {
+    config = config.merge_right(&conf)?;
+  }
+  Ok(config)
+}
+
 // Check server SDL matches expected client SDL
-#[test]
-fn test_server_to_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
@@ -266,6 +274,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
     let config = Config::from_sdl(content).to_result().unwrap();
+    let config = resolve_config_links(config).await.unwrap();
     let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
@@ -292,6 +301,7 @@ async fn test_execution() -> std::io::Result<()> {
         let mut config = Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str())
           .to_result()
           .unwrap();
+        config = resolve_config_links(config).await.unwrap();
         config.server.query_validation = Some(false);
 
         let blueprint = Valid::from(Blueprint::try_from(&config))
@@ -330,8 +340,8 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[test]
-fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_failures_in_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
 
   for spec in specs? {
@@ -339,6 +349,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let expected = spec.sdl_errors;
     let content = content.as_str();
     let config = Config::from_sdl(content);
+    // let config = Valid::succeed(resolve_config_links(config.to_result().unwrap()).await.unwrap());
 
     let actual = config
       .and_then(|config| Valid::from(Blueprint::try_from(&config)))
@@ -363,7 +374,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
 }
 
 #[tokio::test]
-async fn test_merge_sdl() -> std::io::Result<()> {
+async fn test_merge_sdl() -> anyhow::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
   for spec in specs? {
@@ -373,11 +384,11 @@ async fn test_merge_sdl() -> std::io::Result<()> {
       .get_sources(Tag::ServerSDL)
       .map(|s| Config::from_sdl(s).to_result().unwrap())
       .collect::<Vec<_>>();
-    // let config = content.iter().fold(Config::default(), |acc, c| acc.merge_right(c));
-    let mut config = Config::default();
-    for c in content {
-      config = config.merge_right(&c).unwrap();
-    }
+    let config = content
+      .iter()
+      .fold(Config::default(), |acc, c| acc.merge_right(c).unwrap());
+    let config = resolve_config_links(config).await.unwrap();
+
     let actual = config.to_sdl();
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
