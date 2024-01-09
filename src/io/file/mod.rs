@@ -1,10 +1,10 @@
 #[cfg(feature = "default")]
-pub mod cli;
+pub mod native;
 #[cfg(not(feature = "default"))]
 pub mod wasm;
 
 #[cfg(feature = "default")]
-pub use cli::*;
+pub use native::*;
 #[cfg(not(feature = "default"))]
 pub use wasm::*;
 
