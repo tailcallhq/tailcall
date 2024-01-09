@@ -1,4 +1,3 @@
-pub mod client;
 mod data_loader;
 
 mod data_loader_request;
@@ -19,9 +18,9 @@ mod server_context;
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};
-pub use client::*;
 pub use data_loader::*;
 pub use data_loader_request::*;
+use derive_setters::Setters;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;
@@ -34,6 +33,12 @@ pub use server_context::ServerContext;
 
 #[cfg(feature = "default")]
 use self::server_config::ServerConfig;
+
+// TODO: merge with upstream
+#[derive(Default)]
+pub struct HttpClientOptions {
+  pub http2_only: bool,
+}
 
 pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;

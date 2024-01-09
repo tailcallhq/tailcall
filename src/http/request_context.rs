@@ -7,7 +7,6 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, HttpClientOptions};
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
 use crate::config::{self, Upstream};
@@ -15,16 +14,19 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
+use crate::http::{DataLoaderRequest, HttpDataLoader, ServerContext};
+use crate::io::http::HttpIO;
+
+use super::HttpClientOptions;
 
 #[derive(Setters)]
 pub struct RequestContext {
   // TODO: consider storing http clients where they are used i.e. expression and dataloaders
-  pub universal_http_client: Arc<dyn HttpClient>,
+  pub universal_http_client: Arc<dyn HttpIO>,
   // http2 only client is required for grpc in cases the server supports only http2
   // and the request will fail on protocol negotiation
   // having separate client for now looks like the only way to do with reqwest
-  pub http2_only_client: Arc<dyn HttpClient>,
+  pub http2_only_client: Arc<dyn HttpIO>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -37,19 +39,25 @@ pub struct RequestContext {
   pub env_vars: Arc<HashMap<String, String>>,
 }
 
-impl Default for RequestContext {
-  fn default() -> Self {
+impl RequestContext {
+  pub fn native() -> Self {
     let config::Config { server, upstream, .. } = config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
 
+    let universal_http_client = Arc::new(crate::io::http::init_http_native(
+      &upstream,
+      &HttpClientOptions::default(),
+    ));
+
+    let http2_only_client = Arc::new(crate::io::http::init_http_native(
+      &upstream,
+      &HttpClientOptions::default().http2_only(true),
+    ));
     Self {
       req_headers: HeaderMap::new(),
-      universal_http_client: Arc::new(DefaultHttpClient::new(&upstream)),
-      http2_only_client: Arc::new(DefaultHttpClient::with_options(
-        &upstream,
-        HttpClientOptions { http2_only: true },
-      )),
+      universal_http_client,
+      http2_only_client,
       server,
       upstream,
       http_data_loaders: Arc::new(vec![]),
@@ -61,9 +69,6 @@ impl Default for RequestContext {
       env_vars: Arc::new(HashMap::new()),
     }
   }
-}
-
-impl RequestContext {
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
@@ -152,7 +157,7 @@ mod test {
 
   #[test]
   fn test_update_max_age_less_than_existing() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = RequestContext::native();
     req_ctx.set_min_max_age(120);
     req_ctx.set_min_max_age(60);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -160,7 +165,7 @@ mod test {
 
   #[test]
   fn test_update_max_age_greater_than_existing() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = RequestContext::native();
     req_ctx.set_min_max_age(60);
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -168,21 +173,21 @@ mod test {
 
   #[test]
   fn test_update_max_age_no_existing_value() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = RequestContext::native();
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(120));
   }
 
   #[test]
   fn test_update_cache_visibility_private() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = RequestContext::native();
     req_ctx.set_cache_visibility(&Some(Cachability::Private));
     assert_eq!(req_ctx.is_cache_public(), Some(false));
   }
 
   #[test]
   fn test_update_cache_visibility_public() {
-    let req_ctx: RequestContext = RequestContext::default();
+    let req_ctx: RequestContext = RequestContext::native();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
     assert_eq!(req_ctx.is_cache_public(), None);
   }
@@ -195,7 +200,7 @@ mod test {
     upstream.batch = Some(Batch::default());
     let server = Server::try_from(config.server.clone()).unwrap();
 
-    let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+    let req_ctx: RequestContext = RequestContext::native().upstream(upstream).server(server);
 
     assert!(req_ctx.is_batching_enabled());
   }

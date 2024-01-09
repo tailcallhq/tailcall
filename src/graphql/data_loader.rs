@@ -8,15 +8,16 @@ use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, HttpClient, Response};
+use crate::http::{DataLoaderRequest, Response};
+use crate::io::http::HttpIO;
 
 pub struct GraphqlDataLoader {
-  pub client: Arc<dyn HttpClient>,
+  pub client: Arc<dyn HttpIO>,
   pub batch: bool,
 }
 
 impl GraphqlDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, batch: bool) -> Self {
+  pub fn new(client: Arc<dyn HttpIO>, batch: bool) -> Self {
     GraphqlDataLoader { client, batch }
   }
 

@@ -102,7 +102,7 @@ mod tests {
     B: DeserializeOwned,
   {
     async fn eval(self) -> Result<B> {
-      let req_ctx = RequestContext::default();
+      let req_ctx = RequestContext::native();
       let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
       let result = self.expression.eval(&ctx).await?;
       let json = serde_json::to_value(result)?;

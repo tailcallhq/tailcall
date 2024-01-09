@@ -2,7 +2,7 @@
 pub mod native;
 
 #[cfg(not(feature = "default"))]
-pub mod wasm;
+pub mod cloudflare;
 
 #[async_trait::async_trait]
 pub trait FileIO {

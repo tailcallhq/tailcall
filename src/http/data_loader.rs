@@ -9,7 +9,8 @@ use async_graphql_value::ConstValue;
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, HttpClient, Response};
+use crate::http::{DataLoaderRequest, Response};
+use crate::io::http::HttpIO;
 use crate::json::JsonLike;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
@@ -32,12 +33,12 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 
 #[derive(Clone)]
 pub struct HttpDataLoader {
-  pub client: Arc<dyn HttpClient>,
+  pub client: Arc<dyn HttpIO>,
   pub group_by: Option<GroupBy>,
   pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, group_by: Option<GroupBy>, is_list: bool) -> Self {
+  pub fn new(client: Arc<dyn HttpIO>, group_by: Option<GroupBy>, is_list: bool) -> Self {
     HttpDataLoader {
       client,
       group_by,

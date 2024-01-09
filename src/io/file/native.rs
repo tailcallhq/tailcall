@@ -1,6 +1,5 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use url::Url;
 
 use super::FileIO;
 
@@ -21,15 +20,16 @@ impl FileIO for NativeFileIO {
   }
 
   async fn read_file(file_path: &str) -> Result<(String, String)> {
-    if let Ok(url) = Url::parse(file_path) {
-      let response = crate::io::http::get_string(url).await?;
-      let sdl = response.headers.get("content-type");
-      let sdl = match sdl {
-        Some(v) => v.to_str().map_err(|e| anyhow!("{}", e))?.to_string(),
-        None => file_path.to_string(),
-      };
-      return Ok((response.body, sdl));
-    }
+    // FIXME: move http logic to config reader
+    // if let Ok(url) = Url::parse(file_path) {
+    //   let response = crate::io::http::get_string(url).await?;
+    //   let sdl = response.headers.get("content-type");
+    //   let sdl = match sdl {
+    //     Some(v) => v.to_str().map_err(|e| anyhow!("{}", e))?.to_string(),
+    //     None => file_path.to_string(),
+    //   };
+    //   return Ok((response.body, sdl));
+    // }
     let mut file = tokio::fs::File::open(file_path).await?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).await?;

@@ -6,7 +6,8 @@ use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
 use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
+use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::io::http::HttpIO;
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -15,7 +16,7 @@ struct MockHttpClient {
 }
 
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
+impl HttpIO for MockHttpClient {
   async fn execute(&self, _: Request) -> anyhow::Result<Response<async_graphql::Value>> {
     self.request_count.fetch_add(1, Ordering::SeqCst);
     // You can mock the actual response as per your need

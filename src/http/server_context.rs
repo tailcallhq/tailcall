@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
+use super::{DataLoaderRequest, HttpClientOptions};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -13,12 +13,13 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
+use crate::io::http::HttpIO;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
-  pub universal_http_client: Arc<dyn HttpClient>,
-  pub http2_only_client: Arc<dyn HttpClient>,
+  pub universal_http_client: Arc<dyn HttpIO>,
+  pub http2_only_client: Arc<dyn HttpIO>,
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -29,10 +30,14 @@ pub struct ServerContext {
 
 impl ServerContext {
   pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    let http2_only_client = Arc::new(DefaultHttpClient::with_options(
+    let universal_http_client = Arc::new(crate::io::http::init_http_native(
       &blueprint.upstream,
-      HttpClientOptions { http2_only: true },
+      &HttpClientOptions::default(),
+    ));
+
+    let http2_only_client = Arc::new(crate::io::http::init_http_native(
+      &blueprint.upstream,
+      &HttpClientOptions { http2_only: true },
     ));
 
     Self::with_http_clients(blueprint, universal_http_client, http2_only_client)
@@ -40,8 +45,8 @@ impl ServerContext {
 
   pub fn with_http_clients(
     mut blueprint: Blueprint,
-    universal_http_client: Arc<dyn HttpClient>,
-    http2_only_client: Arc<dyn HttpClient>,
+    universal_http_client: Arc<dyn HttpIO>,
+    http2_only_client: Arc<dyn HttpIO>,
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];

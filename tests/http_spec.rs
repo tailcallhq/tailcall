@@ -20,7 +20,8 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tailcall::http::{handle_request, Method, Response, ServerContext};
+use tailcall::io::http::HttpIO;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -222,7 +223,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
   bytes
 }
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
+impl HttpIO for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
