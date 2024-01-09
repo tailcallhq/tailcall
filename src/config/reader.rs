@@ -6,6 +6,8 @@ use crate::http::HttpClientOptions;
 use crate::io::file::FileIO;
 use crate::io::http::HttpIO;
 
+const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
+
 pub struct ConfigReader<File> {
   file: File,
 }
@@ -27,7 +29,13 @@ impl<File: FileIO> ConfigReader<File> {
           .await?;
         let sdl = response.headers.get("content-type");
         let sdl = match sdl {
-          Some(v) => v.to_str().map_err(|e| anyhow!("{}", e))?.to_string(),
+          Some(value) => {
+            let value = value.to_str().map_err(|e| anyhow!("{}", e))?.to_string();
+            match SUPPORTED_EXT.iter().any(|&substring| value.contains(substring)) {
+              true => value,
+              false => file.to_string(),
+            }
+          }
           None => file.to_string(),
         };
         let source = Self::detect_source(&sdl)?;
