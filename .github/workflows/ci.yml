@@ -31,6 +31,7 @@ jobs:
 
   compile_wasm:
     name: Compile WASM
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
