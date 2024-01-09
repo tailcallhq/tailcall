@@ -3,10 +3,10 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
 }
 
 type Query {
-  foo: Foo @const(data: { id: 0 })
-  bar: Bar @const(data: { id: 0 })
-  bar1: Bar @const(data: { id: 1 }) @cache(maxAge: 1000)
-  bar2: Bar @const(data: { id: 2 }) @cache(maxAge: 1000)
+  foo: Foo @const(data: {id: 0})
+  bar: Bar @const(data: {id: 0})
+  bar1: Bar @const(data: {id: 1}) @cache(maxAge: 1000)
+  bar2: Bar @const(data: {id: 2}) @cache(maxAge: 1000)
 }
 
 type Foo {
