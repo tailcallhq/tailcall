@@ -5,7 +5,7 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
-use tailcall::http::{handle_request, ServerContext};
+use tailcall::http::{handle_request, HttpClientOptions, ServerContext};
 use tailcall::io::file::FileIO;
 use worker::*;
 
@@ -35,7 +35,16 @@ async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
       }
     };
     let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-    let serv_ctx = Arc::new(ServerContext::new(blueprint));
+    let universal_http_client = Arc::new(tailcall::io::http::init(
+      &blueprint.upstream,
+      &HttpClientOptions::default(),
+    ));
+
+    let http2_only_client = Arc::new(tailcall::io::http::init(
+      &blueprint.upstream,
+      &HttpClientOptions { http2_only: true },
+    ));
+    let serv_ctx = Arc::new(ServerContext::new(blueprint, universal_http_client, http2_only_client));
     *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
     server_ctx = Some(serv_ctx);
   }

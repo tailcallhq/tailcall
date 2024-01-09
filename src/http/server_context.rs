@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::{DataLoaderRequest, HttpClientOptions};
+use super::DataLoaderRequest;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -29,17 +29,11 @@ pub struct ServerContext {
 }
 
 impl ServerContext {
-  pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(crate::io::http::init(
-      &blueprint.upstream,
-      &HttpClientOptions::default(),
-    ));
-
-    let http2_only_client = Arc::new(crate::io::http::init(
-      &blueprint.upstream,
-      &HttpClientOptions { http2_only: true },
-    ));
-
+  pub fn new(
+    blueprint: Blueprint,
+    universal_http_client: Arc<impl HttpIO + 'static>,
+    http2_only_client: Arc<impl HttpIO + 'static>,
+  ) -> Self {
     Self::with_http_clients(blueprint, universal_http_client, http2_only_client)
   }
 

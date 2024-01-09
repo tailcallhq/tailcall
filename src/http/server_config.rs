@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use super::ServerContext;
+use super::{HttpClientOptions, ServerContext};
 use crate::blueprint::{Blueprint, Http};
 
 pub struct ServerConfig {
@@ -11,7 +11,23 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone())), blueprint }
+    let universal_http_client = Arc::new(crate::io::http::init(
+      &blueprint.upstream,
+      &HttpClientOptions::default(),
+    ));
+
+    let http2_only_client = Arc::new(crate::io::http::init(
+      &blueprint.upstream,
+      &HttpClientOptions { http2_only: true },
+    ));
+    Self {
+      server_context: Arc::new(ServerContext::new(
+        blueprint.clone(),
+        universal_http_client,
+        http2_only_client,
+      )),
+      blueprint,
+    }
   }
 
   pub fn addr(&self) -> SocketAddr {
