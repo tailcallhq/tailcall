@@ -13,8 +13,8 @@ use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
 use crate::config::reader::ConfigReader;
-use crate::config::Config;
-use crate::http::Server;
+use crate::config::{Config, Upstream};
+use crate::http::{HttpClientOptions, Server};
 use crate::print_schema;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
@@ -24,12 +24,13 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   logger_init();
+  let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
   let file_io = crate::io::file::init_native();
   let config_reader = ConfigReader::init(file_io);
 
   match cli.command {
     Command::Start { file_paths } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -40,7 +41,7 @@ pub fn run() -> Result<()> {
       Ok(())
     }
     Command::Check { file_paths, n_plus_one_queries, schema } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
         Ok(blueprint) => {
@@ -56,7 +57,7 @@ pub fn run() -> Result<()> {
     }
     Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
     Command::Compose { file_paths, format } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
       Fmt::display(format.encode(config)?);
       Ok(())
     }

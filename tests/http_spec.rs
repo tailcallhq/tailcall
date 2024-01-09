@@ -19,8 +19,8 @@ use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, Method, Response, ServerContext};
+use tailcall::config::{Config, Source, Upstream};
+use tailcall::http::{handle_request, HttpClientOptions, Method, Response, ServerContext};
 use tailcall::io::http::HttpIO;
 use url::Url;
 
@@ -173,10 +173,11 @@ impl HttpSpec {
   }
 
   async fn server_context(&self) -> Arc<ServerContext> {
+    let http_client = tailcall::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
         let reader = ConfigReader::init(tailcall::io::file::init_native());
-        reader.read(&[file]).await.unwrap()
+        reader.read(&[file], http_client).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
     };

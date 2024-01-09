@@ -11,12 +11,12 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(crate::io::http::init(
+    let universal_http_client = Arc::new(crate::io::http::init_http_native(
       &blueprint.upstream,
       &HttpClientOptions::default(),
     ));
 
-    let http2_only_client = Arc::new(crate::io::http::init(
+    let http2_only_client = Arc::new(crate::io::http::init_http_native(
       &blueprint.upstream,
       &HttpClientOptions { http2_only: true },
     ));

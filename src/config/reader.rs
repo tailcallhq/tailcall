@@ -1,8 +1,7 @@
 use anyhow::anyhow;
 use url::Url;
 
-use crate::config::{Config, Source, Upstream};
-use crate::http::HttpClientOptions;
+use crate::config::{Config, Source};
 use crate::io::file::FileIO;
 use crate::io::http::HttpIO;
 
@@ -17,9 +16,7 @@ impl<File: FileIO> ConfigReader<File> {
     Self { file }
   }
 
-  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
-    let http_client = crate::io::http::init(&Upstream::default(), &HttpClientOptions::default());
-
+  pub async fn read<T: ToString>(&self, files: &[T], http_client: impl HttpIO + Sized) -> anyhow::Result<Config> {
     let files = files.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut config = Config::default();
     for file in files {
@@ -66,7 +63,8 @@ mod reader_tests {
   use tokio::io::AsyncReadExt;
 
   use crate::config::reader::ConfigReader;
-  use crate::config::{Config, Type};
+  use crate::config::{Config, Type, Upstream};
+  use crate::http::HttpClientOptions;
 
   fn start_mock_server() -> httpmock::MockServer {
     httpmock::MockServer::start()
@@ -74,6 +72,7 @@ mod reader_tests {
 
   #[tokio::test]
   async fn test_all() {
+    let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let mut cfg = Config::default();
     cfg.schema.query = Some("Test".to_string());
     cfg = cfg.types([("Test", Type::default())].to_vec());
@@ -110,7 +109,7 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(crate::io::file::init_native());
-    let c = cr.read(&files).await.unwrap();
+    let c = cr.read(&files, http_client).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
         .iter()
@@ -123,6 +122,7 @@ mod reader_tests {
   }
   #[tokio::test]
   async fn test_local_files() {
+    let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let files: Vec<String> = [
       "examples/jsonplaceholder.yml",
       "examples/jsonplaceholder.graphql",
@@ -132,7 +132,7 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(crate::io::file::init_native());
-    let c = cr.read(&files).await.unwrap();
+    let c = cr.read(&files, http_client).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()

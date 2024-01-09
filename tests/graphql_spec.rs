@@ -298,12 +298,12 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let universal_http_client = Arc::new(tailcall::io::http::init(
+        let universal_http_client = Arc::new(tailcall::io::http::init_http_native(
           &blueprint.upstream,
           &HttpClientOptions::default(),
         ));
 
-        let http2_only_client = Arc::new(tailcall::io::http::init(
+        let http2_only_client = Arc::new(tailcall::io::http::init_http_native(
           &blueprint.upstream,
           &HttpClientOptions { http2_only: true },
         ));

@@ -29,12 +29,6 @@ pub trait HttpIO: Sync + Send {
   }
   async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
 }
-pub fn init(upstream: &Upstream, http_client_options: &HttpClientOptions) -> impl HttpIO + Default + Clone {
-  #[cfg(feature = "default")]
-  return HttpNative::init(upstream, http_client_options);
-  #[cfg(not(feature = "default"))]
-  HttpCloudflare::init(upstream, http_client_options)
-}
 
 #[cfg(feature = "default")]
 pub fn init_http_native(upstream: &Upstream, http_client_options: &HttpClientOptions) -> impl HttpIO + Default + Clone {

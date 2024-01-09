@@ -44,12 +44,12 @@ impl RequestContext {
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
 
-    let universal_http_client = Arc::new(crate::io::http::init(
+    let universal_http_client = Arc::new(crate::io::http::init_http_native(
       &upstream,
       &crate::http::HttpClientOptions::default(),
     ));
 
-    let http2_only_client = Arc::new(crate::io::http::init(
+    let http2_only_client = Arc::new(crate::io::http::init_http_native(
       &upstream,
       &crate::http::HttpClientOptions { http2_only: true },
     ));
