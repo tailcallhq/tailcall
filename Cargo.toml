@@ -100,7 +100,10 @@ default = [
 
 
 [workspace]
-members = ["."]
+members = [
+   ".",
+   "cloudflare"
+]
 
 [profile.release]
 opt-level = 3

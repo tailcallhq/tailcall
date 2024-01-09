@@ -478,7 +478,10 @@ impl Config {
     Iter: Iterator,
     Iter::Item: AsRef<str>,
   {
+    /*    #[cfg(feature = "default")]
     let config_reader = ConfigReader::init(crate::io::file::init_native());
+    #[cfg(not(feature = "default"))]*/
+    let config_reader = ConfigReader::init(crate::io::file::init());
 
     config_reader
       .read(&file_paths.map(|path| path.as_ref().to_owned()).collect::<Vec<String>>())

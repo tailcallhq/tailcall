@@ -13,14 +13,13 @@ lazy_static! {
 }
 
 async fn make_req() -> Result<Config> {
-  
-  let reader = ConfigReader::init(
-    [
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql", // add/edit the SDL links to this list
-    ]
-    .iter(),
-  );
-  reader.read().await.map_err(conv_err)
+  let reader = ConfigReader::init(tailcall::io::file::init_wasm());
+  reader
+    .read(&[
+      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
+    ])
+    .await
+    .map_err(conv_err)
 }
 
 #[event(fetch)]
