@@ -4,8 +4,8 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::http::Server;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let config_reader = ConfigReader::init(tailcall::io::file::init_native());
-  let config = config_reader.read(configs).await.unwrap();
+  let reader = ConfigReader::init(tailcall::io::file::init_native());
+  let config = reader.read(configs).await.unwrap();
   let mut server = Server::new(config);
   let server_up_receiver = server.server_up_receiver();
 

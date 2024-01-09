@@ -10,6 +10,7 @@ pub trait FileIO {
   async fn read_file(file_path: &str) -> anyhow::Result<(String, String)>;
   async fn read_files<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>>;
 }
+
 #[cfg(not(feature = "default"))]
 pub fn init_wasm() -> impl FileIO {
   wasm::WasmFileIO::init()

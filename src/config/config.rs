@@ -471,21 +471,6 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
-
-  /*  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    /*    #[cfg(feature = "default")]
-    let config_reader = ConfigReader::init(crate::io::file::init_native());
-    #[cfg(not(feature = "default"))]*/
-    let config_reader = ConfigReader::init(crate::io::file::init());
-
-    config_reader
-      .read(&file_paths.map(|path| path.as_ref().to_owned()).collect::<Vec<String>>())
-      .await
-  }*/
 }
 
 #[cfg(test)]

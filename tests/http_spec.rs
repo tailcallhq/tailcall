@@ -174,8 +174,8 @@ impl HttpSpec {
   async fn server_context(&self) -> Arc<ServerContext> {
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
-        let config_reader = ConfigReader::init(tailcall::io::file::init_native());
-        config_reader.read(&[file]).await.unwrap()
+        let reader = ConfigReader::init(tailcall::io::file::init_native());
+        reader.read(&[file]).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
     };
