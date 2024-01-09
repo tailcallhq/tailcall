@@ -1,0 +1,13 @@
+{
+  "name": "tailcall",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "deploy": "npx wrangler deploy --minify",
+    "publish": "npx wrangler publish --minify",
+    "dev": "npx wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.22.2"
+  }
+}

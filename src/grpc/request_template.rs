@@ -85,7 +85,8 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-    *req.version_mut() = reqwest::Version::HTTP_2;
+    #[cfg(feature = "default")]
+    super::set_req_version(&mut req);
     req.headers_mut().extend(self.headers.clone());
 
     Ok(create_grpc_request(

@@ -131,6 +131,11 @@ impl ServerContext {
     let local_rate_limiter = LocalRateLimiter::new(type_rate_limits, field_rate_limits);
     let global_rate_limiter = GlobalRateLimiter::new();
 
+    #[cfg(feature = "default")]
+    let env_vars = Arc::new(std::env::vars().collect());
+    #[cfg(not(feature = "default"))]
+    let env_vars = Arc::new(HashMap::new());
+
     ServerContext {
       schema,
       universal_http_client,
@@ -142,7 +147,7 @@ impl ServerContext {
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       local_rate_limiter,
       global_rate_limiter,
-      env_vars: Arc::new(env),
+      env_vars,
     }
   }
 }
