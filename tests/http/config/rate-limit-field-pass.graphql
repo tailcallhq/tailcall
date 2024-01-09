@@ -7,5 +7,5 @@ type Query {
 }
 
 type Bar {
-  id: Int @rateLimit(requestsPerUnit: 3, unit: "month")
+  id: Int @localRateLimit(requestsPerUnit: 3, unit: "month")
 }

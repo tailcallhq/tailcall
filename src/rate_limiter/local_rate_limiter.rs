@@ -6,21 +6,21 @@ use std::sync::{Arc, Mutex};
 use async_graphql_value::ConstValue;
 
 use super::{FoldRateLimitResults, NumRequestsRemaining, RateLimitError, RateLimiter};
-use crate::blueprint::{hash_const_value, RateLimit};
+use crate::blueprint::{hash_const_value, LocalRateLimit};
 use crate::http::NumRequestsFetched;
 use crate::json::JsonLike;
 
 #[derive(Clone)]
 pub struct LocalRateLimiter {
-  type_rate_limits: Arc<HashMap<String, RateLimit>>,
-  field_rate_limits: Arc<HashMap<String, HashMap<String, RateLimit>>>,
+  type_rate_limits: Arc<HashMap<String, LocalRateLimit>>,
+  field_rate_limits: Arc<HashMap<String, HashMap<String, LocalRateLimit>>>,
   num_requests_fetched: Arc<Mutex<HashMap<String, HashMap<String, NumRequestsFetched>>>>,
 }
 
 impl LocalRateLimiter {
   pub fn new(
-    type_rate_limits: HashMap<String, RateLimit>,
-    field_rate_limits: HashMap<String, HashMap<String, RateLimit>>,
+    type_rate_limits: HashMap<String, LocalRateLimit>,
+    field_rate_limits: HashMap<String, HashMap<String, LocalRateLimit>>,
   ) -> Self {
     Self {
       type_rate_limits: Arc::new(type_rate_limits),
@@ -45,11 +45,8 @@ impl LocalRateLimiter {
 
   pub fn allow_obj(&self, type_name: &str, const_value: &ConstValue) -> Result<NumRequestsRemaining, RateLimitError> {
     let type_name = type_name.to_lowercase();
-    if let Some(rate_limit @ RateLimit { group_by, .. }) = self.type_rate_limits.get(&type_name) {
-      let group_by = group_by
-        .as_ref()
-        .map(|req_acc| req_acc.req_field.as_str())
-        .unwrap_or("");
+    if let Some(rate_limit @ LocalRateLimit { group_by, .. }) = self.type_rate_limits.get(&type_name) {
+      let group_by = group_by.as_ref().map(String::as_str).unwrap_or("");
       let mut hasher = DefaultHasher::new();
       if let Some(val) = const_value.get_key(group_by) {
         hash_const_value(val, &mut hasher);

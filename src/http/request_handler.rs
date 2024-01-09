@@ -10,7 +10,6 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::ServerContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::rate_limiter::RateLimiter;
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(
@@ -98,12 +97,8 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
-  if let Some(ref rate_limit) = state.blueprint.rate_limit {
-    if let Some(ref request_accessor) = rate_limit.group_by {
-      if let Ok(key) = request_accessor.access_request(&req).await {
-        state.global_rate_limiter.allow([key], rate_limit)?;
-      }
-    }
+  if let Some(ref rate_limit) = state.blueprint.global_rate_limit {
+    state.global_rate_limiter.allow_req(&req, rate_limit)?;
   }
 
   match *req.method() {

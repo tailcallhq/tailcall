@@ -27,7 +27,7 @@ pub struct Config {
   #[serde(default)]
   pub upstream: Upstream,
   pub schema: RootSchema,
-  pub rate_limit: Option<RateLimit>,
+  pub rate_limit: Option<GlobalRateLimit>,
   #[serde(default)]
   #[setters(skip)]
   pub types: BTreeMap<String, Type>,
@@ -157,7 +157,7 @@ pub struct Type {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub rate_limit: Option<RateLimit>,
+  pub rate_limit: Option<LocalRateLimit>,
 }
 
 impl Type {
@@ -216,7 +216,15 @@ impl RateLimitUnit {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct RateLimit {
+pub struct GlobalRateLimit {
+  pub unit: RateLimitUnit,
+  pub requests_per_unit: NonZeroU64,
+  pub group_by: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalRateLimit {
   pub unit: RateLimitUnit,
   pub requests_per_unit: NonZeroU64,
   pub group_by: Option<String>,
@@ -297,7 +305,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub rate_limit: Option<RateLimit>,
+  pub rate_limit: Option<LocalRateLimit>,
 }
 
 impl Field {

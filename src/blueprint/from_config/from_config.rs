@@ -30,8 +30,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
   );
 
   let rate_limit = to_rate_limit().transform::<Blueprint>(
-    |rate_limit, blueprint| blueprint.rate_limit(rate_limit),
-    |blueprint| blueprint.rate_limit,
+    |rate_limit, blueprint| blueprint.global_rate_limit(rate_limit),
+    |blueprint| blueprint.global_rate_limit,
   );
 
   server

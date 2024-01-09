@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{Cache, RateLimit};
+use super::{Cache, GlobalRateLimit, LocalRateLimit};
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::mustache::Mustache;
@@ -79,12 +79,12 @@ fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
-fn rate_limit(schema_definition: &SchemaDefinition) -> Valid<Option<RateLimit>, String> {
+fn rate_limit(schema_definition: &SchemaDefinition) -> Valid<Option<GlobalRateLimit>, String> {
   let mut res = Valid::succeed(None);
-  let directive_name = RateLimit::directive_name();
+  let directive_name = GlobalRateLimit::directive_name();
   for directive in schema_definition.directives.iter() {
     if directive.node.name.node.as_ref() == directive_name.as_str() {
-      res = RateLimit::from_directive(&directive.node).and_then(|rt| {
+      res = GlobalRateLimit::from_directive(&directive.node).and_then(|rt| {
         if let Some(Ok(mustache)) = rt.group_by.as_ref().map(|group_by| Mustache::parse(group_by)) {
           let maybe_iter = mustache.expression_segments().first().map(|list| list.iter());
           let valid_group_by = maybe_iter.and_then(|mut iter| iter.next().filter(|name| name == &"request"));
@@ -118,7 +118,7 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
     let directives = &type_definition.node.directives;
 
     Cache::from_directives(directives.iter())
-      .zip(RateLimit::from_directives(directives.iter()))
+      .zip(LocalRateLimit::from_directives(directives.iter()))
       .and_then(|(cache, rate_limit)| match type_definition.node.kind.clone() {
         TypeKind::Object(object_type) => to_object_type(
           &object_type,
@@ -177,7 +177,7 @@ fn to_object_type<T>(
   description: &Option<Positioned<String>>,
   directives: &[Positioned<ConstDirective>],
   cache: Option<Cache>,
-  rate_limit: Option<RateLimit>,
+  rate_limit: Option<LocalRateLimit>,
 ) -> Valid<config::Type, String>
 where
   T: ObjectLike,
@@ -186,7 +186,7 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  if let Some(RateLimit { group_by: Some(ref group_by), .. }) = rate_limit {
+  if let Some(LocalRateLimit { group_by: Some(ref group_by), .. }) = rate_limit {
     if fields.iter().all(|val| !val.node.name.node.eq(group_by)) {
       return Valid::fail_with(
         format!("Cannot groupBy field {group_by}"),
@@ -274,7 +274,7 @@ where
     .zip(GraphQL::from_directives(directives.iter()))
     .zip(Cache::from_directives(directives.iter()))
     .zip(Grpc::from_directives(directives.iter()))
-    .zip(RateLimit::from_directives(directives.iter()))
+    .zip(LocalRateLimit::from_directives(directives.iter()))
     .map(|((((http, graphql), cache), grpc), rate_limit)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);

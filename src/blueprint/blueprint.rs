@@ -14,6 +14,7 @@ use crate::blueprint::from_config::Server;
 use crate::config::{self, Upstream};
 use crate::lambda::{Expression, Lambda};
 use crate::mustache::Mustache;
+use crate::rate_limiter::RateLimit;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -25,7 +26,7 @@ pub struct Blueprint {
   pub schema: SchemaDefinition,
   pub server: Server,
   pub upstream: Upstream,
-  pub rate_limit: Option<RateLimit>,
+  pub global_rate_limit: Option<GlobalRateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -91,7 +92,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
-  pub rate_limit: Option<RateLimit>,
+  pub rate_limit: Option<LocalRateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -138,21 +139,48 @@ pub struct Cache {
 }
 
 #[derive(Clone, Debug)]
-pub struct RateLimit {
+pub struct LocalRateLimit {
   pub duration: Duration,
   pub requests: NonZeroU64,
-  pub group_by: Option<RequestAccessor>,
+  pub group_by: Option<String>,
+}
+
+impl RateLimit for LocalRateLimit {
+  fn duration(&self) -> Duration {
+    self.duration
+  }
+
+  fn requests(&self) -> NonZeroU64 {
+    self.requests
+  }
 }
 
 #[derive(Clone, Debug)]
-pub struct RequestAccessor {
-  pub req_field: String,
+pub struct GlobalRateLimit {
+  pub duration: Duration,
+  pub requests: NonZeroU64,
+  pub group_by: Option<GroupBy>,
+}
+
+impl RateLimit for GlobalRateLimit {
+  fn duration(&self) -> Duration {
+    self.duration
+  }
+
+  fn requests(&self) -> NonZeroU64 {
+    self.requests
+  }
+}
+
+#[derive(Clone, Debug)]
+pub struct GroupBy {
+  pub base: String,
   pub rest: Vec<String>,
 }
 
-impl RequestAccessor {
-  pub async fn access_request<T>(&self, req: &hyper::Request<T>) -> anyhow::Result<String> {
-    Ok(match self.req_field.as_str() {
+impl GroupBy {
+  pub fn get_global_key<T>(&self, req: &hyper::Request<T>) -> anyhow::Result<String> {
+    Ok(match self.base.as_str() {
       "method" => req.method().to_string(),
       "uri" => req.uri().to_string(),
       "version" => format!("{:?}", req.version()),
@@ -169,7 +197,7 @@ impl RequestAccessor {
   }
 }
 
-impl TryFrom<&String> for RequestAccessor {
+impl TryFrom<&String> for GroupBy {
   type Error = anyhow::Error;
 
   fn try_from(value: &String) -> anyhow::Result<Self> {
@@ -192,20 +220,29 @@ impl TryFrom<&String> for RequestAccessor {
       x => Err(anyhow::anyhow!("`request` doesn't support field name `{x}`"))?,
     }
 
-    Ok(Self { req_field: second, rest: segments_iter.collect() })
+    Ok(Self { base: second, rest: segments_iter.collect() })
   }
 }
 
-impl TryFrom<&config::RateLimit> for RateLimit {
+impl TryFrom<&config::GlobalRateLimit> for GlobalRateLimit {
   type Error = anyhow::Error;
 
-  fn try_from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> anyhow::Result<Self> {
+  fn try_from(
+    config::GlobalRateLimit { unit, requests_per_unit, group_by }: &config::GlobalRateLimit,
+  ) -> anyhow::Result<Self> {
     let duration = Duration::from_secs(unit.into_secs());
-    Ok(RateLimit {
+    Ok(GlobalRateLimit {
       duration,
       requests: *requests_per_unit,
-      group_by: group_by.as_ref().map(RequestAccessor::try_from).transpose()?,
+      group_by: group_by.as_ref().map(GroupBy::try_from).transpose()?,
     })
+  }
+}
+
+impl From<&config::LocalRateLimit> for LocalRateLimit {
+  fn from(config::LocalRateLimit { unit, requests_per_unit, group_by }: &config::LocalRateLimit) -> Self {
+    let duration = Duration::from_secs(unit.into_secs());
+    LocalRateLimit { duration, requests: *requests_per_unit, group_by: group_by.as_ref().map(String::clone) }
   }
 }
 
@@ -218,7 +255,7 @@ pub struct FieldDefinition {
   pub directives: Vec<Directive>,
   pub description: Option<String>,
   pub cache: Option<Cache>,
-  pub rate_limit: Option<RateLimit>,
+  pub rate_limit: Option<LocalRateLimit>,
 }
 
 impl FieldDefinition {

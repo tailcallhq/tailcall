@@ -1,9 +1,14 @@
-use std::time::SystemTime;
+use std::num::NonZeroU64;
+use std::time::{Duration, SystemTime};
 
 use serde::Serialize;
 
-use crate::blueprint::RateLimit;
 use crate::http::NumRequestsFetched;
+
+pub trait RateLimit {
+  fn requests(&self) -> NonZeroU64;
+  fn duration(&self) -> Duration;
+}
 
 pub trait RateLimiter<const NUM_KEYS: usize> {
   const NUM_KEYS: usize = NUM_KEYS;
@@ -13,16 +18,20 @@ pub trait RateLimiter<const NUM_KEYS: usize> {
     keys: [String; NUM_KEYS],
     f: F,
   ) -> Result<NumRequestsRemaining, RateLimitError>;
+
   #[allow(clippy::too_many_arguments)]
-  fn allow(&self, keys: [String; NUM_KEYS], rate_limit: &RateLimit) -> Result<NumRequestsRemaining, RateLimitError> {
-    println!("{keys:?}");
+  fn allow(
+    &self,
+    keys: [String; NUM_KEYS],
+    rate_limit: &impl RateLimit,
+  ) -> Result<NumRequestsRemaining, RateLimitError> {
     self.with_nrf(keys, |nrf| {
       let duration = nrf.last_fetched.elapsed().unwrap();
-      let requests_remaining = rate_limit.requests.get() as usize - nrf.num_requests;
-      if duration < rate_limit.duration && requests_remaining > 0 {
+      let requests_remaining = rate_limit.requests().get() as usize - nrf.num_requests;
+      if duration < rate_limit.duration() && requests_remaining > 0 {
         nrf.num_requests += 1;
         nrf.last_fetched = SystemTime::now();
-      } else if duration >= rate_limit.duration {
+      } else if duration >= rate_limit.duration() {
         nrf.last_fetched = SystemTime::now();
         nrf.num_requests = 1;
       } else {
