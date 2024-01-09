@@ -56,5 +56,9 @@ pub enum Command {
   },
 
   /// Initialize a new project
-  Init { file_path: String },
+  Init {
+    // default is current directory
+    #[arg(default_value = ".")]
+    folder_path: String,
+  },
 }

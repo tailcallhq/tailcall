@@ -32,7 +32,10 @@ impl GrpcDataLoader {
       .max_batch_size(batch.max_size)
   }
 
-  async fn load_dedupe_only(&self, keys: &[DataLoaderRequest]) -> anyhow::Result<HashMap<DataLoaderRequest, Response>> {
+  async fn load_dedupe_only(
+    &self,
+    keys: &[DataLoaderRequest],
+  ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
     let results = keys.iter().map(|key| async {
       let result = match key.to_request() {
         Ok(req) => execute_grpc_request(self.client.deref(), &self.operation, req).await,
@@ -58,7 +61,7 @@ impl GrpcDataLoader {
     &self,
     group_by: &GroupBy,
     keys: &[DataLoaderRequest],
-  ) -> Result<HashMap<DataLoaderRequest, Response>> {
+  ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
     let inputs = keys.iter().map(|key| key.template.body.as_str());
     let (multiple_body, grouped_keys) = self.operation.convert_multiple_inputs(inputs, group_by.key())?;
 
@@ -93,7 +96,7 @@ impl GrpcDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GrpcDataLoader {
-  type Value = Response;
+  type Value = Response<async_graphql::Value>;
   type Error = Arc<anyhow::Error>;
 
   async fn load(
