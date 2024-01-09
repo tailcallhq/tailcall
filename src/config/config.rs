@@ -27,6 +27,7 @@ pub struct Config {
   #[serde(default)]
   pub upstream: Upstream,
   pub schema: RootSchema,
+  pub rate_limit: Option<RateLimit>,
   #[serde(default)]
   #[setters(skip)]
   pub types: BTreeMap<String, Type>,
@@ -126,8 +127,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
+    let rate_limit = self.rate_limit.or(other.rate_limit.clone());
 
-    Self { server, upstream, types, schema, unions }
+    Self { server, upstream, types, schema, rate_limit, unions }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {

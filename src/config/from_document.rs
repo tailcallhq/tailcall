@@ -10,6 +10,7 @@ use async_graphql::Name;
 use super::{Cache, RateLimit};
 use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
+use crate::mustache::Mustache;
 use crate::valid::Valid;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition =
@@ -30,8 +31,22 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(types).zip(unions).zip(schema))
-    .map(|((((server, upstream), types), unions), schema)| Config { server, upstream, types, unions, schema })
+    .and_then(|sd| {
+      server(sd)
+        .zip(upstream(sd))
+        .zip(rate_limit(sd))
+        .zip(types)
+        .zip(unions)
+        .zip(schema)
+    })
+    .map(|(((((server, upstream), rate_limit), types), unions), schema)| Config {
+      server,
+      upstream,
+      rate_limit,
+      types,
+      unions,
+      schema,
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -63,6 +78,29 @@ fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
 }
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
+}
+fn rate_limit(schema_definition: &SchemaDefinition) -> Valid<Option<RateLimit>, String> {
+  let mut res = Valid::succeed(None);
+  let directive_name = RateLimit::directive_name();
+  for directive in schema_definition.directives.iter() {
+    if directive.node.name.node.as_ref() == directive_name.as_str() {
+      res = RateLimit::from_directive(&directive.node).and_then(|rt| {
+        if let Some(Ok(mustache)) = rt.group_by.as_ref().map(|group_by| Mustache::parse(group_by)) {
+          let maybe_iter = mustache.expression_segments().first().map(|list| list.iter());
+          let valid_group_by = maybe_iter.and_then(|mut iter| iter.next().filter(|name| name == &"request"));
+
+          if valid_group_by.is_none() {
+            return Valid::fail(format!(
+              "Only `request` is supported as base object {}",
+              rt.group_by.unwrap()
+            ));
+          }
+        }
+        Valid::succeed(Some(rt))
+      })
+    }
+  }
+  res
 }
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);

@@ -233,7 +233,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
-      rate_limit: type_of.rate_limit.as_ref().map(RateLimit::from),
+      rate_limit: type_of.rate_limit.as_ref().and_then(|rt| rt.try_into().ok()),
     })
   })
 }
@@ -270,7 +270,7 @@ fn update_args<'a>(
       directives: Vec::new(),
       resolver: None,
       cache,
-      rate_limit: field.rate_limit.as_ref().map(RateLimit::from),
+      rate_limit: field.rate_limit.as_ref().and_then(|rt| rt.try_into().ok()),
     })
   })
 }

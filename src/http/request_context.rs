@@ -17,7 +17,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
-use crate::rate_limiter::rate_limiter::RateLimiter;
+use crate::rate_limiter::{GlobalRateLimiter, LocalRateLimiter};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -37,12 +37,19 @@ pub struct RequestContext {
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<HashMap<String, String>>,
-  pub rate_limiter: RateLimiter,
+  pub local_rate_limiter: LocalRateLimiter,
+  pub global_rate_limiter: GlobalRateLimiter,
 }
 
 pub struct NumRequestsFetched {
   pub last_fetched: SystemTime,
   pub num_requests: usize,
+}
+
+impl Default for NumRequestsFetched {
+  fn default() -> Self {
+    NumRequestsFetched { last_fetched: SystemTime::now(), num_requests: 0 }
+  }
 }
 
 impl Default for RequestContext {
@@ -67,7 +74,8 @@ impl Default for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: Arc::new(HashMap::new()),
-      rate_limiter: RateLimiter::new(HashMap::new(), HashMap::new()),
+      local_rate_limiter: LocalRateLimiter::new(HashMap::new(), HashMap::new()),
+      global_rate_limiter: GlobalRateLimiter::new(),
     }
   }
 }
@@ -146,7 +154,8 @@ impl From<&ServerContext> for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: server_ctx.env_vars.clone(),
-      rate_limiter: server_ctx.rate_limiter.clone(),
+      local_rate_limiter: server_ctx.local_rate_limiter.clone(),
+      global_rate_limiter: server_ctx.global_rate_limiter.clone(),
     }
   }
 }

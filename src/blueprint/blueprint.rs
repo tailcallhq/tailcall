@@ -13,6 +13,7 @@ use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::{self, Upstream};
 use crate::lambda::{Expression, Lambda};
+use crate::mustache::Mustache;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -24,6 +25,7 @@ pub struct Blueprint {
   pub schema: SchemaDefinition,
   pub server: Server,
   pub upstream: Upstream,
+  pub rate_limit: Option<RateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -139,13 +141,71 @@ pub struct Cache {
 pub struct RateLimit {
   pub duration: Duration,
   pub requests: NonZeroU64,
-  pub group_by: Option<String>,
+  pub group_by: Option<RequestAccessor>,
 }
 
-impl From<&config::RateLimit> for RateLimit {
-  fn from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> Self {
+#[derive(Clone, Debug)]
+pub struct RequestAccessor {
+  pub req_field: String,
+  pub rest: Vec<String>,
+}
+
+impl RequestAccessor {
+  pub async fn access_request<T>(&self, req: &hyper::Request<T>) -> anyhow::Result<String> {
+    Ok(match self.req_field.as_str() {
+      "method" => req.method().to_string(),
+      "uri" => req.uri().to_string(),
+      "version" => format!("{:?}", req.version()),
+      "headers" => match self.rest.first() {
+        Some(key) => req
+          .headers()
+          .get(key)
+          .map(|val| format!("{val:?}"))
+          .ok_or(anyhow::anyhow!("Header key {key} not found"))?,
+        _ => Err(anyhow::anyhow!("{:?} invalid path", self.rest))?,
+      },
+      x => Err(anyhow::anyhow!("{x} field is not supported"))?,
+    })
+  }
+}
+
+impl TryFrom<&String> for RequestAccessor {
+  type Error = anyhow::Error;
+
+  fn try_from(value: &String) -> anyhow::Result<Self> {
+    let segments = Mustache::parse(value)?
+      .expression_segments_owned()
+      .into_iter()
+      .next()
+      .ok_or(anyhow::anyhow!("No Expression found in mustache"))?;
+    let mut segments_iter = segments.into_iter();
+    let first = segments_iter.next();
+    first
+      .map(|name| name.as_str() == "request")
+      .ok_or(anyhow::anyhow!("Invalid name"))?;
+    let second = segments_iter
+      .next()
+      .ok_or(anyhow::anyhow!("No field in request object specified"))?;
+
+    match second.as_str() {
+      "method" | "uri" | "version" | "headers" => {}
+      x => Err(anyhow::anyhow!("`request` doesn't support field name `{x}`"))?,
+    }
+
+    Ok(Self { req_field: second, rest: segments_iter.collect() })
+  }
+}
+
+impl TryFrom<&config::RateLimit> for RateLimit {
+  type Error = anyhow::Error;
+
+  fn try_from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> anyhow::Result<Self> {
     let duration = Duration::from_secs(unit.into_secs());
-    RateLimit { duration, requests: *requests_per_unit, group_by: group_by.clone() }
+    Ok(RateLimit {
+      duration,
+      requests: *requests_per_unit,
+      group_by: group_by.as_ref().map(RequestAccessor::try_from).transpose()?,
+    })
   }
 }
 

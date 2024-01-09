@@ -14,7 +14,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
-use crate::rate_limiter::rate_limiter::RateLimiter;
+use crate::rate_limiter::{GlobalRateLimiter, LocalRateLimiter};
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
@@ -25,7 +25,8 @@ pub struct ServerContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub rate_limiter: RateLimiter,
+  pub local_rate_limiter: LocalRateLimiter,
+  pub global_rate_limiter: GlobalRateLimiter,
   pub env_vars: Arc<HashMap<String, String>>,
 }
 
@@ -127,7 +128,8 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let env = std::env::vars().collect();
-    let rate_limiter = RateLimiter::new(type_rate_limits, field_rate_limits);
+    let local_rate_limiter = LocalRateLimiter::new(type_rate_limits, field_rate_limits);
+    let global_rate_limiter = GlobalRateLimiter::new();
 
     ServerContext {
       schema,
@@ -138,7 +140,8 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
-      rate_limiter,
+      local_rate_limiter,
+      global_rate_limiter,
       env_vars: Arc::new(env),
     }
   }
