@@ -2,11 +2,18 @@ use anyhow::{anyhow, Result};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use url::Url;
 
-use super::FileOperations;
-use crate::io::file::FileIO;
+use super::FileIO;
+
+pub struct NativeFileIO {}
+
+impl NativeFileIO {
+  pub fn init() -> Self {
+    NativeFileIO {}
+  }
+}
 
 #[async_trait::async_trait]
-impl FileOperations for FileIO {
+impl FileIO for NativeFileIO {
   async fn write<'a>(file: &'a str, content: &'a [u8]) -> Result<()> {
     let mut file = tokio::fs::File::create(file).await?;
     file.write_all(content).await?;

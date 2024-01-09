@@ -13,6 +13,7 @@ lazy_static! {
 }
 
 async fn make_req() -> Result<Config> {
+  
   let reader = ConfigReader::init(
     [
       "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql", // add/edit the SDL links to this list

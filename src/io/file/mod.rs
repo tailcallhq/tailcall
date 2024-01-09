@@ -5,16 +5,18 @@ pub mod native;
 pub mod wasm;
 
 #[async_trait::async_trait]
-pub trait FileOperations {
+pub trait FileIO {
   async fn write<'a>(file: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
   async fn read_file(file_path: &str) -> anyhow::Result<(String, String)>;
   async fn read_files<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>>;
 }
 
-pub struct FileIO {}
+#[cfg(not(feature = "default"))]
+pub fn init_wasm() -> impl FileIO {
+  wasm::WasmFileIO::init()
+}
 
-impl FileIO {
-  pub fn init() -> Self {
-    FileIO {}
-  }
+#[cfg(feature = "default")]
+pub fn init_native() -> impl FileIO {
+  native::NativeFileIO::init()
 }

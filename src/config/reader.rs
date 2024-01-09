@@ -1,22 +1,21 @@
-use crate::config::{Config, Source};
-use crate::io::file::{FileIO, FileOperations};
+use derive_setters::Setters;
 
-pub struct ConfigReader {
-  file: FileIO,
-  files: Vec<String>,
+use crate::config::{Config, Source};
+use crate::io::file::FileIO;
+
+#[derive(Setters)]
+pub struct ConfigReader<File> {
+  file: File,
 }
 
-impl ConfigReader {
-  pub fn init<Iter>(file_paths: Iter) -> Self
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    Self { file: FileIO::init(), files: file_paths.map(|x| x.as_ref().to_string()).collect() }
+impl<File: FileIO> ConfigReader<File> {
+  pub fn init(file: File) -> Self {
+    Self { file }
   }
-  pub async fn read(&self) -> anyhow::Result<Config> {
+
+  pub async fn read(&self, files: &[String]) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    for (content, path) in &self.file.read_files(&self.files).await? {
+    for (content, path) in &self.file.read_files(files).await? {
       let source = Self::detect_source(path)?;
       let conf = Config::from_source(source, content)?;
       config = config.clone().merge_right(&conf);

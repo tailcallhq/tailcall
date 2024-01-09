@@ -1,15 +1,23 @@
 use anyhow::{anyhow, Result};
 use url::Url;
 
-use crate::io::file::{FileIO, FileOperations};
+use crate::io::file::FileIO;
 
 // This is temporary, should be removed with removal of config for wasm
 const SUBSTRINGS: [&'static str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 
+pub struct WasmFileIO {}
+
+impl WasmFileIO {
+  pub fn init() -> Self {
+    WasmFileIO {}
+  }
+}
+
 // TODO: Temporary implementation that performs an HTTP request to get the file content
 // This should be moved to a more native implementation that's based on the WASM env.
 #[async_trait::async_trait]
-impl FileOperations for FileIO {
+impl FileIO for WasmFileIO {
   async fn read_file(file_path: &str) -> Result<(String, String)> {
     let url = Url::parse(file_path)?;
     let response = crate::io::http::get_string(url).await?;
