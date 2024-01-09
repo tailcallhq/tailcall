@@ -4,9 +4,11 @@ pub mod group_by;
 mod into_document;
 mod key_values;
 mod n_plus_one;
-mod reader;
+pub mod reader;
 mod server;
 mod source;
+
+// TODO: write is not used anywhere
 mod writer;
 
 pub use config::*;

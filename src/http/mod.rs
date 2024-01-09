@@ -1,18 +1,21 @@
-mod client;
+pub mod client;
 mod data_loader;
 
 mod data_loader_request;
+#[cfg(feature = "default")]
 mod http_1;
+#[cfg(feature = "default")]
 mod http_2;
 mod method;
 mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
+#[cfg(feature = "default")]
 mod server;
+#[cfg(feature = "default")]
 mod server_config;
 mod server_context;
-
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};
@@ -25,26 +28,28 @@ pub use request_context::RequestContext;
 pub use request_handler::handle_request;
 pub use request_template::RequestTemplate;
 pub use response::*;
+#[cfg(feature = "default")]
 pub use server::Server;
 pub use server_context::ServerContext;
 
+#[cfg(feature = "default")]
 use self::server_config::ServerConfig;
 
-pub fn cache_policy(res: &Response) -> Option<CacheControl> {
+pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;
   let value = header.to_str().ok()?;
 
   CacheControl::from_value(value)
 }
 
-pub fn max_age(res: &Response) -> Option<Duration> {
+pub fn max_age(res: &Response<async_graphql::Value>) -> Option<Duration> {
   match cache_policy(res) {
     Some(value) => value.max_age,
     None => None,
   }
 }
 
-pub fn cache_visibility(res: &Response) -> String {
+pub fn cache_visibility(res: &Response<async_graphql::Value>) -> String {
   let cachability = cache_policy(res).and_then(|value| value.cachability);
 
   match cachability {
@@ -56,7 +61,7 @@ pub fn cache_visibility(res: &Response) -> String {
 }
 
 /// Returns the minimum TTL of the given responses.
-pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
+pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response<async_graphql::Value>>) -> i32 {
   let mut min = -1;
 
   for res in res_vec {
@@ -69,7 +74,7 @@ pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response>) -> i32 {
   }
   min
 }
-
+#[cfg(feature = "default")]
 fn log_launch_and_open_browser(sc: &ServerConfig) {
   let addr = sc.addr().to_string();
   log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());
