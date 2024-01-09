@@ -39,6 +39,16 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
         .fold(|state| other.try_fold(input, state), other.try_fold(input, state))
     }))
   }
+  // pub fn and(self, other: TryFold<'a, I, O, E>) -> Self {
+  //   TryFold(Box::new(move |input, state| {
+  //     let r1 = self.try_fold(input, state.clone()).to_result();
+
+  //     match r1 {
+  //       Ok(state) => other.try_fold(input, state),
+  //       Err(error) => Valid::<O, E>::from_validation_err(error).and(other.try_fold(input, state)),
+  //     }
+  //   }))
+  // }
 
   /// Create a new `TryFold` with a specified folding function.
   ///
@@ -160,30 +170,25 @@ impl<'a, I, O: Clone, E> FromIterator<TryFold<'a, I, O, E>> for TryFold<'a, I, O
 
 #[cfg(test)]
 mod tests {
+  use std::cell::RefCell;
+
   use super::TryFold;
   use crate::valid::{Valid, ValidationError};
 
   #[test]
   fn test_and() {
+    let call_number = RefCell::new(0);
     let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a + b));
-    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a * b));
+    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| {
+      *call_number.borrow_mut() += 1;
+      Valid::succeed(a * b)
+    });
     let t = t1.and(t2);
 
     let actual = t.try_fold(&2, 3).to_result().unwrap();
     let expected = 10;
 
-    assert_eq!(actual, expected)
-  }
-
-  #[test]
-  fn test_combine_ok() {
-    let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a + b));
-    let t2 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| Valid::succeed(a * b));
-    let t = t1.and(t2);
-
-    let actual = t.try_fold(&2, 3).to_result().unwrap();
-    let expected = 10;
-
+    assert_eq!(*call_number.borrow(), 1);
     assert_eq!(actual, expected)
   }
 
@@ -209,6 +214,26 @@ mod tests {
     let expected = ValidationError::new(5).combine(ValidationError::new(6));
 
     assert_eq!(actual, expected)
+  }
+
+  #[test]
+  fn test_order() {
+    let calls = RefCell::new(Vec::new());
+    let t1 = TryFold::<i32, i32, ()>::new(|a: &i32, b: i32| {
+      calls.borrow_mut().push(1);
+      Valid::succeed(a + b)
+    }); // 2 + 3
+    let t2 = TryFold::new(|a: &i32, b: i32| {
+      calls.borrow_mut().push(2);
+      Valid::succeed(a * b)
+    }); // 2 * 3
+    let t3 = TryFold::new(|a: &i32, b: i32| {
+      calls.borrow_mut().push(3);
+      Valid::succeed(a * b * 100)
+    }); // 2 * 6
+    let _t = t1.and(t2).and(t3).try_fold(&2, 3);
+
+    assert_eq!(*calls.borrow(), vec![1, 2, 3]);
   }
 
   #[test]
