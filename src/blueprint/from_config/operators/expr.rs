@@ -18,20 +18,6 @@ struct CompileIf<'a> {
   els: Box<ExprBody>,
 }
 
-fn compile_if(input: CompileIf) -> Valid<Expression, String> {
-  let context = input.context;
-  let cond = input.cond;
-  let then = input.then;
-  let els = input.els;
-
-  compile(context, *cond)
-    .trace("cond")
-    .map(Box::new)
-    .zip(compile(context, *then).trace("then").map(Box::new))
-    .zip(compile(context, *els).trace("else").map(Box::new))
-    .map(|((cond, then), els)| Expression::If { cond, then, els })
-}
-
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
   let config = context.config;
   let field = context.config_field;
@@ -49,6 +35,20 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
       compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }).trace("const")
     }
   }
+}
+
+fn compile_if(input: CompileIf) -> Valid<Expression, String> {
+  let context = input.context;
+  let cond = input.cond;
+  let then = input.then;
+  let els = input.els;
+
+  compile(context, *cond)
+    .trace("cond")
+    .map(Box::new)
+    .zip(compile(context, *then).trace("then").map(Box::new))
+    .zip(compile(context, *els).trace("else").map(Box::new))
+    .map(|((cond, then), els)| Expression::If { cond, then, els })
 }
 
 pub fn update_expr(
