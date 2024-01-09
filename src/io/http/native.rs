@@ -5,10 +5,9 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
+use super::HttpIO;
 use crate::config::Upstream;
 use crate::http::{HttpClientOptions, Response};
-
-use super::HttpIO;
 
 #[derive(Clone)]
 pub struct HttpNative {

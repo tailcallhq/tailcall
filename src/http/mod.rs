@@ -20,7 +20,6 @@ use std::time::Duration;
 use cache_control::{Cachability, CacheControl};
 pub use data_loader::*;
 pub use data_loader_request::*;
-use derive_setters::Setters;
 use hyper::header::CACHE_CONTROL;
 pub use method::Method;
 pub use request_context::RequestContext;

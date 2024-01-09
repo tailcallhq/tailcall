@@ -19,7 +19,7 @@ impl FileIO for NativeFileIO {
     Ok(())
   }
 
-  async fn read_file(file_path: &str) -> Result<(String, String)> {
+  async fn read_file<'a>(&'a self, file_path: &'a str) -> Result<(String, String)> {
     // FIXME: move http logic to config reader
     // if let Ok(url) = Url::parse(file_path) {
     //   let response = crate::io::http::get_string(url).await?;
@@ -39,7 +39,7 @@ impl FileIO for NativeFileIO {
   async fn read_files<'a>(&'a self, file_paths: &'a [String]) -> Result<Vec<(String, String)>> {
     let mut files = vec![];
     for file in file_paths {
-      let content = Self::read_file(file).await?;
+      let content = self.read_file(file).await?;
       files.push(content);
     }
     Ok(files)

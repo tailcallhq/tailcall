@@ -1,5 +1,10 @@
-use crate::config::{Config, Source};
+use anyhow::anyhow;
+use url::Url;
+
+use crate::config::{Config, Source, Upstream};
+use crate::http::HttpClientOptions;
 use crate::io::file::FileIO;
+use crate::io::http::HttpIO;
 
 pub struct ConfigReader<File> {
   file: File,
@@ -11,14 +16,29 @@ impl<File: FileIO> ConfigReader<File> {
   }
 
   pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
+    let http_client = crate::io::http::init(&Upstream::default(), &HttpClientOptions::default());
+
+    let files = files.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut config = Config::default();
-    for (content, path) in &self
-      .file
-      .read_files(&files.iter().map(|x| x.to_string()).collect::<Vec<String>>())
-      .await?
-    {
-      let source = Self::detect_source(path)?;
-      let conf = Config::from_source(source, content)?;
+    for file in files {
+      if let Ok(url) = Url::parse(&file) {
+        let response = http_client
+          .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
+          .await?;
+        let sdl = response.headers.get("content-type");
+        let sdl = match sdl {
+          Some(v) => v.to_str().map_err(|e| anyhow!("{}", e))?.to_string(),
+          None => file.to_string(),
+        };
+        let source = Self::detect_source(&sdl)?;
+        let content = String::from_utf8(response.body)?;
+        let conf = Config::from_source(source, &content)?;
+        config = config.clone().merge_right(&conf);
+        continue;
+      }
+      let (content, path) = self.file.read_file(&file).await?;
+      let source = Self::detect_source(&path)?;
+      let conf = Config::from_source(source, &content)?;
       config = config.clone().merge_right(&conf);
     }
     Ok(config)

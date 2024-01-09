@@ -30,12 +30,12 @@ pub struct ServerContext {
 
 impl ServerContext {
   pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(crate::io::http::init_http_native(
+    let universal_http_client = Arc::new(crate::io::http::init(
       &blueprint.upstream,
       &HttpClientOptions::default(),
     ));
 
-    let http2_only_client = Arc::new(crate::io::http::init_http_native(
+    let http2_only_client = Arc::new(crate::io::http::init(
       &blueprint.upstream,
       &HttpClientOptions { http2_only: true },
     ));

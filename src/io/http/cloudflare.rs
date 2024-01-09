@@ -1,60 +1,46 @@
 use anyhow::Result;
-use reqwest::{Client, IntoUrl, Request};
+use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
+use super::HttpIO;
 use crate::config::Upstream;
 use crate::http::{HttpClientOptions, Response};
 
-pub fn make_client(_: &Upstream, _: HttpClientOptions) -> ClientWithMiddleware {
-  let builder = Client::builder();
-  let client = ClientBuilder::new(builder.build().expect("Failed to build client"));
-  client.build()
+#[derive(Clone)]
+pub struct HttpCloudflare {
+  client: ClientWithMiddleware,
 }
 
-pub async fn execute_raw(client: &ClientWithMiddleware, request: Request) -> Result<Response<Vec<u8>>> {
-  async_std::task::spawn_local(internal_execute_raw(client.clone(), request)).await
+impl Default for HttpCloudflare {
+  fn default() -> Self {
+    Self { client: ClientBuilder::new(Client::new()).build() }
+  }
 }
 
-pub async fn execute(client: &ClientWithMiddleware, request: Request) -> Result<Response<async_graphql::Value>> {
-  async_std::task::spawn_local(internal_execute_val(client.clone(), request)).await
+impl HttpCloudflare {
+  pub fn init(_: &Upstream, _: &HttpClientOptions) -> Self {
+    let client = ClientBuilder::new(Client::new());
+    Self { client: client.build() }
+  }
+}
+
+#[async_trait::async_trait]
+impl HttpIO for HttpCloudflare {
+  async fn execute(&self, request: Request) -> Result<Response<async_graphql::Value>> {
+    self.execute_raw(request).await?.to_json()
+  }
+  async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+    let client = self.client.clone();
+    async_std::task::spawn_local(internal_execute_raw(client, request)).await
+  }
 }
 
 async fn internal_execute_raw(client: ClientWithMiddleware, request: Request) -> Result<Response<Vec<u8>>> {
   let response = client.execute(request).await?;
-  super::to_resp_raw(response).await
+  Ok(Response::from_reqwest(response).await?)
 }
 
-async fn internal_execute_val(
-  client: ClientWithMiddleware,
-  request: Request,
-) -> Result<Response<async_graphql::Value>> {
-  let response = client.execute(request).await?;
-  super::to_resp_value(response).await
-}
-
-pub async fn get_raw<T: IntoUrl + 'static>(url: T) -> Result<Response<Vec<u8>>> {
-  async_std::task::spawn_local(internal_get_raw(url)).await
-}
-
-pub async fn get_string<T: IntoUrl + 'static>(url: T) -> Result<Response<String>> {
-  async_std::task::spawn_local(internal_get_string(url)).await
-}
-
-pub async fn get_value<T: IntoUrl + 'static>(url: T) -> Result<Response<async_graphql::Value>> {
-  async_std::task::spawn_local(internal_get_val(url)).await
-}
-
-async fn internal_get_raw<T: IntoUrl + 'static>(url: T) -> Result<Response<Vec<u8>>> {
-  let response = reqwest::get(url).await?;
-  super::to_resp_raw(response).await
-}
-
-async fn internal_get_val<T: IntoUrl + 'static>(url: T) -> Result<Response<async_graphql::Value>> {
-  let response = reqwest::get(url).await?;
-  super::to_resp_value(response).await
-}
-
-async fn internal_get_string<T: IntoUrl + 'static>(url: T) -> Result<Response<String>> {
-  let response = reqwest::get(url).await?;
-  super::to_resp_string(response).await
-}
+/*async fn internal_execute(client: ClientWithMiddleware, request: Request) -> Result<Response<Vec<u8>>> {
+  let response = internal_execute_raw(client, request).await?;
+  response.to_json()
+}*/

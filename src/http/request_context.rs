@@ -9,15 +9,13 @@ use hyper::HeaderMap;
 
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
-use crate::config::{self, Upstream};
+use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader, ServerContext};
 use crate::io::http::HttpIO;
-
-use super::HttpClientOptions;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -40,19 +38,20 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
+  #[cfg(feature = "default")]
   pub fn native() -> Self {
-    let config::Config { server, upstream, .. } = config::Config::default();
+    let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
 
-    let universal_http_client = Arc::new(crate::io::http::init_http_native(
+    let universal_http_client = Arc::new(crate::io::http::init(
       &upstream,
-      &HttpClientOptions::default(),
+      &crate::http::HttpClientOptions::default(),
     ));
 
-    let http2_only_client = Arc::new(crate::io::http::init_http_native(
+    let http2_only_client = Arc::new(crate::io::http::init(
       &upstream,
-      &HttpClientOptions::default().http2_only(true),
+      &crate::http::HttpClientOptions { http2_only: true },
     ));
     Self {
       req_headers: HeaderMap::new(),
@@ -69,6 +68,7 @@ impl RequestContext {
       env_vars: Arc::new(HashMap::new()),
     }
   }
+
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
@@ -148,7 +148,6 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-
   use cache_control::Cachability;
 
   use crate::blueprint::Server;
