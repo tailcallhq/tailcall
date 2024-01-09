@@ -3,8 +3,7 @@ use anyhow::anyhow;
 use tokio::{fs::File, io::AsyncReadExt};
 use url::Url;
 
-use crate::config::{Config, Source};
-use crate::config::Link;
+use crate::config::{Config, Link, Source};
 
 pub struct ConfigReader {
   file_paths: Vec<String>,
@@ -35,7 +34,7 @@ impl ConfigReader {
       config = config.clone().merge_right(&conf)?;
 
       let config_from_link = Link::resolve_recurse(&mut config.links).await?;
-      
+
       if let Some(conf) = config_from_link {
         config = config.clone().merge_right(&conf)?;
       }
