@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::Config;
+use super::{Config, LinkType};
 use crate::blueprint::TypeLike;
 use crate::directive::DirectiveCodec;
 
@@ -11,9 +11,29 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
+  let mut directives = vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())];
+
+  config.links.iter().for_each(|link| {
+    let mut directive = link.to_directive();
+
+    let name = match link.type_of {
+      LinkType::Config => "Config",
+      LinkType::GraphQL => "Graphql",
+      LinkType::Protobuf => "Protobuf",
+      LinkType::Data => "Data",
+    }
+    .to_string();
+
+    directive
+      .arguments
+      .push((pos(Name::new("type")), pos(ConstValue::Enum(Name::new(name)))));
+
+    directives.push(pos(directive));
+  });
+
   let schema_definition = SchemaDefinition {
     extend: false,
-    directives: vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())],
+    directives,
     query: config.schema.query.clone().map(|name| pos(Name::new(name))),
     mutation: config.schema.mutation.clone().map(|name| pos(Name::new(name))),
     subscription: config.schema.subscription.clone().map(|name| pos(Name::new(name))),
