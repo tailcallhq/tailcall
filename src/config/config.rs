@@ -478,9 +478,9 @@ impl Config {
     Iter: Iterator,
     Iter::Item: AsRef<str>,
   {
-    let config_reader = ConfigReader::init(file_paths);
+    let config_reader = ConfigReader::init(crate::io::file::init_native());
 
-    config_reader.read().await
+    config_reader.read(&file_paths.map(|path| path.as_ref().to_owned()).collect::<Vec<String>>()).await
   }
 }
 
