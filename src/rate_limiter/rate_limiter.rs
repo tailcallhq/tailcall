@@ -63,7 +63,6 @@ impl RateLimiter {
     key2: String,
     rate_limit: &RateLimit,
   ) -> Result<NumRequestsRemaining, RateLimitError> {
-    println!("key1: {key1}, key2: {key2}, rate_limit: {rate_limit:?}");
     let mut mtx_guard = self.num_requests_fetched.lock().unwrap();
     let nrf = mtx_guard
       .entry(key1)
