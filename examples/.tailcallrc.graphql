@@ -300,22 +300,63 @@ directive @cache(
   maxAge: Int!
 ) on FIELD_DEFINITION
 
-directive @expr(body: ExprBody!) on FIELD_DEFINITION
+"""
+Allows composing operators as simple expressions
+"""
+directive @expr(
+  """
+  Root of the expression AST
+  """
+  body: ExprBody!
+) on FIELD_DEFINITION
 
+"""
+Kinds of nodes that the expression AST can use
+"""
 input ExprBody {
+  """
+  Branch based on a condition
+  """
   if: ExprIf
+  """
+  Fetch a resources using the http operator
+  """
   http: ExprHttp
+  """
+  Fetch a resources using the grpc operator
+  """
   grpc: ExprGrpc
+  """
+  Evaluate to constant data
+  """
   const: JSON
+  """
+  Fetch a resources using the graphQL operator
+  """
   graphQL: ExprGraphQL
 }
 
+"""
+Arguments for an if-node in expression AST
+"""
 input ExprIf {
+  """
+  Expression to be used as a condition
+  """
   cond: ExprBody!
+  """
+  Expression to evaluate if the condition is true
+  """
   then: ExprBody!
+  """
+  Expression to evaluate if the condition is false
+  """
   else: ExprBody!
 }
 
+"""
+Arguments for the http-node in expression AST. Same as the @http directive.
+"""
 input ExprHttp {
   baseURL: String
   path: String!
@@ -326,6 +367,9 @@ input ExprHttp {
   groupBy: [String!]
 }
 
+"""
+Arguments for the grpc-node in expression AST. Same as the @grpc directive.
+"""
 input ExprGrpc {
   service: String!
   method: String!
@@ -335,6 +379,9 @@ input ExprGrpc {
   groupBy: [String!]
 }
 
+"""
+Arguments for the graphQL-node in expression AST. Same as the @graphQL directive.
+"""
 input ExprGraphQL {
   """
   This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
