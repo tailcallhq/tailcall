@@ -1,0 +1,28 @@
+config: !file tests/http/config/caching-collisions.graphql
+name: Check caching graphql collisions
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar1 { id } bar2 { id } }"
+    response:
+      body:
+        data:
+          bar1:
+            id: 1
+          bar2:
+            id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { foo { name } bar { name } }"
+    response:
+      body:
+        data:
+          foo:
+            name: from-foo
+          bar:
+            name: from-bar
+
