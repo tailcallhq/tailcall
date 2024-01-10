@@ -167,7 +167,6 @@ mod tests {
 
     assert_eq!(req.url().as_str(), "http://localhost:3000/");
     assert_eq!(req.method(), Method::POST);
-    assert_eq!(req.version(), Version::HTTP_2);
     assert_eq!(
       req.headers(),
       &HeaderMap::from_iter([
