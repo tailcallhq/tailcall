@@ -34,21 +34,32 @@ jobs:
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Use Node.js
+        uses: actions/setup-node@v1
         with:
-          toolchain: stable
-          override: true
-
-      - name: Add wasm32 target
-        run: rustup target add wasm32-unknown-unknown
-
-      - name: Build WASM
-        run: cargo build --lib --release --target wasm32-unknown-unknown
+          node-version: "18"
+      - name: Install dependencies
+        run: npm install
         working-directory: ./cloudflare
-
+      - name: Run dev server
+        run: npm run dev &
+        working-directory: ./cloudflare
+      - name: Make POST request
+        working-directory: ./cloudflare
+        run: |
+          sleep 90
+          response=$(curl --request POST --url http://localhost:19194/graphql --header 'Content-Type: application/json' --data '{"query":"{\n  user(id: 1) {\n    id\n  }\n}"}')
+          echo "Response: $response"
+          formatted_response=$(echo $response | jq .)
+          expected_response='{"data":{"user":{"id":1}}}'
+          if [ "$formatted_response" != "$expected_response" ]; then
+          echo "Response does not match expected output"
+          exit 1
+          fi
+      - name: Stop Node server
+        if: always()
+        run: kill $(lsof -t -i:19194)
+        working-directory: ./cloudflare
   test:
     name: Run Tests
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
@@ -85,29 +96,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
           fail_ci_if_error: true
-      - name: Use Node.js
-        uses: actions/setup-node@v1
-        with:
-          node-version: "18"
-
-      - name: Install dependencies
-        run: npm install
-      - name: Run dev server
-        run: npm run dev &
-      - name: Make POST request
-        run: |
-          sleep 90
-          response=$(curl --request POST --url http://localhost:19194/graphql --header 'Content-Type: application/json' --data '{"query":"{\n  user(id: 1) {\n    id\n  }\n}"}')
-          echo "Response: $response"
-          formatted_response=$(echo $response | jq .)
-          expected_response='{"data":{"user":{"id":1}}}'
-          if [ "$formatted_response" != "$expected_response" ]; then
-          echo "Response does not match expected output"
-          exit 1
-          fi
-      - name: Stop Node server
-        if: always()
-        run: kill $(lsof -t -i:19194)
 
   format:
     name: Run Formatter and Lint Check
