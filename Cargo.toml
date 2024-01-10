@@ -102,8 +102,7 @@ default = [
 
 [workspace]
 members = [
-   ".",
-   "cloudflare"
+   "."
 ]
 
 [profile.release]

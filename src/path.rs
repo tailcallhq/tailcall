@@ -186,7 +186,7 @@ mod tests {
       let mut req_ctx = RequestContext::native().req_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
-      req_ctx.env_vars = Arc::new(TEST_ENV_VARS.clone());
+      req_ctx.env_vars = Arc::new(crate::io::env::init_env_test(TEST_ENV_VARS.clone()));
 
       req_ctx
     });

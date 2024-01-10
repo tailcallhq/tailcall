@@ -307,7 +307,12 @@ async fn test_execution() -> std::io::Result<()> {
           &blueprint.upstream,
           &HttpClientOptions { http2_only: true },
         ));
-        let server_ctx = ServerContext::new(blueprint, universal_http_client, http2_only_client);
+        let server_ctx = ServerContext::new(
+          blueprint,
+          universal_http_client,
+          http2_only_client,
+          Arc::new(tailcall::io::env::init_env_native()),
+        );
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

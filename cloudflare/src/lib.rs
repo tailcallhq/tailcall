@@ -15,13 +15,12 @@ lazy_static! {
 
 async fn make_req(file: impl FileIO) -> Result<Config> {
   let http_client = tailcall::io::http::init_http_cloudflare(&Upstream::default(), &HttpClientOptions::default());
-  let reader = ConfigReader::init(file);
+  let reader = ConfigReader::init(file, http_client);
   reader
     .read(
       &[
         "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
       ],
-      http_client,
     )
     .await
     .map_err(conv_err)

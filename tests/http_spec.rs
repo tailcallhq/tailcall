@@ -176,17 +176,17 @@ impl HttpSpec {
     let http_client = tailcall::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
-        let reader = ConfigReader::init(tailcall::io::file::init_native());
-        reader.read(&[file], http_client).await.unwrap()
+        let reader = ConfigReader::init(tailcall::io::file::init_native(), http_client);
+        reader.read(&[file]).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let mut server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
-    server_context.env_vars = Arc::new(self.env.clone());
-
+    let env = Arc::new(tailcall::io::env::init_env_test(self.env.clone()));
+    let server_context = ServerContext::with_http_clients(blueprint, client, http2_client, env.clone());
+    // server_context.env_vars = env;
     Arc::new(server_context)
   }
 }

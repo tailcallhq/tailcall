@@ -49,13 +49,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     value.to_str().ok()
   }
 
-  // FIXME: Convert this to idiomatic code
-  pub fn env_var(&self, key: &str) -> Option<&str> {
-    let _value = self.req_ctx.env_vars.get(key);
-    /*  if let Ok(value) = value {
-      return Some(value.as_str());
-    }*/
-    None
+  pub fn env_var(&self, key: &str) -> Option<String> {
+    self.req_ctx.env_vars.get(key).ok()
   }
 
   pub fn var(&self, key: &str) -> Option<&str> {

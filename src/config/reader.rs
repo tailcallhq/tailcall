@@ -74,7 +74,6 @@ mod reader_tests {
 
   #[tokio::test]
   async fn test_all() {
-    let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let mut cfg = Config::default();
     cfg.schema.query = Some("Test".to_string());
     cfg = cfg.types([("Test", Type::default())].to_vec());
@@ -127,7 +126,6 @@ mod reader_tests {
   }
   #[tokio::test]
   async fn test_local_files() {
-    let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let files: Vec<String> = [
       "examples/jsonplaceholder.yml",
       "examples/jsonplaceholder.graphql",
