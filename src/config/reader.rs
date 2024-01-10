@@ -7,21 +7,23 @@ use crate::io::http::HttpIO;
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 
-pub struct ConfigReader<File> {
+pub struct ConfigReader<File, Http> {
   file: File,
+  http: Http,
 }
 
-impl<File: FileIO> ConfigReader<File> {
-  pub fn init(file: File) -> Self {
-    Self { file }
+impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
+  pub fn init(file: File, http: Http) -> Self {
+    Self { file, http }
   }
 
-  pub async fn read<T: ToString>(&self, files: &[T], http_client: impl HttpIO + Sized) -> anyhow::Result<Config> {
+  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
     let files = files.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut config = Config::default();
     for file in files {
       if let Ok(url) = Url::parse(&file) {
-        let response = http_client
+        let response = self
+          .http
           .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
           .await?;
         let sdl = response.headers.get("content-type");
@@ -108,8 +110,11 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(crate::io::file::init_native());
-    let c = cr.read(&files, http_client).await.unwrap();
+    let cr = ConfigReader::init(
+      crate::io::file::init_native(),
+      crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default()),
+    );
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
         .iter()
@@ -131,8 +136,11 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(crate::io::file::init_native());
-    let c = cr.read(&files, http_client).await.unwrap();
+    let cr = ConfigReader::init(
+      crate::io::file::init_native(),
+      crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default()),
+    );
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()

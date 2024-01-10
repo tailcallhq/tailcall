@@ -26,11 +26,12 @@ pub fn run() -> Result<()> {
   logger_init();
   let http_client = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
   let file_io = crate::io::file::init_native();
-  let config_reader = ConfigReader::init(file_io);
+  let http_io = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
+  let config_reader = ConfigReader::init(file_io, http_io);
 
   match cli.command {
     Command::Start { file_paths } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -41,7 +42,7 @@ pub fn run() -> Result<()> {
       Ok(())
     }
     Command::Check { file_paths, n_plus_one_queries, schema } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
         Ok(blueprint) => {
@@ -57,7 +58,7 @@ pub fn run() -> Result<()> {
     }
     Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
     Command::Compose { file_paths, format } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       Fmt::display(format.encode(&config)?);
       Ok(())
     }
