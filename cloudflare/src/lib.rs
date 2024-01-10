@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
@@ -8,7 +7,6 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::io::{EnvIO, FileIO, HttpIO};
-use worker::wasm_bindgen::JsValue;
 use worker::*;
 
 mod env;
@@ -73,10 +71,6 @@ async fn init(env: Env) -> Result<Arc<AppContext>> {
   ));
   *APP_CTX.write().unwrap() = Some(app_ctx.clone());
   Ok(app_ctx)
-}
-
-fn env_to_map(env: JsValue) -> Result<HashMap<String, String>> {
-  Ok(serde_wasm_bindgen::from_value::<HashMap<String, String>>(env).map_err(conv_err)?)
 }
 
 async fn get_option() -> Option<Arc<AppContext>> {
