@@ -29,19 +29,11 @@ pub struct ServerContext {
 }
 
 impl ServerContext {
+  #[allow(clippy::too_many_arguments)]
   pub fn new(
-    blueprint: Blueprint,
-    universal_http_client: Arc<impl HttpIO + 'static>,
-    http2_only_client: Arc<impl HttpIO + 'static>,
-    env: Arc<impl EnvIO + 'static>,
-  ) -> Self {
-    Self::with_http_clients(blueprint, universal_http_client, http2_only_client, env)
-  }
-
-  pub fn with_http_clients(
     mut blueprint: Blueprint,
-    universal_http_client: Arc<dyn HttpIO>,
-    http2_only_client: Arc<dyn HttpIO>,
+    h_client: Arc<impl HttpIO + 'static>,
+    h2_client: Arc<impl HttpIO + 'static>,
     env: Arc<impl EnvIO + 'static>,
   ) -> Self {
     let mut http_data_loaders = vec![];
@@ -55,7 +47,7 @@ impl ServerContext {
             match expr_unsafe {
               Unsafe::Http { req_template, group_by, .. } => {
                 let data_loader = HttpDataLoader::new(
-                  universal_http_client.clone(),
+                  h_client.clone(),
                   group_by.clone(),
                   matches!(&field.of_type, ListType { .. }),
                 )
@@ -71,7 +63,7 @@ impl ServerContext {
               }
 
               Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-                let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch)
+                let graphql_data_loader = GraphqlDataLoader::new(h_client.clone(), *batch)
                   .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
                 field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
@@ -86,7 +78,7 @@ impl ServerContext {
 
               Unsafe::Grpc { req_template, group_by, .. } => {
                 let data_loader = GrpcDataLoader {
-                  client: http2_only_client.clone(),
+                  client: h2_client.clone(),
                   operation: req_template.operation.clone(),
                   group_by: group_by.clone(),
                 };
@@ -111,8 +103,8 @@ impl ServerContext {
 
     ServerContext {
       schema,
-      universal_http_client,
-      http2_only_client,
+      universal_http_client: h_client,
+      http2_only_client: h2_client,
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),

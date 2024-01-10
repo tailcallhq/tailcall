@@ -20,4 +20,3 @@ impl EnvCloudflare {
     Self { env }
   }
 }
-

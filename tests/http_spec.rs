@@ -33,6 +33,7 @@ enum Annotation {
   Only,
   Fail,
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct APIRequest {
@@ -55,17 +56,23 @@ struct APIResponse {
   #[serde(default)]
   body: serde_json::Value,
 }
+
 fn default_status() -> u16 {
   200
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
@@ -185,8 +192,7 @@ impl HttpSpec {
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
     let env = Arc::new(tailcall::io::env::init_env_test(self.env.clone()));
-    let server_context = ServerContext::with_http_clients(blueprint, client, http2_client, env.clone());
-    // server_context.env_vars = env;
+    let server_context = ServerContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
 }
@@ -223,6 +229,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
   bytes
 }
+
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
