@@ -28,12 +28,12 @@ fn init_http() -> impl HttpIO + Default + Clone {
 }
 
 lazy_static! {
-  static ref SERV_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
+  static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
-async fn make_req(file: impl FileIO, env: &impl EnvIO) -> Result<Config> {
-  let http_client = init_http();
-  let reader = ConfigReader::init(file, http_client);
+async fn get_config(file: impl FileIO, env: &impl EnvIO) -> Result<Config> {
+  let http = init_http();
+  let reader = ConfigReader::init(file, http);
   reader
     .read(&[env.get("TC_CONFIG").ok_or(conv_err("Config not found"))?])
     .await
@@ -45,7 +45,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   let mut app_ctx = get_option().await;
 
   if app_ctx.is_none() {
-    app_ctx = Some(initiate(env).await?);
+    app_ctx = Some(init(env).await?);
   }
 
   let resp = handle_request::<GraphQLRequest>(
@@ -59,8 +59,8 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
 }
 
 async fn initiate(env: Env) -> Result<Arc<AppContext>> {
-  let envio = init_env(env);
-  let cfg = make_req(init_file(), &envio).await.map_err(conv_err)?;
+  let envio = init_env(env_to_map(env.clone())?);
+  let cfg = make_req(init_file(), envio).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
   let universal_http_client = Arc::new(init_http());
   let http2_only_client = Arc::new(init_http());
@@ -71,7 +71,7 @@ async fn initiate(env: Env) -> Result<Arc<AppContext>> {
     http2_only_client,
     Arc::new(envio),
   ));
-  *SERV_CTX.write().unwrap() = Some(app_ctx.clone());
+  *APP_CTX.write().unwrap() = Some(app_ctx.clone());
   Ok(app_ctx)
 }
 
@@ -80,7 +80,7 @@ fn env_to_map(env: JsValue) -> Result<HashMap<String, String>> {
 }
 
 async fn get_option() -> Option<Arc<AppContext>> {
-  SERV_CTX.read().unwrap().clone()
+  APP_CTX.read().unwrap().clone()
 }
 
 async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {
