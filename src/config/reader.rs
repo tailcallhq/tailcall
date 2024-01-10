@@ -26,7 +26,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
           .http
           .execute_raw(
             reqwest::Request::new(reqwest::Method::GET, url),
-            HttpClientOptions::new(true),
+            HttpClientOptions::new(false),
           )
           .await?;
         let sdl = response.headers.get("content-type");
