@@ -31,16 +31,10 @@ impl HttpIO for HttpCloudflare {
   }
   async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
     let client = self.client.clone();
-    async_std::task::spawn_local(internal_execute_raw(client, request)).await
+    async_std::task::spawn_local(async move {
+      let response = client.execute(request).await?;
+      Response::from_reqwest(response).await
+    })
+    .await
   }
 }
-
-async fn internal_execute_raw(client: ClientWithMiddleware, request: Request) -> Result<Response<Vec<u8>>> {
-  let response = client.execute(request).await?;
-  Ok(Response::from_reqwest(response).await?)
-}
-
-/*async fn internal_execute(client: ClientWithMiddleware, request: Request) -> Result<Response<Vec<u8>>> {
-  let response = internal_execute_raw(client, request).await?;
-  response.to_json()
-}*/
