@@ -4,7 +4,7 @@ mod env;
 mod file;
 mod http;
 
-pub fn init_env(env: worker::Env) -> impl EnvIO {
+pub fn init_env(env: std::collections::HashMap<String, String>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 

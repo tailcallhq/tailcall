@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
@@ -6,51 +7,63 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::io::FileIO;
+use tailcall::io::{EnvIO, FileIO};
+use worker::wasm_bindgen::JsValue;
 use worker::*;
 
 lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
-async fn make_req(file: impl FileIO) -> Result<Config> {
+async fn make_req(file: impl FileIO, env: impl EnvIO) -> Result<Config> {
   let http_client = tailcall::io::cloudflare::init_http();
   let reader = ConfigReader::init(file, http_client);
   reader
-    .read(&[
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
-    ])
+    .read(&[env.get("TC_CONFIG").ok_or(conv_err("Config not found"))?])
     .await
     .map_err(conv_err)
 }
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
-  let mut server_ctx = get_option().await;
-  if server_ctx.is_none() {
-    let cfg = make_req(tailcall::io::cloudflare::init_file()).await.map_err(conv_err);
-    let cfg = match cfg {
-      Ok(cfg) => cfg,
-      Err(e) => {
-        return Response::ok(format!("cfg err: {}", e.to_string()));
-      }
-    };
-    let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-    let universal_http_client = Arc::new(tailcall::io::cloudflare::init_http());
+  let mut app_ctx = get_option().await;
 
-    let http2_only_client = Arc::new(tailcall::io::cloudflare::init_http());
-    let serv_ctx = Arc::new(AppContext::new(blueprint, universal_http_client, http2_only_client));
-    *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
-    server_ctx = Some(serv_ctx);
+  if app_ctx.is_none() {
+    app_ctx = Some(initiate(env).await?);
   }
+
   let resp = handle_request::<GraphQLRequest>(
     convert_to_hyper_request(req).await?,
-    server_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
+    app_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
   )
   .await
   .map_err(conv_err)?;
   let resp = make_request(resp).await.map_err(conv_err)?;
   Ok(resp)
+}
+
+async fn initiate(env: Env) -> Result<Arc<AppContext>> {
+  let envio = tailcall::io::cloudflare::init_env(env_to_map(env.clone())?);
+  let cfg = make_req(tailcall::io::cloudflare::init_file(), envio)
+    .await
+    .map_err(conv_err)?;
+  let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
+  let universal_http_client = Arc::new(tailcall::io::cloudflare::init_http());
+  let http2_only_client = Arc::new(tailcall::io::cloudflare::init_http());
+
+  let envio = tailcall::io::cloudflare::init_env(env_to_map(env.clone())?);
+  let app_ctx = Arc::new(AppContext::new(
+    blueprint,
+    universal_http_client,
+    http2_only_client,
+    Arc::new(envio),
+  ));
+  *SERV_CTX.write().unwrap() = Some(app_ctx.clone());
+  Ok(app_ctx)
+}
+
+fn env_to_map(env: JsValue) -> Result<HashMap<String, String>> {
+  Ok(serde_wasm_bindgen::from_value::<HashMap<String, String>>(env).map_err(conv_err)?)
 }
 
 async fn get_option() -> Option<Arc<AppContext>> {

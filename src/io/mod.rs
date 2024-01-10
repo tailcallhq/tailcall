@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use anyhow::anyhow;
-
 use crate::http::{HttpClientOptions, Response};
 
 #[cfg(feature = "default")]
@@ -11,7 +9,7 @@ pub mod native;
 pub mod cloudflare;
 
 pub trait EnvIO: Send + Sync {
-  fn get(&self, key: &str) -> anyhow::Result<String>;
+  fn get(&self, key: &str) -> Option<String>;
 }
 
 #[async_trait::async_trait]
@@ -39,8 +37,8 @@ pub struct Env {
 }
 
 impl EnvIO for Env {
-  fn get(&self, key: &str) -> anyhow::Result<String> {
-    self.env.get(key).ok_or(anyhow!("Key not found")).cloned()
+  fn get(&self, key: &str) -> Option<String> {
+    self.env.get(key).cloned()
   }
 }
 

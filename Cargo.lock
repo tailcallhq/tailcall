@@ -787,6 +787,7 @@ version = "0.1.0"
 dependencies = [
  "hyper",
  "lazy_static",
+ "serde-wasm-bindgen 0.6.3",
  "tailcall",
  "worker",
 ]
@@ -2951,6 +2952,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-wasm-bindgen"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9b713f70513ae1f8d92665bbbbda5c295c2cf1da5542881ae5eefe20c9af132"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.194"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3283,6 +3295,7 @@ dependencies = [
  "ttl_cache",
  "url",
  "webbrowser",
+ "worker",
 ]
 
 [[package]]
@@ -4077,7 +4090,7 @@ dependencies = [
  "matchit",
  "pin-project",
  "serde",
- "serde-wasm-bindgen",
+ "serde-wasm-bindgen 0.5.0",
  "serde_json",
  "tokio",
  "url",
@@ -4098,7 +4111,7 @@ checksum = "3d4b9fe1a87b7aef252fceb4f30bf6303036a5de329c81ccad9be9c35d1fdbc7"
 dependencies = [
  "js-sys",
  "serde",
- "serde-wasm-bindgen",
+ "serde-wasm-bindgen 0.5.0",
  "serde_json",
  "thiserror",
  "wasm-bindgen",

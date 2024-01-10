@@ -1,22 +1,20 @@
-use std::fmt::Display;
-
-use anyhow::anyhow;
+use std::collections::HashMap;
 
 use crate::io::EnvIO;
 
+#[derive(Clone)]
 pub struct EnvCloudflare {
-  env: worker::Env,
+  env: HashMap<String, String>,
 }
 
 impl EnvIO for EnvCloudflare {
-  fn get(&self, key: &str) -> anyhow::Result<String> {
-    let secret = self.env.secret(key).map_err(|e| anyhow!(e.to_string()))?;
-    Ok(secret.to_string())
+  fn get(&self, key: &str) -> Option<String> {
+    self.env.get(key).cloned()
   }
 }
 
 impl EnvCloudflare {
-  pub fn init(env: worker::Env) -> Self {
+  pub fn init(env: HashMap<String, String>) -> Self {
     Self { env }
   }
 }

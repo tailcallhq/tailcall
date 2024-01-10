@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 
-use anyhow::anyhow;
+
 
 use crate::io::EnvIO;
 
+#[derive(Clone)]
 pub struct EnvNative {
   vars: HashMap<String, String>,
 }
 
 impl EnvIO for EnvNative {
-  fn get(&self, key: &str) -> anyhow::Result<String> {
-    self.vars.get(key).cloned().ok_or(anyhow!("Key not found"))
+  fn get(&self, key: &str) -> Option<String> {
+    self.vars.get(key).cloned()
   }
 }
 
