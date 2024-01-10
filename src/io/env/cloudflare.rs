@@ -10,7 +10,7 @@ pub struct EnvCloudflare {
 
 impl EnvIO for EnvCloudflare {
   fn get(&self, key: &str) -> anyhow::Result<String> {
-    let secret = self.env.secret(key).map_err(map_err)?;
+    let secret = self.env.secret(key).map_err(|e| anyhow!(e.to_string()))?;
     Ok(secret.to_string())
   }
 }
@@ -21,6 +21,3 @@ impl EnvCloudflare {
   }
 }
 
-fn map_err<T: Display>(e: T) -> anyhow::Error {
-  anyhow!(e.to_string())
-}
