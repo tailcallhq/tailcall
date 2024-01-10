@@ -15,7 +15,7 @@ mod env;
 mod file;
 mod http;
 
-fn init_env(env: HashMap<String, String>) -> impl EnvIO {
+fn init_env(env: Env) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
@@ -31,7 +31,7 @@ lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
-async fn make_req(file: impl FileIO, env: impl EnvIO) -> Result<Config> {
+async fn make_req(file: impl FileIO, env: &impl EnvIO) -> Result<Config> {
   let http_client = init_http();
   let reader = ConfigReader::init(file, http_client);
   reader
@@ -59,13 +59,12 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
 }
 
 async fn initiate(env: Env) -> Result<Arc<AppContext>> {
-  let envio = init_env(env_to_map(env.clone())?);
-  let cfg = make_req(init_file(), envio).await.map_err(conv_err)?;
+  let envio = init_env(env);
+  let cfg = make_req(init_file(), &envio).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
   let universal_http_client = Arc::new(init_http());
   let http2_only_client = Arc::new(init_http());
 
-  let envio = init_env(env_to_map(env.clone())?);
   let app_ctx = Arc::new(AppContext::new(
     blueprint,
     universal_http_client,

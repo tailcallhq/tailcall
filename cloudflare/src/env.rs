@@ -1,20 +1,21 @@
-use std::collections::HashMap;
-
 use tailcall::io::EnvIO;
+use worker::Env;
 
-#[derive(Clone)]
 pub struct EnvCloudflare {
-  env: HashMap<String, String>,
+  env: Env,
 }
+
+unsafe impl Send for EnvCloudflare {}
+unsafe impl Sync for EnvCloudflare {}
 
 impl EnvIO for EnvCloudflare {
   fn get(&self, key: &str) -> Option<String> {
-    self.env.get(key).cloned()
+    self.env.var(key).ok().map(|s| s.to_string())
   }
 }
 
 impl EnvCloudflare {
-  pub fn init(env: HashMap<String, String>) -> Self {
+  pub fn init(env: Env) -> Self {
     Self { env }
   }
 }
