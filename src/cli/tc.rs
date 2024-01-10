@@ -11,12 +11,12 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
+use crate::cli::server::Server;
 use crate::cli::CLIError;
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
 use crate::http::HttpClientOptions;
 use crate::print_schema;
-use crate::server::Server;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";

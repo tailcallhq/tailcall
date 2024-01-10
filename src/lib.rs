@@ -23,7 +23,5 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
-#[cfg(feature = "default")]
-pub mod server;
 pub mod try_fold;
 pub mod valid;

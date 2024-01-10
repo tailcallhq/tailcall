@@ -1,9 +1,9 @@
 use reqwest::Client;
 use serde_json::json;
+use tailcall::cli::server::Server;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Upstream;
 use tailcall::http::HttpClientOptions;
-use tailcall::server::Server;
 
 async fn test_server(configs: &[&str], url: &str) {
   let http_client = tailcall::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
