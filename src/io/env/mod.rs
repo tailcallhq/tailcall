@@ -1,5 +1,7 @@
+#[cfg(feature = "default")]
 mod native;
-mod wasm;
+#[cfg(not(feature = "default"))]
+mod cloudflare;
 
 pub trait EnvIO {
   fn get(key: String) -> Option<String>;
