@@ -17,8 +17,8 @@ fn init_env(env: Arc<Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-fn init_file(r2_id: &str, env: Arc<Env>) -> Result<impl FileIO> {
-  file::CloudflareFileIO::init(r2_id, env).map_err(conv_err)
+fn init_file(r2_id: String, env: Arc<Env>) -> impl FileIO {
+  file::CloudflareFileIO::init(r2_id, env)
 }
 
 fn init_http() -> impl HttpIO + Default + Clone {
@@ -33,7 +33,7 @@ async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
   let config_val = env_io.get("CONFIG").ok_or(Error::from("Invalid path string"))?;
   let (r2_id, path) = separate_id_path(config_val).ok_or(Error::from("Invalid path string"))?;
 
-  let file_io = init_file(&r2_id, env.clone())?;
+  let file_io = init_file(r2_id, env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
   reader.read(&[path]).await.map_err(conv_err)
@@ -44,7 +44,11 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   let mut app_ctx = get_option().await;
   let env = Arc::new(env);
   if app_ctx.is_none() {
-    app_ctx = Some(init(env).await?);
+    let x = init(env).await;
+    if let Err(e) = x {
+      return Response::ok(format!("{:?}", e));
+    }
+    app_ctx = Some(x?);
   }
 
   let resp = handle_request::<GraphQLRequest>(

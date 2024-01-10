@@ -2,14 +2,15 @@ name = "tc-worker"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-03-22"
 
-#account_id = "59eda2a637301830ad43a6e3e4419346"
+account_id = "59eda2a637301830ad43a6e3e4419346"
 
 [build]
 command = "cargo install -q worker-build && worker-build --release"
 
 [vars]
-CONFIG = "MY_BUCKET/examples/jsonplaceholder.graphql"
+CONFIG = "MY_R2/examples/jsonplaceholder.graphql"
 
 [[r2_buckets]]
-binding = 'configs'
+binding = 'MY_R2'
+bucket_name = 'configs'
 preview_bucket_name = 'configs'
