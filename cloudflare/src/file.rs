@@ -1,26 +1,39 @@
-use anyhow::Result;
-use tailcall::io::FileIO;
-pub struct CloudflareFileIO {}
+use std::sync::Arc;
 
+use anyhow::{anyhow, Result};
+use tailcall::io::FileIO;
+use worker::{Bucket, Env};
+
+pub struct CloudflareFileIO {
+  bucket: Arc<Bucket>,
+}
+unsafe impl Send for CloudflareFileIO {}
+unsafe impl Sync for CloudflareFileIO {}
 impl CloudflareFileIO {
-  pub fn init() -> Self {
-    CloudflareFileIO {}
+  pub fn init(r2_id: &str, env: Arc<Env>) -> Result<Self> {
+    let bucket = env.bucket(r2_id).map_err(conv_err)?;
+    let bucket = Arc::new(bucket);
+    Ok(CloudflareFileIO { bucket })
   }
 }
-
-// TODO: Temporary implementation that performs an HTTP request to get the file content
-// This should be moved to a more native implementation that's based on the WASM env.
+// FIXME fix the errors in the methods
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-  async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<()> {
-    unimplemented!("file write I/O is not required for cloudflare")
+  async fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> Result<()> {
+    self
+      .bucket
+      .put(file, content.to_vec())
+      .execute()
+      .await
+      .map_err(conv_err)?;
+    Ok(())
   }
 
-  async fn read<'a>(&'a self, _: &'a str) -> Result<(String, String)> {
+  async fn read_file<'a>(&'a self, _: &'a str) -> Result<(String, String)> {
     unimplemented!("file read I/O is not required for cloudflare")
   }
 
-  async fn read_all<'a>(&'a self, _: &'a [String]) -> Result<Vec<(String, String)>> {
+  async fn read_files<'a>(&'a self, _: &'a [String]) -> Result<Vec<(String, String)>> {
     unimplemented!("file read I/O is not required for cloudflare")
   }
 }
