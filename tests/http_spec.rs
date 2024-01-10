@@ -20,7 +20,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
-use tailcall::http::{handle_request, HttpClientOptions, Method, Response, ServerContext};
+use tailcall::http::{handle_request, AppContext, HttpClientOptions, Method, Response};
 use tailcall::io::http::HttpIO;
 use url::Url;
 
@@ -179,7 +179,7 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<ServerContext> {
+  async fn server_context(&self) -> Arc<AppContext> {
     let http_client = tailcall::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
@@ -192,7 +192,7 @@ impl HttpSpec {
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
     let env = Arc::new(tailcall::io::env::init_env_test(self.env.clone()));
-    let server_context = ServerContext::new(blueprint, client, http2_client, env.clone());
+    let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
 }

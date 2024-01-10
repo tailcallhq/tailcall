@@ -5,23 +5,21 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Upstream};
-use tailcall::http::{handle_request, HttpClientOptions, ServerContext};
+use tailcall::http::{handle_request, AppContext, HttpClientOptions};
 use tailcall::io::file::FileIO;
 use worker::*;
 
 lazy_static! {
-  static ref SERV_CTX: RwLock<Option<Arc<ServerContext>>> = RwLock::new(None);
+  static ref SERV_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
 async fn make_req(file: impl FileIO) -> Result<Config> {
   let http_client = tailcall::io::http::init_http_cloudflare(&Upstream::default(), &HttpClientOptions::default());
   let reader = ConfigReader::init(file, http_client);
   reader
-    .read(
-      &[
-        "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
-      ],
-    )
+    .read(&[
+      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql".to_string(), // add/edit the SDL links to this list
+    ])
     .await
     .map_err(conv_err)
 }
@@ -47,7 +45,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
       &blueprint.upstream,
       &HttpClientOptions { http2_only: true },
     ));
-    let serv_ctx = Arc::new(ServerContext::new(blueprint, universal_http_client, http2_only_client));
+    let serv_ctx = Arc::new(AppContext::new(blueprint, universal_http_client, http2_only_client));
     *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
     server_ctx = Some(serv_ctx);
   }
@@ -61,7 +59,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   Ok(resp)
 }
 
-async fn get_option() -> Option<Arc<ServerContext>> {
+async fn get_option() -> Option<Arc<AppContext>> {
   SERV_CTX.read().unwrap().clone()
 }
 

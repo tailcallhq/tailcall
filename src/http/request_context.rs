@@ -13,7 +13,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{DataLoaderRequest, HttpDataLoader, ServerContext};
+use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
 use crate::io::env::EnvIO;
 use crate::io::http::HttpIO;
 
@@ -96,8 +96,8 @@ impl RequestContext {
   }
 }
 
-impl From<&ServerContext> for RequestContext {
-  fn from(server_ctx: &ServerContext) -> Self {
+impl From<&AppContext> for RequestContext {
+  fn from(server_ctx: &AppContext) -> Self {
     Self {
       universal_http_client: server_ctx.universal_http_client.clone(),
       http2_only_client: server_ctx.http2_only_client.clone(),

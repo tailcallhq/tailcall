@@ -3,7 +3,6 @@ use std::sync::Arc;
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::DataLoaderRequest;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -11,12 +10,12 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::HttpDataLoader;
+use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::io::env::EnvIO;
 use crate::io::http::HttpIO;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
-pub struct ServerContext {
+pub struct AppContext {
   pub schema: dynamic::Schema,
   pub universal_http_client: Arc<dyn HttpIO>,
   pub http2_only_client: Arc<dyn HttpIO>,
@@ -28,7 +27,7 @@ pub struct ServerContext {
   pub env_vars: Arc<dyn EnvIO>,
 }
 
-impl ServerContext {
+impl AppContext {
   #[allow(clippy::too_many_arguments)]
   pub fn new(
     mut blueprint: Blueprint,
@@ -101,7 +100,7 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
 
-    ServerContext {
+    AppContext {
       schema,
       universal_http_client: h_client,
       http2_only_client: h2_client,

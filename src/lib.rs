@@ -1,4 +1,5 @@
 #![allow(clippy::module_inception)]
+mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;

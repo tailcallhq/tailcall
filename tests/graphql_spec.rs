@@ -16,7 +16,7 @@ use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{HttpClientOptions, RequestContext, ServerContext};
+use tailcall::http::{AppContext, HttpClientOptions, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -307,7 +307,7 @@ async fn test_execution() -> std::io::Result<()> {
           &blueprint.upstream,
           &HttpClientOptions { http2_only: true },
         ));
-        let server_ctx = ServerContext::new(
+        let server_ctx = AppContext::new(
           blueprint,
           universal_http_client,
           http2_only_client,

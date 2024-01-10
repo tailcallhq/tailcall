@@ -6,7 +6,7 @@ mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
-mod server_context;
+
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};
@@ -18,7 +18,8 @@ pub use request_context::RequestContext;
 pub use request_handler::handle_request;
 pub use request_template::RequestTemplate;
 pub use response::*;
-pub use server_context::ServerContext;
+
+pub use crate::app_context::AppContext;
 
 // TODO: merge with upstream
 #[derive(Default)]

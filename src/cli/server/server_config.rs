@@ -2,11 +2,11 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use crate::blueprint::{Blueprint, Http};
-use crate::http::{HttpClientOptions, ServerContext};
+use crate::http::{AppContext, HttpClientOptions};
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub server_context: Arc<ServerContext>,
+  pub server_context: Arc<AppContext>,
 }
 
 impl ServerConfig {
@@ -22,7 +22,7 @@ impl ServerConfig {
     ));
     let env = crate::io::env::init_env_native();
     Self {
-      server_context: Arc::new(ServerContext::new(
+      server_context: Arc::new(AppContext::new(
         blueprint.clone(),
         universal_http_client,
         http2_only_client,
