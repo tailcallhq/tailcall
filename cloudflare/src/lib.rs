@@ -58,9 +58,9 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   Ok(resp)
 }
 
-async fn initiate(env: Env) -> Result<Arc<AppContext>> {
-  let envio = init_env(env_to_map(env.clone())?);
-  let cfg = make_req(init_file(), envio).await.map_err(conv_err)?;
+async fn init(env: Env) -> Result<Arc<AppContext>> {
+  let env_io = init_env(env);
+  let cfg = get_config(init_file(), &env_io).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
   let universal_http_client = Arc::new(init_http());
   let http2_only_client = Arc::new(init_http());
@@ -69,7 +69,7 @@ async fn initiate(env: Env) -> Result<Arc<AppContext>> {
     blueprint,
     universal_http_client,
     http2_only_client,
-    Arc::new(envio),
+    Arc::new(env_io),
   ));
   *APP_CTX.write().unwrap() = Some(app_ctx.clone());
   Ok(app_ctx)
