@@ -85,6 +85,29 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
           fail_ci_if_error: true
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+      - name: Run dev server
+        run: npm run dev &
+      - name: Make POST request
+        run: |
+          sleep 90
+          response=$(curl --request POST --url http://localhost:19194/graphql --header 'Content-Type: application/json' --data '{"query":"{\n  user(id: 1) {\n    id\n  }\n}"}')
+          echo "Response: $response"
+          formatted_response=$(echo $response | jq .)
+          expected_response='{"data":{"user":{"id":1}}}'
+          if [ "$formatted_response" != "$expected_response" ]; then
+          echo "Response does not match expected output"
+          exit 1
+          fi
+      - name: Stop Node server
+        if: always()
+        run: kill $(lsof -t -i:19194)
 
   format:
     name: Run Formatter and Lint Check
