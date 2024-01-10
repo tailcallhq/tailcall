@@ -102,7 +102,7 @@ mod tests {
 
   use derive_setters::Setters;
   use hyper::header::{HeaderName, HeaderValue};
-  use hyper::{HeaderMap, Method, Version};
+  use hyper::{HeaderMap, Method};
   use once_cell::sync::Lazy;
   use pretty_assertions::assert_eq;
 
