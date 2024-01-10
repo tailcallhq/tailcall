@@ -180,6 +180,9 @@ pub struct Upstream {
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  #[setters(strip_option)]
+  pub http2_only: Option<bool>,
 }
 
 impl Upstream {
@@ -222,6 +225,10 @@ impl Upstream {
 
   pub fn get_max_size(&self) -> usize {
     self.batch.clone().unwrap_or_default().max_size
+  }
+
+  pub fn get_http_2_only(&self) -> bool {
+    self.http2_only.unwrap_or(false)
   }
 
   pub fn merge_right(mut self, other: Self) -> Self {

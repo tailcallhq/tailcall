@@ -71,7 +71,6 @@ mod reader_tests {
   use crate::cli::{init_file, init_http};
   use crate::config::reader::ConfigReader;
   use crate::config::{Config, Type, Upstream};
-  use crate::http::HttpClientOptions;
 
   fn start_mock_server() -> httpmock::MockServer {
     httpmock::MockServer::start()
@@ -114,10 +113,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(
-      init_file(),
-      init_http(&Upstream::default(), &HttpClientOptions::default()),
-    );
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
@@ -140,10 +136,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(
-      init_file(),
-      init_http(&Upstream::default(), &HttpClientOptions::default()),
-    );
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]

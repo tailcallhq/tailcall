@@ -181,7 +181,7 @@ impl HttpSpec {
   }
 
   async fn server_context(&self) -> Arc<AppContext> {
-    let http_client = init_http(&Upstream::default(), &HttpClientOptions::default());
+    let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
         let reader = ConfigReader::init(init_file(), http_client);

@@ -19,11 +19,11 @@ use crate::io::{EnvIO, HttpIO};
 #[derive(Setters)]
 pub struct RequestContext {
   // TODO: consider storing http clients where they are used i.e. expression and dataloaders
-  pub universal_http_client: Arc<dyn HttpIO>,
+  pub h_client: Arc<dyn HttpIO>,
   // http2 only client is required for grpc in cases the server supports only http2
   // and the request will fail on protocol negotiation
   // having separate client for now looks like the only way to do with reqwest
-  pub http2_only_client: Arc<dyn HttpIO>,
+  pub h2_client: Arc<dyn HttpIO>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -98,8 +98,8 @@ impl RequestContext {
 impl From<&AppContext> for RequestContext {
   fn from(server_ctx: &AppContext) -> Self {
     Self {
-      universal_http_client: server_ctx.universal_http_client.clone(),
-      http2_only_client: server_ctx.http2_only_client.clone(),
+      h_client: server_ctx.universal_http_client.clone(),
+      h2_client: server_ctx.http2_only_client.clone(),
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
@@ -133,16 +133,12 @@ mod test {
       //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
 
-      let universal_http_client = Arc::new(init_http(&upstream, &crate::http::HttpClientOptions::default()));
-
-      let http2_only_client = Arc::new(init_http(
-        &upstream,
-        &crate::http::HttpClientOptions { http2_only: true },
-      ));
+      let h_client = Arc::new(init_http(&upstream));
+      let h2_client = Arc::new(init_http(&upstream.clone().http2_only(true)));
       RequestContext {
         req_headers: HeaderMap::new(),
-        universal_http_client,
-        http2_only_client,
+        h_client,
+        h2_client,
         server,
         upstream,
         http_data_loaders: Arc::new(vec![]),

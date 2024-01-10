@@ -17,7 +17,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_env, init_http};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{AppContext, HttpClientOptions, RequestContext};
+use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -299,9 +299,9 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let universal_http_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions::default()));
+        let universal_http_client = Arc::new(init_http(&blueprint.upstream));
 
-        let http2_only_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions { http2_only: true }));
+        let http2_only_client = Arc::new(init_http(&blueprint.upstream.clone().http2_only(true)));
         let server_ctx = AppContext::new(
           blueprint,
           universal_http_client,

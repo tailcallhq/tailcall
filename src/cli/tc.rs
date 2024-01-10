@@ -15,7 +15,6 @@ use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
-use crate::http::HttpClientOptions;
 use crate::print_schema;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
@@ -26,7 +25,7 @@ pub fn run() -> Result<()> {
 
   logger_init();
   let file_io = init_file();
-  let http_io = init_http(&Upstream::default(), &HttpClientOptions::default());
+  let http_io = init_http(&Upstream::default());
   let config_reader = ConfigReader::init(file_io, http_io);
 
   match cli.command {

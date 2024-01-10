@@ -21,7 +21,7 @@ impl Default for HttpNative {
 }
 
 impl HttpNative {
-  pub fn init(upstream: &Upstream, options: &HttpClientOptions) -> Self {
+  pub fn init(upstream: &Upstream) -> Self {
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
       .timeout(Duration::from_secs(upstream.get_timeout()))
@@ -32,7 +32,7 @@ impl HttpNative {
       .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
       .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
       .user_agent(upstream.get_user_agent());
-    if options.http2_only {
+    if upstream.get_http_2_only() {
       builder = builder.http2_prior_knowledge();
     }
     if let Some(ref proxy) = upstream.proxy {

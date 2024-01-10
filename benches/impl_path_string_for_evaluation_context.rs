@@ -143,16 +143,12 @@ fn request_context() -> RequestContext {
   //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 
-  let universal_http_client = Arc::new(init_http(&upstream, &tailcall::http::HttpClientOptions::default()));
-
-  let http2_only_client = Arc::new(init_http(
-    &upstream,
-    &tailcall::http::HttpClientOptions { http2_only: true },
-  ));
+  let h_client = Arc::new(init_http(&upstream));
+  let h2_client = Arc::new(init_http(&upstream.clone().http2_only(true)));
   RequestContext {
     req_headers: HeaderMap::new(),
-    universal_http_client,
-    http2_only_client,
+    h_client,
+    h2_client,
     server,
     upstream,
     http_data_loaders: Arc::new(vec![]),

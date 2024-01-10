@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::{init_env, init_http};
-use crate::http::{AppContext, HttpClientOptions};
+use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
@@ -12,19 +12,10 @@ pub struct ServerConfig {
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions::default()));
-
-    let http2_only_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions { http2_only: true }));
+    let h_client = Arc::new(init_http(&blueprint.upstream));
+    let h2_client = Arc::new(init_http(&blueprint.upstream.clone().http2_only(true)));
     let env = init_env();
-    Self {
-      server_context: Arc::new(AppContext::new(
-        blueprint.clone(),
-        universal_http_client,
-        http2_only_client,
-        Arc::new(env),
-      )),
-      blueprint,
-    }
+    Self { server_context: Arc::new(AppContext::new(blueprint.clone(), h_client, h2_client, Arc::new(env))), blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {

@@ -4,10 +4,9 @@ use tailcall::cli::server::Server;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Upstream;
-use tailcall::http::HttpClientOptions;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let http_client = init_http(&Upstream::default(), &HttpClientOptions::default());
+  let http_client = init_http(&Upstream::default());
   let reader = ConfigReader::init(init_file(), http_client);
   let config = reader.read(configs).await.unwrap();
   let mut server = Server::new(config);

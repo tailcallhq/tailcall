@@ -8,7 +8,6 @@ pub use error::CLIError;
 pub use tc::run;
 
 use crate::config::Upstream;
-use crate::http::HttpClientOptions;
 use crate::io::{EnvIO, FileIO, HttpIO};
 
 pub(crate) mod env;
@@ -26,6 +25,6 @@ pub fn init_file() -> impl FileIO {
 }
 
 // Provides access to http in native rust environment
-pub fn init_http(upstream: &Upstream, http_client_options: &HttpClientOptions) -> impl HttpIO + Default + Clone {
-  http::HttpNative::init(upstream, http_client_options)
+pub fn init_http(upstream: &Upstream) -> impl HttpIO + Default + Clone {
+  http::HttpNative::init(upstream)
 }
