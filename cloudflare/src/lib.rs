@@ -1,4 +1,5 @@
 use std::sync::{Arc, RwLock};
+
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
