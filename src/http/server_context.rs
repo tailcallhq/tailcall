@@ -81,27 +81,33 @@ impl ServerContext {
     ctx
   }
 
-  fn check_resolver_of_field(&mut self, field: &mut blueprint::FieldDefinition, expr: &Expression) {
+  // return true means field is modified
+  fn check_resolver_of_field(&mut self, field: &mut blueprint::FieldDefinition, expr: &Expression) -> bool {
     match expr {
       Expression::Unsafe(expr_unsafe) => self.check_unsafe_expr(expr_unsafe, field),
       Expression::Cache(cache) => {
-        self.check_resolver_of_field(field, cache.source());
-        field.resolver = field.resolver.as_ref().map(|ne| {
-          Expression::Cache(Cache::new(
-            cache.hasher().clone(),
-            cache.max_age(),
-            Box::new(ne.clone()),
-          ))
-        });
+        let modified = self.check_resolver_of_field(field, cache.source());
+        if modified {
+          field.resolver = field.resolver.as_ref().map(|ne| {
+            Expression::Cache(Cache::new(
+              cache.hasher().clone(),
+              cache.max_age(),
+              Box::new(dbg!(ne.clone())),
+            ))
+          });
+        }
+        modified
       }
-      _ => (),
+      _ => false,
     }
   }
 
-  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &mut blueprint::FieldDefinition) {
+  // return true means field is modified
+  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &mut blueprint::FieldDefinition) -> bool {
     let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
     let universal_http_client = self.universal_http_client.clone();
     let http2_only_client = self.http2_only_client.clone();
+    let mut modified = false;
     match expr_unsafe {
       Unsafe::Http { req_template, group_by, .. } => {
         let data_loader = HttpDataLoader::new(
@@ -116,6 +122,7 @@ impl ServerContext {
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
         }));
+        modified = true;
 
         let http_data_loaders = Arc::get_mut(&mut self.http_data_loaders).unwrap();
         http_data_loaders.push(data_loader);
@@ -130,6 +137,7 @@ impl ServerContext {
           batch: *batch,
           dl_id: Some(DataLoaderId(self.gql_data_loaders.len())),
         }));
+        modified = true;
 
         let gql_data_loaders = Arc::get_mut(&mut self.gql_data_loaders).unwrap();
         gql_data_loaders.push(graphql_data_loader);
@@ -148,11 +156,13 @@ impl ServerContext {
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
         }));
+        modified = true;
 
         let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
         grpc_data_loaders.push(data_loader);
       }
       _ => (),
     }
+    modified
   }
 }
