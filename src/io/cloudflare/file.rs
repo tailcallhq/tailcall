@@ -13,7 +13,7 @@ impl CloudflareFileIO {
 // This should be moved to a more native implementation that's based on the WASM env.
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-  async fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+  async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<()> {
     unimplemented!("file write I/O is not required for cloudflare")
   }
 
