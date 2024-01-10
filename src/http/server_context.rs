@@ -33,7 +33,7 @@ impl ServerContext {
     blueprint: Blueprint,
     universal_http_client: Arc<impl HttpIO + 'static>,
     http2_only_client: Arc<impl HttpIO + 'static>,
-    env: Arc<impl EnvIO + 'static>
+    env: Arc<impl EnvIO + 'static>,
   ) -> Self {
     Self::with_http_clients(blueprint, universal_http_client, http2_only_client, env)
   }
@@ -42,7 +42,7 @@ impl ServerContext {
     mut blueprint: Blueprint,
     universal_http_client: Arc<dyn HttpIO>,
     http2_only_client: Arc<dyn HttpIO>,
-    env: Arc<impl EnvIO + 'static>
+    env: Arc<impl EnvIO + 'static>,
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
@@ -108,11 +108,6 @@ impl ServerContext {
     }
 
     let schema = blueprint.to_schema();
-
-    // #[cfg(feature = "default")]
-    // let env_vars = Arc::new(std::env::vars().collect());
-    // #[cfg(not(feature = "default"))]
-    // let env_vars = Arc::new(HashMap::new());
 
     ServerContext {
       schema,

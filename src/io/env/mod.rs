@@ -1,7 +1,7 @@
-#[cfg(feature = "default")]
-mod native;
 #[cfg(not(feature = "default"))]
 mod cloudflare;
+#[cfg(feature = "default")]
+mod native;
 
 pub trait EnvIO: Send + Sync {
   fn get(&self, key: &str) -> anyhow::Result<String>;

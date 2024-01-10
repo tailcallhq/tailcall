@@ -1,19 +1,11 @@
 mod data_loader;
 
 mod data_loader_request;
-#[cfg(feature = "default")]
-mod http_1;
-#[cfg(feature = "default")]
-mod http_2;
 mod method;
 mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
-#[cfg(feature = "default")]
-mod server;
-#[cfg(feature = "default")]
-mod server_config;
 mod server_context;
 use std::time::Duration;
 
@@ -26,12 +18,7 @@ pub use request_context::RequestContext;
 pub use request_handler::handle_request;
 pub use request_template::RequestTemplate;
 pub use response::*;
-#[cfg(feature = "default")]
-pub use server::Server;
 pub use server_context::ServerContext;
-
-#[cfg(feature = "default")]
-use self::server_config::ServerConfig;
 
 // TODO: merge with upstream
 #[derive(Default)]
@@ -77,17 +64,6 @@ pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response<async_graphql::Val
     }
   }
   min
-}
-#[cfg(feature = "default")]
-fn log_launch_and_open_browser(sc: &ServerConfig) {
-  let addr = sc.addr().to_string();
-  log::info!("🚀 Tailcall launched at [{}] over {}", addr, sc.http_version());
-  if sc.graphiql() {
-    let url = sc.graphiql_url();
-    log::info!("🌍 Playground: {}", url);
-
-    let _ = webbrowser::open(url.as_str());
-  }
 }
 
 #[cfg(test)]
