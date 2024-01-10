@@ -1,9 +1,8 @@
 use anyhow::Result;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-
-use super::HttpIO;
-use crate::http::{HttpClientOptions, Response};
+use tailcall::http::{HttpClientOptions, Response};
+use tailcall::io::HttpIO;
 
 #[derive(Clone)]
 pub struct HttpCloudflare {

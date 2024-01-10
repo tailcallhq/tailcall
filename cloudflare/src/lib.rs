@@ -7,17 +7,15 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::io::{EnvIO, FileIO};
+use tailcall::io::{EnvIO, FileIO, HttpIO};
 use worker::wasm_bindgen::JsValue;
 use worker::*;
-
-use tailcall::io::{EnvIO, FileIO, HttpIO};
 
 mod env;
 mod file;
 mod http;
 
-fn init_env(env: std::collections::HashMap<String, String>) -> impl EnvIO {
+fn init_env(env: HashMap<String, String>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 

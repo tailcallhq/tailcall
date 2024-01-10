@@ -11,6 +11,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
 use tailcall::chrono_cache::ChronoCache;
+use tailcall::cli::{init_env, init_http};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
@@ -142,12 +143,9 @@ fn request_context() -> RequestContext {
   //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 
-  let universal_http_client = Arc::new(tailcall::io::native::init_http(
-    &upstream,
-    &tailcall::http::HttpClientOptions::default(),
-  ));
+  let universal_http_client = Arc::new(init_http(&upstream, &tailcall::http::HttpClientOptions::default()));
 
-  let http2_only_client = Arc::new(tailcall::io::native::init_http(
+  let http2_only_client = Arc::new(init_http(
     &upstream,
     &tailcall::http::HttpClientOptions { http2_only: true },
   ));
@@ -163,7 +161,7 @@ fn request_context() -> RequestContext {
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
-    env_vars: Arc::new(tailcall::io::native::init_env()),
+    env_vars: Arc::new(init_env()),
   }
 }
 

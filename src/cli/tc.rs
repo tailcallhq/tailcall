@@ -12,7 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::CLIError;
+use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
 use crate::http::HttpClientOptions;
@@ -25,8 +25,8 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   logger_init();
-  let file_io = crate::io::native::init_file();
-  let http_io = crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default());
+  let file_io = init_file();
+  let http_io = init_http(&Upstream::default(), &HttpClientOptions::default());
   let config_reader = ConfigReader::init(file_io, http_io);
 
   match cli.command {

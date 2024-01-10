@@ -14,6 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
+use tailcall::cli::{init_env, init_http};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, HttpClientOptions, RequestContext};
@@ -298,20 +299,14 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let universal_http_client = Arc::new(tailcall::io::native::init_http(
-          &blueprint.upstream,
-          &HttpClientOptions::default(),
-        ));
+        let universal_http_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions::default()));
 
-        let http2_only_client = Arc::new(tailcall::io::native::init_http(
-          &blueprint.upstream,
-          &HttpClientOptions { http2_only: true },
-        ));
+        let http2_only_client = Arc::new(init_http(&blueprint.upstream, &HttpClientOptions { http2_only: true }));
         let server_ctx = AppContext::new(
           blueprint,
           universal_http_client,
           http2_only_client,
-          Arc::new(tailcall::io::native::init_env()),
+          Arc::new(init_env()),
         );
         let schema = &server_ctx.schema;
 

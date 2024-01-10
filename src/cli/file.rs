@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use super::FileIO;
+use crate::io::FileIO;
 
 pub struct NativeFileIO {}
 

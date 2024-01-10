@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
 use crate::http::{HttpClientOptions, Response};
-
-#[cfg(feature = "default")]
-pub mod native;
-
 pub trait EnvIO: Send + Sync {
   fn get(&self, key: &str) -> Option<String>;
 }

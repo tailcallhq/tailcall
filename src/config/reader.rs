@@ -68,6 +68,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
 mod reader_tests {
   use tokio::io::AsyncReadExt;
 
+  use crate::cli::{init_file, init_http};
   use crate::config::reader::ConfigReader;
   use crate::config::{Config, Type, Upstream};
   use crate::http::HttpClientOptions;
@@ -114,8 +115,8 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(
-      crate::io::native::init_file(),
-      crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default()),
+      init_file(),
+      init_http(&Upstream::default(), &HttpClientOptions::default()),
     );
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
@@ -140,8 +141,8 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(
-      crate::io::native::init_file(),
-      crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default()),
+      init_file(),
+      init_http(&Upstream::default(), &HttpClientOptions::default()),
     );
     let c = cr.read(&files).await.unwrap();
     assert_eq!(

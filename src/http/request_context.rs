@@ -123,6 +123,7 @@ mod test {
 
   use crate::blueprint::Server;
   use crate::chrono_cache::ChronoCache;
+  use crate::cli::{init_env, init_http};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
 
@@ -132,12 +133,9 @@ mod test {
       //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
 
-      let universal_http_client = Arc::new(crate::io::native::init_http(
-        &upstream,
-        &crate::http::HttpClientOptions::default(),
-      ));
+      let universal_http_client = Arc::new(init_http(&upstream, &crate::http::HttpClientOptions::default()));
 
-      let http2_only_client = Arc::new(crate::io::native::init_http(
+      let http2_only_client = Arc::new(init_http(
         &upstream,
         &crate::http::HttpClientOptions { http2_only: true },
       ));
@@ -153,7 +151,7 @@ mod test {
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
-        env_vars: Arc::new(crate::io::native::init_env()),
+        env_vars: Arc::new(init_env()),
       }
     }
   }

@@ -1,6 +1,5 @@
 use anyhow::Result;
-
-use crate::io::FileIO;
+use tailcall::io::FileIO;
 pub struct CloudflareFileIO {}
 
 impl CloudflareFileIO {

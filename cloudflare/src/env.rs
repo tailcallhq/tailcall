@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::io::EnvIO;
+use tailcall::io::EnvIO;
 
 #[derive(Clone)]
 pub struct EnvCloudflare {
