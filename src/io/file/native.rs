@@ -13,7 +13,7 @@ impl NativeFileIO {
 
 #[async_trait::async_trait]
 impl FileIO for NativeFileIO {
-  async fn write<'a>(file: &'a str, content: &'a [u8]) -> Result<()> {
+  async fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> Result<()> {
     let mut file = tokio::fs::File::create(file).await?;
     file.write_all(content).await?;
     Ok(())

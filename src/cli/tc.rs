@@ -58,7 +58,7 @@ pub fn run() -> Result<()> {
     Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
     Command::Compose { file_paths, format } => {
       let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths, http_client))?;
-      Fmt::display(format.encode(config)?);
+      Fmt::display(format.encode(&config)?);
       Ok(())
     }
   }

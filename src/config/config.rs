@@ -11,7 +11,6 @@ use serde_json::Value;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
@@ -127,12 +126,6 @@ impl Config {
     let upstream = self.upstream.merge_right(other.upstream.clone());
 
     Self { server, upstream, types, schema, unions }
-  }
-
-  pub async fn write_file(self, filename: &String) -> Result<()> {
-    let config_writer = ConfigWriter::init(self);
-
-    config_writer.write(filename).await
   }
 }
 
