@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic;
@@ -13,6 +12,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
+use crate::io::env::EnvIO;
 use crate::io::http::HttpIO;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
@@ -25,7 +25,7 @@ pub struct ServerContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub env_vars: Arc<HashMap<String, String>>,
+  pub env_vars: Arc<dyn EnvIO>,
 }
 
 impl ServerContext {
@@ -33,14 +33,16 @@ impl ServerContext {
     blueprint: Blueprint,
     universal_http_client: Arc<impl HttpIO + 'static>,
     http2_only_client: Arc<impl HttpIO + 'static>,
+    env: Arc<impl EnvIO + 'static>
   ) -> Self {
-    Self::with_http_clients(blueprint, universal_http_client, http2_only_client)
+    Self::with_http_clients(blueprint, universal_http_client, http2_only_client, env)
   }
 
   pub fn with_http_clients(
     mut blueprint: Blueprint,
     universal_http_client: Arc<dyn HttpIO>,
     http2_only_client: Arc<dyn HttpIO>,
+    env: Arc<impl EnvIO + 'static>
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
@@ -107,10 +109,10 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
 
-    #[cfg(feature = "default")]
-    let env_vars = Arc::new(std::env::vars().collect());
-    #[cfg(not(feature = "default"))]
-    let env_vars = Arc::new(HashMap::new());
+    // #[cfg(feature = "default")]
+    // let env_vars = Arc::new(std::env::vars().collect());
+    // #[cfg(not(feature = "default"))]
+    // let env_vars = Arc::new(HashMap::new());
 
     ServerContext {
       schema,
@@ -121,7 +123,7 @@ impl ServerContext {
       gql_data_loaders: Arc::new(gql_data_loaders),
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
-      env_vars,
+      env_vars: env,
     }
   }
 }

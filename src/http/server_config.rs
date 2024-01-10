@@ -20,11 +20,13 @@ impl ServerConfig {
       &blueprint.upstream,
       &HttpClientOptions { http2_only: true },
     ));
+    let env = crate::io::env::init_env_native();
     Self {
       server_context: Arc::new(ServerContext::new(
         blueprint.clone(),
         universal_http_client,
         http2_only_client,
+        Arc::new(env)
       )),
       blueprint,
     }

@@ -28,7 +28,7 @@ async fn make_req(file: impl FileIO) -> Result<Config> {
 }
 
 #[event(fetch)]
-async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
+async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
     let cfg = make_req(tailcall::io::file::init_cloudflare()).await.map_err(conv_err);

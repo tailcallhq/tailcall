@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
@@ -15,6 +14,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader, ServerContext};
+use crate::io::env::EnvIO;
 use crate::io::http::HttpIO;
 
 #[derive(Setters)]
@@ -34,7 +34,7 @@ pub struct RequestContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   min_max_age: Arc<Mutex<Option<i32>>>,
   cache_public: Arc<Mutex<Option<bool>>>,
-  pub env_vars: Arc<HashMap<String, String>>,
+  pub env_vars: Arc<dyn EnvIO>,
 }
 
 impl RequestContext {
@@ -65,7 +65,7 @@ impl RequestContext {
       grpc_data_loaders: Arc::new(vec![]),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
-      env_vars: Arc::new(HashMap::new()),
+      env_vars: Arc::new(crate::io::env::init_env_native()),
     }
   }
 
