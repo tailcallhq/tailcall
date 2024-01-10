@@ -36,7 +36,7 @@ impl HttpNative {
 
     // Add Http2 Prior Knowledge
     if upstream.get_http_2_only() {
-      log::info!("Enabled Http2 prior knowledge: {}", id);
+      log::info!("Enabled Http2 prior knowledge");
       builder = builder.http2_prior_knowledge();
     }
 

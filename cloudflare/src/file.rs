@@ -16,11 +16,11 @@ impl FileIO for CloudflareFileIO {
     unimplemented!("file write I/O is not required for cloudflare")
   }
 
-  async fn read_file<'a>(&'a self, _: &'a str) -> Result<(String, String)> {
+  async fn read<'a>(&'a self, _: &'a str) -> Result<(String, String)> {
     unimplemented!("file read I/O is not required for cloudflare")
   }
 
-  async fn read_files<'a>(&'a self, _: &'a [String]) -> Result<Vec<(String, String)>> {
+  async fn read_all<'a>(&'a self, _: &'a [String]) -> Result<Vec<(String, String)>> {
     unimplemented!("file read I/O is not required for cloudflare")
   }
 }
