@@ -4,9 +4,9 @@ use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Upstream};
-use tailcall::http::{handle_request, AppContext, HttpClientOptions};
-use tailcall::io::file::FileIO;
+use tailcall::config::Config;
+use tailcall::http::{handle_request, AppContext};
+use tailcall::io::FileIO;
 use worker::*;
 
 lazy_static! {
@@ -14,7 +14,7 @@ lazy_static! {
 }
 
 async fn make_req(file: impl FileIO) -> Result<Config> {
-  let http_client = tailcall::io::http::init_http_cloudflare(&Upstream::default(), &HttpClientOptions::default());
+  let http_client = tailcall::io::cloudflare::init_http();
   let reader = ConfigReader::init(file, http_client);
   reader
     .read(&[
@@ -28,7 +28,7 @@ async fn make_req(file: impl FileIO) -> Result<Config> {
 async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   let mut server_ctx = get_option().await;
   if server_ctx.is_none() {
-    let cfg = make_req(tailcall::io::file::init_cloudflare()).await.map_err(conv_err);
+    let cfg = make_req(tailcall::io::cloudflare::init_file()).await.map_err(conv_err);
     let cfg = match cfg {
       Ok(cfg) => cfg,
       Err(e) => {
@@ -36,15 +36,9 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
       }
     };
     let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-    let universal_http_client = Arc::new(tailcall::io::http::init_http_cloudflare(
-      &blueprint.upstream,
-      &HttpClientOptions::default(),
-    ));
+    let universal_http_client = Arc::new(tailcall::io::cloudflare::init_http());
 
-    let http2_only_client = Arc::new(tailcall::io::http::init_http_cloudflare(
-      &blueprint.upstream,
-      &HttpClientOptions { http2_only: true },
-    ));
+    let http2_only_client = Arc::new(tailcall::io::cloudflare::init_http());
     let serv_ctx = Arc::new(AppContext::new(blueprint, universal_http_client, http2_only_client));
     *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
     server_ctx = Some(serv_ctx);

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 
-use crate::io::env::EnvIO;
+use crate::io::EnvIO;
 
 pub struct EnvNative {
   vars: HashMap<String, String>,

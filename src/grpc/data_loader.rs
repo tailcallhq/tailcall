@@ -15,7 +15,7 @@ use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
-use crate::io::http::HttpIO;
+use crate::io::HttpIO;
 use crate::json::JsonLike;
 
 #[derive(Clone)]

@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::config::{Config, Source};
-use crate::io::file::FileIO;
+use crate::io::FileIO;
 
 pub struct ConfigWriter<File> {
   file: File,

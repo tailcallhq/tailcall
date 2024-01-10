@@ -14,8 +14,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::io::env::EnvIO;
-use crate::io::http::HttpIO;
+use crate::io::{EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -133,12 +132,12 @@ mod test {
       //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
 
-      let universal_http_client = Arc::new(crate::io::http::init_http_native(
+      let universal_http_client = Arc::new(crate::io::native::init_http(
         &upstream,
         &crate::http::HttpClientOptions::default(),
       ));
 
-      let http2_only_client = Arc::new(crate::io::http::init_http_native(
+      let http2_only_client = Arc::new(crate::io::native::init_http(
         &upstream,
         &crate::http::HttpClientOptions { http2_only: true },
       ));
@@ -154,7 +153,7 @@ mod test {
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
-        env_vars: Arc::new(crate::io::env::init_env_native()),
+        env_vars: Arc::new(crate::io::native::init_env()),
       }
     }
   }

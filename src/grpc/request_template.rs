@@ -10,7 +10,6 @@ use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
-use crate::io::http::set_req_version;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -86,7 +85,6 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-    set_req_version(&mut req);
     req.headers_mut().extend(self.headers.clone());
 
     Ok(create_grpc_request(
@@ -138,11 +136,13 @@ mod tests {
       Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
   }
+
   impl crate::path::PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
       self.value.path_string(parts)
     }
   }
+
   impl crate::has_headers::HasHeaders for Context {
     fn headers(&self) -> &HeaderMap {
       &self.headers

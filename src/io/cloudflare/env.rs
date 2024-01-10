@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use anyhow::anyhow;
 
-use crate::io::env::EnvIO;
+use crate::io::EnvIO;
 
 pub struct EnvCloudflare {
   env: worker::Env,

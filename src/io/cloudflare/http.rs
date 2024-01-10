@@ -1,9 +1,8 @@
 use anyhow::Result;
-use reqwest::{Client, Request};
+use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::HttpIO;
-use crate::config::Upstream;
 use crate::http::{HttpClientOptions, Response};
 
 #[derive(Clone)]
@@ -18,7 +17,7 @@ impl Default for HttpCloudflare {
 }
 
 impl HttpCloudflare {
-  pub fn init(_: &Upstream, _: &HttpClientOptions) -> Self {
+  pub fn init() -> Self {
     let client = ClientBuilder::new(Client::new());
     Self { client: client.build() }
   }
@@ -26,10 +25,9 @@ impl HttpCloudflare {
 
 #[async_trait::async_trait]
 impl HttpIO for HttpCloudflare {
-  async fn execute(&self, request: Request) -> Result<Response<async_graphql::Value>> {
-    self.execute_raw(request).await?.to_json()
-  }
-  async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  // HttpClientOptions are ignored in Cloudflare
+  // This is because there is little control over the underlying HTTP client
+  async fn execute_raw(&self, request: reqwest::Request, _: HttpClientOptions) -> Result<Response<Vec<u8>>> {
     let client = self.client.clone();
     async_std::task::spawn_local(async move {
       let response = client.execute(request).await?;

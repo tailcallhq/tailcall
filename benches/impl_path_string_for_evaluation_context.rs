@@ -142,12 +142,12 @@ fn request_context() -> RequestContext {
   //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 
-  let universal_http_client = Arc::new(tailcall::io::http::init_http_native(
+  let universal_http_client = Arc::new(tailcall::io::native::init_http(
     &upstream,
     &tailcall::http::HttpClientOptions::default(),
   ));
 
-  let http2_only_client = Arc::new(tailcall::io::http::init_http_native(
+  let http2_only_client = Arc::new(tailcall::io::native::init_http(
     &upstream,
     &tailcall::http::HttpClientOptions { http2_only: true },
   ));
@@ -163,7 +163,7 @@ fn request_context() -> RequestContext {
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
-    env_vars: Arc::new(tailcall::io::env::init_env_native()),
+    env_vars: Arc::new(tailcall::io::native::init_env()),
   }
 }
 

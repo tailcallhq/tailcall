@@ -2,8 +2,8 @@ use anyhow::anyhow;
 use url::Url;
 
 use crate::config::{Config, Source};
-use crate::io::file::FileIO;
-use crate::io::http::HttpIO;
+use crate::http::HttpClientOptions;
+use crate::io::{FileIO, HttpIO};
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 
@@ -24,7 +24,10 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
       if let Ok(url) = Url::parse(&file) {
         let response = self
           .http
-          .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
+          .execute_raw(
+            reqwest::Request::new(reqwest::Method::GET, url),
+            HttpClientOptions::new(true),
+          )
           .await?;
         let sdl = response.headers.get("content-type");
         let sdl = match sdl {
@@ -60,6 +63,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
     Ok(source)
   }
 }
+
 #[cfg(test)]
 mod reader_tests {
   use tokio::io::AsyncReadExt;
@@ -110,8 +114,8 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(
-      crate::io::file::init_native(),
-      crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default()),
+      crate::io::native::init_file(),
+      crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default()),
     );
     let c = cr.read(&files).await.unwrap();
     assert_eq!(
@@ -124,6 +128,7 @@ mod reader_tests {
     foo_json_serv.assert(); // checks if the request was actually made
     header_serv.assert();
   }
+
   #[tokio::test]
   async fn test_local_files() {
     let files: Vec<String> = [
@@ -135,8 +140,8 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(
-      crate::io::file::init_native(),
-      crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default()),
+      crate::io::native::init_file(),
+      crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default()),
     );
     let c = cr.read(&files).await.unwrap();
     assert_eq!(

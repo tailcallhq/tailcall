@@ -52,8 +52,11 @@ impl HttpNative {
 
 #[async_trait::async_trait]
 impl HttpIO for HttpNative {
-  async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  async fn execute_raw(&self, mut request: reqwest::Request, option: HttpClientOptions) -> Result<Response<Vec<u8>>> {
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
+    if option.http2_only {
+      *request.version_mut() = reqwest::Version::HTTP_2;
+    }
     let response = self.client.execute(request).await?;
     Ok(Response::from_reqwest(response).await?)
   }

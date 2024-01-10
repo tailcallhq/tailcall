@@ -11,8 +11,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::io::env::EnvIO;
-use crate::io::http::HttpIO;
+use crate::io::{EnvIO, HttpIO};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
 pub struct AppContext {

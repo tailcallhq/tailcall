@@ -25,8 +25,8 @@ pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   logger_init();
-  let file_io = crate::io::file::init_native();
-  let http_io = crate::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
+  let file_io = crate::io::native::init_file();
+  let http_io = crate::io::native::init_http(&Upstream::default(), &HttpClientOptions::default());
   let config_reader = ConfigReader::init(file_io, http_io);
 
   match cli.command {

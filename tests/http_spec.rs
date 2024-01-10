@@ -21,7 +21,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, HttpClientOptions, Method, Response};
-use tailcall::io::http::HttpIO;
+use tailcall::io::HttpIO;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -180,10 +180,10 @@ impl HttpSpec {
   }
 
   async fn server_context(&self) -> Arc<AppContext> {
-    let http_client = tailcall::io::http::init_http_native(&Upstream::default(), &HttpClientOptions::default());
+    let http_client = tailcall::io::native::init_http(&Upstream::default(), &HttpClientOptions::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
-        let reader = ConfigReader::init(tailcall::io::file::init_native(), http_client);
+        let reader = ConfigReader::init(tailcall::io::native::init_file(), http_client);
         reader.read(&[file]).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
@@ -191,7 +191,7 @@ impl HttpSpec {
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let env = Arc::new(tailcall::io::env::init_env_test(self.env.clone()));
+    let env = Arc::new(tailcall::io::Env::init(self.env.clone()));
     let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
@@ -290,7 +290,7 @@ impl HttpIO for MockHttpClient {
 
     Ok(response)
   }
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
+  async fn execute_raw(&self, req: reqwest::Request, _: HttpClientOptions) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.

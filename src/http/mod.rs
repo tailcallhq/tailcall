@@ -27,6 +27,12 @@ pub struct HttpClientOptions {
   pub http2_only: bool,
 }
 
+impl HttpClientOptions {
+  pub fn new(http2_only: bool) -> Self {
+    Self { http2_only }
+  }
+}
+
 pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
   let header = res.headers.get(CACHE_CONTROL)?;
   let value = header.to_str().ok()?;
