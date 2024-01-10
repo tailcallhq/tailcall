@@ -32,43 +32,12 @@ pub struct RequestContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  min_max_age: Arc<Mutex<Option<i32>>>,
-  cache_public: Arc<Mutex<Option<bool>>>,
+  pub min_max_age: Arc<Mutex<Option<i32>>>,
+  pub cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<dyn EnvIO>,
 }
 
 impl RequestContext {
-  #[cfg(feature = "default")]
-  pub fn native() -> Self {
-    let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
-    //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(server).unwrap();
-
-    let universal_http_client = Arc::new(crate::io::http::init_http_native(
-      &upstream,
-      &crate::http::HttpClientOptions::default(),
-    ));
-
-    let http2_only_client = Arc::new(crate::io::http::init_http_native(
-      &upstream,
-      &crate::http::HttpClientOptions { http2_only: true },
-    ));
-    Self {
-      req_headers: HeaderMap::new(),
-      universal_http_client,
-      http2_only_client,
-      server,
-      upstream,
-      http_data_loaders: Arc::new(vec![]),
-      gql_data_loaders: Arc::new(vec![]),
-      cache: ChronoCache::new(),
-      grpc_data_loaders: Arc::new(vec![]),
-      min_max_age: Arc::new(Mutex::new(None)),
-      cache_public: Arc::new(Mutex::new(None)),
-      env_vars: Arc::new(crate::io::env::init_env_native()),
-    }
-  }
-
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
   }
@@ -148,15 +117,51 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
+  use std::sync::{Arc, Mutex};
+
   use cache_control::Cachability;
+  use hyper::HeaderMap;
 
   use crate::blueprint::Server;
+  use crate::chrono_cache::ChronoCache;
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
 
+  impl Default for RequestContext {
+    fn default() -> Self {
+      let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
+      //TODO: default is used only in tests. Drop default and move it to test.
+      let server = Server::try_from(server).unwrap();
+
+      let universal_http_client = Arc::new(crate::io::http::init_http_native(
+        &upstream,
+        &crate::http::HttpClientOptions::default(),
+      ));
+
+      let http2_only_client = Arc::new(crate::io::http::init_http_native(
+        &upstream,
+        &crate::http::HttpClientOptions { http2_only: true },
+      ));
+      RequestContext {
+        req_headers: HeaderMap::new(),
+        universal_http_client,
+        http2_only_client,
+        server,
+        upstream,
+        http_data_loaders: Arc::new(vec![]),
+        gql_data_loaders: Arc::new(vec![]),
+        cache: ChronoCache::new(),
+        grpc_data_loaders: Arc::new(vec![]),
+        min_max_age: Arc::new(Mutex::new(None)),
+        cache_public: Arc::new(Mutex::new(None)),
+        env_vars: Arc::new(crate::io::env::init_env_native()),
+      }
+    }
+  }
+
   #[test]
   fn test_update_max_age_less_than_existing() {
-    let req_ctx = RequestContext::native();
+    let req_ctx = RequestContext::default();
     req_ctx.set_min_max_age(120);
     req_ctx.set_min_max_age(60);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -164,7 +169,7 @@ mod test {
 
   #[test]
   fn test_update_max_age_greater_than_existing() {
-    let req_ctx = RequestContext::native();
+    let req_ctx = RequestContext::default();
     req_ctx.set_min_max_age(60);
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -172,21 +177,21 @@ mod test {
 
   #[test]
   fn test_update_max_age_no_existing_value() {
-    let req_ctx = RequestContext::native();
+    let req_ctx = RequestContext::default();
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(120));
   }
 
   #[test]
   fn test_update_cache_visibility_private() {
-    let req_ctx = RequestContext::native();
+    let req_ctx = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Private));
     assert_eq!(req_ctx.is_cache_public(), Some(false));
   }
 
   #[test]
   fn test_update_cache_visibility_public() {
-    let req_ctx: RequestContext = RequestContext::native();
+    let req_ctx: RequestContext = RequestContext::default();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
     assert_eq!(req_ctx.is_cache_public(), None);
   }
@@ -199,7 +204,7 @@ mod test {
     upstream.batch = Some(Batch::default());
     let server = Server::try_from(config.server.clone()).unwrap();
 
-    let req_ctx: RequestContext = RequestContext::native().upstream(upstream).server(server);
+    let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
     assert!(req_ctx.is_batching_enabled());
   }
