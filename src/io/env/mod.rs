@@ -1,7 +1,7 @@
-#[cfg(feature = "default")]
-mod native;
 #[cfg(not(feature = "default"))]
 mod cloudflare;
+#[cfg(feature = "default")]
+mod native;
 
 pub trait EnvIO {
   fn get(key: String) -> Option<String>;
