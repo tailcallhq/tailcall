@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{Body, HeaderMap, Request, Response, StatusCode, header::{CONNECTION, UPGRADE}};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
@@ -97,9 +97,19 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
-  match *req.method() {
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
-    _ => not_found(),
+  if req.version() != hyper::Version::HTTP_2 {
+    let response = Response::builder()
+      .status(101)
+      .header(CONNECTION, "Upgrade")
+      .header(UPGRADE, "h2c")
+      .body(Body::default())
+      .unwrap();
+    Ok(response)
+  } else {
+    match *req.method() {
+      hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
+      hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
+      _ => not_found(),
+    }
   }
 }

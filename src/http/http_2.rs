@@ -1,8 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 use std::io::BufReader;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
+use hyper::header::{HeaderValue, CONNECTION, UPGRADE};
 use hyper::server::conn::{AddrIncoming, Connecting};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Response, Server};
@@ -54,54 +56,28 @@ pub async fn start_http_2(
   server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
   let addr = sc.addr();
-    let incoming = AddrIncoming::bind(&addr)?;
+  let incoming = AddrIncoming::bind(&addr)?;
 
   if cert.is_empty() | key.is_empty() {
-    // let make_svc_single_req = make_service_fn(|_conn| {
-    //   let state = Arc::clone(&sc);
-    //   async move {
-    //     Ok::<_, anyhow::Error>(service_fn(move |req| {
-    //       handle_request::<GraphQLRequest>(req, state.server_context.clone())
-    //     }))
-    //   }
-    // });
+    let make_svc_single_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
 
-    // let make_svc_batch_req = make_service_fn(|_conn| {
-    //   let state = Arc::clone(&sc);
-    //   async move {
-    //     Ok::<_, anyhow::Error>(service_fn(move |req| {
-    //       handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
-    //     }))
-    //   }
-    // });
+    let make_svc_batch_req = make_service_fn(|_conn| {
+      let state = Arc::clone(&sc);
+      async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+          handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        }))
+      }
+    });
 
     let builder = Server::builder(incoming);
-
-    let _ = builder
-      .serve(make_service_fn(|connection| {
-        let state = Arc::clone(&sc);
-        log::info!("{:#?}", connection);
-        async move {
-          Ok::<_, anyhow::Error>(service_fn(|req| async move {
-            if req.version() != hyper::Version::HTTP_2 {
-              let response = Response::builder()
-                .status(101)
-                .header("Connection", "Upgrade")
-                .header("Upgrade", "h2c")
-                .body(Body::default())
-                .unwrap();
-
-              // Log information after initiating the upgrade
-              println!("Upgrade to HTTP/2 initiated.");
-
-              Ok(response)
-            } else {
-              Err("Error")
-            }
-          }))
-        }
-      }))
-      .await;
 
     log_launch_and_open_browser(sc.as_ref());
 
@@ -109,16 +85,15 @@ pub async fn start_http_2(
       sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    // let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
-    //   builder.serve(make_svc_batch_req).await
-    // } else {
-    //   builder.serve(make_svc_single_req).await
-    // };
+    let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
+      builder.serve(make_svc_batch_req).await
+    } else {
+      builder.serve(make_svc_single_req).await
+    };
 
-    // let result = server.map_err(CLIError::from);
+    let result = server.map_err(CLIError::from);
 
-    // Ok(result?)
-    Ok(())
+    Ok(result?)
   } else {
     let cert_chain = load_cert(&cert).await?;
     let key = load_private_key(&key).await?;
