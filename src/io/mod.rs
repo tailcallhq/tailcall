@@ -5,9 +5,6 @@ use crate::http::{HttpClientOptions, Response};
 #[cfg(feature = "default")]
 pub mod native;
 
-#[cfg(not(feature = "default"))]
-pub mod cloudflare;
-
 pub trait EnvIO: Send + Sync {
   fn get(&self, key: &str) -> Option<String>;
 }

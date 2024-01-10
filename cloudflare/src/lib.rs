@@ -11,12 +11,30 @@ use tailcall::io::{EnvIO, FileIO};
 use worker::wasm_bindgen::JsValue;
 use worker::*;
 
+use tailcall::io::{EnvIO, FileIO, HttpIO};
+
+mod env;
+mod file;
+mod http;
+
+fn init_env(env: std::collections::HashMap<String, String>) -> impl EnvIO {
+  env::EnvCloudflare::init(env)
+}
+
+fn init_file() -> impl FileIO {
+  file::CloudflareFileIO::init()
+}
+
+fn init_http() -> impl HttpIO + Default + Clone {
+  http::HttpCloudflare::init()
+}
+
 lazy_static! {
   static ref SERV_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
 async fn make_req(file: impl FileIO, env: impl EnvIO) -> Result<Config> {
-  let http_client = tailcall::io::cloudflare::init_http();
+  let http_client = init_http();
   let reader = ConfigReader::init(file, http_client);
   reader
     .read(&[env.get("TC_CONFIG").ok_or(conv_err("Config not found"))?])
@@ -43,15 +61,13 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
 }
 
 async fn initiate(env: Env) -> Result<Arc<AppContext>> {
-  let envio = tailcall::io::cloudflare::init_env(env_to_map(env.clone())?);
-  let cfg = make_req(tailcall::io::cloudflare::init_file(), envio)
-    .await
-    .map_err(conv_err)?;
+  let envio = init_env(env_to_map(env.clone())?);
+  let cfg = make_req(init_file(), envio).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-  let universal_http_client = Arc::new(tailcall::io::cloudflare::init_http());
-  let http2_only_client = Arc::new(tailcall::io::cloudflare::init_http());
+  let universal_http_client = Arc::new(init_http());
+  let http2_only_client = Arc::new(init_http());
 
-  let envio = tailcall::io::cloudflare::init_env(env_to_map(env.clone())?);
+  let envio = init_env(env_to_map(env.clone())?);
   let app_ctx = Arc::new(AppContext::new(
     blueprint,
     universal_http_client,
