@@ -7,16 +7,17 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::HttpIO;
 use crate::config::Upstream;
-use crate::http::{HttpClientOptions, Response};
+use crate::http::Response;
 
 #[derive(Clone)]
 pub struct HttpNative {
   client: ClientWithMiddleware,
+  http2_only: bool,
 }
 
 impl Default for HttpNative {
   fn default() -> Self {
-    Self { client: ClientBuilder::new(Client::new()).build() }
+    Self { client: ClientBuilder::new(Client::new()).build(), http2_only: false }
   }
 }
 
@@ -32,13 +33,20 @@ impl HttpNative {
       .pool_idle_timeout(Some(Duration::from_secs(upstream.get_pool_idle_timeout())))
       .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
       .user_agent(upstream.get_user_agent());
+
+    // Add Http2 Prior Knowledge
     if upstream.get_http_2_only() {
+      log::info!("Enabled Http2 prior knowledge: {}", id);
       builder = builder.http2_prior_knowledge();
     }
+
+    // Add Http Proxy
     if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
+
     let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+
     if upstream.get_enable_http_cache() {
       client = client.with(Cache(HttpCache {
         mode: CacheMode::Default,
@@ -46,17 +54,17 @@ impl HttpNative {
         options: HttpCacheOptions::default(),
       }))
     }
-    Self { client: client.build() }
+    Self { client: client.build(), http2_only: upstream.get_http_2_only() }
   }
 }
 
 #[async_trait::async_trait]
 impl HttpIO for HttpNative {
-  async fn execute_raw(&self, mut request: reqwest::Request, option: HttpClientOptions) -> Result<Response<Vec<u8>>> {
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    if option.http2_only {
+  async fn execute_raw(&self, mut request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+    if self.http2_only {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }
+    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
     let response = self.client.execute(request).await?;
     Ok(Response::from_reqwest(response).await?)
   }

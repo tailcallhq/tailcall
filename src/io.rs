@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::http::{HttpClientOptions, Response};
+use crate::http::Response;
 pub trait EnvIO: Send + Sync {
   fn get(&self, key: &str) -> Option<String>;
 }
@@ -8,13 +8,9 @@ pub trait EnvIO: Send + Sync {
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    self.execute_raw(request, HttpClientOptions::default()).await?.to_json()
+    self.execute_raw(request).await?.to_json()
   }
-  async fn execute_raw(
-    &self,
-    request: reqwest::Request,
-    option: HttpClientOptions,
-  ) -> anyhow::Result<Response<Vec<u8>>>;
+  async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
 }
 
 #[async_trait::async_trait]

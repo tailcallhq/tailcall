@@ -123,7 +123,7 @@ mod test {
 
   use crate::blueprint::Server;
   use crate::chrono_cache::ChronoCache;
-  use crate::cli::{init_env, init_http};
+  use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
 
@@ -134,7 +134,7 @@ mod test {
       let server = Server::try_from(server).unwrap();
 
       let h_client = Arc::new(init_http(&upstream));
-      let h2_client = Arc::new(init_http(&upstream.clone().http2_only(true)));
+      let h2_client = Arc::new(init_http2_only(&upstream.clone()));
       RequestContext {
         req_headers: HeaderMap::new(),
         h_client,

@@ -28,3 +28,8 @@ pub fn init_file() -> impl FileIO {
 pub fn init_http(upstream: &Upstream) -> impl HttpIO + Default + Clone {
   http::HttpNative::init(upstream)
 }
+
+// Provides access to http in native rust environment
+pub fn init_http2_only(upstream: &Upstream) -> impl HttpIO + Default + Clone {
+  http::HttpNative::init(&upstream.clone().http2_only(true))
+}

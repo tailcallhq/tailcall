@@ -2,7 +2,6 @@ use anyhow::anyhow;
 use url::Url;
 
 use crate::config::{Config, Source};
-use crate::http::HttpClientOptions;
 use crate::io::{FileIO, HttpIO};
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
@@ -24,10 +23,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
       if let Ok(url) = Url::parse(&file) {
         let response = self
           .http
-          .execute_raw(
-            reqwest::Request::new(reqwest::Method::GET, url),
-            HttpClientOptions::new(false),
-          )
+          .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
           .await?;
         let sdl = response.headers.get("content-type");
         let sdl = match sdl {

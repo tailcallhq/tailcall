@@ -180,8 +180,8 @@ pub struct Upstream {
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
-  #[serde(default, skip_serializing_if = "is_default")]
   #[setters(strip_option)]
+  #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
   pub http2_only: Option<bool>,
 }
 
@@ -231,6 +231,7 @@ impl Upstream {
     self.http2_only.unwrap_or(false)
   }
 
+  // TODO: add unit tests for merge
   pub fn merge_right(mut self, other: Self) -> Self {
     self.allowed_headers = other.allowed_headers.map(|other| {
       if let Some(mut self_headers) = self.allowed_headers {
@@ -259,6 +260,8 @@ impl Upstream {
       batch.headers.extend(other.headers);
       batch
     });
+
+    self.http2_only = other.http2_only.or(self.http2_only);
     self
   }
 }

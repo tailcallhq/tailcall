@@ -299,15 +299,9 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let universal_http_client = Arc::new(init_http(&blueprint.upstream));
-
-        let http2_only_client = Arc::new(init_http(&blueprint.upstream.clone().http2_only(true)));
-        let server_ctx = AppContext::new(
-          blueprint,
-          universal_http_client,
-          http2_only_client,
-          Arc::new(init_env()),
-        );
+        let h_client = Arc::new(init_http(&blueprint.upstream));
+        let h2_client = Arc::new(init_http(&blueprint.upstream));
+        let server_ctx = AppContext::new(blueprint, h_client, h2_client, Arc::new(init_env()));
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

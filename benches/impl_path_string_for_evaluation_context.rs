@@ -11,7 +11,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
 use tailcall::chrono_cache::ChronoCache;
-use tailcall::cli::{init_env, init_http};
+use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
@@ -144,7 +144,7 @@ fn request_context() -> RequestContext {
   let server = Server::try_from(server).unwrap();
 
   let h_client = Arc::new(init_http(&upstream));
-  let h2_client = Arc::new(init_http(&upstream.clone().http2_only(true)));
+  let h2_client = Arc::new(init_http2_only(&upstream));
   RequestContext {
     req_headers: HeaderMap::new(),
     h_client,

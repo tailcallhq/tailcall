@@ -6,7 +6,7 @@ use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::http::{HttpClientOptions, Response};
+use crate::http::Response;
 use crate::io::HttpIO;
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
@@ -22,7 +22,7 @@ pub async fn execute_grpc_request(
   operation: &ProtobufOperation,
   request: Request,
 ) -> Result<Response<async_graphql::Value>> {
-  let response = client.execute_raw(request, HttpClientOptions::new(true)).await?;
+  let response = client.execute_raw(request).await?;
 
   if response.status.is_success() {
     return response.to_grpc_value(operation);

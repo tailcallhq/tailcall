@@ -6,7 +6,7 @@ use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
 use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpClientOptions, HttpDataLoader, Response};
+use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::io::HttpIO;
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl HttpIO for MockHttpClient {
     Ok(Response::default())
   }
 
-  async fn execute_raw(&self, _req: Request, _: HttpClientOptions) -> anyhow::Result<Response<Vec<u8>>> {
+  async fn execute_raw(&self, _req: Request) -> anyhow::Result<Response<Vec<u8>>> {
     unimplemented!()
   }
 }

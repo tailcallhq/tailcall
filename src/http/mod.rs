@@ -18,15 +18,3 @@ pub use request_template::RequestTemplate;
 pub use response::*;
 
 pub use crate::app_context::AppContext;
-
-// TODO: merge with upstream
-#[derive(Default)]
-pub struct HttpClientOptions {
-  pub http2_only: bool,
-}
-
-impl HttpClientOptions {
-  pub fn new(http2_only: bool) -> Self {
-    Self { http2_only }
-  }
-}

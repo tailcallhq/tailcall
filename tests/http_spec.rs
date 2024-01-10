@@ -21,7 +21,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
-use tailcall::http::{handle_request, AppContext, HttpClientOptions, Method, Response};
+use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::io::HttpIO;
 use url::Url;
 
@@ -291,7 +291,7 @@ impl HttpIO for MockHttpClient {
 
     Ok(response)
   }
-  async fn execute_raw(&self, req: reqwest::Request, _: HttpClientOptions) -> anyhow::Result<Response<Vec<u8>>> {
+  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.

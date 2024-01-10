@@ -25,9 +25,8 @@ pub fn run() -> Result<()> {
 
   logger_init();
   let file_io = init_file();
-  let http_io = init_http(&Upstream::default());
-  let config_reader = ConfigReader::init(file_io, http_io);
-
+  let default_http_io = init_http(&Upstream::default());
+  let config_reader = ConfigReader::init(file_io, default_http_io);
   match cli.command {
     Command::Start { file_paths } => {
       let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
