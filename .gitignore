@@ -12,3 +12,9 @@
 
 npm/@tailcallhq
 npm/node_modules
+
+cloudflare/.wrangler
+cloudflare/build
+cloudflare/node_modules
+cloudflare/pkg
+cloudflare/package-lock.json
