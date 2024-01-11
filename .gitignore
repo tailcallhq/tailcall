@@ -15,4 +15,5 @@ cloudflare/.wrangler
 cloudflare/build
 cloudflare/node_modules
 cloudflare/pkg
-cloudflare/package-lock.json
+
+.wrangler/
