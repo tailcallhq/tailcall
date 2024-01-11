@@ -13,12 +13,12 @@ mod env;
 mod file;
 mod http;
 
-fn init_env(env: Env) -> impl EnvIO {
+fn init_env(env: Arc<Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-fn init_file() -> impl FileIO {
-  file::CloudflareFileIO::init()
+fn init_file(r2_id: String, env: Arc<Env>) -> impl FileIO {
+  file::CloudflareFileIO::init(r2_id, env)
 }
 
 fn init_http() -> impl HttpIO + Default + Clone {
@@ -29,21 +29,26 @@ lazy_static! {
   static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
-async fn get_config(file: impl FileIO, env: &impl EnvIO) -> Result<Config> {
-  let http = init_http();
-  let reader = ConfigReader::init(file, http);
-  reader
-    .read(&[env.get("TC_CONFIG").ok_or(conv_err("Config not found"))?])
-    .await
-    .map_err(conv_err)
+async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
+  let config_val = env_io.get("CONFIG").ok_or(Error::from("Invalid path string"))?;
+  let (r2_id, path) = separate_id_path(config_val).ok_or(Error::from("Invalid path string"))?;
+
+  let file_io = init_file(r2_id, env.clone());
+  let http_io = init_http();
+  let reader = ConfigReader::init(file_io, http_io);
+  reader.read(&[path]).await.map_err(conv_err)
 }
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   let mut app_ctx = get_option().await;
-
+  let env = Arc::new(env);
   if app_ctx.is_none() {
-    app_ctx = Some(init(env).await?);
+    let x = init(env).await;
+    if let Err(e) = x {
+      return Response::ok(format!("{:?}", e));
+    }
+    app_ctx = Some(x?);
   }
 
   let resp = handle_request::<GraphQLRequest>(
@@ -56,9 +61,9 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   Ok(resp)
 }
 
-async fn init(env: Env) -> Result<Arc<AppContext>> {
-  let env_io = init_env(env);
-  let cfg = get_config(init_file(), &env_io).await.map_err(conv_err)?;
+async fn init(env: Arc<Env>) -> Result<Arc<AppContext>> {
+  let env_io = init_env(env.clone());
+  let cfg = get_config(&env_io, env.clone()).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
   let universal_http_client = Arc::new(init_http());
   let http2_only_client = Arc::new(init_http());
@@ -120,4 +125,11 @@ async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::
 
 fn conv_err<T: std::fmt::Display>(e: T) -> Error {
   Error::from(format!("{}", e.to_string()))
+}
+
+fn separate_id_path(val: String) -> Option<(String, String)> {
+  let mut split = val.split("/");
+  let r2_id = split.next()?.to_string();
+  let path = split.collect::<Vec<&str>>().join("/");
+  Some((r2_id, path))
 }
