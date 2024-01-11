@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
@@ -10,7 +10,6 @@ use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::io::EnvIO;
 
-use crate::http::{to_request, to_response};
 use crate::{init_env, init_file, init_http};
 
 lazy_static! {
@@ -20,7 +19,7 @@ lazy_static! {
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result<Config> {
+async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Result<Config> {
   let path = env_io.get("CONFIG").ok_or(anyhow!("CONFIG var is not set"))?;
   let file_io = init_file(env.clone());
   let http_io = init_http();
@@ -29,9 +28,8 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
   Ok(config)
 }
 
-pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
-  let env = Rc::new(env);
-  log::debug!("Execution starting");
+pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+  let env = Arc::new(env);
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -41,11 +39,14 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = read_app_ctx() {
+  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
     Ok(app_ctx.clone())
   } else {
+    // Initialize Logger
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+
     // Create new context
     let env_io = init_env(env.clone());
     let cfg = get_config(&env_io, env.clone()).await?;
@@ -55,10 +56,45 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
     let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
     *APP_CTX.write().unwrap() = Some(app_ctx.clone());
     log::info!("Initialized new application context");
+
     Ok(app_ctx)
   }
 }
 
-fn read_app_ctx() -> Option<Arc<AppContext>> {
-  APP_CTX.read().unwrap().clone()
+async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
+  let buf = hyper::body::to_bytes(response).await?;
+  let text = std::str::from_utf8(&buf)?;
+  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
+}
+
+fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
+  let method = &*method.to_string().to_uppercase();
+  match method {
+    "GET" => Ok(hyper::Method::GET),
+    "POST" => Ok(hyper::Method::POST),
+    "PUT" => Ok(hyper::Method::PUT),
+    "DELETE" => Ok(hyper::Method::DELETE),
+    "HEAD" => Ok(hyper::Method::HEAD),
+    "OPTIONS" => Ok(hyper::Method::OPTIONS),
+    "PATCH" => Ok(hyper::Method::PATCH),
+    "CONNECT" => Ok(hyper::Method::CONNECT),
+    "TRACE" => Ok(hyper::Method::TRACE),
+    method => Err(anyhow!("Unsupported HTTP method: {}", method)),
+  }
+}
+
+async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+  let body = req.text().await.map_err(to_anyhow)?;
+  let method = req.method();
+  let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
+  let headers = req.headers();
+  let mut builder = hyper::Request::builder().method(to_method(method)?).uri(uri);
+  for (k, v) in headers {
+    builder = builder.header(k, v);
+  }
+  Ok(builder.body(hyper::body::Body::from(body))?)
+}
+
+fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
+  anyhow!("{}", e)
 }
