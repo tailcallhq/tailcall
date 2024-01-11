@@ -1,5 +1,7 @@
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
+use anyhow::anyhow;
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -7,18 +9,18 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::io::{EnvIO, FileIO, HttpIO};
-use worker::*;
 
 mod env;
 mod file;
 mod http;
+mod r2_address;
 
-fn init_env(env: Arc<Env>) -> impl EnvIO {
+fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-fn init_file(path: String, env: Arc<Env>) -> impl FileIO {
-  file::CloudflareFileIO::init(path, env)
+fn init_file(env: Arc<worker::Env>) -> impl FileIO {
+  file::CloudflareFileIO::init(env)
 }
 
 fn init_http() -> impl HttpIO + Default + Clone {
@@ -29,76 +31,61 @@ lazy_static! {
   static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
 }
 
-async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
-  let config_val = env_io.get("CONFIG").ok_or(Error::from("Invalid path string"))?;
-  let file_io = init_file(config_val.clone(), env.clone());
+///
+/// Reads the configuration from the CONFIG environment variable.
+///
+async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Result<Config> {
+  let path = env_io.get("CONFIG").ok_or(anyhow!("CONFIG var is not set"))?;
+  let file_io = init_file(env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  let config = reader.read(&[config_val]).await.map_err(conv_err)?;
+  let config = reader.read(&[path]).await?;
   Ok(config)
 }
 
-#[event(fetch)]
-async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
-  let mut app_ctx = get_option().await;
+#[worker::event(fetch)]
+async fn main(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Arc::new(env);
-  if app_ctx.is_none() {
-    let x = init(env).await;
-    if let Err(e) = x {
-      return Response::ok(format!("{:?}", e));
-    }
-    app_ctx = Some(x?);
+  let app_ctx = init(env).await?;
+  let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
+  Ok(to_response(resp).await?)
+}
+
+///
+/// Initializes the worker once and caches the app context
+/// for future requests.
+///
+async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+  // Read context from cache
+  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
+    Ok(app_ctx.clone())
+  } else {
+    // Initialize Logger
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+
+    // Create new context
+    let env_io = init_env(env.clone());
+    let cfg = get_config(&env_io, env.clone()).await?;
+    let blueprint = Blueprint::try_from(&cfg)?;
+    let h_client = Arc::new(init_http());
+
+    let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
+    *APP_CTX.write().unwrap() = Some(app_ctx.clone());
+    log::info!("Initialized new application context");
+
+    Ok(app_ctx)
   }
-
-  let resp = handle_request::<GraphQLRequest>(
-    convert_to_hyper_request(req).await?,
-    app_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
-  )
-  .await
-  .map_err(conv_err)?;
-
-  let resp = make_request(resp).await.map_err(conv_err)?;
-  Ok(resp)
 }
 
-async fn init(env: Arc<Env>) -> Result<Arc<AppContext>> {
-  wasm_logger::init(wasm_logger::Config::new(log::Level::Debug));
-
-  let env_io = init_env(env.clone());
-  let cfg = get_config(&env_io, env.clone()).await.map_err(conv_err)?;
-  let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-  let universal_http_client = Arc::new(init_http());
-  let http2_only_client = Arc::new(init_http());
-
-  let app_ctx = Arc::new(AppContext::new(
-    blueprint,
-    universal_http_client,
-    http2_only_client,
-    Arc::new(env_io),
-  ));
-  *APP_CTX.write().unwrap() = Some(app_ctx.clone());
-  Ok(app_ctx)
+async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
+  let buf = hyper::body::to_bytes(response).await?;
+  let text = std::str::from_utf8(&buf)?;
+  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
 }
 
-async fn get_option() -> Option<Arc<AppContext>> {
-  APP_CTX.read().unwrap().clone()
-}
-
-async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {
-  let buf = hyper::body::to_bytes(response).await.map_err(conv_err)?;
-  let text = std::str::from_utf8(&buf).map_err(conv_err)?;
-  let mut response = Response::ok(text).map_err(conv_err)?;
-  response
-    .headers_mut()
-    .append("Content-Type", "text/html")
-    .map_err(conv_err)?;
-  Ok(response)
-}
-
-fn convert_method(worker_method: Method) -> hyper::Method {
-  let method_str = &*worker_method.to_string().to_uppercase();
-
-  match method_str {
+fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
+  let method = &*method.to_string().to_uppercase();
+  match method {
     "GET" => Ok(hyper::Method::GET),
     "POST" => Ok(hyper::Method::POST),
     "PUT" => Ok(hyper::Method::PUT),
@@ -108,23 +95,22 @@ fn convert_method(worker_method: Method) -> hyper::Method {
     "PATCH" => Ok(hyper::Method::PATCH),
     "CONNECT" => Ok(hyper::Method::CONNECT),
     "TRACE" => Ok(hyper::Method::TRACE),
-    _ => Err("Unsupported HTTP method"),
+    method => Err(anyhow!("Unsupported HTTP method: {}", method)),
   }
-  .unwrap()
 }
 
-async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::Request<hyper::Body>> {
-  let body = worker_request.text().await?;
-  let method = worker_request.method();
-  let uri = worker_request.url()?.as_str().to_string();
-  let headers = worker_request.headers();
-  let mut builder = hyper::Request::builder().method(convert_method(method)).uri(uri);
+async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+  let body = req.text().await.map_err(to_anyhow)?;
+  let method = req.method();
+  let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
+  let headers = req.headers();
+  let mut builder = hyper::Request::builder().method(to_method(method)?).uri(uri);
   for (k, v) in headers {
     builder = builder.header(k, v);
   }
-  builder.body(hyper::body::Body::from(body)).map_err(conv_err)
+  Ok(builder.body(hyper::body::Body::from(body))?)
 }
 
-fn conv_err<T: std::fmt::Display>(e: T) -> Error {
-  Error::from(format!("{}", e.to_string()))
+fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
+  anyhow!("{}", e)
 }

@@ -19,18 +19,19 @@ impl FileIO for NativeFileIO {
     Ok(())
   }
 
-  async fn read<'a>(&'a self, file_path: &'a str) -> Result<(String, String)> {
+  async fn read<'a>(&'a self, file_path: &'a str) -> Result<String> {
     let mut file = tokio::fs::File::open(file_path).await?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).await?;
-    Ok((String::from_utf8(buffer)?, file_path.to_string()))
+    Ok(String::from_utf8(buffer)?)
   }
 
   async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> Result<Vec<(String, String)>> {
     let mut files = vec![];
+    // TODO: make this parallel
     for file in file_paths {
       let content = self.read(file).await?;
-      files.push(content);
+      files.push((content, file.to_string()));
     }
     Ok(files)
   }

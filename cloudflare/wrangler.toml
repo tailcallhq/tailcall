@@ -13,6 +13,6 @@ command = "cargo install -q worker-build && worker-build --release"
 CONFIG = "/MY_R2/examples/jsonplaceholder.graphql"
 
 [[r2_buckets]]
-binding = 'MY_R2' # this binding/name is to be used in code
+binding = 'MY_R2'               # this binding/name is to be used in code
 bucket_name = 'configs'
 preview_bucket_name = 'configs'
