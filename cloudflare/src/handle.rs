@@ -42,8 +42,8 @@ pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context)
 ///
 async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
-    Ok(app_ctx.clone())
+  if let Some(app_ctx) = get_app_ctx() {
+    Ok(app_ctx)
   } else {
     // Initialize Logger
     wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
@@ -62,10 +62,20 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
+fn get_app_ctx() -> Option<Arc<AppContext>> {
+  APP_CTX.read().unwrap().clone()
+}
+
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
   let buf = hyper::body::to_bytes(response).await?;
   let text = std::str::from_utf8(&buf)?;
-  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
+  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
+  response
+    .headers_mut()
+    .0
+    .set("Content-Type", "text/html")
+    .map_err(|e| anyhow!("error: {:?}", e.as_string()))?;
+  Ok(response)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
