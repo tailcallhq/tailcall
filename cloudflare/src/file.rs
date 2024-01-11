@@ -44,7 +44,6 @@ impl CloudflareFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
     let io = self.clone();
