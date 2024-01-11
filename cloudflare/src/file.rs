@@ -47,24 +47,44 @@ impl CloudflareFileIO {
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-    let r2 = R2Address::from_string(file_path.to_string())?;
-    self.put(&r2, content.to_vec()).await.map_err(to_anyhow)?;
+    let io = self.clone();
+    let file_path = file_path.to_string();
+    let content = content.to_vec();
+    async_std::task::spawn_local(async move {
+      let r2 = R2Address::from_string(file_path)?;
+      io.put(&r2, content).await.map_err(to_anyhow)?;
+      anyhow::Ok(())
+    }).await?;
     Ok(())
   }
 
   async fn read<'a>(&'a self, file_path: &'a str) -> anyhow::Result<String> {
-    let r2 = R2Address::from_string(file_path.to_string())?;
-    let content = self.get(&r2).await.map_err(to_anyhow)?;
-    Ok(content)
+    let file_path = file_path.to_string();
+    let io = self.clone();
+    async_std::task::spawn_local(async move {
+      let r2 = R2Address::from_string(file_path)?;
+      let content = io.get(&r2).await.map_err(to_anyhow)?;
+      anyhow::Ok(content)
+    }).await
   }
 
   async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>> {
-    let mut vec = Vec::new();
-    // TODO: read files in parallel
-    for file in file_paths {
-      let content = self.read(file).await.map_err(to_anyhow)?;
-      vec.push((content, file.to_string()));
-    }
-    Ok(vec)
+    let file_paths = file_paths.to_vec();
+    let io = self.clone();
+    async_std::task::spawn_local(async move {
+      let mut vec = Vec::new();
+      // TODO: read files in parallel
+      for file in file_paths {
+        let content = io.read(&file).await.map_err(to_anyhow)?;
+        vec.push((content, file.to_string()));
+      }
+      anyhow::Ok(vec)
+    }).await
   }
 }
+
+/*async fn internal_shi(io: CloudflareFileIO, file_path: String, content: Vec<u8>) -> anyhow::Result<()> {
+  let r2 = R2Address::from_string(file_path)?;
+  io.put(&r2, content).await.map_err(to_anyhow)?;
+  Ok(())
+}*/
