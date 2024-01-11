@@ -1,10 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 use std::io::BufReader;
 use std::sync::Arc;
-use std::time::Duration;
 
 use anyhow::Result;
-use hyper::header::{HeaderValue, CONNECTION, UPGRADE};
 use hyper::server::conn::{AddrIncoming, Connecting};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Response, Server};
