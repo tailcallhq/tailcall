@@ -159,6 +159,13 @@ directive @upstream(
 ) on SCHEMA
 
 """
+Enable [opentelemetry](https://opentelemetry.io) support
+"""
+directive @opentelemetry (
+  export: OpentelemetryExport
+) on SCHEMA
+
+"""
 @http
 The @http operator indicates that a field or node is backed by a REST API.
 
@@ -323,6 +330,25 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
+}
+
+input OpentelemetryStdout {
+  """
+  Output to stdout in pretty human-readable format
+  """
+  pretty: Boolean
+}
+
+input OpentelemetryOtlp {
+  url: String
+}
+
+input OpentelemetryExport {
+  """
+  Output the opentelemetry data to the stdout. Mostly used for debug purposes
+  """
+  stdout: OpentelemetryStdout
+  otlp: OpentelemetryOtlp
 }
 
 scalar JSON

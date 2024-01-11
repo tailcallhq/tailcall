@@ -1,5 +1,6 @@
 mod definitions;
 mod from_config;
+mod opentelemetry;
 mod operators;
 mod schema;
 mod server;
@@ -7,6 +8,7 @@ mod upstream;
 
 pub use definitions::*;
 pub use from_config::*;
+pub use opentelemetry::*;
 pub use operators::*;
 pub use schema::*;
 pub use server::*;

@@ -29,10 +29,16 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     |blueprint| blueprint.upstream,
   );
 
+  let opentelemetry = to_opentelemetry().transform::<Blueprint>(
+    |opentelemetry, blueprint| blueprint.opentelemetry(opentelemetry),
+    |blueprint| blueprint.opentelemetry,
+  );
+
   server
     .and(schema)
     .and(definitions)
     .and(upstream)
+    .and(opentelemetry)
     .update(apply_batching)
     .update(compress)
 }

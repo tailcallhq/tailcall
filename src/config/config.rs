@@ -8,6 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::opentelemetry::Opentelemetry;
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::reader::ConfigReader;
@@ -32,6 +33,8 @@ pub struct Config {
   pub types: BTreeMap<String, Type>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub opentelemetry: Opentelemetry
 }
 impl Config {
   pub fn port(&self) -> u16 {
@@ -126,8 +129,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
+    let opentelemetry = self.opentelemetry.merge_right(other.opentelemetry.clone());
 
-    Self { server, upstream, types, schema, unions }
+    Self { server, upstream, types, schema, unions, opentelemetry }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
