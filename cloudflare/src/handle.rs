@@ -28,8 +28,9 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
   Ok(config)
 }
 
-pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
+  log::debug!("Execution starting");
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -44,9 +45,6 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
-    // Initialize Logger
-    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
-
     // Create new context
     let env_io = init_env(env.clone());
     let cfg = get_config(&env_io, env.clone()).await?;
@@ -56,7 +54,6 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
     let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
     *APP_CTX.write().unwrap() = Some(app_ctx.clone());
     log::info!("Initialized new application context");
-
     Ok(app_ctx)
   }
 }
