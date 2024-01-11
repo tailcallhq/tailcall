@@ -4,7 +4,7 @@ use std::sync::Once;
 
 use derive_setters::Setters;
 use regex::Regex;
-use tailcall::blueprint::Blueprint;
+use tailcall::blueprint::{Blueprint, validation_schema, validate_operation};
 use tailcall::config::Config;
 use tailcall::valid::Valid;
 
@@ -148,15 +148,13 @@ async fn test_operations() -> std::io::Result<()> {
           .to_result()
           .unwrap();
 
-        let schema = Valid::from(blueprint.to_validation_schema())
+        let schema = Valid::from(validation_schema(&blueprint))
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
 
         for query_spec in spec.test_queries {
-          let count = Blueprint::validate_operation(&schema, query_spec.query.as_str())
-            .await
-            .len() as u32;
+          let count = validate_operation(&schema, query_spec.query.as_str()).await.len() as u32;
 
           if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
             assert_ne!(

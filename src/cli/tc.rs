@@ -9,7 +9,7 @@ use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
-use crate::blueprint::Blueprint;
+use crate::blueprint::{Blueprint, validate_operations};
 use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
 use crate::config::Config;
@@ -52,7 +52,7 @@ pub fn run() -> Result<()> {
 
           Ok(
             tokio::runtime::Runtime::new()?
-              .block_on(async { blueprint.validate_operations(operations).await })
+              .block_on(async { validate_operations(&blueprint, operations).await })
               .to_result()?,
           )
         }

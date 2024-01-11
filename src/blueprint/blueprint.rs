@@ -8,12 +8,10 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::into_schema::{create, SchemaModifiers};
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
-use crate::valid::{Cause, Valid, ValidationError};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -220,62 +218,5 @@ impl Blueprint {
     // We should safely assume the blueprint is correct and,
     // generation of schema cannot fail.
     schema.finish().unwrap()
-  }
-
-  /// Generate a dumb schema useful for validation.
-  pub fn to_validation_schema(&self) -> Result<Schema, ValidationError<String>> {
-    match create(self, Some(SchemaModifiers { no_resolver: true }))
-      .validation_mode(ValidationMode::Strict)
-      .disable_introspection()
-      .finish()
-    {
-      Ok(schema) => Ok(schema),
-      Err(e) => Err(ValidationError::new(e.to_string())),
-    }
-  }
-
-  pub async fn validate_operation(schema: &Schema, query: &str) -> Vec<Cause<String>> {
-    schema
-      .execute(query)
-      .await
-      .errors
-      .iter()
-      .map(|err| {
-        Cause::new(err.message.clone()).trace(
-          err
-            .locations
-            .iter()
-            .map(|loc| format!("line {} column {}", loc.line, loc.column))
-            .collect(),
-        )
-      })
-      .collect()
-  }
-
-  pub async fn validate_operations(&self, operations: Vec<String>) -> Valid<(), String> {
-    match self.to_validation_schema() {
-      Ok(schema) => {
-        let mut execution = vec![];
-
-        for op in operations.iter() {
-          match tokio::fs::read_to_string(op).await {
-            Ok(operation) => {
-              let causes = Blueprint::validate_operation(&schema, &operation).await;
-              execution.push((op.to_string(), causes));
-            }
-            Err(_) => execution.push((
-              op.to_string(),
-              vec![Cause::new(format!("Cannot read file operation file {}", op))],
-            )),
-          }
-        }
-
-        Valid::from_iter(execution.iter(), |(op, causes)| {
-          Valid::<(), String>::from_vec_cause(causes.to_vec()).trace(op)
-        })
-        .unit()
-      }
-      Err(e) => Valid::fail_with("Failed to generate schema".into(), e.to_string()),
-    }
   }
 }
