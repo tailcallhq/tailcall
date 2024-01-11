@@ -84,9 +84,3 @@ impl FileIO for CloudflareFileIO {
     .await
   }
 }
-
-/*async fn internal_shi(io: CloudflareFileIO, file_path: String, content: Vec<u8>) -> anyhow::Result<()> {
-  let r2 = R2Address::from_string(file_path)?;
-  io.put(&r2, content).await.map_err(to_anyhow)?;
-  Ok(())
-}*/
