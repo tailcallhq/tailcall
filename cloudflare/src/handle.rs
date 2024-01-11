@@ -29,8 +29,9 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
   Ok(config)
 }
 
-pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
+  log::debug!("Execution starting");
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -42,12 +43,9 @@ pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context)
 ///
 async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = get_app_ctx() {
-    Ok(app_ctx)
+  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
+    Ok(app_ctx.clone())
   } else {
-    // Initialize Logger
-    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
-
     // Create new context
     let env_io = init_env(env.clone());
     let cfg = get_config(&env_io, env.clone()).await?;
@@ -57,25 +55,14 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
     let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
     *APP_CTX.write().unwrap() = Some(app_ctx.clone());
     log::info!("Initialized new application context");
-
     Ok(app_ctx)
   }
-}
-
-fn get_app_ctx() -> Option<Arc<AppContext>> {
-  APP_CTX.read().unwrap().clone()
 }
 
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
   let buf = hyper::body::to_bytes(response).await?;
   let text = std::str::from_utf8(&buf)?;
-  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
-  response
-    .headers_mut()
-    .0
-    .set("Content-Type", "text/html")
-    .map_err(|e| anyhow!("error: {:?}", e.as_string()))?;
-  Ok(response)
+  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
