@@ -36,7 +36,9 @@ async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
   let file_io = init_file(r2_id, env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  reader.read(&[path]).await.map_err(conv_err)
+  let config = reader.read(&[path]).await.map_err(conv_err)?;
+  // log::info!("config: {:?}",config);
+  Ok(config)
 }
 
 #[event(fetch)]
@@ -57,11 +59,14 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   )
   .await
   .map_err(conv_err)?;
+  log::info!("alo");
   let resp = make_request(resp).await.map_err(conv_err)?;
   Ok(resp)
 }
 
 async fn init(env: Arc<Env>) -> Result<Arc<AppContext>> {
+  wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+
   let env_io = init_env(env.clone());
   let cfg = get_config(&env_io, env.clone()).await.map_err(conv_err)?;
   let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
