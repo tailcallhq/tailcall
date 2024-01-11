@@ -1,9 +1,10 @@
-use crate::blueprint::*;
-use crate::config;
+use crate::{blueprint::*, config};
 use crate::config::{Config, Field, GraphQLOperationType};
 use crate::directive::DirectiveCodec;
+// use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
+// use crate::valid::ValidationError;
 
 pub fn update_call(
   operation_type: &GraphQLOperationType,
@@ -42,14 +43,36 @@ pub fn update_call(
         .and_then(|(field, field_name, args)| {
           args.fold(Valid::succeed(field.clone()), |field, (key, value)| {
             field.and_then(|field| {
-              let value = value.replace("{{", "").replace("}}", "");
+              // not sure if the code below will be useful
+              // TO-DO: remove if not needed
+              // let mustache = Mustache::parse(value.as_str()).map_err(|e| ValidationError::new(e.to_string())).unwrap();
+              // println!("mustache: {:?}", mustache);
+              // println!("field: {:?}", field);
 
               if let Some(http) = field.clone().http.as_mut() {
+                let value = value.replace("{{", "").replace("}}", "");
+                
                 http.path = http.path.replace(format!("args.{}", key).as_str(), value.as_str());
 
                 let field = Field { http: Some(http.clone()), ..field.clone() };
 
                 Valid::succeed(field)
+              } else if let Some(graphql) = field.clone().graphql.as_mut() {
+                graphql.args = graphql.args.clone().map(|mut args| {
+                  args.0.iter_mut().for_each(|(k, v)| {
+                    if k == key {
+                      *v = value.clone();
+                    }
+                  });
+
+                  args
+                });
+
+                let field = Field { graphql: Some(graphql.clone()), ..field.clone() };
+
+                Valid::succeed(field)
+              } else if let Some(grpc) = field.clone().grpc.as_mut() {
+                todo!("grpc not implemented yet");
               } else {
                 Valid::fail(format!("{} field does not have an http resolver", field_name))
               }
