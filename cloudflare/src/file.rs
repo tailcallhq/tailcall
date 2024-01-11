@@ -7,7 +7,7 @@ use worker::Env;
 
 pub struct CloudflareFileIO {
   env: Arc<Env>,
-  path: PathBuf
+  path: PathBuf,
 }
 unsafe impl Send for CloudflareFileIO {}
 unsafe impl Sync for CloudflareFileIO {}
@@ -72,25 +72,28 @@ fn conv_err<T: std::fmt::Display>(e: T) -> anyhow::Error {
   anyhow!("{}", e)
 }
 
-fn merge_path(mut head: PathBuf, input: String) -> Option<(String,String)> {
+fn merge_path(mut head: PathBuf, input: String) -> Option<(String, String)> {
   let path = PathBuf::from(&input);
   if path.is_absolute() {
     return separate_path(path.to_str()?);
   }
   for component in path.components() {
     match component {
-      std::path::Component::ParentDir => { head.pop(); }, // for ../
+      std::path::Component::ParentDir => {
+        // for ../
+        head.pop();
+      }
       std::path::Component::CurDir => (), // for ./
-      _ => head.push(component)
+      _ => head.push(component),
     }
   }
   separate_path(head.to_str()?)
 }
 
 // Get the bucket id from absolute path (it is expected that all paths starts with bucket id
-fn separate_path(input: &str) -> Option<(String,String)> {
+fn separate_path(input: &str) -> Option<(String, String)> {
   let mut split = input.split("/").filter(|s| !s.is_empty());
   let r2_id = split.next()?.to_string();
   let path = split.collect::<Vec<&str>>().join("/");
-  Some((r2_id,path))
+  Some((r2_id, path))
 }
