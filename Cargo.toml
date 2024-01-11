@@ -11,18 +11,22 @@ path = "src/main.rs"
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
-mimalloc = { version = "0.1.39", default-features = false, optional = true}
-http-cache-reqwest = { version = "0.12.0", features = ["manager-moka"], default-features = false, optional = true }
-moka = { version = "0.12.2", default-features = false, features = ["future"], optional = true }
-hyper-rustls = {version = "0.24.2", optional = true}
-rustls = {version = "0.21.9",optional = true}
-rustls-pemfile = {version = "1.0.4",optional = true}
-inquire = {version = "0.6.2",optional = true}
+mimalloc = { version = "0.1.39", default-features = false, optional = true }
+http-cache-reqwest = { version = "0.12.0", features = [
+   "manager-moka",
+], default-features = false, optional = true }
+moka = { version = "0.12.2", default-features = false, features = [
+   "future",
+], optional = true }
+hyper-rustls = { version = "0.24.2", optional = true }
+rustls = { version = "0.21.9", optional = true }
+rustls-pemfile = { version = "1.0.4", optional = true }
+inquire = { version = "0.6.2", optional = true }
 
 # dependencies safe for wasm:
 
-hyper = { version = "0.14", features = ["server"], default-features = false    }
-tokio = { version = "1.35.1", features = ["rt","time"] }
+hyper = { version = "0.14", features = ["server"], default-features = false }
+tokio = { version = "1.35.1", features = ["rt", "time"] }
 anyhow = "1.0.79"
 derive_setters = "0.1.6"
 thiserror = "1.0.56"
@@ -33,9 +37,14 @@ serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
 reqwest = { version = "0.11", features = [
    "json",
-   "rustls-tls"
+   "rustls-tls",
 ], default-features = false }
-async-graphql = { version = "6.0.11", features = ["dynamic-schema", "dataloader", "apollo_tracing"] }
+async-graphql = { version = "6.0.11", features = [
+   "dynamic-schema",
+   "dataloader",
+   "apollo_tracing",
+   "opentelemetry",
+] }
 async-graphql-value = "6.0.11"
 indexmap = "2.1"
 once_cell = "1.19.0"
@@ -50,8 +59,6 @@ cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
 resource = "0.5.0"
-log = "0.4.20"
-env_logger = "0.10.1"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
@@ -60,11 +67,36 @@ futures-timer = { version = "3.0.2" }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
-async-std = {version = "1.12.0",features = ["wasm-bindgen-futures", "unstable"]}
+async-std = { version = "1.12.0", features = [
+   "wasm-bindgen-futures",
+   "unstable",
+] }
 ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
+opentelemetry = { version = "0.21.0", features = ["trace", "logs", "metrics"] }
+opentelemetry-stdout = { version = "0.2.0", features = [
+   "trace",
+   "logs",
+   "metrics",
+] }
+opentelemetry_sdk = { version = "0.21.1", features = [
+   "trace",
+   "logs",
+   "metrics",
+   "rt-tokio",
+] }
+opentelemetry-otlp = { version = "0.14.0", features = [
+   "trace",
+   "logs",
+   "metrics",
+] }
+opentelemetry-appender-tracing = { version="0.2.0", default-features = false }
+# TODO: disable some levels with features?
+tracing = { version = "0.1.40" }
+tracing-subscriber = "0.3.18"
+tracing-opentelemetry = "0.22.0"
 
 
 [dev-dependencies]
@@ -75,14 +107,21 @@ stripmargin = "0.1.1"
 
 [features]
 unsafe-js = ["dep:mini-v8"]
-default = ["tokio/fs", "tokio/rt-multi-thread", "mimalloc", "http-cache-reqwest","moka", "hyper-rustls", "rustls", "rustls-pemfile","inquire"]
+default = [
+   "tokio/fs",
+   "tokio/rt-multi-thread",
+   "mimalloc",
+   "http-cache-reqwest",
+   "moka",
+   "hyper-rustls",
+   "rustls",
+   "rustls-pemfile",
+   "inquire",
+]
 
 
 [workspace]
-members = [
-   ".",
-    "cloudflare"
-]
+members = [".", "cloudflare"]
 
 [profile.release]
 opt-level = 3

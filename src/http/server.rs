@@ -9,6 +9,7 @@ use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
 use crate::config::Config;
+use crate::opentelemetry::init_opentelemetry;
 
 pub struct Server {
   config: Config,
@@ -30,6 +31,7 @@ impl Server {
 
   pub async fn start(self) -> Result<()> {
     let blueprint = Blueprint::try_from(&self.config).map_err(CLIError::from)?;
+    init_opentelemetry(Default::default())?;
     let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
     match blueprint.server.http.clone() {

@@ -83,105 +83,108 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
+  #[tracing::instrument(skip_all)]
   pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
-    Box::pin(async move {
-      match self {
-        Expression::Context(op) => match op {
-          Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
-          Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
-        },
-        Expression::Input(input, path) => {
-          let inp = &input.eval(ctx).await?;
-          Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
-        }
-        Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
-        Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-          left.eval(ctx).await? == right.eval(ctx).await?,
-        )),
-        Expression::Unsafe(operation) => match operation {
-          Unsafe::Http { req_template, dl_id, .. } => {
-            let req = req_template.to_request(ctx)?;
-            let is_get = req.method() == reqwest::Method::GET;
+    Box::pin(
+      async move {
+        match self {
+          Expression::Context(op) => match op {
+            Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
+            Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
+          },
+          Expression::Input(input, path) => {
+            let inp = &input.eval(ctx).await?;
+            Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
+          }
+          Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
+          Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
+            left.eval(ctx).await? == right.eval(ctx).await?,
+          )),
+          Expression::Unsafe(operation) => match operation {
+            Unsafe::Http { req_template, dl_id, .. } => {
+              let req = req_template.to_request(ctx)?;
+              let is_get = req.method() == reqwest::Method::GET;
 
-            let res = if is_get && ctx.req_ctx.is_batching_enabled() {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
-            } else {
-              execute_raw_request(ctx, req).await?
-            };
+              let res = if is_get && ctx.req_ctx.is_batching_enabled() {
+                let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
+                  dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+                execute_request_with_dl(ctx, req, data_loader).await?
+              } else {
+                execute_raw_request(ctx, req).await?
+              };
 
-            if ctx.req_ctx.server.get_enable_http_validation() {
-              req_template
-                .endpoint
-                .output
-                .validate(&res.body)
-                .to_result()
-                .map_err(EvaluationError::from)?;
+              if ctx.req_ctx.server.get_enable_http_validation() {
+                req_template
+                  .endpoint
+                  .output
+                  .validate(&res.body)
+                  .to_result()
+                  .map_err(EvaluationError::from)?;
+              }
+
+              set_cache_control(ctx, &res);
+
+              Ok(res.body)
             }
+            Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+              let req = req_template.to_request(ctx)?;
 
-            set_cache_control(ctx, &res);
+              let res = if ctx.req_ctx.upstream.batch.is_some()
+                && matches!(req_template.operation_type, GraphQLOperationType::Query)
+              {
+                let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
+                  dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+                execute_request_with_dl(ctx, req, data_loader).await?
+              } else {
+                execute_raw_request(ctx, req).await?
+              };
 
-            Ok(res.body)
-          }
-          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
-            let req = req_template.to_request(ctx)?;
+              set_cache_control(ctx, &res);
+              parse_graphql_response(ctx, res, field_name)
+            }
+            Unsafe::Grpc { req_template, dl_id, .. } => {
+              let rendered = req_template.render(ctx)?;
 
-            let res = if ctx.req_ctx.upstream.batch.is_some()
-              && matches!(req_template.operation_type, GraphQLOperationType::Query)
-            {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
-            } else {
-              execute_raw_request(ctx, req).await?
-            };
-
-            set_cache_control(ctx, &res);
-            parse_graphql_response(ctx, res, field_name)
-          }
-          Unsafe::Grpc { req_template, dl_id, .. } => {
-            let rendered = req_template.render(ctx)?;
-
-            let res = if ctx.req_ctx.upstream.batch.is_some()
+              let res = if ctx.req_ctx.upstream.batch.is_some()
               // TODO: share check for operation_type for resolvers
               && matches!(req_template.operation_type, GraphQLOperationType::Query)
-            {
-              let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
-              execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
-            } else {
-              let req = rendered.to_request()?;
-              execute_raw_grpc_request(ctx, req, &req_template.operation).await?
-            };
+              {
+                let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
+                  dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+                execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+              } else {
+                let req = rendered.to_request()?;
+                execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+              };
 
-            set_cache_control(ctx, &res);
+              set_cache_control(ctx, &res);
 
-            Ok(res.body)
-          }
-          Unsafe::JS(input, script) => {
-            let result;
-            #[cfg(not(feature = "unsafe-js"))]
-            {
-              let _ = script;
-              let _ = input;
-              result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
+              Ok(res.body)
             }
+            Unsafe::JS(input, script) => {
+              let result;
+              #[cfg(not(feature = "unsafe-js"))]
+              {
+                let _ = script;
+                let _ = input;
+                result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
+              }
 
-            #[cfg(feature = "unsafe-js")]
-            {
-              let input = input.eval(ctx).await?;
-              result = javascript::execute_js(script, input, Some(ctx.timeout))
-                .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+              #[cfg(feature = "unsafe-js")]
+              {
+                let input = input.eval(ctx).await?;
+                result = javascript::execute_js(script, input, Some(ctx.timeout))
+                  .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+              }
+              result
             }
-            result
-          }
-        },
+          },
+        }
       }
-    })
+    )
   }
 }
 

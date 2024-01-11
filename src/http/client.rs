@@ -19,7 +19,7 @@ pub trait HttpClient: Sync + Send {
 impl HttpClient for DefaultHttpClient {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
     #[cfg(feature = "default")]
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
+    tracing::info!("{} {} {:?}", request.method(), request.url(), request.version());
     #[cfg(not(feature = "default"))]
     return async_std::task::spawn_local(execute(self.client.clone(), request)).await;
     #[cfg(feature = "default")]
@@ -28,7 +28,7 @@ impl HttpClient for DefaultHttpClient {
 
   async fn execute_raw(&self, request: Request) -> anyhow::Result<Response<Vec<u8>>> {
     #[cfg(feature = "default")]
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
+    tracing::info!("{} {} {:?}", request.method(), request.url(), request.version());
     #[cfg(not(feature = "default"))]
     return async_std::task::spawn_local(execute_vec(self.client.clone(), request)).await;
     #[cfg(feature = "default")]

@@ -68,7 +68,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
       Ok(resp)
     }
     Err(err) => {
-      log::error!(
+      tracing::error!(
         "Failed to parse request: {}",
         String::from_utf8(bytes.to_vec()).unwrap()
       );

@@ -1,9 +1,8 @@
 use std::path::Path;
-use std::{env, fs};
+use std::fs;
 
 use anyhow::Result;
 use clap::Parser;
-use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
@@ -15,6 +14,7 @@ use crate::cli::CLIError;
 use crate::config::Config;
 use crate::http::Server;
 use crate::print_schema;
+use crate::tracing::default_tracing;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -22,13 +22,13 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
-  logger_init();
+  let cli_subscriber = default_tracing();
 
-  match cli.command {
+  tracing::subscriber::with_default(cli_subscriber, || match cli.command {
     Command::Start { file_paths } => {
       let config =
         tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
-      log::info!("N + 1: {}", config.n_plus_one().len().to_string());
+      tracing::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
         .enable_all()
@@ -62,7 +62,7 @@ pub fn run() -> Result<()> {
 
       Ok(())
     }
-  }
+  })
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
@@ -149,19 +149,4 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   Fmt::display(Fmt::table(seq));
 }
 
-// initialize logger
-fn logger_init() {
-  // set the log level
-  const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
-  const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
 
-  // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
-  let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
-    .map(|_| LONG_ENV_FILTER_VAR_NAME)
-    .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
-
-  // use the log level from the env if there is one, otherwise use the default.
-  let env = Env::new().filter_or(filter_env_name, "info");
-
-  env_logger::Builder::from_env(env).init();
-}

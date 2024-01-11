@@ -94,11 +94,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                   Some((ttl, key)) => {
                     if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
                       // Return value from cache
-                      log::info!("Reading from cache. key = {key}");
+                      tracing::debug!("Reading from cache. key = {key}");
                       const_value
                     } else {
                       let const_value = expr.eval(&ctx).await?;
-                      log::info!("Writing to cache. key = {key}");
+                      tracing::debug!("Writing to cache. key = {key}");
                       // Write value to cache
                       ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
                       const_value
@@ -112,7 +112,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                   a => FieldValue::from(a),
                 };
                 Ok(Some(p))
-              })
+              }.instrument(tracing::warn_span!("field::resolver")))
             }
           }
         });
