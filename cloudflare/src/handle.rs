@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -43,8 +42,8 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 ///
 async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = get_app_ctx() {
-    Ok(app_ctx)
+  if let Some(app_ctx) = read_app_ctx() {
+    Ok(app_ctx.clone())
   } else {
     // Create new context
     let env_io = init_env(env.clone());
@@ -59,20 +58,24 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
-fn get_app_ctx() -> Option<Arc<AppContext>> {
+fn read_app_ctx() -> Option<Arc<AppContext>> {
   APP_CTX.read().unwrap().clone()
 }
 
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
-  let buf = hyper::body::to_bytes(response).await?;
-  let text = std::str::from_utf8(&buf)?;
-  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
-  response
-    .headers_mut()
-    .0
-    .set("Content-Type", "text/html")
-    .map_err(|e| anyhow!("error: {:?}", e.as_string()))?;
-  Ok(response)
+  let status = response.status().as_u16();
+  let headers = response.headers().clone();
+  let bytes = hyper::body::to_bytes(response).await?;
+  let body = worker::ResponseBody::Body(bytes.to_vec());
+  let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
+  w_response = w_response.with_status(status);
+  let mut_headers = w_response.headers_mut();
+  for (name, value) in headers.iter() {
+    let value = String::from_utf8(value.as_bytes().to_vec())?;
+    mut_headers.append(name.as_str(), &value).map_err(to_anyhow)?;
+  }
+
+  Ok(w_response)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
