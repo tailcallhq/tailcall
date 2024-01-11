@@ -19,10 +19,10 @@ impl CloudflareFileIO {
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> Result<()> {
     let env = self.env.clone();
-    let r2 = self.r2_id.clone();
+    let r2_id = self.r2_id.clone();
     let file = file.to_string();
     let content = content.to_vec();
-    async_std::task::spawn_local(internal_write(env, r2, file, content.to_vec())).await?;
+    async_std::task::spawn_local(internal_write(env, r2_id, file, content.to_vec())).await?;
     Ok(())
   }
 
