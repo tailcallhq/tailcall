@@ -11,8 +11,6 @@ use crate::to_anyhow;
 pub struct CloudflareFileIO {
   env: Arc<Env>,
 }
-unsafe impl Send for CloudflareFileIO {}
-unsafe impl Sync for CloudflareFileIO {}
 
 impl CloudflareFileIO {
   pub fn init(env: Arc<Env>) -> Self {
