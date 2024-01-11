@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -43,7 +42,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 ///
 async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
+  if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
     // Create new context
@@ -59,10 +58,19 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
+fn read_app_ctx() -> Option<Arc<AppContext>> {
+  APP_CTX.read().unwrap().clone()
+}
+
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
   let buf = hyper::body::to_bytes(response).await?;
   let text = std::str::from_utf8(&buf)?;
-  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
+  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
+  response
+    .headers_mut()
+    .append("Content-Type", "text/html")
+    .map_err(|e| anyhow!("{:?}", e))?;
+  Ok(response)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
