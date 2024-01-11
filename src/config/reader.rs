@@ -42,8 +42,8 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
         config = config.clone().merge_right(&conf);
         continue;
       }
-      let (content, path) = self.file.read(&file).await?;
-      let source = Self::detect_source(&path)?;
+      let content = self.file.read(&file).await?;
+      let source = Self::detect_source(&file)?;
       let conf = Config::from_source(source, &content)?;
       config = config.clone().merge_right(&conf);
     }
