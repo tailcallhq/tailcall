@@ -18,8 +18,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, Source, Upstream};
+use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::io::HttpIO;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -31,6 +34,7 @@ enum Annotation {
   Only,
   Fail,
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct APIRequest {
@@ -53,17 +57,23 @@ struct APIResponse {
   #[serde(default)]
   body: serde_json::Value,
 }
+
 fn default_status() -> u16 {
   200
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
@@ -170,17 +180,20 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<ServerContext> {
+  async fn server_context(&self) -> Arc<AppContext> {
+    let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::read_from_files([file].iter()).await.unwrap(),
+      ConfigSource::File(file) => {
+        let reader = ConfigReader::init(init_file(), http_client);
+        reader.read(&[file]).await.unwrap()
+      }
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let mut server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
-    server_context.env_vars = Arc::new(self.env.clone());
-
+    let env = Arc::new(tailcall::io::Env::init(self.env.clone()));
+    let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
 }
@@ -217,8 +230,9 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
   bytes
 }
+
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
+impl HttpIO for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
