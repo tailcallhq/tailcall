@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
@@ -19,7 +19,7 @@ lazy_static! {
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Result<Config> {
+async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result<Config> {
   let path = env_io.get("CONFIG").ok_or(anyhow!("CONFIG var is not set"))?;
   let file_io = init_file(env.clone());
   let http_io = init_http();
@@ -29,7 +29,7 @@ async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Resul
 }
 
 pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
-  let env = Arc::new(env);
+  let env = Rc::new(env);
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -39,9 +39,9 @@ pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context)
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
+  if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
     // Initialize Logger
@@ -61,10 +61,24 @@ async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
-async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
-  let buf = hyper::body::to_bytes(response).await?;
-  let text = std::str::from_utf8(&buf)?;
-  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
+fn read_app_ctx() -> Option<Arc<AppContext>> {
+  APP_CTX.read().unwrap().clone()
+}
+
+pub async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
+  let status = response.status().as_u16();
+  let headers = response.headers().clone();
+  let bytes = hyper::body::to_bytes(response).await?;
+  let body = worker::ResponseBody::Body(bytes.to_vec());
+  let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
+  w_response = w_response.with_status(status);
+  let mut_headers = w_response.headers_mut();
+  for (name, value) in headers.iter() {
+    let value = String::from_utf8(value.as_bytes().to_vec())?;
+    mut_headers.append(name.as_str(), &value).map_err(to_anyhow)?;
+  }
+
+  Ok(w_response)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
@@ -83,7 +97,7 @@ fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
   }
 }
 
-async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
   let body = req.text().await.map_err(to_anyhow)?;
   let method = req.method();
   let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
