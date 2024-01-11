@@ -10,6 +10,8 @@ use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::io::{EnvIO, FileIO, HttpIO};
 
+use crate::{env, file, http};
+
 fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
