@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use tailcall::io::FileIO;
@@ -9,11 +9,11 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
-  env: Arc<Env>,
+  env: Rc<Env>,
 }
 
 impl CloudflareFileIO {
-  pub fn init(env: Arc<Env>) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     CloudflareFileIO { env }
   }
 }
@@ -24,9 +24,7 @@ impl CloudflareFileIO {
   }
 
   async fn get(&self, r2: &R2Address) -> anyhow::Result<String> {
-    log::debug!("Reading from bucket:{} path:{}", r2.bucket, r2.path);
     let bucket = self.bucket(&r2).await.map_err(to_anyhow)?;
-
     let maybe_object = bucket.get(&r2.path).execute().await.map_err(to_anyhow)?;
     let object = maybe_object.ok_or(anyhow!("File {} was not found in bucket: {}", r2.path, r2.bucket))?;
 
@@ -44,44 +42,26 @@ impl CloudflareFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-    let io = self.clone();
-    let file_path = file_path.to_string();
-    let content = content.to_vec();
-    async_std::task::spawn_local(async move {
-      let r2 = R2Address::from_string(file_path)?;
-      io.put(&r2, content).await.map_err(to_anyhow)?;
-      anyhow::Ok(())
-    })
-    .await?;
+    let r2 = R2Address::from_string(file_path.to_string())?;
+    self.put(&r2, content.to_vec()).await.map_err(to_anyhow)?;
     Ok(())
   }
 
   async fn read<'a>(&'a self, file_path: &'a str) -> anyhow::Result<String> {
-    let file_path = file_path.to_string();
-    let io = self.clone();
-    async_std::task::spawn_local(async move {
-      let r2 = R2Address::from_string(file_path)?;
-      let content = io.get(&r2).await.map_err(to_anyhow)?;
-      anyhow::Ok(content)
-    })
-    .await
+    let r2 = R2Address::from_string(file_path.to_string())?;
+    let content = self.get(&r2).await.map_err(to_anyhow)?;
+    Ok(content)
   }
 
   async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>> {
-    let file_paths = file_paths.to_vec();
-    let io = self.clone();
-    async_std::task::spawn_local(async move {
-      let mut vec = Vec::new();
-      // TODO: read files in parallel
-      for file in file_paths {
-        let content = io.read(&file).await.map_err(to_anyhow)?;
-        vec.push((content, file.to_string()));
-      }
-      anyhow::Ok(vec)
-    })
-    .await
+    let mut vec = Vec::new();
+    // TODO: read files in parallel
+    for file in file_paths {
+      let content = self.read(file).await.map_err(to_anyhow)?;
+      vec.push((content, file.to_string()));
+    }
+    Ok(vec)
   }
 }
