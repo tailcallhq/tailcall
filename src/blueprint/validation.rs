@@ -1,9 +1,16 @@
 use async_graphql::dynamic::Schema;
 use async_graphql::ValidationMode;
+use derive_setters::Setters;
 
 use super::into_schema::{create, SchemaModifiers};
 use super::Blueprint;
 use crate::valid::{Cause, Valid, ValidationError};
+
+#[derive(Debug, Setters)]
+pub struct Operation {
+  query: String,
+  trace: Option<String>,
+}
 
 pub fn validation_schema(blueprint: &Blueprint) -> Result<Schema, ValidationError<String>> {
   match create(blueprint, Some(SchemaModifiers { no_resolver: true }))
