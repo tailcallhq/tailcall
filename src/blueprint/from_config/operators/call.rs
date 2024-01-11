@@ -1,4 +1,5 @@
-use crate::{blueprint::*, config};
+use crate::blueprint::*;
+use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType};
 use crate::directive::DirectiveCodec;
 // use crate::mustache::Mustache;
@@ -51,7 +52,7 @@ pub fn update_call(
 
               if let Some(http) = field.clone().http.as_mut() {
                 let value = value.replace("{{", "").replace("}}", "");
-                
+
                 http.path = http.path.replace(format!("args.{}", key).as_str(), value.as_str());
 
                 let field = Field { http: Some(http.clone()), ..field.clone() };
@@ -71,7 +72,7 @@ pub fn update_call(
                 let field = Field { graphql: Some(graphql.clone()), ..field.clone() };
 
                 Valid::succeed(field)
-              } else if let Some(grpc) = field.clone().grpc.as_mut() {
+              } else if let Some(_grpc) = field.clone().grpc.as_mut() {
                 todo!("grpc not implemented yet");
               } else {
                 Valid::fail(format!("{} field does not have an http resolver", field_name))
