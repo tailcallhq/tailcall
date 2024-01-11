@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use tailcall::io::EnvIO;
 use worker::Env;
 
 pub struct EnvCloudflare {
-  env: Arc<Env>,
+  env: Rc<Env>,
 }
 
 unsafe impl Send for EnvCloudflare {}
@@ -17,7 +17,7 @@ impl EnvIO for EnvCloudflare {
 }
 
 impl EnvCloudflare {
-  pub fn init(env: Arc<Env>) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     Self { env }
   }
 }
