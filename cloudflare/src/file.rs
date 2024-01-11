@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use tailcall::io::FileIO;
@@ -9,11 +9,11 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
-  env: Arc<Env>,
+  env: Rc<Env>,
 }
 
 impl CloudflareFileIO {
-  pub fn init(env: Arc<Env>) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     CloudflareFileIO { env }
   }
 }
