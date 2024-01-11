@@ -79,8 +79,8 @@ fn merge_path(mut head: PathBuf, input: String) -> Option<(String,String)> {
   }
   for component in path.components() {
     match component {
-      std::path::Component::ParentDir => { head.pop(); },
-      std::path::Component::CurDir => (),
+      std::path::Component::ParentDir => { head.pop(); }, // for ../
+      std::path::Component::CurDir => (), // for ./
       _ => head.push(component)
     }
   }
