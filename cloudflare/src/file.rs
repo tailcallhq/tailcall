@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use tailcall::io::FileIO;
@@ -9,11 +9,11 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
-  env: Arc<Env>,
+  env: Rc<Env>,
 }
 
 impl CloudflareFileIO {
-  pub fn init(env: Arc<Env>) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     CloudflareFileIO { env }
   }
 }
@@ -24,9 +24,7 @@ impl CloudflareFileIO {
   }
 
   async fn get(&self, r2: &R2Address) -> anyhow::Result<String> {
-    log::debug!("Reading from bucket:{} path:{}", r2.bucket, r2.path);
     let bucket = self.bucket(&r2).await.map_err(to_anyhow)?;
-
     let maybe_object = bucket.get(&r2.path).execute().await.map_err(to_anyhow)?;
     let object = maybe_object.ok_or(anyhow!("File {} was not found in bucket: {}", r2.path, r2.bucket))?;
 
@@ -44,7 +42,6 @@ impl CloudflareFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
     let r2 = R2Address::from_string(file_path.to_string())?;
