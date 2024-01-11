@@ -26,7 +26,7 @@ impl FileIO for CloudflareFileIO {
     Ok(())
   }
 
-  async fn read_file<'a>(&'a self, file: &'a str) -> Result<(String, String)> {
+  async fn read<'a>(&'a self, file: &'a str) -> Result<(String, String)> {
     let env = self.env.clone();
     let r2_id = self.r2_id.clone();
     let file = file.to_string();
@@ -34,10 +34,10 @@ impl FileIO for CloudflareFileIO {
     Ok((body, file.to_string()))
   }
 
-  async fn read_files<'a>(&'a self, files: &'a [String]) -> Result<Vec<(String, String)>> {
+  async fn read_all<'a>(&'a self, files: &'a [String]) -> Result<Vec<(String, String)>> {
     let mut vec = Vec::new();
     for file in files {
-      vec.push(self.read_file(file).await.map_err(conv_err)?);
+      vec.push(self.read(file).await.map_err(conv_err)?);
     }
     Ok(vec)
   }
