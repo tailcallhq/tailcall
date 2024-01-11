@@ -17,8 +17,8 @@ fn init_env(env: Arc<Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-fn init_file(r2_id: String, env: Arc<Env>) -> impl FileIO {
-  file::CloudflareFileIO::init(r2_id, env)
+fn init_file(path: String, env: Arc<Env>) -> impl FileIO {
+  file::CloudflareFileIO::init(path, env)
 }
 
 fn init_http() -> impl HttpIO + Default + Clone {
@@ -31,13 +31,12 @@ lazy_static! {
 
 async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
   let config_val = env_io.get("CONFIG").ok_or(Error::from("Invalid path string"))?;
-  let (r2_id, path) = separate_id_path(config_val).ok_or(Error::from("Invalid path string"))?;
-
-  let file_io = init_file(r2_id, env.clone());
+  let file_io = init_file(config_val.clone(), env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  let config = reader.read(&[path]).await.map_err(conv_err)?;
-  // log::info!("config: {:?}",config);
+  let config = reader.read(&[
+    config_val
+  ]).await.map_err(conv_err)?;
   Ok(config)
 }
 
@@ -59,13 +58,13 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
   )
   .await
   .map_err(conv_err)?;
-  log::info!("alo");
+
   let resp = make_request(resp).await.map_err(conv_err)?;
   Ok(resp)
 }
 
 async fn init(env: Arc<Env>) -> Result<Arc<AppContext>> {
-  wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+  wasm_logger::init(wasm_logger::Config::new(log::Level::Debug));
 
   let env_io = init_env(env.clone());
   let cfg = get_config(&env_io, env.clone()).await.map_err(conv_err)?;
@@ -130,11 +129,4 @@ async fn convert_to_hyper_request(mut worker_request: Request) -> Result<hyper::
 
 fn conv_err<T: std::fmt::Display>(e: T) -> Error {
   Error::from(format!("{}", e.to_string()))
-}
-
-fn separate_id_path(val: String) -> Option<(String, String)> {
-  let mut split = val.split("/");
-  let r2_id = split.next()?.to_string();
-  let path = split.collect::<Vec<&str>>().join("/");
-  Some((r2_id, path))
 }

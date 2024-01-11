@@ -795,6 +795,7 @@ dependencies = [
  "reqwest-middleware",
  "serde-wasm-bindgen 0.6.3",
  "tailcall",
+ "walkdir",
  "wasm-logger",
  "worker",
 ]
