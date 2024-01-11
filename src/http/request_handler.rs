@@ -4,7 +4,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode, header::{CONNECTION, UPGRADE}};
+use hyper::{
+  header::{CONNECTION, UPGRADE, HeaderValue},
+  Body, HeaderMap, Request, Response, StatusCode,
+};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
@@ -98,13 +101,19 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
   if req.version() != hyper::Version::HTTP_2 {
-    let response = Response::builder()
-      .status(101)
-      .header(CONNECTION, "Upgrade")
-      .header(UPGRADE, "h2c")
-      .body(Body::default())
-      .unwrap();
-    Ok(response)
+    let mut res = match *req.method() {
+      hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
+      hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
+      _ => not_found(),
+    }
+    .unwrap();
+
+    *res.status_mut() = StatusCode::SWITCHING_PROTOCOLS;
+    res.headers_mut().insert(UPGRADE, HeaderValue::from_static("h2c"));
+    res
+      .headers_mut()
+      .insert(CONNECTION, HeaderValue::from_static("Upgrade"));
+    Ok(res)
   } else {
     match *req.method() {
       hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
