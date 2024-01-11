@@ -1,56 +1,28 @@
 use std::time::Duration;
 
+use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
-use super::Response;
-use crate::config::{self, Upstream};
-
-#[async_trait::async_trait]
-pub trait HttpClient: Sync + Send {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response>;
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response>;
-}
-
-#[async_trait::async_trait]
-impl HttpClient for DefaultHttpClient {
-  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response> {
-    let response = self.execute_raw(request).await?;
-    let response = Response::from_response(response).await?;
-    Ok(response)
-  }
-
-  async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<reqwest::Response> {
-    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    Ok(self.client.execute(request).await?.error_for_status()?)
-  }
-}
+use super::HttpIO;
+use crate::config::Upstream;
+use crate::http::Response;
 
 #[derive(Clone)]
-pub struct DefaultHttpClient {
+pub struct HttpNative {
   client: ClientWithMiddleware,
+  http2_only: bool,
 }
 
-impl Default for DefaultHttpClient {
+impl Default for HttpNative {
   fn default() -> Self {
-    let upstream = config::Upstream::default();
-    //TODO: default is used only in tests. Drop default and move it to test.
-    DefaultHttpClient::new(&upstream)
+    Self { client: ClientBuilder::new(Client::new()).build(), http2_only: false }
   }
 }
 
-#[derive(Default)]
-pub struct HttpClientOptions {
-  pub http2_only: bool,
-}
-
-impl DefaultHttpClient {
-  pub fn new(upstream: &Upstream) -> Self {
-    Self::with_options(upstream, HttpClientOptions::default())
-  }
-
-  pub fn with_options(upstream: &Upstream, options: HttpClientOptions) -> Self {
+impl HttpNative {
+  pub fn init(upstream: &Upstream) -> Self {
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
       .timeout(Duration::from_secs(upstream.get_timeout()))
@@ -62,10 +34,13 @@ impl DefaultHttpClient {
       .pool_max_idle_per_host(upstream.get_pool_max_idle_per_host())
       .user_agent(upstream.get_user_agent());
 
-    if options.http2_only {
+    // Add Http2 Prior Knowledge
+    if upstream.get_http_2_only() {
+      log::info!("Enabled Http2 prior knowledge");
       builder = builder.http2_prior_knowledge();
     }
 
+    // Add Http Proxy
     if let Some(ref proxy) = upstream.proxy {
       builder = builder.proxy(reqwest::Proxy::http(proxy.url.clone()).expect("Failed to set proxy in http client"));
     }
@@ -79,7 +54,18 @@ impl DefaultHttpClient {
         options: HttpCacheOptions::default(),
       }))
     }
+    Self { client: client.build(), http2_only: upstream.get_http_2_only() }
+  }
+}
 
-    DefaultHttpClient { client: client.build() }
+#[async_trait::async_trait]
+impl HttpIO for HttpNative {
+  async fn execute_raw(&self, mut request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+    if self.http2_only {
+      *request.version_mut() = reqwest::Version::HTTP_2;
+    }
+    log::info!("{} {} {:?}", request.method(), request.url(), request.version());
+    let response = self.client.execute(request).await?;
+    Ok(Response::from_reqwest(response).await?)
   }
 }

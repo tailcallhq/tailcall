@@ -8,15 +8,16 @@ use async_graphql::futures_util::future::join_all;
 
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, HttpClient, Response};
+use crate::http::{DataLoaderRequest, Response};
+use crate::io::HttpIO;
 
 pub struct GraphqlDataLoader {
-  pub client: Arc<dyn HttpClient>,
+  pub client: Arc<dyn HttpIO>,
   pub batch: bool,
 }
 
 impl GraphqlDataLoader {
-  pub fn new(client: Arc<dyn HttpClient>, batch: bool) -> Self {
+  pub fn new(client: Arc<dyn HttpIO>, batch: bool) -> Self {
     GraphqlDataLoader { client, batch }
   }
 
@@ -29,7 +30,7 @@ impl GraphqlDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GraphqlDataLoader {
-  type Value = Response;
+  type Value = Response<async_graphql::Value>;
   type Error = Arc<anyhow::Error>;
 
   #[allow(clippy::mutable_key_type)]
@@ -86,9 +87,9 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 
 #[allow(clippy::mutable_key_type)]
 fn extract_responses(
-  result: Result<Response, anyhow::Error>,
+  result: Result<Response<async_graphql::Value>, anyhow::Error>,
   keys: &[DataLoaderRequest],
-) -> HashMap<DataLoaderRequest, Response> {
+) -> HashMap<DataLoaderRequest, Response<async_graphql::Value>> {
   let mut hashmap = HashMap::new();
   if let Ok(res) = result {
     if let async_graphql_value::ConstValue::List(values) = res.body {
