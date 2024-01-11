@@ -33,7 +33,7 @@ pub enum Command {
   Check {
     /// Path for the configuration files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
 
     /// N plus one queries
     #[arg(short, long)]
@@ -48,7 +48,7 @@ pub enum Command {
   Compose {
     /// Path for the configuration files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
 
     /// Format of the result. Accepted values: JSON|YML|GQL.
     #[clap(short, long, default_value = "gql")]

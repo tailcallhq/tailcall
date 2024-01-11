@@ -215,7 +215,6 @@ impl From<Box<dyn std::error::Error>> for CLIError {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::VecDeque;
 
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
@@ -343,12 +342,7 @@ mod tests {
   fn test_from_validation() {
     let cause = Cause::new("Base URL needs to be specified")
       .description("Set `baseURL` in @http or @server directives")
-      .trace(VecDeque::from(vec![
-        "Query".to_string(),
-        "users".to_string(),
-        "@http".to_string(),
-        "baseURL".to_string(),
-      ]));
+      .trace(vec!["Query", "users", "@http", "baseURL"]);
     let valid = ValidationError::from(cause);
     let error = CLIError::from(valid);
     let expected = r"|Error: Invalid Configuration

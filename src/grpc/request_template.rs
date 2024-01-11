@@ -85,7 +85,6 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
   pub fn to_request(&self) -> Result<reqwest::Request> {
     let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-    *req.version_mut() = reqwest::Version::HTTP_2;
     req.headers_mut().extend(self.headers.clone());
 
     Ok(create_grpc_request(
@@ -103,7 +102,7 @@ mod tests {
 
   use derive_setters::Setters;
   use hyper::header::{HeaderName, HeaderValue};
-  use hyper::{HeaderMap, Method, Version};
+  use hyper::{HeaderMap, Method};
   use once_cell::sync::Lazy;
   use pretty_assertions::assert_eq;
 
@@ -137,11 +136,13 @@ mod tests {
       Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
   }
+
   impl crate::path::PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
       self.value.path_string(parts)
     }
   }
+
   impl crate::has_headers::HasHeaders for Context {
     fn headers(&self) -> &HeaderMap {
       &self.headers
@@ -166,7 +167,6 @@ mod tests {
 
     assert_eq!(req.url().as_str(), "http://localhost:3000/");
     assert_eq!(req.method(), Method::POST);
-    assert_eq!(req.version(), Version::HTTP_2);
     assert_eq!(
       req.headers(),
       &HeaderMap::from_iter([
