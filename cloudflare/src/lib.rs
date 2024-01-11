@@ -34,9 +34,7 @@ async fn get_config(env_io: &impl EnvIO, env: Arc<Env>) -> Result<Config> {
   let file_io = init_file(config_val.clone(), env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  let config = reader.read(&[
-    config_val
-  ]).await.map_err(conv_err)?;
+  let config = reader.read(&[config_val]).await.map_err(conv_err)?;
   Ok(config)
 }
 
