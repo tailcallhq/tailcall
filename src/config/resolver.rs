@@ -2,11 +2,11 @@ use std::collections::VecDeque;
 
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
 use url::Url;
 
+use crate::cli::init_file;
 use crate::config::{is_default, Config, Source};
+use crate::FileIO;
 
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub enum LinkType {
@@ -95,13 +95,13 @@ impl Link {
         (Some(resp.text().await?), None)
       }
     } else {
-      let mut f = File::open(path).await?;
-      let mut buffer: Vec<u8> = Vec::new();
-      f.read_to_end(&mut buffer).await?;
+      let file = init_file();
+
+      let data = file.read(path).await?;
       if link.type_of == LinkType::Config {
-        (Some(String::from_utf8(buffer)?), Some(Source::detect(path)?))
+        (Some(data), Some(Source::detect(path)?))
       } else {
-        (Some(String::from_utf8(buffer)?), None)
+        (Some(data), None)
       }
     };
     link.content = content;
