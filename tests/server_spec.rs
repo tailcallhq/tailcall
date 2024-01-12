@@ -62,10 +62,19 @@ async fn server_start() {
 }
 
 #[tokio::test]
-async fn server_start_http2() {
+async fn server_start_http2_pcks8() {
   test_server(
-    &["tests/server/config/server-start-http2.graphql"],
+    &["tests/server/config/server-start-http2-pkcs8.graphql"],
     "https://localhost:8801/graphql",
+  )
+  .await
+}
+
+#[tokio::test]
+async fn server_start_http2_rsa() {
+  test_server(
+    &["tests/server/config/server-start-http2-rsa.graphql"],
+    "https://localhost:8802/graphql",
   )
   .await
 }
