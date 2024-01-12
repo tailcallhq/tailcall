@@ -1,6 +1,6 @@
 schema
   @server(
-    port: 8801
+    port: 8802
     version: HTTP2
     hostname: "localhost"
     cert: "./tests/server/config/example.crt"
