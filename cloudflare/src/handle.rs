@@ -115,19 +115,14 @@ fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
 }
 
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
-  let status = response.status().as_u16();
-  let headers = response.headers().clone();
-  let bytes = hyper::body::to_bytes(response).await?;
-  let body = worker::ResponseBody::Body(bytes.to_vec());
-  let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
-  w_response = w_response.with_status(status);
-  let mut_headers = w_response.headers_mut();
-  for (name, value) in headers.iter() {
-    let value = String::from_utf8(value.as_bytes().to_vec())?;
-    mut_headers.append(name.as_str(), &value).map_err(to_anyhow)?;
-  }
-
-  Ok(w_response)
+  let buf = hyper::body::to_bytes(response).await?;
+  let text = std::str::from_utf8(&buf)?;
+  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
+  response
+    .headers_mut()
+    .append("Content-Type", "text/html")
+    .map_err(|e| anyhow!("{:?}", e))?;
+  Ok(response)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
