@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use anyhow::anyhow;
-use tailcall::io::{EnvIO, FileIO, HttpIO};
 
 mod env;
 mod file;
@@ -9,15 +8,15 @@ mod handle;
 mod http;
 mod r2_address;
 
-pub fn init_env(env: Rc<worker::Env>) -> impl EnvIO {
+pub fn init_env(env: Rc<worker::Env>) -> env::EnvCloudflare {
   env::EnvCloudflare::init(env)
 }
 
-pub fn init_file(env: Rc<worker::Env>) -> impl FileIO {
+pub fn init_file(env: Rc<worker::Env>) -> file::CloudflareFileIO {
   file::CloudflareFileIO::init(env)
 }
 
-pub fn init_http() -> impl HttpIO + Default + Clone {
+pub fn init_http() -> http::HttpCloudflare {
   http::HttpCloudflare::init()
 }
 

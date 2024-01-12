@@ -10,11 +10,13 @@ use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::io::EnvIO;
 
-use crate::http::{to_request, to_response};
+use crate::env::EnvCloudflare;
+use crate::http::{to_request, to_response, HttpCloudflare};
 use crate::{init_env, init_file, init_http};
 
+type CloudFlareAppContext = AppContext<HttpCloudflare, EnvCloudflare>;
 lazy_static! {
-  static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
+  static ref APP_CTX: RwLock<Option<Arc<CloudFlareAppContext>>> = RwLock::new(None);
 }
 ///
 /// The main fetch handler that handles requests on cloudflare
@@ -23,7 +25,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
   let env = Rc::new(env);
   log::debug!("Execution starting");
   let app_ctx = get_app_ctx(env).await?;
-  let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
+  let resp = handle_request::<GraphQLRequest, HttpCloudflare, EnvCloudflare>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
 }
 
@@ -43,7 +45,7 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
@@ -61,6 +63,6 @@ async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
-fn read_app_ctx() -> Option<Arc<AppContext>> {
+fn read_app_ctx() -> Option<Arc<CloudFlareAppContext>> {
   APP_CTX.read().unwrap().clone()
 }

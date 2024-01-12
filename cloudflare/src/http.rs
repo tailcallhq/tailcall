@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
+use async_std::task::spawn_local;
 use reqwest::Client;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::http::Response;
 use tailcall::io::HttpIO;
 
@@ -8,19 +8,19 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct HttpCloudflare {
-  client: ClientWithMiddleware,
+  client: Client,
 }
 
 impl Default for HttpCloudflare {
   fn default() -> Self {
-    Self { client: ClientBuilder::new(Client::new()).build() }
+    Self { client: Client::new() }
   }
 }
 
 impl HttpCloudflare {
   pub fn init() -> Self {
-    let client = ClientBuilder::new(Client::new());
-    Self { client: client.build() }
+    let client = Client::new();
+    Self { client: client }
   }
 }
 
@@ -30,7 +30,8 @@ impl HttpIO for HttpCloudflare {
   // This is because there is little control over the underlying HTTP client
   async fn execute(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
     let client = self.client.clone();
-    async_std::task::spawn_local(async move {
+    // TODO: remove spawn local
+    spawn_local(async move {
       let response = client.execute(request).await?;
       Response::from_reqwest(response).await
     })

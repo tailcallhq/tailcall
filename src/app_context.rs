@@ -14,26 +14,21 @@ use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::io::{EnvIO, HttpIO};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
 
-pub struct AppContext {
+pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
-  pub universal_http_client: Arc<dyn HttpIO>,
-  pub http2_only_client: Arc<dyn HttpIO>,
+  pub universal_http_client: Arc<Http>,
+  pub http2_only_client: Arc<Http>,
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub env_vars: Arc<dyn EnvIO>,
+  pub env_vars: Arc<Env>,
 }
 
-impl AppContext {
+impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(
-    mut blueprint: Blueprint,
-    h_client: Arc<impl HttpIO + 'static>,
-    h2_client: Arc<impl HttpIO + 'static>,
-    env: Arc<impl EnvIO + 'static>,
-  ) -> Self {
+  pub fn new(mut blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];

@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::future::Future;
 
 use crate::http::Response;
-pub trait EnvIO: Send + Sync {
+pub trait EnvIO: Send + Sync + 'static {
   fn get(&self, key: &str) -> Option<String>;
 }
 
 #[async_trait::async_trait]
-pub trait HttpIO: Sync + Send {
+pub trait HttpIO: Sync + Send + 'static {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
 }
 

@@ -22,7 +22,7 @@ use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
-use tailcall::io::HttpIO;
+use tailcall::io::{EnvIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -180,7 +180,7 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<AppContext> {
+  async fn server_context(&self) -> Arc<AppContext<impl HttpIO, impl EnvIO>> {
     let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
@@ -388,8 +388,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_request::<GraphQLBatchRequest>(req, server_context).await
+    handle_request::<GraphQLBatchRequest, _, _>(req, server_context).await
   } else {
-    handle_request::<GraphQLRequest>(req, server_context).await
+    handle_request::<GraphQLRequest, _, _>(req, server_context).await
   }
 }
