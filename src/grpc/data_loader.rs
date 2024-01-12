@@ -15,8 +15,8 @@ use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
-use crate::io::HttpIO;
 use crate::json::JsonLike;
+use crate::HttpIO;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {

@@ -10,8 +10,8 @@ use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
-use crate::io::HttpIO;
 use crate::json::JsonLike;
+use crate::HttpIO;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   body_value
@@ -79,9 +79,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         first_url.query_pairs_mut().extend_pairs(url.query_pairs());
       }
 
-      let res = self.client.execute(request).await?;
+      let res = self.client.execute(request).await?.to_json()?;
       #[allow(clippy::mutable_key_type)]
-      let mut hashmap: HashMap<DataLoaderRequest, Response<async_graphql::Value>> = HashMap::with_capacity(keys.len());
+      let mut hashmap = HashMap::with_capacity(keys.len());
       let path = &group_by.path();
       let body_value = res.body.group_by(path);
 
@@ -105,7 +105,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
       #[allow(clippy::mutable_key_type)]
       let mut hashmap = HashMap::new();
       for (key, value) in results {
-        hashmap.insert(key, value?);
+        hashmap.insert(key, value?.to_json()?);
       }
 
       Ok(hashmap)
