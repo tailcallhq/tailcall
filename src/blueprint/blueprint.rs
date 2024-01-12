@@ -243,7 +243,7 @@ impl TryFrom<&config::ClientRateLimit> for ClientRateLimit {
 impl From<&config::RateLimit> for RateLimit {
   fn from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> Self {
     let duration = Duration::from_secs(unit.into_secs());
-    RateLimit { duration, requests: *requests_per_unit, group_by: group_by.as_ref().map(String::clone) }
+    RateLimit { duration, requests: *requests_per_unit, group_by: group_by.clone() }
   }
 }
 
