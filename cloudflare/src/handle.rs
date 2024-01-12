@@ -28,9 +28,8 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
   Ok(config)
 }
 
-pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
-  log::debug!("Execution starting");
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
