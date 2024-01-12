@@ -78,3 +78,13 @@ async fn server_start_http2_rsa() {
   )
   .await
 }
+
+#[tokio::test]
+async fn server_start_http2_nokey() {
+  let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
+  let http_client = init_http(&Upstream::default());
+  let reader = ConfigReader::init(init_file(), http_client);
+  let config = reader.read(configs).await.unwrap();
+  let server = Server::new(config);
+  assert!(server.start().await.is_err())
+}
