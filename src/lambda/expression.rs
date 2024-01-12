@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::future::Future;
-use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -207,7 +206,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   Ok(
     ctx
       .req_ctx
-      .universal_http_client
+      .h_client
       .execute(req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
@@ -220,7 +219,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>> {
   Ok(
-    execute_grpc_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
+    execute_grpc_request(&ctx.req_ctx.h2_client, operation, req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )

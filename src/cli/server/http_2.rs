@@ -12,9 +12,9 @@ use tokio::fs::File;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use super::{handle_request, log_launch_and_open_browser};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
+use crate::http::handle_request;
 
 async fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error> {
   let file = File::open(filename).await?;
@@ -81,7 +81,7 @@ pub async fn start_http_2(
 
   let builder = Server::builder(acceptor).http2_only(true);
 
-  log_launch_and_open_browser(sc.as_ref());
+  super::log_launch_and_open_browser(sc.as_ref());
 
   if let Some(sender) = server_up_sender {
     sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;

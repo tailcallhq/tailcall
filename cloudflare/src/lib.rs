@@ -5,36 +5,50 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
-use tailcall::http::{handle_request, ServerContext};
+use tailcall::http::{handle_request, AppContext};
+use tailcall::io::{EnvIO, FileIO, HttpIO};
 use worker::*;
 
-lazy_static! {
-  static ref SERV_CTX: RwLock<Option<Arc<ServerContext>>> = RwLock::new(None);
+mod env;
+mod file;
+mod http;
+
+fn init_env(env: Env) -> impl EnvIO {
+  env::EnvCloudflare::init(env)
 }
 
-async fn make_req() -> Result<Config> {
-  let reader = ConfigReader::init(
-    [
-      "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql", // add/edit the SDL links to this list
-    ]
-    .iter(),
-  );
-  reader.read().await.map_err(conv_err)
+fn init_file() -> impl FileIO {
+  file::CloudflareFileIO::init()
+}
+
+fn init_http() -> impl HttpIO + Default + Clone {
+  http::HttpCloudflare::init()
+}
+
+lazy_static! {
+  static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
+}
+
+async fn get_config(file: impl FileIO, env: &impl EnvIO) -> Result<Config> {
+  let http = init_http();
+  let reader = ConfigReader::init(file, http);
+  reader
+    .read(&[env.get("TC_CONFIG").ok_or(conv_err("Config not found"))?])
+    .await
+    .map_err(conv_err)
 }
 
 #[event(fetch)]
-async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
-  let mut server_ctx = get_option().await;
-  if server_ctx.is_none() {
-    let cfg = make_req().await.map_err(conv_err)?;
-    let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
-    let serv_ctx = Arc::new(ServerContext::new(blueprint));
-    *SERV_CTX.write().unwrap() = Some(serv_ctx.clone());
-    server_ctx = Some(serv_ctx);
+async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
+  let mut app_ctx = get_option().await;
+
+  if app_ctx.is_none() {
+    app_ctx = Some(init(env).await?);
   }
+
   let resp = handle_request::<GraphQLRequest>(
     convert_to_hyper_request(req).await?,
-    server_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
+    app_ctx.ok_or(Error::from("Unable to initiate connection"))?.clone(),
   )
   .await
   .map_err(conv_err)?;
@@ -42,8 +56,25 @@ async fn main(req: Request, _: Env, _: Context) -> Result<Response> {
   Ok(resp)
 }
 
-async fn get_option() -> Option<Arc<ServerContext>> {
-  SERV_CTX.read().unwrap().clone()
+async fn init(env: Env) -> Result<Arc<AppContext>> {
+  let env_io = init_env(env);
+  let cfg = get_config(init_file(), &env_io).await.map_err(conv_err)?;
+  let blueprint = Blueprint::try_from(&cfg).map_err(conv_err)?;
+  let universal_http_client = Arc::new(init_http());
+  let http2_only_client = Arc::new(init_http());
+
+  let app_ctx = Arc::new(AppContext::new(
+    blueprint,
+    universal_http_client,
+    http2_only_client,
+    Arc::new(env_io),
+  ));
+  *APP_CTX.write().unwrap() = Some(app_ctx.clone());
+  Ok(app_ctx)
+}
+
+async fn get_option() -> Option<Arc<AppContext>> {
+  APP_CTX.read().unwrap().clone()
 }
 
 async fn make_request(response: hyper::Response<hyper::Body>) -> Result<Response> {

@@ -1,3 +1,8 @@
+pub use config::*;
+pub use key_values::*;
+pub use server::*;
+pub use source::*;
+
 mod config;
 mod from_document;
 pub mod group_by;
@@ -7,14 +12,6 @@ mod n_plus_one;
 pub mod reader;
 mod server;
 mod source;
-
-// TODO: write is not used anywhere
-mod writer;
-
-pub use config::*;
-pub use key_values::*;
-pub use server::*;
-pub use source::*;
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()
