@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
@@ -8,19 +8,9 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::io::{EnvIO, FileIO, HttpIO};
+use tailcall::io::EnvIO;
 
-fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
-  env::EnvCloudflare::init(env)
-}
-
-fn init_file(env: Arc<worker::Env>) -> impl FileIO {
-  file::CloudflareFileIO::init(env)
-}
-
-fn init_http() -> impl HttpIO + Default + Clone {
-  http::HttpCloudflare::init()
-}
+use crate::{init_env, init_file, init_http};
 
 lazy_static! {
   static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
@@ -29,7 +19,7 @@ lazy_static! {
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result<Config> {
+async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Result<Config> {
   let path = env_io.get("CONFIG").ok_or(anyhow!("CONFIG var is not set"))?;
   let file_io = init_file(env.clone());
   let http_io = init_http();
@@ -39,7 +29,7 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
 }
 
 pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
-  let env = Rc::new(env);
+  let env = Arc::new(env);
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -49,10 +39,10 @@ pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context)
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = read_app_ctx() {
-    Ok(app_ctx)
+  if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
+    Ok(app_ctx.clone())
   } else {
     // Initialize Logger
     wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
@@ -71,19 +61,10 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   }
 }
 
-fn read_app_ctx() -> Option<Arc<AppContext>> {
-  APP_CTX.read().unwrap().clone()
-}
-
 async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Result<worker::Response> {
   let buf = hyper::body::to_bytes(response).await?;
   let text = std::str::from_utf8(&buf)?;
-  let mut response = worker::Response::ok(text).map_err(to_anyhow)?;
-  response
-    .headers_mut()
-    .append("Content-Type", "text/html")
-    .map_err(|e| anyhow!("{:?}", e))?;
-  Ok(response)
+  Ok(worker::Response::ok(text).map_err(to_anyhow)?)
 }
 
 fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
