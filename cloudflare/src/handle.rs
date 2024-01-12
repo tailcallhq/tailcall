@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -43,7 +44,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
-    Ok(app_ctx.clone())
+    Ok(app_ctx)
   } else {
     // Create new context
     let env_io = init_env(env.clone());
