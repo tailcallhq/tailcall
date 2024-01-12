@@ -147,7 +147,8 @@ where
     let doc = description.to_owned().map(|pos| pos.node);
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
-    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+    let key = to_key_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, key, ..Default::default() }
   })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
@@ -316,6 +317,19 @@ fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> V
     .filter_map(|directive| {
       if directive.node.name.node == config::AddField::directive_name() {
         config::AddField::from_directive(&directive.node).to_result().ok()
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<_>>()
+}
+
+fn to_key_from_directives(directives: &[Positioned<ConstDirective>]) -> Vec<config::Key> {
+  directives
+    .iter()
+    .filter_map(|directive| {
+      if directive.node.name.node == config::Key::directive_name() {
+        config::Key::from_directive(&directive.node).to_result().ok()
       } else {
         None
       }

@@ -13,6 +13,8 @@ pub struct Server {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache_control_header: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  pub federation: Option<bool>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub graphiql: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub introspection: Option<bool>,
@@ -68,6 +70,9 @@ impl Server {
   pub fn enable_apollo_tracing(&self) -> bool {
     self.apollo_tracing.unwrap_or(false)
   }
+  pub fn enable_federation(&self) -> bool {
+    self.federation.unwrap_or(false)
+  }
   pub fn enable_graphiql(&self) -> bool {
     self.graphiql.unwrap_or(false)
   }
@@ -121,6 +126,7 @@ impl Server {
   pub fn merge_right(mut self, other: Self) -> Self {
     self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
     self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
+    self.federation = other.federation.or(self.federation);
     self.graphiql = other.graphiql.or(self.graphiql);
     self.introspection = other.introspection.or(self.introspection);
     self.query_validation = other.query_validation.or(self.query_validation);

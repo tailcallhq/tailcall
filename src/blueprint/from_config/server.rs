@@ -12,6 +12,7 @@ use crate::valid::{Valid, ValidationError};
 pub struct Server {
   pub enable_apollo_tracing: bool,
   pub enable_cache_control_header: bool,
+  pub enable_federation: bool,
   pub enable_graphiql: bool,
   pub enable_introspection: bool,
   pub enable_query_validation: bool,
@@ -55,6 +56,10 @@ impl Server {
   pub fn get_enable_query_validation(&self) -> bool {
     self.enable_query_validation
   }
+
+  pub fn get_enable_federation(&self) -> bool {
+    self.enable_federation
+  }
 }
 
 impl TryFrom<crate::config::Server> for Server {
@@ -80,6 +85,7 @@ impl TryFrom<crate::config::Server> for Server {
       .map(|((hostname, http), response_headers)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
+        enable_federation: (config_server).enable_federation(),
         enable_graphiql: (config_server).enable_graphiql(),
         enable_introspection: (config_server).enable_introspection(),
         enable_query_validation: (config_server).enable_query_validation(),

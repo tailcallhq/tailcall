@@ -13,6 +13,11 @@ directive @server(
   cacheControlHeader: Boolean
 
   """
+  `federation` activates the _services and _entities queries
+  """
+  federation: Boolean
+
+  """
   `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.
   """
   graphiql: Boolean

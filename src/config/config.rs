@@ -146,6 +146,8 @@ pub struct Type {
   pub scalar: bool,
   #[serde(default)]
   pub cache: Option<Cache>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub key: Vec<Key>,
 }
 
 impl Type {
@@ -436,6 +438,10 @@ pub struct AddField {
   pub path: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Key {
+  pub fields: String,
+}
 impl Config {
   pub fn from_json(json: &str) -> Result<Self> {
     Ok(serde_json::from_str(json)?)

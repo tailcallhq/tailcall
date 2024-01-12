@@ -159,7 +159,8 @@ fn config_document(config: &Config) -> ServiceDocument {
         .added_fields
         .iter()
         .map(|added_field| pos(added_field.to_directive()))
-        .collect::<Vec<_>>(),
+        .chain(type_def.key.iter().map(|key| pos(key.to_directive())))
+        .collect(),
       kind,
     })));
   }

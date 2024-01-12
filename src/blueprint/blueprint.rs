@@ -80,6 +80,10 @@ pub struct InterfaceTypeDefinition {
   pub name: String,
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
+  // pub keys: Vec<String>,
+  // extends: bool,
+  // inaccessible: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -88,6 +92,13 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
+  // pub keys: Vec<String>,
+  // extends: bool,
+  // shareable: bool,
+  // resolvable: bool,
+  // inaccessible: bool,
+  // interface_object: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -95,6 +106,9 @@ pub struct InputObjectTypeDefinition {
   pub name: String,
   pub fields: Vec<InputFieldDefinition>,
   pub description: Option<String>,
+  // pub oneof: bool,
+  // inaccessible: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -103,6 +117,8 @@ pub struct EnumTypeDefinition {
   pub directives: Vec<Directive>,
   pub description: Option<String>,
   pub enum_values: Vec<EnumValueDefinition>,
+  // inaccessible: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -110,6 +126,8 @@ pub struct EnumValueDefinition {
   pub description: Option<String>,
   pub name: String,
   pub directives: Vec<Directive>,
+  // inaccessible: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -174,6 +192,9 @@ pub struct ScalarTypeDefinition {
   pub name: String,
   pub directive: Vec<Directive>,
   pub description: Option<String>,
+  // pub specified_by_url: Option<String>,
+  // inaccessible: bool,
+  // tags: Vec<String>,
 }
 
 #[derive(Clone, Debug)]

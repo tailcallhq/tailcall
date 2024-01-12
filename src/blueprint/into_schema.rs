@@ -185,7 +185,9 @@ fn create(blueprint: &Blueprint) -> SchemaBuilder {
   for def in blueprint.definitions.iter() {
     schema = schema.register(to_type(def));
   }
-
+  if blueprint.server.enable_federation {
+    schema = schema.enable_federation()
+  }
   schema
 }
 

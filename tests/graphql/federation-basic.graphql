@@ -1,0 +1,42 @@
+#> server-sdl
+schema @server(federation: true) @upstream {
+  query: Query
+}
+
+type Amit @key(fields: "id") {
+  body: String
+  id: ID
+  title: String
+  userId: ID
+}
+
+type Query {
+  posts: [Amit] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
+}
+
+#> client-sdl
+type Amit {
+  body: String
+  id: ID
+  title: String
+  userId: ID
+}
+
+type Query {
+  _service: _Service!
+  posts: [Amit]
+}
+
+"""
+The `_Any` scalar is used to pass representations of entities from external
+services into the root `_entities` field for execution.
+"""
+scalar _Any
+
+type _Service {
+  sdl: String
+}
+
+schema {
+  query: Query
+}
