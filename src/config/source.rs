@@ -58,7 +58,7 @@ impl Source {
       .ok_or(UnsupportedFileFormat(content_type.to_string()))
   }
 
-  pub fn encode(&self, config: Config) -> Result<String, anyhow::Error> {
+  pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
     match self {
       Source::Yml => Ok(config.to_yaml()?),
       Source::GraphQL => Ok(config.to_sdl()),
