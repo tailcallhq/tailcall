@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
 use anyhow::anyhow;
 use tailcall::io::FileIO;
@@ -9,13 +9,11 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
-  env: Arc<Env>,
+  env: Rc<Env>,
 }
-unsafe impl Send for CloudflareFileIO {}
-unsafe impl Sync for CloudflareFileIO {}
 
 impl CloudflareFileIO {
-  pub fn init(env: Arc<Env>) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     CloudflareFileIO { env }
   }
 }
@@ -44,7 +42,6 @@ impl CloudflareFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
     let r2 = R2Address::from_string(file_path.to_string())?;

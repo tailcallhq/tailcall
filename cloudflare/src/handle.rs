@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
@@ -19,7 +20,7 @@ lazy_static! {
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Result<Config> {
+async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result<Config> {
   let path = env_io.get("CONFIG").ok_or(anyhow!("CONFIG var is not set"))?;
   let file_io = init_file(env.clone());
   let http_io = init_http();
@@ -29,7 +30,7 @@ async fn get_config(env_io: &impl EnvIO, env: Arc<worker::Env>) -> anyhow::Resul
 }
 
 pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
-  let env = Arc::new(env);
+  let env = Rc::new(env);
   let app_ctx = init(env).await?;
   let resp = handle_request::<GraphQLRequest>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -39,7 +40,7 @@ pub async fn execute(req: worker::Request, env: worker::Env, _: worker::Context)
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn init(env: Arc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
+async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   // Read context from cache
   if let Some(app_ctx) = APP_CTX.read().unwrap().deref() {
     Ok(app_ctx.clone())
