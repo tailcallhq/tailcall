@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+use crate::config::Source;
+
 const VERSION: &str = match option_env!("APP_VERSION") {
   Some(version) => version,
   _ => "0.1.0-dev",
@@ -31,7 +33,7 @@ pub enum Command {
   Check {
     /// Path for the configuration files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
 
     /// N plus one queries
     #[arg(short, long)]
@@ -40,11 +42,23 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
-
-    /// Path of the file to save final configuration in
-    #[arg(short, long("out"))]
-    out_file_path: Option<String>,
   },
+
+  /// Merge multiple configuration file into one
+  Compose {
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_paths: Vec<String>,
+
+    /// Format of the result. Accepted values: JSON|YML|GQL.
+    #[clap(short, long, default_value = "gql")]
+    format: Source,
+  },
+
   /// Initialize a new project
-  Init { file_path: String },
+  Init {
+    // default is current directory
+    #[arg(default_value = ".")]
+    folder_path: String,
+  },
 }

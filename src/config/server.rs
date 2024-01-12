@@ -60,7 +60,7 @@ pub struct Batch {
 }
 impl Default for Batch {
   fn default() -> Self {
-    Batch { max_size: 100, delay: 1, headers: BTreeSet::new() }
+    Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
   }
 }
 
@@ -180,6 +180,9 @@ pub struct Upstream {
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
+  #[setters(strip_option)]
+  #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
+  pub http2_only: Option<bool>,
 }
 
 impl Upstream {
@@ -224,6 +227,11 @@ impl Upstream {
     self.batch.clone().unwrap_or_default().max_size
   }
 
+  pub fn get_http_2_only(&self) -> bool {
+    self.http2_only.unwrap_or(false)
+  }
+
+  // TODO: add unit tests for merge
   pub fn merge_right(mut self, other: Self) -> Self {
     self.allowed_headers = other.allowed_headers.map(|other| {
       if let Some(mut self_headers) = self.allowed_headers {
@@ -252,6 +260,8 @@ impl Upstream {
       batch.headers.extend(other.headers);
       batch
     });
+
+    self.http2_only = other.http2_only.or(self.http2_only);
     self
   }
 }

@@ -1,5 +1,5 @@
 #> server-sdl
-schema @upstream(batch: {delay: 0}, baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 

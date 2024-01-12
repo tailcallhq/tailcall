@@ -10,9 +10,7 @@ use serde_json::Value;
 
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
-use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
@@ -128,12 +126,6 @@ impl Config {
     let upstream = self.upstream.merge_right(other.upstream.clone());
 
     Self { server, upstream, types, schema, unions }
-  }
-
-  pub async fn write_file(self, filename: &String) -> Result<()> {
-    let config_writer = ConfigWriter::init(self);
-
-    config_writer.write(filename).await
   }
 }
 
@@ -508,16 +500,6 @@ impl Config {
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
-  }
-
-  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    let config_reader = ConfigReader::init(file_paths);
-
-    config_reader.read().await
   }
 }
 

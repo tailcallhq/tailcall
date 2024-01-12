@@ -18,8 +18,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, Source, Upstream};
+use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::io::HttpIO;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -31,6 +34,7 @@ enum Annotation {
   Only,
   Fail,
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct APIRequest {
@@ -53,17 +57,23 @@ struct APIResponse {
   #[serde(default)]
   body: serde_json::Value,
 }
+
 fn default_status() -> u16 {
   200
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
@@ -170,17 +180,20 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<ServerContext> {
+  async fn server_context(&self) -> Arc<AppContext> {
+    let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::read_from_files([file].iter()).await.unwrap(),
+      ConfigSource::File(file) => {
+        let reader = ConfigReader::init(init_file(), http_client);
+        reader.read(&[file]).await.unwrap()
+      }
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let mut server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
-    server_context.env_vars = Arc::new(self.env.clone());
-
+    let env = Arc::new(tailcall::io::Env::init(self.env.clone()));
+    let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
 }
@@ -217,9 +230,10 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
   bytes
 }
+
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response> {
+impl HttpIO for MockHttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
     // Clone the mocks to allow iteration without borrowing issues.
     let mocks = self.spec.mock.clone();
 
@@ -277,8 +291,7 @@ impl HttpClient for MockHttpClient {
 
     Ok(response)
   }
-
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.
@@ -321,19 +334,18 @@ impl HttpClient for MockHttpClient {
       return Err(anyhow::format_err!("Status code error"));
     }
 
-    let mut response = hyper::Response::builder().status(status_code);
-    let headers = response.headers_mut().ok_or(anyhow!("Invalid headers"))?;
+    let mut response = Response { status: status_code, ..Default::default() };
+
     // Insert headers from the mock into the response.
     for (key, value) in mock_response.0.headers {
       let header_name = HeaderName::from_str(&key)?;
       let header_value = HeaderValue::from_str(&value)?;
-      headers.insert(header_name, header_value);
+      response.headers.insert(header_name, header_value);
     }
 
     let body = mock_response.0.body.as_str().unwrap_or_default();
-    let res = response.body(Body::from(string_to_bytes(body)))?;
-
-    Ok(reqwest::Response::from(res))
+    response.body = string_to_bytes(body);
+    Ok(response)
   }
 }
 
