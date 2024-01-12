@@ -58,6 +58,22 @@ struct APIResponse {
   body: serde_json::Value,
 }
 
+pub struct Env {
+  env: HashMap<String, String>,
+}
+
+impl EnvIO for Env {
+  fn get(&self, key: &str) -> Option<String> {
+    self.env.get(key).cloned()
+  }
+}
+
+impl Env {
+  pub fn init(map: HashMap<String, String>) -> Self {
+    Self { env: map }
+  }
+}
+
 fn default_status() -> u16 {
   200
 }
@@ -192,7 +208,7 @@ impl HttpSpec {
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let env = Arc::new(tailcall::io::Env::init(self.env.clone()));
+    let env = Arc::new(Env::init(self.env.clone()));
     let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
