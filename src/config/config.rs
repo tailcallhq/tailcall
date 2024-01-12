@@ -129,7 +129,7 @@ impl Config {
     let upstream = self.upstream.merge_right(other.upstream.clone());
     // let rate_limit = self.rate_limit.or(other.rate_limit.clone());
 
-    Self { server, upstream, types, schema, unions,/* rate_limit */ }
+    Self { server, upstream, types, schema, unions /* rate_limit */ }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {

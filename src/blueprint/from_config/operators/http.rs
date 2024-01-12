@@ -182,7 +182,7 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
               rate_limit: field.http.as_ref().and_then(|http| {
                 let crt = http.rate_limit.as_ref()?;
                 crt.try_into().ok()
-              })
+              }),
             })))
           } else {
             b_field.resolver(Some(Lambda::from_request_template(req_template).expression))

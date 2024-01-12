@@ -10,7 +10,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
-use crate::blueprint::{RateLimit, ClientRateLimit};
+use crate::blueprint::ClientRateLimit;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};

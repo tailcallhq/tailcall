@@ -3,9 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::config::{is_default, KeyValues};
-
 use super::ClientRateLimit;
+use crate::config::{is_default, KeyValues};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

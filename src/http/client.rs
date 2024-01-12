@@ -1,16 +1,17 @@
+use std::sync::Arc;
 #[cfg(feature = "default")]
 use std::time::Duration;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use core::future::Future;
 
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::{Client, Request};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tower::{Service, limit::RateLimit, util::ServiceFn};
+use reqwest_middleware::ClientBuilder;
+use tokio::sync::Mutex;
+use tower::limit::RateLimit;
+use tower::Service;
 
-use super::{Response, http_client_service::HttpClientService};
+use super::http_client_service::HttpClientService;
+use super::Response;
 use crate::config::{self, Upstream};
 
 #[async_trait::async_trait]
@@ -43,7 +44,7 @@ impl HttpClient for DefaultHttpClient {
 #[derive(Clone)]
 enum HttpService {
   RateLimited(Arc<Mutex<RateLimit<HttpClientService>>>),
-  Normal(Arc<Mutex<HttpClientService>>)
+  Normal(Arc<Mutex<HttpClientService>>),
 }
 
 #[derive(Clone)]
@@ -55,10 +56,10 @@ impl DefaultHttpClient {
   async fn call(&self, request: reqwest::Request) -> anyhow::Result<reqwest::Response> {
     use HttpService::*;
 
-    Ok(match self.service {
+    match self.service {
       RateLimited(ref service) => service.lock().await.call(request).await,
       Normal(ref service) => service.lock().await.call(request).await,
-    }?)
+    }
   }
 }
 
@@ -117,16 +118,15 @@ impl DefaultHttpClient {
 
     let service = match _upstream.rate_limit.as_ref() {
       Some(rate_limit) => {
-          let duration = Duration::from_secs(rate_limit.unit.into_secs());
-          let service = tower::ServiceBuilder::new()
-            .rate_limit(rate_limit.requests_per_unit.get(), duration)
-            .service(HttpClientService::new(client));
-          let service = Arc::new(Mutex::new(service));
-          HttpService::RateLimited(service)
-      },
-      None => {
+        let duration = Duration::from_secs(rate_limit.unit.into_secs());
         let service = tower::ServiceBuilder::new()
+          .rate_limit(rate_limit.requests_per_unit.get(), duration)
           .service(HttpClientService::new(client));
+        let service = Arc::new(Mutex::new(service));
+        HttpService::RateLimited(service)
+      }
+      None => {
+        let service = tower::ServiceBuilder::new().service(HttpClientService::new(client));
         let service = Arc::new(Mutex::new(service));
         HttpService::Normal(service)
       }

@@ -6,6 +6,7 @@ mod data_loader_request;
 mod http_1;
 #[cfg(feature = "default")]
 mod http_2;
+mod http_client_service;
 mod method;
 mod request_context;
 mod request_handler;
@@ -16,7 +17,6 @@ mod server;
 #[cfg(feature = "default")]
 mod server_config;
 mod server_context;
-mod http_client_service;
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};
