@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::io::FileIO;
+use crate::FileIO;
 
 pub struct NativeFileIO {}
 
@@ -11,7 +11,6 @@ impl NativeFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for NativeFileIO {
   async fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> Result<()> {
     let mut file = tokio::fs::File::create(file).await?;
@@ -19,19 +18,10 @@ impl FileIO for NativeFileIO {
     Ok(())
   }
 
-  async fn read<'a>(&'a self, file_path: &'a str) -> Result<(String, String)> {
+  async fn read<'a>(&'a self, file_path: &'a str) -> Result<String> {
     let mut file = tokio::fs::File::open(file_path).await?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).await?;
-    Ok((String::from_utf8(buffer)?, file_path.to_string()))
-  }
-
-  async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> Result<Vec<(String, String)>> {
-    let mut files = vec![];
-    for file in file_paths {
-      let content = self.read(file).await?;
-      files.push(content);
-    }
-    Ok(files)
+    Ok(String::from_utf8(buffer)?)
   }
 }
