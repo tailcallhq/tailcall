@@ -36,7 +36,7 @@ impl PartialEq for DataLoaderRequest {
     other.hash(&mut hasher_other);
     let hash_other = hasher_other.finish();
 
-    hash_self.eq(&hash_other)
+    hash_self == hash_other
   }
 }
 
