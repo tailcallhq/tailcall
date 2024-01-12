@@ -122,7 +122,7 @@ impl Config {
     self.types.contains_key(name) || self.unions.contains_key(name)
   }
 
-  pub fn merge_right(self, other: &Self) -> anyhow::Result<Self> {
+  pub fn merge_right(self, other: &Self) -> Self {
     let server = self.server.merge_right(other.server.clone());
     let types = merge_types(self.types, other.types.clone());
     let unions = merge_unions(self.unions, other.unions.clone());
@@ -130,7 +130,7 @@ impl Config {
     let upstream = self.upstream.merge_right(other.upstream.clone());
     let links = merge_links(self.links, other.links.clone());
 
-    Ok(Self { server, upstream, types, schema, unions, links })
+    Self { server, upstream, types, schema, unions, links }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
