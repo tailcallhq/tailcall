@@ -8,6 +8,7 @@ use anyhow::Context;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
+use futures_util::future::join_all;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use pretty_assertions::{assert_eq, assert_ne};
@@ -332,9 +333,7 @@ async fn test_execution() -> std::io::Result<()> {
     })
     .collect();
 
-  for task in tasks {
-    task.await?;
-  }
+  join_all(tasks).await;
 
   Ok(())
 }

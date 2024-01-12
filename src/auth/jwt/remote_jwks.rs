@@ -9,7 +9,7 @@ use reqwest::Request;
 use url::Url;
 
 use crate::auth::base::AuthError;
-use crate::io::HttpIO;
+use crate::HttpIO;
 
 struct JWKSCache {
   jwks: JwkSetVerifier,
@@ -87,7 +87,7 @@ impl RemoteJwksVerifier {
       .headers_mut()
       .insert("accept", HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()));
 
-    let response = self.client.execute_raw(request).await?;
+    let response = self.client.execute(request).await?;
     Ok(response.to_json()?.body)
   }
 }

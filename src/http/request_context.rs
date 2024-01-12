@@ -12,10 +12,9 @@ use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::io::{EnvIO, HttpIO};
+use crate::{grpc, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -99,8 +98,8 @@ impl RequestContext {
   }
 }
 
-impl From<&AppContext> for RequestContext {
-  fn from(server_ctx: &AppContext) -> Self {
+impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
+  fn from(server_ctx: &AppContext<Http, Env>) -> Self {
     Self {
       h_client: server_ctx.universal_http_client.clone(),
       h2_client: server_ctx.http2_only_client.clone(),

@@ -4,9 +4,8 @@ use thiserror::Error;
 
 use super::basic::BasicProvider;
 use super::jwt::JwtProvider;
-use crate::blueprint;
 use crate::http::RequestContext;
-use crate::io::HttpIO;
+use crate::{blueprint, HttpIO};
 
 #[derive(Debug, Error, Clone, PartialEq, PartialOrd)]
 pub enum AuthError {

@@ -11,9 +11,8 @@ use jwtk::HeaderAndClaims;
 use self::remote_jwks::RemoteJwksVerifier;
 use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProviderTrait};
-use crate::blueprint;
 use crate::http::RequestContext;
-use crate::io::HttpIO;
+use crate::{blueprint, HttpIO};
 
 // only used in tests and uses mocked implementation
 #[cfg(test)]
@@ -132,11 +131,7 @@ pub mod tests {
 
   #[async_trait::async_trait]
   impl HttpIO for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-      todo!()
-    }
-
-    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
+    async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
       todo!()
     }
   }

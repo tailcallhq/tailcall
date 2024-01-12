@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use async_graphql::dynamic;
+use async_graphql::dynamic::{self, DynamicRequest};
+use async_graphql::Response;
 use async_graphql_value::ConstValue;
 
 use crate::auth::context::GlobalAuthContext;
@@ -9,33 +10,27 @@ use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::io::{EnvIO, HttpIO};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
+use crate::{grpc, EnvIO, HttpIO};
 
-pub struct AppContext {
+pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
-  pub universal_http_client: Arc<dyn HttpIO>,
-  pub http2_only_client: Arc<dyn HttpIO>,
+  pub universal_http_client: Arc<Http>,
+  pub http2_only_client: Arc<Http>,
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
-  pub env_vars: Arc<dyn EnvIO>,
+  pub env_vars: Arc<Env>,
   pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
-impl AppContext {
+impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(
-    mut blueprint: Blueprint,
-    h_client: Arc<impl HttpIO + 'static>,
-    h2_client: Arc<impl HttpIO + 'static>,
-    env: Arc<impl EnvIO + 'static>,
-  ) -> Self {
+  pub fn new(mut blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
@@ -117,5 +112,9 @@ impl AppContext {
       env_vars: env,
       auth_ctx: Arc::new(auth_ctx),
     }
+  }
+
+  pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+    self.schema.execute(request).await
   }
 }

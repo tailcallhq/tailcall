@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use super::base::{AuthError, AuthProvider, AuthProviderTrait};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
-use crate::io::HttpIO;
+use crate::HttpIO;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -88,11 +88,7 @@ mod tests {
 
   #[async_trait::async_trait]
   impl HttpIO for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-      todo!()
-    }
-
-    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
+    async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
       todo!()
     }
   }

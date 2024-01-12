@@ -859,10 +859,10 @@ dependencies = [
  "async-trait",
  "hyper",
  "lazy_static",
+ "log",
  "reqwest",
- "reqwest-middleware",
- "serde-wasm-bindgen 0.6.3",
  "tailcall",
+ "wasm-logger",
  "worker",
 ]
 
@@ -3096,12 +3096,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "resource"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a7f6703c396037a02da99195e49138c37f3cc5146cb95f2f7d26debc0c5622"
-
-[[package]]
 name = "ring"
 version = "0.17.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3321,17 +3315,6 @@ name = "serde-wasm-bindgen"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3b143e2833c57ab9ad3ea280d21fd34e285a42837aeb0ee301f4f41890fa00e"
-dependencies = [
- "js-sys",
- "serde",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "serde-wasm-bindgen"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9b713f70513ae1f8d92665bbbbda5c295c2cf1da5542881ae5eefe20c9af132"
 dependencies = [
  "js-sys",
  "serde",
@@ -3733,7 +3716,6 @@ dependencies = [
  "regex",
  "reqwest",
  "reqwest-middleware",
- "resource",
  "rustls",
  "rustls-pemfile",
  "serde",
@@ -4235,6 +4217,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 
 [[package]]
+name = "wasm-logger"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "074649a66bb306c8f2068c9016395fa65d8e08d2affcbf95acf3c24c3ab19718"
+dependencies = [
+ "log",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "wasm-streams"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4499,7 +4492,7 @@ dependencies = [
  "matchit",
  "pin-project",
  "serde",
- "serde-wasm-bindgen 0.5.0",
+ "serde-wasm-bindgen",
  "serde_json",
  "tokio",
  "url",
@@ -4520,7 +4513,7 @@ checksum = "3d4b9fe1a87b7aef252fceb4f30bf6303036a5de329c81ccad9be9c35d1fdbc7"
 dependencies = [
  "js-sys",
  "serde",
- "serde-wasm-bindgen 0.5.0",
+ "serde-wasm-bindgen",
  "serde_json",
  "thiserror",
  "wasm-bindgen",
