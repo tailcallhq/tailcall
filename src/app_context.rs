@@ -1,10 +1,8 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic;
 use async_graphql_value::ConstValue;
 
-use super::{DataLoaderRequest, DefaultHttpClient, HttpClient, HttpClientOptions};
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{self, Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -12,59 +10,42 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::HttpDataLoader;
+use crate::http::{DataLoaderRequest, HttpDataLoader};
+use crate::io::{EnvIO, HttpIO};
 use crate::lambda::{Cache, DataLoaderId, Expression, Unsafe};
 
-pub struct ServerContext {
+pub struct AppContext {
   pub schema: dynamic::Schema,
-  pub universal_http_client: Arc<dyn HttpClient>,
-  pub http2_only_client: Arc<dyn HttpClient>,
+  pub universal_http_client: Arc<dyn HttpIO>,
+  pub http2_only_client: Arc<dyn HttpIO>,
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub env_vars: Arc<HashMap<String, String>>,
+  pub env_vars: Arc<dyn EnvIO>,
 }
 
-impl ServerContext {
-  pub fn new(blueprint: Blueprint) -> Self {
-    let universal_http_client = Arc::new(DefaultHttpClient::new(&blueprint.upstream));
-    let http2_only_client = Arc::new(DefaultHttpClient::with_options(
-      &blueprint.upstream,
-      HttpClientOptions { http2_only: true },
-    ));
-
-    Self::with_http_clients(blueprint, universal_http_client, http2_only_client)
-  }
-
-  pub fn with_http_clients(
+impl AppContext {
+  #[allow(clippy::too_many_arguments)]
+  pub fn new(
     blueprint: Blueprint,
-    universal_http_client: Arc<dyn HttpClient>,
-    http2_only_client: Arc<dyn HttpClient>,
+    h_client: Arc<impl HttpIO + 'static>,
+    h2_client: Arc<impl HttpIO + 'static>,
+    env: Arc<impl EnvIO + 'static>,
   ) -> Self {
-    let http_data_loaders = vec![];
-    let gql_data_loaders = vec![];
-    let grpc_data_loaders = vec![];
-
-    let schema = blueprint.to_schema();
-
-    #[cfg(feature = "default")]
-    let env_vars = Arc::new(std::env::vars().collect());
-    #[cfg(not(feature = "default"))]
-    let env_vars = Arc::new(HashMap::new());
     let mut bp = blueprint.clone();
 
-    let mut ctx = ServerContext {
-      schema,
-      universal_http_client,
-      http2_only_client,
+    let mut ctx = AppContext {
+      schema: blueprint.to_schema(),
+      universal_http_client: h_client,
+      http2_only_client: h2_client,
       blueprint,
-      http_data_loaders: Arc::new(http_data_loaders),
-      gql_data_loaders: Arc::new(gql_data_loaders),
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
       cache: ChronoCache::new(),
-      grpc_data_loaders: Arc::new(grpc_data_loaders),
-      env_vars,
+      grpc_data_loaders: Arc::new(vec![]),
+      env_vars: env,
     };
 
     for def in bp.definitions.iter_mut() {
@@ -76,6 +57,7 @@ impl ServerContext {
         }
       }
     }
+
     ctx.schema = bp.to_schema();
     ctx.blueprint = bp;
     ctx
@@ -92,7 +74,7 @@ impl ServerContext {
             Expression::Cache(Cache::new(
               cache.hasher().clone(),
               cache.max_age(),
-              Box::new(dbg!(ne.clone())),
+              Box::new(ne.clone()),
             ))
           });
         }

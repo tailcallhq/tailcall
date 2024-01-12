@@ -142,7 +142,7 @@ jobs:
 
   Cache_Benchmarks:
     name: Micro Benchmarks
-    if: github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       pull-requests: write
       contents: write
@@ -150,8 +150,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1

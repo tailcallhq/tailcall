@@ -4,9 +4,9 @@ use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use super::{handle_request, log_launch_and_open_browser};
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
+use crate::http::handle_request;
 
 pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<oneshot::Sender<()>>) -> anyhow::Result<()> {
   let addr = sc.addr();
@@ -30,7 +30,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
   let builder = hyper::Server::try_bind(&addr)
     .map_err(CLIError::from)?
     .http1_pipeline_flush(sc.server_context.blueprint.server.pipeline_flush);
-  log_launch_and_open_browser(sc.as_ref());
+  super::log_launch_and_open_browser(sc.as_ref());
 
   if let Some(sender) = server_up_sender {
     sender.send(()).or(Err(anyhow::anyhow!("Failed to send message")))?;
