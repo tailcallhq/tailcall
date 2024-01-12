@@ -27,7 +27,7 @@ async fn fetch(req: worker::Request, env: worker::Env, context: worker::Context)
   match result {
     Ok(response) => Ok(response),
     Err(message) => {
-      log::error!("ServerError: {}", message.to_string());
+      tracing::error!("ServerError: {}", message.to_string());
       worker::Response::error(message.to_string(), 500).map_err(to_anyhow)
     }
   }
@@ -36,7 +36,11 @@ async fn fetch(req: worker::Request, env: worker::Env, context: worker::Context)
 #[worker::event(start)]
 fn start() {
   // Initialize Logger
-  wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+  let config = tracing_wasm::WASMLayerConfigBuilder::new()
+    .set_max_level(tracing::Level::INFO)
+    .build();
+
+  tracing_wasm::set_as_global_default_with_config(config)
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {

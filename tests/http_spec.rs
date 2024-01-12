@@ -23,6 +23,8 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::{EnvIO, HttpIO};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -166,7 +168,7 @@ impl HttpSpec {
 
     for spec in specs {
       match spec.runner {
-        Some(Annotation::Skip) => log::warn!("{} {} ... skipped", spec.name, spec.path.display()),
+        Some(Annotation::Skip) => tracing::warn!("{} {} ... skipped", spec.name, spec.path.display()),
         Some(Annotation::Only) => only_specs.push(spec),
         Some(Annotation::Fail) => filtered_specs.push(spec),
         None => filtered_specs.push(spec),
@@ -182,8 +184,13 @@ impl HttpSpec {
   }
   fn from_source(source: Source, contents: String) -> anyhow::Result<Self> {
     INIT.call_once(|| {
-      env_logger::builder()
-        .filter(Some("http_spec"), log::LevelFilter::Info)
+      tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .compact()
+        .finish()
+        .with(tracing_subscriber::filter::filter_fn(|metadata| {
+          metadata.target().starts_with("http_spec")
+        }))
         .init();
     });
 
@@ -341,7 +348,7 @@ async fn assert_downstream(spec: HttpSpec) {
           );
         }
         Err(_) => {
-          log::info!("{} {} ... failed (expected)", spec.name, spec.path.display());
+          tracing::info!("{} {} ... failed (expected)", spec.name, spec.path.display());
         }
       }
     } else {
@@ -380,7 +387,7 @@ async fn assert_downstream(spec: HttpSpec) {
       }
     }
   }
-  log::info!("{} {} ... ok", spec.name, spec.path.display());
+  tracing::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 
 fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {

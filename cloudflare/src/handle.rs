@@ -23,7 +23,7 @@ lazy_static! {
 ///
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
-  log::debug!("Execution starting");
+  tracing::debug!("Execution starting");
   let app_ctx = get_app_ctx(env).await?;
   let resp = handle_request::<GraphQLRequest, HttpCloudflare, EnvCloudflare>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -58,7 +58,7 @@ async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<CloudFlareAppCo
 
     let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
     *APP_CTX.write().unwrap() = Some(app_ctx.clone());
-    log::info!("Initialized new application context");
+    tracing::info!("Initialized new application context");
     Ok(app_ctx)
   }
 }

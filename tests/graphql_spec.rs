@@ -21,6 +21,8 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 static INIT: Once = Once::new();
 
@@ -108,8 +110,13 @@ impl GraphQLSpec {
 
   fn new(path: PathBuf, content: &str) -> GraphQLSpec {
     INIT.call_once(|| {
-      env_logger::builder()
-        .filter(Some("graphql_spec"), log::LevelFilter::Info)
+      tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .compact()
+        .finish()
+        .with(tracing_subscriber::filter::filter_fn(|metadata| {
+          metadata.target().starts_with("graphql_spec")
+        }))
         .init();
     });
 
@@ -205,7 +212,7 @@ impl GraphQLSpec {
           Some(Annotation::Only) => only_files.push(spec),
           Some(Annotation::Fail) | None => files.push(spec),
           Some(Annotation::Skip) => {
-            log::warn!("{} ... skipped", spec.path.display());
+            tracing::warn!("{} ... skipped", spec.path.display());
           }
         }
       }
@@ -251,7 +258,7 @@ fn test_config_identity() -> std::io::Result<()> {
       assert_eq!(actual, expected, "ServerSDLIdentity: {}", spec.path.display());
     }
 
-    log::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
+    tracing::info!("ServerSDLIdentity: {} ... ok", spec.path.display());
   }
 
   Ok(())
@@ -276,7 +283,7 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
       assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     }
 
-    log::info!("ClientSDL: {} ... ok", spec.path.display());
+    tracing::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
   Ok(())
@@ -320,7 +327,7 @@ async fn test_execution() -> std::io::Result<()> {
             assert_eq!(json, expected, "QueryExecution: {}", spec.path.display());
           }
 
-          log::info!("QueryExecution: {} ... ok", spec.path.display());
+          tracing::info!("QueryExecution: {} ... ok", spec.path.display());
         }
       })
     })
@@ -355,7 +362,7 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
           assert_eq!(actual, expected, "Server SDL failure mismatch: {}", spec.path.display());
         }
 
-        log::info!("ClientSDLError: {} ... ok", spec.path.display());
+        tracing::info!("ClientSDLError: {} ... ok", spec.path.display());
       }
       _ => panic!("ClientSDLError: {}", spec.path.display()),
     }
@@ -384,7 +391,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
       assert_eq!(actual, expected, "SDLMerge: {}", spec.path.display());
     }
 
-    log::info!("SDLMerge: {} ... ok", spec.path.display());
+    tracing::info!("SDLMerge: {} ... ok", spec.path.display());
   }
 
   Ok(())

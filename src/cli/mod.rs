@@ -1,6 +1,7 @@
 mod command;
 mod error;
 mod fmt;
+pub mod opentelemetry;
 pub mod server;
 mod tc;
 

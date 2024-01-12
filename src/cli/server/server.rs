@@ -8,17 +8,21 @@ use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
+use crate::cli::opentelemetry::init_opentelemetry;
 use crate::config::Config;
-use crate::opentelemetry::init_opentelemetry;
 
 pub struct Server {
-  config: Config,
+  blueprint: Blueprint,
   server_up_sender: Option<oneshot::Sender<()>>,
 }
 
 impl Server {
-  pub fn new(config: Config) -> Self {
-    Self { config, server_up_sender: None }
+  pub fn try_new(config: Config) -> Result<Self> {
+    let blueprint = Blueprint::try_from(&config).map_err(CLIError::from)?;
+
+    init_opentelemetry(blueprint.opentelemetry.clone())?;
+
+    Ok(Self { blueprint, server_up_sender: None })
   }
 
   pub fn server_up_receiver(&mut self) -> oneshot::Receiver<()> {
@@ -30,12 +34,9 @@ impl Server {
   }
 
   pub async fn start(self) -> Result<()> {
-    let blueprint = Blueprint::try_from(&self.config).map_err(CLIError::from)?;
-    let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
+    let server_config = Arc::new(ServerConfig::new(self.blueprint.clone()));
 
-    init_opentelemetry(blueprint.opentelemetry)?;
-
-    match blueprint.server.http.clone() {
+    match self.blueprint.server.http.clone() {
       Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key, self.server_up_sender).await,
       Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
     }

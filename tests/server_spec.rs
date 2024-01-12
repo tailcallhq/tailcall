@@ -9,7 +9,7 @@ async fn test_server(configs: &[&str], url: &str) {
   let http_client = init_http(&Upstream::default());
   let reader = ConfigReader::init(init_file(), http_client);
   let config = reader.read(configs).await.unwrap();
-  let mut server = Server::new(config);
+  let mut server = Server::try_new(config).unwrap();
   let server_up_receiver = server.server_up_receiver();
 
   tokio::spawn(async move {

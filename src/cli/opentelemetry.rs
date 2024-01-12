@@ -15,10 +15,10 @@ use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::trace::Tracer;
 use opentelemetry_sdk::trace::TracerProvider;
 use serde::Serialize;
+use tracing::Subscriber;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::filter::dynamic_filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
 use tracing_subscriber::Registry;
 
@@ -134,23 +134,31 @@ fn set_meter_provider(exporter: &OpentelemetryExporter) -> MetricsResult<()> {
   Ok(())
 }
 
+fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
+  // ignore errors since there is only one possible error when the global subscriber
+  // is already set. The init is called multiple times in the same process many times inside
+  // tests, so we want to ignore if it is already set
+  let _ = tracing::subscriber::set_global_default(subscriber);
+}
+
 // TODO: set global attributes
 pub fn init_opentelemetry(config: Opentelemetry) -> anyhow::Result<()> {
   if let Some(exporter) = &config.export {
     let trace_layer = set_trace_provider(exporter)?;
     let log_layer = set_logger_provider(exporter)?;
     set_meter_provider(exporter)?;
-    tracing_subscriber::registry()
+    let subscriber = tracing_subscriber::registry()
       .with(trace_layer)
       .with(log_layer.with_filter(dynamic_filter_fn(|_metatada, context| {
         // ignore logs that are generated inside tracing::Span since they will be logged
         // anyway with tracer_provider and log here only the events without associated span
         context.lookup_current().is_none()
       })))
-      .with(default_filter_target())
-      .try_init()?;
+      .with(default_filter_target());
+
+    set_tracing_subscriber(subscriber)
   } else {
-    default_tracing().try_init()?;
+    set_tracing_subscriber(default_tracing());
   }
 
   Ok(())

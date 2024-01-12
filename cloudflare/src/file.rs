@@ -24,7 +24,7 @@ impl CloudflareFileIO {
   }
 
   async fn get(&self, r2: &R2Address) -> anyhow::Result<String> {
-    log::debug!("Reading from bucket:{} path:{}", r2.bucket, r2.path);
+    tracing::debug!("Reading from bucket:{} path:{}", r2.bucket, r2.path);
     let bucket = self.bucket(&r2).await.map_err(to_anyhow)?;
 
     let maybe_object = bucket.get(&r2.path).execute().await.map_err(to_anyhow)?;

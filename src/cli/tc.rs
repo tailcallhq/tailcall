@@ -37,7 +37,7 @@ pub fn run() -> Result<()> {
           .worker_threads(config.server.get_workers())
           .enable_all()
           .build()?;
-        let server = Server::new(config);
+        let server = Server::try_new(config)?;
         runtime.block_on(server.start())?;
         Ok(())
       }

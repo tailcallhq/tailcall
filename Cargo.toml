@@ -22,6 +22,28 @@ hyper-rustls = { version = "0.24.2", optional = true }
 rustls = { version = "0.21.9", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
 inquire = { version = "0.6.2", optional = true }
+opentelemetry = { version = "0.21.0", features = [
+   "trace",
+   "logs",
+   "metrics",
+], optional = true }
+opentelemetry-stdout = { version = "0.2.0", features = [
+   "trace",
+   "logs",
+   "metrics",
+], optional = true }
+opentelemetry_sdk = { version = "0.21.1", features = [
+   "trace",
+   "logs",
+   "metrics",
+   "rt-tokio",
+], optional = true }
+opentelemetry-otlp = { version = "0.14.0", features = [
+   "trace",
+   "logs",
+   "metrics",
+], optional = true }
+opentelemetry-appender-tracing = { version = "0.2.0", default-features = false, optional = true }
 
 # dependencies safe for wasm:
 
@@ -75,28 +97,11 @@ ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
-opentelemetry = { version = "0.21.0", features = ["trace", "logs", "metrics"] }
-opentelemetry-stdout = { version = "0.2.0", features = [
-   "trace",
-   "logs",
-   "metrics",
-] }
-opentelemetry_sdk = { version = "0.21.1", features = [
-   "trace",
-   "logs",
-   "metrics",
-   "rt-tokio",
-] }
-opentelemetry-otlp = { version = "0.14.0", features = [
-   "trace",
-   "logs",
-   "metrics",
-] }
-opentelemetry-appender-tracing = { version="0.2.0", default-features = false }
 # TODO: disable some levels with features?
-tracing = { version = "0.1.40" }
+tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 tracing-opentelemetry = "0.22.0"
+getrandom = { version = "0.2.11", features = ["js"] }
 
 
 [dev-dependencies]
@@ -117,6 +122,11 @@ default = [
    "rustls",
    "rustls-pemfile",
    "inquire",
+   "opentelemetry",
+   "opentelemetry_sdk",
+   "opentelemetry-stdout",
+   "opentelemetry-appender-tracing",
+   "opentelemetry-otlp"
 ]
 
 

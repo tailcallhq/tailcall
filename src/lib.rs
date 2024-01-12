@@ -21,7 +21,6 @@ pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
-pub mod opentelemetry;
 pub mod path;
 pub mod print_schema;
 pub mod tracing;
