@@ -9,13 +9,14 @@ use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
-use crate::blueprint::{Blueprint, validate_operations};
+use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
 use crate::print_schema;
+use crate::valid::Cause;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -51,11 +52,19 @@ pub fn run() -> Result<()> {
             display_schema(&blueprint);
           }
 
-          Ok(
-            tokio::runtime::Runtime::new()?
-              .block_on(async { validate_operations(&blueprint, operations).await })
-              .to_result()?,
-          )
+          Ok(tokio::runtime::Runtime::new()?.block_on(async {
+            let ops: Result<Vec<OperationQuery>, Cause<String>> =
+              futures_util::future::join_all(operations.iter().map(|op| async {
+                match tokio::fs::read_to_string(op.clone()).await {
+                  Ok(query) => Ok(OperationQuery::new(query, Some(op.clone()))),
+                  Err(e) => Err(Cause::new(e.to_string()).trace(vec![op.clone()])),
+                }
+              }))
+              .await
+              .into_iter()
+              .collect();
+            validate_operations(&blueprint, ops?).await.to_result()
+          })?)
         }
         Err(e) => Err(e.into()),
       }
