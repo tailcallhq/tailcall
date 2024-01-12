@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use url::Url;
 
 use crate::config::{Config, Source};
-use crate::io::{FileIO, HttpIO};
+use crate::{FileIO, HttpIO};
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use reqwest::Client;
 use tailcall::http::Response;
-use tailcall::io::HttpIO;
+use tailcall::HttpIO;
 
 use crate::to_anyhow;
 

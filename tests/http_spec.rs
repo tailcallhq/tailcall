@@ -22,7 +22,7 @@ use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
-use tailcall::io::{EnvIO, HttpIO};
+use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();

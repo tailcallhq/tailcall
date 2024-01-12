@@ -7,7 +7,7 @@ use url::Url;
 
 use super::protobuf::ProtobufOperation;
 use crate::http::Response;
-use crate::io::HttpIO;
+use crate::HttpIO;
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
   let mut req = Request::new(Method::POST, url);

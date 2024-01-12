@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::io::{EnvIO, HttpIO};
+use crate::{EnvIO, HttpIO};
 
 fn graphiql() -> Result<Response<Body>> {
   Ok(Response::new(Body::from(

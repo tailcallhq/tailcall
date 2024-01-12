@@ -9,11 +9,10 @@ use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::io::{EnvIO, HttpIO};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
+use crate::{grpc, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,

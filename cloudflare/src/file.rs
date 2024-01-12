@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::anyhow;
-use tailcall::io::FileIO;
+use tailcall::FileIO;
 use worker::Env;
 
 use crate::r2_address::R2Address;

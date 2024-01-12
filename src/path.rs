@@ -111,9 +111,9 @@ mod tests {
     use once_cell::sync::Lazy;
 
     use crate::http::RequestContext;
-    use crate::io::EnvIO;
     use crate::lambda::{EvaluationContext, ResolverContextLike};
     use crate::path::{PathGraphql, PathString};
+    use crate::EnvIO;
 
     struct Env {
       env: HashMap<String, String>,

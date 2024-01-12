@@ -11,10 +11,9 @@ use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::io::{EnvIO, HttpIO};
+use crate::{grpc, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {

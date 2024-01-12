@@ -8,7 +8,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::io::EnvIO;
+use tailcall::EnvIO;
 
 use crate::env::EnvCloudflare;
 use crate::http::{to_request, to_response, HttpCloudflare};

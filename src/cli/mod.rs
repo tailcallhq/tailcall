@@ -8,7 +8,7 @@ pub use error::CLIError;
 pub use tc::run;
 
 use crate::config::Upstream;
-use crate::io::{FileIO, HttpIO};
+use crate::{FileIO, HttpIO};
 
 pub(crate) mod env;
 pub(crate) mod file;

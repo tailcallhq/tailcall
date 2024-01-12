@@ -9,7 +9,7 @@ use async_graphql::futures_util::future::join_all;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
-use crate::io::HttpIO;
+use crate::HttpIO;
 
 pub struct GraphqlDataLoader {
   pub client: Arc<dyn HttpIO>,

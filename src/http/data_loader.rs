@@ -10,8 +10,8 @@ use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
-use crate::io::HttpIO;
 use crate::json::JsonLike;
+use crate::HttpIO;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
   body_value

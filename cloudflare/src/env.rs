@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use tailcall::io::EnvIO;
+use tailcall::EnvIO;
 use worker::Env;
 
 pub struct EnvCloudflare {

@@ -7,7 +7,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use reqwest::Request;
 use tailcall::config::Batch;
 use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::io::HttpIO;
+use tailcall::HttpIO;
 
 #[derive(Clone)]
 struct MockHttpClient {
