@@ -1,12 +1,16 @@
 #[cfg(feature = "default")]
 use std::time::Duration;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use core::future::Future;
 
 #[cfg(feature = "default")]
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tower::{Service, limit::RateLimit, util::ServiceFn};
 
-use super::Response;
+use super::{Response, http_client_service::HttpClientService};
 use crate::config::{self, Upstream};
 
 #[async_trait::async_trait]
@@ -21,24 +25,41 @@ impl HttpClient for DefaultHttpClient {
     #[cfg(feature = "default")]
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
     #[cfg(not(feature = "default"))]
-    return async_std::task::spawn_local(execute(self.client.clone(), request)).await;
+    return async_std::task::spawn_local(execute(self.service.clone(), request)).await;
     #[cfg(feature = "default")]
-    Response::from_response_to_val(self.client.execute(request).await?).await
+    Response::from_response_to_val(self.call(request).await?).await
   }
 
   async fn execute_raw(&self, request: Request) -> anyhow::Result<Response<Vec<u8>>> {
     #[cfg(feature = "default")]
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
     #[cfg(not(feature = "default"))]
-    return async_std::task::spawn_local(execute_vec(self.client.clone(), request)).await;
+    return async_std::task::spawn_local(execute_vec(self.service.clone(), request)).await;
     #[cfg(feature = "default")]
-    Response::from_response_to_vec(self.client.execute(request).await?).await
+    Response::from_response_to_vec(self.call(request).await?).await
   }
 }
 
 #[derive(Clone)]
+enum HttpService {
+  RateLimited(Arc<Mutex<RateLimit<HttpClientService>>>),
+  Normal(Arc<Mutex<HttpClientService>>)
+}
+
+#[derive(Clone)]
 pub struct DefaultHttpClient {
-  client: ClientWithMiddleware,
+  service: HttpService,
+}
+
+impl DefaultHttpClient {
+  async fn call(&self, request: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    use HttpService::*;
+
+    Ok(match self.service {
+      RateLimited(ref service) => service.lock().await.call(request).await,
+      Normal(ref service) => service.lock().await.call(request).await,
+    }?)
+  }
 }
 
 impl Default for DefaultHttpClient {
@@ -92,18 +113,37 @@ impl DefaultHttpClient {
       }))
     }
 
-    DefaultHttpClient { client: client.build() }
+    let client = client.build();
+
+    let service = match _upstream.rate_limit.as_ref() {
+      Some(rate_limit) => {
+          let duration = Duration::from_secs(rate_limit.unit.into_secs());
+          let service = tower::ServiceBuilder::new()
+            .rate_limit(rate_limit.requests_per_unit.get(), duration)
+            .service(HttpClientService::new(client));
+          let service = Arc::new(Mutex::new(service));
+          HttpService::RateLimited(service)
+      },
+      None => {
+        let service = tower::ServiceBuilder::new()
+          .service(HttpClientService::new(client));
+        let service = Arc::new(Mutex::new(service));
+        HttpService::Normal(service)
+      }
+    };
+
+    DefaultHttpClient { service }
   }
 }
 #[cfg(not(feature = "default"))]
-async fn execute(client: ClientWithMiddleware, request: Request) -> anyhow::Result<Response<async_graphql::Value>> {
-  let response = client.execute(request).await?.error_for_status()?;
+async fn execute(service: HttpService, request: Request) -> anyhow::Result<Response<async_graphql::Value>> {
+  let response = service.call(request).await?.error_for_status()?;
   let response = Response::from_response_to_val(response).await?;
   Ok(response)
 }
 #[cfg(not(feature = "default"))]
-async fn execute_vec(client: ClientWithMiddleware, request: Request) -> anyhow::Result<Response<Vec<u8>>> {
-  let response = client.execute(request).await?.error_for_status()?;
+async fn execute_vec(service: HttpService, request: Request) -> anyhow::Result<Response<Vec<u8>>> {
+  let response = service.call(request).await?.error_for_status()?;
   let response = Response::from_response_to_vec(response).await?;
   Ok(response)
 }

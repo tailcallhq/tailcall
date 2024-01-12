@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
 
+use super::ClientRateLimit;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
@@ -180,6 +182,8 @@ pub struct Upstream {
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: Option<Batch>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<ClientRateLimit>,
 }
 
 impl Upstream {

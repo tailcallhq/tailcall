@@ -14,7 +14,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::HttpDataLoader;
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
-use crate::rate_limiter::{GlobalRateLimiter, LocalRateLimiter};
+use crate::rate_limiter::LocalRateLimiter;
 
 pub struct ServerContext {
   pub schema: dynamic::Schema,
@@ -26,7 +26,6 @@ pub struct ServerContext {
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub local_rate_limiter: LocalRateLimiter,
-  pub global_rate_limiter: GlobalRateLimiter,
   pub env_vars: Arc<HashMap<String, String>>,
 }
 
@@ -72,7 +71,7 @@ impl ServerContext {
 
           if let Some(Expression::Unsafe(expr_unsafe)) = &mut field.resolver {
             match expr_unsafe {
-              Unsafe::Http { req_template, group_by, .. } => {
+              Unsafe::Http { req_template, group_by, rate_limit, .. } => {
                 let data_loader = HttpDataLoader::new(
                   universal_http_client.clone(),
                   group_by.clone(),
@@ -84,12 +83,13 @@ impl ServerContext {
                   req_template: req_template.clone(),
                   group_by: group_by.clone(),
                   dl_id: Some(DataLoaderId(http_data_loaders.len())),
+                  rate_limit: rate_limit.clone(),
                 }));
 
                 http_data_loaders.push(data_loader);
               }
 
-              Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+              Unsafe::GraphQLEndpoint { req_template, field_name, batch, rate_limit, .. } => {
                 let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch)
                   .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
@@ -98,12 +98,13 @@ impl ServerContext {
                   field_name: field_name.clone(),
                   batch: *batch,
                   dl_id: Some(DataLoaderId(gql_data_loaders.len())),
+                  rate_limit: rate_limit.clone(),
                 }));
 
                 gql_data_loaders.push(graphql_data_loader);
               }
 
-              Unsafe::Grpc { req_template, group_by, .. } => {
+              Unsafe::Grpc { req_template, group_by, rate_limit, .. } => {
                 let data_loader = GrpcDataLoader {
                   client: http2_only_client.clone(),
                   operation: req_template.operation.clone(),
@@ -115,6 +116,7 @@ impl ServerContext {
                   req_template: req_template.clone(),
                   group_by: group_by.clone(),
                   dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                  rate_limit: rate_limit.clone(),
                 }));
 
                 grpc_data_loaders.push(data_loader);
@@ -128,7 +130,6 @@ impl ServerContext {
 
     let schema = blueprint.to_schema();
     let local_rate_limiter = LocalRateLimiter::new(type_rate_limits, field_rate_limits);
-    let global_rate_limiter = GlobalRateLimiter::new();
 
     #[cfg(feature = "default")]
     let env_vars = Arc::new(std::env::vars().collect());
@@ -145,7 +146,6 @@ impl ServerContext {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       local_rate_limiter,
-      global_rate_limiter,
       env_vars,
     }
   }

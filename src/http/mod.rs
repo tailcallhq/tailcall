@@ -16,6 +16,7 @@ mod server;
 #[cfg(feature = "default")]
 mod server_config;
 mod server_context;
+mod http_client_service;
 use std::time::Duration;
 
 use cache_control::{Cachability, CacheControl};

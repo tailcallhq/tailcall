@@ -97,10 +97,6 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
   state: Arc<ServerContext>,
 ) -> Result<Response<Body>> {
-  if let Some(ref rate_limit) = state.blueprint.global_rate_limit {
-    state.global_rate_limiter.allow_req(&req, rate_limit)?;
-  }
-
   match *req.method() {
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),

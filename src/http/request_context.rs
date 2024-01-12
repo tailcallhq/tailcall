@@ -17,7 +17,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
-use crate::rate_limiter::{GlobalRateLimiter, LocalRateLimiter};
+use crate::rate_limiter::LocalRateLimiter;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -38,7 +38,6 @@ pub struct RequestContext {
   cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<HashMap<String, String>>,
   pub local_rate_limiter: LocalRateLimiter,
-  pub global_rate_limiter: GlobalRateLimiter,
 }
 
 pub struct NumRequestsFetched {
@@ -75,7 +74,6 @@ impl Default for RequestContext {
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: Arc::new(HashMap::new()),
       local_rate_limiter: LocalRateLimiter::new(HashMap::new(), HashMap::new()),
-      global_rate_limiter: GlobalRateLimiter::new(),
     }
   }
 }
@@ -155,7 +153,6 @@ impl From<&ServerContext> for RequestContext {
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: server_ctx.env_vars.clone(),
       local_rate_limiter: server_ctx.local_rate_limiter.clone(),
-      global_rate_limiter: server_ctx.global_rate_limiter.clone(),
     }
   }
 }

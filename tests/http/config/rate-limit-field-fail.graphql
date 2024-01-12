@@ -7,6 +7,6 @@ type Query {
 }
 
 type Bar {
-  id: Int @localRateLimit(requestsPerUnit: 3, unit: "minute")
-  name: String @localRateLimit(requestsPerUnit: 100, unit: "second")
+  id: Int @rateLimit(requestsPerUnit: 3, unit: "minute")
+  name: String @rateLimit(requestsPerUnit: 100, unit: "second")
 }

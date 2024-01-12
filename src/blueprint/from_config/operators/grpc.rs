@@ -2,7 +2,7 @@ use std::path::Path;
 
 use prost_reflect::FieldDescriptor;
 
-use crate::blueprint::{FieldDefinition, TypeLike};
+use crate::blueprint::{FieldDefinition, TypeLike, RateLimit, ClientRateLimit};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -132,6 +132,10 @@ pub fn update_grpc<'a>(
                 req_template,
                 group_by: Some(GroupBy::new(grpc.group_by.clone())),
                 dl_id: None,
+                rate_limit: field.grpc.as_ref().and_then(|grpc| {
+                  let crt = grpc.rate_limit.as_ref()?;
+                  crt.try_into().ok()
+                })
               }))))
             } else {
               Valid::succeed(b_field.resolver(Some(Lambda::from_grpc_request_template(req_template).expression)))

@@ -8,13 +8,14 @@ use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
 use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::{self, Upstream};
 use crate::lambda::{Expression, Lambda};
 use crate::mustache::Mustache;
-use crate::rate_limiter::RateLimit;
+use crate::rate_limiter;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -26,7 +27,7 @@ pub struct Blueprint {
   pub schema: SchemaDefinition,
   pub server: Server,
   pub upstream: Upstream,
-  pub global_rate_limit: Option<GlobalRateLimit>,
+  pub global_rate_limit: Option<RateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -92,7 +93,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
-  pub rate_limit: Option<LocalRateLimit>,
+  pub rate_limit: Option<RateLimit>,
 }
 
 #[derive(Clone, Debug)]
@@ -139,13 +140,13 @@ pub struct Cache {
 }
 
 #[derive(Clone, Debug)]
-pub struct LocalRateLimit {
+pub struct RateLimit {
   pub duration: Duration,
   pub requests: NonZeroU64,
   pub group_by: Option<String>,
 }
 
-impl RateLimit for LocalRateLimit {
+impl rate_limiter::RateLimit for RateLimit {
   fn duration(&self) -> Duration {
     self.duration
   }
@@ -155,14 +156,14 @@ impl RateLimit for LocalRateLimit {
   }
 }
 
-#[derive(Clone, Debug)]
-pub struct GlobalRateLimit {
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct ClientRateLimit {
   pub duration: Duration,
   pub requests: NonZeroU64,
   pub group_by: Option<GroupBy>,
 }
 
-impl RateLimit for GlobalRateLimit {
+impl rate_limiter::RateLimit for ClientRateLimit {
   fn duration(&self) -> Duration {
     self.duration
   }
@@ -172,7 +173,7 @@ impl RateLimit for GlobalRateLimit {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct GroupBy {
   pub base: String,
   pub rest: Vec<String>,
@@ -224,14 +225,14 @@ impl TryFrom<&String> for GroupBy {
   }
 }
 
-impl TryFrom<&config::GlobalRateLimit> for GlobalRateLimit {
+impl TryFrom<&config::ClientRateLimit> for ClientRateLimit {
   type Error = anyhow::Error;
 
   fn try_from(
-    config::GlobalRateLimit { unit, requests_per_unit, group_by }: &config::GlobalRateLimit,
+    config::ClientRateLimit { unit, requests_per_unit, group_by }: &config::ClientRateLimit,
   ) -> anyhow::Result<Self> {
     let duration = Duration::from_secs(unit.into_secs());
-    Ok(GlobalRateLimit {
+    Ok(ClientRateLimit {
       duration,
       requests: *requests_per_unit,
       group_by: group_by.as_ref().map(GroupBy::try_from).transpose()?,
@@ -239,10 +240,10 @@ impl TryFrom<&config::GlobalRateLimit> for GlobalRateLimit {
   }
 }
 
-impl From<&config::LocalRateLimit> for LocalRateLimit {
-  fn from(config::LocalRateLimit { unit, requests_per_unit, group_by }: &config::LocalRateLimit) -> Self {
+impl From<&config::RateLimit> for RateLimit {
+  fn from(config::RateLimit { unit, requests_per_unit, group_by }: &config::RateLimit) -> Self {
     let duration = Duration::from_secs(unit.into_secs());
-    LocalRateLimit { duration, requests: *requests_per_unit, group_by: group_by.as_ref().map(String::clone) }
+    RateLimit { duration, requests: *requests_per_unit, group_by: group_by.as_ref().map(String::clone) }
   }
 }
 
@@ -255,7 +256,7 @@ pub struct FieldDefinition {
   pub directives: Vec<Directive>,
   pub description: Option<String>,
   pub cache: Option<Cache>,
-  pub rate_limit: Option<LocalRateLimit>,
+  pub rate_limit: Option<RateLimit>,
 }
 
 impl FieldDefinition {

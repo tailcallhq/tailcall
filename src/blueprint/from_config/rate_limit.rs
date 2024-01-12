@@ -1,5 +1,4 @@
 use super::TryFoldConfig;
-use crate::blueprint::GlobalRateLimit;
 use crate::config::Config;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;

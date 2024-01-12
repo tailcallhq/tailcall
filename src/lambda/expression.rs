@@ -10,6 +10,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use crate::blueprint::{RateLimit, ClientRateLimit};
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -46,17 +47,20 @@ pub enum Unsafe {
     req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
+    rate_limit: Option<ClientRateLimit>,
   },
   GraphQLEndpoint {
     req_template: graphql::RequestTemplate,
     field_name: String,
     batch: bool,
     dl_id: Option<DataLoaderId>,
+    rate_limit: Option<ClientRateLimit>,
   },
   Grpc {
     req_template: grpc::RequestTemplate,
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
+    rate_limit: Option<ClientRateLimit>,
   },
   JS(Box<Expression>, String),
 }

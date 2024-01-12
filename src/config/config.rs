@@ -27,7 +27,7 @@ pub struct Config {
   #[serde(default)]
   pub upstream: Upstream,
   pub schema: RootSchema,
-  pub rate_limit: Option<GlobalRateLimit>,
+  // pub rate_limit: Option<GlobalRateLimit>,
   #[serde(default)]
   #[setters(skip)]
   pub types: BTreeMap<String, Type>,
@@ -127,9 +127,9 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let rate_limit = self.rate_limit.or(other.rate_limit.clone());
+    // let rate_limit = self.rate_limit.or(other.rate_limit.clone());
 
-    Self { server, upstream, types, schema, rate_limit, unions }
+    Self { server, upstream, types, schema, unions,/* rate_limit */ }
   }
 
   pub async fn write_file(self, filename: &String) -> Result<()> {
@@ -157,7 +157,7 @@ pub struct Type {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub rate_limit: Option<LocalRateLimit>,
+  pub rate_limit: Option<RateLimit>,
 }
 
 impl Type {
@@ -216,7 +216,7 @@ impl RateLimitUnit {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct GlobalRateLimit {
+pub struct ClientRateLimit {
   pub unit: RateLimitUnit,
   pub requests_per_unit: NonZeroU64,
   pub group_by: Option<String>,
@@ -224,7 +224,7 @@ pub struct GlobalRateLimit {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct LocalRateLimit {
+pub struct RateLimit {
   pub unit: RateLimitUnit,
   pub requests_per_unit: NonZeroU64,
   pub group_by: Option<String>,
@@ -305,7 +305,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub rate_limit: Option<LocalRateLimit>,
+  pub rate_limit: Option<RateLimit>,
 }
 
 impl Field {
@@ -432,6 +432,8 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(rename = "rateLimit", default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<ClientRateLimit>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -448,6 +450,8 @@ pub struct Grpc {
   pub proto_path: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<ClientRateLimit>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -461,6 +465,8 @@ pub struct GraphQL {
   pub headers: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
   pub batch: bool,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub rate_limit: Option<ClientRateLimit>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

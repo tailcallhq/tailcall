@@ -49,6 +49,7 @@ impl Lambda<serde_json::Value> {
       req_template,
       group_by: None,
       dl_id: None,
+      rate_limit: None,
     }))
   }
 
@@ -62,6 +63,7 @@ impl Lambda<serde_json::Value> {
       field_name,
       batch,
       dl_id: None,
+      rate_limit: None,
     }))
   }
 
@@ -70,6 +72,7 @@ impl Lambda<serde_json::Value> {
       req_template,
       group_by: None,
       dl_id: None,
+      rate_limit: None,
     }))
   }
 }

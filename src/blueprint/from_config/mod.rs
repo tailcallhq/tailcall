@@ -1,7 +1,6 @@
 mod definitions;
 mod from_config;
 mod operators;
-mod rate_limit;
 mod schema;
 mod server;
 mod upstream;
@@ -9,7 +8,6 @@ mod upstream;
 pub use definitions::*;
 pub use from_config::*;
 pub use operators::*;
-pub use rate_limit::*;
 pub use schema::*;
 pub use server::*;
 pub use upstream::*;

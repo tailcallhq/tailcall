@@ -6,7 +6,7 @@ type Query {
   bars: [Bar] @http(path: "/bars")
 }
 
-type Bar @localRateLimit(requestsPerUnit: 3, unit: "day", groupBy: "id") {
+type Bar @rateLimit(requestsPerUnit: 3, unit: "day", groupBy: "id") {
   id: Int
   name: String
 }

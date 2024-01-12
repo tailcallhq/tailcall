@@ -29,16 +29,16 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
     |blueprint| blueprint.upstream,
   );
 
-  let rate_limit = to_rate_limit().transform::<Blueprint>(
-    |rate_limit, blueprint| blueprint.global_rate_limit(rate_limit),
-    |blueprint| blueprint.global_rate_limit,
-  );
+  // let rate_limit = to_rate_limit().transform::<Blueprint>(
+  //   |rate_limit, blueprint| blueprint.global_rate_limit(rate_limit),
+  //   |blueprint| blueprint.global_rate_limit,
+  // );
 
   server
     .and(schema)
     .and(definitions)
     .and(upstream)
-    .and(rate_limit)
+    // .and(rate_limit)
     .update(apply_batching)
     .update(compress)
 }
