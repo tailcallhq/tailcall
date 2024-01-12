@@ -272,10 +272,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let type_of = to_type_of(&input_value_definition.ty.node);
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
   let required = !input_value_definition.ty.node.nullable;
-  let doc = input_value_definition
-    .description
-    .to_owned()
-    .map(|pos| pos.node);
+  let doc = input_value_definition.description.to_owned().map(|pos| pos.node);
   let modify = to_modify(&input_value_definition.directives);
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
     let value = &pos.node;
