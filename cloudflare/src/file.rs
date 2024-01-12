@@ -44,7 +44,6 @@ impl CloudflareFileIO {
   }
 }
 
-#[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
     let r2 = R2Address::from_string(file_path.to_string())?;
