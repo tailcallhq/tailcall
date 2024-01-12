@@ -5,7 +5,8 @@ use thiserror::Error;
 use super::basic::BasicProvider;
 use super::jwt::JwtProvider;
 use crate::blueprint;
-use crate::http::{HttpClient, RequestContext};
+use crate::http::RequestContext;
+use crate::io::HttpIO;
 
 #[derive(Debug, Error, Clone, PartialEq, PartialOrd)]
 pub enum AuthError {
@@ -29,7 +30,7 @@ pub enum AuthProvider {
 }
 
 impl AuthProvider {
-  pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpClient>) -> Self {
+  pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpIO>) -> Self {
     match config {
       blueprint::AuthProvider::Basic(options) => AuthProvider::Basic(BasicProvider::new(options)),
       blueprint::AuthProvider::Jwt(options) => AuthProvider::Jwt(JwtProvider::new(options, client)),

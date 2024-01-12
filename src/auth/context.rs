@@ -4,7 +4,8 @@ use futures_util::future::join_all;
 
 use super::base::{AuthError, AuthProvider, AuthProviderTrait};
 use crate::blueprint::Auth;
-use crate::http::{HttpClient, RequestContext};
+use crate::http::RequestContext;
+use crate::io::HttpIO;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -42,7 +43,7 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-  pub fn new(auth: Auth, client: Arc<dyn HttpClient>) -> Self {
+  pub fn new(auth: Auth, client: Arc<dyn HttpIO>) -> Self {
     let providers = auth
       .0
       .into_iter()
@@ -81,16 +82,17 @@ mod tests {
   use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN};
   use crate::auth::jwt::JwtProvider;
   use crate::blueprint;
+  use crate::http::Response;
 
   struct MockHttpClient;
 
   #[async_trait::async_trait]
-  impl HttpClient for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<crate::http::Response> {
+  impl HttpIO for MockHttpClient {
+    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
       todo!()
     }
 
-    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
       todo!()
     }
   }

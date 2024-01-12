@@ -161,6 +161,11 @@ directive @upstream(
   An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).
   """
   batch: Batch
+
+  """
+  The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.
+  """
+  http2Only: Boolean
 ) on SCHEMA
 
 """

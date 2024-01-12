@@ -12,7 +12,8 @@ use self::remote_jwks::RemoteJwksVerifier;
 use self::validation::{validate_aud, validate_iss};
 use super::base::{AuthError, AuthProviderTrait};
 use crate::blueprint;
-use crate::http::{HttpClient, RequestContext};
+use crate::http::RequestContext;
+use crate::io::HttpIO;
 
 // only used in tests and uses mocked implementation
 #[cfg(test)]
@@ -44,7 +45,7 @@ enum JwksVerifier {
 }
 
 impl JwksVerifier {
-  pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpClient>) -> Self {
+  pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
     match &options.jwks {
       blueprint::Jwks::Local(jwks) => {
         let mut verifier = jwks.verifier();
@@ -77,7 +78,7 @@ pub struct JwtProvider {
 }
 
 impl JwtProvider {
-  pub fn new(options: blueprint::JwtProvider, client: Arc<dyn HttpClient>) -> Self {
+  pub fn new(options: blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
     Self { verifier: JwksVerifier::new(&options, client), options }
   }
 
@@ -125,17 +126,17 @@ pub mod tests {
   use std::collections::HashSet;
 
   use super::*;
-  use crate::http::HttpClient;
+  use crate::http::Response;
 
   struct MockHttpClient;
 
   #[async_trait::async_trait]
-  impl HttpClient for MockHttpClient {
-    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<crate::http::Response> {
+  impl HttpIO for MockHttpClient {
+    async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
       todo!()
     }
 
-    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    async fn execute_raw(&self, _req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
       todo!()
     }
   }

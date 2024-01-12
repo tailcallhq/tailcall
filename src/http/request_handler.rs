@@ -8,7 +8,7 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::ServerContext;
+use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 fn graphiql() -> Result<Response<Body>> {
@@ -24,7 +24,7 @@ fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
 
-fn create_request_context(req: &Request<Body>, server_ctx: &ServerContext) -> RequestContext {
+fn create_request_context(req: &Request<Body>, server_ctx: &AppContext) -> RequestContext {
   let upstream = server_ctx.blueprint.upstream.clone();
   let allowed = upstream.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
@@ -35,7 +35,7 @@ fn create_request_context(req: &Request<Body>, server_ctx: &ServerContext) -> Re
 
 fn update_cache_control_header(
   response: GraphQLResponse,
-  server_ctx: &ServerContext,
+  server_ctx: &AppContext,
   req_ctx: Arc<RequestContext>,
 ) -> GraphQLResponse {
   if server_ctx.blueprint.server.enable_cache_control_header {
@@ -46,7 +46,7 @@ fn update_cache_control_header(
   response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &ServerContext) {
+pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &AppContext) {
   if !server_ctx.blueprint.server.response_headers.is_empty() {
     resp
       .headers_mut()
@@ -56,7 +56,7 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_c
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
-  server_ctx: &ServerContext,
+  server_ctx: &AppContext,
 ) -> Result<Response<Body>> {
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
@@ -97,7 +97,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
-  state: Arc<ServerContext>,
+  state: Arc<AppContext>,
 ) -> Result<Response<Body>> {
   match *req.method() {
     hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T>(req, state.as_ref()).await,

@@ -9,7 +9,7 @@ use reqwest::Request;
 use url::Url;
 
 use crate::auth::base::AuthError;
-use crate::http::HttpClient;
+use crate::io::HttpIO;
 
 struct JWKSCache {
   jwks: JwkSetVerifier,
@@ -20,14 +20,14 @@ pub struct RemoteJwksVerifier {
   url: Url,
   // as a trait object due to deep bubbling of generic definition
   // up to the entry point
-  client: Arc<dyn HttpClient>,
+  client: Arc<dyn HttpIO>,
   max_age: Duration,
   cache: RwLock<Option<JWKSCache>>,
   require_kid: bool,
 }
 
 impl RemoteJwksVerifier {
-  pub fn new(url: Url, client: Arc<dyn HttpClient>, max_age: Duration) -> Self {
+  pub fn new(url: Url, client: Arc<dyn HttpIO>, max_age: Duration) -> Self {
     Self { url, client, max_age, cache: RwLock::new(None), require_kid: true }
   }
 
@@ -88,6 +88,6 @@ impl RemoteJwksVerifier {
       .insert("accept", HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()));
 
     let response = self.client.execute_raw(request).await?;
-    Ok(serde_json::from_value(response.json().await?)?)
+    Ok(response.to_json()?.body)
   }
 }

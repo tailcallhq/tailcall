@@ -121,7 +121,7 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<
     let type_opt = match type_definition.node.kind.clone() {
       TypeKind::Union(union_type) => to_union(
         union_type,
-        &type_definition.node.description.as_ref().map(|pos| pos.node.clone()),
+        &type_definition.node.description.to_owned().map(|pos| pos.node),
       ),
       _ => continue,
     };
@@ -148,7 +148,7 @@ where
   to_fields(fields, cache)
     .zip(Protected::from_directives(directives.iter()))
     .map(|(fields, protected)| {
-      let doc = description.as_ref().map(|pos| pos.node.clone());
+      let doc = description.to_owned().map(|pos| pos.node);
       let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
       let added_fields = to_add_fields_from_directives(directives);
       config::Type {
@@ -227,7 +227,7 @@ where
   let type_of = to_type_of(type_);
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
-  let doc = description.as_ref().map(|pos| pos.node.clone());
+  let doc = description.to_owned().map(|pos| pos.node);
   let modify = to_modify(directives);
 
   config::Http::from_directives(directives.iter())
@@ -286,7 +286,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let type_of = to_type_of(&input_value_definition.ty.node);
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
   let required = !input_value_definition.ty.node.nullable;
-  let doc = input_value_definition.description.as_ref().map(|pos| pos.node.clone());
+  let doc = input_value_definition.description.to_owned().map(|pos| pos.node);
   let modify = to_modify(&input_value_definition.directives);
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
     let value = &pos.node;
