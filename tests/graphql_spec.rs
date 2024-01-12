@@ -7,6 +7,7 @@ use std::sync::{Arc, Once};
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
+use futures_util::future::join_all;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use pretty_assertions::{assert_eq, assert_ne};
@@ -15,8 +16,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::{Config, Link};
+use tailcall::cli::{init_env, init_http};
+use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
-use tailcall::http::{RequestContext, ServerContext};
+use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
 use tailcall::valid::{Cause, Valid};
 
@@ -308,7 +311,9 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let server_ctx = ServerContext::new(blueprint);
+        let h_client = Arc::new(init_http(&blueprint.upstream));
+        let h2_client = Arc::new(init_http(&blueprint.upstream));
+        let server_ctx = AppContext::new(blueprint, h_client, h2_client, Arc::new(init_env()));
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {
@@ -332,9 +337,7 @@ async fn test_execution() -> std::io::Result<()> {
     })
     .collect();
 
-  for task in tasks {
-    task.await?;
-  }
+  join_all(tasks).await;
 
   Ok(())
 }
