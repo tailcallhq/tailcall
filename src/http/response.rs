@@ -39,4 +39,8 @@ impl Response<Vec<u8>> {
   pub fn to_resp_string(self) -> Result<Response<String>> {
     Ok(Response::<String> { body: String::from_utf8(self.body)?, status: self.status, headers: self.headers })
   }
+
+  pub fn empty() -> Response<Vec<u8>> {
+    Response { status: reqwest::StatusCode::OK, headers: reqwest::header::HeaderMap::default(), body: Vec::new() }
+  }
 }

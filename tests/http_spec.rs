@@ -8,7 +8,6 @@ use std::sync::{Arc, Once};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
-use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::body::Bytes;
@@ -234,64 +233,6 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    // Clone the mocks to allow iteration without borrowing issues.
-    let mocks = self.spec.mock.clone();
-
-    // Try to find a matching mock for the incoming request.
-    let mock = mocks
-      .iter()
-      .find(|Mock { request: mock_req, response: _ }| {
-        let method_match = req.method() == mock_req.0.method.clone().to_hyper();
-        let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-        let req_body = match req.body() {
-          Some(body) => {
-            if let Some(bytes) = body.as_bytes() {
-              if let Ok(body_str) = std::str::from_utf8(bytes) {
-                Value::from(body_str)
-              } else {
-                Value::Null
-              }
-            } else {
-              Value::Null
-            }
-          }
-          None => Value::Null,
-        };
-        let body_match = req_body == mock_req.0.body;
-        method_match && url_match && body_match
-      })
-      .ok_or(anyhow!(
-        "No mock found for request: {:?} {} in {}",
-        req.method(),
-        req.url(),
-        format!("{}", self.spec.path.to_str().unwrap())
-      ))?;
-
-    // Clone the response from the mock to avoid borrowing issues.
-    let mock_response = mock.response.clone();
-
-    // Build the response with the status code from the mock.
-    let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
-
-    if status_code.is_client_error() || status_code.is_server_error() {
-      return Err(anyhow::format_err!("Status code error"));
-    }
-
-    let mut response = Response { status: status_code, ..Default::default() };
-
-    // Insert headers from the mock into the response.
-    for (key, value) in mock_response.0.headers {
-      let header_name = HeaderName::from_str(&key)?;
-      let header_value = HeaderValue::from_str(&value)?;
-      response.headers.insert(header_name, header_value);
-    }
-
-    // Set the body of the response.
-    response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
-
-    Ok(response)
-  }
   async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 

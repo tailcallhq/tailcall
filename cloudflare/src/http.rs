@@ -30,8 +30,11 @@ impl HttpIO for HttpCloudflare {
   // This is because there is little control over the underlying HTTP client
   async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
     let client = self.client.clone();
-    let response = client.execute(request).await?;
-    Response::from_reqwest(response).await
+    async_std::task::spawn_local(async move {
+      let response = client.execute(request).await?;
+      Response::from_reqwest(response).await
+    })
+    .await
   }
 }
 

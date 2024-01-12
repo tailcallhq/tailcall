@@ -17,14 +17,8 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-  async fn execute(&self, _: Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    self.request_count.fetch_add(1, Ordering::SeqCst);
-    // You can mock the actual response as per your need
-    Ok(Response::default())
-  }
-
   async fn execute_raw(&self, _req: Request) -> anyhow::Result<Response<Vec<u8>>> {
-    unimplemented!()
+    Ok(Response::empty())
   }
 }
 
