@@ -33,7 +33,7 @@ impl HttpIO for HttpCloudflare {
     let client = self.client.clone();
     // TODO: remove spawn local
     spawn_local(async move {
-      let response = client.execute(request).await?;
+      let response = client.execute(request).await?.error_for_status()?;
       Response::from_reqwest(response).await
     })
     .await

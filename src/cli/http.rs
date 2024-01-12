@@ -66,7 +66,7 @@ impl HttpIO for HttpNative {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response = self.client.execute(request).await?;
+    let response = self.client.execute(request).await?.error_for_status()?;
     Ok(Response::from_reqwest(response).await?)
   }
 }

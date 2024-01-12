@@ -252,6 +252,9 @@ impl HttpIO for MockHttpClient {
   async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
     let mocks = self.spec.mock.clone();
 
+    // Determine if the request is a GRPC request based on PORT
+    let is_grpc = req.url().as_str().contains("50051");
+
     // Try to find a matching mock for the incoming request.
     let mock = mocks
       .iter()
@@ -272,8 +275,8 @@ impl HttpIO for MockHttpClient {
           }
           None => Value::Null,
         };
-        let _body_match = req_body == mock_req.0.body;
-        method_match && url_match // && body_match
+        let body_match = req_body == mock_req.0.body;
+        method_match && url_match && (body_match || is_grpc)
       })
       .ok_or(anyhow!(
         "No mock found for request: {:?} {} in {}",
@@ -301,9 +304,16 @@ impl HttpIO for MockHttpClient {
       response.headers.insert(header_name, header_value);
     }
 
-    let body = mock_response.0.body.as_str().unwrap_or_default();
-    response.body = Bytes::from_iter(string_to_bytes(body));
-    Ok(response)
+    // Special Handling for GRPC
+    if is_grpc {
+      let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+      response.body = Bytes::from_iter(body);
+      Ok(response)
+    } else {
+      let body = serde_json::to_vec(&mock_response.0.body)?;
+      response.body = Bytes::from_iter(body);
+      Ok(response)
+    }
   }
 }
 
