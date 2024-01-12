@@ -31,7 +31,7 @@ pub struct Link {
 impl Link {
   fn merge_configs(config: Option<Config>, config_right: Option<Config>) -> anyhow::Result<Option<Config>> {
     match (config, config_right) {
-      (Some(c), Some(cc)) => Ok(Some(c.merge_right(&cc)?)),
+      (Some(c), Some(cc)) => Ok(Some(c.merge_right(&cc))),
       (Some(c), None) => Ok(Some(c)),
       (None, Some(cc)) => Ok(Some(cc)),
       (None, None) => Ok(None),

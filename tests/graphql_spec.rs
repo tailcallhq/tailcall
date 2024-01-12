@@ -261,7 +261,7 @@ fn test_config_identity() -> std::io::Result<()> {
 async fn resolve_config_links(mut config: Config) -> anyhow::Result<Config> {
   let config_from_link = Link::resolve_recurse(&mut config.links).await?;
   if let Some(conf) = config_from_link {
-    config = config.merge_right(&conf)?;
+    config = config.merge_right(&conf);
   }
   Ok(config)
 }
