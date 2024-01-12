@@ -8,9 +8,21 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::io::EnvIO;
+use tailcall::io::{EnvIO, FileIO, HttpIO};
 
-use crate::{init_env, init_file, init_http};
+use crate::{env, file, http};
+
+fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
+  env::EnvCloudflare::init(env)
+}
+
+fn init_file(env: Arc<worker::Env>) -> impl FileIO {
+  file::CloudflareFileIO::init(env)
+}
+
+fn init_http() -> impl HttpIO + Default + Clone {
+  http::HttpCloudflare::init()
+}
 
 lazy_static! {
   static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);

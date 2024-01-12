@@ -9,15 +9,15 @@ mod handle;
 mod http;
 mod r2_address;
 
-pub fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
+fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-pub fn init_file(env: Arc<worker::Env>) -> impl FileIO {
+fn init_file(env: Arc<worker::Env>) -> impl FileIO {
   file::CloudflareFileIO::init(env)
 }
 
-pub fn init_http() -> impl HttpIO + Default + Clone {
+fn init_http() -> impl HttpIO + Default + Clone {
   http::HttpCloudflare::init()
 }
 
