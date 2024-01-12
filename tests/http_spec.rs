@@ -249,7 +249,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.
@@ -302,7 +302,7 @@ impl HttpIO for MockHttpClient {
     }
 
     let body = mock_response.0.body.as_str().unwrap_or_default();
-    response.body = string_to_bytes(body);
+    response.body = Bytes::from_iter(string_to_bytes(body));
     Ok(response)
   }
 }

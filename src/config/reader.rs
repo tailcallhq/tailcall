@@ -37,7 +37,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
           None => file.to_string(),
         };
         let source = Self::detect_source(&sdl)?;
-        let content = String::from_utf8(response.body)?;
+        let content = String::from_utf8(response.body.to_vec())?;
         let conf = Config::from_source(source, &content)?;
         config = config.clone().merge_right(&conf);
         continue;

@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use hyper::body::Bytes;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
@@ -60,7 +61,7 @@ impl HttpNative {
 
 #[async_trait::async_trait]
 impl HttpIO for HttpNative {
-  async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
     if self.http2_only {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }

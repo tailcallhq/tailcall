@@ -1,5 +1,6 @@
 use anyhow::Result;
 use derive_setters::Setters;
+use hyper::body::Bytes;
 
 use crate::grpc::protobuf::ProtobufOperation;
 
@@ -10,12 +11,15 @@ pub struct Response<Body: Default + Clone> {
   pub body: Body,
 }
 
-impl Response<Vec<u8>> {
-  pub async fn from_reqwest(resp: reqwest::Response) -> Result<Response<Vec<u8>>> {
+impl Response<Bytes> {
+  pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
     let status = resp.status();
     let headers = resp.headers().to_owned();
-    let body = resp.bytes().await?.to_vec();
+    let body = resp.bytes().await?;
     Ok(Response { status, headers, body })
+  }
+  pub fn empty() -> Self {
+    Response { status: reqwest::StatusCode::OK, headers: reqwest::header::HeaderMap::default(), body: Bytes::new() }
   }
 
   pub fn to_json(self) -> Result<Response<async_graphql::Value>> {
@@ -37,10 +41,6 @@ impl Response<Vec<u8>> {
   }
 
   pub fn to_resp_string(self) -> Result<Response<String>> {
-    Ok(Response::<String> { body: String::from_utf8(self.body)?, status: self.status, headers: self.headers })
-  }
-
-  pub fn empty() -> Response<Vec<u8>> {
-    Response { status: reqwest::StatusCode::OK, headers: reqwest::header::HeaderMap::default(), body: Vec::new() }
+    Ok(Response::<String> { body: String::from_utf8(self.body.to_vec())?, status: self.status, headers: self.headers })
   }
 }

@@ -36,7 +36,7 @@ pub trait EnvIO: Send + Sync + 'static {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
-  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
+  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
 pub trait FileIO {

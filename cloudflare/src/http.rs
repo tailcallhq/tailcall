@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
+use hyper::body::Bytes;
 use reqwest::Client;
 use tailcall::http::Response;
 use tailcall::HttpIO;
@@ -28,7 +29,7 @@ impl HttpCloudflare {
 impl HttpIO for HttpCloudflare {
   // HttpClientOptions are ignored in Cloudflare
   // This is because there is little control over the underlying HTTP client
-  async fn execute(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
     let client = self.client.clone();
     // TODO: remove spawn local
     spawn_local(async move {
