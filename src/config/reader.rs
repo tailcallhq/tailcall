@@ -23,7 +23,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
       if let Ok(url) = Url::parse(&file) {
         let response = self
           .http
-          .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
+          .execute(reqwest::Request::new(reqwest::Method::GET, url))
           .await?;
         let sdl = response.headers.get("content-type");
         let sdl = match sdl {

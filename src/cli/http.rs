@@ -60,7 +60,7 @@ impl HttpNative {
 
 #[async_trait::async_trait]
 impl HttpIO for HttpNative {
-  async fn execute_raw(&self, mut request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Vec<u8>>> {
     if self.http2_only {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }

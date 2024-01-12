@@ -22,7 +22,7 @@ pub async fn execute_grpc_request(
   operation: &ProtobufOperation,
   request: Request,
 ) -> Result<Response<async_graphql::Value>> {
-  let response = client.execute_raw(request).await?;
+  let response = client.execute(request).await?;
 
   if response.status.is_success() {
     return response.to_grpc_value(operation);

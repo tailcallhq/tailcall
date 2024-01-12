@@ -8,10 +8,7 @@ pub trait EnvIO: Send + Sync {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send {
-  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    self.execute_raw(request).await?.to_json()
-  }
-  async fn execute_raw(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
+  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>>;
 }
 
 pub trait FileIO {

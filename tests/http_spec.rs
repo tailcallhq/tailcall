@@ -233,7 +233,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
     let mocks = self.spec.mock.clone();
 
     // Try to find a matching mock for the incoming request.

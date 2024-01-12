@@ -203,7 +203,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx
       .req_ctx
       .h_client
-      .execute_raw(req)
+      .execute(req)
       .await?
       .to_json()
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,

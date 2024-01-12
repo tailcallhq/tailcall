@@ -28,7 +28,7 @@ impl HttpCloudflare {
 impl HttpIO for HttpCloudflare {
   // HttpClientOptions are ignored in Cloudflare
   // This is because there is little control over the underlying HTTP client
-  async fn execute_raw(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
+  async fn execute(&self, request: reqwest::Request) -> Result<Response<Vec<u8>>> {
     let client = self.client.clone();
     async_std::task::spawn_local(async move {
       let response = client.execute(request).await?;
