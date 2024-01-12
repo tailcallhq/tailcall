@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use tailcall::io::{EnvIO, FileIO, HttpIO};
@@ -9,11 +9,11 @@ mod handle;
 mod http;
 mod r2_address;
 
-pub fn init_env(env: Rc<worker::Env>) -> impl EnvIO {
+pub fn init_env(env: Arc<worker::Env>) -> impl EnvIO {
   env::EnvCloudflare::init(env)
 }
 
-pub fn init_file(env: Rc<worker::Env>) -> impl FileIO {
+pub fn init_file(env: Arc<worker::Env>) -> impl FileIO {
   file::CloudflareFileIO::init(env)
 }
 
