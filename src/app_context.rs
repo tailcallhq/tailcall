@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use async_graphql::dynamic;
+use async_graphql::dynamic::{self, DynamicRequest};
+use async_graphql::Response;
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::Type::ListType;
@@ -105,5 +106,9 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
     }
+  }
+
+  pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+    self.schema.execute(request).await
   }
 }
