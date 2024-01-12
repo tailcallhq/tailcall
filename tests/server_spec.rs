@@ -88,3 +88,12 @@ async fn server_start_http2_nokey() {
   let server = Server::new(config);
   assert!(server.start().await.is_err())
 }
+
+#[tokio::test]
+async fn server_start_http2_ec() {
+  test_server(
+    &["tests/server/config/server-start-http2-ec.graphql"],
+    "https://localhost:8804/graphql",
+  )
+  .await
+}
