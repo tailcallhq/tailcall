@@ -1,11 +1,10 @@
 schema
   @server(
-    port: 8802
+    port: 8803
     version: HTTP2
     hostname: "localhost"
     cert: "./tests/server/config/example.crt"
-    key: "./tests/server/config/example-rsa.key"
-    batchRequests: true
+    key: "./tests/server/config/example-nokey.key"
   ) {
   query: Query
 }
