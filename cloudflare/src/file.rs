@@ -56,14 +56,4 @@ impl FileIO for CloudflareFileIO {
     let content = self.get(&r2).await.map_err(to_anyhow)?;
     Ok(content)
   }
-
-  async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>> {
-    let mut vec = Vec::new();
-    // TODO: read files in parallel
-    for file in file_paths {
-      let content = self.read(file).await.map_err(to_anyhow)?;
-      vec.push((content, file.to_string()));
-    }
-    Ok(vec)
-  }
 }

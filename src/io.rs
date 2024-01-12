@@ -17,7 +17,6 @@ pub trait HttpIO: Sync + Send {
 pub trait FileIO {
   fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> impl Future<Output = anyhow::Result<()>>;
   fn read<'a>(&'a self, file_path: &'a str) -> impl Future<Output = anyhow::Result<String>>;
-  fn read_all<'a>(&'a self, file_paths: &'a [String]) -> impl Future<Output = anyhow::Result<Vec<(String, String)>>>;
 }
 
 // TODO: rename to ConstEnv

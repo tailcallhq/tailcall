@@ -24,14 +24,4 @@ impl FileIO for NativeFileIO {
     file.read_to_end(&mut buffer).await?;
     Ok(String::from_utf8(buffer)?)
   }
-
-  async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> Result<Vec<(String, String)>> {
-    let mut files = vec![];
-    // TODO: make this parallel
-    for file in file_paths {
-      let content = self.read(file).await?;
-      files.push((content, file.to_string()));
-    }
-    Ok(files)
-  }
 }
