@@ -199,14 +199,13 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
 ) -> Result<Response<async_graphql::Value>> {
-  Ok(
-    ctx
-      .req_ctx
-      .h_client
-      .execute(req)
-      .await
-      .map_err(|e| EvaluationError::IOException(e.to_string()))?,
-  )
+  ctx
+    .req_ctx
+    .h_client
+    .execute(req)
+    .await
+    .map_err(|e| EvaluationError::IOException(e.to_string()))?
+    .to_json()
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
