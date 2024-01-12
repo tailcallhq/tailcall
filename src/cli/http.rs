@@ -3,21 +3,23 @@ use std::time::Duration;
 use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use reqwest::Client;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_middleware::ClientBuilder;
 
 use super::HttpIO;
 use crate::config::Upstream;
-use crate::http::Response;
+use crate::http::{HttpService, Response};
 
 #[derive(Clone)]
 pub struct HttpNative {
-  client: ClientWithMiddleware,
+  service: HttpService,
   http2_only: bool,
 }
 
 impl Default for HttpNative {
   fn default() -> Self {
-    Self { client: ClientBuilder::new(Client::new()).build(), http2_only: false }
+    let client = ClientBuilder::new(Client::new()).build();
+    let service = HttpService::simple(client);
+    Self { service, http2_only: false }
   }
 }
 
@@ -54,7 +56,19 @@ impl HttpNative {
         options: HttpCacheOptions::default(),
       }))
     }
-    Self { client: client.build(), http2_only: upstream.get_http_2_only() }
+    let client = client.build();
+
+    let service = match upstream.rate_limit.as_ref() {
+      Some(rate_limit) => {
+        let num = rate_limit.requests_per_unit.get();
+        let secs = rate_limit.unit.into_secs();
+        let per = Duration::from_secs(secs);
+        HttpService::rate_limited(client, num, per)
+      }
+      None => HttpService::simple(client),
+    };
+
+    Self { service, http2_only: upstream.get_http_2_only() }
   }
 }
 
@@ -65,7 +79,7 @@ impl HttpIO for HttpNative {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response = self.client.execute(request).await?;
+    let response = self.service.call(request).await?;
     Ok(Response::from_reqwest(response).await?)
   }
 }

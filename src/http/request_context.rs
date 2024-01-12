@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -10,15 +9,14 @@ use hyper::HeaderMap;
 
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
-use crate::cli::{init_http, init_http2_only, init_env};
-use crate::config::{Upstream, self};
+use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::rate_limiter::LocalRateLimiter;
 use crate::io::{EnvIO, HttpIO};
+use crate::rate_limiter::LocalRateLimiter;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -134,7 +132,7 @@ impl From<&AppContext> for RequestContext {
 #[cfg(test)]
 mod test {
   use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+  use std::sync::{Arc, Mutex};
 
   use cache_control::Cachability;
   use hyper::HeaderMap;
@@ -144,7 +142,7 @@ use std::sync::{Arc, Mutex};
   use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
-use crate::rate_limiter::LocalRateLimiter;
+  use crate::rate_limiter::LocalRateLimiter;
 
   impl Default for RequestContext {
     fn default() -> Self {

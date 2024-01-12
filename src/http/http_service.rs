@@ -1,10 +1,43 @@
 use core::future::Future;
+use std::sync::Arc;
 use std::task::Poll;
+use std::time::Duration;
 
 use futures_util::FutureExt;
 use reqwest_middleware::ClientWithMiddleware;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
+use tower::limit::rate::Rate;
+use tower::limit::RateLimit;
 use tower::Service;
+
+#[derive(Clone)]
+pub enum HttpService {
+  RateLimited(Arc<Mutex<RateLimit<HttpClientService>>>),
+  Simple(Arc<Mutex<HttpClientService>>),
+}
+
+impl HttpService {
+  pub fn simple(client: ClientWithMiddleware) -> Self {
+    let service = HttpClientService::new(client);
+    Self::Simple(Arc::new(Mutex::new(service)))
+  }
+
+  pub fn rate_limited(client: ClientWithMiddleware, num: u64, per: Duration) -> Self {
+    let rate = Rate::new(num, per);
+    let service = HttpClientService::new(client);
+    let service = RateLimit::new(service, rate);
+    Self::RateLimited(Arc::new(Mutex::new(service)))
+  }
+
+  pub async fn call(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
+    use HttpService::*;
+    match self {
+      RateLimited(service) => service.lock().await.call(req).await,
+      Simple(service) => service.lock().await.call(req).await,
+    }
+  }
+}
 
 #[derive(Clone)]
 pub struct HttpClientService {

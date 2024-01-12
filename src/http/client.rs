@@ -41,11 +41,7 @@ impl HttpClient for DefaultHttpClient {
   }
 }
 
-#[derive(Clone)]
-enum HttpService {
-  RateLimited(Arc<Mutex<RateLimit<HttpClientService>>>),
-  Normal(Arc<Mutex<HttpClientService>>),
-}
+
 
 #[derive(Clone)]
 pub struct DefaultHttpClient {

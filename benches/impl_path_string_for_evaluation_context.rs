@@ -159,7 +159,7 @@ fn request_context() -> RequestContext {
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
     env_vars: Arc::new(init_env()),
-    local_rate_limiter: LocalRateLimiter::new(HashMap::new(), HashMap::new())
+    local_rate_limiter: LocalRateLimiter::new(HashMap::new(), HashMap::new()),
   }
 }
 
