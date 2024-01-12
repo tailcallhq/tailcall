@@ -69,6 +69,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
+      for key in &def.keys {
+        object = object.key(key);
+      }
       for field in def.fields.iter() {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
@@ -133,6 +136,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
     }
     Definition::InterfaceTypeDefinition(def) => {
       let mut interface = dynamic::Interface::new(def.name.clone());
+      for key in &def.keys {
+        interface = interface.key(key);
+      }
       for field in def.fields.iter() {
         interface = interface.field(dynamic::InterfaceField::new(
           field.name.clone(),

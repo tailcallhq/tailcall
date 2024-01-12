@@ -52,6 +52,7 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
     name: definition.name,
     fields: definition.fields,
     description: definition.description,
+    keys: definition.keys,
   }))
 }
 
@@ -233,6 +234,7 @@ fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
+      keys: type_of.key.iter().map(|key| key.fields.clone()).collect(),
     })
   })
 }

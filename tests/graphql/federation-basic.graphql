@@ -3,7 +3,7 @@ schema @server(federation: true) @upstream {
   query: Query
 }
 
-type Amit @key(fields: "id") {
+type Post @key(fields: "id") {
   body: String
   id: ID
   title: String
@@ -11,11 +11,11 @@ type Amit @key(fields: "id") {
 }
 
 type Query {
-  posts: [Amit] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
+  posts: [Post] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
 }
 
 #> client-sdl
-type Amit {
+type Post {
   body: String
   id: ID
   title: String
@@ -23,8 +23,9 @@ type Amit {
 }
 
 type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
-  posts: [Amit]
+  posts: [Post]
 }
 
 """
@@ -32,6 +33,8 @@ The `_Any` scalar is used to pass representations of entities from external
 services into the root `_entities` field for execution.
 """
 scalar _Any
+
+union _Entity = Post
 
 type _Service {
   sdl: String
