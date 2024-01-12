@@ -74,9 +74,9 @@ impl Link {
   }
 
   async fn get_content(link: &mut Link) -> anyhow::Result<Option<Source>> {
+    let path = &link.src.trim_end_matches('/');
     let (content, source) = if let Ok(url) = Url::parse(&link.src) {
       let resp = reqwest::get(url).await?;
-      let path = link.src.clone();
       if !resp.status().is_success() {
         return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
       }
@@ -85,17 +85,16 @@ impl Link {
           if let Ok(s) = Source::detect_content_type(v.to_str()?) {
             s
           } else {
-            Source::detect(path.trim_end_matches('/'))?
+            Source::detect(path)?
           }
         } else {
-          Source::detect(path.trim_end_matches('/'))?
+          Source::detect(path)?
         };
         (Some(resp.text().await?), Some(source))
       } else {
         (Some(resp.text().await?), None)
       }
     } else {
-      let path = &link.src.trim_end_matches('/');
       let mut f = File::open(path).await?;
       let mut buffer: Vec<u8> = Vec::new();
       f.read_to_end(&mut buffer).await?;
