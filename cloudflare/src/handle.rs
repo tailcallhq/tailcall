@@ -45,6 +45,9 @@ async fn init(env: Rc<worker::Env>) -> anyhow::Result<Arc<AppContext>> {
   if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
+    // Initialize Logger
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+
     // Create new context
     let env_io = init_env(env.clone());
     let cfg = get_config(&env_io, env.clone()).await?;

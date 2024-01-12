@@ -10,7 +10,6 @@ use std::{fs, panic};
 use anyhow::{anyhow, Context};
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
-use futures_util::future::join_all;
 use hyper::body::Bytes;
 use hyper::{Body, Request};
 use pretty_assertions::assert_eq;
@@ -426,8 +425,13 @@ fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
 async fn http_spec_e2e() -> anyhow::Result<()> {
   let spec = HttpSpec::cargo_read("tests/http")?;
   let spec = HttpSpec::filter_specs(spec);
-  let tasks: Vec<_> = spec.into_iter().map(assert_downstream).collect();
-  join_all(tasks).await;
+  let tasks: Vec<_> = spec
+    .into_iter()
+    .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
+    .collect();
+  for task in tasks {
+    task.await?;
+  }
   Ok(())
 }
 
