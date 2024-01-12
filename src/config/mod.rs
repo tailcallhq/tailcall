@@ -14,7 +14,6 @@ pub mod reader;
 mod resolver;
 mod server;
 mod source;
-mod writer;
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()

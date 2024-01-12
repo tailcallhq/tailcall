@@ -39,7 +39,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
         let source = Self::detect_source(&sdl)?;
         let content = String::from_utf8(response.body)?;
         let conf = Config::from_source(source, &content)?;
-        config = config.clone().merge_right(&conf);
+        config = config.clone().merge_right(&conf)?;
         let config_from_link = Link::resolve_recurse(&mut config.links).await?;
 
         if let Some(conf) = config_from_link {
@@ -51,7 +51,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
       let (content, path) = self.file.read(&file).await?;
       let source = Self::detect_source(&path)?;
       let conf = Config::from_source(source, &content)?;
-      config = config.clone().merge_right(&conf);
+      config = config.clone().merge_right(&conf)?;
       let config_from_link = Link::resolve_recurse(&mut config.links).await?;
 
       if let Some(conf) = config_from_link {
