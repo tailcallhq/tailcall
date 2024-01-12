@@ -53,8 +53,7 @@ impl FileIO for CloudflareFileIO {
       let r2 = R2Address::from_string(file_path)?;
       io.put(&r2, content).await.map_err(to_anyhow)?;
       anyhow::Ok(())
-    })
-    .await?;
+    }).await?;
     Ok(())
   }
 
@@ -65,8 +64,7 @@ impl FileIO for CloudflareFileIO {
       let r2 = R2Address::from_string(file_path)?;
       let content = io.get(&r2).await.map_err(to_anyhow)?;
       anyhow::Ok(content)
-    })
-    .await
+    }).await
   }
 
   async fn read_all<'a>(&'a self, file_paths: &'a [String]) -> anyhow::Result<Vec<(String, String)>> {
@@ -80,7 +78,6 @@ impl FileIO for CloudflareFileIO {
         vec.push((content, file.to_string()));
       }
       anyhow::Ok(vec)
-    })
-    .await
+    }).await
   }
 }
