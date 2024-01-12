@@ -388,7 +388,7 @@ async fn test_merge_sdl() -> anyhow::Result<()> {
       .collect::<Vec<_>>();
     let config = content
       .iter()
-      .fold(Config::default(), |acc, c| acc.merge_right(c).unwrap());
+      .fold(Config::default(), |acc, c| acc.merge_right(c));
     let config = resolve_config_links(config).await.unwrap();
 
     let actual = config.to_sdl();
