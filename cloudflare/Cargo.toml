@@ -14,8 +14,13 @@ hyper = { version = "0.14", default-features = false }
 # strict version of `wasm-bindgen` that are conficting with opentelemetry-tracing
 # crate from root. Git version has a higher version that removes the conflict
 worker = { git = "https://github.com/cloudflare/workers-rs", rev = "c57f7a6d31da601397e46daec5a9448d6efbe1cc" } # version = "0.18"
-tailcall = {path = "..", default-features = false}
-lazy_static = { version = "1.4.0", features = [] }
+tailcall = { path = "..", default-features = false }
+lazy_static = "1.4.0"
+anyhow = "1.0.79"
+async-trait = "0.1.77"
+reqwest = { version = "0.11", default-features = false }
+async-std = "1.12.0"
+wasm-logger = "0.2.0"
 
 [profile.release]
 lto = true

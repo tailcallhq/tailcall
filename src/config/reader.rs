@@ -1,81 +1,72 @@
 use anyhow::anyhow;
-#[cfg(feature = "default")]
-use tokio::{fs::File, io::AsyncReadExt};
 use url::Url;
 
 use crate::config::{Config, Source};
+use crate::{FileIO, HttpIO};
 
-pub struct ConfigReader {
-  file_paths: Vec<String>,
+const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
+
+pub struct ConfigReader<File, Http> {
+  file: File,
+  http: Http,
 }
 
-impl ConfigReader {
-  pub fn init<Iter>(file_paths: Iter) -> Self
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    Self { file_paths: file_paths.map(|path| path.as_ref().to_owned()).collect() }
+impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
+  pub fn init(file: File, http: Http) -> Self {
+    Self { file, http }
   }
-  pub async fn read(&self) -> anyhow::Result<Config> {
+
+  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
+    let files = files.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut config = Config::default();
-    for path in &self.file_paths {
-      #[cfg(feature = "default")]
-      let conf = if let Ok(url) = Url::parse(path) {
-        Self::from_url(url).await?
-      } else {
-        let path = path.trim_end_matches('/');
-        Self::from_file_path(path).await?
-      };
-      #[cfg(not(feature = "default"))]
-      let url = Url::parse(path)?;
-      #[cfg(not(feature = "default"))]
-      let conf = Self::from_url(url).await?;
+    for file in files {
+      if let Ok(url) = Url::parse(&file) {
+        let response = self
+          .http
+          .execute(reqwest::Request::new(reqwest::Method::GET, url))
+          .await?;
+        let sdl = response.headers.get("content-type");
+        let sdl = match sdl {
+          Some(value) => {
+            let value = value.to_str().map_err(|e| anyhow!("{}", e))?.to_string();
+            match SUPPORTED_EXT.iter().any(|&substring| value.contains(substring)) {
+              true => value,
+              false => file.to_string(),
+            }
+          }
+          None => file.to_string(),
+        };
+        let source = Self::detect_source(&sdl)?;
+        let content = String::from_utf8(response.body.to_vec())?;
+        let conf = Config::from_source(source, &content)?;
+        config = config.clone().merge_right(&conf);
+        continue;
+      }
+      let content = self.file.read(&file).await?;
+      let source = Self::detect_source(&file)?;
+      let conf = Config::from_source(source, &content)?;
       config = config.clone().merge_right(&conf);
     }
     Ok(config)
   }
-  #[cfg(feature = "default")]
-  async fn from_file_path(file_path: &str) -> anyhow::Result<Config> {
-    let (server_sdl, source) = ConfigReader::read_file(file_path).await?;
-    Config::from_source(source, &server_sdl)
-  }
-  #[cfg(feature = "default")]
-  async fn read_file(file_path: &str) -> anyhow::Result<(String, Source)> {
-    let mut f = File::open(file_path).await?;
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer).await?;
-    Ok((String::from_utf8(buffer)?, Source::detect(file_path)?))
-  }
-  async fn read_over_url(url: Url) -> anyhow::Result<(String, Source)> {
-    let path = url.path().to_string();
-    let resp = reqwest::get(url).await?;
-    if !resp.status().is_success() {
-      return Err(anyhow!("Read over URL failed with status code: {}", resp.status()));
-    }
-    let source = if let Some(v) = resp.headers().get("content-type") {
-      if let Ok(s) = Source::detect_content_type(v.to_str()?) {
-        s
-      } else {
-        Source::detect(path.trim_end_matches('/'))?
-      }
+
+  fn detect_source(source: &str) -> anyhow::Result<Source> {
+    let source = if let Ok(s) = Source::detect_content_type(source) {
+      s
     } else {
-      Source::detect(path.trim_end_matches('/'))?
+      Source::detect(source.trim_end_matches('/'))?
     };
-    let txt = resp.text().await?;
-    Ok((txt, source))
-  }
-  async fn from_url(url: Url) -> anyhow::Result<Config> {
-    let (st, source) = Self::read_over_url(url).await?;
-    Config::from_source(source, &st)
+    Ok(source)
   }
 }
+
 #[cfg(test)]
 mod reader_tests {
   use tokio::io::AsyncReadExt;
 
+  use crate::cli::{init_file, init_http};
   use crate::config::reader::ConfigReader;
-  use crate::config::{Config, Type};
+  use crate::config::{Config, Type, Upstream};
 
   fn start_mock_server() -> httpmock::MockServer {
     httpmock::MockServer::start()
@@ -118,8 +109,8 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(files.iter());
-    let c = cr.read().await.unwrap();
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
         .iter()
@@ -130,6 +121,7 @@ mod reader_tests {
     foo_json_serv.assert(); // checks if the request was actually made
     header_serv.assert();
   }
+
   #[tokio::test]
   async fn test_local_files() {
     let files: Vec<String> = [
@@ -140,8 +132,8 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(files.iter());
-    let c = cr.read().await.unwrap();
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let c = cr.read(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()

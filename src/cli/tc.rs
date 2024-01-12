@@ -1,5 +1,5 @@
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
@@ -10,9 +10,10 @@ use tokio::runtime::Builder;
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::cli::CLIError;
-use crate::config::Config;
-use crate::http::Server;
+use crate::cli::server::Server;
+use crate::cli::{init_file, init_http, CLIError};
+use crate::config::reader::ConfigReader;
+use crate::config::{Config, Upstream};
 use crate::print_schema;
 use crate::tracing::default_tracing;
 
@@ -20,47 +21,49 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub fn run() -> Result<()> {
-  let cli = Cli::parse();
-
   let cli_subscriber = default_tracing();
 
-  tracing::subscriber::with_default(cli_subscriber, || match cli.command {
-    Command::Start { file_paths } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
-      tracing::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      let runtime = Builder::new_multi_thread()
-        .worker_threads(config.server.get_workers())
-        .enable_all()
-        .build()?;
-      let server = Server::new(config);
-      runtime.block_on(server.start())?;
-      Ok(())
-    }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
-      let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
-      match blueprint {
-        Ok(blueprint) => {
-          display_config(&config, n_plus_one_queries);
-          if schema {
-            display_schema(&blueprint);
-          }
+  tracing::subscriber::with_default(cli_subscriber, || {
+    let cli = Cli::parse();
 
-          Ok(())
-        }
-        Err(e) => Err(e.into()),
+    let file_io = init_file();
+    let default_http_io = init_http(&Upstream::default());
+    let config_reader = ConfigReader::init(file_io, default_http_io);
+    match cli.command {
+      Command::Start { file_paths } => {
+        let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+        tracing::info!("N + 1: {}", config.n_plus_one().len().to_string());
+        let runtime = Builder::new_multi_thread()
+          .worker_threads(config.server.get_workers())
+          .enable_all()
+          .build()?;
+        let server = Server::new(config);
+        runtime.block_on(server.start())?;
+        Ok(())
       }
-    }
-    Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
-    Command::Compose { file_path, format } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
+      Command::Check { file_paths, n_plus_one_queries, schema } => {
+        let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+        let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
+        match blueprint {
+          Ok(blueprint) => {
+            display_config(&config, n_plus_one_queries);
+            if schema {
+              display_schema(&blueprint);
+            }
 
-      Fmt::display(format.encode(config)?);
-
-      Ok(())
+            Ok(())
+          }
+          Err(e) => Err(e.into()),
+        }
+      }
+      Command::Init { folder_path } => {
+        Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?)
+      }
+      Command::Compose { file_paths, format } => {
+        let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+        Fmt::display(format.encode(&config)?);
+        Ok(())
+      }
     }
   })
 }
@@ -75,6 +78,8 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
     if confirm {
       fs::create_dir_all(folder_path)?;
+    } else {
+      return Ok(());
     };
   }
 
@@ -117,19 +122,24 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
   let mut yaml: serde_yaml::Value = serde_yaml::from_str(&graphqlrc)?;
 
-  if let Some(schema) = yaml.get_mut("schema").and_then(|v| v.as_sequence_mut()) {
-    if !schema
-      .iter()
-      .any(|v| v == &serde_yaml::Value::from("./.tailcallrc.graphql"))
-    {
-      let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
-        .with_default(false)
-        .prompt()?;
+  if let Some(mapping) = yaml.as_mapping_mut() {
+    let schema = mapping
+      .entry("schema".into())
+      .or_insert(serde_yaml::Value::Sequence(Default::default()));
+    if let Some(schema) = schema.as_sequence_mut() {
+      if !schema
+        .iter()
+        .any(|v| v == &serde_yaml::Value::from("./.tailcallrc.graphql"))
+      {
+        let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
+          .with_default(false)
+          .prompt()?;
 
-      if confirm {
-        schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
-        let updated = serde_yaml::to_string(&yaml)?;
-        fs::write(yml_file_path, updated)?;
+        if confirm {
+          schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
+          let updated = serde_yaml::to_string(&yaml)?;
+          fs::write(yml_file_path, updated)?;
+        }
       }
     }
   }
@@ -148,5 +158,3 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
 }
-
-

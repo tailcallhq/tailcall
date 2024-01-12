@@ -6,6 +6,7 @@ use async_graphql::dynamic::{
   FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
 };
 use async_graphql_value::ConstValue;
+use tracing::Instrument;
 
 use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};

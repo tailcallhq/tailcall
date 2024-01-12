@@ -1,7 +1,7 @@
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
-  @opentelemetry(export: { stdout: { pretty: false } }) {
+  @opentelemetry(export: { stdout: { pretty: true } }) {
   query: Query
 }
 

@@ -8,8 +8,8 @@ use std::sync::{Arc, Once};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
-use async_graphql_value::ConstValue;
 use derive_setters::Setters;
+use futures_util::future::join_all;
 use hyper::body::Bytes;
 use hyper::{Body, Request};
 use pretty_assertions::assert_eq;
@@ -18,8 +18,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, Source};
-use tailcall::http::{handle_request, HttpClient, Method, Response, ServerContext};
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, Source, Upstream};
+use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -31,6 +34,7 @@ enum Annotation {
   Only,
   Fail,
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct APIRequest {
@@ -53,17 +57,39 @@ struct APIResponse {
   #[serde(default)]
   body: serde_json::Value,
 }
+
+pub struct Env {
+  env: HashMap<String, String>,
+}
+
+impl EnvIO for Env {
+  fn get(&self, key: &str) -> Option<String> {
+    self.env.get(key).cloned()
+  }
+}
+
+impl Env {
+  pub fn init(map: HashMap<String, String>) -> Self {
+    Self { env: map }
+  }
+}
+
 fn default_status() -> u16 {
   200
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UpstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamRequest(APIRequest);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamResponse(APIResponse);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
   request: DownstreamRequest,
@@ -170,17 +196,20 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<ServerContext> {
+  async fn server_context(&self) -> Arc<AppContext<impl HttpIO, impl EnvIO>> {
+    let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
-      ConfigSource::File(file) => Config::read_from_files([file].iter()).await.unwrap(),
+      ConfigSource::File(file) => {
+        let reader = ConfigReader::init(init_file(), http_client);
+        reader.read(&[file]).await.unwrap()
+      }
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
-    let mut server_context = ServerContext::with_http_clients(blueprint, client, http2_client);
-    server_context.env_vars = Arc::new(self.env.clone());
-
+    let env = Arc::new(Env::init(self.env.clone()));
+    let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
     Arc::new(server_context)
   }
 }
@@ -217,11 +246,14 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
   bytes
 }
+
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<async_graphql::Value>> {
-    // Clone the mocks to allow iteration without borrowing issues.
+impl HttpIO for MockHttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
     let mocks = self.spec.mock.clone();
+
+    // Determine if the request is a GRPC request based on PORT
+    let is_grpc = req.url().as_str().contains("50051");
 
     // Try to find a matching mock for the incoming request.
     let mock = mocks
@@ -244,7 +276,7 @@ impl HttpClient for MockHttpClient {
           None => Value::Null,
         };
         let body_match = req_body == mock_req.0.body;
-        method_match && url_match && body_match
+        method_match && url_match && (body_match || is_grpc)
       })
       .ok_or(anyhow!(
         "No mock found for request: {:?} {} in {}",
@@ -272,66 +304,16 @@ impl HttpClient for MockHttpClient {
       response.headers.insert(header_name, header_value);
     }
 
-    // Set the body of the response.
-    response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
-
-    Ok(response)
-  }
-  async fn execute_raw(&self, req: reqwest::Request) -> anyhow::Result<Response<Vec<u8>>> {
-    let mocks = self.spec.mock.clone();
-
-    // Try to find a matching mock for the incoming request.
-    let mock = mocks
-      .iter()
-      .find(|Mock { request: mock_req, response: _ }| {
-        let method_match = req.method() == mock_req.0.method.clone().to_hyper();
-        let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-        let req_body = match req.body() {
-          Some(body) => {
-            if let Some(bytes) = body.as_bytes() {
-              if let Ok(body_str) = std::str::from_utf8(bytes) {
-                Value::from(body_str)
-              } else {
-                Value::Null
-              }
-            } else {
-              Value::Null
-            }
-          }
-          None => Value::Null,
-        };
-        let _body_match = req_body == mock_req.0.body;
-        method_match && url_match // && body_match
-      })
-      .ok_or(anyhow!(
-        "No mock found for request: {:?} {} in {}",
-        req.method(),
-        req.url(),
-        format!("{}", self.spec.path.to_str().unwrap())
-      ))?;
-
-    // Clone the response from the mock to avoid borrowing issues.
-    let mock_response = mock.response.clone();
-
-    // Build the response with the status code from the mock.
-    let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
-
-    if status_code.is_client_error() || status_code.is_server_error() {
-      return Err(anyhow::format_err!("Status code error"));
+    // Special Handling for GRPC
+    if is_grpc {
+      let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+      response.body = Bytes::from_iter(body);
+      Ok(response)
+    } else {
+      let body = serde_json::to_vec(&mock_response.0.body)?;
+      response.body = Bytes::from_iter(body);
+      Ok(response)
     }
-
-    let mut response = Response { status: status_code, ..Default::default() };
-
-    // Insert headers from the mock into the response.
-    for (key, value) in mock_response.0.headers {
-      let header_name = HeaderName::from_str(&key)?;
-      let header_value = HeaderValue::from_str(&value)?;
-      response.headers.insert(header_name, header_value);
-    }
-
-    let body = mock_response.0.body.as_str().unwrap_or_default();
-    response.body = string_to_bytes(body);
-    Ok(response)
   }
 }
 
@@ -411,13 +393,8 @@ fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
 async fn http_spec_e2e() -> anyhow::Result<()> {
   let spec = HttpSpec::cargo_read("tests/http")?;
   let spec = HttpSpec::filter_specs(spec);
-  let tasks: Vec<_> = spec
-    .into_iter()
-    .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
-    .collect();
-  for task in tasks {
-    task.await?;
-  }
+  let tasks: Vec<_> = spec.into_iter().map(assert_downstream).collect();
+  join_all(tasks).await;
   Ok(())
 }
 
@@ -437,8 +414,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_request::<GraphQLBatchRequest>(req, server_context).await
+    handle_request::<GraphQLBatchRequest, _, _>(req, server_context).await
   } else {
-    handle_request::<GraphQLRequest>(req, server_context).await
+    handle_request::<GraphQLRequest, _, _>(req, server_context).await
   }
 }
