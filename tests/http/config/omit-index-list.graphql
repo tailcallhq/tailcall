@@ -7,5 +7,5 @@ type User {
 }
 
 type Query @addField(name: "username", path: ["username", "0", "name"]) {
-  username: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com") @omit()
+  username: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com") @omit
 }

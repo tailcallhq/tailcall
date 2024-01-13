@@ -16,7 +16,7 @@ type Foo {
 }
 
 type Query @addField(name: "foo", path: ["foo", "a", "0", "b"]) {
-  foo: [Foo] @http(path: "/foo") @omit()
+  foo: [Foo] @http(path: "/foo") @omit
 }
 
 #> client-sdl

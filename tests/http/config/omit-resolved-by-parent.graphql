@@ -11,5 +11,5 @@ type Query {
 }
 
 type User @addField(name: "address", path: ["address", "street"]) {
-  address: Address @omit()
+  address: Address @omit
 }
