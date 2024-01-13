@@ -19,7 +19,7 @@ fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective,
     Valid::from(
       serde_json::from_value(v.clone())
         .map(pos)
-        .map_err(|e| ValidationError::new(e.to_string()).trace(format!("@{}", directive.name).as_str())),
+        .map_err(|e| ValidationError::new(format!("to_const_directive {}", e.to_string())).trace(format!("@{}", directive.name).as_str())),
     )
     .map(|value| (name, value))
   })
@@ -68,7 +68,7 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
       Valid::from(
         serde_json::to_value(&v.node)
-          .map_err(|e| ValidationError::new(e.to_string()).trace(format!("@{}", directive.name.node).as_str())),
+          .map_err(|e| ValidationError::new(format!("from_directive {}", e.to_string())).trace(format!("@{}", directive.name.node).as_str())),
       )
       .map(|v| (k.node.as_str().to_string(), v))
     })

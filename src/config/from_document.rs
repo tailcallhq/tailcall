@@ -217,6 +217,7 @@ where
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.to_owned().map(|pos| pos.node);
   let modify = to_modify(directives);
+  let omit = to_omit(directives);
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
@@ -234,6 +235,7 @@ where
         args,
         doc,
         modify,
+        omit,
         http,
         grpc,
         unsafe_operation,
@@ -288,6 +290,16 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
   directives.iter().find_map(|directive| {
     if directive.node.name.node == config::Modify::directive_name() {
       config::Modify::from_directive(&directive.node).to_result().ok()
+    } else {
+      None
+    }
+  })
+}
+
+fn to_omit(directives: &[Positioned<ConstDirective>]) -> Option<config::Omit> {
+  directives.iter().find_map(|directive| {
+    if directive.node.name.node == config::Omit::directive_name() {
+      config::Omit::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
