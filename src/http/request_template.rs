@@ -97,36 +97,33 @@ impl RequestTemplate {
     let method = self.method.clone();
     let mut req = reqwest::Request::new(method, url);
     req = self.set_headers(req, ctx);
-    req = self.set_body(req, ctx);
+    req = self.set_body(req, ctx)?;
 
     Ok(req)
   }
 
   /// Sets the body for the request
-  fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+  fn set_body<C: PathString + HasHeaders>(
+    &self,
+    mut req: reqwest::Request,
+    ctx: &C,
+  ) -> anyhow::Result<reqwest::Request> {
     if let Some(body) = &self.body {
       match &self.encoding {
         Encoding::ApplicationJson => {
           req.body_mut().replace(body.render(ctx).into());
         }
         Encoding::ApplicationXWwwFormUrlencoded => {
+          // TODO: this is a performance bottleneck
+          // We first encode everything to string and then back to form-urlencoded
           let raw_data: String = body.render(ctx);
-          // The raw_data can be both JSON or plain string. If it is 
-          // JSON, we need to parse it, or, we can directly use it.
-          if let Ok(deserialized_data) = serde_json::from_str::<serde_json::Value>(&raw_data) {
-            let form_data = serde_urlencoded::to_string(deserialized_data);
-            if let Ok(form_data) = form_data {
-              req.body_mut().replace(form_data.into());
-            } else {
-              req.body_mut().replace(raw_data.into());
-            }
-          } else {
-            req.body_mut().replace(raw_data.into());
-          }
-        } 
+          let deserialized_data = serde_json::from_str::<serde_json::Value>(&raw_data)?;
+          let form_data = serde_urlencoded::to_string(deserialized_data)?;
+          req.body_mut().replace(form_data.into());
+        }
       }
     }
-    req
+    Ok(req)
   }
 
   /// Sets the headers for the request
