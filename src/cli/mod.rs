@@ -13,6 +13,7 @@ use crate::{FileIO, HttpIO};
 pub(crate) mod env;
 pub(crate) mod file;
 pub(crate) mod http;
+pub(crate) mod update_checker;
 pub use env::EnvNative;
 pub use file::NativeFileIO;
 pub use http::HttpNative;

@@ -75,6 +75,8 @@ ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
+which = "5.0.0"
+semver = "1.0.21"
 
 [dev-dependencies]
 criterion = "0.5.1"

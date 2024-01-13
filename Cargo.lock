@@ -3288,6 +3288,7 @@ dependencies = [
  "reqwest-middleware",
  "rustls",
  "rustls-pemfile",
+ "semver",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -3299,6 +3300,7 @@ dependencies = [
  "ttl_cache",
  "url",
  "webbrowser",
+ "which 5.0.0",
 ]
 
 [[package]]
@@ -3650,7 +3652,7 @@ dependencies = [
  "bitflags 1.3.2",
  "fslock",
  "once_cell",
- "which",
+ "which 4.4.2",
 ]
 
 [[package]]
@@ -3829,6 +3831,19 @@ dependencies = [
  "home",
  "once_cell",
  "rustix 0.38.28",
+]
+
+[[package]]
+name = "which"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bf3ea8596f3a0dd5980b46430f2058dfe2c36a27ccfbb1845d6fbfcd9ba6e14"
+dependencies = [
+ "either",
+ "home",
+ "once_cell",
+ "rustix 0.38.28",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
