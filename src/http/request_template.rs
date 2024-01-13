@@ -161,17 +161,6 @@ impl RequestTemplate {
       encoding: Default::default(),
     })
   }
-
-  pub fn to_request_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<Vec<u8>> {
-    Ok(
-      self
-        .to_request(ctx)?
-        .body()
-        .and_then(|a| a.as_bytes())
-        .map(|a| a.to_vec())
-        .unwrap_or_default(),
-    )
-  }
 }
 
 impl TryFrom<Endpoint> for RequestTemplate {
@@ -212,7 +201,9 @@ mod tests {
   use serde_json::json;
 
   use super::RequestTemplate;
+  use crate::has_headers::HasHeaders;
   use crate::mustache::Mustache;
+  use crate::path::PathString;
 
   #[derive(Setters)]
   struct Context {
@@ -233,6 +224,19 @@ mod tests {
   impl crate::has_headers::HasHeaders for Context {
     fn headers(&self) -> &HeaderMap {
       &self.headers
+    }
+  }
+
+  impl RequestTemplate {
+    fn to_request_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<Vec<u8>> {
+      Ok(
+        self
+          .to_request(ctx)?
+          .body()
+          .and_then(|a| a.as_bytes())
+          .map(|a| a.to_vec())
+          .unwrap_or_default(),
+      )
     }
   }
   #[test]
