@@ -40,6 +40,12 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
         let content = String::from_utf8(response.body.to_vec())?;
         let conf = Config::from_source(source, &content)?;
         config = config.clone().merge_right(&conf);
+        let config_from_link = Link::resolve_recurse(&mut config.links).await?;
+
+        if let Some(conf) = config_from_link {
+          config = config.clone().merge_right(&conf);
+        }
+
         continue;
       }
       let content = self.file.read(&file).await?;
