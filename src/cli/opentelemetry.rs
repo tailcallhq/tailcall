@@ -1,3 +1,5 @@
+mod metrics;
+
 use std::io::Write;
 
 use anyhow::Result;
@@ -26,6 +28,10 @@ use crate::config::opentelemetry::Opentelemetry;
 use crate::config::opentelemetry::OpentelemetryExporter;
 use crate::tracing::default_filter_target;
 use crate::tracing::default_tracing;
+
+use self::metrics::init_metrics;
+
+use super::server::server_config::ServerConfig;
 
 fn pretty_encoder<T: Serialize>(writer: &mut dyn Write, data: T) -> Result<()> {
   // convert to buffer first to use write_all and minimize
@@ -142,7 +148,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
 }
 
 // TODO: set global attributes
-pub fn init_opentelemetry(config: Opentelemetry) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: Opentelemetry, server_config: &ServerConfig) -> anyhow::Result<()> {
   if let Some(exporter) = &config.export {
     let trace_layer = set_trace_provider(exporter)?;
     let log_layer = set_logger_provider(exporter)?;
@@ -155,6 +161,8 @@ pub fn init_opentelemetry(config: Opentelemetry) -> anyhow::Result<()> {
         context.lookup_current().is_none()
       })))
       .with(default_filter_target());
+
+    init_metrics(server_config)?;
 
     set_tracing_subscriber(subscriber)
   } else {

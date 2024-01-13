@@ -32,4 +32,17 @@ impl<K: Hash + Eq, V: Clone> ChronoCache<K, V> {
   pub fn get(&self, key: &K) -> Option<V> {
     self.data.read().unwrap().get(key).cloned()
   }
+
+  pub fn hit_rate(&self) -> Option<f64> {
+    let cache = self.data.read().unwrap();
+    let hits = cache.hit_count();
+    let misses = cache.miss_count();
+    drop(cache);
+
+    if hits + misses > 0 {
+      return Some(hits as f64 / (hits + misses) as f64);
+    }
+
+    None
+  }
 }
