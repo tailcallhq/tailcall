@@ -228,15 +228,15 @@ mod tests {
   }
 
   impl RequestTemplate {
-    fn to_request_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<Vec<u8>> {
-      Ok(
-        self
-          .to_request(ctx)?
-          .body()
-          .and_then(|a| a.as_bytes())
-          .map(|a| a.to_vec())
-          .unwrap_or_default(),
-      )
+    fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+      let body = self
+        .to_request(ctx)?
+        .body()
+        .and_then(|a| a.as_bytes())
+        .map(|a| a.to_vec())
+        .unwrap_or_default();
+
+      Ok(std::str::from_utf8(&body)?.to_string())
     }
   }
   #[test]
@@ -382,8 +382,8 @@ mod tests {
       .unwrap()
       .body(Some(Mustache::parse("foo").unwrap()));
     let ctx = Context::default();
-    let body = tmpl.to_request_body(&ctx).unwrap();
-    assert_eq!(body, "foo".as_bytes());
+    let body = tmpl.to_body(&ctx).unwrap();
+    assert_eq!(body, "foo");
   }
   #[test]
   fn test_body_template() {
@@ -395,8 +395,8 @@ mod tests {
         "bar": "baz"
       }
     }));
-    let body = tmpl.to_request_body(&ctx).unwrap();
-    assert_eq!(body, "baz".as_bytes());
+    let body = tmpl.to_body(&ctx).unwrap();
+    assert_eq!(body, "baz");
   }
   #[test]
   fn test_body_encoding_application_json() {
@@ -409,8 +409,8 @@ mod tests {
         "bar": "baz"
       }
     }));
-    let body = tmpl.to_request_body(&ctx).unwrap();
-    assert_eq!(body, "baz".as_bytes());
+    let body = tmpl.to_body(&ctx).unwrap();
+    assert_eq!(body, "baz");
   }
   #[test]
   fn test_body_encoding_application_x_www_form_urlencoded_with_string() {
@@ -419,10 +419,9 @@ mod tests {
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
       .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
     let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
-    let request_body = tmpl.to_request_body(&ctx);
-    println!("{:?}", request_body);
+    let request_body = tmpl.to_body(&ctx);
     let body = request_body.unwrap();
-    assert_eq!(body, "baz".as_bytes());
+    assert_eq!(body, "baz");
   }
   #[test]
   fn test_body_encoding_application_x_www_form_urlencoded_with_json() {
@@ -433,8 +432,7 @@ mod tests {
     let ctx = Context::default().value(json!({
       "baz": "baz"
     }));
-    let body = tmpl.to_request_body(&ctx).unwrap();
-    let body = std::str::from_utf8(&body).unwrap();
+    let body = tmpl.to_body(&ctx).unwrap();
     assert_eq!(body, "foo=%7B%7Bbaz%7D%7D");
   }
   #[test]
@@ -444,9 +442,7 @@ mod tests {
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
       .body(Some(Mustache::parse("{\"foo\": \"bar\"}}").unwrap()));
     let ctx = Context::default().value(json!({}));
-    let body = tmpl.to_request_body(&ctx).unwrap();
-    let body = std::str::from_utf8(&body).unwrap();
-    println!("{:?}", body);
+    let body = tmpl.to_body(&ctx).unwrap();
     assert_eq!(body, "{\"foo\": \"bar\"}}");
   }
   #[test]
