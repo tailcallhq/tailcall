@@ -1,0 +1,15 @@
+schema {
+  query: Query
+}
+
+type Address {
+  street: String
+}
+
+type Query {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}
+
+type User @addField(name: "address", path: ["address", "street"]) {
+  address: Address @omit()
+}
