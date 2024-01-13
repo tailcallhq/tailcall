@@ -16,11 +16,10 @@ fn pos<A>(a: A) -> Positioned<A> {
 fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
   Valid::from_iter(directive.arguments.iter(), |(k, v)| {
     let name = pos(Name::new(k.clone()));
-    Valid::from(
-      serde_json::from_value(v.clone())
-        .map(pos)
-        .map_err(|e| ValidationError::new(format!("to_const_directive {}", e.to_string())).trace(format!("@{}", directive.name).as_str())),
-    )
+    Valid::from(serde_json::from_value(v.clone()).map(pos).map_err(|e| {
+      ValidationError::new(format!("to_const_directive {}", e))
+        .trace(format!("@{}", directive.name).as_str())
+    }))
     .map(|value| (name, value))
   })
   .map(|arguments| ConstDirective { name: pos(Name::new(directive.name.clone())), arguments })
@@ -66,10 +65,10 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
 
   fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
-      Valid::from(
-        serde_json::to_value(&v.node)
-          .map_err(|e| ValidationError::new(format!("from_directive {}", e.to_string())).trace(format!("@{}", directive.name.node).as_str())),
-      )
+      Valid::from(serde_json::to_value(&v.node).map_err(|e| {
+        ValidationError::new(format!("from_directive {}", e))
+          .trace(format!("@{}", directive.name.node).as_str())
+      }))
       .map(|v| (k.node.as_str().to_string(), v))
     })
     .map(|items| {
