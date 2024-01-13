@@ -223,9 +223,6 @@ impl RootSchema {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Omit {}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
@@ -244,7 +241,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub omit: Option<Omit>,
+  pub omit: bool,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]

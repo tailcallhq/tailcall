@@ -296,14 +296,10 @@ fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify
   })
 }
 
-fn to_omit(directives: &[Positioned<ConstDirective>]) -> Option<config::Omit> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::Omit::directive_name() {
-      config::Omit::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
+fn to_omit(directives: &[Positioned<ConstDirective>]) -> bool {
+  directives
+    .iter()
+    .any(|directive| directive.node.name.node == "omit")
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

@@ -355,7 +355,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .fields
       .iter()
       .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true))
-      .filter(|field| field.1.omit.is_none()),
+      .filter(|(_, field)| !field.omit),
     |(name, field)| {
       validate_field_type_exist(config, field)
         .and(to_field(name, field))
@@ -379,7 +379,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             args: source_field.args.clone(),
             doc: None,
             modify: source_field.modify.clone(),
-            omit: source_field.omit.clone(),
+            omit: source_field.omit,
             http: source_field.http.clone(),
             grpc: source_field.grpc.clone(),
             unsafe_operation: source_field.unsafe_operation.clone(),
