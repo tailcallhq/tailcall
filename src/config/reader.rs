@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use url::Url;
-
 use crate::config::{Config, Link, Source};
 use crate::io::{FileIO, HttpIO};
+
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 
@@ -23,7 +23,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
       if let Ok(url) = Url::parse(&file) {
         let response = self
           .http
-          .execute_raw(reqwest::Request::new(reqwest::Method::GET, url))
+          .execute(reqwest::Request::new(reqwest::Method::GET, url))
           .await?;
         let sdl = response.headers.get("content-type");
         let sdl = match sdl {
@@ -37,7 +37,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
           None => file.to_string(),
         };
         let source = Self::detect_source(&sdl)?;
-        let content = String::from_utf8(response.body)?;
+        let content = String::from_utf8(response.body.to_vec())?;
         let conf = Config::from_source(source, &content)?;
         config = config.clone().merge_right(&conf)?;
         let config_from_link = Link::resolve_recurse(&mut config.links).await?;
@@ -48,8 +48,8 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
         
         continue;
       }
-      let (content, path) = self.file.read(&file).await?;
-      let source = Self::detect_source(&path)?;
+      let content = self.file.read(&file).await?;
+      let source = Self::detect_source(&file)?;
       let conf = Config::from_source(source, &content)?;
       config = config.clone().merge_right(&conf)?;
       let config_from_link = Link::resolve_recurse(&mut config.links).await?;
