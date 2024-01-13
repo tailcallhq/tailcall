@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use url::Url;
+
 use crate::config::{Config, Link, Source};
 use crate::{FileIO, HttpIO};
-
 
 const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
 
@@ -45,7 +45,7 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
         if let Some(conf) = config_from_link {
           config = config.clone().merge_right(&conf)?;
         }
-        
+
         continue;
       }
       let content = self.file.read(&file).await?;
