@@ -5,6 +5,8 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use crate::cli::env::EnvNative;
+use crate::cli::http::HttpNative;
 use crate::cli::CLIError;
 use crate::http::handle_request;
 
@@ -14,7 +16,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest>(req, state.server_context.clone())
+        handle_request::<GraphQLRequest, HttpNative, EnvNative>(req, state.server_context.clone())
       }))
     }
   });
@@ -23,7 +25,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest>(req, state.server_context.clone())
+        handle_request::<GraphQLBatchRequest, HttpNative, EnvNative>(req, state.server_context.clone())
       }))
     }
   });
