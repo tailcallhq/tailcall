@@ -1,17 +1,24 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use super::ServerContext;
 use crate::blueprint::{Blueprint, Http};
+use crate::cli::env::EnvNative;
+use crate::cli::http::HttpNative;
+use crate::cli::{init_env, init_http, init_http2_only};
+use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub server_context: Arc<ServerContext>,
+  pub server_context: Arc<AppContext<HttpNative, EnvNative>>,
 }
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    Self { server_context: Arc::new(ServerContext::new(blueprint.clone())), blueprint }
+    let h_client = Arc::new(init_http(&blueprint.upstream));
+    let h2_client = Arc::new(init_http2_only(&blueprint.upstream));
+    let env = init_env();
+    let server_context = Arc::new(AppContext::new(blueprint.clone(), h_client, h2_client, Arc::new(env)));
+    Self { server_context, blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {

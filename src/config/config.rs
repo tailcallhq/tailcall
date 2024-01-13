@@ -10,9 +10,7 @@ use serde_json::Value;
 
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
-use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
@@ -128,12 +126,6 @@ impl Config {
     let upstream = self.upstream.merge_right(other.upstream.clone());
 
     Self { server, upstream, types, schema, unions }
-  }
-
-  pub async fn write_file(self, filename: &String) -> Result<()> {
-    let config_writer = ConfigWriter::init(self);
-
-    config_writer.write(filename).await
   }
 }
 
@@ -258,6 +250,8 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub expr: Option<Expr>,
   pub cache: Option<Cache>,
 }
 
@@ -268,6 +262,7 @@ impl Field {
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
+      || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -389,6 +384,30 @@ pub struct Http {
   pub encoding: Encoding,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ExprBody {
+  #[serde(rename = "http")]
+  Http(Http),
+  #[serde(rename = "grpc")]
+  Grpc(Grpc),
+  #[serde(rename = "graphQL")]
+  GraphQL(GraphQL),
+  #[serde(rename = "const")]
+  Const(Value),
+  #[serde(rename = "if")]
+  If {
+    cond: Box<ExprBody>,
+    then: Box<ExprBody>,
+    #[serde(rename = "else")]
+    els: Box<ExprBody>,
+  },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Expr {
+  pub body: ExprBody,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Grpc {
@@ -410,7 +429,7 @@ pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
@@ -473,16 +492,6 @@ impl Config {
 
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
-  }
-
-  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    let config_reader = ConfigReader::init(file_paths);
-
-    config_reader.read().await
   }
 }
 

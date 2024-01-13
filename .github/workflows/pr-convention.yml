@@ -10,6 +10,6 @@ jobs:
     steps:
       - uses: naveenk1223/action-pr-title@master
         with:
-          regex: '^[a-zA-Z]+(\([a-zA-Z]+\))?: .+'
+          regex: '^[a-zA-Z]+(\([a-zA-Z/]+\))?!?: .+'
           allowed_prefixes: "feat,fix,docs,style,refactor,test,chore,ci,perf,revert"
           prefix_case_sensitive: false

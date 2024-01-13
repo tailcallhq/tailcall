@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -15,12 +14,13 @@ use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::grpc::request::create_grpc_request;
-use crate::http::{HttpClient, Response};
+use crate::http::Response;
 use crate::json::JsonLike;
+use crate::HttpIO;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
-  pub(crate) client: Arc<dyn HttpClient>,
+  pub(crate) client: Arc<dyn HttpIO>,
   pub(crate) operation: ProtobufOperation,
   pub(crate) group_by: Option<GroupBy>,
 }
@@ -38,7 +38,7 @@ impl GrpcDataLoader {
   ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
     let results = keys.iter().map(|key| async {
       let result = match key.to_request() {
-        Ok(req) => execute_grpc_request(self.client.deref(), &self.operation, req).await,
+        Ok(req) => execute_grpc_request(&self.client, &self.operation, req).await,
         Err(error) => Err(error),
       };
 
@@ -72,7 +72,7 @@ impl GrpcDataLoader {
       multiple_body,
     );
 
-    let response = execute_grpc_request(self.client.deref(), &self.operation, multiple_request).await?;
+    let response = execute_grpc_request(&self.client, &self.operation, multiple_request).await?;
 
     let path = &group_by.path();
     let response_body = response.body.group_by(path);

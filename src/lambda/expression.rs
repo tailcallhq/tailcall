@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::future::Future;
-use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -32,6 +31,11 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
+  If {
+    cond: Box<Expression>,
+    then: Box<Expression>,
+    els: Box<Expression>,
+  },
 }
 
 #[derive(Clone, Debug)]
@@ -180,8 +184,38 @@ impl Expression {
             result
           }
         },
+
+        Expression::If { cond, then, els } => {
+          let cond = cond.eval(ctx).await?;
+          if is_truthy(cond) {
+            then.eval(ctx).await
+          } else {
+            els.eval(ctx).await
+          }
+        }
       }
     })
+  }
+}
+
+/// Check if a value is truthy
+///
+/// Special cases:
+/// 1. An empty string is considered falsy
+/// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
+fn is_truthy(value: async_graphql::Value) -> bool {
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
+
+  match value {
+    Value::Null => false,
+    Value::Enum(_) => true,
+    Value::List(_) => true,
+    Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    Value::Boolean(b) => b,
+    Value::Number(n) => n != Number::from(0),
+    Value::Binary(b) => b != Bytes::default(),
   }
 }
 
@@ -200,14 +234,13 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   ctx: &EvaluationContext<'ctx, Ctx>,
   req: Request,
 ) -> Result<Response<async_graphql::Value>> {
-  Ok(
-    ctx
-      .req_ctx
-      .universal_http_client
-      .execute(req)
-      .await
-      .map_err(|e| EvaluationError::IOException(e.to_string()))?,
-  )
+  ctx
+    .req_ctx
+    .h_client
+    .execute(req)
+    .await
+    .map_err(|e| EvaluationError::IOException(e.to_string()))?
+    .to_json()
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -216,7 +249,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
   operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>> {
   Ok(
-    execute_grpc_request(ctx.req_ctx.http2_only_client.deref(), operation, req)
+    execute_grpc_request(&ctx.req_ctx.h2_client, operation, req)
       .await
       .map_err(|e| EvaluationError::IOException(e.to_string()))?,
   )
@@ -290,4 +323,30 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   }
 
   Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default())
+}
+
+#[cfg(test)]
+mod tests {
+  use async_graphql::{Name, Number, Value};
+  use hyper::body::Bytes;
+  use indexmap::IndexMap;
+
+  use super::is_truthy;
+
+  #[test]
+  fn test_is_truthy() {
+    assert!(is_truthy(Value::Enum(Name::new("EXAMPLE"))));
+    assert!(is_truthy(Value::List(vec![])));
+    assert!(is_truthy(Value::Object(IndexMap::default())));
+    assert!(is_truthy(Value::String("Hello".to_string())));
+    assert!(is_truthy(Value::Boolean(true)));
+    assert!(is_truthy(Value::Number(Number::from(1))));
+    assert!(is_truthy(Value::Binary(Bytes::from_static(&[0, 1, 2]))));
+
+    assert!(!is_truthy(Value::Null));
+    assert!(!is_truthy(Value::String("".to_string())));
+    assert!(!is_truthy(Value::Boolean(false)));
+    assert!(!is_truthy(Value::Number(Number::from(0))));
+    assert!(!is_truthy(Value::Binary(Bytes::default())));
+  }
 }
