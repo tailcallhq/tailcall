@@ -24,16 +24,13 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
   let operation_type = context.operation_type;
 
   match expr {
-    ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }).trace("if"),
-    ExprBody::Http(http) => compile_http(config, field, &http).trace("http"),
+    ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }),
+    ExprBody::Http(http) => compile_http(config, field, &http),
     ExprBody::Grpc(grpc) => {
       compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false })
-        .trace("grpc")
     }
-    ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql).trace("graphQL"),
-    ExprBody::Const(value) => {
-      compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }).trace("const")
-    }
+    ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
+    ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }),
   }
 }
 
@@ -44,10 +41,9 @@ fn compile_if(input: CompileIf) -> Valid<Expression, String> {
   let els = input.els;
 
   compile(context, *cond)
-    .trace("cond")
     .map(Box::new)
-    .zip(compile(context, *then).trace("then").map(Box::new))
-    .zip(compile(context, *els).trace("else").map(Box::new))
+    .zip(compile(context, *then).map(Box::new))
+    .zip(compile(context, *els).map(Box::new))
     .map(|((cond, then), els)| Expression::If { cond, then, els })
 }
 
