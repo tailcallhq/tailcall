@@ -36,6 +36,11 @@ pub enum Expression {
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
   Cache(Cache),
+  If {
+    cond: Box<Expression>,
+    then: Box<Expression>,
+    els: Box<Expression>,
+  },
 }
 
 #[derive(Clone, Debug)]
@@ -224,6 +229,14 @@ impl Expression {
             cache.source.eval(ctx).await
           }
         }
+        Expression::If { cond, then, els } => {
+          let cond = cond.eval(ctx).await?;
+          if is_truthy(cond) {
+            then.eval(ctx).await
+          } else {
+            els.eval(ctx).await
+          }
+        }
       }
     })
   }
@@ -277,6 +290,27 @@ fn get_cache_key<'a, H: Hasher + Clone>(
       .fold(hasher.finish(), |acc, val| acc ^ val)
   });
   key
+}
+
+/// Check if a value is truthy
+///
+/// Special cases:
+/// 1. An empty string is considered falsy
+/// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
+fn is_truthy(value: async_graphql::Value) -> bool {
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
+
+  match value {
+    Value::Null => false,
+    Value::Enum(_) => true,
+    Value::List(_) => true,
+    Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    Value::Boolean(b) => b,
+    Value::Number(n) => n != Number::from(0),
+    Value::Binary(b) => b != Bytes::default(),
+  }
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -383,4 +417,30 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
   }
 
   Ok(res.data.get_key(field_name).map(|v| v.to_owned()).unwrap_or_default())
+}
+
+#[cfg(test)]
+mod tests {
+  use async_graphql::{Name, Number, Value};
+  use hyper::body::Bytes;
+  use indexmap::IndexMap;
+
+  use super::is_truthy;
+
+  #[test]
+  fn test_is_truthy() {
+    assert!(is_truthy(Value::Enum(Name::new("EXAMPLE"))));
+    assert!(is_truthy(Value::List(vec![])));
+    assert!(is_truthy(Value::Object(IndexMap::default())));
+    assert!(is_truthy(Value::String("Hello".to_string())));
+    assert!(is_truthy(Value::Boolean(true)));
+    assert!(is_truthy(Value::Number(Number::from(1))));
+    assert!(is_truthy(Value::Binary(Bytes::from_static(&[0, 1, 2]))));
+
+    assert!(!is_truthy(Value::Null));
+    assert!(!is_truthy(Value::String("".to_string())));
+    assert!(!is_truthy(Value::Boolean(false)));
+    assert!(!is_truthy(Value::Number(Number::from(0))));
+    assert!(!is_truthy(Value::Binary(Bytes::default())));
+  }
 }
