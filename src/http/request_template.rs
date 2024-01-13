@@ -117,8 +117,11 @@ impl RequestTemplate {
           // TODO: this is a performance bottleneck
           // We first encode everything to string and then back to form-urlencoded
           let raw_data: String = body.render(ctx);
-          let deserialized_data = serde_json::from_str::<serde_json::Value>(&raw_data)?;
-          let form_data = serde_urlencoded::to_string(deserialized_data)?;
+          let form_data = match serde_json::from_str::<serde_json::Value>(&raw_data) {
+            Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
+            Err(_) => raw_data,
+          };
+
           req.body_mut().replace(form_data.into());
         }
       }
@@ -411,12 +414,10 @@ mod tests {
       .unwrap()
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
       .body(Some(Mustache::parse("{{foo.bar}}").unwrap()));
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz"
-      }
-    }));
-    let body = tmpl.to_request_body(&ctx).unwrap();
+    let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
+    let request_body = tmpl.to_request_body(&ctx);
+    println!("{:?}", request_body);
+    let body = request_body.unwrap();
     assert_eq!(body, "baz".as_bytes());
   }
   #[test]
