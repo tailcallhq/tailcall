@@ -233,7 +233,6 @@ const SPEC_ONLY: &str = "spec-only";
 const SPEC_SKIP: &str = "spec-skip";
 const SPEC_FAIL: &str = "spec-fail";
 
-
 // Check if SDL -> Config -> SDL is identity
 #[test]
 fn test_config_identity() -> std::io::Result<()> {
