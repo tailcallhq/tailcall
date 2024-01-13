@@ -206,6 +206,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     field.modify.as_ref().map(|d| pos(d.to_directive())),
     field.graphql.as_ref().map(|d| pos(d.to_directive())),
     field.grpc.as_ref().map(|d| pos(d.to_directive())),
+    field.expr.as_ref().map(|d| pos(d.to_directive())),
   ];
 
   directives.into_iter().flatten().collect()
