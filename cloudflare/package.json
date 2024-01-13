@@ -8,6 +8,6 @@
     "dev": "npx wrangler dev --port 19194 --remote"
   },
   "devDependencies": {
-    "wrangler": "^3.22.2"
+    "wrangler": "^3.22.4"
   }
 }
