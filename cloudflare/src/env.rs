@@ -1,8 +1,10 @@
-use tailcall::io::EnvIO;
+use std::rc::Rc;
+
+use tailcall::EnvIO;
 use worker::Env;
 
 pub struct EnvCloudflare {
-  env: Env,
+  env: Rc<Env>,
 }
 
 unsafe impl Send for EnvCloudflare {}
@@ -15,7 +17,7 @@ impl EnvIO for EnvCloudflare {
 }
 
 impl EnvCloudflare {
-  pub fn init(env: Env) -> Self {
+  pub fn init(env: Rc<Env>) -> Self {
     Self { env }
   }
 }

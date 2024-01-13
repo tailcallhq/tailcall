@@ -9,7 +9,7 @@ use async_graphql::futures_util::future::join_all;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
-use crate::io::HttpIO;
+use crate::HttpIO;
 
 pub struct GraphqlDataLoader {
   pub client: Arc<dyn HttpIO>,
@@ -40,7 +40,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
   ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
     if self.batch {
       let batched_req = create_batched_request(keys);
-      let result = self.client.execute(batched_req).await;
+      let result = self.client.execute(batched_req).await?.to_json();
       let hashmap = extract_responses(result, keys);
       Ok(hashmap)
     } else {
@@ -52,7 +52,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
       #[allow(clippy::mutable_key_type)]
       let mut hashmap = HashMap::new();
       for (key, value) in results {
-        hashmap.insert(key, value?);
+        hashmap.insert(key, value?.to_json()?);
       }
 
       Ok(hashmap)
