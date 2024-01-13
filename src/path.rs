@@ -97,6 +97,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 
 #[cfg(test)]
 mod tests {
+
   mod evaluation_context {
     use std::borrow::Cow;
     use std::collections::{BTreeMap, HashMap};
@@ -112,6 +113,23 @@ mod tests {
     use crate::http::RequestContext;
     use crate::lambda::{EvaluationContext, ResolverContextLike};
     use crate::path::{PathGraphql, PathString};
+    use crate::EnvIO;
+
+    struct Env {
+      env: HashMap<String, String>,
+    }
+
+    impl EnvIO for Env {
+      fn get(&self, key: &str) -> Option<String> {
+        self.env.get(key).cloned()
+      }
+    }
+
+    impl Env {
+      pub fn init(map: HashMap<String, String>) -> Self {
+        Self { env: map }
+      }
+    }
 
     static TEST_VALUES: Lazy<Value> = Lazy::new(|| {
       let mut root = IndexMap::new();
@@ -185,7 +203,7 @@ mod tests {
       let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
-      req_ctx.env_vars = Arc::new(crate::io::Env::init(TEST_ENV_VARS.clone()));
+      req_ctx.env_vars = Arc::new(Env::init(TEST_ENV_VARS.clone()));
 
       req_ctx
     });

@@ -1,0 +1,35 @@
+schema
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @expr(body: {http: {path: "/posts"}})
+  user(id: Int!): User @expr(body: {http: {path: "/users/{{args.id}}"}})
+
+  getUserIdTwo: User
+    @expr(body: {if: {cond: {const: {data: true}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}})
+
+  getUserIdOne: User
+    @expr(
+      body: {if: {cond: {const: {data: false}}, then: {http: {path: "/users/2"}}, else: {http: {path: "/users/1"}}}}
+    )
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}

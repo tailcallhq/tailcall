@@ -350,6 +350,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
+      .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
       .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
@@ -388,6 +389,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
             unsafe_operation: source_field.unsafe_operation.clone(),
             const_field: source_field.const_field.clone(),
             graphql: source_field.graphql.clone(),
+            expr: source_field.expr.clone(),
             cache: source_field.cache.clone(),
             rate_limit: source_field.rate_limit.clone(),
           };

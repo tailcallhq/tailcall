@@ -295,6 +295,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
   #[serde(default, skip_serializing_if = "is_default")]
+  pub expr: Option<Expr>,
   pub cache: Option<Cache>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub rate_limit: Option<RateLimit>,
@@ -307,6 +308,7 @@ impl Field {
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
+      || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -428,6 +430,30 @@ pub struct Http {
   pub rate_limit: Option<ClientRateLimit>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ExprBody {
+  #[serde(rename = "http")]
+  Http(Http),
+  #[serde(rename = "grpc")]
+  Grpc(Grpc),
+  #[serde(rename = "graphQL")]
+  GraphQL(GraphQL),
+  #[serde(rename = "const")]
+  Const(Value),
+  #[serde(rename = "if")]
+  If {
+    cond: Box<ExprBody>,
+    then: Box<ExprBody>,
+    #[serde(rename = "else")]
+    els: Box<ExprBody>,
+  },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Expr {
+  pub body: ExprBody,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Grpc {
@@ -451,7 +477,7 @@ pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
