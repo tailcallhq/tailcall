@@ -13,7 +13,6 @@
         "inline-many-list.graphql",
         "test-grpc.graphql",
         "test-add-link-to-empty-config.graphql",
-        "test-graphql-with-link.graphql"
       ],
       "options": {
         "printWidth": 200

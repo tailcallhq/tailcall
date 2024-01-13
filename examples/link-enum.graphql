@@ -1,4 +1,3 @@
-#> server-sdl
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -10,18 +9,4 @@ enum Foo {
 
 type Query {
   foo: Foo @http(path: "/foo")
-}
-
-#> client-sdl
-enum Foo {
-  BAR
-  BAZ
-}
-
-type Query {
-  foo: Foo
-}
-
-schema {
-  query: Query
 }
