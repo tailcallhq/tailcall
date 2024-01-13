@@ -158,6 +158,17 @@ impl RequestTemplate {
       encoding: Default::default(),
     })
   }
+
+  pub fn to_request_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<Vec<u8>> {
+    Ok(
+      self
+        .to_request(ctx)?
+        .body()
+        .and_then(|a| a.as_bytes())
+        .map(|a| a.to_vec())
+        .unwrap_or_default(),
+    )
+  }
 }
 
 impl TryFrom<Endpoint> for RequestTemplate {
@@ -364,14 +375,7 @@ mod tests {
       .unwrap()
       .body(Some(Mustache::parse("foo").unwrap()));
     let ctx = Context::default();
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     assert_eq!(body, "foo".as_bytes());
   }
   #[test]
@@ -384,14 +388,7 @@ mod tests {
         "bar": "baz"
       }
     }));
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     assert_eq!(body, "baz".as_bytes());
   }
   #[test]
@@ -405,14 +402,7 @@ mod tests {
         "bar": "baz"
       }
     }));
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     assert_eq!(body, "baz".as_bytes());
   }
   #[test]
@@ -426,14 +416,7 @@ mod tests {
         "bar": "baz"
       }
     }));
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     assert_eq!(body, "baz".as_bytes());
   }
   #[test]
@@ -445,14 +428,7 @@ mod tests {
     let ctx = Context::default().value(json!({
       "baz": "baz"
     }));
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     let body = std::str::from_utf8(&body).unwrap();
     assert_eq!(body, "foo=%7B%7Bbaz%7D%7D");
   }
@@ -463,14 +439,7 @@ mod tests {
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded)
       .body(Some(Mustache::parse("{\"foo\": \"bar\"}}").unwrap()));
     let ctx = Context::default().value(json!({}));
-    let body = tmpl
-      .to_request(&ctx)
-      .unwrap()
-      .body()
-      .unwrap()
-      .as_bytes()
-      .unwrap()
-      .to_owned();
+    let body = tmpl.to_request_body(&ctx).unwrap();
     let body = std::str::from_utf8(&body).unwrap();
     println!("{:?}", body);
     assert_eq!(body, "{\"foo\": \"bar\"}}");
