@@ -38,7 +38,7 @@ pub async fn check_for_update() {
 
   if let Some(latest_version) = informer.check_version().ok().flatten() {
     let github_release_url = format!("https://github.com/tailcallhq/tailcall/releases/tag/{}", latest_version);
-
+    let installation_method = get_installation_method();
     log::warn!(
       "{}",
       format!(
@@ -49,8 +49,6 @@ pub async fn check_for_update() {
       )
       .yellow()
     );
-
-    let installation_method = get_installation_method();
     match installation_method {
       InstallationMethod::Npm => log::warn!("{}", "To upgrade, run: npm update -g @tailcallhq/tailcall"),
       InstallationMethod::Brew => log::warn!("{}", "To upgrade, run: brew upgrade tailcall"),
