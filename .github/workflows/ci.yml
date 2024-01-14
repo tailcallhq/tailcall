@@ -52,9 +52,7 @@ jobs:
 
       - name: Build and Test in cloudflare directory
         working-directory: ./cloudflare
-        run: |
-          cargo build
-          cargo test
+        run: cargo test
 
       - name: Cache Cargo Registry
         uses: actions/cache@v2
