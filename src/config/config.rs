@@ -389,6 +389,8 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub encoding: Encoding,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -500,6 +502,13 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub enum Encoding {
+  #[default]
+  ApplicationJson,
+  ApplicationXWwwFormUrlencoded,
 }
 
 #[cfg(test)]
