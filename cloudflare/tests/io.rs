@@ -9,8 +9,6 @@ mod test_cf_io {
   use worker::wasm_bindgen::JsValue;
   use worker::Env;
 
-  wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-
   lazy_static! {
     static ref VENV: Value = {
       let mut venv = serde_json::Map::new();
