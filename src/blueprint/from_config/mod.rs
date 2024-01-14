@@ -1,5 +1,6 @@
 mod definitions;
 mod from_config;
+mod init_context;
 mod opentelemetry;
 mod operators;
 mod schema;

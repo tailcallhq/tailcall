@@ -9,9 +9,9 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
+use super::opentelemetry::Opentelemetry;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
-use crate::config::opentelemetry::Opentelemetry;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.

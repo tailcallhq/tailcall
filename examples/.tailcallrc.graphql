@@ -345,7 +345,8 @@ input OpentelemetryStdout {
 }
 
 input OpentelemetryOtlp {
-  url: String
+  url: String!
+  headers: [KeyValue]
 }
 
 input OpentelemetryExport {
@@ -353,6 +354,9 @@ input OpentelemetryExport {
   Output the opentelemetry data to the stdout. Mostly used for debug purposes
   """
   stdout: OpentelemetryStdout
+  """
+  Output the opentelemetry data to otlp collector
+  """
   otlp: OpentelemetryOtlp
 }
 

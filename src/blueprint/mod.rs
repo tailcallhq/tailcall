@@ -3,6 +3,7 @@ mod compress;
 mod const_utils;
 mod from_config;
 mod into_schema;
+pub mod opentelemetry;
 mod timeout;
 
 pub use blueprint::*;
