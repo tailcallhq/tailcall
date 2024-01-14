@@ -350,11 +350,9 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
+  // Process fields that are not marked as `omit`
   let fields = Valid::from_iter(
-    type_of
-      .fields
-      .iter()
-      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    type_of.fields.iter().filter(|(_, field)| !field.is_omitted()),
     |(name, field)| {
       validate_field_type_exist(config, field)
         .and(to_field(name, field))
@@ -369,69 +367,51 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
         .iter()
         .find(|&(field_name, _)| *field_name == add_field.path[0]);
       match source_field {
-        Some((_, source_field)) => {
-          let new_field = config::Field {
-            type_of: source_field.type_of.clone(),
-            list: source_field.list,
-            required: source_field.required,
-            list_type_required: source_field.list_type_required,
-            args: source_field.args.clone(),
-            doc: None,
-            modify: source_field.modify.clone(),
-            http: source_field.http.clone(),
-            grpc: source_field.grpc.clone(),
-            unsafe_operation: source_field.unsafe_operation.clone(),
-            const_field: source_field.const_field.clone(),
-            graphql: source_field.graphql.clone(),
-            expr: source_field.expr.clone(),
-            cache: source_field.cache.clone(),
-          };
-          to_field(&add_field.name, &new_field)
-            .and_then(|field_definition| {
-              let added_field_path = match source_field.http {
-                Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
-                None => add_field.path.clone(),
-              };
-              let invalid_path_handler =
-                |field_name: &str, _added_field_path: &[String], original_path: &[String]| -> Valid<Type, String> {
-                  Valid::fail_with(
-                    "Cannot add field".to_string(),
-                    format!("Path [{}] does not exist", original_path.join(", ")),
-                  )
-                  .trace(field_name)
-                };
-              let path_resolver_error_handler = |resolver_name: &str,
-                                                 field_type: &str,
-                                                 field_name: &str,
-                                                 original_path: &[String]|
-               -> Valid<Type, String> {
-                Valid::<Type, String>::fail_with(
+        Some((_, source_field)) => to_field(&add_field.name, source_field)
+          .and_then(|field_definition| {
+            let added_field_path = match source_field.http {
+              Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
+              None => add_field.path.clone(),
+            };
+            let invalid_path_handler =
+              |field_name: &str, _added_field_path: &[String], original_path: &[String]| -> Valid<Type, String> {
+                Valid::fail_with(
                   "Cannot add field".to_string(),
-                  format!(
-                    "Path: [{}] contains resolver {} at [{}.{}]",
-                    original_path.join(", "),
-                    resolver_name,
-                    field_type,
-                    field_name
-                  ),
+                  format!("Path [{}] does not exist", original_path.join(", ")),
                 )
+                .trace(field_name)
               };
-              update_resolver_from_path(
-                &ProcessPathContext {
-                  path: &added_field_path,
-                  field: source_field,
-                  type_info: type_of,
-                  is_required: false,
-                  config,
-                  invalid_path_handler: &invalid_path_handler,
-                  path_resolver_error_handler: &path_resolver_error_handler,
-                  original_path: &add_field.path,
-                },
-                field_definition,
+            let path_resolver_error_handler = |resolver_name: &str,
+                                               field_type: &str,
+                                               field_name: &str,
+                                               original_path: &[String]|
+             -> Valid<Type, String> {
+              Valid::<Type, String>::fail_with(
+                "Cannot add field".to_string(),
+                format!(
+                  "Path: [{}] contains resolver {} at [{}.{}]",
+                  original_path.join(", "),
+                  resolver_name,
+                  field_type,
+                  field_name
+                ),
               )
-            })
-            .trace(config::AddField::trace_name().as_str())
-        }
+            };
+            update_resolver_from_path(
+              &ProcessPathContext {
+                path: &added_field_path,
+                field: source_field,
+                type_info: type_of,
+                is_required: false,
+                config,
+                invalid_path_handler: &invalid_path_handler,
+                path_resolver_error_handler: &path_resolver_error_handler,
+                original_path: &add_field.path,
+              },
+              field_definition,
+            )
+          })
+          .trace(config::AddField::trace_name().as_str()),
         None => Valid::fail(format!(
           "Could not find field {} in path {}",
           add_field.path[0],
