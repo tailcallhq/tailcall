@@ -160,7 +160,8 @@ pub fn compile_http(config: &config::Config, field: &config::Field, http: &confi
           .query(query)
           .output(output_schema)
           .input(input_schema)
-          .body(http.body.clone()),
+          .body(http.body.clone())
+          .encoding(http.encoding.clone()),
       )
       .map(|req_tmpl| req_tmpl.headers(headers))
       .map_err(|e| ValidationError::new(e.to_string()))
