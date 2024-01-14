@@ -44,6 +44,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Add wasm32-unknown-unknown Target
+        run: rustup target add wasm32-unknown-unknown
+
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --vers "0.2.86"
 
