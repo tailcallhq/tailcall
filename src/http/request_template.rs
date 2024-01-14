@@ -2,9 +2,8 @@ use std::borrow::Cow;
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderValue, CONTENT_TYPE};
 use url::Url;
-
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
@@ -100,12 +99,32 @@ impl RequestTemplate {
     Ok(req)
   }
 
+
   /// Sets the body for the request
-  fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
+  pub fn set_body<C: PathString + HasHeaders>(&self, mut req: reqwest::Request, ctx: &C) -> reqwest::Request {
     if let Some(body) = &self.body {
-      req.body_mut().replace(body.render(ctx).into());
+        // Checks and sets content type based on your condition
+        if Self::is_application_x_www_form_urlencoded(&req.headers()) {
+            req.headers_mut().insert(CONTENT_TYPE, HeaderValue::from_static("application/x-www-form-urlencoded"));
+
+            // Serialize the Mustache template directly to form_urlencoded
+            let form_data = serde_urlencoded::to_string(&body.render(ctx)).unwrap();
+            req.body_mut().replace(form_data.into());
+        }
+
+        req.body_mut().replace(body.render(ctx).into());
     }
     req
+}
+
+  /// checks for the CONTENT_TYPE header
+  pub fn is_application_x_www_form_urlencoded(headers: &HeaderMap) -> bool {
+    if let Some(content_type) = headers.get(CONTENT_TYPE) {
+        if let Ok(content_type_str) = content_type.to_str() {
+            return content_type_str.to_lowercase().starts_with("application/x-www-form-urlencoded");
+        }
+    }
+    false
   }
 
   /// Sets the headers for the request
