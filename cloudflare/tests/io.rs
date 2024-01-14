@@ -24,6 +24,7 @@ mod test_cf_io {
   #[wasm_bindgen_test]
   async fn env_io() {
     let env_io = cloudflare::init_env(get_venv());
+    assert_eq!(true,false);
     assert_eq!(env_io.get("CONFIG").unwrap(), "/MY_R2/examples/jsonplaceholder.graphql");
   }
   fn get_venv() -> Rc<Env> {
