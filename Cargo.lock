@@ -796,7 +796,6 @@ dependencies = [
  "serde-wasm-bindgen 0.6.3",
  "serde_json",
  "tailcall",
- "wasm-bindgen",
  "wasm-bindgen-test",
  "wasm-logger",
  "worker",
@@ -3748,8 +3747,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bba0e8cb82ba49ff4e229459ff22a191bbe9a1cb3a341610c9c33efc27ddf73"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
