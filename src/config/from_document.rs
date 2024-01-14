@@ -7,8 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{Cache, Expr};
-use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -216,15 +215,15 @@ where
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.to_owned().map(|pos| pos.node);
-  let modify = to_modify(directives);
-  let omit = to_omit(directives);
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
     .zip(Cache::from_directives(directives.iter()))
     .zip(Grpc::from_directives(directives.iter()))
     .zip(Expr::from_directives(directives.iter()))
-    .map(|((((http, graphql), cache), grpc), expr)| {
+    .zip(Omit::from_directives(directives.iter()))
+    .zip(Modify::from_directives(directives.iter()))
+    .map(|((((((http, graphql), cache), grpc), expr), omit), modify)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {
@@ -277,7 +276,10 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
   let required = !input_value_definition.ty.node.nullable;
   let doc = input_value_definition.description.to_owned().map(|pos| pos.node);
-  let modify = to_modify(&input_value_definition.directives);
+  let modify = Modify::from_directives(input_value_definition.directives.iter())
+    .to_result()
+    .ok()
+    .flatten();
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
     let value = &pos.node;
     serde_json::to_value(value).ok()
@@ -285,19 +287,6 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     None
   };
   config::Arg { type_of, list, required, doc, modify, default_value }
-}
-fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::Modify::directive_name() {
-      config::Modify::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
-}
-
-fn to_omit(directives: &[Positioned<ConstDirective>]) -> bool {
-  directives.iter().any(|directive| directive.node.name.node == "omit")
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

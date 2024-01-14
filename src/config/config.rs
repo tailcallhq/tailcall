@@ -223,6 +223,9 @@ impl RootSchema {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Omit {}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
@@ -241,7 +244,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub omit: bool,
+  pub omit: Option<Omit>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -313,6 +316,10 @@ impl Field {
 
   pub fn id() -> Self {
     Self { type_of: "ID".to_string(), ..Default::default() }
+  }
+
+  pub fn is_omitted(&self) -> bool {
+    self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
   }
 }
 
