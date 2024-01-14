@@ -45,8 +45,8 @@ pub fn run() -> Result<()> {
 
       match blueprint {
         Ok(blueprint) => {
+          log::info!("{}", "Config successfully validated".to_string());
           display_config(&config, n_plus_one_queries);
-
           if schema {
             display_schema(&blueprint);
           }
@@ -167,7 +167,6 @@ pub fn display_schema(blueprint: &Blueprint) {
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
-  log::info!("{}", Fmt::success(&"No errors found on config".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
 }
