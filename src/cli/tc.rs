@@ -40,7 +40,7 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_paths, n_plus_one_queries, schema, operations, out_file_path: _ } => {
+    Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
       let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
 
@@ -164,6 +164,7 @@ pub fn display_schema(blueprint: &Blueprint) {
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
+  log::info!("{}", Fmt::success(&"No errors found on config".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
 }

@@ -43,12 +43,8 @@ pub enum Command {
     #[arg(short, long)]
     schema: bool,
 
-    /// Path of the file to save final configuration in
-    #[arg(short, long("out"))]
-    out_file_path: Option<String>,
-
     /// Operations to check
-    #[arg(short('p'), long, value_delimiter=',', num_args = 1..)]
+    #[arg(short, long, value_delimiter=',', num_args = 1..)]
     operations: Vec<String>,
   },
 
