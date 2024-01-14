@@ -1,5 +1,5 @@
 use colored::Colorize;
-use serde_json::Value;
+use update_informer::{registry, Check};
 use which::which;
 
 enum InstallationMethod {
@@ -7,10 +7,6 @@ enum InstallationMethod {
   Brew,
   Direct,
 }
-
-const RELEASE_URL: &str = "https://api.github.com/repos/tailcallhq/tailcall/releases";
-
-const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
 fn get_installation_method() -> InstallationMethod {
   let output = std::process::Command::new("npm").arg("ls").arg("--global").output();
@@ -31,39 +27,16 @@ fn get_installation_method() -> InstallationMethod {
   InstallationMethod::Direct
 }
 
-async fn get_latest_version() -> Result<String, reqwest::Error> {
-  let client = reqwest::Client::builder().user_agent(APP_USER_AGENT).build()?;
-  let response = client.get(RELEASE_URL).send().await?;
-  let json: Value = serde_json::from_str(&response.text().await?).unwrap();
-  let latest_version = json[0]["tag_name"].as_str().unwrap().to_string();
-  Ok(latest_version)
-}
-
 pub async fn check_for_update() {
+  let name = env!("CARGO_PKG_NAME");
   let current_version: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
     _ => return,
   };
 
-  let latest_version = get_latest_version().await.unwrap();
+  let informer = update_informer::new(registry::GitHub, name, current_version);
 
-  let latest_version = match semver::Version::parse(&latest_version.replace('v', "")) {
-    Ok(version) => version,
-    Err(_) => {
-      return;
-    }
-  };
-
-  let current_version = match semver::Version::parse(&current_version.replace('v', "")) {
-    Ok(version) => version,
-    Err(_) => {
-      return;
-    }
-  };
-
-  let needs_update = latest_version > current_version;
-
-  if needs_update {
+  if let Some(latest_version) = informer.check_version().ok().flatten() {
     let github_release_url = format!(
       "https://github.com/tailcallhq/tailcall/releases/tag/v{}",
       latest_version
