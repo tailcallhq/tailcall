@@ -47,13 +47,6 @@ jobs:
       - name: Add wasm32-unknown-unknown Target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --vers "0.2.86"
-
-      - name: Build and Test in cloudflare directory
-        working-directory: ./cloudflare
-        run: cargo test
-
       - name: Cache Cargo Registry
         uses: actions/cache@v2
         with:
@@ -61,6 +54,13 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --vers "0.2.86"
+
+      - name: Build and Test in cloudflare directory
+        working-directory: ./cloudflare
+        run: cargo test
 
   test:
     name: Run Tests
