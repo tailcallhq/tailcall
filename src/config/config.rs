@@ -32,7 +32,7 @@ pub struct Config {
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
   #[serde(default, skip_serializing_if = "is_default")]
-  pub opentelemetry: Opentelemetry
+  pub opentelemetry: Opentelemetry,
 }
 impl Config {
   pub fn port(&self) -> u16 {

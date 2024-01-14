@@ -26,7 +26,7 @@ fn to_headers(headers: &KeyValues, init_context: &InitContext) -> Valid<HeaderMa
           .map(|v| (k, v))
       })
     })
-    .map(|headers| HeaderMap::from_iter(headers))
+    .map(HeaderMap::from_iter)
     .trace("headers")
 }
 

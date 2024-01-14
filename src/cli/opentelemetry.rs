@@ -2,47 +2,33 @@ mod metrics;
 
 use std::io::Write;
 
-use anyhow::anyhow;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
-use opentelemetry::logs::LogError;
-use opentelemetry::logs::LogResult;
-use opentelemetry::metrics::MetricsError;
-use opentelemetry::metrics::Result as MetricsResult;
-use opentelemetry::trace::TraceError;
-use opentelemetry::trace::TracerProvider as _;
-use opentelemetry::KeyValue;
-use opentelemetry::{global, trace::TraceResult};
+use opentelemetry::logs::{LogError, LogResult};
+use opentelemetry::metrics::{MetricsError, Result as MetricsResult};
+use opentelemetry::trace::{TraceError, TraceResult, TracerProvider as _};
+use opentelemetry::{global, KeyValue};
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
-use opentelemetry_otlp::TonicExporterBuilder;
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_otlp::{TonicExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::logs::{Logger, LoggerProvider};
 use opentelemetry_sdk::metrics::{MeterProvider, PeriodicReader};
-use opentelemetry_sdk::runtime;
 use opentelemetry_sdk::runtime::Tokio;
-use opentelemetry_sdk::trace::Tracer;
-use opentelemetry_sdk::trace::TracerProvider;
-use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::{Tracer, TracerProvider};
+use opentelemetry_sdk::{runtime, Resource};
 use serde::Serialize;
 use tonic::metadata::MetadataMap;
 use tracing::Subscriber;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::filter::dynamic_filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Layer;
-use tracing_subscriber::Registry;
-
-use crate::blueprint::opentelemetry::Opentelemetry;
-use crate::blueprint::opentelemetry::OpentelemetryExporter;
-use crate::blueprint::opentelemetry::OtlpExporter;
-use crate::tracing::default_filter_target;
-use crate::tracing::default_tracing;
+use tracing_subscriber::{Layer, Registry};
 
 use self::metrics::init_metrics;
-
 use super::server::server_config::ServerConfig;
+use crate::blueprint::opentelemetry::{Opentelemetry, OpentelemetryExporter, OtlpExporter};
+use crate::tracing::{default_filter_target, default_tracing};
 
-const RESOURCE: Lazy<Resource> = Lazy::new(|| {
+static RESOURCE: Lazy<Resource> = Lazy::new(|| {
   Resource::default().merge(&Resource::new(vec![
     KeyValue::new(opentelemetry_semantic_conventions::resource::SERVICE_NAME, "tailcall"),
     KeyValue::new(

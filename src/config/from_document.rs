@@ -31,8 +31,24 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
   let schema = schema_definition(&doc).map(to_root_schema);
 
   schema_definition(&doc)
-    .and_then(|sd| server(sd).zip(upstream(sd)).zip(opentelemetry(sd)).zip(types).zip(unions).zip(schema))
-    .map(|(((((server, upstream), opentelemetry), types), unions), schema)| Config { server, upstream, types, unions, schema, opentelemetry })
+    .and_then(|sd| {
+      server(sd)
+        .zip(upstream(sd))
+        .zip(opentelemetry(sd))
+        .zip(types)
+        .zip(unions)
+        .zip(schema)
+    })
+    .map(
+      |(((((server, upstream), opentelemetry), types), unions), schema)| Config {
+        server,
+        upstream,
+        types,
+        unions,
+        schema,
+        opentelemetry,
+      },
+    )
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {

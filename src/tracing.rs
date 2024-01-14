@@ -1,7 +1,10 @@
-use std::{env, str::FromStr};
+use std::env;
+use std::str::FromStr;
 
 use tracing::Subscriber;
-use tracing_subscriber::{filter::filter_fn, layer::SubscriberExt, Layer};
+use tracing_subscriber::filter::filter_fn;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::Layer;
 
 pub fn default_tracing() -> impl Subscriber {
   const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
@@ -10,8 +13,7 @@ pub fn default_tracing() -> impl Subscriber {
   let level = env::var(LONG_ENV_FILTER_VAR_NAME)
     .or(env::var(SHORT_ENV_FILTER_VAR_NAME))
     .ok()
-    .map(|v| tracing::Level::from_str(&v).ok())
-    .flatten()
+    .and_then(|v| tracing::Level::from_str(&v).ok())
     // use the log level from the env if there is one, otherwise use the default.
     .unwrap_or(tracing::Level::INFO);
 

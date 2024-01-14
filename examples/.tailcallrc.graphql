@@ -166,9 +166,7 @@ directive @upstream(
 """
 Enable [opentelemetry](https://opentelemetry.io) support
 """
-directive @opentelemetry (
-  export: OpentelemetryExport
-) on SCHEMA
+directive @opentelemetry(export: OpentelemetryExport) on SCHEMA
 
 """
 @http

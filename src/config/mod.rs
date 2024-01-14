@@ -1,8 +1,8 @@
 pub use config::*;
 pub use key_values::*;
+pub use opentelemetry::*;
 pub use server::*;
 pub use source::*;
-pub use opentelemetry::*;
 
 mod config;
 mod from_document;

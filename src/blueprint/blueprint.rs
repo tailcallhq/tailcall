@@ -8,8 +8,8 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::GlobalTimeout;
 use super::opentelemetry::Opentelemetry;
+use super::GlobalTimeout;
 use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
