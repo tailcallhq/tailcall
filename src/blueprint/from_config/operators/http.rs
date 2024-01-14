@@ -172,6 +172,7 @@ pub fn compile_http(config: &config::Config, field: &config::Field, http: &confi
           req_template,
           group_by: Some(GroupBy::new(http.group_by.clone())),
           dl_id: None,
+          rate_limit: http.rate_limit.as_ref().and_then(|crt| crt.try_into().ok()),
         })
       } else {
         Lambda::from_request_template(req_template).expression

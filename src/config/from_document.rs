@@ -276,7 +276,7 @@ where
     .zip(Grpc::from_directives(directives.iter()))
     .zip(RateLimit::from_directives(directives.iter()))
     .zip(Expr::from_directives(directives.iter()))
-    .map(|(((((http, graphql), cache), grpc), rate_limit), expr))| {
+    .map(|(((((http, graphql), cache), grpc), rate_limit), expr)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {

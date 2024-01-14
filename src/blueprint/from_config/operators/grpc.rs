@@ -140,6 +140,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
           req_template,
           group_by: Some(GroupBy::new(grpc.group_by.clone())),
           dl_id: None,
+          rate_limit: grpc.rate_limit.as_ref().and_then(|crt| crt.try_into().ok()),
         })
       } else {
         Lambda::from_grpc_request_template(req_template).expression
