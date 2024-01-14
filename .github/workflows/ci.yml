@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -58,9 +58,20 @@ jobs:
       - name: Install wasm-bindgen-cli
         run: cargo install wasm-bindgen-cli --vers "0.2.86"
 
-      - name: Build and Test in cloudflare directory
+      - name: Run CF Test
+        uses: actions-rs/cargo@v1
         working-directory: ./cloudflare
-        run: cargo test
+        with:
+          command: llvm-cov
+          args: --all-features --lcov --output-path lcov.info
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
+
 
   test:
     name: Run Tests
