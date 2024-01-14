@@ -29,25 +29,37 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  compile_wasm:
-    name: Compile WASM
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+  test_cf:
+    name: Build and Test cloudflare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: stable
           override: true
 
-      - name: Add wasm32 target
-        run: rustup target add wasm32-unknown-unknown
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --vers "0.2.86"
 
-      - name: Build WASM
-        run: cargo build --lib --release --target wasm32-unknown-unknown
+      - name: Build and Test in cloudflare directory
         working-directory: ./cloudflare
+        run: |
+          cargo build
+          cargo test
+
+      - name: Cache Cargo Registry
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
   test:
     name: Run Tests
