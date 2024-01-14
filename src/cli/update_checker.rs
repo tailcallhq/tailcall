@@ -28,7 +28,7 @@ fn get_installation_method() -> InstallationMethod {
 }
 
 pub async fn check_for_update() {
-  let name = env!("CARGO_PKG_NAME");
+  let name: &str = "tailcallhq/tailcall";
   let current_version: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
     _ => return,
