@@ -4,9 +4,11 @@ use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
 use criterion::{criterion_group, criterion_main, Criterion};
+use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpClient, HttpDataLoader, Response};
+use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::HttpIO;
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -15,17 +17,12 @@ struct MockHttpClient {
 }
 
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
-  async fn execute(&self, _req: reqwest::Request) -> anyhow::Result<Response> {
-    self.request_count.fetch_add(1, Ordering::SeqCst);
-    // You can mock the actual response as per your need
-    Ok(Response::default())
-  }
-
-  async fn execute_raw(&self, _req: Request) -> anyhow::Result<reqwest::Response> {
-    unimplemented!("not needed for this test")
+impl HttpIO for MockHttpClient {
+  async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
+    Ok(Response::empty())
   }
 }
+
 fn benchmark_data_loader(c: &mut Criterion) {
   c.bench_function("test_data_loader", |b| {
     b.iter(|| {

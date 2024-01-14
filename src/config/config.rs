@@ -10,9 +10,7 @@ use serde_json::Value;
 
 use super::{Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::reader::ConfigReader;
 use crate::config::source::Source;
-use crate::config::writer::ConfigWriter;
 use crate::config::{is_default, KeyValues};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
@@ -129,12 +127,6 @@ impl Config {
 
     Self { server, upstream, types, schema, unions }
   }
-
-  pub async fn write_file(self, filename: &String) -> Result<()> {
-    let config_writer = ConfigWriter::init(self);
-
-    config_writer.write(filename).await
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -231,6 +223,9 @@ impl RootSchema {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Omit {}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
@@ -249,6 +244,8 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
+  pub omit: Option<Omit>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
@@ -258,6 +255,8 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub expr: Option<Expr>,
   pub cache: Option<Cache>,
 }
 
@@ -268,6 +267,7 @@ impl Field {
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
+      || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -316,6 +316,10 @@ impl Field {
 
   pub fn id() -> Self {
     Self { type_of: "ID".to_string(), ..Default::default() }
+  }
+
+  pub fn is_omitted(&self) -> bool {
+    self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
   }
 }
 
@@ -385,6 +389,32 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub encoding: Encoding,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ExprBody {
+  #[serde(rename = "http")]
+  Http(Http),
+  #[serde(rename = "grpc")]
+  Grpc(Grpc),
+  #[serde(rename = "graphQL")]
+  GraphQL(GraphQL),
+  #[serde(rename = "const")]
+  Const(Value),
+  #[serde(rename = "if")]
+  If {
+    cond: Box<ExprBody>,
+    then: Box<ExprBody>,
+    #[serde(rename = "else")]
+    els: Box<ExprBody>,
+  },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Expr {
+  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -408,7 +438,7 @@ pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
@@ -472,16 +502,13 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
 
-  pub async fn read_from_files<Iter>(file_paths: Iter) -> Result<Config>
-  where
-    Iter: Iterator,
-    Iter::Item: AsRef<str>,
-  {
-    let config_reader = ConfigReader::init(file_paths);
-
-    config_reader.read().await
-  }
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub enum Encoding {
+  #[default]
+  ApplicationJson,
+  ApplicationXWwwFormUrlencoded,
 }
 
 #[cfg(test)]

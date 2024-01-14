@@ -1,30 +1,35 @@
+use std::path::Path;
 use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
-use resource::resource_str;
 use stripmargin::StripMargin;
 use tokio::runtime::Builder;
 
 use super::command::{Cli, Command};
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
-use crate::cli::CLIError;
-use crate::config::Config;
-use crate::http::Server;
+use crate::cli::server::Server;
+use crate::cli::{init_file, init_http, CLIError};
+use crate::config::reader::ConfigReader;
+use crate::config::{Config, Upstream};
 use crate::print_schema;
+
+const FILE_NAME: &str = ".tailcallrc.graphql";
+const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub fn run() -> Result<()> {
   let cli = Cli::parse();
 
   logger_init();
-
+  let file_io = init_file();
+  let default_http_io = init_http(&Upstream::default());
+  let config_reader = ConfigReader::init(file_io, default_http_io);
   match cli.command {
     Command::Start { file_paths } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_paths.iter()).await })?;
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let runtime = Builder::new_multi_thread()
         .worker_threads(config.server.get_workers())
@@ -34,9 +39,8 @@ pub fn run() -> Result<()> {
       runtime.block_on(server.start())?;
       Ok(())
     }
-    Command::Check { file_path, n_plus_one_queries, schema } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
+    Command::Check { file_paths, n_plus_one_queries, schema } => {
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
       match blueprint {
         Ok(blueprint) => {
@@ -50,64 +54,91 @@ pub fn run() -> Result<()> {
         Err(e) => Err(e.into()),
       }
     }
-    Command::Compose { file_path, format } => {
-      let config =
-        tokio::runtime::Runtime::new()?.block_on(async { Config::read_from_files(file_path.iter()).await })?;
-
-      Fmt::display(format.encode(config)?);
-
+    Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
+    Command::Compose { file_paths, format } => {
+      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      Fmt::display(format.encode(&config)?);
       Ok(())
     }
-    Command::Init { file_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&file_path).await })?),
   }
 }
 
-pub async fn init(file_path: &str) -> Result<()> {
-  let tailcallrc: resource::Resource<str> = resource_str!("examples/.tailcallrc.graphql");
+pub async fn init(folder_path: &str) -> Result<()> {
+  let folder_exists = fs::metadata(folder_path).is_ok();
 
-  let answer = Confirm::new("Do you want to add a file to the project?")
-    .with_default(false)
-    .prompt();
+  if !folder_exists {
+    let confirm = Confirm::new(&format!("Do you want to create the folder {}?", folder_path))
+      .with_default(false)
+      .prompt()?;
 
-  match answer {
-    Ok(true) => {
-      let file_name = inquire::Text::new("Enter the file name:")
-        .with_default(".graphql")
-        .prompt()
-        .unwrap_or_else(|_| String::from(".graphql"));
-
-      let file_name = format!("{}.graphql", file_name.strip_suffix(".graphql").unwrap_or(&file_name));
-
-      let confirm = Confirm::new(&format!("Do you want to create the file {}?", file_name))
-        .with_default(false)
-        .prompt();
-
-      match confirm {
-        Ok(true) => {
-          fs::write(format!("{}/{}", file_path, &file_name), "")?;
-
-          let graphqlrc = format!(
-            r#"|schema:
-               |- './{}'
-               |- './.tailcallrc.graphql'
-          "#,
-            &file_name
-          )
-          .strip_margin();
-          fs::write(format!("{}/.graphqlrc.yml", file_path), graphqlrc)?;
-        }
-        Ok(false) => (),
-        Err(e) => return Err(e.into()),
-      }
-    }
-    Ok(false) => (),
-    Err(e) => return Err(e.into()),
+    if confirm {
+      fs::create_dir_all(folder_path)?;
+    } else {
+      return Ok(());
+    };
   }
 
-  fs::write(
-    format!("{}/.tailcallrc.graphql", file_path),
-    tailcallrc.as_ref().as_bytes(),
-  )?;
+  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
+
+  let file_path = Path::new(folder_path).join(FILE_NAME);
+  let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+
+  let tailcall_exists = fs::metadata(&file_path).is_ok();
+
+  if tailcall_exists {
+    // confirm overwrite
+    let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", FILE_NAME))
+      .with_default(false)
+      .prompt()?;
+
+    if confirm {
+      fs::write(&file_path, tailcallrc.as_bytes())?;
+    }
+  } else {
+    fs::write(&file_path, tailcallrc.as_bytes())?;
+  }
+
+  let yml_exists = fs::metadata(&yml_file_path).is_ok();
+
+  if !yml_exists {
+    fs::write(&yml_file_path, "")?;
+
+    let graphqlrc = r"|schema:
+         |- './.tailcallrc.graphql'
+    "
+    .strip_margin();
+
+    fs::write(&yml_file_path, graphqlrc)?;
+  }
+
+  let graphqlrc = fs::read_to_string(&yml_file_path)?;
+
+  let file_path = file_path.to_str().unwrap();
+
+  let mut yaml: serde_yaml::Value = serde_yaml::from_str(&graphqlrc)?;
+
+  if let Some(mapping) = yaml.as_mapping_mut() {
+    let schema = mapping
+      .entry("schema".into())
+      .or_insert(serde_yaml::Value::Sequence(Default::default()));
+    if let Some(schema) = schema.as_sequence_mut() {
+      if !schema
+        .iter()
+        .any(|v| v == &serde_yaml::Value::from("./.tailcallrc.graphql"))
+      {
+        let confirm = Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
+          .with_default(false)
+          .prompt()?;
+
+        if confirm {
+          schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
+          let updated = serde_yaml::to_string(&yaml)?;
+          fs::write(yml_file_path, updated)?;
+        }
+      }
+    }
+  }
+
   Ok(())
 }
 
