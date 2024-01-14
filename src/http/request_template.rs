@@ -417,113 +417,121 @@ mod tests {
     assert_eq!(body, "baz");
   }
 
-  #[test]
-  fn test_from_endpoint() {
-    let mut headers = HeaderMap::new();
-    headers.insert("foo", "bar".parse().unwrap());
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string())
-      .method(crate::http::Method::POST)
-      .headers(headers)
-      .body(Some("foo".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.method(), reqwest::Method::POST);
-    assert_eq!(req.headers().get("foo").unwrap(), "bar");
-    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-    assert_eq!(body, "foo".as_bytes());
-    assert_eq!(req.url().to_string(), "http://localhost:3000/");
-  }
-  #[test]
-  fn test_from_endpoint_template() {
-    let mut headers = HeaderMap::new();
-    headers.insert("foo", "{{foo.header}}".parse().unwrap());
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
-      .method(crate::http::Method::POST)
-      .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
-      .headers(headers)
-      .body(Some("{{foo.bar}}".into()));
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "foo": {
-        "bar": "baz",
-        "header": "abc"
-      }
-    }));
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.method(), reqwest::Method::POST);
-    assert_eq!(req.headers().get("foo").unwrap(), "abc");
-    let body = req.body().unwrap().as_bytes().unwrap().to_owned();
-    assert_eq!(body, "baz".as_bytes());
-    assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
-  }
+  mod endpoint {
+    use hyper::HeaderMap;
+    use serde_json::json;
 
-  #[test]
-  fn test_from_endpoint_template_null_value() {
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/");
-  }
+    use crate::http::request_template::tests::Context;
+    use crate::http::RequestTemplate;
 
-  #[test]
-  fn test_from_endpoint_template_with_query_null_value() {
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}&q=1".to_string()).query(vec![
-      ("b".to_string(), "1".to_string()),
-      ("c".to_string(), "{{args.c}}".to_string()),
-    ]);
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default();
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
-  }
+    #[test]
+    fn test_from_endpoint() {
+      let mut headers = HeaderMap::new();
+      headers.insert("foo", "bar".parse().unwrap());
+      let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string())
+        .method(crate::http::Method::POST)
+        .headers(headers)
+        .body(Some("foo".into()));
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default();
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.method(), reqwest::Method::POST);
+      assert_eq!(req.headers().get("foo").unwrap(), "bar");
+      let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+      assert_eq!(body, "foo".as_bytes());
+      assert_eq!(req.url().to_string(), "http://localhost:3000/");
+    }
+    #[test]
+    fn test_from_endpoint_template() {
+      let mut headers = HeaderMap::new();
+      headers.insert("foo", "{{foo.header}}".parse().unwrap());
+      let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
+        .method(crate::http::Method::POST)
+        .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
+        .headers(headers)
+        .body(Some("{{foo.bar}}".into()));
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default().value(json!({
+        "foo": {
+          "bar": "baz",
+          "header": "abc"
+        }
+      }));
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.method(), reqwest::Method::POST);
+      assert_eq!(req.headers().get("foo").unwrap(), "abc");
+      let body = req.body().unwrap().as_bytes().unwrap().to_owned();
+      assert_eq!(body, "baz".as_bytes());
+      assert_eq!(req.url().to_string(), "http://localhost:3000/baz?foo=baz");
+    }
 
-  #[test]
-  fn test_from_endpoint_template_few_null_value() {
-    let endpoint = crate::endpoint::Endpoint::new(
-      "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-    );
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "args": {
-        "b": "foo",
-        "d": "bar"
-      }
-    }));
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar");
-  }
+    #[test]
+    fn test_from_endpoint_template_null_value() {
+      let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default();
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.url().to_string(), "http://localhost:3000/");
+    }
 
-  #[test]
-  fn test_from_endpoint_template_few_null_value_mixed() {
-    let endpoint = crate::endpoint::Endpoint::new(
-      "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-    )
-    .query(vec![
-      ("e".to_string(), "{{args.e}}".to_string()),
-      ("f".to_string(), "{{args.f}}".to_string()),
-    ]);
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let ctx = Context::default().value(json!({
-      "args": {
-        "b": "foo",
-        "d": "bar",
-        "f": "baz"
-      }
-    }));
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar&f=baz");
-  }
-  #[test]
-  fn test_headers_forward() {
-    let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
-    let tmpl = RequestTemplate::try_from(endpoint).unwrap();
-    let mut headers = HeaderMap::new();
-    headers.insert("baz", "qux".parse().unwrap());
-    let ctx = Context::default().headers(headers);
-    let req = tmpl.to_request(&ctx).unwrap();
-    assert_eq!(req.headers().get("baz").unwrap(), "qux");
+    #[test]
+    fn test_from_endpoint_template_with_query_null_value() {
+      let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}&q=1".to_string()).query(vec![
+        ("b".to_string(), "1".to_string()),
+        ("c".to_string(), "{{args.c}}".to_string()),
+      ]);
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default();
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
+    }
+
+    #[test]
+    fn test_from_endpoint_template_few_null_value() {
+      let endpoint = crate::endpoint::Endpoint::new(
+        "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
+      );
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default().value(json!({
+        "args": {
+          "b": "foo",
+          "d": "bar"
+        }
+      }));
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar");
+    }
+
+    #[test]
+    fn test_from_endpoint_template_few_null_value_mixed() {
+      let endpoint = crate::endpoint::Endpoint::new(
+        "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
+      )
+      .query(vec![
+        ("e".to_string(), "{{args.e}}".to_string()),
+        ("f".to_string(), "{{args.f}}".to_string()),
+      ]);
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let ctx = Context::default().value(json!({
+        "args": {
+          "b": "foo",
+          "d": "bar",
+          "f": "baz"
+        }
+      }));
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.url().to_string(), "http://localhost:3000/foo?b=foo&d=bar&f=baz");
+    }
+    #[test]
+    fn test_headers_forward() {
+      let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
+      let tmpl = RequestTemplate::try_from(endpoint).unwrap();
+      let mut headers = HeaderMap::new();
+      headers.insert("baz", "qux".parse().unwrap());
+      let ctx = Context::default().headers(headers);
+      let req = tmpl.to_request(&ctx).unwrap();
+      assert_eq!(req.headers().get("baz").unwrap(), "qux");
+    }
   }
 
   mod form_encoded_url {
