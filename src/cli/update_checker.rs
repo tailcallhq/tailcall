@@ -37,16 +37,14 @@ pub async fn check_for_update() {
   let informer = update_informer::new(registry::GitHub, name, current_version);
 
   if let Some(latest_version) = informer.check_version().ok().flatten() {
-    let github_release_url = format!(
-      "https://github.com/tailcallhq/tailcall/releases/tag/v{}",
-      latest_version
-    );
+    let github_release_url = format!("https://github.com/tailcallhq/tailcall/releases/tag/{}", latest_version);
 
     log::warn!(
       "{}",
       format!(
-        "A new release of tailcall is available: {} -> {}",
+        "A new release of tailcall is available: {} {} {}",
         current_version.to_string().cyan(),
+        "➜".white(),
         latest_version.to_string().cyan()
       )
       .yellow()
