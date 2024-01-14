@@ -114,6 +114,39 @@ jobs:
       - name: Run Lint Script
         run: ./lint.sh --mode=check
 
+  semantic_version:
+    name: Semantic Version
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest release version
+        uses: pozetroninc/github-action-get-latest-release@master
+        id: tailcall_release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: tailcallhq
+          repo: tailcall
+
+      - name: Set version-fragment based on commit message
+        id: set_version_fragment
+        run: |
+          if echo "${{ github.event.head_commit.message }}" | grep -q 'feat'; then version_fragment='feature'
+          elif echo "${{ github.event.head_commit.message }}" | grep -q 'fix'; then version_fragment='bug'
+          fi
+          echo "version_fragment=${version_fragment}" >> $GITHUB_ENV
+
+      - name: Bump release version
+        id: bump_version
+        uses: christian-draeger/increment-semantic-version@1.1.0
+        with:
+          current-version: ${{ steps.tailcall_release.outputs.release }}
+          version-fragment: ${{ steps.set_version_fragment.outputs.version_fragment }}
+
+      - name: Set Environment Variables for Later Jobs
+        run: |
+          echo "RESOLVED_VERSION=${{ steps.tailcall_release.outputs.release }}" >> $GITHUB_ENV
+          echo "NEW_VERSION=${{ steps.bump_version.outputs.new-version }}" >> $GITHUB_ENV
+
   draft_release:
     name: Draft Release
     if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
@@ -144,7 +177,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, compile_wasm]
+    needs: [test, format, semantic_version, draft_release, check_if_build, compile_wasm]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
