@@ -266,7 +266,7 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Install Node.js
-        if: github.event_name == 'release' && github.event.action == 'published'
+        #        if: github.event_name == 'release' && github.event.action == 'published'
         uses: actions/setup-node@v4
         with:
           node-version: 20.11.0
@@ -308,12 +308,13 @@ jobs:
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
 
-      - name: Run Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm install -g semantic-release
-          npx semantic-release
+  name: Run Semantic Release
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    npm install -g semantic-release
+    npx semantic-release
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
