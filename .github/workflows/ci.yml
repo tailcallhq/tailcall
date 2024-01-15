@@ -311,7 +311,6 @@ jobs:
   semantic_release:
     name: Semantic Release
     needs: [release]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     run: |
