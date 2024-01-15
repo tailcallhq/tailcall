@@ -11,7 +11,7 @@ pub fn update_protected<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config:
     |(config, field, type_, _), b_field| {
       Valid::succeed(if field.protected || type_.protected {
         if !config.server.auth.is_some() {
-          return Valid::fail("@protected operator is used without defining auth on schema's @server".to_owned())
+          return Valid::fail("@protected operator is used without defining auth @server".to_owned())
             .trace(Protected::trace_name().as_str());
         }
 

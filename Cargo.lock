@@ -3787,7 +3787,6 @@ dependencies = [
  "ttl_cache",
  "url",
  "webbrowser",
- "worker",
 ]
 
 [[package]]
