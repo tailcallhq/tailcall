@@ -238,6 +238,7 @@ impl Expression {
         Expression::Relation(relation) => eval_relation(ctx, relation).await,
         Expression::Logic(logic) => eval_logic(ctx, logic).await,
         Expression::List(list) => eval_list(ctx, list).await,
+        Expression::Math(_) => todo!(),
       }
     })
   }
@@ -305,13 +306,47 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
   logic: &'a Logic,
 ) -> Result<async_graphql::Value> {
-  let Logic::If { cond, then, els } = logic;
-  let cond = cond.eval(ctx).await?;
-  if is_truthy(cond) {
-    then.eval(ctx).await
-  } else {
-    els.eval(ctx).await
-  }
+  Ok(match logic {
+    Logic::And(lhs, rhs) => {
+      let lhs_val = lhs.eval(ctx).await?;
+      (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx).await?)).into()
+    },
+    Logic::AnyPass(list) => {
+      let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
+        .await
+        .into_iter()
+        .any(|result| {
+          result
+            .map(is_truthy)
+            .unwrap_or(false)
+        });
+        result.into()
+    },
+    Logic::Cond(_) => todo!(),
+    Logic::DefaultTo(_, _) => todo!(),
+    Logic::IsEmpty(_) => todo!(),
+    Logic::Not(expr) => (!is_truthy(expr.eval(ctx).await?)).into(),
+    Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx).await?) || is_truthy(rhs.eval(ctx).await?)).into(),
+    Logic::AllPass(list) => {
+      let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
+        .await
+        .into_iter()
+        .all(|result| {
+          result
+            .map(is_truthy)
+            .unwrap_or(false)
+        });
+        result.into()
+    },
+    Logic::If { cond, then, els } => {
+      let cond = cond.eval(ctx).await?;
+      if is_truthy(cond) {
+        then.eval(ctx).await?
+      } else {
+        els.eval(ctx).await?
+      }
+    }
+  })
 }
 
 /// Check if a value is truthy
