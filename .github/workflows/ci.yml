@@ -57,7 +57,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: llvm-cov
-          args: --all-features --lcov --output-path lcov.info
+          args: --all-features --workspace --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -68,14 +68,13 @@ jobs:
 
   test_cf:
     name: Run CF Tests
+    defaults:
+      run:
+        working-directory: ./cloudflare
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Change directory
-        run: cd ./cloudflare
 
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
@@ -100,17 +99,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run CF Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: llvm-cov
-          args: --all-features --lcov --output-path lcov_cf.info
-
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov_cf.info
-          fail_ci_if_error: true
+        run: cargo test
 
   format:
     name: Run Formatter and Lint Check
