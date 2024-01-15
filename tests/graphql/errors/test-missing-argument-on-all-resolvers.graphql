@@ -31,6 +31,8 @@ type Query {
     )
   newsGrpcUrl: NewsData!
     @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService", baseURL: "{{args.url}}")
+  newsGrpcBody: NewsData!
+    @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService", body: "{{args.id}}")
 }
 
 type User {
@@ -39,6 +41,7 @@ type User {
 }
 
 #> client-sdl
+type Failure @error(message: "no argument 'id' found", trace: ["Query", "newsGrpcBody", "@grpc", "body"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "newsGrpcHeaders", "@grpc", "headers"])
 type Failure @error(message: "no argument 'url' found", trace: ["Query", "newsGrpcUrl", "@grpc", "path"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQLArgs", "@graphQL", "args"])
