@@ -8,17 +8,17 @@ use tailcall::HttpIO;
 use crate::to_anyhow;
 
 #[derive(Clone)]
-pub struct HttpCloudflare {
+pub struct CloudflareHttp {
   client: Client,
 }
 
-impl Default for HttpCloudflare {
+impl Default for CloudflareHttp {
   fn default() -> Self {
     Self { client: Client::new() }
   }
 }
 
-impl HttpCloudflare {
+impl CloudflareHttp {
   pub fn init() -> Self {
     let client = Client::new();
     Self { client: client }
@@ -26,7 +26,7 @@ impl HttpCloudflare {
 }
 
 #[async_trait::async_trait]
-impl HttpIO for HttpCloudflare {
+impl HttpIO for CloudflareHttp {
   // HttpClientOptions are ignored in Cloudflare
   // This is because there is little control over the underlying HTTP client
   async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
