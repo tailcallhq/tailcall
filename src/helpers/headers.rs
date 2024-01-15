@@ -6,7 +6,7 @@ use crate::valid::{Valid, ValidationError};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
-pub fn to_headervec(headers: &KeyValues) -> Valid<Vec<(HeaderName, Mustache)>, String> {
+pub fn to_mustache_headers(headers: &KeyValues) -> Valid<MustacheHeaders, String> {
   Valid::from_iter(headers.iter(), |(k, v)| {
     let name =
       Valid::from(HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string()))).trace(k);
@@ -22,7 +22,7 @@ mod tests {
   use anyhow::Result;
   use hyper::header::HeaderName;
 
-  use super::to_headervec;
+  use super::to_mustache_headers;
   use crate::config::KeyValues;
   use crate::mustache::Mustache;
 
@@ -30,7 +30,7 @@ mod tests {
   fn valid_headers() -> Result<()> {
     let input: KeyValues = serde_json::from_str(r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#)?;
 
-    let headers = to_headervec(&input).to_result()?;
+    let headers = to_mustache_headers(&input).to_result()?;
 
     assert_eq!(
       headers,
@@ -47,7 +47,7 @@ mod tests {
   fn not_valid_due_to_utf8() {
     let input: KeyValues =
       serde_json::from_str(r#"[{"key": "😅", "value": "str"}, {"key": "b", "value": "🦀"}]"#).unwrap();
-    let error = to_headervec(&input).to_result().unwrap_err();
+    let error = to_mustache_headers(&input).to_result().unwrap_err();
 
     // HeaderValue should be parsed just fine despite non-visible ascii symbols range
     // see https://github.com/hyperium/http/issues/519
