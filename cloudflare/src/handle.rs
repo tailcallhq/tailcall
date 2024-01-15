@@ -10,11 +10,11 @@ use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::EnvIO;
 
-use crate::env::EnvCloudflare;
-use crate::http::{to_request, to_response, HttpCloudflare};
+use crate::env::CloudflareEnv;
+use crate::http::{to_request, to_response, CloudflareHttp};
 use crate::{init_env, init_file, init_http};
 
-type CloudFlareAppContext = AppContext<HttpCloudflare, EnvCloudflare>;
+type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
   static ref APP_CTX: RwLock<Option<Arc<CloudFlareAppContext>>> = RwLock::new(None);
 }
@@ -25,7 +25,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
   let env = Rc::new(env);
   log::debug!("Execution starting");
   let app_ctx = get_app_ctx(env).await?;
-  let resp = handle_request::<GraphQLRequest, HttpCloudflare, EnvCloudflare>(to_request(req).await?, app_ctx).await?;
+  let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
 }
 
