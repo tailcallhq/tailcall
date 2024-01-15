@@ -18,28 +18,30 @@ impl OperationQuery {
     Self { query, file: trace }
   }
 
+  fn to_cause(&self, err: &async_graphql::ServerError) -> Cause<String> {
+    let mut trace = Vec::new();
+    let file = self.file.as_str();
+
+    for loc in err.locations.iter() {
+      let mut message = String::new();
+      message.write_str(file).unwrap();
+      message
+        .write_str(format!(":{}:{}", loc.line, loc.column).as_str())
+        .unwrap();
+
+      trace.push(message);
+    }
+
+    Cause::new(err.message.clone()).trace(trace)
+  }
+
   pub async fn validate(&self, schema: &Schema) -> Vec<Cause<String>> {
     schema
       .execute(&self.query)
       .await
       .errors
       .iter()
-      .map(|err| {
-        let mut trace = Vec::new();
-        let file = self.file.as_str();
-
-        for loc in err.locations.iter() {
-          let mut message = String::new();
-          message.write_str(file).unwrap();
-          message
-            .write_str(format!(":{}:{}", loc.line, loc.column).as_str())
-            .unwrap();
-
-          trace.push(message);
-        }
-
-        Cause::new(err.message.clone()).trace(trace)
-      })
+      .map(|e| self.to_cause(e))
       .collect()
   }
 }
