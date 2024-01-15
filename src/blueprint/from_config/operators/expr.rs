@@ -1,7 +1,7 @@
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, ExprBody, Field};
-use crate::lambda::Expression;
+use crate::lambda::{Expression, List, Logic, Relation};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -9,64 +9,6 @@ struct CompilationContext<'a> {
   config_field: &'a config::Field,
   operation_type: &'a config::GraphQLOperationType,
   config: &'a config::Config,
-}
-
-struct CompileIf<'a> {
-  context: &'a CompilationContext<'a>,
-  cond: Box<ExprBody>,
-  then: Box<ExprBody>,
-  els: Box<ExprBody>,
-}
-
-struct CompileListOp<'a> {
-  context: &'a CompilationContext<'a>,
-  values: Vec<ExprBody>,
-}
-
-fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-  let config = context.config;
-  let field = context.config_field;
-  let operation_type = context.operation_type;
-
-  match expr {
-    ExprBody::If { cond, on_true: then, on_false: els } => compile_if(CompileIf { context, cond, then, els }),
-    ExprBody::Http(http) => compile_http(config, field, &http),
-    ExprBody::Grpc(grpc) => {
-      compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false })
-    }
-    ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
-    ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }),
-    ExprBody::Concat(values) => compile_concat(CompileListOp { context, values }),
-    ExprBody::Intersection(values) => compile_intersection(CompileListOp { context, values }),
-  }
-}
-
-fn compile_intersection(input: CompileListOp) -> Valid<Expression, String> {
-  compile_list_op(input).map(Expression::IntersectionAll)
-}
-
-fn compile_concat(input: CompileListOp) -> Valid<Expression, String> {
-  compile_list_op(input).map(Expression::ConcatAll)
-}
-
-fn compile_list_op(input: CompileListOp) -> Valid<Vec<Expression>, String> {
-  let context = input.context;
-  let values = input.values;
-
-  Valid::from_iter(values, |value| compile(context, value))
-}
-
-fn compile_if(input: CompileIf) -> Valid<Expression, String> {
-  let context = input.context;
-  let cond = input.cond;
-  let then = input.then;
-  let els = input.els;
-
-  compile(context, *cond)
-    .map(Box::new)
-    .zip(compile(context, *then).map(Box::new))
-    .zip(compile(context, *els).map(Box::new))
-    .map(|((cond, then), els)| Expression::If { cond, then, els })
 }
 
 pub fn update_expr(
@@ -81,4 +23,42 @@ pub fn update_expr(
 
     compile(&context, expr.body.clone()).map(|compiled| b_field.resolver(Some(compiled)))
   })
+}
+
+///
+/// Compiles a list of Exprs into a list of Expressions
+///
+fn compile_list(context: &CompilationContext, expr_vec: Vec<ExprBody>) -> Valid<Vec<Expression>, String> {
+  Valid::from_iter(expr_vec, |value| compile(context, value))
+}
+
+///
+/// Compiles expr into Expression
+///
+fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
+  let config = ctx.config;
+  let field = ctx.config_field;
+  let operation_type = ctx.operation_type;
+
+  match expr {
+    // Unsafe Expr
+    ExprBody::Http(http) => compile_http(config, field, &http),
+    ExprBody::Grpc(grpc) => {
+      let grpc = CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false };
+      compile_grpc(grpc)
+    }
+    ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
+
+    // Safe Expr
+    ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate: false }),
+    ExprBody::If { cond, on_true: then, on_false: els } => compile(ctx, *cond)
+      .map(Box::new)
+      .zip(compile(ctx, *then).map(Box::new))
+      .zip(compile(ctx, *els).map(Box::new))
+      .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
+    ExprBody::Concat(values) => compile_list(ctx, values).map(|a| Expression::List(List::Concat(a))),
+    ExprBody::Intersection(values) => {
+      compile_list(ctx, values).map(|a| Expression::Relation(Relation::Intersection(a)))
+    }
+  }
 }

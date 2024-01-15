@@ -13,7 +13,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::blueprint::HashableConstValue;
 use crate::config::group_by::GroupBy;
-use crate::config::GraphQLOperationType;
+use crate::config::{Expr, GraphQLOperationType};
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc;
@@ -34,13 +34,28 @@ pub enum Expression {
   EqualTo(Box<Expression>, Box<Expression>),
   Unsafe(Unsafe),
   Input(Box<Expression>, Vec<String>),
+  Logic(Logic),
+  Relation(Relation),
+  List(List),
+}
+
+#[derive(Clone, Debug)]
+pub enum List {
+  Concat(Vec<Expression>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Relation {
+  Intersection(Vec<Expression>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Logic {
   If {
     cond: Box<Expression>,
     then: Box<Expression>,
     els: Box<Expression>,
   },
-  ConcatAll(Vec<Expression>),
-  IntersectionAll(Vec<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -158,9 +173,9 @@ impl Expression {
           Unsafe::Grpc { req_template, dl_id, .. } => {
             let rendered = req_template.render(ctx)?;
 
-            let res = if ctx.req_ctx.upstream.batch.is_some()
-              // TODO: share check for operation_type for resolvers
-              && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            let res = if ctx.req_ctx.upstream.batch.is_some() &&
+                // TODO: share check for operation_type for resolvers
+                matches!(req_template.operation_type, GraphQLOperationType::Query)
             {
               let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
                 dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
@@ -193,6 +208,9 @@ impl Expression {
           }
         },
 
+        Expression::Relation(relation) => eval_relation(relation).await,
+        Expression::Logic(logic) => eval_logic(logic).await,
+        Expression::List(list) => eval_list(list).await,
         Expression::If { cond, then, els } => {
           let cond = cond.eval(ctx).await?;
           if is_truthy(cond) {
@@ -221,7 +239,9 @@ impl Expression {
               ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
               _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
             },
-            None => return Ok(ConstValue::List(vec![])),
+            None => {
+              return Ok(ConstValue::List(vec![]));
+            }
           };
 
           for expr in exprs_iter {
