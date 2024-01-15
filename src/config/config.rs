@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream};
+use super::{Expr, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
@@ -92,7 +92,7 @@ impl Config {
   }
 
   pub fn to_document(&self) -> ServiceDocument {
-    (self.clone()).into()
+    self.clone().into()
   }
 
   pub fn to_sdl(&self) -> String {
@@ -181,8 +181,8 @@ pub struct Cache {
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
   for (name, mut other_type) in other_types {
     if let Some(self_type) = self_types.remove(&name) {
-      other_type = self_type.merge_right(&other_type)
-    };
+      other_type = self_type.merge_right(&other_type);
+    }
 
     self_types.insert(name, other_type);
   }
@@ -272,19 +272,19 @@ impl Field {
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
     if self.http.is_some() {
-      directives.push(Http::trace_name())
+      directives.push(Http::trace_name());
     }
     if self.graphql.is_some() {
-      directives.push(GraphQL::trace_name())
+      directives.push(GraphQL::trace_name());
     }
     if self.unsafe_operation.is_some() {
-      directives.push(Unsafe::trace_name())
+      directives.push(Unsafe::trace_name());
     }
     if self.const_field.is_some() {
-      directives.push(Const::trace_name())
+      directives.push(Const::trace_name());
     }
     if self.grpc.is_some() {
-      directives.push(Grpc::trace_name())
+      directives.push(Grpc::trace_name());
     }
     directives
   }
@@ -391,34 +391,6 @@ pub struct Http {
   pub group_by: Vec<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub encoding: Encoding,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum ExprBody {
-  #[serde(rename = "http")]
-  Http(Http),
-  #[serde(rename = "grpc")]
-  Grpc(Grpc),
-  #[serde(rename = "graphQL")]
-  GraphQL(GraphQL),
-  #[serde(rename = "const")]
-  Const(Value),
-  #[serde(rename = "if")]
-  If {
-    cond: Box<ExprBody>,
-    then: Box<ExprBody>,
-    #[serde(rename = "else")]
-    els: Box<ExprBody>,
-  },
-  #[serde(rename = "concatAll")]
-  ConcatAll(Vec<ExprBody>),
-  #[serde(rename = "intersectionAll")]
-  IntersectionAll(Vec<ExprBody>),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Expr {
-  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

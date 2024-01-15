@@ -1,9 +1,10 @@
 pub use config::*;
+pub use expr::*;
 pub use key_values::*;
 pub use server::*;
 pub use source::*;
-
 mod config;
+mod expr;
 mod from_document;
 pub mod group_by;
 mod into_document;

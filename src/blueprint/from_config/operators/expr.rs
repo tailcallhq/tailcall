@@ -29,15 +29,15 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
   let operation_type = context.operation_type;
 
   match expr {
-    ExprBody::If { cond, then, els } => compile_if(CompileIf { context, cond, then, els }),
+    ExprBody::If { cond, on_true: then, on_false: els } => compile_if(CompileIf { context, cond, then, els }),
     ExprBody::Http(http) => compile_http(config, field, &http),
     ExprBody::Grpc(grpc) => {
       compile_grpc(CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false })
     }
     ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
     ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }),
-    ExprBody::ConcatAll(values) => compile_concat(CompileListOp { context, values }),
-    ExprBody::IntersectionAll(values) => compile_intersection(CompileListOp { context, values }),
+    ExprBody::Concat(values) => compile_concat(CompileListOp { context, values }),
+    ExprBody::Intersection(values) => compile_intersection(CompileListOp { context, values }),
   }
 }
 
