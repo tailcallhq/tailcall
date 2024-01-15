@@ -7,6 +7,10 @@ Please support us by giving the repository a star
 
 [high-performance]: https://github.com/tailcallhq/graphql-benchmarks
 
+[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=for-the-badge&logo=x&color=yellow&labelColor=yellow)](https://twitter.com/intent/tweet?text=%40tailcallhq%20GraphQL%20platform%20engineered%20for%20scale%0AA%20cloud%20native%20solution%20to%20streamline%20API%20management%20across%20edge%2C%20middle%2C%20and%20service%20layers.%20%20%0ACheck%20it%20out%20at%20%F0%9F%94%97https%3A%2F%2Ftailcall.run%20%0A&url=https://github.com/tailcallhq/tailcall%20%0A&hashtags=apiplatform,graphql,nocode,performance,opensource,developers)
+[![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=120&logo=discord)](https://discord.gg/Q2ZExpFCnA)
+---
+
 [![Open Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dopen&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=open)
 [![Rewarded Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dcompleted&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=completed)
 [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tailcallhq/tailcall/ci.yml?style=for-the-badge)](https://github.com/tailcallhq/tailcall/actions)
