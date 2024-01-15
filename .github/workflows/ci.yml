@@ -289,8 +289,9 @@ jobs:
           overwrite: true
 
       - name: Run Semantic Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check_if_build.outputs.      check_if_build == 'true' && needs.test.result == 'success' && needs.format.result == 'success'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             npm install -g semantic-release
             npx semantic-release
