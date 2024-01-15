@@ -277,28 +277,30 @@ where
     .zip(Expr::from_directives(directives.iter()))
     .zip(Omit::from_directives(directives.iter()))
     .zip(Modify::from_directives(directives.iter()))
-    .map(|(((((((http, graphql), cache), grpc), rate_limit), expr), omit), modify)| {
-      let unsafe_operation = to_unsafe_operation(directives);
-      let const_field = to_const_field(directives);
-      config::Field {
-        type_of,
-        list,
-        required: !nullable,
-        list_type_required,
-        args,
-        doc,
-        modify,
-        omit,
-        http,
-        grpc,
-        unsafe_operation,
-        const_field,
-        graphql,
-        expr,
-        cache: cache.or(parent_cache),
-        rate_limit,
-      }
-    })
+    .map(
+      |(((((((http, graphql), cache), grpc), rate_limit), expr), omit), modify)| {
+        let unsafe_operation = to_unsafe_operation(directives);
+        let const_field = to_const_field(directives);
+        config::Field {
+          type_of,
+          list,
+          required: !nullable,
+          list_type_required,
+          args,
+          doc,
+          modify,
+          omit,
+          http,
+          grpc,
+          unsafe_operation,
+          const_field,
+          graphql,
+          expr,
+          cache: cache.or(parent_cache),
+          rate_limit,
+        }
+      },
+    )
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {

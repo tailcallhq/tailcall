@@ -373,44 +373,15 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
         .iter()
         .find(|&(field_name, _)| *field_name == add_field.path[0]);
       match source_field {
-        Some((_, source_field)) => {
-          let new_field = config::Field {
-            type_of: source_field.type_of.clone(),
-            list: source_field.list,
-            required: source_field.required,
-            list_type_required: source_field.list_type_required,
-            args: source_field.args.clone(),
-            doc: None,
-            modify: source_field.modify.clone(),
-            http: source_field.http.clone(),
-            grpc: source_field.grpc.clone(),
-            unsafe_operation: source_field.unsafe_operation.clone(),
-            const_field: source_field.const_field.clone(),
-            graphql: source_field.graphql.clone(),
-            expr: source_field.expr.clone(),
-            cache: source_field.cache.clone(),
-            rate_limit: source_field.rate_limit.clone(),
-          };
-          to_field(&add_field.name, &new_field)
-            .and_then(|field_definition| {
-              let added_field_path = match source_field.http {
-                Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
-                None => add_field.path.clone(),
-              };
-              let invalid_path_handler =
-                |field_name: &str, _added_field_path: &[String], original_path: &[String]| -> Valid<Type, String> {
-                  Valid::fail_with(
-                    "Cannot add field".to_string(),
-                    format!("Path [{}] does not exist", original_path.join(", ")),
-                  )
-                  .trace(field_name)
-                };
-              let path_resolver_error_handler = |resolver_name: &str,
-                                                 field_type: &str,
-                                                 field_name: &str,
-                                                 original_path: &[String]|
-               -> Valid<Type, String> {
-                Valid::<Type, String>::fail_with(
+        Some((_, source_field)) => to_field(&add_field.name, source_field)
+          .and_then(|field_definition| {
+            let added_field_path = match source_field.http {
+              Some(_) => add_field.path[1..].iter().map(|s| s.to_owned()).collect::<Vec<_>>(),
+              None => add_field.path.clone(),
+            };
+            let invalid_path_handler =
+              |field_name: &str, _added_field_path: &[String], original_path: &[String]| -> Valid<Type, String> {
+                Valid::fail_with(
                   "Cannot add field".to_string(),
                   format!("Path [{}] does not exist", original_path.join(", ")),
                 )
