@@ -7,10 +7,28 @@ type Post {
   id: Int!
 }
 
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
 type Query {
   postGraphQLArgs: Post @graphQL(name: "post", args: [{key: "id", value: "{{args.id}}"}])
   postGraphQLHeaders: Post @graphQL(name: "post", headers: [{key: "id", value: "{{args.id}}"}])
   postHttp: Post @http(path: "/posts/{{args.id}}")
+  newsHeaders: NewsData!
+    @grpc(
+      method: "GetAllNews"
+      protoPath: "src/grpc/tests/news.proto"
+      service: "NewsService"
+      headers: [{key: "id", value: "{{args.id}}"}]
+    )
 }
 
 type User {
@@ -19,6 +37,7 @@ type User {
 }
 
 #> client-sdl
+type Failure @error(message: "no argument 'id' found", trace: ["Query", "newsHeaders", "@grpc", "headers"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQLArgs", "@graphQL", "args"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQLHeaders", "@graphQL", "headers"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postHttp", "@http", "path"])
