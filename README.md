@@ -55,7 +55,35 @@ docker run -p 8080:8080 -p 8081:8081 ghcr.io/tailcallhq/tailcall/tc-server
 
 The below file is a standard `.graphQL` file, with a few additions such as `@server` and `@http` directives. So basically we specify the GraphQL schema and how to resolve that GraphQL schema in the same file, without having to write any code!
 
-[![GraphQL Config Screenshot](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/json_placeholder.png)](https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql)
+```graphql
+schema
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}
+```
 
 Now, run the following command to start the server with the full path to the jsonplaceholder.graphql file that you created above.
 
