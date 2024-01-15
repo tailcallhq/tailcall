@@ -7,6 +7,8 @@ type Query {
   posts: [Post] @http(path: "/posts")
   userWithoutResolver(id: Int!): User
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  userWithGraphQLResolver(id: Int!): User
+    @graphQL(name: "user", args: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {
@@ -18,13 +20,13 @@ type Post {
   withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
   multipleResolvers: User @http(path: "/users/{{value.userId}}") @call(query: "user", args: {id: "{{value.userId}}"})
   withoutOperator: User @call(args: {id: "{{value.userId}}"})
-  brokenMustache: User @call(query: "user", args: {})
+  argumentMismatchHttp: User @call(query: "user", args: {})
   # invalidResolver: User @call(query: "userWithGraphQLResolver", args: {id: "{{value.userId}}"})
 }
 
 #> client-sdl
 type Failure @error(message: "No resolver has been found in the schema", trace: ["Query", "userWithoutResolver"])
-type Failure @error(message: "no argument 'id' found", trace: ["Post", "brokenMustache", "@call", "@http", "path"])
+type Failure @error(message: "no argument 'id' found", trace: ["Post", "argumentMismatchHttp", "@call", "@http", "path"])
 type Failure
   @error(
     message: "@call directive is not allowed on field multipleResolvers because it already has a resolver"
