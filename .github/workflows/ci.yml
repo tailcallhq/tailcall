@@ -311,11 +311,17 @@ jobs:
   semantic_release:
     name: Semantic Release
     needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    run: |
-      npm install -g semantic-release
-      npx semantic-release
+    steps:
+      - name: Release with Semantic Release
+        run: |
+          npm install -g semantic-release
+          npx semantic-release
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
