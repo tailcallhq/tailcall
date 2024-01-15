@@ -114,13 +114,10 @@ impl RequestTemplate {
           req.body_mut().replace(body_path.render(ctx).into());
         }
         Encoding::ApplicationXWwwFormUrlencoded => {
-          // TODO: this is a performance bottleneck
-          // We first encode everything to string and then back to form-urlencoded
-          let body: String = body_path.render(ctx);
-          let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
+          let form_data = match serde_json::from_str::<serde_json::Value>(&body_path.render(ctx)) {
             Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
-            Err(_) => body,
-          };
+            Err(_) => body_path.render(ctx),
+        };
 
           req.body_mut().replace(form_data.into());
         }
