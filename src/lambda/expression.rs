@@ -244,12 +244,12 @@ impl Expression {
   }
 }
 
-async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
-  list: &'a List,
+  relation: &'a Relation,
 ) -> Result<async_graphql::Value> {
-  match list {
-    List::Concat(list) => {
+  match relation {
+    Relation::Intersection(list) => {
       let results = join_all(list.iter().map(|expr| expr.eval(ctx)))
         .await;
 
@@ -280,12 +280,12 @@ async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   }
 }
 
-async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
-  relation: &'a Relation,
+  list: &'a List,
 ) -> Result<async_graphql::Value> {
-  match relation {
-    Relation::Intersection(list) => {
+  match list {
+    List::Concat(list) => {
       join_all(list.iter().map(|expr| expr.eval(ctx)))
         .await
         .into_iter()
