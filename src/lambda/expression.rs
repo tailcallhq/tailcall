@@ -228,7 +228,7 @@ impl Expression {
             match expr.eval(ctx).await? {
               ConstValue::List(result) => {
                 let result_set = result.into_iter().map(HashableConstValue).collect();
-                set = set.intersection(&result_set).map(HashableConstValue::clone).collect();
+                set = set.intersection(&result_set).cloned().collect();
               }
               _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
             }
