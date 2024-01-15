@@ -1,8 +1,0 @@
-query {
-  posts {
-    id
-    body
-    userOd
-    userAd
-  }
-}
