@@ -14,7 +14,7 @@ use thiserror::Error;
 use super::ResolverContextLike;
 use crate::blueprint::HashableConstValue;
 use crate::config::group_by::GroupBy;
-use crate::config::{Expr, GraphQLOperationType};
+use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc;
@@ -250,32 +250,33 @@ async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 ) -> Result<async_graphql::Value> {
   match relation {
     Relation::Intersection(list) => {
-      let results = join_all(list.iter().map(|expr| expr.eval(ctx)))
-        .await;
+      let results = join_all(list.iter().map(|expr| expr.eval(ctx))).await;
 
       let mut results_iter = results.into_iter();
 
       let set: HashSet<_> = match results_iter.next() {
         Some(first) => match first? {
           ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
-          _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
+          _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
         },
-        None => Err(EvaluationError::ConcatException("element is not a list".into()))?
+        None => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
       };
 
-      let final_set = results_iter
-        .try_fold(set, |mut acc, result| {
-          match result? {
-            ConstValue::List(list) => {
-              let set: HashSet<_> = list.into_iter().map(HashableConstValue).collect();
-              acc = acc.intersection(&set).cloned().collect();
-              Ok::<_, anyhow::Error>(acc)
-            }
-            _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
-          }
-        })?;
+      let final_set = results_iter.try_fold(set, |mut acc, result| match result? {
+        ConstValue::List(list) => {
+          let set: HashSet<_> = list.into_iter().map(HashableConstValue).collect();
+          acc = acc.intersection(&set).cloned().collect();
+          Ok::<_, anyhow::Error>(acc)
+        }
+        _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+      })?;
 
-      Ok(final_set.into_iter().map(|HashableConstValue(const_value)| const_value).collect())
+      Ok(
+        final_set
+          .into_iter()
+          .map(|HashableConstValue(const_value)| const_value)
+          .collect(),
+      )
     }
   }
 }
@@ -285,20 +286,16 @@ async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   list: &'a List,
 ) -> Result<async_graphql::Value> {
   match list {
-    List::Concat(list) => {
-      join_all(list.iter().map(|expr| expr.eval(ctx)))
-        .await
-        .into_iter()
-        .try_fold(async_graphql::Value::List(vec![]), |acc, result| {
-          match (acc, result?) {
-            (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
-              lhs.extend(rhs.into_iter());
-              Ok(ConstValue::List(lhs))
-            },
-            _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
-          }
-        })
-    }
+    List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+      .await
+      .into_iter()
+      .try_fold(async_graphql::Value::List(vec![]), |acc, result| match (acc, result?) {
+        (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
+          lhs.extend(rhs.into_iter());
+          Ok(ConstValue::List(lhs))
+        }
+        _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
+      }),
   }
 }
 
@@ -310,34 +307,34 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     Logic::And(lhs, rhs) => {
       let lhs_val = lhs.eval(ctx).await?;
       (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx).await?)).into()
-    },
+    }
     Logic::AnyPass(list) => {
       let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
         .await
         .into_iter()
-        .any(|result| {
-          result
-            .map(is_truthy)
-            .unwrap_or(false)
-        });
-        result.into()
-    },
+        .any(|result| result.map(is_truthy).unwrap_or(false));
+      result.into()
+    }
     Logic::Cond(_) => todo!(),
     Logic::DefaultTo(_, _) => todo!(),
-    Logic::IsEmpty(_) => todo!(),
+    Logic::IsEmpty(expr) => match expr.eval(ctx).await? {
+      ConstValue::Null => true,
+      ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
+      ConstValue::Binary(bytes) => bytes.is_empty(),
+      ConstValue::List(list) => list.is_empty(),
+      ConstValue::Object(obj) => obj.is_empty(),
+      ConstValue::String(string) => string.is_empty(),
+    }
+    .into(),
     Logic::Not(expr) => (!is_truthy(expr.eval(ctx).await?)).into(),
     Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx).await?) || is_truthy(rhs.eval(ctx).await?)).into(),
     Logic::AllPass(list) => {
       let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
         .await
         .into_iter()
-        .all(|result| {
-          result
-            .map(is_truthy)
-            .unwrap_or(false)
-        });
-        result.into()
-    },
+        .all(|result| result.map(is_truthy).unwrap_or(false));
+      result.into()
+    }
     Logic::If { cond, then, els } => {
       let cond = cond.eval(ctx).await?;
       if is_truthy(cond) {
