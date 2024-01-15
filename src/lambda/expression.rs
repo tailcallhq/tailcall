@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
+use futures_util::future::join_all;
 use reqwest::Request;
 use serde_json::Value;
 use thiserror::Error;
@@ -101,6 +102,9 @@ pub enum EvaluationError {
 
   #[error("ConcatException: {0:?}")]
   ConcatException(String),
+
+  #[error("IntersectionException: {0:?}")]
+  IntersectionException(String),
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
@@ -208,60 +212,82 @@ impl Expression {
           }
         },
 
-        Expression::Relation(relation) => eval_relation(relation).await,
-        Expression::Logic(logic) => eval_logic(logic).await,
-        Expression::List(list) => eval_list(list).await,
-        Expression::If { cond, then, els } => {
-          let cond = cond.eval(ctx).await?;
-          if is_truthy(cond) {
-            then.eval(ctx).await
-          } else {
-            els.eval(ctx).await
-          }
-        }
-        Expression::ConcatAll(exprs) => {
-          let mut results = Vec::with_capacity(exprs.len());
-          for expr in exprs.iter() {
-            match expr.eval(ctx).await? {
-              ConstValue::List(result) => {
-                results.extend(result.into_iter());
-              }
-              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
-            }
-          }
-          Ok(ConstValue::List(results))
-        }
-        Expression::IntersectionAll(exprs) => {
-          let mut exprs_iter = exprs.iter();
-
-          let mut set: HashSet<_> = match exprs_iter.next() {
-            Some(expr) => match expr.eval(ctx).await? {
-              ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
-              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
-            },
-            None => {
-              return Ok(ConstValue::List(vec![]));
-            }
-          };
-
-          for expr in exprs_iter {
-            match expr.eval(ctx).await? {
-              ConstValue::List(result) => {
-                let result_set = result.into_iter().map(HashableConstValue).collect();
-                set = set.intersection(&result_set).cloned().collect();
-              }
-              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
-            }
-          }
-          Ok(ConstValue::List(
-            set
-              .into_iter()
-              .map(|HashableConstValue(const_value)| const_value)
-              .collect(),
-          ))
-        }
+        Expression::Relation(relation) => eval_relation(ctx, relation).await,
+        Expression::Logic(logic) => eval_logic(ctx, logic).await,
+        Expression::List(list) => eval_list(ctx, list).await,
       }
     })
+  }
+}
+
+async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  ctx: &'a EvaluationContext<'a, Ctx>,
+  list: &'a List,
+) -> Result<async_graphql::Value> {
+  match list {
+    List::Concat(list) => {
+      let results = join_all(list.iter().map(|expr| expr.eval(ctx)))
+        .await;
+
+      let mut results_iter = results.into_iter();
+
+      let set: HashSet<_> = match results_iter.next() {
+        Some(first) => match first? {
+          ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
+          _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
+        },
+        None => Err(EvaluationError::ConcatException("element is not a list".into()))?
+      };
+
+      let final_set = results_iter
+        .try_fold(set, |mut acc, result| {
+          match result? {
+            ConstValue::List(list) => {
+              let set: HashSet<_> = list.into_iter().map(HashableConstValue).collect();
+              acc = acc.intersection(&set).cloned().collect();
+              Ok::<_, anyhow::Error>(acc)
+            }
+            _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
+          }
+        })?;
+
+      Ok(final_set.into_iter().map(|HashableConstValue(const_value)| const_value).collect())
+    }
+  }
+}
+
+async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  ctx: &'a EvaluationContext<'a, Ctx>,
+  relation: &'a Relation,
+) -> Result<async_graphql::Value> {
+  match relation {
+    Relation::Intersection(list) => {
+      join_all(list.iter().map(|expr| expr.eval(ctx)))
+        .await
+        .into_iter()
+        .try_fold(async_graphql::Value::List(vec![]), |acc, result| {
+          match (acc, result?) {
+            (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
+              lhs.extend(rhs.into_iter());
+              Ok(ConstValue::List(lhs))
+            },
+            _ => Err(EvaluationError::ConcatException("element is not a list".into()))?
+          }
+        })
+    }
+  }
+}
+
+async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  ctx: &'a EvaluationContext<'a, Ctx>,
+  logic: &'a Logic,
+) -> Result<async_graphql::Value> {
+  let Logic::If { cond, then, els } = logic;
+  let cond = cond.eval(ctx).await?;
+  if is_truthy(cond) {
+    then.eval(ctx).await
+  } else {
+    els.eval(ctx).await
   }
 }
 
