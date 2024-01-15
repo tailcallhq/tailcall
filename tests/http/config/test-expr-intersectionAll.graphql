@@ -1,0 +1,7 @@
+schema {
+  query: Query
+}
+
+type Query {
+  intersectionAll: [Int] @expr(body: {intersectionAll: [{const: [1, 2, 3]}, {const: [3, 4, 5]}]})
+}

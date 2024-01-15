@@ -410,10 +410,10 @@ pub enum ExprBody {
     #[serde(rename = "else")]
     els: Box<ExprBody>,
   },
-  #[serde(rename = "concat")]
-  Concat { lhs: Box<ExprBody>, rhs: Box<ExprBody> },
-  #[serde(rename = "intersection")]
-  Intersection { lhs: Box<ExprBody>, rhs: Box<ExprBody> },
+  #[serde(rename = "concatAll")]
+  ConcatAll(Vec<ExprBody>),
+  #[serde(rename = "intersectionAll")]
+  IntersectionAll(Vec<ExprBody>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
@@ -10,6 +11,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
+use crate::blueprint::HashableConstValue;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -37,14 +39,8 @@ pub enum Expression {
     then: Box<Expression>,
     els: Box<Expression>,
   },
-  Concat {
-    lhs: Box<Expression>,
-    rhs: Box<Expression>,
-  },
-  Intersection {
-    lhs: Box<Expression>,
-    rhs: Box<Expression>,
-  },
+  ConcatAll(Vec<Expression>),
+  IntersectionAll(Vec<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -205,21 +201,45 @@ impl Expression {
             els.eval(ctx).await
           }
         }
-        Expression::Concat { lhs, rhs } => {
-          let lhs = lhs.eval(ctx).await?;
-          let rhs = rhs.eval(ctx).await?;
-
-          match (lhs, rhs) {
-            (ConstValue::List(mut llist), ConstValue::List(rlist)) => {
-              llist.extend(rlist);
-              Ok(ConstValue::List(llist))
+        Expression::ConcatAll(exprs) => {
+          let mut results = Vec::with_capacity(exprs.len());
+          for expr in exprs.iter() {
+            match expr.eval(ctx).await? {
+              ConstValue::List(result) => {
+                results.extend(result.into_iter());
+              }
+              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
             }
-            (ConstValue::List(_), _) => Err(EvaluationError::ConcatException("rhs is not a list".into()).into()),
-            (_, ConstValue::List(_)) => Err(EvaluationError::ConcatException("lhs is not a list".into()).into()),
-            (_, _) => Err(EvaluationError::ConcatException("both rhs and lhs are not a list".into()).into()),
           }
+          Ok(ConstValue::List(results))
         }
-        Expression::Intersection { lhs: _, rhs: _ } => todo!(),
+        Expression::IntersectionAll(exprs) => {
+          let mut exprs_iter = exprs.iter();
+
+          let mut set: HashSet<_> = match exprs_iter.next() {
+            Some(expr) => match expr.eval(ctx).await? {
+              ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
+              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
+            },
+            None => return Ok(ConstValue::List(vec![])),
+          };
+
+          for expr in exprs_iter {
+            match expr.eval(ctx).await? {
+              ConstValue::List(result) => {
+                let result_set = result.into_iter().map(HashableConstValue).collect();
+                set = set.intersection(&result_set).map(HashableConstValue::clone).collect();
+              }
+              _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
+            }
+          }
+          Ok(ConstValue::List(
+            set
+              .into_iter()
+              .map(|HashableConstValue(const_value)| const_value)
+              .collect(),
+          ))
+        }
       }
     })
   }

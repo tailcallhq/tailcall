@@ -1,0 +1,13 @@
+config: !file tests/http/config/test-expr-intersectionAll.graphql
+name: expr intersectionAll
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { intersectionAll }"
+    response:
+      body:
+        data:
+          intersectionAll:
+            - 3

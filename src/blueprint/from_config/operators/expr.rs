@@ -18,10 +18,9 @@ struct CompileIf<'a> {
   els: Box<ExprBody>,
 }
 
-struct CompileBinaryOp<'a> {
+struct CompileListOp<'a> {
   context: &'a CompilationContext<'a>,
-  lhs: Box<ExprBody>,
-  rhs: Box<ExprBody>,
+  values: Vec<ExprBody>,
 }
 
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
@@ -37,31 +36,24 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
     }
     ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
     ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }),
-    ExprBody::Concat { lhs, rhs } => compile_concat(CompileBinaryOp { context, lhs, rhs }),
-    ExprBody::Intersection { lhs, rhs } => compile_intersection(CompileBinaryOp { context, lhs, rhs }),
+    ExprBody::ConcatAll(values) => compile_concat(CompileListOp { context, values }),
+    ExprBody::IntersectionAll(values) => compile_intersection(CompileListOp { context, values }),
   }
 }
 
-fn compile_intersection(input: CompileBinaryOp) -> Valid<Expression, String> {
-  let context = input.context;
-  let lhs = input.lhs;
-  let rhs = input.rhs;
-
-  compile(context, *lhs)
-    .map(Box::new)
-    .zip(compile(context, *rhs).map(Box::new))
-    .map(|(lhs, rhs)| Expression::Intersection { lhs, rhs })
+fn compile_intersection(input: CompileListOp) -> Valid<Expression, String> {
+  compile_list_op(input).map(Expression::IntersectionAll)
 }
 
-fn compile_concat(input: CompileBinaryOp) -> Valid<Expression, String> {
-  let context = input.context;
-  let lhs = input.lhs;
-  let rhs = input.rhs;
+fn compile_concat(input: CompileListOp) -> Valid<Expression, String> {
+  compile_list_op(input).map(Expression::ConcatAll)
+}
 
-  compile(context, *lhs)
-    .map(Box::new)
-    .zip(compile(context, *rhs).map(Box::new))
-    .map(|(lhs, rhs)| Expression::Concat { lhs, rhs })
+fn compile_list_op(input: CompileListOp) -> Valid<Vec<Expression>, String> {
+  let context = input.context;
+  let values = input.values;
+
+  Valid::from_iter(values, |value| compile(context, value))
 }
 
 fn compile_if(input: CompileIf) -> Valid<Expression, String> {

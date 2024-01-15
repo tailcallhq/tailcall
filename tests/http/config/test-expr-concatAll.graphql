@@ -1,0 +1,7 @@
+schema {
+  query: Query
+}
+
+type Query {
+  concatAll: [Int] @expr(body: {concatAll: [{const: [1, 2]}, {const: [3, 4]}]})
+}
