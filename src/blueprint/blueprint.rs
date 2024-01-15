@@ -294,8 +294,18 @@ impl FieldDefinition {
             parts_validator.validate(parts, true).trace("headers")
           })
         })
-        .map_to(()),
+        .unit(),
       )
+      .and_then(|_| {
+        if let Some(body) = &req_template.body {
+          Valid::from_iter(body.expression_segments(), |parts| {
+            parts_validator.validate(parts, true).trace("body")
+          })
+        } else {
+          Valid::succeed(Default::default())
+        }
+      })
+      .unit()
     } else {
       Valid::succeed(())
     }
