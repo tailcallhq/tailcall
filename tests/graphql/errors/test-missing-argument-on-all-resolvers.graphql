@@ -18,5 +18,5 @@ type User {
 }
 
 #> client-sdl
+type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQL", "@graphQL", "args"])
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postHttp", "@http", "path"])
-type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQL", "@http"])

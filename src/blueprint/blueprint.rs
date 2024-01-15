@@ -266,6 +266,17 @@ impl FieldDefinition {
         })
       }))
       .unit()
+    } else if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &self.resolver {
+      if let Some(args) = &req_template.operation_arguments {
+        Valid::from_iter(args, |(_, mustache)| {
+          Valid::from_iter(mustache.expression_segments(), |parts| {
+            parts_validator.validate(parts, true).trace("args")
+          })
+        })
+        .unit()
+      } else {
+        Valid::succeed(())
+      }
     } else {
       Valid::succeed(())
     }
