@@ -308,13 +308,11 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
       let lhs_val = lhs.eval(ctx).await?;
       (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx).await?)).into()
     }
-    Logic::AnyPass(list) => {
-      let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
-        .await
-        .into_iter()
-        .any(|result| result.map(is_truthy).unwrap_or(false));
-      result.into()
-    }
+    Logic::AnyPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+      .await
+      .into_iter()
+      .try_fold(false, |acc, result| Ok::<_, anyhow::Error>(acc || is_truthy(result?)))?
+      .into(),
     Logic::Cond(_) => todo!(),
     Logic::DefaultTo(_, _) => todo!(),
     Logic::IsEmpty(expr) => match expr.eval(ctx).await? {
@@ -328,13 +326,11 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     .into(),
     Logic::Not(expr) => (!is_truthy(expr.eval(ctx).await?)).into(),
     Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx).await?) || is_truthy(rhs.eval(ctx).await?)).into(),
-    Logic::AllPass(list) => {
-      let result = join_all(list.iter().map(|expr| expr.eval(ctx)))
-        .await
-        .into_iter()
-        .all(|result| result.map(is_truthy).unwrap_or(false));
-      result.into()
-    }
+    Logic::AllPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+      .await
+      .into_iter()
+      .try_fold(true, |acc, result| Ok::<_, anyhow::Error>(acc && is_truthy(result?)))?
+      .into(),
     Logic::If { cond, then, els } => {
       let cond = cond.eval(ctx).await?;
       if is_truthy(cond) {
