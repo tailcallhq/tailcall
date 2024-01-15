@@ -43,12 +43,6 @@ jobs:
           toolchain: stable
           default: true
 
-      - name: Add wasm32-unknown-unknown Target
-        run: rustup target add wasm32-unknown-unknown
-
-      - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --vers "0.2.86"
-
       - name: Cache Rust Dependencies
         uses: actions/cache@v3
         with:
@@ -65,10 +59,49 @@ jobs:
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
 
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: lcov.info
+          fail_ci_if_error: true
+
+  test_cf:
+    name: Run CF Tests
+    defaults:
+      run:
+        working-directory: ./cloudflare
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install Stable Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
+
+      - name: Add wasm32-unknown-unknown Target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --vers "0.2.86"
+
+      - name: Cache Rust Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
       - name: Run CF Test
         uses: actions-rs/cargo@v1
         with:
-          working-directory: ./cloudflare
           command: llvm-cov
           args: --all-features --lcov --output-path lcov_cf.info
 
@@ -76,7 +109,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov.info,lcov_cf.info
+          files: lcov_cf.info
           fail_ci_if_error: true
 
   format:
@@ -137,7 +170,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build]
+    needs: [test, format, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ${{ matrix.os }}
     strategy:
