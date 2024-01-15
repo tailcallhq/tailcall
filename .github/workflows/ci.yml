@@ -82,7 +82,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   format:
     name: Run Formatter and Lint Check
