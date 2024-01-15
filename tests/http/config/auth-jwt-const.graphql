@@ -6,7 +6,7 @@ schema
       {
         jwt: {
           jwks: {
-            const: """
+            data: """
             {
               "keys": [
                 {

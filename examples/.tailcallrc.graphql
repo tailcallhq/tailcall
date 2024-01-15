@@ -455,8 +455,7 @@ input Batch {
 }
 
 input AuthBasic {
-  file: String
-  const: String
+  data: String
 }
 
 input AuthJwksRemote {
@@ -466,17 +465,13 @@ input AuthJwksRemote {
 
 input AuthJwks {
   """
-  JWKS data loaded from file
-  """
-  file: String
-  """
   JWKS data loaded from the remote server
   """
   remote: AuthJwksRemote
   """
   JWKS data as a string or a template
   """
-  const: String
+  data: String
 }
 
 input AuthJWT {

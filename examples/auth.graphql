@@ -2,9 +2,18 @@ schema
   @server(
     port: 8000
     graphiql: true
-    vars: [{key: "BASIC_AUTH", value: "examples/auth-basic/htpasswd.txt"}]
+    vars: [
+      {
+        key: "BASIC_AUTH",
+        value: """
+testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
+testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
+testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
+"""
+      }
+    ]
     auth: [
-      {id: "basic-1", basic: {file: "{{vars.BASIC_AUTH}}"}}
+      {id: "basic-1", basic: {data: "{{vars.BASIC_AUTH}}"}}
       {
         id: "jwt-1"
         jwt: {

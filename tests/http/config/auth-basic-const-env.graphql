@@ -1,4 +1,4 @@
-schema @server(port: 8000, graphiql: true, auth: [{id: "basic", basic: {const: "{{env.HTPASSWD_CONTENT}}"}}]) {
+schema @server(port: 8000, graphiql: true, auth: [{id: "basic", basic: {data: "{{env.HTPASSWD_CONTENT}}"}}]) {
   query: Query
 }
 

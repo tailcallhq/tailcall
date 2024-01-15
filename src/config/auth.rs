@@ -20,15 +20,13 @@ mod default {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum BasicProvider {
-  Const(String),
-  File(String),
+  Data(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum Jwks {
-  Const(String),
-  File(String),
+  Data(String),
   #[serde(rename_all = "camelCase")]
   Remote {
     url: String,
@@ -90,17 +88,6 @@ mod tests {
 
   #[test]
   fn jwt_options_parse() -> Result<()> {
-    let config: JwtProvider = serde_json::from_value(json!({
-      "jwks": {
-        "file": "tests/server/config/jwks.json"
-      }
-    }))?;
-
-    assert!(matches!(
-      config,
-      JwtProvider { optional_kid: false, jwks: Jwks::File(_), .. }
-    ));
-
     let config: JwtProvider = serde_json::from_value(json!({
       "optionalKid": true,
       "jwks": {

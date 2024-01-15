@@ -3,8 +3,8 @@ schema
     port: 8000
     graphiql: true
     auth: [
-      {id: "basic", basic: {file: "tests/server/config/htpasswd.txt"}}
-      {id: "jwt", jwt: {jwks: {file: "tests/server/config/jwks.json"}}}
+      {id: "basic", basic: {data: "{{env.BASIC_AUTH}}"}}
+      {id: "jwt", jwt: {jwks: {data: "{{env.JWKS_AUTH}}"}}}
     ]
   ) {
   query: Query
