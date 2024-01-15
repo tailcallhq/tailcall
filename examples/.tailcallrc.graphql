@@ -208,6 +208,11 @@ directive @http(
   The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   groupBy: [String!]
+
+  """
+  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
+  """
+  encoding: Encoding
 ) on FIELD_DEFINITION
 
 """
@@ -420,6 +425,11 @@ enum Method {
   PATCH
   HEAD
   OPTIONS
+}
+
+enum Encoding {
+  ApplicationJson
+  ApplicationXWwwFormUrlEncoded
 }
 
 input Proxy {

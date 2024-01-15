@@ -356,11 +356,9 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
   };
 
+  // Process fields that are not marked as `omit`
   let fields = Valid::from_iter(
-    type_of
-      .fields
-      .iter()
-      .filter(|field| field.1.modify.as_ref().map(|m| !m.omit).unwrap_or(true)),
+    type_of.fields.iter().filter(|(_, field)| !field.is_omitted()),
     |(name, field)| {
       validate_field_type_exist(config, field)
         .and(to_field(name, field))
@@ -414,31 +412,41 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
                -> Valid<Type, String> {
                 Valid::<Type, String>::fail_with(
                   "Cannot add field".to_string(),
-                  format!(
-                    "Path: [{}] contains resolver {} at [{}.{}]",
-                    original_path.join(", "),
-                    resolver_name,
-                    field_type,
-                    field_name
-                  ),
+                  format!("Path [{}] does not exist", original_path.join(", ")),
                 )
+                .trace(field_name)
               };
-              update_resolver_from_path(
-                &ProcessPathContext {
-                  path: &added_field_path,
-                  field: source_field,
-                  type_info: type_of,
-                  is_required: false,
-                  config,
-                  invalid_path_handler: &invalid_path_handler,
-                  path_resolver_error_handler: &path_resolver_error_handler,
-                  original_path: &add_field.path,
-                },
-                field_definition,
+            let path_resolver_error_handler = |resolver_name: &str,
+                                               field_type: &str,
+                                               field_name: &str,
+                                               original_path: &[String]|
+             -> Valid<Type, String> {
+              Valid::<Type, String>::fail_with(
+                "Cannot add field".to_string(),
+                format!(
+                  "Path: [{}] contains resolver {} at [{}.{}]",
+                  original_path.join(", "),
+                  resolver_name,
+                  field_type,
+                  field_name
+                ),
               )
-            })
-            .trace(config::AddField::trace_name().as_str())
-        }
+            };
+            update_resolver_from_path(
+              &ProcessPathContext {
+                path: &added_field_path,
+                field: source_field,
+                type_info: type_of,
+                is_required: false,
+                config,
+                invalid_path_handler: &invalid_path_handler,
+                path_resolver_error_handler: &path_resolver_error_handler,
+                original_path: &add_field.path,
+              },
+              field_definition,
+            )
+          })
+          .trace(config::AddField::trace_name().as_str()),
         None => Valid::fail(format!(
           "Could not find field {} in path {}",
           add_field.path[0],

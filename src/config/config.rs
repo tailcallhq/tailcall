@@ -267,6 +267,9 @@ impl RootSchema {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Omit {}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
@@ -284,6 +287,8 @@ pub struct Field {
   pub doc: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub omit: Option<Omit>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -358,6 +363,10 @@ impl Field {
   pub fn id() -> Self {
     Self { type_of: "ID".to_string(), ..Default::default() }
   }
+
+  pub fn is_omitted(&self) -> bool {
+    self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -428,6 +437,8 @@ pub struct Http {
   pub group_by: Vec<String>,
   #[serde(rename = "rateLimit", default, skip_serializing_if = "is_default")]
   pub rate_limit: Option<ClientRateLimit>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub encoding: Encoding,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -543,6 +554,13 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub enum Encoding {
+  #[default]
+  ApplicationJson,
+  ApplicationXWwwFormUrlencoded,
 }
 
 #[cfg(test)]
