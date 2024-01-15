@@ -1,0 +1,15 @@
+schema
+  @server(
+    port: 8802
+    version: HTTP2
+    hostname: "localhost"
+    cert: "./tests/server/config/example.crt"
+    key: "./tests/server/config/example-rsa.key"
+    batchRequests: true
+  ) {
+  query: Query
+}
+
+type Query {
+  greet: String @const(data: "Hello World!")
+}
