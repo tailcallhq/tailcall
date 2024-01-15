@@ -1,0 +1,20 @@
+#> server-sdl
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  id: Int!
+}
+
+type Query {
+  postHttp: Post @http(path: "/posts/{{args.id}}")
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+#> client-sdl
+type Failure @error(message: "no argument 'id' found", trace: ["Query", "postHttp", "@http", "path"])
