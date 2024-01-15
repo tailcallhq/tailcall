@@ -10,7 +10,10 @@ pub fn print_schema(schema: Schema) -> String {
 
   for line in sdl.lines() {
     let trimmed_line = line.trim();
-
+    // Check if line contains the directives to be skipped
+    if trimmed_line.starts_with("directive @include") || trimmed_line.starts_with("directive @skip") {
+      continue;
+    }
     if trimmed_line.is_empty() {
       if !prev_line_empty {
         result.push('\n');

@@ -33,7 +33,7 @@ pub enum Command {
   Check {
     /// Path for the configuration files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
 
     /// N plus one queries
     #[arg(short, long)]
@@ -42,13 +42,17 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Operations to check
+    #[arg(short, long, value_delimiter=',', num_args = 1..)]
+    operations: Vec<String>,
   },
 
   /// Merge multiple configuration file into one
   Compose {
     /// Path for the configuration files separated by spaces if more than one
     #[arg(required = true)]
-    file_path: Vec<String>,
+    file_paths: Vec<String>,
 
     /// Format of the result. Accepted values: JSON|YML|GQL.
     #[clap(short, long, default_value = "gql")]
@@ -56,5 +60,9 @@ pub enum Command {
   },
 
   /// Initialize a new project
-  Init { file_path: String },
+  Init {
+    // default is current directory
+    #[arg(default_value = ".")]
+    folder_path: String,
+  },
 }

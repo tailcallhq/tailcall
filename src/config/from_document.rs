@@ -7,8 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::Cache;
-use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
+use crate::config::{self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -119,7 +118,7 @@ fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<
     let type_opt = match type_definition.node.kind.clone() {
       TypeKind::Union(union_type) => to_union(
         union_type,
-        &type_definition.node.description.as_ref().map(|pos| pos.node.clone()),
+        &type_definition.node.description.to_owned().map(|pos| pos.node),
       ),
       _ => continue,
     };
@@ -144,7 +143,7 @@ where
   let interface = object.is_interface();
 
   to_fields(fields, cache).map(|fields| {
-    let doc = description.as_ref().map(|pos| pos.node.clone());
+    let doc = description.to_owned().map(|pos| pos.node);
     let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
     let added_fields = to_add_fields_from_directives(directives);
     config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
@@ -215,14 +214,16 @@ where
   let type_of = to_type_of(type_);
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
-  let doc = description.as_ref().map(|pos| pos.node.clone());
-  let modify = to_modify(directives);
+  let doc = description.to_owned().map(|pos| pos.node);
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
     .zip(Cache::from_directives(directives.iter()))
     .zip(Grpc::from_directives(directives.iter()))
-    .map(|(((http, graphql), cache), grpc)| {
+    .zip(Expr::from_directives(directives.iter()))
+    .zip(Omit::from_directives(directives.iter()))
+    .zip(Modify::from_directives(directives.iter()))
+    .map(|((((((http, graphql), cache), grpc), expr), omit), modify)| {
       let unsafe_operation = to_unsafe_operation(directives);
       let const_field = to_const_field(directives);
       config::Field {
@@ -233,11 +234,13 @@ where
         args,
         doc,
         modify,
+        omit,
         http,
         grpc,
         unsafe_operation,
         const_field,
         graphql,
+        expr,
         cache: cache.or(parent_cache),
       }
     })
@@ -272,8 +275,11 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let type_of = to_type_of(&input_value_definition.ty.node);
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
   let required = !input_value_definition.ty.node.nullable;
-  let doc = input_value_definition.description.as_ref().map(|pos| pos.node.clone());
-  let modify = to_modify(&input_value_definition.directives);
+  let doc = input_value_definition.description.to_owned().map(|pos| pos.node);
+  let modify = Modify::from_directives(input_value_definition.directives.iter())
+    .to_result()
+    .ok()
+    .flatten();
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
     let value = &pos.node;
     serde_json::to_value(value).ok()
@@ -281,15 +287,6 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     None
   };
   config::Arg { type_of, list, required, doc, modify, default_value }
-}
-fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::Modify::directive_name() {
-      config::Modify::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

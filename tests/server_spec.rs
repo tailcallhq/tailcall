@@ -1,10 +1,14 @@
 use reqwest::Client;
 use serde_json::json;
-use tailcall::config::Config;
-use tailcall::http::Server;
+use tailcall::cli::server::Server;
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::Upstream;
 
 async fn test_server(configs: &[&str], url: &str) {
-  let config = Config::read_from_files(configs.iter()).await.unwrap();
+  let http_client = init_http(&Upstream::default());
+  let reader = ConfigReader::init(init_file(), http_client);
+  let config = reader.read(configs).await.unwrap();
   let mut server = Server::new(config);
   let server_up_receiver = server.server_up_receiver();
 
@@ -58,10 +62,38 @@ async fn server_start() {
 }
 
 #[tokio::test]
-async fn server_start_http2() {
+async fn server_start_http2_pcks8() {
   test_server(
-    &["tests/server/config/server-start-http2.graphql"],
+    &["tests/server/config/server-start-http2-pkcs8.graphql"],
     "https://localhost:8801/graphql",
+  )
+  .await
+}
+
+#[tokio::test]
+async fn server_start_http2_rsa() {
+  test_server(
+    &["tests/server/config/server-start-http2-rsa.graphql"],
+    "https://localhost:8802/graphql",
+  )
+  .await
+}
+
+#[tokio::test]
+async fn server_start_http2_nokey() {
+  let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
+  let http_client = init_http(&Upstream::default());
+  let reader = ConfigReader::init(init_file(), http_client);
+  let config = reader.read(configs).await.unwrap();
+  let server = Server::new(config);
+  assert!(server.start().await.is_err())
+}
+
+#[tokio::test]
+async fn server_start_http2_ec() {
+  test_server(
+    &["tests/server/config/server-start-http2-ec.graphql"],
+    "https://localhost:8804/graphql",
   )
   .await
 }

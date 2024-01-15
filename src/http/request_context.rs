@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
@@ -7,24 +6,23 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use super::{DefaultHttpClient, HttpClientOptions};
 use crate::blueprint::Server;
 use crate::chrono_cache::ChronoCache;
-use crate::config::{self, Upstream};
+use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{DataLoaderRequest, HttpClient, HttpDataLoader, ServerContext};
+use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
+use crate::{grpc, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
   // TODO: consider storing http clients where they are used i.e. expression and dataloaders
-  pub universal_http_client: Arc<dyn HttpClient>,
+  pub h_client: Arc<dyn HttpIO>,
   // http2 only client is required for grpc in cases the server supports only http2
   // and the request will fail on protocol negotiation
   // having separate client for now looks like the only way to do with reqwest
-  pub http2_only_client: Arc<dyn HttpClient>,
+  pub h2_client: Arc<dyn HttpIO>,
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
@@ -32,35 +30,9 @@ pub struct RequestContext {
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  min_max_age: Arc<Mutex<Option<i32>>>,
-  cache_public: Arc<Mutex<Option<bool>>>,
-  pub env_vars: Arc<HashMap<String, String>>,
-}
-
-impl Default for RequestContext {
-  fn default() -> Self {
-    let config::Config { server, upstream, .. } = config::Config::default();
-    //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(server).unwrap();
-
-    Self {
-      req_headers: HeaderMap::new(),
-      universal_http_client: Arc::new(DefaultHttpClient::new(&upstream)),
-      http2_only_client: Arc::new(DefaultHttpClient::with_options(
-        &upstream,
-        HttpClientOptions { http2_only: true },
-      )),
-      server,
-      upstream,
-      http_data_loaders: Arc::new(vec![]),
-      gql_data_loaders: Arc::new(vec![]),
-      cache: ChronoCache::new(),
-      grpc_data_loaders: Arc::new(vec![]),
-      min_max_age: Arc::new(Mutex::new(None)),
-      cache_public: Arc::new(Mutex::new(None)),
-      env_vars: Arc::new(HashMap::new()),
-    }
-  }
+  pub min_max_age: Arc<Mutex<Option<i32>>>,
+  pub cache_public: Arc<Mutex<Option<bool>>>,
+  pub env_vars: Arc<dyn EnvIO>,
 }
 
 impl RequestContext {
@@ -122,11 +94,11 @@ impl RequestContext {
   }
 }
 
-impl From<&ServerContext> for RequestContext {
-  fn from(server_ctx: &ServerContext) -> Self {
+impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
+  fn from(server_ctx: &AppContext<Http, Env>) -> Self {
     Self {
-      universal_http_client: server_ctx.universal_http_client.clone(),
-      http2_only_client: server_ctx.http2_only_client.clone(),
+      h_client: server_ctx.universal_http_client.clone(),
+      h2_client: server_ctx.http2_only_client.clone(),
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
@@ -143,12 +115,41 @@ impl From<&ServerContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
+  use std::sync::{Arc, Mutex};
 
   use cache_control::Cachability;
+  use hyper::HeaderMap;
 
   use crate::blueprint::Server;
+  use crate::chrono_cache::ChronoCache;
+  use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
+
+  impl Default for RequestContext {
+    fn default() -> Self {
+      let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
+      //TODO: default is used only in tests. Drop default and move it to test.
+      let server = Server::try_from(server).unwrap();
+
+      let h_client = Arc::new(init_http(&upstream));
+      let h2_client = Arc::new(init_http2_only(&upstream.clone()));
+      RequestContext {
+        req_headers: HeaderMap::new(),
+        h_client,
+        h2_client,
+        server,
+        upstream,
+        http_data_loaders: Arc::new(vec![]),
+        gql_data_loaders: Arc::new(vec![]),
+        cache: ChronoCache::new(),
+        grpc_data_loaders: Arc::new(vec![]),
+        min_max_age: Arc::new(Mutex::new(None)),
+        cache_public: Arc::new(Mutex::new(None)),
+        env_vars: Arc::new(init_env()),
+      }
+    }
+  }
 
   #[test]
   fn test_update_max_age_less_than_existing() {
