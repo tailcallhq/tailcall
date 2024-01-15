@@ -94,7 +94,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20.11.0"
       - name: Install Prettier
         run: npm install --global prettier
       - name: Install Nightly Toolchain
@@ -266,7 +266,7 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Install Node.js
-        #        if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release' && github.event.action == 'published'
         uses: actions/setup-node@v4
         with:
           node-version: 20.11.0
