@@ -68,14 +68,14 @@ jobs:
 
   test_cf:
     name: Run CF Tests
-    defaults:
-      run:
-        working-directory: ./cloudflare
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Change directory
+        run: cd ./cloudflare
 
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
