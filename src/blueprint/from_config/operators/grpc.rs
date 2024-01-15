@@ -118,7 +118,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
   to_url(grpc, config)
     .zip(to_operation(grpc))
-    .zip(helpers::headers::to_headervec(&grpc.headers))
+    .zip(helpers::headers::to_mustache_headers(&grpc.headers))
     .zip(helpers::body::to_body(grpc.body.as_deref()))
     .and_then(|(((url, operation), headers), body)| {
       let validation = if validate_with_schema {
