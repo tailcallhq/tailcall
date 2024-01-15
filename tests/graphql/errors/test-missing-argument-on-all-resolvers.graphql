@@ -8,6 +8,7 @@ type Post {
 }
 
 type Query {
+  postGraphQL: Post @graphQL(name: "post", args: [{key: "id", value: "{{args.id}}"}])
   postHttp: Post @http(path: "/posts/{{args.id}}")
 }
 
@@ -18,3 +19,4 @@ type User {
 
 #> client-sdl
 type Failure @error(message: "no argument 'id' found", trace: ["Query", "postHttp", "@http", "path"])
+type Failure @error(message: "no argument 'id' found", trace: ["Query", "postGraphQL", "@http"])
