@@ -2,7 +2,7 @@ query {
   posts {
     id
     body
-    userId
-    # userAd
+    userOd
+    userAd
   }
 }

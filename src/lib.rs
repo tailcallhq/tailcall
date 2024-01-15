@@ -39,7 +39,7 @@ pub trait HttpIO: Sync + Send + 'static {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
-pub trait FileIO {
+pub trait FileIO: Clone {
   fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> impl Future<Output = anyhow::Result<()>>;
   fn read<'a>(&'a self, file_path: &'a str) -> impl Future<Output = anyhow::Result<String>>;
 }

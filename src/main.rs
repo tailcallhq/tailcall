@@ -1,15 +1,19 @@
 // Required for the #[global_allocator] proc macro
 #![allow(clippy::too_many_arguments)]
 
-use anyhow::Result;
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-fn main() -> Result<()> {
-  let result = tailcall::cli::run();
+fn run_blocking() -> anyhow::Result<()> {
+  let rt = tokio::runtime::Runtime::new()?;
+  rt.block_on(async { tailcall::cli::run().await })
+}
+
+fn main() -> anyhow::Result<()> {
+  let result = run_blocking();
   match result {
     Ok(_) => {}
     Err(error) => {
