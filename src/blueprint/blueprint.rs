@@ -45,6 +45,7 @@ impl Type {
     }
   }
 
+  // is_nullable returns true if the type is nullable.
   pub fn is_nullable(&self) -> bool {
     !match self {
       Type::NamedType { non_null, .. } => *non_null,
