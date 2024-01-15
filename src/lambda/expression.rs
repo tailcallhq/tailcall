@@ -38,6 +38,7 @@ pub enum Expression {
   Logic(Logic),
   Relation(Relation),
   List(List),
+  Math(Math),
 }
 
 #[derive(Clone, Debug)]
@@ -57,6 +58,28 @@ pub enum Logic {
     then: Box<Expression>,
     els: Box<Expression>,
   },
+  AllPass(Vec<Expression>),
+  And(Box<Expression>, Box<Expression>),
+  AnyPass(Vec<Expression>),
+  Cond(Vec<(Box<Expression>, Box<Expression>)>),
+  DefaultTo(Box<Expression>, Box<Expression>),
+  IsEmpty(Box<Expression>),
+  Not(Box<Expression>),
+  Or(Box<Expression>, Box<Expression>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Math {
+  Mod(Box<Expression>, Box<Expression>),
+  Add(Box<Expression>, Box<Expression>),
+  Dec(Box<Expression>),
+  Divide(Box<Expression>, Box<Expression>),
+  Inc(Box<Expression>),
+  Multiply(Box<Expression>, Box<Expression>),
+  Negate(Box<Expression>),
+  Product(Vec<Expression>),
+  Subtract(Box<Expression>, Box<Expression>),
+  Sum(Vec<Expression>),
 }
 
 #[derive(Clone, Debug)]
