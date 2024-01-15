@@ -1,0 +1,31 @@
+config: !file tests/http/config/test-expr-logic.graphql
+name: expr logic
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query {allPassTrue allPassFalse andTrue andFalse1 andFalse2 anyPassTrue anyPassFalse isEmptyTrue1 isEmptyTrue2 isEmptyTrue3 isEmptyTrue4 isEmptyFalse1 isEmptyFalse2 isEmptyFalse3 notTrue notFalse1 notFalse2 orFalse orTrue1 orTrue2}"
+    response:
+      body:
+        data:
+          allPassTrue: true
+          allPassFalse: false
+          andTrue: true
+          andFalse1: false
+          andFalse2: false
+          anyPassTrue: true
+          anyPassFalse: false
+          isEmptyTrue1: true
+          isEmptyTrue2: true
+          isEmptyTrue3: true
+          isEmptyTrue4: true
+          isEmptyFalse1: false
+          isEmptyFalse2: false
+          isEmptyFalse3: false
+          notTrue: true
+          notFalse1: false
+          notFalse2: false
+          orFalse: false
+          orTrue1: true
+          orTrue2: true
