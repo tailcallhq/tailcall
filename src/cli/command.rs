@@ -42,6 +42,10 @@ pub enum Command {
     /// Display schema
     #[arg(short, long)]
     schema: bool,
+
+    /// Operations to check
+    #[arg(short, long, value_delimiter=',', num_args = 1..)]
+    operations: Vec<String>,
   },
 
   /// Merge multiple configuration file into one
