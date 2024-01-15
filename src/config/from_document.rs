@@ -7,8 +7,9 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{Cache, Protected};
-use crate::config::{self, Config, GraphQL, Grpc, RootSchema, Server, Union, Upstream};
+use crate::config::{
+  self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
+};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -228,33 +229,39 @@ where
   let list = matches!(&base, BaseType::List(_));
   let list_type_required = matches!(&base, BaseType::List(ty) if !ty.nullable);
   let doc = description.to_owned().map(|pos| pos.node);
-  let modify = to_modify(directives);
 
   config::Http::from_directives(directives.iter())
     .zip(GraphQL::from_directives(directives.iter()))
-    .zip(Grpc::from_directives(directives.iter()))
     .zip(Cache::from_directives(directives.iter()))
+    .zip(Grpc::from_directives(directives.iter()))
+    .zip(Expr::from_directives(directives.iter()))
+    .zip(Omit::from_directives(directives.iter()))
+    .zip(Modify::from_directives(directives.iter()))
     .zip(Protected::from_directives(directives.iter()))
-    .map(|((((http, graphql), grpc), cache), protected)| {
-      let unsafe_operation = to_unsafe_operation(directives);
-      let const_field = to_const_field(directives);
-      config::Field {
-        type_of,
-        list,
-        required: !nullable,
-        list_type_required,
-        args,
-        doc,
-        modify,
-        http,
-        grpc,
-        unsafe_operation,
-        const_field,
-        graphql,
-        cache: cache.or(parent_cache),
-        protected: protected.is_some(),
-      }
-    })
+    .map(
+      |(((((((http, graphql), cache), grpc), expr), omit), modify), protected)| {
+        let unsafe_operation = to_unsafe_operation(directives);
+        let const_field = to_const_field(directives);
+        config::Field {
+          type_of,
+          list,
+          required: !nullable,
+          list_type_required,
+          args,
+          doc,
+          modify,
+          omit,
+          http,
+          grpc,
+          unsafe_operation,
+          const_field,
+          graphql,
+          expr,
+          cache: cache.or(parent_cache),
+          protected: protected.is_some(),
+        }
+      },
+    )
 }
 fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
   directives.iter().find_map(|directive| {
@@ -287,7 +294,10 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
   let required = !input_value_definition.ty.node.nullable;
   let doc = input_value_definition.description.to_owned().map(|pos| pos.node);
-  let modify = to_modify(&input_value_definition.directives);
+  let modify = Modify::from_directives(input_value_definition.directives.iter())
+    .to_result()
+    .ok()
+    .flatten();
   let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
     let value = &pos.node;
     serde_json::to_value(value).ok()
@@ -295,15 +305,6 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     None
   };
   config::Arg { type_of, list, required, doc, modify, default_value }
-}
-fn to_modify(directives: &[Positioned<ConstDirective>]) -> Option<config::Modify> {
-  directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::Modify::directive_name() {
-      config::Modify::from_directive(&directive.node).to_result().ok()
-    } else {
-      None
-    }
-  })
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

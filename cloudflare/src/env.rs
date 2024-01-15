@@ -3,20 +3,20 @@ use std::rc::Rc;
 use tailcall::EnvIO;
 use worker::Env;
 
-pub struct EnvCloudflare {
+pub struct CloudflareEnv {
   env: Rc<Env>,
 }
 
-unsafe impl Send for EnvCloudflare {}
-unsafe impl Sync for EnvCloudflare {}
+unsafe impl Send for CloudflareEnv {}
+unsafe impl Sync for CloudflareEnv {}
 
-impl EnvIO for EnvCloudflare {
+impl EnvIO for CloudflareEnv {
   fn get(&self, key: &str) -> Option<String> {
     self.env.var(key).ok().map(|s| s.to_string())
   }
 }
 
-impl EnvCloudflare {
+impl CloudflareEnv {
   pub fn init(env: Rc<Env>) -> Self {
     Self { env }
   }

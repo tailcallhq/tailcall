@@ -28,11 +28,9 @@ pub trait PathGraphql {
 
 impl PathString for serde_json::Value {
   fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-    self.get_path(path).and_then(|a| match a {
-      serde_json::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
-      serde_json::Value::Number(n) => Some(Cow::Owned(n.to_string())),
-      serde_json::Value::Bool(b) => Some(Cow::Owned(b.to_string())),
-      _ => None,
+    self.get_path(path).map(|a| match a {
+      serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
+      _ => Cow::Owned(a.to_string()),
     })
   }
 }

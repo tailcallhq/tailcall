@@ -12,6 +12,8 @@
         "inline-many.graphql",
         "inline-many-list.graphql",
         "test-grpc.graphql",
+        "test-expr-success.graphql",
+        "omit-many.graphql",
         "tests/graphql/auth.graphql"
       ],
       "options": {

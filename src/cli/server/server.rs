@@ -28,6 +28,7 @@ impl Server {
     rx
   }
 
+  /// Starts the server in the current Runtime
   pub async fn start(self) -> Result<()> {
     let blueprint = Blueprint::try_from(&self.config).map_err(CLIError::from)?;
     let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
@@ -36,5 +37,17 @@ impl Server {
       Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key, self.server_up_sender).await,
       Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
     }
+  }
+
+  /// Starts the server in its own multithreaded Runtime
+  pub async fn fork_start(self) -> anyhow::Result<()> {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(self.config.server.get_workers())
+      .enable_all()
+      .build()?;
+
+    let _ = runtime.spawn(async { self.start().await }).await?;
+
+    Ok(())
   }
 }

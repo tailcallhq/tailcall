@@ -228,6 +228,9 @@ impl RootSchema {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Omit {}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
 #[setters(strip_option)]
 pub struct Field {
@@ -246,6 +249,8 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
   #[serde(default, skip_serializing_if = "is_default")]
+  pub omit: Option<Omit>,
+  #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
@@ -255,6 +260,8 @@ pub struct Field {
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub expr: Option<Expr>,
   pub cache: Option<Cache>,
   #[serde(default)]
   pub protected: bool,
@@ -267,6 +274,7 @@ impl Field {
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
+      || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
     let mut directives = Vec::with_capacity(4);
@@ -315,6 +323,10 @@ impl Field {
 
   pub fn id() -> Self {
     Self { type_of: "ID".to_string(), ..Default::default() }
+  }
+
+  pub fn is_omitted(&self) -> bool {
+    self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
   }
 }
 
@@ -384,6 +396,32 @@ pub struct Http {
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
   pub group_by: Vec<String>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub encoding: Encoding,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ExprBody {
+  #[serde(rename = "http")]
+  Http(Http),
+  #[serde(rename = "grpc")]
+  Grpc(Grpc),
+  #[serde(rename = "graphQL")]
+  GraphQL(GraphQL),
+  #[serde(rename = "const")]
+  Const(Value),
+  #[serde(rename = "if")]
+  If {
+    cond: Box<ExprBody>,
+    then: Box<ExprBody>,
+    #[serde(rename = "else")]
+    els: Box<ExprBody>,
+  },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Expr {
+  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -407,7 +445,7 @@ pub struct GraphQL {
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: Option<KeyValues>,
-  #[serde(rename = "baseURL")]
+  #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub headers: KeyValues,
@@ -471,6 +509,13 @@ impl Config {
   pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
     super::n_plus_one::n_plus_one(self)
   }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+pub enum Encoding {
+  #[default]
+  ApplicationJson,
+  ApplicationXWwwFormUrlencoded,
 }
 
 #[cfg(test)]
