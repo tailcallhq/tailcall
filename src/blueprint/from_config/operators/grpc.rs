@@ -151,13 +151,14 @@ pub fn update_grpc<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _type_of, _name), b_field| {
+    |(config, field, type_of, _name), b_field| {
       let Some(grpc) = &field.grpc else {
         return Valid::succeed(b_field);
       };
 
       compile_grpc(CompileGrpc { config, operation_type, field, grpc, validate_with_schema: true })
         .map(|resolver| b_field.resolver(Some(resolver)))
+        .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
     },
   )
 }
