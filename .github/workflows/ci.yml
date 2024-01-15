@@ -30,6 +30,7 @@ jobs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
   test_cf:
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
     name: Build and Test cloudflare
     runs-on: ubuntu-latest
     steps:
@@ -60,8 +61,8 @@ jobs:
 
       - name: Run CF Test
         uses: actions-rs/cargo@v1
-        working-directory: ./cloudflare
         with:
+          working-directory: ./cloudflare
           command: llvm-cov
           args: --all-features --lcov --output-path lcov.info
 
