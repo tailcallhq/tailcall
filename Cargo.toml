@@ -12,7 +12,7 @@ path = "src/main.rs"
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
 mimalloc = { version = "0.1.39", default-features = false, optional = true }
-http-cache-reqwest = { version = "0.12.0", features = [
+http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
 moka = { version = "0.12.3", default-features = false, features = [
