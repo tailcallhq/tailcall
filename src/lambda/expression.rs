@@ -1,9 +1,11 @@
+
 use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql_value::ConstValue;
 use reqwest::Request;
 use serde_json::Value;
 use thiserror::Error;
@@ -35,6 +37,14 @@ pub enum Expression {
     cond: Box<Expression>,
     then: Box<Expression>,
     els: Box<Expression>,
+  },
+  Concat {
+    lhs: Box<Expression>,
+    rhs: Box<Expression>,
+  },
+  Intersection {
+    lhs: Box<Expression>,
+    rhs: Box<Expression>,
   },
 }
 
@@ -78,6 +88,9 @@ pub enum EvaluationError {
 
   #[error("APIValidationError: {0:?}")]
   APIValidationError(Vec<String>),
+
+  #[error("ConcatException: {0:?}")]
+  ConcatException(String),
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
@@ -193,6 +206,21 @@ impl Expression {
             els.eval(ctx).await
           }
         }
+        Expression::Concat { lhs, rhs } => {
+          let lhs = lhs.eval(ctx).await?;
+          let rhs = rhs.eval(ctx).await?;
+
+          match (lhs, rhs) {
+            (ConstValue::List(mut llist), ConstValue::List(rlist)) => {
+              llist.extend(rlist);
+              Ok(ConstValue::List(llist))
+            }
+            (ConstValue::List(_), _) => Err(EvaluationError::ConcatException("rhs is not a list".into()).into()),
+            (_, ConstValue::List(_)) => Err(EvaluationError::ConcatException("lhs is not a list".into()).into()),
+            (_, _) => Err(EvaluationError::ConcatException("both rhs and lhs are not a list".into()).into()),
+          }
+        }
+        Expression::Intersection { lhs: _, rhs: _ } => todo!(),
       }
     })
   }

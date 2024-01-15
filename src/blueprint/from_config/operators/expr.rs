@@ -18,6 +18,12 @@ struct CompileIf<'a> {
   els: Box<ExprBody>,
 }
 
+struct CompileBinaryOp<'a> {
+  context: &'a CompilationContext<'a>,
+  lhs: Box<ExprBody>,
+  rhs: Box<ExprBody>,
+}
+
 fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
   let config = context.config;
   let field = context.config_field;
@@ -31,7 +37,31 @@ fn compile(context: &CompilationContext, expr: ExprBody) -> Valid<Expression, St
     }
     ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
     ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate_with_schema: false }),
+    ExprBody::Concat { lhs, rhs } => compile_concat(CompileBinaryOp { context, lhs, rhs }),
+    ExprBody::Intersection { lhs, rhs } => compile_intersection(CompileBinaryOp { context, lhs, rhs }),
   }
+}
+
+fn compile_intersection(input: CompileBinaryOp) -> Valid<Expression, String> {
+  let context = input.context;
+  let lhs = input.lhs;
+  let rhs = input.rhs;
+
+  compile(context, *lhs)
+    .map(Box::new)
+    .zip(compile(context, *rhs).map(Box::new))
+    .map(|(lhs, rhs)| Expression::Intersection { lhs, rhs })
+}
+
+fn compile_concat(input: CompileBinaryOp) -> Valid<Expression, String> {
+  let context = input.context;
+  let lhs = input.lhs;
+  let rhs = input.rhs;
+
+  compile(context, *lhs)
+    .map(Box::new)
+    .zip(compile(context, *rhs).map(Box::new))
+    .map(|(lhs, rhs)| Expression::Concat { lhs, rhs })
 }
 
 fn compile_if(input: CompileIf) -> Valid<Expression, String> {
