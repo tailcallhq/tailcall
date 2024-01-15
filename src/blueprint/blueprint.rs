@@ -285,12 +285,17 @@ impl FieldDefinition {
       })
       .unit()
     } else if let Some(Expression::Unsafe(Unsafe::Grpc { req_template, .. })) = &self.resolver {
-      Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
-        Valid::from_iter(mustache.expression_segments(), |parts| {
-          parts_validator.validate(parts, true).trace("headers")
-        })
+      Valid::from_iter(req_template.url.expression_segments(), |parts| {
+        parts_validator.validate(parts, false).trace("path")
       })
-      .map_to(())
+      .and(
+        Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
+          Valid::from_iter(mustache.expression_segments(), |parts| {
+            parts_validator.validate(parts, true).trace("headers")
+          })
+        })
+        .map_to(()),
+      )
     } else {
       Valid::succeed(())
     }
