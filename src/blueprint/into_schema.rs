@@ -65,7 +65,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
   Some(key)
 }
 
-fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
+fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
       let mut object = dynamic::Object::new(def.name.clone());
@@ -75,10 +75,6 @@ fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
         let field_name = &field.name.clone();
         let cache = field.cache.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
-          if no_resolver {
-            return FieldFuture::from_value(None);
-          }
-
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
           let field_name = &field.name;
           match &field.resolver {
@@ -181,25 +177,16 @@ fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
   }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct SchemaModifiers {
-  pub no_resolver: bool,
-}
-
-pub(crate) fn create(blueprint: &Blueprint, modifiers: Option<SchemaModifiers>) -> SchemaBuilder {
-  let query = blueprint.query();
-  let mutation = blueprint.mutation();
-  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-  for def in blueprint.definitions.iter() {
-    schema = schema.register(to_type(def, modifiers.map(|a| a.no_resolver).unwrap_or(false)));
-  }
-
-  schema
-}
-
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
-    create(blueprint, None)
+    let query = blueprint.query();
+    let mutation = blueprint.mutation();
+    let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+    for def in blueprint.definitions.iter() {
+      schema = schema.register(to_type(def));
+    }
+
+    schema
   }
 }
