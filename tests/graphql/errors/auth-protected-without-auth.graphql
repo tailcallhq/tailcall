@@ -9,7 +9,4 @@ type Query {
 
 #> client-sdl
 type Failure
-  @error(
-    message: "@protected operator is used without defining auth @server"
-    trace: ["Query", "data", "@protected"]
-  )
+  @error(message: "@protected operator is used without defining auth @server", trace: ["Query", "data", "@protected"])

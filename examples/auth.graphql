@@ -5,7 +5,16 @@ schema
     vars: [{key: "BASIC_AUTH", value: "examples/auth-basic/htpasswd.txt"}]
     auth: [
       {id: "basic-1", basic: {file: "{{vars.BASIC_AUTH}}"}}
-      {id: "jwt-1", jwt: {jwks: {remote: {url: "https://gist.githubusercontent.com/meskill/b0e2343c4aa3e0af95ca0c9209b5818a/raw/tailcall-auth-jwt-jwks-example.json"}}}}
+      {
+        id: "jwt-1"
+        jwt: {
+          jwks: {
+            remote: {
+              url: "https://gist.githubusercontent.com/meskill/b0e2343c4aa3e0af95ca0c9209b5818a/raw/tailcall-auth-jwt-jwks-example.json"
+            }
+          }
+        }
+      }
     ]
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
