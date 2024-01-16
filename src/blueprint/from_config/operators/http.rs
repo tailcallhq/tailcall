@@ -63,7 +63,7 @@ pub fn update_http<'a>() -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type
 
       compile_http(config, field, http)
         .map(|resolver| b_field.resolver(Some(resolver)))
-        .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
+        .and_then(|b_field| b_field.validate_field(type_of, config))
     },
   )
 }
