@@ -345,9 +345,14 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
-      .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
+      .and(validate_call(&operation_type).trace(config::Call::trace_name().as_str()))
       .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+      .and_then(|b_field| {
+        println!("b_field.resolver: {:?}", b_field.resolver);
+
+        Valid::succeed(b_field)
+      })
   };
 
   let fields = Valid::from_iter(
