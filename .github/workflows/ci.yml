@@ -9,8 +9,6 @@ on:
     types: [opened, reopened, synchronize]
   pull_request_target:
     types: [opened, reopened, synchronize]
-  release:
-    types: [published]
 permissions:
   contents: read
 jobs:
@@ -51,7 +49,7 @@ jobs:
 
   test:
     name: Run Tests
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +86,7 @@ jobs:
 
   format:
     name: Run Formatter and Lint Check
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Install Node.js
@@ -116,7 +114,7 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -145,7 +143,7 @@ jobs:
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build, compile_wasm]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -243,7 +241,7 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
-      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
 
     steps:
       - name: Checkout Current Branch (Fast)
@@ -257,7 +255,7 @@ jobs:
 
       - name: Build
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name}}
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
@@ -266,20 +264,20 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Install Node.js
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')
         uses: actions/setup-node@v4
         with:
           node-version: 20.11.0
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')
         run: |
           cd npm
           npm install
 
       - name: Run generate.js script
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')
         run: |
           cd npm
           npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}} --ext ${{ matrix.ext || '' }} --libc ${{ matrix.libc }}
@@ -287,7 +285,7 @@ jobs:
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
       - name: NPM Publish
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
@@ -310,6 +308,7 @@ jobs:
 
   semantic_release:
     name: Semantic Release
+    if: contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')
     needs: [draft_release, release]
     runs-on: ubuntu-latest
     permissions:
@@ -317,20 +316,10 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+      APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
     steps:
-      #      - name: Checkout Current Branch (Fast)
-      #        uses: actions/checkout@v4
-      #      - name: Set Git Identity
-      #        run: |
-      #          git config --local user.email "action@github.com"
-      #          git config --local user.name "GitHub Action"
-      #      - name: Release with Semantic Release
-      #        run: |
-      #          git tag -a ${{ env.APP_VERSION }} -m "Release ${{ env.APP_VERSION }}"
-      #          git push origin ${{ env.APP_VERSION }}
       - name: Publish Release
-        uses: eregon/publish-release@v1 #https://github.com/elgohr/Github-Release-Action
+        uses: eregon/publish-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
