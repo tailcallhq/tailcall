@@ -318,6 +318,12 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
     steps:
+      - name: Update release
+        uses: johnwbyrd/update-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{needs.draft_release.outputs.create_release_name }}
+          draft: true
       - name: Publish Release
         uses: test-room-7/action-publish-release-drafts@v0
         env:
