@@ -325,7 +325,7 @@ jobs:
       - name: Release with Semantic Release
         run: |
           npm install -g semantic-release
-          npx semantic-release
+          npx semantic-release --branches main
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
