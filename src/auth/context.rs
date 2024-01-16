@@ -79,7 +79,7 @@ mod tests {
   use super::*;
   use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
   use crate::auth::basic::BasicProvider;
-  use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN};
+  use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
   use crate::auth::jwt::JwtProvider;
   use crate::blueprint;
   use crate::http::Response;
@@ -116,7 +116,7 @@ mod tests {
       .await;
     assert!(validation.is_ok());
 
-    let validation = auth_context.validate(&create_jwt_auth_request(JWT_VALID_TOKEN)).await;
+    let validation = auth_context.validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID)).await;
     assert!(validation.is_ok());
   }
 }

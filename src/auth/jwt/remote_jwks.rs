@@ -3,16 +3,18 @@ use std::time::{Duration, Instant};
 
 use hyper::header::HeaderValue;
 use hyper::Method;
-use jwtk::jwk::{JwkSet, JwkSetVerifier};
-use jwtk::HeaderAndClaims;
+use jsonwebtoken::jwk::JwkSet;
 use reqwest::Request;
 use url::Url;
 
 use crate::auth::base::AuthError;
 use crate::HttpIO;
 
+use super::jwks::Jwks;
+use super::JwtClaims;
+
 struct JWKSCache {
-  jwks: JwkSetVerifier,
+  jwks: Jwks,
   expiration: Instant,
 }
 
@@ -23,30 +25,29 @@ pub struct RemoteJwksVerifier {
   client: Arc<dyn HttpIO>,
   max_age: Duration,
   cache: RwLock<Option<JWKSCache>>,
-  require_kid: bool,
+  optional_kid: bool,
 }
 
 impl RemoteJwksVerifier {
   pub fn new(url: Url, client: Arc<dyn HttpIO>, max_age: Duration) -> Self {
-    Self { url, client, max_age, cache: RwLock::new(None), require_kid: true }
+    Self { url, client, max_age, cache: RwLock::new(None), optional_kid: false }
   }
 
-  /// If called with `false`, subsequent `verify` calls will
+  /// If called with `true`, subsequent `decode` calls will
   /// try all keys from the key set if a `kid` is not specified in the token.
-  pub fn set_require_kid(&mut self, required: bool) {
-    self.require_kid = required;
-    if let Ok(Some(v)) = self.cache.get_mut() {
-      v.jwks.set_require_kid(required);
-    }
+  pub fn optional_kid(mut self, optional: bool) -> Self {
+    self.optional_kid = optional;
+
+    self
   }
 
-  pub async fn verify(&self, token: &str) -> Result<HeaderAndClaims<()>, AuthError> {
+  pub async fn decode(&self, token: &str) -> Result<JwtClaims, AuthError> {
     {
       let cache = self.cache.read().unwrap();
 
       if let Some(c) = cache.as_ref() {
         if c.expiration > Instant::now() {
-          return c.jwks.verify(token).map_err(|_| AuthError::Invalid);
+          return c.jwks.decode(token);
         }
       }
     }
@@ -59,15 +60,14 @@ impl RemoteJwksVerifier {
     let mut cache = self.cache.write().unwrap();
     if let Some(c) = cache.as_ref() {
       if c.expiration > Instant::now() {
-        return c.jwks.verify(token).map_err(|_| AuthError::Invalid);
+        return c.jwks.decode(token);
       }
     }
 
     *cache = Some(JWKSCache {
       jwks: {
-        let mut v = jwks.verifier();
-        v.set_require_kid(self.require_kid);
-        v
+        let v = Jwks::from(jwks);
+        v.optional_kid(self.optional_kid)
       },
       expiration: std::time::Instant::now() + self.max_age,
     });
@@ -76,7 +76,7 @@ impl RemoteJwksVerifier {
       .as_ref()
       .unwrap()
       .jwks
-      .verify(token)
+      .decode(token)
       .map_err(|_| AuthError::Invalid)
   }
 

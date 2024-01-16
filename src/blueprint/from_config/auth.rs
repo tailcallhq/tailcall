@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use jwtk::jwk::JwkSet;
+use jsonwebtoken::jwk::JwkSet;
 use url::Url;
 
 use super::init_context::InitContext;
@@ -14,23 +14,10 @@ pub struct BasicProvider {
   pub htpasswd: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Jwks {
   Local(JwkSet),
   Remote { url: Url, max_age: Duration },
-}
-
-impl Clone for Jwks {
-  fn clone(&self) -> Self {
-    match self {
-      Self::Local(jwks) => {
-        // TODO: hack to clone JwkSet
-        // maybe try another library that has built in cloning?
-        Self::Local(serde_json::from_value(serde_json::to_value(jwks).unwrap()).unwrap())
-      }
-      Self::Remote { url, max_age } => Self::Remote { url: url.clone(), max_age: *max_age },
-    }
-  }
 }
 
 #[derive(Clone, Debug)]
@@ -76,17 +63,20 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
   let jwks_valid = match &jwks {
     config::Jwks::Data(data) => Valid::from(Mustache::parse(data).map_err(|e| ValidationError::new(e.to_string())))
       .and_then(|tmpl| {
-        let data = tmpl.render(init_context);
+        {
+          let data = tmpl.render(init_context);
 
-        if data.is_empty() {
-          return Valid::fail("JWKS data is empty".into());
+          if data.is_empty() {
+            return Valid::fail("JWKS data is empty".into());
+          }
+
+          let de = &mut serde_json::Deserializer::from_str(&data);
+
+          Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
+            .map(|jwks: JwkSet| Jwks::Local(jwks))
         }
-
-        let de = &mut serde_json::Deserializer::from_str(&data);
-
-        Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
-          .map(|jwks: JwkSet| Jwks::Local(jwks))
-      }.trace("data")),
+        .trace("data")
+      }),
     config::Jwks::Remote { url, max_age } => {
       Valid::from(Mustache::parse(url).map_err(|e| ValidationError::new(e.to_string()))).and_then(|url| {
         let url = url.render(init_context);
