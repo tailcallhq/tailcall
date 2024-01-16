@@ -112,60 +112,63 @@ impl FieldDefinition {
 
     let parts_validator = MustachePartsValidator::new(type_of, config, self);
 
-    if let Some(Expression::Unsafe(Unsafe::Http { req_template, .. })) = &self.resolver {
-      Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-        parts_validator.validate(parts, false).trace("path")
-      })
-      .and(Valid::from_iter(req_template.query.clone(), |query| {
-        let (_, mustache) = query;
+    match &self.resolver {
+      Some(Expression::Unsafe(Unsafe::Http { req_template, .. })) => {
+        Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
+          parts_validator.validate(parts, false).trace("path")
+        })
+        .and(Valid::from_iter(req_template.query.clone(), |query| {
+          let (_, mustache) = query;
 
-        Valid::from_iter(mustache.expression_segments(), |parts| {
-          parts_validator.validate(parts, true).trace("query")
-        })
-      }))
-      .unit()
-    } else if let Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) = &self.resolver {
-      Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
-        Valid::from_iter(mustache.expression_segments(), |parts| {
-          parts_validator.validate(parts, true).trace("headers")
-        })
-      })
-      .and_then(|_| {
-        if let Some(args) = &req_template.operation_arguments {
-          Valid::from_iter(args, |(_, mustache)| {
-            Valid::from_iter(mustache.expression_segments(), |parts| {
-              parts_validator.validate(parts, true).trace("args")
-            })
+          Valid::from_iter(mustache.expression_segments(), |parts| {
+            parts_validator.validate(parts, true).trace("query")
           })
-        } else {
-          Valid::succeed(Default::default())
-        }
-      })
-      .unit()
-    } else if let Some(Expression::Unsafe(Unsafe::Grpc { req_template, .. })) = &self.resolver {
-      Valid::from_iter(req_template.url.expression_segments(), |parts| {
-        parts_validator.validate(parts, false).trace("path")
-      })
-      .and(
+        }))
+        .unit()
+      }
+      Some(Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. })) => {
         Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
           Valid::from_iter(mustache.expression_segments(), |parts| {
             parts_validator.validate(parts, true).trace("headers")
           })
         })
-        .unit(),
-      )
-      .and_then(|_| {
-        if let Some(body) = &req_template.body {
-          Valid::from_iter(body.expression_segments(), |parts| {
-            parts_validator.validate(parts, true).trace("body")
+        .and_then(|_| {
+          if let Some(args) = &req_template.operation_arguments {
+            Valid::from_iter(args, |(_, mustache)| {
+              Valid::from_iter(mustache.expression_segments(), |parts| {
+                parts_validator.validate(parts, true).trace("args")
+              })
+            })
+          } else {
+            Valid::succeed(Default::default())
+          }
+        })
+        .unit()
+      }
+      Some(Expression::Unsafe(Unsafe::Grpc { req_template, .. })) => {
+        Valid::from_iter(req_template.url.expression_segments(), |parts| {
+          parts_validator.validate(parts, false).trace("path")
+        })
+        .and(
+          Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
+            Valid::from_iter(mustache.expression_segments(), |parts| {
+              parts_validator.validate(parts, true).trace("headers")
+            })
           })
-        } else {
-          Valid::succeed(Default::default())
-        }
-      })
-      .unit()
-    } else {
-      Valid::succeed(())
+          .unit(),
+        )
+        .and_then(|_| {
+          if let Some(body) = &req_template.body {
+            Valid::from_iter(body.expression_segments(), |parts| {
+              parts_validator.validate(parts, true).trace("body")
+            })
+          } else {
+            Valid::succeed(Default::default())
+          }
+        })
+        .unit()
+      }
+      _ => Valid::succeed(()),
     }
   }
 }
