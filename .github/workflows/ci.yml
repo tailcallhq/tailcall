@@ -82,7 +82,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           files: lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   format:
     name: Run Formatter and Lint Check
@@ -309,7 +309,7 @@ jobs:
   semantic_release:
     name: Semantic Release
     if: (contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: [draft_release, release]
+    needs: [draft_release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
