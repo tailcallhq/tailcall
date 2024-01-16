@@ -2,13 +2,11 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::dynamic::{
-  FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
-};
+use async_graphql::dynamic::{self, FieldFuture, FieldValue, ResolverContext, SchemaBuilder};
 use async_graphql_value::ConstValue;
 
-use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};
+use crate::helpers;
 use crate::http::RequestContext;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationContext;
@@ -47,7 +45,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     .map(|data| data.get_key("id"))
   {
     // Hash on parent's id only?
-    hash_const_value(const_value?, &mut hasher)
+    helpers::value::hash(const_value?, &mut hasher);
   }
 
   let key = ctx
@@ -57,7 +55,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     .map(|(key, value)| {
       let mut hasher = hasher.clone();
       key.hash(&mut hasher);
-      hash_const_value(value.as_value(), &mut hasher);
+      helpers::value::hash(value.as_value(), &mut hasher);
       hasher.finish()
     })
     .fold(hasher.finish(), |acc, val| acc ^ val);

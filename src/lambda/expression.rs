@@ -12,7 +12,6 @@ use serde_json::Value;
 use thiserror::Error;
 
 use super::ResolverContextLike;
-use crate::blueprint::HashableConstValue;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -22,6 +21,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
+use crate::helpers::value::HashableConstValue;
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -315,14 +315,14 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
       .into(),
     Logic::Cond(_) => todo!(),
     Logic::DefaultTo(_, _) => todo!(),
-    Logic::IsEmpty(expr) => match expr.eval(ctx).await? {
+    Logic::IsEmpty(expr) => (match expr.eval(ctx).await? {
       ConstValue::Null => true,
       ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
       ConstValue::Binary(bytes) => bytes.is_empty(),
       ConstValue::List(list) => list.is_empty(),
       ConstValue::Object(obj) => obj.is_empty(),
       ConstValue::String(string) => string.is_empty(),
-    }
+    })
     .into(),
     Logic::Not(expr) => (!is_truthy(expr.eval(ctx).await?)).into(),
     Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx).await?) || is_truthy(rhs.eval(ctx).await?)).into(),
