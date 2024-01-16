@@ -11,18 +11,18 @@ use crate::config::Upstream;
 use crate::http::Response;
 
 #[derive(Clone)]
-pub struct HttpNative {
+pub struct NativeHttp {
   client: ClientWithMiddleware,
   http2_only: bool,
 }
 
-impl Default for HttpNative {
+impl Default for NativeHttp {
   fn default() -> Self {
     Self { client: ClientBuilder::new(Client::new()).build(), http2_only: false }
   }
 }
 
-impl HttpNative {
+impl NativeHttp {
   pub fn init(upstream: &Upstream) -> Self {
     let mut builder = Client::builder()
       .tcp_keepalive(Some(Duration::from_secs(upstream.get_tcp_keep_alive())))
@@ -60,7 +60,7 @@ impl HttpNative {
 }
 
 #[async_trait::async_trait]
-impl HttpIO for HttpNative {
+impl HttpIO for NativeHttp {
   async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
     if self.http2_only {
       *request.version_mut() = reqwest::Version::HTTP_2;

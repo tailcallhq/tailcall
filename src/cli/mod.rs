@@ -8,14 +8,14 @@ pub use error::CLIError;
 pub use tc::run;
 
 use crate::config::Upstream;
-use crate::{FileIO, HttpIO};
+use crate::HttpIO;
 
 pub(crate) mod env;
 pub(crate) mod file;
 pub(crate) mod http;
 pub use env::EnvNative;
 pub use file::NativeFileIO;
-pub use http::HttpNative;
+pub use http::NativeHttp;
 
 // Provides access to env in native rust environment
 pub fn init_env() -> env::EnvNative {
@@ -23,16 +23,16 @@ pub fn init_env() -> env::EnvNative {
 }
 
 // Provides access to file system in native rust environment
-pub fn init_file() -> impl FileIO {
+pub fn init_file() -> file::NativeFileIO {
   file::NativeFileIO::init()
 }
 
 // Provides access to http in native rust environment
-pub fn init_http(upstream: &Upstream) -> http::HttpNative {
-  http::HttpNative::init(upstream)
+pub fn init_http(upstream: &Upstream) -> http::NativeHttp {
+  http::NativeHttp::init(upstream)
 }
 
 // Provides access to http in native rust environment
-pub fn init_http2_only(upstream: &Upstream) -> http::HttpNative {
-  http::HttpNative::init(&upstream.clone().http2_only(true))
+pub fn init_http2_only(upstream: &Upstream) -> http::NativeHttp {
+  http::NativeHttp::init(&upstream.clone().http2_only(true))
 }

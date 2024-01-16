@@ -121,20 +121,16 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: &Blueprint) -> SchemaBuilder {
-  let query = blueprint.query();
-  let mutation = blueprint.mutation();
-  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-  for def in blueprint.definitions.iter() {
-    schema = schema.register(to_type(def));
-  }
-
-  schema
-}
-
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
-    create(blueprint)
+    let query = blueprint.query();
+    let mutation = blueprint.mutation();
+    let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+    for def in blueprint.definitions.iter() {
+      schema = schema.register(to_type(def));
+    }
+
+    schema
   }
 }

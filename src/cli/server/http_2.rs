@@ -7,28 +7,28 @@ use hyper::server::conn::AddrIncoming;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
 use hyper_rustls::TlsAcceptor;
-use rustls::PrivateKey;
+use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer};
 use tokio::fs::File;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::env::EnvNative;
-use crate::cli::http::HttpNative;
+use crate::cli::http::NativeHttp;
 use crate::cli::CLIError;
 use crate::http::handle_request;
 
-async fn load_cert(filename: &str) -> Result<Vec<rustls::Certificate>, std::io::Error> {
+async fn load_cert(filename: String) -> Result<Vec<CertificateDer<'static>>, std::io::Error> {
   let file = File::open(filename).await?;
   let file = file.into_std().await;
   let mut file = BufReader::new(file);
 
   let certificates = rustls_pemfile::certs(&mut file)?;
 
-  Ok(certificates.into_iter().map(rustls::Certificate).collect())
+  Ok(certificates.into_iter().map(CertificateDer::from).collect())
 }
 
-async fn load_private_key(filename: &str) -> anyhow::Result<PrivateKey> {
+async fn load_private_key(filename: String) -> anyhow::Result<PrivateKeyDer<'static>> {
   let file = File::open(filename).await?;
   let file = file.into_std().await;
   let mut file = BufReader::new(file);
@@ -40,9 +40,9 @@ async fn load_private_key(filename: &str) -> anyhow::Result<PrivateKey> {
   }
 
   let key = keys.into_iter().find_map(|key| match key {
-    rustls_pemfile::Item::RSAKey(key) => Some(PrivateKey(key)),
-    rustls_pemfile::Item::ECKey(key) => Some(PrivateKey(key)),
-    rustls_pemfile::Item::PKCS8Key(key) => Some(PrivateKey(key)),
+    rustls_pemfile::Item::RSAKey(key) => Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key))),
+    rustls_pemfile::Item::ECKey(key) => Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key))),
+    rustls_pemfile::Item::PKCS8Key(key) => Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key))),
     _ => None,
   });
 
@@ -56,8 +56,8 @@ pub async fn start_http_2(
   server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
   let addr = sc.addr();
-  let cert_chain = load_cert(&cert).await?;
-  let key = load_private_key(&key).await?;
+  let cert_chain = load_cert(cert).await?;
+  let key = load_private_key(key).await?;
   let incoming = AddrIncoming::bind(&addr)?;
   let acceptor = TlsAcceptor::builder()
     .with_single_cert(cert_chain, key)?
@@ -67,7 +67,7 @@ pub async fn start_http_2(
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest, HttpNative, EnvNative>(req, state.server_context.clone())
+        handle_request::<GraphQLRequest, NativeHttp, EnvNative>(req, state.server_context.clone())
       }))
     }
   });
@@ -76,7 +76,7 @@ pub async fn start_http_2(
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest, HttpNative, EnvNative>(req, state.server_context.clone())
+        handle_request::<GraphQLBatchRequest, NativeHttp, EnvNative>(req, state.server_context.clone())
       }))
     }
   });

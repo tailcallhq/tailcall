@@ -145,7 +145,7 @@ pub fn compile_http(config: &config::Config, field: &config::Field, http: &confi
       http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
       "No base URL defined".to_string(),
     ))
-    .zip(helpers::headers::to_headervec(&http.headers))
+    .zip(helpers::headers::to_mustache_headers(&http.headers))
     .and_then(|(base_url, headers)| {
       let mut base_url = base_url.trim_end_matches('/').to_owned();
       base_url.push_str(http.path.clone().as_str());
