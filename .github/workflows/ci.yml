@@ -329,6 +329,17 @@ jobs:
         run: |
           git tag -a ${{ env.APP_VERSION }} -m "Release ${{ env.APP_VERSION }}"
           git push origin ${{ env.APP_VERSION }}
+      - name: update release
+        id: update_release
+        uses: tubone24/update_release@v1.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag: ${{ env.APP_VERSION  }}
+      - name: Publish Release
+        uses: eregon/publish-release@v1 #https://github.com/elgohr/Github-Release-Action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
