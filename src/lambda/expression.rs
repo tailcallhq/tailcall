@@ -39,6 +39,13 @@ pub enum Expression {
   Relation(Relation),
   List(List),
   Math(Math),
+  Concurrency(Concurrency, Box<Expression>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Concurrency {
+  Parallel,
+  Sequential,
 }
 
 #[derive(Clone, Debug)]
@@ -137,23 +144,45 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
+  pub fn concurrency(self, conc: Concurrency) -> Self {
+    Expression::Concurrency(conc, Box::new(self))
+  }
+
+  pub fn in_parallel(self) -> Self {
+    self.concurrency(Concurrency::Parallel)
+  }
+
+  pub fn parallel_when(self, cond: bool) -> Self {
+    if cond {
+      self.concurrency(Concurrency::Parallel)
+    } else {
+      self
+    }
+  }
+
+  pub fn in_sequence(self) -> Self {
+    self.concurrency(Concurrency::Sequential)
+  }
+
   pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
+    conc: &'a Concurrency,
   ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
     Box::pin(async move {
       match self {
+        Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
         Expression::Context(op) => match op {
           Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
           Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
         },
         Expression::Input(input, path) => {
-          let inp = &input.eval(ctx).await?;
+          let inp = &input.eval(ctx, conc).await?;
           Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
         }
         Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-          left.eval(ctx).await? == right.eval(ctx).await?,
+          left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
         )),
         Expression::Unsafe(operation) => match operation {
           Unsafe::Http { req_template, dl_id, .. } => {
@@ -227,7 +256,7 @@ impl Expression {
 
             #[cfg(feature = "unsafe-js")]
             {
-              let input = input.eval(ctx).await?;
+              let input = input.eval(ctx, conc).await?;
               result = javascript::execute_js(script, input, Some(ctx.timeout))
                 .map_err(|e| EvaluationError::JSException(e.to_string()).into());
             }
@@ -235,9 +264,9 @@ impl Expression {
           }
         },
 
-        Expression::Relation(relation) => eval_relation(ctx, relation).await,
-        Expression::Logic(logic) => eval_logic(ctx, logic).await,
-        Expression::List(list) => eval_list(ctx, list).await,
+        Expression::Relation(relation) => eval_relation(ctx, relation, conc).await,
+        Expression::Logic(logic) => eval_logic(ctx, logic, conc).await,
+        Expression::List(list) => eval_list(ctx, list, conc).await,
         Expression::Math(_) => todo!(),
       }
     })
@@ -247,10 +276,11 @@ impl Expression {
 async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
   relation: &'a Relation,
+  conc: &'a Concurrency,
 ) -> Result<async_graphql::Value> {
   match relation {
     Relation::Intersection(list) => {
-      let results = join_all(list.iter().map(|expr| expr.eval(ctx))).await;
+      let results = join_all(list.iter().map(|expr| expr.eval(ctx, conc))).await;
 
       let mut results_iter = results.into_iter();
 
@@ -284,9 +314,10 @@ async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
   list: &'a List,
+  conc: &'a Concurrency,
 ) -> Result<async_graphql::Value> {
   match list {
-    List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+    List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
       .await
       .into_iter()
       .try_fold(async_graphql::Value::List(vec![]), |acc, result| match (acc, result?) {
@@ -302,20 +333,22 @@ async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
   ctx: &'a EvaluationContext<'a, Ctx>,
   logic: &'a Logic,
+  conc: &'a Concurrency,
 ) -> Result<async_graphql::Value> {
   Ok(match logic {
     Logic::And(lhs, rhs) => {
-      let lhs_val = lhs.eval(ctx).await?;
-      (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx).await?)).into()
+      let lhs_val = lhs.eval(ctx, conc).await?;
+      (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx, conc).await?)).into()
     }
-    Logic::AnyPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+    //TODO: check if par or seq
+    Logic::AnyPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
       .await
       .into_iter()
       .try_fold(false, |acc, result| Ok::<_, anyhow::Error>(acc || is_truthy(result?)))?
       .into(),
     Logic::Cond(_) => todo!(),
     Logic::DefaultTo(_, _) => todo!(),
-    Logic::IsEmpty(expr) => (match expr.eval(ctx).await? {
+    Logic::IsEmpty(expr) => (match expr.eval(ctx, conc).await? {
       ConstValue::Null => true,
       ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
       ConstValue::Binary(bytes) => bytes.is_empty(),
@@ -324,19 +357,21 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
       ConstValue::String(string) => string.is_empty(),
     })
     .into(),
-    Logic::Not(expr) => (!is_truthy(expr.eval(ctx).await?)).into(),
-    Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx).await?) || is_truthy(rhs.eval(ctx).await?)).into(),
-    Logic::AllPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx)))
+    Logic::Not(expr) => (!is_truthy(expr.eval(ctx, conc).await?)).into(),
+    Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx, conc).await?) || is_truthy(rhs.eval(ctx, conc).await?)).into(),
+
+    //TODO: check if par or seq
+    Logic::AllPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
       .await
       .into_iter()
       .try_fold(true, |acc, result| Ok::<_, anyhow::Error>(acc && is_truthy(result?)))?
       .into(),
     Logic::If { cond, then, els } => {
-      let cond = cond.eval(ctx).await?;
+      let cond = cond.eval(ctx, conc).await?;
       if is_truthy(cond) {
-        then.eval(ctx).await?
+        then.eval(ctx, conc).await?
       } else {
-        els.eval(ctx).await?
+        els.eval(ctx, conc).await?
       }
     }
   })

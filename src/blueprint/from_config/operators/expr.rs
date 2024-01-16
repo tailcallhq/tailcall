@@ -46,7 +46,6 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
   let config = ctx.config;
   let field = ctx.config_field;
   let operation_type = ctx.operation_type;
-
   match expr {
     // Unsafe Expr
     ExprBody::Http(http) => compile_http(config, field, &http),
@@ -66,11 +65,15 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
       .zip(compile(ctx, *els).map(Box::new))
       .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
 
-    ExprBody::AllPass(list) => compile_list(ctx, list).map(|a| Expression::Logic(Logic::AllPass(a))),
+    ExprBody::AllPass(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::AllPass(a)).parallel_when(expr.has_io()))
+    }
     ExprBody::And(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Logic(Logic::And(Box::new(a), Box::new(b))))
     }
-    ExprBody::AnyPass(list) => compile_list(ctx, list).map(|a| Expression::Logic(Logic::AnyPass(a))),
+    ExprBody::AnyPass(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::AnyPass(a)).parallel_when(expr.has_io()))
+    }
     ExprBody::Cond(list) => Valid::from_iter(list, |(cond, operation)| {
       compile_ab(ctx, (*cond, *operation)).map(|(cond, operation)| (Box::new(cond), Box::new(operation)))
     })
@@ -85,12 +88,13 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     }
 
     // List
-    ExprBody::Concat(values) => compile_list(ctx, values).map(|a| Expression::List(List::Concat(a))),
+    ExprBody::Concat(ref values) => {
+      compile_list(ctx, values.clone()).map(|a| Expression::List(List::Concat(a)).parallel_when(expr.has_io()))
+    }
 
     // Relation
-    ExprBody::Intersection(values) => {
-      compile_list(ctx, values).map(|a| Expression::Relation(Relation::Intersection(a)))
-    }
+    ExprBody::Intersection(ref values) => compile_list(ctx, values.clone())
+      .map(|a| Expression::Relation(Relation::Intersection(a)).parallel_when(expr.has_io())),
 
     // Math
     ExprBody::Mod(a, b) => {
@@ -108,10 +112,14 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Math(Math::Multiply(Box::new(a), Box::new(b))))
     }
     ExprBody::Negate(a) => compile(ctx, *a).map(|a| Expression::Math(Math::Negate(Box::new(a)))),
-    ExprBody::Product(list) => compile_list(ctx, list).map(|a| Expression::Math(Math::Product(a))),
+    ExprBody::Product(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Math(Math::Product(a)).parallel_when(expr.has_io()))
+    }
     ExprBody::Subtract(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Math(Math::Subtract(Box::new(a), Box::new(b))))
     }
-    ExprBody::Sum(list) => compile_list(ctx, list).map(|a| Expression::Math(Math::Sum(a))),
+    ExprBody::Sum(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Math(Math::Sum(a)).parallel_when(expr.has_io()))
+    }
   }
 }
