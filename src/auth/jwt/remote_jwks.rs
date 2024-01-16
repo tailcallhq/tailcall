@@ -17,7 +17,7 @@ struct JWKSCache {
   expiration: Instant,
 }
 
-pub struct RemoteJwksVerifier {
+pub struct RemoteJwks {
   url: Url,
   // as a trait object due to deep bubbling of generic definition
   // up to the entry point
@@ -27,7 +27,7 @@ pub struct RemoteJwksVerifier {
   optional_kid: bool,
 }
 
-impl RemoteJwksVerifier {
+impl RemoteJwks {
   pub fn new(url: Url, client: Arc<dyn HttpIO>, max_age: Duration) -> Self {
     Self { url, client, max_age, cache: RwLock::new(None), optional_kid: false }
   }

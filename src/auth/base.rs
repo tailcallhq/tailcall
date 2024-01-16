@@ -23,6 +23,10 @@ pub(crate) trait AuthProviderTrait {
   async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError>;
 }
 
+#[allow(clippy::large_enum_variant)]
+// the difference in size is indeed significant here
+// but it's quite unlikely that someone will require to store several hundreds
+// of providers or more to care much
 pub enum AuthProvider {
   Basic(BasicProvider),
   Jwt(JwtProvider),
