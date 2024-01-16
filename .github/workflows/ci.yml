@@ -319,18 +319,18 @@ jobs:
       APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
     steps:
       - name: Update release
-        uses: johnwbyrd/update-release@v1.0.0
+        uses: johnwbyrd/update-release@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{needs.draft_release.outputs.create_release_name }}
           draft: true
       - name: Publish Release
-        uses: eregon/publish-release@v1
+        uses: test-room-7/action-publish-release-drafts@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          tag_name: ${{needs.draft_release.outputs.create_release_name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag-name: ${{needs.draft_release.outputs.create_release_name }}
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
