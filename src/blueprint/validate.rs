@@ -75,7 +75,6 @@ impl<'a> MustachePartsValidator<'a> {
           }
 
           // we can use non-scalar types in args
-
           if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
             return Valid::fail(format!("argument '{tail}' is a nullable type"));
           }
@@ -109,7 +108,6 @@ impl FieldDefinition {
     // type if it doesn't exist, so we wouldn't be able to get enough
     // context from that method alone
     // So we must duplicate some of that logic here :(
-
     let parts_validator = MustachePartsValidator::new(type_of, config, self);
 
     match &self.resolver {
