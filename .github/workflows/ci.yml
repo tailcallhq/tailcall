@@ -318,6 +318,10 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.11.0
       - name: Release with Semantic Release
         run: |
           npm install -g semantic-release
@@ -333,7 +337,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20.11.0
           registry-url: https://registry.npmjs.org
       - name: Install dependencies
         run: |
