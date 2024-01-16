@@ -12,8 +12,12 @@ pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
   env::CloudflareEnv::init(env)
 }
 
-pub fn init_file(env: Rc<worker::Env>) -> file::CloudflareFileIO {
-  file::CloudflareFileIO::init(env)
+pub fn init_file_r2(env: Rc<worker::Env>) -> file::CloudflareR2FileIO {
+  file::CloudflareR2FileIO::init(env)
+}
+
+pub fn init_file_static(env: Rc<worker::Env>) -> file::CloudflareStaticFileIO {
+  file::CloudflareStaticFileIO::init(env)
 }
 
 pub fn init_http() -> http::CloudflareHttp {
