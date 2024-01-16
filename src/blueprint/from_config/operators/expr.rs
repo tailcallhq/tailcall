@@ -95,6 +95,45 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     // Relation
     ExprBody::Intersection(ref values) => compile_list(ctx, values.clone())
       .map(|a| Expression::Relation(Relation::Intersection(a)).parallel_when(expr.has_io())),
+    ExprBody::Difference(a, b) => compile_list(ctx, a)
+      .zip(compile_list(ctx, b))
+      .map(|(a, b)| Expression::Relation(Relation::Difference(a, b))),
+    ExprBody::Equals(a, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::Equals(Box::new(a), Box::new(b))))
+    }
+    ExprBody::Gt(a, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::Gt(Box::new(a), Box::new(b))))
+    }
+    ExprBody::Gte(a, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::Gte(Box::new(a), Box::new(b))))
+    }
+    ExprBody::Lt(a, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::Lt(Box::new(a), Box::new(b))))
+    }
+    ExprBody::Lte(a, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::Lte(Box::new(a), Box::new(b))))
+    }
+    ExprBody::Max(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Relation(Relation::Max(a)).parallel_when(expr.has_io()))
+    }
+    ExprBody::Min(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Relation(Relation::Min(a)).parallel_when(expr.has_io()))
+    }
+    ExprBody::PathEq(a, path, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::PathEq(Box::new(a), path, Box::new(b))))
+    }
+    ExprBody::PropEq(a, path, b) => {
+      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::PropEq(Box::new(a), path, Box::new(b))))
+    }
+    ExprBody::SortPath(a, path) => {
+      compile_list(ctx, a).map(|a| Expression::Relation(Relation::SortPath(a, path.clone())))
+    }
+    ExprBody::SymmetricDifference(a, b) => compile_list(ctx, a)
+      .zip(compile_list(ctx, b))
+      .map(|(a, b)| Expression::Relation(Relation::SymmetricDifference(a, b))),
+    ExprBody::Union(a, b) => compile_list(ctx, a)
+      .zip(compile_list(ctx, b))
+      .map(|(a, b)| Expression::Relation(Relation::Union(a, b))),
 
     // Math
     ExprBody::Mod(a, b) => {

@@ -56,6 +56,19 @@ pub enum List {
 #[derive(Clone, Debug)]
 pub enum Relation {
   Intersection(Vec<Expression>),
+  Difference(Vec<Expression>, Vec<Expression>),
+  Equals(Box<Expression>, Box<Expression>),
+  Gt(Box<Expression>, Box<Expression>),
+  Gte(Box<Expression>, Box<Expression>),
+  Lt(Box<Expression>, Box<Expression>),
+  Lte(Box<Expression>, Box<Expression>),
+  Max(Vec<Expression>),
+  Min(Vec<Expression>),
+  PathEq(Box<Expression>, Vec<String>, Box<Expression>),
+  PropEq(Box<Expression>, String, Box<Expression>),
+  SortPath(Vec<Expression>, Vec<String>),
+  SymmetricDifference(Vec<Expression>, Vec<Expression>),
+  Union(Vec<Expression>, Vec<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -308,6 +321,19 @@ async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
           .collect(),
       )
     }
+    Relation::Difference(_, _) => todo!(),
+    Relation::Equals(_, _) => todo!(),
+    Relation::Gt(_, _) => todo!(),
+    Relation::Gte(_, _) => todo!(),
+    Relation::Lt(_, _) => todo!(),
+    Relation::Lte(_, _) => todo!(),
+    Relation::Max(_) => todo!(),
+    Relation::Min(_) => todo!(),
+    Relation::PathEq(_, _, _) => todo!(),
+    Relation::PropEq(_, _, _) => todo!(),
+    Relation::SortPath(_, _) => todo!(),
+    Relation::SymmetricDifference(_, _) => todo!(),
+    Relation::Union(_, _) => todo!(),
   }
 }
 

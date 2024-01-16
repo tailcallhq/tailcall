@@ -52,6 +52,32 @@ pub enum ExprBody {
   // Relation
   #[serde(rename = "intersection")]
   Intersection(Vec<ExprBody>),
+  #[serde(rename = "difference")]
+  Difference(Vec<ExprBody>, Vec<ExprBody>),
+  #[serde(rename = "eq")]
+  Equals(Box<ExprBody>, Box<ExprBody>),
+  #[serde(rename = "gt")]
+  Gt(Box<ExprBody>, Box<ExprBody>),
+  #[serde(rename = "gte")]
+  Gte(Box<ExprBody>, Box<ExprBody>),
+  #[serde(rename = "lt")]
+  Lt(Box<ExprBody>, Box<ExprBody>),
+  #[serde(rename = "lte")]
+  Lte(Box<ExprBody>, Box<ExprBody>),
+  #[serde(rename = "max")]
+  Max(Vec<ExprBody>),
+  #[serde(rename = "min")]
+  Min(Vec<ExprBody>),
+  #[serde(rename = "pathEq")]
+  PathEq(Box<ExprBody>, Vec<String>, Box<ExprBody>),
+  #[serde(rename = "propEq")]
+  PropEq(Box<ExprBody>, String, Box<ExprBody>),
+  #[serde(rename = "sortPath")]
+  SortPath(Vec<ExprBody>, Vec<String>),
+  #[serde(rename = "symmetricDifference")]
+  SymmetricDifference(Vec<ExprBody>, Vec<ExprBody>),
+  #[serde(rename = "union")]
+  Union(Vec<ExprBody>, Vec<ExprBody>),
 
   // Math
   #[serde(rename = "mod")]
@@ -109,6 +135,19 @@ impl ExprBody {
       ExprBody::Product(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Subtract(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Sum(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::Difference(l1, l2) => l1.iter().any(|e| e.has_io()) || l2.iter().any(|e| e.has_io()),
+      ExprBody::Equals(expr1, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::Gt(expr1, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::Gte(expr1, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::Lt(expr1, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::Lte(expr1, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::Max(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::Min(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::PathEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::PropEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
+      ExprBody::SortPath(l, _) => l.iter().any(|e| e.has_io()),
+      ExprBody::SymmetricDifference(l1, l2) => l1.iter().any(|e| e.has_io()) || l2.iter().any(|e| e.has_io()),
+      ExprBody::Union(l1, l2) => l1.iter().any(|e| e.has_io()) || l2.iter().any(|e| e.has_io()),
     }
   }
 }
