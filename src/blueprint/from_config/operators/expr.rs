@@ -74,10 +74,10 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::AnyPass(ref list) => {
       compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::AnyPass(a)).parallel_when(expr.has_io()))
     }
-    ExprBody::Cond(list) => Valid::from_iter(list, |(cond, operation)| {
+    ExprBody::Cond(default, list) => Valid::from_iter(list, |(cond, operation)| {
       compile_ab(ctx, (*cond, *operation)).map(|(cond, operation)| (Box::new(cond), Box::new(operation)))
     })
-    .map(|list| Expression::Logic(Logic::Cond(list))),
+    .and_then(|list| compile(ctx, *default).map(|default| Expression::Logic(Logic::Cond(Box::new(default), list)))),
     ExprBody::DefaultTo(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Logic(Logic::DefaultTo(Box::new(a), Box::new(b))))
     }

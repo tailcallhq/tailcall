@@ -5,7 +5,7 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
-        query: "query {allPassTrue allPassFalse andTrue andFalse1 andFalse2 anyPassTrue anyPassFalse isEmptyTrue1 isEmptyTrue2 isEmptyTrue3 isEmptyTrue4 isEmptyFalse1 isEmptyFalse2 isEmptyFalse3 notTrue notFalse1 notFalse2 orFalse orTrue1 orTrue2}"
+        query: "query {allPassTrue allPassFalse andTrue andFalse1 andFalse2 anyPassTrue anyPassFalse isEmptyTrue1 isEmptyTrue2 isEmptyTrue3 isEmptyTrue4 isEmptyFalse1 isEmptyFalse2 isEmptyFalse3 notTrue notFalse1 notFalse2 orFalse orTrue1 orTrue2, condZero, condOne, condTwo}"
     response:
       body:
         data:
@@ -29,3 +29,6 @@ assert:
           orFalse: false
           orTrue1: true
           orTrue2: true
+          condZero: 0
+          condOne: 1
+          condTwo: 2

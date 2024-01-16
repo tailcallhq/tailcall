@@ -68,7 +68,7 @@ pub enum Logic {
   AllPass(Vec<Expression>),
   And(Box<Expression>, Box<Expression>),
   AnyPass(Vec<Expression>),
-  Cond(Vec<(Box<Expression>, Box<Expression>)>),
+  Cond(Box<Expression>, Vec<(Box<Expression>, Box<Expression>)>),
   DefaultTo(Box<Expression>, Box<Expression>),
   IsEmpty(Box<Expression>),
   Not(Box<Expression>),
@@ -340,32 +340,80 @@ async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
       let lhs_val = lhs.eval(ctx, conc).await?;
       (is_truthy(lhs_val) && is_truthy(rhs.eval(ctx, conc).await?)).into()
     }
-    //TODO: check if par or seq
-    Logic::AnyPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
-      .await
-      .into_iter()
-      .try_fold(false, |acc, result| Ok::<_, anyhow::Error>(acc || is_truthy(result?)))?
-      .into(),
-    Logic::Cond(_) => todo!(),
-    Logic::DefaultTo(_, _) => todo!(),
-    Logic::IsEmpty(expr) => (match expr.eval(ctx, conc).await? {
-      ConstValue::Null => true,
-      ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
-      ConstValue::Binary(bytes) => bytes.is_empty(),
-      ConstValue::List(list) => list.is_empty(),
-      ConstValue::Object(obj) => obj.is_empty(),
-      ConstValue::String(string) => string.is_empty(),
-    })
-    .into(),
+    Logic::AnyPass(list) => {
+      let futures = list.iter().map(|expr| expr.eval(ctx, conc));
+      let init = false;
+      let f = |acc, result| Ok::<_, anyhow::Error>(acc || is_truthy(result?));
+
+      match *conc {
+        Concurrency::Parallel => join_all(futures.into_iter()).await.into_iter().try_fold(init, f),
+        Concurrency::Sequential => {
+          let mut result = Ok(init);
+          for future in futures.into_iter() {
+            result = f(result?, future.await);
+          }
+          result
+        }
+      }?
+      .into()
+    }
+    Logic::Cond(default, list) => match *conc {
+      Concurrency::Sequential => {
+        let mut result = None;
+        for (cond, expr) in list.iter() {
+          if is_truthy(cond.eval(ctx, conc).await?) {
+            result = Some(expr.eval(ctx, conc).await?);
+            break;
+          }
+        }
+        result.unwrap_or(default.eval(ctx, conc).await?)
+      }
+      Concurrency::Parallel => {
+        let true_cond_index = join_all(list.iter().map(|(cond, _)| cond.eval(ctx, conc)))
+          .await
+          .into_iter()
+          .enumerate()
+          .find_map(|(index, cond)| Some(is_truthy_ref(cond.as_ref().ok()?)).map(|_| index));
+
+        if let Some(index) = true_cond_index {
+          let (_, value) = list
+            .get(index)
+            .ok_or(anyhow::anyhow!("no condition found at index {index}"))?;
+          value.eval(ctx, conc).await?
+        } else {
+          default.eval(ctx, conc).await?
+        }
+      }
+    },
+    Logic::DefaultTo(value, default) => {
+      let result = value.eval(ctx, conc).await?;
+      if is_empty(&result) {
+        default.eval(ctx, conc).await?
+      } else {
+        result
+      }
+    }
+    Logic::IsEmpty(expr) => is_empty(&expr.eval(ctx, conc).await?).into(),
     Logic::Not(expr) => (!is_truthy(expr.eval(ctx, conc).await?)).into(),
     Logic::Or(lhs, rhs) => (is_truthy(lhs.eval(ctx, conc).await?) || is_truthy(rhs.eval(ctx, conc).await?)).into(),
 
-    //TODO: check if par or seq
-    Logic::AllPass(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
-      .await
-      .into_iter()
-      .try_fold(true, |acc, result| Ok::<_, anyhow::Error>(acc && is_truthy(result?)))?
-      .into(),
+    Logic::AllPass(list) => {
+      let futures = list.iter().map(|expr| expr.eval(ctx, conc));
+      let init = true;
+      let f = |acc, result| Ok::<_, anyhow::Error>(acc && is_truthy(result?));
+
+      match *conc {
+        Concurrency::Parallel => join_all(futures.into_iter()).await.into_iter().try_fold(init, f),
+        Concurrency::Sequential => {
+          let mut result = Ok(init);
+          for future in futures.into_iter() {
+            result = f(result?, future.await);
+          }
+          result
+        }
+      }?
+      .into()
+    }
     Logic::If { cond, then, els } => {
       let cond = cond.eval(ctx, conc).await?;
       if is_truthy(cond) {
@@ -395,6 +443,33 @@ fn is_truthy(value: async_graphql::Value) -> bool {
     Value::Boolean(b) => b,
     Value::Number(n) => n != Number::from(0),
     Value::Binary(b) => b != Bytes::default(),
+  }
+}
+
+fn is_truthy_ref(value: &async_graphql::Value) -> bool {
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
+
+  match value {
+    &Value::Null => false,
+    &Value::Enum(_) => true,
+    &Value::List(_) => true,
+    &Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    &Value::Boolean(b) => b,
+    Value::Number(n) => n != &Number::from(0),
+    Value::Binary(b) => b != &Bytes::default(),
+  }
+}
+
+fn is_empty(value: &async_graphql::Value) -> bool {
+  match value {
+    ConstValue::Null => true,
+    ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
+    ConstValue::Binary(bytes) => bytes.is_empty(),
+    ConstValue::List(list) => list.is_empty(),
+    ConstValue::Object(obj) => obj.is_empty(),
+    ConstValue::String(string) => string.is_empty(),
   }
 }
 

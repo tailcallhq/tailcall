@@ -35,7 +35,7 @@ pub enum ExprBody {
   #[serde(rename = "anyPass")]
   AnyPass(Vec<ExprBody>),
   #[serde(rename = "cond")]
-  Cond(Vec<(Box<ExprBody>, Box<ExprBody>)>),
+  Cond(Box<ExprBody>, Vec<(Box<ExprBody>, Box<ExprBody>)>),
   #[serde(rename = "defaultTo")]
   DefaultTo(Box<ExprBody>, Box<ExprBody>),
   #[serde(rename = "isEmpty")]
@@ -90,7 +90,9 @@ impl ExprBody {
       ExprBody::AllPass(l) => l.iter().any(|e| e.has_io()),
       ExprBody::And(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::AnyPass(l) => l.iter().any(|e| e.has_io()),
-      ExprBody::Cond(branches) => branches.iter().any(|(cond, expr)| cond.has_io() || expr.has_io()),
+      ExprBody::Cond(default, branches) => {
+        default.has_io() || branches.iter().any(|(cond, expr)| cond.has_io() || expr.has_io())
+      }
       ExprBody::DefaultTo(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::IsEmpty(expr) => expr.has_io(),
       ExprBody::Not(expr) => expr.has_io(),
