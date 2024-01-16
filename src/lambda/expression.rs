@@ -364,45 +364,42 @@ async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
       matches!(value::compare(&lhs, &rhs), Some(Ordering::Less) | Some(Ordering::Equal)).into()
     }
     Relation::Max(exprs) => {
-      let results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
-      println!("{results:?}");
+      let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
 
-      results
-        .into_iter()
-        .try_reduce(|mut largest, current| {
-          let ord = value::compare(&largest, &current);
-          largest = match ord {
-            Some(Ordering::Greater | Ordering::Equal) => largest,
-            Some(Ordering::Less) => current,
-            _ => Err(anyhow::anyhow!(
-              "`max` cannot be calculated for types that cannot be compared"
-            ))?,
-          };
-          Ok::<_, anyhow::Error>(largest)
-        })?
-        .ok_or(EvaluationError::OperationFailed(
-          "`max` cannot be called on empty list".into(),
-        ))?
+      let last = results.pop().ok_or(EvaluationError::OperationFailed(
+        "`max` cannot be called on empty list".into(),
+      ))?;
+
+      results.into_iter().try_fold(last, |mut largest, current| {
+        let ord = value::compare(&largest, &current);
+        largest = match ord {
+          Some(Ordering::Greater | Ordering::Equal) => largest,
+          Some(Ordering::Less) => current,
+          _ => Err(anyhow::anyhow!(
+            "`max` cannot be calculated for types that cannot be compared"
+          ))?,
+        };
+        Ok::<_, anyhow::Error>(largest)
+      })?
     }
     Relation::Min(exprs) => {
-      let results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
+      let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
 
-      results
-        .into_iter()
-        .try_reduce(|mut largest, current| {
-          let ord = value::compare(&largest, &current);
-          largest = match ord {
-            Some(Ordering::Less | Ordering::Equal) => largest,
-            Some(Ordering::Greater) => current,
-            _ => Err(anyhow::anyhow!(
-              "`min` cannot be calculated for types that cannot be compared"
-            ))?,
-          };
-          Ok::<_, anyhow::Error>(largest)
-        })?
-        .ok_or(EvaluationError::OperationFailed(
-          "`min` cannot be called on empty list".into(),
-        ))?
+      let last = results.pop().ok_or(EvaluationError::OperationFailed(
+        "`min` cannot be called on empty list".into(),
+      ))?;
+
+      results.into_iter().try_fold(last, |mut largest, current| {
+        let ord = value::compare(&largest, &current);
+        largest = match ord {
+          Some(Ordering::Less | Ordering::Equal) => largest,
+          Some(Ordering::Greater) => current,
+          _ => Err(anyhow::anyhow!(
+            "`min` cannot be calculated for types that cannot be compared"
+          ))?,
+        };
+        Ok::<_, anyhow::Error>(largest)
+      })?
     }
     Relation::PathEq(lhs, path, rhs) => {
       let lhs = lhs.eval(ctx, conc).await?;
