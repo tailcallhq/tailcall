@@ -333,6 +333,8 @@ jobs:
         uses: eregon/publish-release@v1 #https://github.com/elgohr/Github-Release-Action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_id: ${{ needs.draft_release.outputs.create_release_id }}
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
