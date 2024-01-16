@@ -343,7 +343,7 @@ jobs:
           npm install
       - name: Run generate-root.js script
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name}}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
         run: |
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }}
@@ -357,5 +357,5 @@ jobs:
           access: public
 
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
