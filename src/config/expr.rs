@@ -28,12 +28,10 @@ pub enum ExprBody {
     #[serde(rename = "else")]
     on_false: Box<ExprBody>,
   },
-  #[serde(rename = "allPass")]
-  AllPass(Vec<ExprBody>),
   #[serde(rename = "and")]
-  And(Box<ExprBody>, Box<ExprBody>),
-  #[serde(rename = "anyPass")]
-  AnyPass(Vec<ExprBody>),
+  And(Vec<ExprBody>),
+  #[serde(rename = "or")]
+  Or(Vec<ExprBody>),
   #[serde(rename = "cond")]
   Cond(Box<ExprBody>, Vec<(Box<ExprBody>, Box<ExprBody>)>),
   #[serde(rename = "defaultTo")]
@@ -42,8 +40,6 @@ pub enum ExprBody {
   IsEmpty(Box<ExprBody>),
   #[serde(rename = "not")]
   Not(Box<ExprBody>),
-  #[serde(rename = "or")]
-  Or(Box<ExprBody>, Box<ExprBody>),
 
   // List
   #[serde(rename = "concat")]
@@ -73,7 +69,7 @@ pub enum ExprBody {
   #[serde(rename = "propEq")]
   PropEq(Box<ExprBody>, String, Box<ExprBody>),
   #[serde(rename = "sortPath")]
-  SortPath(Vec<ExprBody>, Vec<String>),
+  SortPath(Box<ExprBody>, Vec<String>),
   #[serde(rename = "symmetricDifference")]
   SymmetricDifference(Vec<ExprBody>, Vec<ExprBody>),
   #[serde(rename = "union")]
@@ -113,16 +109,14 @@ impl ExprBody {
       ExprBody::GraphQL(_) => true,
       ExprBody::Const(_) => false,
       ExprBody::If { cond, on_true, on_false } => cond.has_io() || on_true.has_io() || on_false.has_io(),
-      ExprBody::AllPass(l) => l.iter().any(|e| e.has_io()),
-      ExprBody::And(expr1, expr2) => expr1.has_io() || expr2.has_io(),
-      ExprBody::AnyPass(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::And(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::Or(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Cond(default, branches) => {
         default.has_io() || branches.iter().any(|(cond, expr)| cond.has_io() || expr.has_io())
       }
       ExprBody::DefaultTo(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::IsEmpty(expr) => expr.has_io(),
       ExprBody::Not(expr) => expr.has_io(),
-      ExprBody::Or(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Concat(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Intersection(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Mod(expr1, expr2) => expr1.has_io() || expr2.has_io(),
@@ -145,7 +139,7 @@ impl ExprBody {
       ExprBody::Min(l) => l.iter().any(|e| e.has_io()),
       ExprBody::PathEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::PropEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
-      ExprBody::SortPath(l, _) => l.iter().any(|e| e.has_io()),
+      ExprBody::SortPath(l, _) => l.has_io(),
       ExprBody::SymmetricDifference(l1, l2) => l1.iter().any(|e| e.has_io()) || l2.iter().any(|e| e.has_io()),
       ExprBody::Union(l1, l2) => l1.iter().any(|e| e.has_io()) || l2.iter().any(|e| e.has_io()),
     }

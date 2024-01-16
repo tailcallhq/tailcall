@@ -1,5 +1,6 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
+#![feature(iterator_try_reduce)]
 mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;

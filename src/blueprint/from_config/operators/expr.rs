@@ -65,14 +65,11 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
       .zip(compile(ctx, *els).map(Box::new))
       .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
 
-    ExprBody::AllPass(ref list) => {
-      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::AllPass(a)).parallel_when(expr.has_io()))
+    ExprBody::And(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::And(a)).parallel_when(expr.has_io()))
     }
-    ExprBody::And(a, b) => {
-      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Logic(Logic::And(Box::new(a), Box::new(b))))
-    }
-    ExprBody::AnyPass(ref list) => {
-      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::AnyPass(a)).parallel_when(expr.has_io()))
+    ExprBody::Or(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::Or(a)).parallel_when(expr.has_io()))
     }
     ExprBody::Cond(default, list) => Valid::from_iter(list, |(cond, operation)| {
       compile_ab(ctx, (*cond, *operation)).map(|(cond, operation)| (Box::new(cond), Box::new(operation)))
@@ -83,9 +80,6 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     }
     ExprBody::IsEmpty(a) => compile(ctx, *a).map(|a| Expression::Logic(Logic::IsEmpty(Box::new(a)))),
     ExprBody::Not(a) => compile(ctx, *a).map(|a| Expression::Logic(Logic::Not(Box::new(a)))),
-    ExprBody::Or(a, b) => {
-      compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Logic(Logic::Or(Box::new(a), Box::new(b))))
-    }
 
     // List
     ExprBody::Concat(ref values) => {
@@ -126,7 +120,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Relation(Relation::PropEq(Box::new(a), path, Box::new(b))))
     }
     ExprBody::SortPath(a, path) => {
-      compile_list(ctx, a).map(|a| Expression::Relation(Relation::SortPath(a, path.clone())))
+      compile(ctx, *a).map(|a| Expression::Relation(Relation::SortPath(Box::new(a), path.clone())))
     }
     ExprBody::SymmetricDifference(a, b) => compile_list(ctx, a)
       .zip(compile_list(ctx, b))
