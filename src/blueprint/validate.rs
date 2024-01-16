@@ -101,14 +101,14 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
-  pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<Self, String> {
+  pub fn validate_field(self, type_of: &config::Type, config: &Config) -> Valid<Self, String> {
     // XXX we could use `Mustache`'s `render` method with a mock
     // struct implementing the `PathString` trait encapsulating `validation_map`
     // but `render` simply falls back to the default value for a given
     // type if it doesn't exist, so we wouldn't be able to get enough
     // context from that method alone
     // So we must duplicate some of that logic here :(
-    let parts_validator = MustachePartsValidator::new(type_of, config, self);
+    let parts_validator = MustachePartsValidator::new(type_of, config, &self);
 
     match &self.resolver {
       Some(Expression::Unsafe(Unsafe::Http { req_template, .. })) => {
