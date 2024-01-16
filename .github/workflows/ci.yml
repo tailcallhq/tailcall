@@ -310,7 +310,7 @@ jobs:
 
   semantic_release:
     name: Semantic Release
-    needs: [release]
+    needs: [draft_release, release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -321,10 +321,6 @@ jobs:
     steps:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.11.0
       - name: Release with Semantic Release
         run: |
           git tag -a ${{ env.APP_VERSION }} -m "Release ${{ env.APP_VERSION }}"
