@@ -319,7 +319,7 @@ jobs:
       APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
     steps:
       - name: Update release
-        uses: johnwbyrd/update-release@v1
+        uses: johnwbyrd/update-release@v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{needs.draft_release.outputs.create_release_name }}
