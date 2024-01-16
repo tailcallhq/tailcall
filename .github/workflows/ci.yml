@@ -318,6 +318,8 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
       - name: Install Node
         uses: actions/setup-node@v4
         with:
