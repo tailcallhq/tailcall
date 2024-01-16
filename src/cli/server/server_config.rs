@@ -3,13 +3,13 @@ use std::sync::Arc;
 
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::env::EnvNative;
-use crate::cli::http::HttpNative;
+use crate::cli::http::NativeHttp;
 use crate::cli::{init_env, init_http, init_http2_only};
 use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub server_context: Arc<AppContext<HttpNative, EnvNative>>,
+  pub server_context: Arc<AppContext<NativeHttp, EnvNative>>,
 }
 
 impl ServerConfig {

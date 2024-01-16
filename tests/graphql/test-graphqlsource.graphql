@@ -6,6 +6,7 @@ schema @server @upstream(baseURL: "http://localhost:8000/graphql") {
 type Post {
   id: Int!
   user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], name: "user")
+  userId: Int!
 }
 
 type Query {
@@ -21,6 +22,7 @@ type User {
 type Post {
   id: Int!
   user: User
+  userId: Int!
 }
 
 type Query {

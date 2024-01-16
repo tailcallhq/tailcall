@@ -208,6 +208,11 @@ directive @http(
   The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   groupBy: [String!]
+
+  """
+  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
+  """
+  encoding: Encoding
 ) on FIELD_DEFINITION
 
 """
@@ -306,7 +311,7 @@ directive @cache(
 ) on FIELD_DEFINITION
 
 """
-The @call operator is used to reference an `@http` operator.
+The @call operator is used to reference a resolver operator (available resolvers are `@http`, `@grpc` and `@graphQL`).
 """
 directive @call(
   """
@@ -319,6 +324,113 @@ directive @call(
   args: JSON
 ) on FIELD_DEFINITION
 
+"""
+Allows composing operators as simple expressions
+"""
+directive @expr(
+  """
+  Root of the expression AST
+  """
+  body: ExprBody!
+) on FIELD_DEFINITION
+
+"""
+Kinds of nodes that the expression AST can use
+"""
+input ExprBody {
+  """
+  Branch based on a condition
+  """
+  if: ExprIf
+  """
+  Fetch a resources using the http operator
+  """
+  http: ExprHttp
+  """
+  Fetch a resources using the grpc operator
+  """
+  grpc: ExprGrpc
+  """
+  Evaluate to constant data
+  """
+  const: JSON
+  """
+  Fetch a resources using the graphQL operator
+  """
+  graphQL: ExprGraphQL
+}
+
+"""
+Arguments for an if-node in expression AST
+"""
+input ExprIf {
+  """
+  Expression to be used as a condition
+  """
+  cond: ExprBody!
+  """
+  Expression to evaluate if the condition is true
+  """
+  then: ExprBody!
+  """
+  Expression to evaluate if the condition is false
+  """
+  else: ExprBody!
+}
+
+"""
+Arguments for the http-node in expression AST. Same as the @http directive.
+"""
+input ExprHttp {
+  baseURL: String
+  path: String!
+  method: Method
+  body: String
+  headers: [KeyValue]
+  query: [KeyValue]
+  groupBy: [String!]
+}
+
+"""
+Arguments for the grpc-node in expression AST. Same as the @grpc directive.
+"""
+input ExprGrpc {
+  service: String!
+  method: String!
+  body: String
+  headers: [KeyValue]
+  protoPath: String
+  groupBy: [String!]
+}
+
+"""
+Arguments for the graphQL-node in expression AST. Same as the @graphQL directive.
+"""
+input ExprGraphQL {
+  """
+  This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+  """
+  baseURL: String
+  """
+  Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
+  """
+  name: String
+  """
+  Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
+  """
+  args: [KeyValue]
+  """
+  The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.
+  """
+  headers: [KeyValue]
+  """
+  If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.
+
+  Make sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.
+  """
+  batch: Boolean
+}
+
 enum Method {
   GET
   POST
@@ -327,6 +439,11 @@ enum Method {
   PATCH
   HEAD
   OPTIONS
+}
+
+enum Encoding {
+  ApplicationJson
+  ApplicationXWwwFormUrlEncoded
 }
 
 input Proxy {
