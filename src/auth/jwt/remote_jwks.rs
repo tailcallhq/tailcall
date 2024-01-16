@@ -7,11 +7,10 @@ use jsonwebtoken::jwk::JwkSet;
 use reqwest::Request;
 use url::Url;
 
-use crate::auth::base::AuthError;
-use crate::HttpIO;
-
 use super::jwks::Jwks;
 use super::JwtClaims;
+use crate::auth::base::AuthError;
+use crate::HttpIO;
 
 struct JWKSCache {
   jwks: Jwks,

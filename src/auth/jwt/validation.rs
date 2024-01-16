@@ -1,6 +1,5 @@
-use crate::blueprint;
-
 use super::{JwtClaims, OneOrMany};
+use crate::blueprint;
 
 pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaims) -> bool {
   options

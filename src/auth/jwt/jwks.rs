@@ -2,15 +2,11 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use derive_setters::Setters;
-use jsonwebtoken::{
-  decode, decode_header,
-  jwk::{Jwk, JwkSet},
-  Algorithm, DecodingKey, Validation,
-};
-
-use crate::auth::base::AuthError;
+use jsonwebtoken::jwk::{Jwk, JwkSet};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 
 use super::JwtClaims;
+use crate::auth::base::AuthError;
 
 #[derive(Setters)]
 pub struct Jwks {
@@ -70,10 +66,8 @@ impl Jwks {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::auth::jwt::{
-    tests::{JWK_SET, JWT_VALID_TOKEN_NO_KID, JWT_VALID_TOKEN_WITH_KID},
-    OneOrMany,
-  };
+  use crate::auth::jwt::tests::{JWK_SET, JWT_VALID_TOKEN_NO_KID, JWT_VALID_TOKEN_WITH_KID};
+  use crate::auth::jwt::OneOrMany;
 
   #[test]
   fn test_decode_required_kid() {

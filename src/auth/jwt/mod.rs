@@ -103,7 +103,7 @@ pub mod tests {
   // token without kid, issuer = "me" and audience = "some"
   pub const JWT_VALID_TOKEN_NO_KID: &str = "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjIwMTkwNTY0NDEsImlzcyI6Im1lIiwiYXVkIjoic29tZSJ9.E_3s1MCdyRPDvpTtM4woHmSrRxU3_zRMSIbGSQYe3zyRQ-d2Tw6jVVleZ39GJ88l3yw0pGrrkdGkRBi1lammrUryoe0Sp8_FQ-tZ1jrkCV3qd75n3X_WYnG8CRiPaDZX5VDEFlF30h1x3gyEBpDloOa657AYqwG20XTG5xgicvOGY7SGsyO6IwNWXbbiJnH5cStNPb5mQ97cY8QDKryT5InWHWMO1USByqUYoj-AL4HdIrr5HUaZqDIJEberLddIIHW446pd55PhW6PXS9voLmJv9in9ckCTij_AVOdr7shDlQqZhfIZAVYFSqG64Vs4GM1jEwHVoP_EK-4L7nq3TQ";
 
-  pub const JWK_SET: Lazy<JwkSet> = Lazy::new(|| {
+  pub static JWK_SET: Lazy<JwkSet> = Lazy::new(|| {
     let value = serde_json::json!({
       "keys": [
         {

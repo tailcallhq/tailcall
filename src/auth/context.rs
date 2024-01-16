@@ -116,7 +116,9 @@ mod tests {
       .await;
     assert!(validation.is_ok());
 
-    let validation = auth_context.validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID)).await;
+    let validation = auth_context
+      .validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
+      .await;
     assert!(validation.is_ok());
   }
 }

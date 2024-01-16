@@ -21,7 +21,6 @@ env:
       ]
     }
 
-
 assert:
   - request:
       method: POST

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use crate::{auth::base::AuthError, blueprint, HttpIO};
-
-use super::{jwks::Jwks, remote_jwks::RemoteJwksVerifier, JwtClaims};
+use super::jwks::Jwks;
+use super::remote_jwks::RemoteJwksVerifier;
+use super::JwtClaims;
+use crate::auth::base::AuthError;
+use crate::{blueprint, HttpIO};
 
 pub enum JwksDecoder {
   Local(Jwks),
