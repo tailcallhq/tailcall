@@ -317,6 +317,7 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
     steps:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
@@ -326,8 +327,8 @@ jobs:
           node-version: 20.11.0
       - name: Release with Semantic Release
         run: |
-          npm install -g semantic-release
-          npx semantic-release --branches main
+          git tag -a ${{ env.APP_VERSION }} -m "Release ${{ env.APP_VERSION }}"
+          git push origin ${{ env.APP_VERSION }}
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
