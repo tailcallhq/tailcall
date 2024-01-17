@@ -3,7 +3,7 @@ use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field};
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
-use crate::lambda::{Expression, Io, Lambda};
+use crate::lambda::{Expression, Lambda, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 use crate::{config, helpers};
@@ -43,7 +43,7 @@ pub fn compile_http(config: &config::Config, field: &config::Field, http: &confi
     })
     .map(|req_template| {
       if !http.group_by.is_empty() && http.method == Method::GET {
-        Expression::Io(Io::Http { req_template, group_by: Some(GroupBy::new(http.group_by.clone())), dl_id: None })
+        Expression::IO(IO::Http { req_template, group_by: Some(GroupBy::new(http.group_by.clone())), dl_id: None })
       } else {
         Lambda::from_request_template(req_template).expression
       }

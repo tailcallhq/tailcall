@@ -23,7 +23,7 @@ use crate::lambda::EvaluationError;
 use crate::{grpc, http};
 
 #[derive(Clone, Debug)]
-pub enum Io {
+pub enum IO {
   Http {
     req_template: http::RequestTemplate,
     group_by: Option<GroupBy>,
@@ -46,7 +46,7 @@ pub enum Io {
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(pub usize);
 
-impl Eval for Io {
+impl Eval for IO {
   fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a super::EvaluationContext<'a, Ctx>,
@@ -54,7 +54,7 @@ impl Eval for Io {
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       match self {
-        Io::Http { req_template, dl_id, .. } => {
+        IO::Http { req_template, dl_id, .. } => {
           let req = req_template.to_request(ctx)?;
           let is_get = req.method() == reqwest::Method::GET;
 
@@ -79,7 +79,7 @@ impl Eval for Io {
 
           Ok(res.body)
         }
-        Io::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+        IO::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
           let req = req_template.to_request(ctx)?;
 
           let res = if ctx.req_ctx.upstream.batch.is_some()
@@ -95,7 +95,7 @@ impl Eval for Io {
           set_cache_control(ctx, &res);
           parse_graphql_response(ctx, res, field_name)
         }
-        Io::Grpc { req_template, dl_id, .. } => {
+        IO::Grpc { req_template, dl_id, .. } => {
           let rendered = req_template.render(ctx)?;
 
           let res = if ctx.req_ctx.upstream.batch.is_some() &&
@@ -114,7 +114,7 @@ impl Eval for Io {
 
           Ok(res.body)
         }
-        Io::JS(input, script) => {
+        IO::JS(input, script) => {
           let result;
           #[cfg(not(feature = "unsafe-js"))]
           {

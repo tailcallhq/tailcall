@@ -74,7 +74,12 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::Cond(default, list) => Valid::from_iter(list, |(cond, operation)| {
       compile_ab(ctx, (*cond, *operation)).map(|(cond, operation)| (Box::new(cond), Box::new(operation)))
     })
-    .and_then(|list| compile(ctx, *default).map(|default| Expression::Logic(Logic::Cond(Box::new(default), list)))),
+    .and_then(|mut list| {
+      compile(ctx, *default).map(|default| {
+        list.push((Box::new(Expression::Literal(true.into())), Box::new(default)));
+        Expression::Logic(Logic::Cond(list))
+      })
+    }),
     ExprBody::DefaultTo(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Logic(Logic::DefaultTo(Box::new(a), Box::new(b))))
     }

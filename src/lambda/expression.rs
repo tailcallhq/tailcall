@@ -9,7 +9,7 @@ use thiserror::Error;
 
 use super::list::List;
 use super::logic::Logic;
-use super::{Eval, EvaluationContext, Io, Math, Relation, ResolverContextLike};
+use super::{Concurrency, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
 
 #[derive(Clone, Debug)]
@@ -17,19 +17,13 @@ pub enum Expression {
   Context(Context),
   Literal(Value), // TODO: this should async_graphql::Value
   EqualTo(Box<Expression>, Box<Expression>),
-  Io(Io),
+  IO(IO),
   Input(Box<Expression>, Vec<String>),
   Logic(Logic),
   Relation(Relation),
   List(List),
   Math(Math),
   Concurrency(Concurrency, Box<Expression>),
-}
-
-#[derive(Clone, Debug)]
-pub enum Concurrency {
-  Parallel,
-  Sequential,
 }
 
 #[derive(Clone, Debug)]
@@ -102,7 +96,7 @@ impl Eval for Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
         )),
-        Expression::Io(operation) => operation.eval(ctx, conc).await,
+        Expression::IO(operation) => operation.eval(ctx, conc).await,
 
         Expression::Relation(relation) => relation.eval(ctx, conc).await,
         Expression::Logic(logic) => logic.eval(ctx, conc).await,
