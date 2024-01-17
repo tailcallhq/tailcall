@@ -1,0 +1,35 @@
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+  mutation: Mutation
+}
+
+input PostInput {
+  body: String
+  title: String
+}
+
+input UserInput {
+  name: String
+  email: String
+  updatePost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+}
+
+type Mutation {
+  insertUser(input: UserInput): User @http(body: "{{args.input}}", method: "POST", path: "/users")
+}
+
+type User {
+  id: Int
+  name: String
+  post: Post @http(body: "{{args}}", method: "POST", path: "/posts")
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+}
+
+type Query {
+  firstUser: User @http(method: "GET", path: "/users/1")
+}

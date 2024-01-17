@@ -1,0 +1,34 @@
+---
+config: !file tests/http/config/mutation-nested.graphql
+name: Mutation nested
+
+mock:
+  - request:
+      method: POST
+      url: http://jsonplaceholder.typicode.com/posts
+      body: '{"body":"post-body","title":"post-title"}'
+    response:
+      body:
+        title: "post-title"
+        body: "post-body"
+        userId: 1
+  - request:
+      method: POST
+      url: http://jsonplaceholder.typicode.com/users
+      body: '{"email":"user-email","name":"user-name","post":{"body":"post-body","title":"post-title"}}'
+    response:
+      body:
+        name: "user-name"
+        email: "user-email"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: 'mutation { insertUser(input: { name: "user-name", email: "user-email" }) { updatePost({ body: "post-body", title: "post-title" }) { body } } }'
+    response:
+      body:
+        data:
+          insertUser:
+            name: "user-namee"
